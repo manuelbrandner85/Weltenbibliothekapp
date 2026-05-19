@@ -15,8 +15,7 @@ class WebLogoutButton extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF141414),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Ausloggen?',
             style: TextStyle(color: Colors.white, fontSize: 18)),
         content: const Text(
@@ -45,8 +44,7 @@ class WebLogoutButton extends StatelessWidget {
     await prefs.remove('web_is_admin');
 
     if (context.mounted) {
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil('/', (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
     }
   }
 
@@ -61,8 +59,7 @@ class WebLogoutButton extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: IconButton(
-        icon: const Icon(Icons.logout_rounded,
-            color: Colors.white70, size: 20),
+        icon: const Icon(Icons.logout_rounded, color: Colors.white70, size: 20),
         tooltip: 'Ausloggen',
         onPressed: () => _logout(context),
       ),

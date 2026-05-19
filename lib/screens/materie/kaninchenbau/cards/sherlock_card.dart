@@ -71,8 +71,7 @@ class _SherlockCardState extends State<SherlockCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.fingerprint,
-                  color: Color(0xFF4DD0E1), size: 18),
+              const Icon(Icons.fingerprint, color: Color(0xFF4DD0E1), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'DIGITALER FUSSABDRUCK',
@@ -136,8 +135,8 @@ class _SherlockCardState extends State<SherlockCard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4DD0E1),
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -199,8 +198,7 @@ class _SherlockCardState extends State<SherlockCard> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle,
-                size: 12, color: Color(0xFF4DD0E1)),
+            const Icon(Icons.check_circle, size: 12, color: Color(0xFF4DD0E1)),
             const SizedBox(width: 6),
             Text(
               h.platform,

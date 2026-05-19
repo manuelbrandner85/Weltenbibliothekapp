@@ -44,7 +44,8 @@ class ResearchPin {
         description: j['description'] as String?,
         upvotes: (j['upvotes'] as int?) ?? 0,
         downvotes: (j['downvotes'] as int?) ?? 0,
-        createdAt: DateTime.tryParse(j['created_at'] as String? ?? '') ?? DateTime.now(),
+        createdAt: DateTime.tryParse(j['created_at'] as String? ?? '') ??
+            DateTime.now(),
       );
 
   int get score => upvotes - downvotes;
@@ -84,15 +85,19 @@ class ResearchPinService {
     String? description,
   }) async {
     try {
-      final res = await _s.from('user_research_pins').insert({
-        'world': world,
-        'user_id': userId,
-        'username': username,
-        'latitude': lat,
-        'longitude': lng,
-        'title': title,
-        'description': description,
-      }).select().single();
+      final res = await _s
+          .from('user_research_pins')
+          .insert({
+            'world': world,
+            'user_id': userId,
+            'username': username,
+            'latitude': lat,
+            'longitude': lng,
+            'title': title,
+            'description': description,
+          })
+          .select()
+          .single();
       return ResearchPin.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ ResearchPin add: $e');

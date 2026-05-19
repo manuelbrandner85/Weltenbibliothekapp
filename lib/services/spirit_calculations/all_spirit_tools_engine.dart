@@ -15,40 +15,73 @@ class AllSpiritToolsEngine {
   static EnergyFieldToolResult calculateEnergyField(EnergieProfile profile) {
     final now = DateTime.now();
     final lifePath = _calculateLifePath(profile.birthDate);
-    final soulNumber = _calculateSoulNumber(profile.firstName, profile.lastName);
-    final expression = _calculateExpression(profile.firstName, profile.lastName);
-    
+    final soulNumber =
+        _calculateSoulNumber(profile.firstName, profile.lastName);
+    final expression =
+        _calculateExpression(profile.firstName, profile.lastName);
+
     // Berechnung: Energiefeld-Stärke
-    final fieldStrength = ((lifePath * 10 + soulNumber * 8 + expression * 6) / 24 * 100).clamp(0.0, 100.0);
-    
+    final fieldStrength =
+        ((lifePath * 10 + soulNumber * 8 + expression * 6) / 24 * 100)
+            .clamp(0.0, 100.0);
+
     // Frequenzbänder (basierend auf Chakra-Frequenzen)
     final frequencyBands = <FrequencyBand>[
-      FrequencyBand(name: 'Alpha (8-12 Hz)', strength: (lifePath / 9 * 100).clamp(0, 100), quality: lifePath >= 5 ? 'Aktiv' : 'Ruhend'),
-      FrequencyBand(name: 'Beta (12-30 Hz)', strength: (soulNumber / 9 * 100).clamp(0, 100), quality: soulNumber >= 6 ? 'Überaktiv' : 'Aktiv'),
-      FrequencyBand(name: 'Gamma (30-100 Hz)', strength: (expression / 9 * 100).clamp(0, 100), quality: expression >= 7 ? 'Sehr aktiv' : 'Moderat'),
-      FrequencyBand(name: 'Delta (0.5-4 Hz)', strength: ((9 - lifePath) / 9 * 100).clamp(0, 100), quality: lifePath <= 3 ? 'Dominant' : 'Schwach'),
-      FrequencyBand(name: 'Theta (4-8 Hz)', strength: ((9 - soulNumber) / 9 * 100).clamp(0, 100), quality: soulNumber <= 4 ? 'Stark' : 'Gering'),
+      FrequencyBand(
+          name: 'Alpha (8-12 Hz)',
+          strength: (lifePath / 9 * 100).clamp(0, 100),
+          quality: lifePath >= 5 ? 'Aktiv' : 'Ruhend'),
+      FrequencyBand(
+          name: 'Beta (12-30 Hz)',
+          strength: (soulNumber / 9 * 100).clamp(0, 100),
+          quality: soulNumber >= 6 ? 'Überaktiv' : 'Aktiv'),
+      FrequencyBand(
+          name: 'Gamma (30-100 Hz)',
+          strength: (expression / 9 * 100).clamp(0, 100),
+          quality: expression >= 7 ? 'Sehr aktiv' : 'Moderat'),
+      FrequencyBand(
+          name: 'Delta (0.5-4 Hz)',
+          strength: ((9 - lifePath) / 9 * 100).clamp(0, 100),
+          quality: lifePath <= 3 ? 'Dominant' : 'Schwach'),
+      FrequencyBand(
+          name: 'Theta (4-8 Hz)',
+          strength: ((9 - soulNumber) / 9 * 100).clamp(0, 100),
+          quality: soulNumber <= 4 ? 'Stark' : 'Gering'),
     ];
-    
+
     // Kohärenz-Berechnung (Standardabweichung der Frequenzen)
     final strengths = frequencyBands.map((f) => f.strength).toList();
     final mean = strengths.reduce((a, b) => a + b) / strengths.length;
-    final variance = strengths.map((s) => (s - mean) * (s - mean)).reduce((a, b) => a + b) / strengths.length;
+    final variance =
+        strengths.map((s) => (s - mean) * (s - mean)).reduce((a, b) => a + b) /
+            strengths.length;
     final coherence = (100 - variance).clamp(0.0, 100.0);
-    
+
     // Resonanzpunkte
     final resonantPoints = <String>[
-      if (lifePath == 11 || lifePath == 22 || lifePath == 33) 'Meisterzahl-Resonanz',
+      if (lifePath == 11 || lifePath == 22 || lifePath == 33)
+        'Meisterzahl-Resonanz',
       if (soulNumber == expression) 'Seelen-Ausdruck-Harmonie',
       if (coherence >= 80) 'Hohe Feld-Kohärenz',
       if (fieldStrength >= 75) 'Starkes Gesamtfeld',
     ];
-    
+
     // Einordnung
-    final stabilityLevel = coherence >= 75 ? 'Sehr stabil' : coherence >= 50 ? 'Ausgeglichen' : 'Instabil';
-    final energyFlow = fieldStrength >= 70 ? 'Fließend' : fieldStrength >= 40 ? 'Ausgeglichen' : 'Blockiert';
-    final activeZones = frequencyBands.where((f) => f.strength >= 60).map((f) => f.name).toList();
-    
+    final stabilityLevel = coherence >= 75
+        ? 'Sehr stabil'
+        : coherence >= 50
+            ? 'Ausgeglichen'
+            : 'Instabil';
+    final energyFlow = fieldStrength >= 70
+        ? 'Fließend'
+        : fieldStrength >= 40
+            ? 'Ausgeglichen'
+            : 'Blockiert';
+    final activeZones = frequencyBands
+        .where((f) => f.strength >= 60)
+        .map((f) => f.name)
+        .toList();
+
     // Interpretation (persönlich & detailliert)
     final interpretation = '''Liebe/r ${profile.firstName},
 
@@ -108,22 +141,34 @@ Vertraue deinem Feld. Es weiß, was es tut – auch wenn dein Verstand es manchm
   static PolarityToolResult calculatePolarity(EnergieProfile profile) {
     final now = DateTime.now();
     final fullName = '${profile.firstName} ${profile.lastName}';
-    final vowels = fullName.toLowerCase().split('').where((c) => 'aeiouäöü'.contains(c)).length;
-    final consonants = fullName.toLowerCase().split('').where((c) => RegExp(r'[bcdfghjklmnpqrstvwxyzß]').hasMatch(c)).length;
+    final vowels = fullName
+        .toLowerCase()
+        .split('')
+        .where((c) => 'aeiouäöü'.contains(c))
+        .length;
+    final consonants = fullName
+        .toLowerCase()
+        .split('')
+        .where((c) => RegExp(r'[bcdfghjklmnpqrstvwxyzß]').hasMatch(c))
+        .length;
     final total = vowels + consonants;
-    
+
     // Yin-Yang Berechnung
     final yinScore = (vowels / total * 100).clamp(0.0, 100.0);
     final yangScore = (consonants / total * 100).clamp(0.0, 100.0);
     final balanceRatio = 1 - (yinScore - yangScore).abs() / 100;
-    
+
     // Polaritätsachsen
     final axes = <PolarityAxis>[
       PolarityAxis(
         name: 'Aktiv ↔ Passiv',
         leftValue: yangScore,
         rightValue: yinScore,
-        state: yangScore > yinScore + 10 ? 'Aktiv-dominant' : yinScore > yangScore + 10 ? 'Passiv-dominant' : 'Ausgeglichen',
+        state: yangScore > yinScore + 10
+            ? 'Aktiv-dominant'
+            : yinScore > yangScore + 10
+                ? 'Passiv-dominant'
+                : 'Ausgeglichen',
       ),
       PolarityAxis(
         name: 'Ordnung ↔ Chaos',
@@ -144,12 +189,23 @@ Vertraue deinem Feld. Es weiß, was es tut – auch wenn dein Verstand es manchm
         state: vowels > consonants ? 'Expansiv' : 'Zurückgezogen',
       ),
     ];
-    
+
     // Einordnung
-    final dominantPole = yangScore > yinScore + 10 ? 'Yang' : yinScore > yangScore + 10 ? 'Yin' : 'Ausgeglichen';
-    final balanceState = balanceRatio >= 0.85 ? 'Harmonisch' : balanceRatio >= 0.65 ? 'Leichte Dysbalance' : 'Starke Dysbalance';
-    final tensionPoints = axes.where((a) => (a.leftValue - a.rightValue).abs() > 20).map((a) => a.name).toList();
-    
+    final dominantPole = yangScore > yinScore + 10
+        ? 'Yang'
+        : yinScore > yangScore + 10
+            ? 'Yin'
+            : 'Ausgeglichen';
+    final balanceState = balanceRatio >= 0.85
+        ? 'Harmonisch'
+        : balanceRatio >= 0.65
+            ? 'Leichte Dysbalance'
+            : 'Starke Dysbalance';
+    final tensionPoints = axes
+        .where((a) => (a.leftValue - a.rightValue).abs() > 20)
+        .map((a) => a.name)
+        .toList();
+
     // Interpretation (persönlich & detailliert)
     final interpretation = '''Liebe/r ${profile.firstName},
 
@@ -224,7 +280,7 @@ ${axes[3].state.contains('Expansiv') ? '→ Du wächst nach außen, erkundest, e
 
 ${tensionPoints.isNotEmpty ? '''\n⚡ SPANNUNGSPUNKTE (WACHSTUMSCHANCEN!)
 
-${tensionPoints.map((t) => '🔥 $t – Hier ist Bewegung! Diese Spannung ist keine Schwäche, sondern ein Hinweis: Hier möchtest du wachsen. Hier liegt ungenutztes Potenzial. Jede Spannung ist wie eine gespannte Bogensehne – sie kann einen Pfeil weit fliegen lassen!').join('\n\n')}''': '''\n✨ HARMONISCHE AUSGEWOGENHEIT
+${tensionPoints.map((t) => '🔥 $t – Hier ist Bewegung! Diese Spannung ist keine Schwäche, sondern ein Hinweis: Hier möchtest du wachsen. Hier liegt ungenutztes Potenzial. Jede Spannung ist wie eine gespannte Bogensehne – sie kann einen Pfeil weit fliegen lassen!').join('\n\n')}''' : '''\n✨ HARMONISCHE AUSGEWOGENHEIT
 
 Wow, ${profile.firstName}! Alle deine Achsen sind ausgeglichen. Das ist selten. Du bewegst dich flexibel zwischen den Polen. Genieße diese Gabe, aber werde nicht selbstgefällig – Balance erfordert ständige Aufmerksamkeit.'''}
 
@@ -256,11 +312,12 @@ Du bist ein Tänzer zwischen den Welten, ${profile.firstName}. Tanze weiter. �
   // ═══════════════════════════════════════════════════════════════
   // TOOL 3: TRANSFORMATIONS-ANALYSE
   // ═══════════════════════════════════════════════════════════════
-  static TransformationToolResult calculateTransformation(EnergieProfile profile) {
+  static TransformationToolResult calculateTransformation(
+      EnergieProfile profile) {
     final now = DateTime.now();
     final age = DateTime.now().year - profile.birthDate.year;
     final personalYear = _calculatePersonalYear(profile.birthDate);
-    
+
     // 7 Stufen der spirituellen Entwicklung
     final stageMap = [
       'Erwachen',
@@ -274,7 +331,7 @@ Du bist ein Tänzer zwischen den Welten, ${profile.firstName}. Tanze weiter. �
     final currentStage = ((age / 70) * 7).floor().clamp(1, 7);
     final stageName = stageMap[currentStage - 1];
     final stageProgress = (((age % 10) / 10) * 100).clamp(0.0, 100.0);
-    
+
     // Übergangsmarker
     final transitionMarkers = <String>[
       if (personalYear == 9) 'Zyklusabschluss',
@@ -283,19 +340,30 @@ Du bist ein Tänzer zwischen den Welten, ${profile.firstName}. Tanze weiter. �
       if (age >= 28 && age <= 30) 'Saturn Return',
       if (currentStage >= 4) 'Tiefe Transformation',
     ];
-    
+
     // Einordnung
-    final maturityLevel = currentStage <= 2 ? 'Beginnend' : currentStage <= 5 ? 'Entwickelnd' : 'Gereift';
-    final processIntensity = transitionMarkers.length >= 3 ? 'Intensiv' : transitionMarkers.isNotEmpty ? 'Aktiv' : 'Ruhig';
+    final maturityLevel = currentStage <= 2
+        ? 'Beginnend'
+        : currentStage <= 5
+            ? 'Entwickelnd'
+            : 'Gereift';
+    final processIntensity = transitionMarkers.length >= 3
+        ? 'Intensiv'
+        : transitionMarkers.isNotEmpty
+            ? 'Aktiv'
+            : 'Ruhig';
     final recurrentThemes = <String>[
-      if (personalYear == 3 || personalYear == 6 || personalYear == 9) 'Loslassen',
-      if (personalYear == 1 || personalYear == 4 || personalYear == 7) 'Neuaufbau',
+      if (personalYear == 3 || personalYear == 6 || personalYear == 9)
+        'Loslassen',
+      if (personalYear == 1 || personalYear == 4 || personalYear == 7)
+        'Neuaufbau',
       if (currentStage == 4) 'Innere Krise',
       if (currentStage >= 5) 'Integration',
     ];
-    
+
     // Interpretation (persönlich & detailliert)
-    final interpretation = '''${profile.firstName}, du stehst an einem besonderen Punkt deiner spirituellen Reise:
+    final interpretation =
+        '''${profile.firstName}, du stehst an einem besonderen Punkt deiner spirituellen Reise:
 
 🦋 PHASE "${stageName.toUpperCase()}" (Stufe $currentStage von 7)
 
@@ -349,21 +417,24 @@ ${recurrentThemes.map((t) => t == 'Loslassen' ? '🍂 Loslassen – Deine Seele 
     final now = DateTime.now();
     final age = DateTime.now().year - profile.birthDate.year;
     final personalYear = _calculatePersonalYear(profile.birthDate);
-    
+
     // Jung's 4-Stufen Shadow Integration
     final stageMap = ['Bekenntnis', 'Aufklärung', 'Bildung', 'Transformation'];
     final shadowStage = ((age / 60) * 4).floor().clamp(1, 4);
     final stageName = stageMap[shadowStage - 1];
-    final integrationLevel = ((age / 60) * 60 + (personalYear / 9) * 40).clamp(0.0, 100.0);
-    
+    final integrationLevel =
+        ((age / 60) * 60 + (personalYear / 9) * 40).clamp(0.0, 100.0);
+
     // Wiederkehrende Muster
     final repeatingPatterns = <String>[
-      if (personalYear == 1 || personalYear == 4 || personalYear == 7) 'Neuanfang-Widerstand',
-      if (personalYear == 3 || personalYear == 6 || personalYear == 9) 'Loslassen-Schwierigkeit',
+      if (personalYear == 1 || personalYear == 4 || personalYear == 7)
+        'Neuanfang-Widerstand',
+      if (personalYear == 3 || personalYear == 6 || personalYear == 9)
+        'Loslassen-Schwierigkeit',
       if (age % 7 == 0) 'Zyklisches Thema',
       if (shadowStage >= 2) 'Alte Verhaltensmuster',
     ];
-    
+
     // Projektionsthemen
     final projectionThemes = <String>[
       if (personalYear <= 3) 'Macht & Kontrolle',
@@ -372,9 +443,13 @@ ${recurrentThemes.map((t) => t == 'Loslassen' ? '🍂 Loslassen – Deine Seele 
       if (shadowStage == 1) 'Schatten-Verleugnung',
       if (shadowStage >= 3) 'Schatten-Akzeptanz',
     ];
-    
+
     // Einordnung
-    final awarenessLevel = integrationLevel >= 70 ? 'Bewusst' : integrationLevel >= 40 ? 'Dämmert' : 'Unbewusst';
+    final awarenessLevel = integrationLevel >= 70
+        ? 'Bewusst'
+        : integrationLevel >= 40
+            ? 'Dämmert'
+            : 'Unbewusst';
     final resistancePoints = <String>[
       if (integrationLevel < 30) 'Starke Abwehr',
       if (personalYear == 5) 'Veränderungsangst',
@@ -385,9 +460,10 @@ ${recurrentThemes.map((t) => t == 'Loslassen' ? '🍂 Loslassen – Deine Seele 
       if (shadowStage >= 2) 'Erkenntnispotential',
       if (age % 7 == 0) 'Zyklus-Neuausrichtung',
     ];
-    
+
     // Interpretation (persönlich)
-    final interpretation = '''${profile.firstName}, lass uns in deinen Schatten schauen:
+    final interpretation =
+        '''${profile.firstName}, lass uns in deinen Schatten schauen:
 
 🌑 SCHATTEN-INTEGRATION: "${stageName.toUpperCase()}" (Stufe $shadowStage/4)
 Level: ${integrationLevel.toStringAsFixed(0)}% | Bewusstheit: $awarenessLevel
@@ -419,10 +495,10 @@ ${repeatingPatterns.isNotEmpty ? "🔄 WIEDERKEHRENDE MUSTER\n${repeatingPattern
     final now = DateTime.now();
     final age = DateTime.now().year - profile.birthDate.year;
     final personalYear = _calculatePersonalYear(profile.birthDate);
-    
+
     // Spiralposition (28-Jahr Saturn-Zyklus)
     final spiralPosition = ((age % 28) / 28 * 100).clamp(0.0, 100.0);
-    
+
     // 5 Selbst-Awareness-Übungen
     final exercises = [
       'Sensorisches Mapping',
@@ -432,35 +508,42 @@ ${repeatingPatterns.isNotEmpty ? "🔄 WIEDERKEHRENDE MUSTER\n${repeatingPattern
       'Umwelt-Spiegelung'
     ];
     final currentExercise = exercises[personalYear % 5];
-    
+
     // Entwicklungsachsen
     final developmentAxes = <String>[
       'Vergangenheit ↔ Zukunft',
       'Unbewusst ↔ Bewusst',
       'Fragment ↔ Ganzheit',
     ];
-    
+
     // Übergangszonen
     final transitionZones = <String>[
       if (spiralPosition >= 20 && spiralPosition <= 30) 'Frühe Orientierung',
       if (spiralPosition >= 45 && spiralPosition <= 55) 'Mitte-Schwelle',
-      if (spiralPosition >= 70 && spiralPosition <= 80) 'Vorbereitung Neuanfang',
+      if (spiralPosition >= 70 && spiralPosition <= 80)
+        'Vorbereitung Neuanfang',
       if (spiralPosition >= 95 || spiralPosition <= 5) 'Zyklus-Neustart',
     ];
-    
+
     // Einordnung
-    final navigationState = spiralPosition <= 33 ? 'Explorierend' : spiralPosition <= 66 ? 'Vertiefend' : 'Integrierend';
+    final navigationState = spiralPosition <= 33
+        ? 'Explorierend'
+        : spiralPosition <= 66
+            ? 'Vertiefend'
+            : 'Integrierend';
     final stillnessAreas = <String>[
       if (personalYear == 2 || personalYear == 4) 'Innere Ruhe',
       if (spiralPosition >= 40 && spiralPosition <= 60) 'Zentrum-Bereich',
     ];
     final movementAreas = <String>[
-      if (personalYear == 1 || personalYear == 5 || personalYear == 9) 'Dynamische Phase',
+      if (personalYear == 1 || personalYear == 5 || personalYear == 9)
+        'Dynamische Phase',
       if (spiralPosition <= 20 || spiralPosition >= 80) 'Übergangs-Bewegung',
     ];
-    
+
     // Interpretation (persönlich & detailliert)
-    final interpretation = '''${profile.firstName}, stell dir vor, deine Seele ist eine Landkarte – mit Bergen, Tälern, Flüssen und verborgenen Schätzen. Lass uns gemeinsam schauen, wo du gerade stehst:
+    final interpretation =
+        '''${profile.firstName}, stell dir vor, deine Seele ist eine Landkarte – mit Bergen, Tälern, Flüssen und verborgenen Schätzen. Lass uns gemeinsam schauen, wo du gerade stehst:
 
 🗺️ DEINE POSITION AUF DER INNEREN LANDKARTE
 
@@ -532,27 +615,43 @@ Vertraue deiner inneren Navigation. Sie weiß mehr, als dein Verstand denkt. �
     final now = DateTime.now();
     final age = DateTime.now().year - profile.birthDate.year;
     final personalYear = _calculatePersonalYear(profile.birthDate);
-    
+
     // 7-Jahres-Zyklus
     final cycle7Year = (age % 7) + 1;
-    
+
     // Saturn-Phase
-    final saturnPhase = age < 28 ? 'Vor-Return' : age >= 28 && age <= 30 ? 'Erster Return' : age >= 56 && age <= 58 ? 'Zweiter Return' : 'Zwischen Returns';
-    
+    final saturnPhase = age < 28
+        ? 'Vor-Return'
+        : age >= 28 && age <= 30
+            ? 'Erster Return'
+            : age >= 56 && age <= 58
+                ? 'Zweiter Return'
+                : 'Zwischen Returns';
+
     // Zyklus-Übereinstimmung
-    final cycleAlignment = ((cycle7Year / 7) * 50 + (personalYear / 9) * 50).clamp(0.0, 100.0);
-    
+    final cycleAlignment =
+        ((cycle7Year / 7) * 50 + (personalYear / 9) * 50).clamp(0.0, 100.0);
+
     // Einordnung
-    final timeQuality = personalYear <= 3 ? 'Aufbauend' : personalYear <= 6 ? 'Kulminierend' : 'Auflösend';
+    final timeQuality = personalYear <= 3
+        ? 'Aufbauend'
+        : personalYear <= 6
+            ? 'Kulminierend'
+            : 'Auflösend';
     final overlappingCycles = <String>[
       '7-Jahres-Zyklus: Jahr $cycle7Year',
       'Persönliches Jahr: $personalYear',
       if (saturnPhase.contains('Return')) 'Saturn Return',
     ];
-    final rhythmState = cycleAlignment >= 70 ? 'Harmonisch' : cycleAlignment >= 40 ? 'Neutral' : 'Dissonant';
-    
+    final rhythmState = cycleAlignment >= 70
+        ? 'Harmonisch'
+        : cycleAlignment >= 40
+            ? 'Neutral'
+            : 'Dissonant';
+
     // Interpretation (persönlich & detailliert)
-    final interpretation = '''${profile.firstName}, das Leben bewegt sich in Zyklen – wie die Jahreszeiten, wie Ebbe und Flut, wie dein Atem. Lass uns schauen, in welchem Rhythmus du gerade schwingst:
+    final interpretation =
+        '''${profile.firstName}, das Leben bewegt sich in Zyklen – wie die Jahreszeiten, wie Ebbe und Flut, wie dein Atem. Lass uns schauen, in welchem Rhythmus du gerade schwingst:
 
 ⏰ DEINE AKTUELLEN ZYKLEN
 
@@ -635,7 +734,7 @@ Dann wird das Leben leichter. Versprochen. ⏰💫''';
     final now = DateTime.now();
     final age = DateTime.now().year - profile.birthDate.year;
     final personalYear = _calculatePersonalYear(profile.birthDate);
-    
+
     // Spiral Dynamics Levels (8 Stufen)
     final levelMap = [
       'Beige (Überleben)',
@@ -650,22 +749,31 @@ Dann wird das Leben leichter. Versprochen. ⏰💫''';
     final developmentLevel = ((age / 70) * 8).floor().clamp(1, 8);
     final levelName = levelMap[developmentLevel - 1];
     final levelProgress = (((age % 9) / 9) * 100).clamp(0.0, 100.0);
-    
+
     // Vergangene Levels
     final pastLevels = levelMap.sublist(0, developmentLevel - 1);
-    
+
     // Einordnung
-    final stabilityState = personalYear == 1 || personalYear == 9 ? 'Übergang' : personalYear == 5 ? 'Instabil' : 'Stabil';
-    final processIntensity = developmentLevel >= 6 ? 'Intensiv' : developmentLevel >= 3 ? 'Moderat' : 'Ruhig';
+    final stabilityState = personalYear == 1 || personalYear == 9
+        ? 'Übergang'
+        : personalYear == 5
+            ? 'Instabil'
+            : 'Stabil';
+    final processIntensity = developmentLevel >= 6
+        ? 'Intensiv'
+        : developmentLevel >= 3
+            ? 'Moderat'
+            : 'Ruhig';
     final umbruchMarkers = <String>[
       if (personalYear == 9) 'Zyklus-Ende',
       if (personalYear == 1) 'Neubeginn',
       if (age % 7 == 0) 'Siebenjahres-Schwelle',
       if (developmentLevel >= 7) 'Bewusstseins-Sprung',
     ];
-    
+
     // Interpretation (persönlich & detailliert)
-    final interpretation = '''${profile.firstName}, lass uns schauen, wo du auf der Entwicklungsspirale des Bewusstseins stehst:
+    final interpretation =
+        '''${profile.firstName}, lass uns schauen, wo du auf der Entwicklungsspirale des Bewusstseins stehst:
 
 🌈 DEINE BEWUSSTSEINS-STUFE: $levelName (Level $developmentLevel/8)
 Fortschritt in dieser Stufe: ${levelProgress.toStringAsFixed(0)}%
@@ -781,7 +889,7 @@ Wo immer du bist: Es ist genau richtig. Genau jetzt. Für genau dich. 🌈💫''
     final now = DateTime.now();
     final personalYear = _calculatePersonalYear(profile.birthDate);
     final lifePath = _calculateLifePath(profile.birthDate);
-    
+
     // System-Spiegel
     final systemMirrors = <String>[
       if (personalYear == lifePath) 'Lebensweg-Jahres-Resonanz',
@@ -790,33 +898,46 @@ Wo immer du bist: Es ist genau richtig. Genau jetzt. Für genau dich. 🌈💫''
       'Namens-Frequenz-Spiegel',
       'Zeit-Zyklus-Spiegel',
     ];
-    
+
     // Themen-Überlagerungen
     final themeOverlays = <String>[
       if (personalYear <= 3) 'Aufbau & Manifestation',
       if (personalYear >= 4 && personalYear <= 6) 'Beziehung & Harmonie',
       if (personalYear >= 7) 'Innenschau & Transformation',
     ];
-    
+
     // Widersprüche
     final contradictions = <String>[
       if (lifePath >= 7 && personalYear <= 3) 'Innenschau vs. Außenaktivität',
       if (lifePath <= 3 && personalYear >= 7) 'Handlung vs. Kontemplation',
     ];
-    
+
     // Resonanz-Stärke
-    final resonanceStrength = (personalYear == lifePath ? 100.0 : ((9 - (personalYear - lifePath).abs()) / 9 * 100)).clamp(0.0, 100.0);
-    
+    final resonanceStrength = (personalYear == lifePath
+            ? 100.0
+            : ((9 - (personalYear - lifePath).abs()) / 9 * 100))
+        .clamp(0.0, 100.0);
+
     // Einordnung
-    final focusIndicator = resonanceStrength >= 75 ? 'Konzentriert' : resonanceStrength >= 40 ? 'Klar' : 'Diffus';
+    final focusIndicator = resonanceStrength >= 75
+        ? 'Konzentriert'
+        : resonanceStrength >= 40
+            ? 'Klar'
+            : 'Diffus';
     final amplifiedThemes = <String>[
       if (resonanceStrength >= 80) 'Lebensweg-Verstärkung',
-      if (personalYear == 11 || personalYear == 22 || personalYear == 33) 'Meisterzahl-Resonanz',
+      if (personalYear == 11 || personalYear == 22 || personalYear == 33)
+        'Meisterzahl-Resonanz',
     ];
-    final mirrorQuality = contradictions.isEmpty ? 'Klar' : contradictions.length == 1 ? 'Mehrdeutig' : 'Verzerrt';
-    
+    final mirrorQuality = contradictions.isEmpty
+        ? 'Klar'
+        : contradictions.length == 1
+            ? 'Mehrdeutig'
+            : 'Verzerrt';
+
     // Interpretation (persönlich & detailliert)
-    final interpretation = '''${profile.firstName}, stell dir vor, dein Leben ist ein Spiegelkabinett. Überall, wo du hinschaust, siehst du dich selbst – nur in verschiedenen Formen. Lass uns diese Spiegel betrachten:
+    final interpretation =
+        '''${profile.firstName}, stell dir vor, dein Leben ist ein Spiegelkabinett. Überall, wo du hinschaust, siehst du dich selbst – nur in verschiedenen Formen. Lass uns diese Spiegel betrachten:
 
 🪞 DEINE SPIEGELWELT
 
@@ -884,12 +1005,20 @@ Denk daran: DU bist nicht der Spiegel. DU bist der, der HINSCHAUT. Und das macht
     final now = DateTime.now();
     final age = DateTime.now().year - profile.birthDate.year;
     final personalYear = _calculatePersonalYear(profile.birthDate);
-    
+
     // 3 Stufen der spirituellen Wahrnehmung
-    final stageMap = ['Purgative (Reinigung)', 'Illuminative (Erleuchtung)', 'Unitive (Einheit)'];
-    final perceptionStage = age <= 30 ? 1 : age <= 50 ? 2 : 3;
+    final stageMap = [
+      'Purgative (Reinigung)',
+      'Illuminative (Erleuchtung)',
+      'Unitive (Einheit)'
+    ];
+    final perceptionStage = age <= 30
+        ? 1
+        : age <= 50
+            ? 2
+            : 3;
     final stageName = stageMap[perceptionStage - 1];
-    
+
     // Aktive Filter
     final activeFilters = <String>[
       if (perceptionStage == 1) 'Dualität-Filter',
@@ -898,7 +1027,7 @@ Denk daran: DU bist nicht der Spiegel. DU bist der, der HINSCHAUT. Und das macht
       if (personalYear <= 3) 'Manifestations-Filter',
       if (personalYear >= 7) 'Transzendenz-Filter',
     ];
-    
+
     // Interpretations-Muster
     final interpretationPatterns = <String>[
       if (perceptionStage == 1) 'Richtig vs. Falsch',
@@ -906,18 +1035,25 @@ Denk daran: DU bist nicht der Spiegel. DU bist der, der HINSCHAUT. Und das macht
       if (perceptionStage == 3) 'Alles ist Eins',
       if (personalYear == 5) 'Veränderung als Chance',
     ];
-    
+
     // Einordnung
-    final flexibilityDegree = ((perceptionStage / 3) * 70 + (personalYear / 9) * 30).clamp(0.0, 100.0);
+    final flexibilityDegree =
+        ((perceptionStage / 3) * 70 + (personalYear / 9) * 30)
+            .clamp(0.0, 100.0);
     final fixationPoints = <String>[
       if (perceptionStage == 1) 'Schwarz-Weiß-Denken',
       if (personalYear == 4) 'Ordnungs-Fixierung',
       if (flexibilityDegree < 40) 'Starre Muster',
     ];
-    final perspectiveRange = flexibilityDegree >= 70 ? 'Weit' : flexibilityDegree >= 40 ? 'Mittel' : 'Eng';
-    
+    final perspectiveRange = flexibilityDegree >= 70
+        ? 'Weit'
+        : flexibilityDegree >= 40
+            ? 'Mittel'
+            : 'Eng';
+
     // Interpretation (persönlich & detailliert)
-    final interpretation = '''${profile.firstName}, die Welt, die du siehst, ist NICHT die Welt, wie sie IST – sie ist die Welt, wie DU sie siehst. Lass uns deine Brille untersuchen:
+    final interpretation =
+        '''${profile.firstName}, die Welt, die du siehst, ist NICHT die Welt, wie sie IST – sie ist die Welt, wie DU sie siehst. Lass uns deine Brille untersuchen:
 
 👁️ DEINE WAHRNEHMUNGS-STUFE: "$stageName" ($perceptionStage/3)
 
@@ -991,42 +1127,50 @@ Denk dran: Wenn du die Welt anders SIEHST, wird sie anders SEIN. So einfach. So 
   // ═══════════════════════════════════════════════════════════════
   // TOOL 10: SELBSTBEOBACHTUNGS-ANALYSE
   // ═══════════════════════════════════════════════════════════════
-  static SelfObservationToolResult calculateSelfObservation(EnergieProfile profile) {
+  static SelfObservationToolResult calculateSelfObservation(
+      EnergieProfile profile) {
     final now = DateTime.now();
     final age = DateTime.now().year - profile.birthDate.year;
     final personalYear = _calculatePersonalYear(profile.birthDate);
-    
+
     // Simulierte Journal-Einträge (basierend auf Profil)
     final patternLog = <String>[
       'Wiederkehrendes Thema: Neuanfang (Persönliches Jahr $personalYear)',
       'Beobachtung: Zyklische Muster alle 7 Jahre',
       if (age % 7 == 0) 'Schwellen-Erfahrung: 7-Jahres-Marke',
     ];
-    
+
     final cycleNotes = <String>[
       '7-Jahres-Zyklus: Jahr ${(age % 7) + 1}',
       'Saturn-Phase: ${age < 28 ? "Vor-Return" : age >= 28 && age <= 30 ? "Erster Return" : "Zwischen Returns"}',
     ];
-    
+
     final symbolTracker = <String>[
       'Lebenszahl: ${_calculateLifePath(profile.birthDate)}',
       'Seelenzahl: ${_calculateSoulNumber(profile.firstName, profile.lastName)}',
-      if (personalYear == 11 || personalYear == 22 || personalYear == 33) 'Meisterzahl-Jahr',
+      if (personalYear == 11 || personalYear == 22 || personalYear == 33)
+        'Meisterzahl-Jahr',
     ];
-    
-    final totalEntries = patternLog.length + cycleNotes.length + symbolTracker.length;
-    
+
+    final totalEntries =
+        patternLog.length + cycleNotes.length + symbolTracker.length;
+
     // Einordnung
-    final observationQuality = totalEntries >= 10 ? 'Tiefgehend' : totalEntries >= 5 ? 'Differenziert' : 'Oberflächlich';
+    final observationQuality = totalEntries >= 10
+        ? 'Tiefgehend'
+        : totalEntries >= 5
+            ? 'Differenziert'
+            : 'Oberflächlich';
     final metacognitiveLevel = ((totalEntries / 15) * 100).clamp(0.0, 100.0);
     final trackingFocus = <String>[
       if (personalYear <= 3) 'Manifestation & Aufbau',
       if (personalYear >= 4 && personalYear <= 6) 'Beziehungen & Harmonie',
       if (personalYear >= 7) 'Innenschau & Transformation',
     ];
-    
+
     // Interpretation (persönlich & detailliert)
-    final interpretation = '''${profile.firstName}, du beobachtest dich selbst – und das ist schon der Anfang aller Weisheit. Lass uns schauen, WIE du beobachtest:
+    final interpretation =
+        '''${profile.firstName}, du beobachtest dich selbst – und das ist schon der Anfang aller Weisheit. Lass uns schauen, WIE du beobachtest:
 
 📖 DEIN SELBSTBEOBACHTUNGS-PROFIL
 
@@ -1079,7 +1223,7 @@ Beobachte weiter. Verstehe tiefer. Transformiere dich selbst. 📖✨''';
       interpretation: interpretation,
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════════
   // HILFS-FUNKTIONEN
   // ═══════════════════════════════════════════════════════════════
@@ -1087,20 +1231,26 @@ Beobachte weiter. Verstehe tiefer. Transformiere dich selbst. 📖✨''';
     final day = birthDate.day;
     final month = birthDate.month;
     final year = birthDate.year;
-    final sum = _reduceToSingleDigit(day) + _reduceToSingleDigit(month) + _reduceToSingleDigit(year);
+    final sum = _reduceToSingleDigit(day) +
+        _reduceToSingleDigit(month) +
+        _reduceToSingleDigit(year);
     return _reduceToSingleDigit(sum);
   }
 
   static int _calculateSoulNumber(String firstName, String lastName) {
     final fullName = '$firstName $lastName';
-    final vowels = fullName.toLowerCase().split('').where((c) => 'aeiouäöü'.contains(c));
+    final vowels =
+        fullName.toLowerCase().split('').where((c) => 'aeiouäöü'.contains(c));
     final sum = vowels.map((c) => _letterValue(c)).reduce((a, b) => a + b);
     return _reduceToSingleDigit(sum);
   }
 
   static int _calculateExpression(String firstName, String lastName) {
     final fullName = '$firstName $lastName';
-    final letters = fullName.toLowerCase().split('').where((c) => RegExp(r'[a-zäöüß]').hasMatch(c));
+    final letters = fullName
+        .toLowerCase()
+        .split('')
+        .where((c) => RegExp(r'[a-zäöüß]').hasMatch(c));
     final sum = letters.map((c) => _letterValue(c)).reduce((a, b) => a + b);
     return _reduceToSingleDigit(sum);
   }
@@ -1110,23 +1260,52 @@ Beobachte weiter. Verstehe tiefer. Transformiere dich selbst. 📖✨''';
     final day = birthDate.day;
     final month = birthDate.month;
     final year = now.year;
-    final sum = _reduceToSingleDigit(day) + _reduceToSingleDigit(month) + _reduceToSingleDigit(year);
+    final sum = _reduceToSingleDigit(day) +
+        _reduceToSingleDigit(month) +
+        _reduceToSingleDigit(year);
     return _reduceToSingleDigit(sum);
   }
 
   static int _reduceToSingleDigit(int number) {
     while (number > 9 && number != 11 && number != 22 && number != 33) {
-      number = number.toString().split('').map(int.parse).reduce((a, b) => a + b);
+      number =
+          number.toString().split('').map(int.parse).reduce((a, b) => a + b);
     }
     return number;
   }
 
   static int _letterValue(String letter) {
     const values = {
-      'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8, 'i': 9,
-      'j': 1, 'k': 2, 'l': 3, 'm': 4, 'n': 5, 'o': 6, 'p': 7, 'q': 8, 'r': 9,
-      's': 1, 't': 2, 'u': 3, 'v': 4, 'w': 5, 'x': 6, 'y': 7, 'z': 8,
-      'ä': 1, 'ö': 6, 'ü': 3, 'ß': 1,
+      'a': 1,
+      'b': 2,
+      'c': 3,
+      'd': 4,
+      'e': 5,
+      'f': 6,
+      'g': 7,
+      'h': 8,
+      'i': 9,
+      'j': 1,
+      'k': 2,
+      'l': 3,
+      'm': 4,
+      'n': 5,
+      'o': 6,
+      'p': 7,
+      'q': 8,
+      'r': 9,
+      's': 1,
+      't': 2,
+      'u': 3,
+      'v': 4,
+      'w': 5,
+      'x': 6,
+      'y': 7,
+      'z': 8,
+      'ä': 1,
+      'ö': 6,
+      'ü': 3,
+      'ß': 1,
     };
     return values[letter.toLowerCase()] ?? 0;
   }

@@ -30,11 +30,12 @@ class TransformationJourneyScreen extends StatefulWidget {
   const TransformationJourneyScreen({super.key});
 
   @override
-  State<TransformationJourneyScreen> createState() => _TransformationJourneyScreenState();
+  State<TransformationJourneyScreen> createState() =>
+      _TransformationJourneyScreenState();
 }
 
-class _TransformationJourneyScreenState extends State<TransformationJourneyScreen>
-    with TickerProviderStateMixin {
+class _TransformationJourneyScreenState
+    extends State<TransformationJourneyScreen> with TickerProviderStateMixin {
   static const Color _bgDark = Color(0xFF080414);
 
   /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
@@ -43,17 +44,18 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFFFF7043);
   static const Color _accent = Color(0xFFAB47BC);
   static const Color _gold = Color(0xFFFFD54F);
   static const String _kvKey = 'transformation_tracker_v1';
 
   static const List<_Dim> _dims = [
-    _Dim('body',         'Körper',        '💪', Color(0xFFE53935)),
-    _Dim('mind',         'Geist',         '🧠', Color(0xFF42A5F5)),
-    _Dim('soul',         'Seele',         '✨', Color(0xFF9C27B0)),
-    _Dim('relations',    'Beziehungen',   '💞', Color(0xFFEC407A)),
-    _Dim('purpose',      'Berufung',      '🎯', Color(0xFF66BB6A)),
+    _Dim('body', 'Körper', '💪', Color(0xFFE53935)),
+    _Dim('mind', 'Geist', '🧠', Color(0xFF42A5F5)),
+    _Dim('soul', 'Seele', '✨', Color(0xFF9C27B0)),
+    _Dim('relations', 'Beziehungen', '💞', Color(0xFFEC407A)),
+    _Dim('purpose', 'Berufung', '🎯', Color(0xFF66BB6A)),
   ];
 
   List<_Snap> _snaps = [];
@@ -65,8 +67,11 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
   @override
   void initState() {
     super.initState();
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat();
-    _drawCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat();
+    _drawCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1400));
     _load();
   }
 
@@ -82,7 +87,9 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
     final raw = prefs.getStringList(_kvKey) ?? const [];
     final out = <_Snap>[];
     for (final s in raw) {
-      try { out.add(_Snap.fromJson(jsonDecode(s) as Map<String, dynamic>)); } catch (_) {}
+      try {
+        out.add(_Snap.fromJson(jsonDecode(s) as Map<String, dynamic>));
+      } catch (_) {}
     }
     out.sort((a, b) => b.date.compareTo(a.date));
     // Vorbelegen Draft mit letztem Snap (falls heute noch keiner)
@@ -118,7 +125,8 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
     // Cloud
     try {
       final username = UnifiedStorageService().getUsername('energie');
-      final userId = await UnifiedStorageService().getCurrentUserId() ?? 'anonym';
+      final userId =
+          await UnifiedStorageService().getCurrentUserId() ?? 'anonym';
       await SpiritReadingService.instance.save(
         userId: userId,
         username: username,
@@ -136,8 +144,13 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
   }
 
   String _dimensionsSummary(Map<String, int> vals) {
-    final entries = vals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    return entries.take(2).map((e) => '${_dims.firstWhere((d) => d.code == e.key, orElse: () => _dims[0]).emoji}${e.value}').join(' ');
+    final entries = vals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return entries
+        .take(2)
+        .map((e) =>
+            '${_dims.firstWhere((d) => d.code == e.key, orElse: () => _dims[0]).emoji}${e.value}')
+        .join(' ');
   }
 
   int get _streak {
@@ -161,8 +174,10 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
           if (dayMap[yKey] == true) {
             streak = 1;
             checkDay = checkDay.subtract(const Duration(days: 1));
-          } else break;
-        } else break;
+          } else
+            break;
+        } else
+          break;
       }
     }
     return streak;
@@ -211,8 +226,11 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
             colors: [_gold, _primary, _accent],
           ).createShader(r),
           child: const Text('TRANSFORMATION',
-              style: TextStyle(color: Colors.white, fontSize: 14,
-                  fontWeight: FontWeight.w900, letterSpacing: 3)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
       ),
       body: Stack(fit: StackFit.expand, children: [
@@ -234,7 +252,8 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 40)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.energie, count: 40)),
         SafeArea(
           child: _loading
               ? Center(child: CircularProgressIndicator(color: _primary))
@@ -261,7 +280,8 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
     final t = _snaps.length;
     final avg = _snaps.isEmpty
         ? 0.0
-        : _snaps.first.values.values.fold<int>(0, (s2, v) => s2 + v) / _dims.length;
+        : _snaps.first.values.values.fold<int>(0, (s2, v) => s2 + v) /
+            _dims.length;
     return Row(children: [
       _statBox('🔥 $s', 'Tag${s == 1 ? "" : "e"} Streak', _primary),
       const SizedBox(width: 8),
@@ -282,10 +302,12 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
         ),
         child: Column(children: [
           Text(value,
-              style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: color, fontSize: 20, fontWeight: FontWeight.bold)),
           Text(label,
               style: const TextStyle(color: Colors.white60, fontSize: 9),
-              textAlign: TextAlign.center, maxLines: 2),
+              textAlign: TextAlign.center,
+              maxLines: 2),
         ]),
       ),
     );
@@ -299,57 +321,77 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: [_primary.withValues(alpha: 0.18), _accent.withValues(alpha: 0.08)]),
+            gradient: LinearGradient(colors: [
+              _primary.withValues(alpha: 0.18),
+              _accent.withValues(alpha: 0.08)
+            ]),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('HEUTE · CHECK-IN',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 3, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 12),
             ..._dims.map((d) {
               final v = _draft[d.code] ?? 5;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Text(d.emoji, style: const TextStyle(fontSize: 16)),
-                    const SizedBox(width: 6),
-                    Text(d.label,
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: d.color.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: d.color.withValues(alpha: 0.5)),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Text(d.emoji, style: const TextStyle(fontSize: 16)),
+                        const SizedBox(width: 6),
+                        Text(d.label,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: d.color.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: d.color.withValues(alpha: 0.5)),
+                          ),
+                          child: Text('$v / 10',
+                              style: TextStyle(
+                                  color: d.color,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ]),
+                      SliderTheme(
+                        data: SliderThemeData(
+                          activeTrackColor: d.color,
+                          inactiveTrackColor:
+                              Colors.white.withValues(alpha: 0.1),
+                          thumbColor: d.color,
+                          overlayColor: d.color.withValues(alpha: 0.2),
+                          trackHeight: 4,
+                          thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 8),
+                        ),
+                        child: Slider(
+                          value: v.toDouble(),
+                          min: 1,
+                          max: 10,
+                          divisions: 9,
+                          onChanged: (val) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _draft[d.code] = val.round());
+                          },
+                        ),
                       ),
-                      child: Text('$v / 10',
-                          style: TextStyle(color: d.color, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  ]),
-                  SliderTheme(
-                    data: SliderThemeData(
-                      activeTrackColor: d.color,
-                      inactiveTrackColor: Colors.white.withValues(alpha: 0.1),
-                      thumbColor: d.color,
-                      overlayColor: d.color.withValues(alpha: 0.2),
-                      trackHeight: 4,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                    ),
-                    child: Slider(
-                      value: v.toDouble(),
-                      min: 1, max: 10,
-                      divisions: 9,
-                      onChanged: (val) {
-                        HapticFeedback.selectionClick();
-                        setState(() => _draft[d.code] = val.round());
-                      },
-                    ),
-                  ),
-                ]),
+                    ]),
               );
             }),
             const SizedBox(height: 6),
@@ -359,7 +401,8 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
                 onPressed: _save,
                 icon: const Icon(Icons.save_rounded, size: 16),
                 label: const Text('CHECK-IN SPEICHERN',
-                    style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primary,
                   foregroundColor: Colors.white,
@@ -387,7 +430,8 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
               border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
             ),
             child: Column(children: [
-              Icon(Icons.timeline_rounded, color: Colors.white.withValues(alpha: 0.3), size: 60),
+              Icon(Icons.timeline_rounded,
+                  color: Colors.white.withValues(alpha: 0.3), size: 60),
               const SizedBox(height: 12),
               const Text('Noch zu wenige Check-Ins für einen Verlauf.',
                   style: TextStyle(color: Colors.white70, fontSize: 13)),
@@ -412,7 +456,11 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
           ),
           child: Column(children: [
             const Text('VERLAUF · LETZTE 30 TAGE',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             AspectRatio(
               aspectRatio: 1.8,
@@ -429,20 +477,30 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
             ),
             const SizedBox(height: 8),
             Wrap(
-              spacing: 6, runSpacing: 4,
+              spacing: 6,
+              runSpacing: 4,
               alignment: WrapAlignment.center,
-              children: _dims.map((d) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: d.color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Container(width: 8, height: 8, decoration: BoxDecoration(color: d.color, shape: BoxShape.circle)),
-                  const SizedBox(width: 4),
-                  Text(d.label, style: const TextStyle(color: Colors.white70, fontSize: 9)),
-                ]),
-              )).toList(),
+              children: _dims
+                  .map((d) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: d.color.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                  color: d.color, shape: BoxShape.circle)),
+                          const SizedBox(width: 4),
+                          Text(d.label,
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 9)),
+                        ]),
+                      ))
+                  .toList(),
             ),
           ]),
         ),
@@ -465,9 +523,14 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('KORRELATIONEN · 30 TAGE',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
             const Text(
                 'Wie bewegen sich Dimensionen zusammen? +1 = im Gleichschritt, −1 = gegenläufig.',
@@ -480,13 +543,23 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(children: [
                   Text('${p.a.emoji}${p.a.label}',
-                      style: TextStyle(color: p.a.color, fontSize: 12, fontWeight: FontWeight.w600)),
-                  Icon(pos ? Icons.swap_horiz_rounded : Icons.swap_vert_rounded, color: color, size: 18),
+                      style: TextStyle(
+                          color: p.a.color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
+                  Icon(pos ? Icons.swap_horiz_rounded : Icons.swap_vert_rounded,
+                      color: color, size: 18),
                   Text('${p.b.emoji}${p.b.label}',
-                      style: TextStyle(color: p.b.color, fontSize: 12, fontWeight: FontWeight.w600)),
+                      style: TextStyle(
+                          color: p.b.color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
                   const Spacer(),
                   Text(p.value.toStringAsFixed(2),
-                      style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold)),
                 ]),
               );
             }),
@@ -512,7 +585,8 @@ class _Snap {
   Map<String, dynamic> toJson() => {'date': date, 'values': values};
   factory _Snap.fromJson(Map<String, dynamic> j) => _Snap(
         date: j['date'] as String? ?? '',
-        values: ((j['values'] as Map?) ?? const {}).map((k, v) => MapEntry(k as String, (v as num).toInt())),
+        values: ((j['values'] as Map?) ?? const {})
+            .map((k, v) => MapEntry(k as String, (v as num).toInt())),
       );
 }
 
@@ -529,7 +603,8 @@ class _TransformChartPainter extends CustomPainter {
   final List<_Dim> dims;
   final double reveal;
 
-  _TransformChartPainter({required this.snaps, required this.dims, required this.reveal});
+  _TransformChartPainter(
+      {required this.snaps, required this.dims, required this.reveal});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -540,10 +615,14 @@ class _TransformChartPainter extends CustomPainter {
     final plotH = size.height - 2 * padY;
 
     // Achsen
-    final axisColor = Paint()..color = Colors.white.withValues(alpha: 0.15)..strokeWidth = 1;
-    canvas.drawLine(Offset(padX, padY + plotH), Offset(padX + plotW, padY + plotH), axisColor);
+    final axisColor = Paint()
+      ..color = Colors.white.withValues(alpha: 0.15)
+      ..strokeWidth = 1;
+    canvas.drawLine(Offset(padX, padY + plotH),
+        Offset(padX + plotW, padY + plotH), axisColor);
     // 50% line
-    canvas.drawLine(Offset(padX, padY + plotH / 2),
+    canvas.drawLine(
+        Offset(padX, padY + plotH / 2),
         Offset(padX + plotW, padY + plotH / 2),
         Paint()..color = Colors.white.withValues(alpha: 0.07));
 
@@ -554,7 +633,8 @@ class _TransformChartPainter extends CustomPainter {
       final glowPath = Path();
       for (int i = 0; i < maxVisible; i++) {
         final v = snaps[i].values[d.code]?.toDouble() ?? 5;
-        final x = padX + (snaps.length == 1 ? plotW / 2 : (i / (snaps.length - 1)) * plotW);
+        final x = padX +
+            (snaps.length == 1 ? plotW / 2 : (i / (snaps.length - 1)) * plotW);
         final y = padY + plotH - ((v - 1) / 9) * plotH;
         if (i == 0) {
           path.moveTo(x, y);
@@ -564,15 +644,19 @@ class _TransformChartPainter extends CustomPainter {
           glowPath.lineTo(x, y);
         }
       }
-      canvas.drawPath(glowPath, Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 5
-        ..color = d.color.withValues(alpha: 0.3)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
-      canvas.drawPath(path, Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.8
-        ..color = d.color);
+      canvas.drawPath(
+          glowPath,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 5
+            ..color = d.color.withValues(alpha: 0.3)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
+      canvas.drawPath(
+          path,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.8
+            ..color = d.color);
     }
   }
 
@@ -587,12 +671,24 @@ class _TransOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        100, const Color(0xFFFF7043));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.6 + math.cos(t * 2 * math.pi) * 0.04)),
-        90, const Color(0xFFAB47BC));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        70, const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.2,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        100,
+        const Color(0xFFFF7043));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.6 + math.cos(t * 2 * math.pi) * 0.04)),
+        90,
+        const Color(0xFFAB47BC));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        70,
+        const Color(0xFFFFD54F));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

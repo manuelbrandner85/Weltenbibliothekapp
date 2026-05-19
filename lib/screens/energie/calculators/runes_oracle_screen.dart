@@ -42,6 +42,7 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFF1B5E20); // dark green
   static const Color _accent = Color(0xFF4DD0E1); // ice blue
   static const Color _gold = Color(0xFFFFB74D);
@@ -67,9 +68,14 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
   @override
   void initState() {
     super.initState();
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat();
-    _castCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
-    _glowCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 5))..repeat(reverse: true);
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat();
+    _castCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2000));
+    _glowCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 5))
+          ..repeat(reverse: true);
     _loadHistory();
   }
 
@@ -109,12 +115,14 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
     await Future.delayed(const Duration(milliseconds: 1500));
 
     final rand = math.Random();
-    final deck = List<int>.generate(_elderFuthark.length, (i) => i)..shuffle(rand);
+    final deck = List<int>.generate(_elderFuthark.length, (i) => i)
+      ..shuffle(rand);
     final picks = <_DrawnRune>[];
     for (int i = 0; i < _spread.count; i++) {
       final rune = _elderFuthark[deck[i]];
       final reversed = rand.nextDouble() < 0.30 && rune.canReverse;
-      picks.add(_DrawnRune(rune: rune, reversed: reversed, position: _spread.positions[i]));
+      picks.add(_DrawnRune(
+          rune: rune, reversed: reversed, position: _spread.positions[i]));
     }
     if (mounted) {
       setState(() {
@@ -136,7 +144,8 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
           .join('\n');
       final prompt = StringBuffer()
         ..writeln('Lies dieses Runen-Wurf in der Tradition des Elder Futhark:')
-        ..writeln('Frage: "${_question.isEmpty ? "Was zeigt das Wyrd?" : _question}"')
+        ..writeln(
+            'Frage: "${_question.isEmpty ? "Was zeigt das Wyrd?" : _question}"')
         ..writeln('Spread: ${_spread.name}')
         ..writeln('Runen:')
         ..writeln(runesText)
@@ -145,7 +154,8 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
             'Rune für Rune im Kontext, dann konkrete Handlung. '
             'Nordisch-mythologisch grundiert (Odin, Yggdrasil, Nornen), '
             'aber direkt anwendbar. Du-Form, ohne Disclaimer.');
-      final token = Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      final token =
+          Supabase.instance.client.auth.currentSession?.accessToken ?? '';
       final res = await http
           .post(
             Uri.parse('${ApiConfig.workerUrl}/api/mentor/chat'),
@@ -163,7 +173,11 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
           .timeout(const Duration(seconds: 40));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final answer = (data['reply'] ?? data['answer'] ?? data['response'] ?? data['message'] ?? '') as String;
+        final answer = (data['reply'] ??
+            data['answer'] ??
+            data['response'] ??
+            data['message'] ??
+            '') as String;
         if (mounted) {
           setState(() {
             _aiReading = answer.trim();
@@ -174,7 +188,8 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
       }
       if (mounted) {
         setState(() {
-          _aiReading = '⚠️ AI-Lesung gerade nicht verfügbar (HTTP ${res.statusCode}).';
+          _aiReading =
+              '⚠️ AI-Lesung gerade nicht verfügbar (HTTP ${res.statusCode}).';
           _loadingAi = false;
         });
       }
@@ -275,13 +290,16 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
           ).createShader(r),
           child: const Text('RUNEN-ORAKEL',
               style: TextStyle(
-                  color: Colors.white, fontSize: 14,
-                  fontWeight: FontWeight.w900, letterSpacing: 3)),
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
         actions: [
           if (_phase == _Phase.revealing && _drawn.length > 1)
             IconButton(
-              icon: Icon(Icons.link_rounded, color: _bindMode ? _gold : Colors.white70),
+              icon: Icon(Icons.link_rounded,
+                  color: _bindMode ? _gold : Colors.white70),
               tooltip: _bindMode ? 'Bind-Modus aus' : 'Bind-Rune erstellen',
               onPressed: _toggleBindRune,
             ),
@@ -337,9 +355,12 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
 
   Widget _content() {
     switch (_phase) {
-      case _Phase.pickSpread: return _pickSpreadPhase();
-      case _Phase.casting:    return _castingPhase();
-      case _Phase.revealing:  return _revealPhase();
+      case _Phase.pickSpread:
+        return _pickSpreadPhase();
+      case _Phase.casting:
+        return _castingPhase();
+      case _Phase.revealing:
+        return _revealPhase();
     }
   }
 
@@ -354,35 +375,52 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [_primary.withValues(alpha: 0.3), _accent.withValues(alpha: 0.08)]),
+                gradient: LinearGradient(colors: [
+                  _primary.withValues(alpha: 0.3),
+                  _accent.withValues(alpha: 0.08)
+                ]),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('FRAGE AN DAS WYRD',
-                    style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 3, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                TextField(
-                  maxLines: 2, maxLength: 140,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'Optional — z.B. "Welche Kraft ruft mich?"',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.05),
-                    counterStyle: const TextStyle(color: Colors.white24, fontSize: 9),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  ),
-                  onChanged: (v) => _question = v.trim(),
-                ),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('FRAGE AN DAS WYRD',
+                        style: TextStyle(
+                            color: _gold,
+                            fontSize: 10,
+                            letterSpacing: 3,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      maxLines: 2,
+                      maxLength: 140,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Optional — z.B. "Welche Kraft ruft mich?"',
+                        hintStyle: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4)),
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.05),
+                        counterStyle:
+                            const TextStyle(color: Colors.white24, fontSize: 9),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none),
+                      ),
+                      onChanged: (v) => _question = v.trim(),
+                    ),
+                  ]),
             ),
           ),
         ),
         const SizedBox(height: 20),
         const Text('WÄHLE DEN WURF',
-            style: TextStyle(color: _gold, fontSize: 11, letterSpacing: 3, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: _gold,
+                fontSize: 11,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w700),
             textAlign: TextAlign.center),
         const SizedBox(height: 14),
         ..._spreads.map((s) {
@@ -402,7 +440,10 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     gradient: sel
-                        ? LinearGradient(colors: [_primary.withValues(alpha: 0.4), _accent.withValues(alpha: 0.15)])
+                        ? LinearGradient(colors: [
+                            _primary.withValues(alpha: 0.4),
+                            _accent.withValues(alpha: 0.15)
+                          ])
                         : null,
                     color: sel ? null : Colors.white.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(16),
@@ -412,24 +453,36 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                     Text(s.icon, style: const TextStyle(fontSize: 32)),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(s.name,
-                            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 3),
-                        Text(s.tagline,
-                            style: const TextStyle(color: Colors.white60, fontSize: 11, height: 1.3),
-                            maxLines: 2),
-                      ]),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(s.name,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 3),
+                            Text(s.tagline,
+                                style: const TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 11,
+                                    height: 1.3),
+                                maxLines: 2),
+                          ]),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: _gold.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: _gold.withValues(alpha: 0.4)),
                       ),
                       child: Text('${s.count}',
-                          style: const TextStyle(color: _gold, fontSize: 14, fontWeight: FontWeight.bold)),
+                          style: const TextStyle(
+                              color: _gold,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ]),
                 ),
@@ -448,17 +501,25 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
           animation: _castCtrl,
           builder: (_, __) {
             return SizedBox(
-              width: 240, height: 240,
-              child: CustomPaint(painter: _RuneCastPainter(_castCtrl.value, _accent, _gold)),
+              width: 240,
+              height: 240,
+              child: CustomPaint(
+                  painter: _RuneCastPainter(_castCtrl.value, _accent, _gold)),
             );
           },
         ),
         const SizedBox(height: 20),
         const Text('Die Runen fallen aufs Tuch…',
-            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
         const Text('"Ek veit at ek hekk" — ich weiß, dass ich hing',
-            style: TextStyle(color: Colors.white54, fontSize: 11, fontStyle: FontStyle.italic)),
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
+                fontStyle: FontStyle.italic)),
       ]),
     );
   }
@@ -498,17 +559,25 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
           child: Column(children: [
             Text(focused.position.toUpperCase(),
-                style: const TextStyle(color: _gold, fontSize: 10, letterSpacing: 3, fontWeight: FontWeight.w700)),
+                style: const TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             _runeStone(focused, mini: false),
             const SizedBox(height: 14),
             Text(
               '${focused.rune.name}${focused.reversed ? " · merkstave" : ""}',
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             Text(focused.rune.transliteration,
-                style: const TextStyle(color: _accent, fontSize: 12, letterSpacing: 2)),
+                style: const TextStyle(
+                    color: _accent, fontSize: 12, letterSpacing: 2)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(14),
@@ -517,13 +586,19 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white12),
               ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                _kv('🪓 BEDEUTUNG', focused.reversed ? focused.rune.reversedMeaning : focused.rune.meaning),
-                const SizedBox(height: 8),
-                _kv('⚔️ ELEMENT', focused.rune.element),
-                const SizedBox(height: 8),
-                _kv('🌳 GOTT/HEIM', focused.rune.deity),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _kv(
+                        '🪓 BEDEUTUNG',
+                        focused.reversed
+                            ? focused.rune.reversedMeaning
+                            : focused.rune.meaning),
+                    const SizedBox(height: 8),
+                    _kv('⚔️ ELEMENT', focused.rune.element),
+                    const SizedBox(height: 8),
+                    _kv('🌳 GOTT/HEIM', focused.rune.deity),
+                  ]),
             ),
             const SizedBox(height: 18),
             if (_aiReading == null && !_loadingAi)
@@ -531,11 +606,13 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                 onPressed: _requestAiReading,
                 icon: const Icon(Icons.auto_awesome_rounded),
                 label: const Text('AI-WYRD-LESUNG',
-                    style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _accent,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
               )
             else if (_loadingAi)
@@ -543,7 +620,8 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                 AnimatedBuilder(
                   animation: _glowCtrl,
                   builder: (_, __) => Container(
-                    width: 60, height: 60,
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(colors: [
@@ -551,7 +629,9 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                         Colors.transparent,
                       ]),
                     ),
-                    child: const Center(child: Icon(Icons.auto_awesome, color: _gold, size: 26)),
+                    child: const Center(
+                        child:
+                            Icon(Icons.auto_awesome, color: _gold, size: 26)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -570,17 +650,27 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: _accent.withValues(alpha: 0.4)),
                     ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        Icon(Icons.auto_awesome_rounded, color: _gold, size: 18),
-                        const SizedBox(width: 6),
-                        const Text('WYRD · AI-LESUNG',
-                            style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
-                      ]),
-                      const SizedBox(height: 10),
-                      SelectableText(_aiReading!,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
-                    ]),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Icon(Icons.auto_awesome_rounded,
+                                color: _gold, size: 18),
+                            const SizedBox(width: 6),
+                            const Text('WYRD · AI-LESUNG',
+                                style: TextStyle(
+                                    color: _gold,
+                                    fontSize: 10,
+                                    letterSpacing: 2,
+                                    fontWeight: FontWeight.w700)),
+                          ]),
+                          const SizedBox(height: 10),
+                          SelectableText(_aiReading!,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  height: 1.6)),
+                        ]),
                   ),
                 ),
               ),
@@ -594,12 +684,15 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                   border: Border.all(color: Colors.white12),
                 ),
                 child: Row(children: [
-                  const Icon(Icons.help_outline_rounded, color: _gold, size: 16),
+                  const Icon(Icons.help_outline_rounded,
+                      color: _gold, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text('"$_question"',
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic)),
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic)),
                   ),
                 ]),
               ),
@@ -621,7 +714,11 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
         ),
         child: Column(children: [
           const Text('BIND-RUNE-GENERATOR',
-              style: TextStyle(color: _gold, fontSize: 11, letterSpacing: 3, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: _gold,
+                  fontSize: 11,
+                  letterSpacing: 3,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(
             _bindSelection.isEmpty
@@ -672,7 +769,9 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                   child: CustomPaint(
                     size: const Size(220, 220),
                     painter: _BindRunePainter(
-                      glyphs: _bindSelection.map((i) => _drawn[i].rune.glyph).toList(),
+                      glyphs: _bindSelection
+                          .map((i) => _drawn[i].rune.glyph)
+                          .toList(),
                       gold: _gold,
                       accent: _accent,
                     ),
@@ -687,7 +786,8 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
           child: Center(
             child: Padding(
               padding: EdgeInsets.all(20),
-              child: Text('Wähle oben mindestens 2 Runen für die Bind-Vorschau.',
+              child: Text(
+                  'Wähle oben mindestens 2 Runen für die Bind-Vorschau.',
                   style: TextStyle(color: Colors.white54, fontSize: 13),
                   textAlign: TextAlign.center),
             ),
@@ -700,19 +800,23 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
     final w = mini ? 60.0 : 180.0;
     final h = mini ? 80.0 : 240.0;
     return Container(
-      width: w, height: h,
+      width: w,
+      height: h,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF3E2723), Color(0xFF5D4037), Color(0xFF8D6E63)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(mini ? 6 : 14),
-        border: Border.all(color: selected ? _gold : _accent.withValues(alpha: 0.45),
+        border: Border.all(
+            color: selected ? _gold : _accent.withValues(alpha: 0.45),
             width: selected ? 2 : 1),
         boxShadow: [
           BoxShadow(
               color: (selected ? _gold : _accent).withValues(alpha: 0.4),
-              blurRadius: mini ? 6 : 16, spreadRadius: 1),
+              blurRadius: mini ? 6 : 16,
+              spreadRadius: 1),
         ],
       ),
       child: Transform.rotate(
@@ -727,7 +831,11 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
             if (!mini) ...[
               const SizedBox(height: 10),
               Text(d.rune.name.toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.bold)),
             ],
           ]),
         ),
@@ -738,9 +846,16 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
   Widget _kv(String k, String v) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(k, style: const TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+          Text(k,
+              style: const TextStyle(
+                  color: _gold,
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
-          Text(v, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+          Text(v,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, height: 1.5)),
         ],
       );
 
@@ -753,7 +868,9 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.7, minChildSize: 0.4, maxChildSize: 0.95,
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
         expand: false,
         builder: (_, scroll) => ListView(
           controller: scroll,
@@ -761,19 +878,28 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
           children: [
             Center(
               child: Container(
-                width: 42, height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 16),
             const Text('WYRD-VERLAUF',
-                style: TextStyle(color: _gold, fontSize: 12, letterSpacing: 3, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 12,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center),
             const SizedBox(height: 14),
             if (_history.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 40),
-                child: Text('Noch keine Würfe.', style: TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+                child: Text('Noch keine Würfe.',
+                    style: TextStyle(color: Colors.white54),
+                    textAlign: TextAlign.center),
               )
             else
               ..._history.map((h) => Container(
@@ -784,23 +910,29 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white12),
                     ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        Text(h.glyphs.join(' '),
-                            style: const TextStyle(color: _gold, fontSize: 20)),
-                        const Spacer(),
-                        Text(_fmt(h.createdAt),
-                            style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                      ]),
-                      if (h.question.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text('"${h.question}"',
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis),
-                      ],
-                    ]),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Text(h.glyphs.join(' '),
+                                style: const TextStyle(
+                                    color: _gold, fontSize: 20)),
+                            const Spacer(),
+                            Text(_fmt(h.createdAt),
+                                style: const TextStyle(
+                                    color: Colors.white38, fontSize: 10)),
+                          ]),
+                          if (h.question.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text('"${h.question}"',
+                                style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    fontStyle: FontStyle.italic),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis),
+                          ],
+                        ]),
                   )),
           ],
         ),
@@ -811,8 +943,10 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
   String _fmt(String iso) {
     try {
       final dt = DateTime.parse(iso).toLocal();
-      return '${dt.day.toString().padLeft(2,'0')}.${dt.month.toString().padLeft(2,'0')}.';
-    } catch (_) { return ''; }
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.';
+    } catch (_) {
+      return '';
+    }
   }
 }
 
@@ -825,21 +959,34 @@ class _Spread {
   final String icon;
   final int count;
   final List<String> positions;
-  const _Spread(this.code, this.name, this.tagline, this.icon, this.count, this.positions);
+  const _Spread(this.code, this.name, this.tagline, this.icon, this.count,
+      this.positions);
 }
 
 const List<_Spread> _spreads = [
   _Spread(
-    'daily', 'Tagesrune', 'Eine Rune für den heutigen Tag.', 'ᚱ',
-    1, ['Heute'],
+    'daily',
+    'Tagesrune',
+    'Eine Rune für den heutigen Tag.',
+    'ᚱ',
+    1,
+    ['Heute'],
   ),
   _Spread(
-    'norns', 'Nornen-Wurf', 'Urd · Verdandi · Skuld — Vergangenheit/Gegenwart/Zukunft.', 'ᚦ',
-    3, ['Urd (Vergangenheit)', 'Verdandi (Gegenwart)', 'Skuld (Zukunft)'],
+    'norns',
+    'Nornen-Wurf',
+    'Urd · Verdandi · Skuld — Vergangenheit/Gegenwart/Zukunft.',
+    'ᚦ',
+    3,
+    ['Urd (Vergangenheit)', 'Verdandi (Gegenwart)', 'Skuld (Zukunft)'],
   ),
   _Spread(
-    'asgard', 'Asgard-Kreuz', 'Tiefer 5-Runen-Wurf für komplexe Fragen.', 'ᚹ',
-    5, [
+    'asgard',
+    'Asgard-Kreuz',
+    'Tiefer 5-Runen-Wurf für komplexe Fragen.',
+    'ᚹ',
+    5,
+    [
       'Wurzel der Frage',
       'Hindernis',
       'Verborgener Einfluss',
@@ -863,61 +1010,230 @@ class _Rune {
 }
 
 const List<_Rune> _elderFuthark = [
-  _Rune('ᚠ', 'Fehu', 'F', 'Vieh, Wohlstand, Anfangskapital, materielle Manifestation, Erfolg durch Energie.',
-      'Verlust von Reichtum, Habsucht, Energie blockiert.', 'Feuer', 'Frey · Vanir', true),
-  _Rune('ᚢ', 'Uruz', 'U', 'Ur-Stier, Urkraft, Rohenergie, Vitalität, Mut zur Verwandlung.',
-      'Schwäche, missbrauchte Kraft, gehemmte Lebensenergie.', 'Erde', 'Audhumla', true),
-  _Rune('ᚦ', 'Thurisaz', 'TH', 'Dorn, Riesenkraft, durchbrechende Energie, Thor\'s Hammer, Schutz.',
-      'Naive Verteidigung, unbedachtes Handeln, Aggression nach innen.', 'Feuer', 'Thor', true),
-  _Rune('ᚨ', 'Ansuz', 'A', 'Odin, göttlicher Atem, Inspiration, gesprochenes Wort, Offenbarung.',
-      'Manipulation durch Worte, Missverständnisse, Lügen.', 'Luft', 'Odin', true),
-  _Rune('ᚱ', 'Raidho', 'R', 'Reise, Rad, Reise zu sich selbst, Rhythmus, geordnete Bewegung.',
-      'Stillstand, falsche Richtung, Reise unterbrochen.', 'Luft', 'Forseti', true),
-  _Rune('ᚲ', 'Kenaz', 'K', 'Fackel, Erkenntnis, Klarheit, Lehrmeisterschaft, schöpferisches Feuer.',
-      'Verdunklung, Verlust von Hoffnung, Erkenntnis verweigert.', 'Feuer', 'Heimdall', true),
-  _Rune('ᚷ', 'Gebo', 'G', 'Gabe, Austausch, Beziehung, sakrale Vereinigung, gegenseitige Hingabe.',
-      '— (kann nicht umgekehrt werden)', 'Luft', 'Odin/Gefjon', false),
-  _Rune('ᚹ', 'Wunjo', 'W', 'Freude, Harmonie, Gemeinschaft, das gute Zuhause, erfüllte Sehnsucht.',
-      'Unzufriedenheit, Entfremdung von Gemeinschaft, Verlust der Freude.', 'Erde', 'Odin', true),
-  _Rune('ᚺ', 'Hagalaz', 'H', 'Hagel, Krise als Reinigung, unausweichlicher Wandel, alte Strukturen brechen.',
-      '— (Krise ist immer Krise)', 'Wasser/Eis', 'Urd · Niflheim', false),
-  _Rune('ᚾ', 'Nauthiz', 'N', 'Not, Notwendigkeit, das was sein muss, innere Disziplin im Mangel.',
-      'Verstärkter Mangel, Erschöpfung, falsche Knappheits-Annahme.', 'Feuer/Eis', 'Skuld', true),
-  _Rune('ᛁ', 'Isa', 'I', 'Eis, Stillstand, Selbstkonzentration, Frieren als Schutz, Pause.',
-      '— (Eis ist Eis)', 'Eis', 'Verdandi · Frost', false),
-  _Rune('ᛃ', 'Jera', 'J', 'Jahr, Ernte, Zyklus, das was reift, geduldige Belohnung nach Arbeit.',
-      '— (Zyklus ist immer Zyklus)', 'Erde', 'Frey/Freyja', false),
-  _Rune('ᛇ', 'Eihwaz', 'EI', 'Eibe, Weltbaum, Lebensbaum, Verbindung Himmel-Erde, Unsterblichkeit.',
-      '— (Weltbaum steht)', 'Erde/Feuer', 'Yggdrasil', false),
-  _Rune('ᛈ', 'Perthro', 'P', 'Würfelbecher, Schicksal, das Verborgene wird offenbar, Geheimnisse.',
-      'Manipulation durch Geheimnisse, schlechte Gewohnheit, Stagnation.', 'Wasser', 'Urd · Wyrd', true),
-  _Rune('ᛉ', 'Algiz', 'Z', 'Elch, Schutz, höheres Selbst, Verbindung zu den Göttern, sakrale Grenze.',
-      'Verlust des Schutzes, Verletzlichkeit, Verbindung zu Selbst gebrochen.', 'Luft', 'Heimdall', true),
-  _Rune('ᛊ', 'Sowilo', 'S', 'Sonne, Sieg, Lebenskraft, Erleuchtung, Vollendung der Tat.',
-      '— (Sonne scheint)', 'Feuer', 'Sol · Sonnengott', false),
-  _Rune('ᛏ', 'Tiwaz', 'T', 'Tyr, Krieger-Gerechtigkeit, Opfer für höhere Sache, klares Urteil.',
-      'Ungerechtigkeit, falscher Sieg, Opfer ohne Sinn.', 'Luft', 'Tyr', true),
-  _Rune('ᛒ', 'Berkano', 'B', 'Birke, Mutter, Geburt, neuer Anfang, weibliche Schöpfungskraft.',
-      'Familienkrise, gestörtes Wachstum, Vernachlässigung.', 'Erde', 'Frigg/Berchta', true),
-  _Rune('ᛖ', 'Ehwaz', 'E', 'Pferd, Partnerschaft, harmonische Bewegung zu zweit, Vertrauen.',
-      'Disharmonie in Partnerschaft, Vertrauensbruch, Stillstand.', 'Erde', 'Sleipnir · Freyr', true),
-  _Rune('ᛗ', 'Mannaz', 'M', 'Mensch, Selbst-Reflexion, Menschheit, Selbst im Bezug zu anderen.',
-      'Isolation, Selbsttäuschung, kalte Einsamkeit.', 'Luft', 'Heimdall/Mensch', true),
-  _Rune('ᛚ', 'Laguz', 'L', 'Wasser, Intuition, Mond, Tiefen des Unbewussten, Fluss.',
-      'Angst vor Tiefe, Überflutung von Emotionen, Verirrung.', 'Wasser', 'Njörd/Mond', true),
-  _Rune('ᛜ', 'Ingwaz', 'NG', 'Frey/Ing, fruchtbarer Same, innere Wachstumskraft, Potenzial.',
-      '— (Same ist Same)', 'Erde', 'Frey/Ing', false),
-  _Rune('ᛞ', 'Dagaz', 'D', 'Tag, Durchbruch, Erleuchtung, Übergang Nacht-zu-Tag.',
-      '— (Tag bricht an)', 'Feuer/Luft', 'Dagr', false),
-  _Rune('ᛟ', 'Othala', 'O', 'Erbe, Heimat, Ahnenkraft, das was uns weitergegeben wurde, Wurzeln.',
-      'Vorurteil, Klan-Engstirnigkeit, ungelöste Ahnen-Themen.', 'Erde', 'Ahnen · Asgard', true),
+  _Rune(
+      'ᚠ',
+      'Fehu',
+      'F',
+      'Vieh, Wohlstand, Anfangskapital, materielle Manifestation, Erfolg durch Energie.',
+      'Verlust von Reichtum, Habsucht, Energie blockiert.',
+      'Feuer',
+      'Frey · Vanir',
+      true),
+  _Rune(
+      'ᚢ',
+      'Uruz',
+      'U',
+      'Ur-Stier, Urkraft, Rohenergie, Vitalität, Mut zur Verwandlung.',
+      'Schwäche, missbrauchte Kraft, gehemmte Lebensenergie.',
+      'Erde',
+      'Audhumla',
+      true),
+  _Rune(
+      'ᚦ',
+      'Thurisaz',
+      'TH',
+      'Dorn, Riesenkraft, durchbrechende Energie, Thor\'s Hammer, Schutz.',
+      'Naive Verteidigung, unbedachtes Handeln, Aggression nach innen.',
+      'Feuer',
+      'Thor',
+      true),
+  _Rune(
+      'ᚨ',
+      'Ansuz',
+      'A',
+      'Odin, göttlicher Atem, Inspiration, gesprochenes Wort, Offenbarung.',
+      'Manipulation durch Worte, Missverständnisse, Lügen.',
+      'Luft',
+      'Odin',
+      true),
+  _Rune(
+      'ᚱ',
+      'Raidho',
+      'R',
+      'Reise, Rad, Reise zu sich selbst, Rhythmus, geordnete Bewegung.',
+      'Stillstand, falsche Richtung, Reise unterbrochen.',
+      'Luft',
+      'Forseti',
+      true),
+  _Rune(
+      'ᚲ',
+      'Kenaz',
+      'K',
+      'Fackel, Erkenntnis, Klarheit, Lehrmeisterschaft, schöpferisches Feuer.',
+      'Verdunklung, Verlust von Hoffnung, Erkenntnis verweigert.',
+      'Feuer',
+      'Heimdall',
+      true),
+  _Rune(
+      'ᚷ',
+      'Gebo',
+      'G',
+      'Gabe, Austausch, Beziehung, sakrale Vereinigung, gegenseitige Hingabe.',
+      '— (kann nicht umgekehrt werden)',
+      'Luft',
+      'Odin/Gefjon',
+      false),
+  _Rune(
+      'ᚹ',
+      'Wunjo',
+      'W',
+      'Freude, Harmonie, Gemeinschaft, das gute Zuhause, erfüllte Sehnsucht.',
+      'Unzufriedenheit, Entfremdung von Gemeinschaft, Verlust der Freude.',
+      'Erde',
+      'Odin',
+      true),
+  _Rune(
+      'ᚺ',
+      'Hagalaz',
+      'H',
+      'Hagel, Krise als Reinigung, unausweichlicher Wandel, alte Strukturen brechen.',
+      '— (Krise ist immer Krise)',
+      'Wasser/Eis',
+      'Urd · Niflheim',
+      false),
+  _Rune(
+      'ᚾ',
+      'Nauthiz',
+      'N',
+      'Not, Notwendigkeit, das was sein muss, innere Disziplin im Mangel.',
+      'Verstärkter Mangel, Erschöpfung, falsche Knappheits-Annahme.',
+      'Feuer/Eis',
+      'Skuld',
+      true),
+  _Rune(
+      'ᛁ',
+      'Isa',
+      'I',
+      'Eis, Stillstand, Selbstkonzentration, Frieren als Schutz, Pause.',
+      '— (Eis ist Eis)',
+      'Eis',
+      'Verdandi · Frost',
+      false),
+  _Rune(
+      'ᛃ',
+      'Jera',
+      'J',
+      'Jahr, Ernte, Zyklus, das was reift, geduldige Belohnung nach Arbeit.',
+      '— (Zyklus ist immer Zyklus)',
+      'Erde',
+      'Frey/Freyja',
+      false),
+  _Rune(
+      'ᛇ',
+      'Eihwaz',
+      'EI',
+      'Eibe, Weltbaum, Lebensbaum, Verbindung Himmel-Erde, Unsterblichkeit.',
+      '— (Weltbaum steht)',
+      'Erde/Feuer',
+      'Yggdrasil',
+      false),
+  _Rune(
+      'ᛈ',
+      'Perthro',
+      'P',
+      'Würfelbecher, Schicksal, das Verborgene wird offenbar, Geheimnisse.',
+      'Manipulation durch Geheimnisse, schlechte Gewohnheit, Stagnation.',
+      'Wasser',
+      'Urd · Wyrd',
+      true),
+  _Rune(
+      'ᛉ',
+      'Algiz',
+      'Z',
+      'Elch, Schutz, höheres Selbst, Verbindung zu den Göttern, sakrale Grenze.',
+      'Verlust des Schutzes, Verletzlichkeit, Verbindung zu Selbst gebrochen.',
+      'Luft',
+      'Heimdall',
+      true),
+  _Rune(
+      'ᛊ',
+      'Sowilo',
+      'S',
+      'Sonne, Sieg, Lebenskraft, Erleuchtung, Vollendung der Tat.',
+      '— (Sonne scheint)',
+      'Feuer',
+      'Sol · Sonnengott',
+      false),
+  _Rune(
+      'ᛏ',
+      'Tiwaz',
+      'T',
+      'Tyr, Krieger-Gerechtigkeit, Opfer für höhere Sache, klares Urteil.',
+      'Ungerechtigkeit, falscher Sieg, Opfer ohne Sinn.',
+      'Luft',
+      'Tyr',
+      true),
+  _Rune(
+      'ᛒ',
+      'Berkano',
+      'B',
+      'Birke, Mutter, Geburt, neuer Anfang, weibliche Schöpfungskraft.',
+      'Familienkrise, gestörtes Wachstum, Vernachlässigung.',
+      'Erde',
+      'Frigg/Berchta',
+      true),
+  _Rune(
+      'ᛖ',
+      'Ehwaz',
+      'E',
+      'Pferd, Partnerschaft, harmonische Bewegung zu zweit, Vertrauen.',
+      'Disharmonie in Partnerschaft, Vertrauensbruch, Stillstand.',
+      'Erde',
+      'Sleipnir · Freyr',
+      true),
+  _Rune(
+      'ᛗ',
+      'Mannaz',
+      'M',
+      'Mensch, Selbst-Reflexion, Menschheit, Selbst im Bezug zu anderen.',
+      'Isolation, Selbsttäuschung, kalte Einsamkeit.',
+      'Luft',
+      'Heimdall/Mensch',
+      true),
+  _Rune(
+      'ᛚ',
+      'Laguz',
+      'L',
+      'Wasser, Intuition, Mond, Tiefen des Unbewussten, Fluss.',
+      'Angst vor Tiefe, Überflutung von Emotionen, Verirrung.',
+      'Wasser',
+      'Njörd/Mond',
+      true),
+  _Rune(
+      'ᛜ',
+      'Ingwaz',
+      'NG',
+      'Frey/Ing, fruchtbarer Same, innere Wachstumskraft, Potenzial.',
+      '— (Same ist Same)',
+      'Erde',
+      'Frey/Ing',
+      false),
+  _Rune(
+      'ᛞ',
+      'Dagaz',
+      'D',
+      'Tag, Durchbruch, Erleuchtung, Übergang Nacht-zu-Tag.',
+      '— (Tag bricht an)',
+      'Feuer/Luft',
+      'Dagr',
+      false),
+  _Rune(
+      'ᛟ',
+      'Othala',
+      'O',
+      'Erbe, Heimat, Ahnenkraft, das was uns weitergegeben wurde, Wurzeln.',
+      'Vorurteil, Klan-Engstirnigkeit, ungelöste Ahnen-Themen.',
+      'Erde',
+      'Ahnen · Asgard',
+      true),
 ];
 
 class _DrawnRune {
   final _Rune rune;
   final bool reversed;
   final String position;
-  const _DrawnRune({required this.rune, required this.reversed, required this.position});
+  const _DrawnRune(
+      {required this.rune, required this.reversed, required this.position});
 }
 
 class _RuneHistory {
@@ -926,12 +1242,16 @@ class _RuneHistory {
   final List<String> glyphs;
   final String createdAt;
   const _RuneHistory({
-    required this.spread, required this.question,
-    required this.glyphs, required this.createdAt,
+    required this.spread,
+    required this.question,
+    required this.glyphs,
+    required this.createdAt,
   });
   Map<String, dynamic> toJson() => {
-        'spread': spread, 'question': question,
-        'glyphs': glyphs, 'createdAt': createdAt,
+        'spread': spread,
+        'question': question,
+        'glyphs': glyphs,
+        'createdAt': createdAt,
       };
   factory _RuneHistory.fromJson(Map<String, dynamic> j) => _RuneHistory(
         spread: j['spread'] as String? ?? 'daily',
@@ -948,12 +1268,24 @@ class _RunesOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.18, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        110, const Color(0xFF1B5E20));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        100, const Color(0xFF4DD0E1));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        80, const Color(0xFFFFB74D));
+    _draw(
+        canvas,
+        Offset(size.width * 0.18,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        110,
+        const Color(0xFF1B5E20));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        100,
+        const Color(0xFF4DD0E1));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        80,
+        const Color(0xFFFFB74D));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {
@@ -1010,15 +1342,18 @@ class _RuneCastPainter extends CustomPainter {
       );
       // Glyphe
       final tp = TextPainter(
-        text: TextSpan(text: glyphs[i],
-            style: TextStyle(color: gold, fontSize: 28, fontWeight: FontWeight.bold)),
+        text: TextSpan(
+            text: glyphs[i],
+            style: TextStyle(
+                color: gold, fontSize: 28, fontWeight: FontWeight.bold)),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
       canvas.restore();
     }
     // Indikator des Beutels
-    canvas.drawLine(Offset(center.dx - 20, bagY - 35), Offset(center.dx + 20, bagY - 35), paint);
+    canvas.drawLine(Offset(center.dx - 20, bagY - 35),
+        Offset(center.dx + 20, bagY - 35), paint);
   }
 
   @override
@@ -1030,7 +1365,8 @@ class _BindRunePainter extends CustomPainter {
   final List<String> glyphs;
   final Color gold;
   final Color accent;
-  _BindRunePainter({required this.glyphs, required this.gold, required this.accent});
+  _BindRunePainter(
+      {required this.glyphs, required this.gold, required this.accent});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1041,7 +1377,8 @@ class _BindRunePainter extends CustomPainter {
       ..strokeWidth = 1
       ..color = accent.withValues(alpha: 0.3);
     canvas.drawCircle(center, size.width * 0.45, circlePaint);
-    canvas.drawCircle(center, size.width * 0.35, circlePaint..color = accent.withValues(alpha: 0.2));
+    canvas.drawCircle(center, size.width * 0.35,
+        circlePaint..color = accent.withValues(alpha: 0.2));
 
     // Vertikale Achse als Trägerlinie
     final axisPaint = Paint()
@@ -1057,7 +1394,8 @@ class _BindRunePainter extends CustomPainter {
       canvas.translate(center.dx, center.dy);
       canvas.rotate(angle);
       final tp = TextPainter(
-        text: TextSpan(text: glyphs[i],
+        text: TextSpan(
+            text: glyphs[i],
             style: TextStyle(
                 color: gold,
                 fontSize: 100,
@@ -1077,5 +1415,6 @@ class _BindRunePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BindRunePainter old) => old.glyphs.length != glyphs.length;
+  bool shouldRepaint(_BindRunePainter old) =>
+      old.glyphs.length != glyphs.length;
 }

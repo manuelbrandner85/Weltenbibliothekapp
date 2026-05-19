@@ -7,7 +7,7 @@ import '../services/cloudflare_api_service.dart';
 class ArticleCommentsWidget extends StatefulWidget {
   final String articleId;
   final int initialCommentCount;
-  
+
   const ArticleCommentsWidget({
     super.key,
     required this.articleId,
@@ -21,24 +21,24 @@ class ArticleCommentsWidget extends StatefulWidget {
 class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
   final CloudflareApiService _api = CloudflareApiService();
   final TextEditingController _commentController = TextEditingController();
-  
+
   List<Map<String, dynamic>> _comments = [];
   bool _isLoading = false;
   bool _isSubmitting = false;
   bool _showComments = false;
-  
+
   @override
   void dispose() {
     _commentController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadComments() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final comments = await _api.getArticleComments(widget.articleId);
-      
+
       if (mounted) {
         setState(() {
           _comments = comments;
@@ -49,7 +49,7 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
       if (kDebugMode) {
         debugPrint('❌ Error loading comments: $e');
       }
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -61,19 +61,20 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
       }
     }
   }
-  
+
   Future<void> _addComment() async {
     final content = _commentController.text.trim();
     if (content.isEmpty) return;
-    
+
     setState(() => _isSubmitting = true);
-    
+
     final currentUser = Supabase.instance.client.auth.currentUser;
-    final userId = currentUser?.id ?? 'anon_${DateTime.now().millisecondsSinceEpoch}';
-    final username = currentUser?.userMetadata?['username'] as String?
-        ?? currentUser?.email?.split('@').first
-        ?? 'Anonym';
-    
+    final userId =
+        currentUser?.id ?? 'anon_${DateTime.now().millisecondsSinceEpoch}';
+    final username = currentUser?.userMetadata?['username'] as String? ??
+        currentUser?.email?.split('@').first ??
+        'Anonym';
+
     try {
       await _api.addComment(
         articleId: widget.articleId,
@@ -81,12 +82,12 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
         username: username,
         content: content,
       );
-      
+
       _commentController.clear();
-      
+
       // Reload comments
       await _loadComments();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -100,7 +101,7 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
       if (kDebugMode) {
         debugPrint('❌ Error adding comment: $e');
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -115,7 +116,7 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
       }
     }
   }
-  
+
   void _toggleComments() {
     setState(() {
       _showComments = !_showComments;
@@ -124,7 +125,7 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
       }
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -146,7 +147,9 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  _comments.isNotEmpty ? '${_comments.length}' : '${widget.initialCommentCount}',
+                  _comments.isNotEmpty
+                      ? '${_comments.length}'
+                      : '${widget.initialCommentCount}',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
@@ -157,11 +160,11 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
             ),
           ),
         ),
-        
+
         // Comments Section (expandable)
         if (_showComments) ...[
           const SizedBox(height: 16),
-          
+
           // Add Comment Input
           Container(
             padding: const EdgeInsets.all(16),
@@ -177,18 +180,22 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
                   maxLines: 3,
                   decoration: InputDecoration(
                     hintText: 'Schreibe einen Kommentar...',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                    hintStyle:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+                      borderSide:
+                          const BorderSide(color: Colors.blueAccent, width: 2),
                     ),
                   ),
                   style: const TextStyle(color: Colors.white),
@@ -198,18 +205,20 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(
                     onPressed: _isSubmitting ? null : _addComment,
-                    icon: _isSubmitting 
+                    icon: _isSubmitting
                         ? const SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.send, size: 18),
-                    label: Text(_isSubmitting ? 'Wird gesendet...' : 'Kommentieren'),
+                    label: Text(
+                        _isSubmitting ? 'Wird gesendet...' : 'Kommentieren'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -219,9 +228,9 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Comments List
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
@@ -253,12 +262,12 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
       ],
     );
   }
-  
+
   Widget _buildCommentTile(Map<String, dynamic> comment) {
     final username = comment['username'] as String;
     final content = comment['content'] as String;
     final createdAt = DateTime.parse(comment['created_at'] as String);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -320,11 +329,11 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
       ),
     );
   }
-  
+
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 60) {
       return 'vor ${difference.inMinutes}m';
     } else if (difference.inHours < 24) {

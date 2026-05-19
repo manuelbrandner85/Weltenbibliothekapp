@@ -88,8 +88,7 @@ class _InCallChatPanelState extends State<InCallChatPanel> {
           decoration: BoxDecoration(
             color: WbDesign.surface(widget.world).withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-                color: accent.withValues(alpha: 0.28), width: 1),
+            border: Border.all(color: accent.withValues(alpha: 0.28), width: 1),
           ),
           child: Column(
             children: [
@@ -98,15 +97,14 @@ class _InCallChatPanelState extends State<InCallChatPanel> {
                 height: 46,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: WbDesign.surfaceAlt(widget.world)
-                      .withValues(alpha: 0.8),
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(18)),
+                  color:
+                      WbDesign.surfaceAlt(widget.world).withValues(alpha: 0.8),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(18)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.chat_bubble_rounded,
-                        color: accent, size: 17),
+                    Icon(Icons.chat_bubble_rounded, color: accent, size: 17),
                     const SizedBox(width: 8),
                     const Text(
                       'Call-Chat',
@@ -155,8 +153,7 @@ class _InCallChatPanelState extends State<InCallChatPanel> {
                         controller: _scrollCtrl,
                         padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
                         itemCount: _messages.length,
-                        itemBuilder: (_, i) =>
-                            _MessageBubble(
+                        itemBuilder: (_, i) => _MessageBubble(
                           msg: _messages[i],
                           accent: accent,
                         ),
@@ -164,13 +161,12 @@ class _InCallChatPanelState extends State<InCallChatPanel> {
               ),
               // ── Eingabe ──────────────────────────────────────────────────
               Container(
-                padding:
-                    const EdgeInsets.fromLTRB(10, 6, 6, 10),
+                padding: const EdgeInsets.fromLTRB(10, 6, 6, 10),
                 decoration: BoxDecoration(
-                  color: WbDesign.surfaceAlt(widget.world)
-                      .withValues(alpha: 0.6),
-                  borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(18)),
+                  color:
+                      WbDesign.surfaceAlt(widget.world).withValues(alpha: 0.6),
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(18)),
                 ),
                 child: Row(
                   children: [
@@ -178,19 +174,21 @@ class _InCallChatPanelState extends State<InCallChatPanel> {
                       child: TextField(
                         controller: _controller,
                         focusNode: _focusNode,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 14),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 14),
                         maxLines: null,
                         maxLength: 300,
-                        buildCounter: (_, {required int currentLength, required bool isFocused, required int? maxLength}) =>
+                        buildCounter: (_,
+                                {required int currentLength,
+                                required bool isFocused,
+                                required int? maxLength}) =>
                             null,
                         decoration: InputDecoration(
                           hintText: 'Nachricht …',
                           hintStyle: TextStyle(
                               color: WbDesign.textTertiary, fontSize: 14),
                           filled: true,
-                          fillColor:
-                              Colors.white.withValues(alpha: 0.06),
+                          fillColor: Colors.white.withValues(alpha: 0.06),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,

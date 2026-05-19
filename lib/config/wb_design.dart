@@ -367,60 +367,84 @@ class WbDesign {
   /// Liefert den passenden Welt-Hintergrund.
   static Color background(String world) {
     switch (world) {
-      case 'energie': return bgEnergie;
-      case 'vorhang': return bgVorhang;
-      case 'ursprung': return bgUrsprung;
-      default: return bgMaterie;
+      case 'energie':
+        return bgEnergie;
+      case 'vorhang':
+        return bgVorhang;
+      case 'ursprung':
+        return bgUrsprung;
+      default:
+        return bgMaterie;
     }
   }
 
   /// Liefert die primäre Card-Surface der Welt.
   static Color surface(String world) {
     switch (world) {
-      case 'energie': return surfaceEnergie;
-      case 'vorhang': return surfaceVorhang;
-      case 'ursprung': return surfaceUrsprung;
-      default: return surfaceMaterie;
+      case 'energie':
+        return surfaceEnergie;
+      case 'vorhang':
+        return surfaceVorhang;
+      case 'ursprung':
+        return surfaceUrsprung;
+      default:
+        return surfaceMaterie;
     }
   }
 
   /// Liefert die alternative Card-Surface der Welt.
   static Color surfaceAlt(String world) {
     switch (world) {
-      case 'energie': return surfaceEnergieAlt;
-      case 'vorhang': return surfaceVorhangAlt;
-      case 'ursprung': return surfaceUrsprungAlt;
-      default: return surfaceMaterieAlt;
+      case 'energie':
+        return surfaceEnergieAlt;
+      case 'vorhang':
+        return surfaceVorhangAlt;
+      case 'ursprung':
+        return surfaceUrsprungAlt;
+      default:
+        return surfaceMaterieAlt;
     }
   }
 
   /// Liefert den Hero-Gradient der Welt.
   static LinearGradient hero(String world) {
     switch (world) {
-      case 'energie': return heroEnergie();
-      case 'vorhang': return heroVorhang();
-      case 'ursprung': return heroUrsprung();
-      default: return heroMaterie();
+      case 'energie':
+        return heroEnergie();
+      case 'vorhang':
+        return heroVorhang();
+      case 'ursprung':
+        return heroUrsprung();
+      default:
+        return heroMaterie();
     }
   }
 
   /// Liefert die 4 Action-Tile-Gradients der Welt.
   static List<LinearGradient> actionTiles(String world) {
     switch (world) {
-      case 'energie': return actionTilesEnergie();
-      case 'vorhang': return actionTilesVorhang();
-      case 'ursprung': return actionTilesUrsprung();
-      default: return actionTilesMaterie();
+      case 'energie':
+        return actionTilesEnergie();
+      case 'vorhang':
+        return actionTilesVorhang();
+      case 'ursprung':
+        return actionTilesUrsprung();
+      default:
+        return actionTilesMaterie();
     }
   }
 
   /// Internal: Welt-Akzent für Border/Shadow.
   static Color _accent(String world) {
     switch (world) {
-      case 'energie': return energiePurple;
-      case 'vorhang': return vorhangGold;
-      case 'ursprung': return ursprungCyan;
-      default: return materieBlue;
+      case 'energie':
+        return energiePurple;
+      case 'vorhang':
+        return vorhangGold;
+      case 'ursprung':
+        return ursprungCyan;
+      default:
+        return materieBlue;
     }
   }
 
@@ -484,8 +508,7 @@ class _WbDesignWorld {
   LinearGradient get hero => WbDesign.hero(world);
   List<LinearGradient> get actionTiles => WbDesign.actionTiles(world);
 
-  BoxDecoration card({double? radius}) =>
-      WbDesign.card(world, radius: radius);
+  BoxDecoration card({double? radius}) => WbDesign.card(world, radius: radius);
   BoxDecoration get statBanner => WbDesign.statBanner(world);
   BoxDecoration get heroBanner => WbDesign.heroBanner(world);
 }

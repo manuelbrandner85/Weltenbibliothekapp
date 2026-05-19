@@ -51,6 +51,7 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _purple = Color(0xFF9C6FFF);
   static const Color _purpleLight = Color(0xFFB99FFF);
   static const Color _teal = Color(0xFF4ECDC4);
@@ -58,9 +59,18 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
 
   // ── Besonderheiten-Tags ────────────────────────────────────
   static const List<String> _tags = [
-    'Fliegen', 'Tunnel', 'Licht', 'Geräusche', 'Vibration',
-    'Schlaflähmung', 'Spiegelwelt', 'Begegnung', 'Zeitreise',
-    'Healing', 'Botschaft', 'Architektur',
+    'Fliegen',
+    'Tunnel',
+    'Licht',
+    'Geräusche',
+    'Vibration',
+    'Schlaflähmung',
+    'Spiegelwelt',
+    'Begegnung',
+    'Zeitreise',
+    'Healing',
+    'Botschaft',
+    'Architektur',
   ];
 
   // ── Techniken ──────────────────────────────────────────────
@@ -72,8 +82,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
       description:
           'Nach 5–6h Schlaf aufwachen, 30–60 min wach bleiben, dann wieder einschlafen. '
           'Erhöht REM-Schlaf-Intensität erheblich.',
-      steps: ['Um 4–5 Uhr wecken', '30 Min lesen oder meditieren',
-          'Bewusst mit Intention einschlafen', 'WILD oder MILD kombinieren'],
+      steps: [
+        'Um 4–5 Uhr wecken',
+        '30 Min lesen oder meditieren',
+        'Bewusst mit Intention einschlafen',
+        'WILD oder MILD kombinieren'
+      ],
       color: Color(0xFF7C4DFF),
     ),
     _AstralTechnique(
@@ -83,8 +97,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
       description:
           'Robert Monroe\'s klassische Methode: Entspannung → hypnagoge Halluzinationen '
           'nutzen → bewusst in Schlaflähmung übergehen.',
-      steps: ['Tiefe Entspannung in 10 Atemzügen', 'Hypnagoge Bilder beobachten',
-          'Vibrationszustand einleiten', 'Aus dem Körper rollen oder gleiten'],
+      steps: [
+        'Tiefe Entspannung in 10 Atemzügen',
+        'Hypnagoge Bilder beobachten',
+        'Vibrationszustand einleiten',
+        'Aus dem Körper rollen oder gleiten'
+      ],
       color: Color(0xFF651FFF),
     ),
     _AstralTechnique(
@@ -94,8 +112,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
       description:
           'Wake Initiated Lucid Dream: Bewusstsein direkt vom Wachzustand in Traum '
           'übertragen, ohne Bewusstlosigkeit.',
-      steps: ['Schlafparalyse bewusst herbeiführen', 'HI/Hypnagoge Bilder beobachten',
-          'Traumbild stabilisieren', 'Körper verlassen oder in Traum eintreten'],
+      steps: [
+        'Schlafparalyse bewusst herbeiführen',
+        'HI/Hypnagoge Bilder beobachten',
+        'Traumbild stabilisieren',
+        'Körper verlassen oder in Traum eintreten'
+      ],
       color: Color(0xFF4A148C),
     ),
     _AstralTechnique(
@@ -105,8 +127,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
       description:
           'Stell dir ein Seil vor, das von der Decke hängt. Klettere imaginär daran '
           'hinauf, bis du den Körper verlässt.',
-      steps: ['Tief entspannen', 'Imaginäres Seil über dir visualisieren',
-          'Hände geistig ausstrecken', 'Langsam am Seil hinaufklettern'],
+      steps: [
+        'Tief entspannen',
+        'Imaginäres Seil über dir visualisieren',
+        'Hände geistig ausstrecken',
+        'Langsam am Seil hinaufklettern'
+      ],
       color: Color(0xFF9C27B0),
     ),
     _AstralTechnique(
@@ -116,8 +142,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
       description:
           'José Silva\'s Alphazustand-Methode: Tiefe Entspannung auf Alpha-Ebene '
           '(7–14 Hz) mit Visualisierungstechniken.',
-      steps: ['Countdown 10 → 1 zur Entspannung', 'Visualisiere einen sicheren Ort',
-          'Bewusstsein ausdehnen', 'Führe die AP-Intention ein'],
+      steps: [
+        'Countdown 10 → 1 zur Entspannung',
+        'Visualisiere einen sicheren Ort',
+        'Bewusstsein ausdehnen',
+        'Führe die AP-Intention ein'
+      ],
       color: Color(0xFF3F51B5),
     ),
     _AstralTechnique(
@@ -127,8 +157,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
       description:
           'Den hypnagogen Schlaf-Wach-Übergang bewusst verlängern und nutzen. '
           'Idealer Einstiegspunkt für OBEs.',
-      steps: ['Arm leicht angewinkelt halten (Wächtermethode)', 'Einschlafphase bewusst beobachten',
-          'Bei Arm-Fallen sofort Bewusstsein fokussieren', 'In Traumbilder einsteigen'],
+      steps: [
+        'Arm leicht angewinkelt halten (Wächtermethode)',
+        'Einschlafphase bewusst beobachten',
+        'Bei Arm-Fallen sofort Bewusstsein fokussieren',
+        'In Traumbilder einsteigen'
+      ],
       color: Color(0xFF1A237E),
     ),
     _AstralTechnique(
@@ -138,8 +172,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
       description:
           'Persönliche Traumzeichen (Realitätschecks) im Wachleben üben, '
           'damit sie im Traum zum Lucidity-Trigger werden.',
-      steps: ['10x täglich Realitätschecks durchführen', 'Traumtagebuch führen',
-          'Persönliche Traumzeichen identifizieren', 'Im Traum auf Zeichen achten'],
+      steps: [
+        '10x täglich Realitätschecks durchführen',
+        'Traumtagebuch führen',
+        'Persönliche Traumzeichen identifizieren',
+        'Im Traum auf Zeichen achten'
+      ],
       color: Color(0xFF006064),
     ),
     _AstralTechnique(
@@ -149,26 +187,42 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
       description:
           'Fortgeschrittene Methode: Vollständige Losgelöstheit von Körpergefühl '
           'durch Bewusstseinsverschiebung in der Tiefenmeditation.',
-      steps: ['Mindestens 30 Min Meditation vorher', 'Körpergefühl schrittweise loslassen',
-          'Bewusstsein als Punkt im Raum visualisieren', 'Expansion des Bewusstseinsfeldes'],
+      steps: [
+        'Mindestens 30 Min Meditation vorher',
+        'Körpergefühl schrittweise loslassen',
+        'Bewusstsein als Punkt im Raum visualisieren',
+        'Expansion des Bewusstseinsfeldes'
+      ],
       color: Color(0xFF4A148C),
     ),
   ];
 
   // ── Symbole ─────────────────────────────────────────────────
   static const List<_AstralSymbol> _symbols = [
-    _AstralSymbol('Tunnel / Portal', '🌀', 'Übergang zwischen Bewusstseinsebenen, Transformation, Schwellenzustand'),
-    _AstralSymbol('Weißes Licht', '✨', 'Göttliche Präsenz, Reinigung, höhere Führung, Erleuchtung'),
-    _AstralSymbol('Doppelgänger', '👤', 'Aspekte des Selbst, Schattenarbeit, Integration'),
-    _AstralSymbol('Fliegen', '🕊️', 'Freiheit, spirituelle Erhebung, Überwindung von Grenzen'),
-    _AstralSymbol('Silberne Schnur', '🧶', 'Verbindung zum physischen Körper, Lebensenergie, Schutz'),
-    _AstralSymbol('Spiegel', '🪞', 'Selbsterkenntnis, parallele Realitäten, Reflexion des Selbst'),
-    _AstralSymbol('Verstorbene', '🕯️', 'Botschaften aus dem Jenseits, Heilung, Abschluss'),
-    _AstralSymbol('Kristalle', '💎', 'Energie-Anker, Schutz, Informationsspeicher'),
-    _AstralSymbol('Bibliothek', '📚', 'Akashische Aufzeichnungen, Wissen, Aktualisierung des Bewusstseins'),
-    _AstralSymbol('Ozean', '🌊', 'Kollektives Unbewusstes, emotionale Tiefe, Urenergie'),
-    _AstralSymbol('Tempelbau', '🏛️', 'Heilige Orte, spirituelle Ausbildung, innere Führung'),
-    _AstralSymbol('Sternenfeld', '🌌', 'Kosmisches Bewusstsein, Unendlichkeit, Verbindung zum All'),
+    _AstralSymbol('Tunnel / Portal', '🌀',
+        'Übergang zwischen Bewusstseinsebenen, Transformation, Schwellenzustand'),
+    _AstralSymbol('Weißes Licht', '✨',
+        'Göttliche Präsenz, Reinigung, höhere Führung, Erleuchtung'),
+    _AstralSymbol('Doppelgänger', '👤',
+        'Aspekte des Selbst, Schattenarbeit, Integration'),
+    _AstralSymbol('Fliegen', '🕊️',
+        'Freiheit, spirituelle Erhebung, Überwindung von Grenzen'),
+    _AstralSymbol('Silberne Schnur', '🧶',
+        'Verbindung zum physischen Körper, Lebensenergie, Schutz'),
+    _AstralSymbol('Spiegel', '🪞',
+        'Selbsterkenntnis, parallele Realitäten, Reflexion des Selbst'),
+    _AstralSymbol('Verstorbene', '🕯️',
+        'Botschaften aus dem Jenseits, Heilung, Abschluss'),
+    _AstralSymbol(
+        'Kristalle', '💎', 'Energie-Anker, Schutz, Informationsspeicher'),
+    _AstralSymbol('Bibliothek', '📚',
+        'Akashische Aufzeichnungen, Wissen, Aktualisierung des Bewusstseins'),
+    _AstralSymbol(
+        'Ozean', '🌊', 'Kollektives Unbewusstes, emotionale Tiefe, Urenergie'),
+    _AstralSymbol('Tempelbau', '🏛️',
+        'Heilige Orte, spirituelle Ausbildung, innere Führung'),
+    _AstralSymbol('Sternenfeld', '🌌',
+        'Kosmisches Bewusstsein, Unendlichkeit, Verbindung zum All'),
   ];
 
   @override
@@ -449,13 +503,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: _purple.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: _purple.withValues(alpha: 0.3)),
+                      border: Border.all(color: _purple.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       '${_entries.length} OBEs',
@@ -571,7 +624,8 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
               TextButton(
                 onPressed: () => setState(() => _showAddForm = false),
                 child: Text('Abbrechen',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+                    style:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.5))),
               ),
             ],
           ),
@@ -624,8 +678,7 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
                       IconButton(
                         icon: const Icon(Icons.add_rounded,
                             color: Colors.white54, size: 20),
-                        onPressed: () =>
-                            setState(() => _durationMin += 5),
+                        onPressed: () => setState(() => _durationMin += 5),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -646,8 +699,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2),
                           child: Icon(
-                            filled ? Icons.star_rounded : Icons.star_outline_rounded,
-                            color: filled ? const Color(0xFFFFD700) : Colors.white30,
+                            filled
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            color: filled
+                                ? const Color(0xFFFFD700)
+                                : Colors.white30,
                             size: 22,
                           ),
                         ),
@@ -669,10 +726,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
                   children: [
                     Text('Verschwommen',
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 11)),
                     Text('Kristallklar',
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 11)),
                   ],
                 ),
                 SliderTheme(
@@ -702,10 +761,12 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
                   children: [
                     Text('Keine',
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 11)),
                     Text('Vollständig',
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 11)),
                   ],
                 ),
                 SliderTheme(
@@ -740,8 +801,8 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
                   }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: sel
                           ? t.color.withValues(alpha: 0.3)
@@ -791,8 +852,8 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
                   }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: sel
                           ? _pink.withValues(alpha: 0.25)
@@ -832,8 +893,7 @@ class _AstralJournalScreenState extends State<AstralJournalScreen>
               ),
               child: const Text(
                 'Erfahrung speichern',
-                style:
-                    TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ),
           ),
@@ -1024,8 +1084,8 @@ class _AstralStarfieldPainter extends CustomPainter {
           0.8 *
               (0.5 +
                   0.5 *
-                      math.sin(animValue * 2 * math.pi * star.speed +
-                          star.phase));
+                      math.sin(
+                          animValue * 2 * math.pi * star.speed + star.phase));
       final paint = Paint()
         ..color = Colors.white.withValues(alpha: twinkle * 0.9);
       if (star.size > 1.2) {
@@ -1040,8 +1100,7 @@ class _AstralStarfieldPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_AstralStarfieldPainter old) =>
-      old.animValue != animValue;
+  bool shouldRepaint(_AstralStarfieldPainter old) => old.animValue != animValue;
 }
 
 class _Star2 {
@@ -1065,8 +1124,18 @@ class _AstralEntryCard extends StatelessWidget {
   const _AstralEntryCard({required this.entry, required this.onDelete});
 
   static const List<String> _months = [
-    'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez',
+    'Jan',
+    'Feb',
+    'Mär',
+    'Apr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Dez',
   ];
 
   @override
@@ -1135,15 +1204,17 @@ class _AstralEntryCard extends StatelessWidget {
                 const Spacer(),
                 // Sterne-Rating
                 Row(
-                  children: List.generate(5, (i) => Icon(
-                    i < entry.quality
-                        ? Icons.star_rounded
-                        : Icons.star_outline_rounded,
-                    color: i < entry.quality
-                        ? const Color(0xFFFFD700)
-                        : Colors.white24,
-                    size: 16,
-                  )),
+                  children: List.generate(
+                      5,
+                      (i) => Icon(
+                            i < entry.quality
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            color: i < entry.quality
+                                ? const Color(0xFFFFD700)
+                                : Colors.white24,
+                            size: 16,
+                          )),
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -1205,8 +1276,8 @@ class _AstralEntryCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF6B9D)
-                                .withValues(alpha: 0.12),
+                            color:
+                                const Color(0xFFFF6B9D).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                                 color: const Color(0xFFFF6B9D)
@@ -1440,8 +1511,8 @@ class _SymbolCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: const Color(0xFF9C6FFF).withValues(alpha: 0.2)),
+        border:
+            Border.all(color: const Color(0xFF9C6FFF).withValues(alpha: 0.2)),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

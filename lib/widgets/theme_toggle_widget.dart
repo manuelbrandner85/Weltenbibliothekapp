@@ -23,11 +23,11 @@ class _ThemeToggleWidgetState extends State<ThemeToggleWidget>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
+
     _rotationAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-    
+
     // Listen to theme changes
     _themeService.addListener(_onThemeChanged);
   }
@@ -56,7 +56,7 @@ class _ThemeToggleWidgetState extends State<ThemeToggleWidget>
   Widget build(BuildContext context) {
     final isDark = _themeService.isDarkMode;
     final theme = Theme.of(context);
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -116,7 +116,7 @@ class _ThemeToggleWidgetState extends State<ThemeToggleWidget>
                   ),
                 ),
                 const SizedBox(width: 16),
-                
+
                 // Text
                 Expanded(
                   child: Column(
@@ -137,13 +137,14 @@ class _ThemeToggleWidgetState extends State<ThemeToggleWidget>
                             : 'Wechsel zu dunklem Design',
                         style: TextStyle(
                           fontSize: 13,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.6),
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Toggle-Indikator
                 Container(
                   padding: const EdgeInsets.symmetric(

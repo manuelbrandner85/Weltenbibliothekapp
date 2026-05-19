@@ -52,8 +52,7 @@ class DreamSymbolMatcher {
   }
 
   /// Returns full symbol metadata for a set of keys (for detail display).
-  Future<List<Map<String, dynamic>>> symbolsForKeys(
-      List<String> keys) async {
+  Future<List<Map<String, dynamic>>> symbolsForKeys(List<String> keys) async {
     if (keys.isEmpty) return [];
     try {
       final rows = await _db

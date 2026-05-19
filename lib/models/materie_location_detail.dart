@@ -2,7 +2,7 @@ import 'package:latlong2/latlong.dart';
 import 'location_category.dart';
 
 /// Detaillierte Location-Information für Materie-Weltkarte
-/// 
+///
 /// Enthält alle Informationen zu einem Location-Marker:
 /// - Basis-Infos (Name, Beschreibung, Position)
 /// - Kategorisierung (category, keywords, date)
@@ -19,11 +19,12 @@ class MaterieLocationDetail {
   final List<String> imageUrls;
   final List<String> videoUrls; // YouTube Video IDs
   final List<String> sources;
-  
+
   // 🔥 NEUE FELDER: Alternative Sichtweisen
-  final String? officialNarrative;    // Offizielle Version/Mainstream-Narrative
-  final String? alternativeView;      // Alternative/Verschwörungstheoretische Sichtweise
-  final String? evidence;             // Beweise/Indizien für alternative Sichtweise
+  final String? officialNarrative; // Offizielle Version/Mainstream-Narrative
+  final String?
+      alternativeView; // Alternative/Verschwörungstheoretische Sichtweise
+  final String? evidence; // Beweise/Indizien für alternative Sichtweise
 
   const MaterieLocationDetail({
     required this.name,

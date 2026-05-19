@@ -10,12 +10,13 @@ final List<KnowledgeEntry> materieKnowledgeDatabase = [
   // ==========================================
   // KATEGORIE: VERSCHWÖRUNGSTHEORIEN (15)
   // ==========================================
-  
+
   KnowledgeEntry(
     id: 'mat_001',
     world: 'materie',
     title: 'MK-Ultra: Mind Control Experimente der CIA',
-    description: 'Geheimprogramm der CIA zur Bewusstseinskontrolle durch LSD, Hypnose und Folter (1953-1973)',
+    description:
+        'Geheimprogramm der CIA zur Bewusstseinskontrolle durch LSD, Hypnose und Folter (1953-1973)',
     fullContent: '''
 # MK-Ultra: Das größte Mind-Control-Programm der CIA
 
@@ -78,7 +79,8 @@ MK-Ultra war ein geheimes Forschungsprogramm der CIA von 1953 bis 1973, das Meth
     id: 'mat_002',
     world: 'materie',
     title: 'Operation Northwoods: False-Flag-Plan gegen Kuba',
-    description: 'US-Militär plante 1962 False-Flag-Terroranschläge gegen eigene Bürger, um Krieg mit Kuba zu rechtfertigen',
+    description:
+        'US-Militär plante 1962 False-Flag-Terroranschläge gegen eigene Bürger, um Krieg mit Kuba zu rechtfertigen',
     fullContent: '''
 # Operation Northwoods
 
@@ -134,7 +136,8 @@ Ein 1962 vom US-Verteidigungsministerium vorgeschlagener Plan für False-Flag-Op
     id: 'mat_003',
     world: 'materie',
     title: 'COINTELPRO: FBI sabotierte Bürgerrechtsbewegung',
-    description: 'Geheimes FBI-Programm zur Zerstörung von Aktivisten, MLK, Black Panthers und Anti-Kriegs-Gruppen',
+    description:
+        'Geheimes FBI-Programm zur Zerstörung von Aktivisten, MLK, Black Panthers und Anti-Kriegs-Gruppen',
     fullContent: '''
 # COINTELPRO - FBI's Krieg gegen Dissidenten
 
@@ -218,7 +221,8 @@ Ein 1962 vom US-Verteidigungsministerium vorgeschlagener Plan für False-Flag-Op
     id: 'mat_004',
     world: 'materie',
     title: 'Operation Gladio: NATO\'s geheime Stay-Behind-Armee',
-    description: 'NATO unterhielt geheime Terrornetzwerke in Europa für False-Flag-Operationen während des Kalten Kriegs',
+    description:
+        'NATO unterhielt geheime Terrornetzwerke in Europa für False-Flag-Operationen während des Kalten Kriegs',
     fullContent: '''
 # Operation Gladio - NATO's Schattenkrieg in Europa
 
@@ -273,7 +277,8 @@ Ein von der NATO und CIA organisiertes Netzwerk geheimer "Stay-Behind"-Armeen in
     id: 'mat_005',
     world: 'materie',
     title: 'Manufacturing Consent - Noam Chomsky',
-    description: 'Wie Massenmedien als Propagandainstrument der Elite funktionieren - Die 5 Filter der Nachrichtenselektion',
+    description:
+        'Wie Massenmedien als Propagandainstrument der Elite funktionieren - Die 5 Filter der Nachrichtenselektion',
     fullContent: '''
 # Manufacturing Consent - Die Propaganda-Maschine
 
@@ -335,7 +340,8 @@ Ein von der NATO und CIA organisiertes Netzwerk geheimer "Stay-Behind"-Armeen in
     id: 'mat_006',
     world: 'materie',
     title: 'Iran-Contra Affäre - Waffenhandel & Drogenschmuggel',
-    description: 'Reagan-Administration verkaufte illegal Waffen an Iran und finanzierte damit Contra-Rebellen in Nicaragua',
+    description:
+        'Reagan-Administration verkaufte illegal Waffen an Iran und finanzierte damit Contra-Rebellen in Nicaragua',
     fullContent: '''
 # Iran-Contra Affäre - Der größte US-Skandal der 80er
 
@@ -411,7 +417,8 @@ Berühmter Moment: North vor Kongress, in Uniform, verteidigte sein Handeln als 
     id: 'mat_007',
     world: 'materie',
     title: 'Nikola Tesla - Unterdrückte Technologien',
-    description: 'Freie Energie, Drahtlose Energieübertragung & Beschlagnahmung seiner Forschung durch FBI',
+    description:
+        'Freie Energie, Drahtlose Energieübertragung & Beschlagnahmung seiner Forschung durch FBI',
     fullContent: '''
 # Nikola Tesla - Das unterdrückte Genie
 
@@ -503,7 +510,8 @@ Berühmter Moment: North vor Kongress, in Uniform, verteidigte sein Handeln als 
     id: 'mat_008',
     world: 'materie',
     title: 'Behold a Pale Horse - William Cooper',
-    description: 'Ehemaliger Navy Intelligence Offizier enthüllt geheime Regierungsprogramme und UFO-Vertuschung',
+    description:
+        'Ehemaliger Navy Intelligence Offizier enthüllt geheime Regierungsprogramme und UFO-Vertuschung',
     fullContent: '''
 # Behold a Pale Horse - Die Whistleblower-Bibel
 
@@ -630,7 +638,8 @@ Berühmter Moment: North vor Kongress, in Uniform, verteidigte sein Handeln als 
     id: 'mat_009',
     world: 'materie',
     title: 'Hermetische Prinzipien - Das Kybalion',
-    description: 'Die 7 universellen Gesetze der hermetischen Philosophie aus dem alten Ägypten',
+    description:
+        'Die 7 universellen Gesetze der hermetischen Philosophie aus dem alten Ägypten',
     fullContent: '''
 # Das Kybalion - Die 7 Hermetischen Prinzipien
 
@@ -771,7 +780,8 @@ Das **Kybalion** (1908) ist eine Einführung in die hermetische Philosophie, bas
     id: 'mat_010',
     world: 'materie',
     title: 'Kabbala - Der Baum des Lebens',
-    description: 'Jüdische Mystik und die 10 Sephiroth als Blaupause der Schöpfung',
+    description:
+        'Jüdische Mystik und die 10 Sephiroth als Blaupause der Schöpfung',
     fullContent: '''
 # Kabbala - Die verborgene Weisheit
 

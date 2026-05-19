@@ -33,8 +33,11 @@ class Annotation {
         highlight: j['highlight'] as String? ?? '',
         note: j['note'] as String?,
         color: j['color'] as String? ?? 'yellow',
-        position: j['position'] is Map ? Map<String, dynamic>.from(j['position'] as Map) : null,
-        createdAt: DateTime.tryParse(j['created_at'] as String? ?? '') ?? DateTime.now(),
+        position: j['position'] is Map
+            ? Map<String, dynamic>.from(j['position'] as Map)
+            : null,
+        createdAt: DateTime.tryParse(j['created_at'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -76,15 +79,19 @@ class AnnotationService {
     Map<String, dynamic>? position,
   }) async {
     try {
-      final res = await _s.from('user_annotations').insert({
-        'user_id': userId,
-        'resource_type': resourceType,
-        'resource_id': resourceId,
-        'highlight': highlight,
-        'note': note,
-        'color': color,
-        'position': position,
-      }).select().single();
+      final res = await _s
+          .from('user_annotations')
+          .insert({
+            'user_id': userId,
+            'resource_type': resourceType,
+            'resource_id': resourceId,
+            'highlight': highlight,
+            'note': note,
+            'color': color,
+            'position': position,
+          })
+          .select()
+          .single();
       return Annotation.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Annotation add: $e');

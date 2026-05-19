@@ -6,14 +6,14 @@ class MessageEditWidget extends StatefulWidget {
   final Map<String, dynamic> message;
   final Function(String newContent) onSave;
   final VoidCallback onCancel;
-  
+
   const MessageEditWidget({
     super.key,
     required this.message,
     required this.onSave,
     required this.onCancel,
   });
-  
+
   @override
   State<MessageEditWidget> createState() => _MessageEditWidgetState();
 }
@@ -21,7 +21,7 @@ class MessageEditWidget extends StatefulWidget {
 class _MessageEditWidgetState extends State<MessageEditWidget> {
   late TextEditingController _controller;
   bool _isSaving = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -29,16 +29,16 @@ class _MessageEditWidgetState extends State<MessageEditWidget> {
       text: widget.message['message']?.toString() ?? '',
     );
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   Future<void> _save() async {
     final newContent = _controller.text.trim();
-    
+
     if (newContent.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -48,9 +48,9 @@ class _MessageEditWidgetState extends State<MessageEditWidget> {
       );
       return;
     }
-    
+
     setState(() => _isSaving = true);
-    
+
     try {
       widget.onSave(newContent);
       if (mounted) {
@@ -77,7 +77,7 @@ class _MessageEditWidgetState extends State<MessageEditWidget> {
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -123,7 +123,7 @@ class _MessageEditWidgetState extends State<MessageEditWidget> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Text Field
           TextField(
             controller: _controller,
@@ -159,7 +159,7 @@ class _MessageEditWidgetState extends State<MessageEditWidget> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Action Buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -173,7 +173,7 @@ class _MessageEditWidgetState extends State<MessageEditWidget> {
                 child: const Text('Abbrechen'),
               ),
               const SizedBox(width: 8),
-              
+
               // Save
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
@@ -190,7 +190,8 @@ class _MessageEditWidgetState extends State<MessageEditWidget> {
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : const Text('Speichern'),

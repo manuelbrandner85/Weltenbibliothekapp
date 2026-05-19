@@ -6,7 +6,8 @@ import '../core/db/app_database.dart';
 
 /// Offline Storage Service – Artikel für Offline-Zugriff (SQLite)
 class OfflineStorageService {
-  static final OfflineStorageService _instance = OfflineStorageService._internal();
+  static final OfflineStorageService _instance =
+      OfflineStorageService._internal();
   factory OfflineStorageService() => _instance;
   OfflineStorageService._internal();
 
@@ -43,7 +44,11 @@ class OfflineStorageService {
       };
       await db.insert(
         'offline_articles',
-        {'id': articleId, 'content': jsonEncode(article), 'saved_at': article['savedAt']!},
+        {
+          'id': articleId,
+          'content': jsonEncode(article),
+          'saved_at': article['savedAt']!
+        },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
       debugPrint('✅ Artikel gespeichert: $title');
@@ -58,9 +63,11 @@ class OfflineStorageService {
   Future<Map<String, dynamic>?> getArticle(String articleId) async {
     try {
       final db = await AppDatabase.instance.db;
-      final rows = await db.query('offline_articles', where: 'id = ?', whereArgs: [articleId]);
+      final rows = await db
+          .query('offline_articles', where: 'id = ?', whereArgs: [articleId]);
       if (rows.isEmpty) return null;
-      return jsonDecode(rows.first['content'] as String) as Map<String, dynamic>;
+      return jsonDecode(rows.first['content'] as String)
+          as Map<String, dynamic>;
     } catch (e) {
       debugPrint('❌ Fehler beim Laden: $e');
       return null;
@@ -68,18 +75,19 @@ class OfflineStorageService {
   }
 
   /// Alle gespeicherten Artikel abrufen
-  Future<List<Map<String, dynamic>>> getAllArticles({String? world, String? category}) async {
+  Future<List<Map<String, dynamic>>> getAllArticles(
+      {String? world, String? category}) async {
     try {
       final db = await AppDatabase.instance.db;
       final rows = await db.query('offline_articles', orderBy: 'saved_at DESC');
       final articles = rows
-          .map((r) => jsonDecode(r['content'] as String) as Map<String, dynamic>)
+          .map(
+              (r) => jsonDecode(r['content'] as String) as Map<String, dynamic>)
           .where((a) {
-            if (world != null && a['world'] != world) return false;
-            if (category != null && a['category'] != category) return false;
-            return true;
-          })
-          .toList();
+        if (world != null && a['world'] != world) return false;
+        if (category != null && a['category'] != category) return false;
+        return true;
+      }).toList();
       return articles;
     } catch (e) {
       debugPrint('❌ Fehler beim Abrufen aller Artikel: $e');
@@ -91,7 +99,8 @@ class OfflineStorageService {
   Future<bool> deleteArticle(String articleId) async {
     try {
       final db = await AppDatabase.instance.db;
-      await db.delete('offline_articles', where: 'id = ?', whereArgs: [articleId]);
+      await db
+          .delete('offline_articles', where: 'id = ?', whereArgs: [articleId]);
       debugPrint('✅ Artikel gelöscht: $articleId');
       return true;
     } catch (e) {
@@ -126,12 +135,14 @@ class OfflineStorageService {
     try {
       final db = await AppDatabase.instance.db;
       if (world == null) {
-        final result = await db.rawQuery('SELECT COUNT(*) as c FROM offline_articles');
+        final result =
+            await db.rawQuery('SELECT COUNT(*) as c FROM offline_articles');
         return (result.first['c'] as int?) ?? 0;
       }
       final rows = await db.query('offline_articles');
       return rows
-          .map((r) => jsonDecode(r['content'] as String) as Map<String, dynamic>)
+          .map(
+              (r) => jsonDecode(r['content'] as String) as Map<String, dynamic>)
           .where((a) => a['world'] == world)
           .length;
     } catch (_) {
@@ -141,14 +152,14 @@ class OfflineStorageService {
 
   /// Speicherplatz-Info
   Future<Map<String, dynamic>> getStorageInfo() async {
-    final total   = await getArticleCount();
+    final total = await getArticleCount();
     final materie = await getArticleCount(world: 'materie');
     final energie = await getArticleCount(world: 'energie');
     return {
-      'totalArticles':    total,
-      'materieArticles':  materie,
-      'energieArticles':  energie,
-      'estimatedSizeMB':  ((total * 50) / 1024).toStringAsFixed(2),
+      'totalArticles': total,
+      'materieArticles': materie,
+      'energieArticles': energie,
+      'estimatedSizeMB': ((total * 50) / 1024).toStringAsFixed(2),
     };
   }
 
@@ -156,8 +167,10 @@ class OfflineStorageService {
   Future<int> cleanOldArticles({int daysToKeep = 30}) async {
     try {
       final db = await AppDatabase.instance.db;
-      final cutoff = DateTime.now().subtract(Duration(days: daysToKeep)).toIso8601String();
-      final count = await db.delete('offline_articles', where: 'saved_at < ?', whereArgs: [cutoff]);
+      final cutoff =
+          DateTime.now().subtract(Duration(days: daysToKeep)).toIso8601String();
+      final count = await db.delete('offline_articles',
+          where: 'saved_at < ?', whereArgs: [cutoff]);
       debugPrint('✅ $count alte Artikel gelöscht');
       return count;
     } catch (e) {
@@ -183,13 +196,13 @@ class OfflineStorageService {
       for (final a in articles) {
         final m = a as Map<String, dynamic>;
         final ok = await saveArticle(
-          articleId:     m['id'] as String,
-          title:         m['title'] as String,
-          content:       m['content'] as String,
-          category:      m['category'] as String,
-          world:         m['world'] as String,
-          imageUrl:      m['imageUrl'] as String?,
-          author:        m['author'] as String?,
+          articleId: m['id'] as String,
+          title: m['title'] as String,
+          content: m['content'] as String,
+          category: m['category'] as String,
+          world: m['world'] as String,
+          imageUrl: m['imageUrl'] as String?,
+          author: m['author'] as String?,
           publishedDate: m['publishedDate'] != null
               ? DateTime.tryParse(m['publishedDate'] as String)
               : null,

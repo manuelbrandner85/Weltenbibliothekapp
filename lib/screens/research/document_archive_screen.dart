@@ -176,8 +176,7 @@ class _ArchiveTabState extends State<_ArchiveTab> {
         ),
         Expanded(
           child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: _accent))
+              ? const Center(child: CircularProgressIndicator(color: _accent))
               : _docs.isEmpty
                   ? Center(
                       child: Padding(
@@ -197,8 +196,7 @@ class _ArchiveTabState extends State<_ArchiveTab> {
                       child: ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: _docs.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (_, i) => _docCard(_docs[i]),
                       ),
                     ),
@@ -233,8 +231,8 @@ class _ArchiveTabState extends State<_ArchiveTab> {
                           fontWeight: FontWeight.bold)),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: _accent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
@@ -253,8 +251,7 @@ class _ArchiveTabState extends State<_ArchiveTab> {
             Text(
               d['source_name'] as String? ?? '',
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 11),
+                  color: Colors.white.withValues(alpha: 0.55), fontSize: 11),
             ),
             if (d['extracted_text'] != null) ...[
               const SizedBox(height: 6),
@@ -293,8 +290,7 @@ class _ArchiveTabState extends State<_ArchiveTab> {
 class _DocDetailSheet extends StatefulWidget {
   final Map<String, dynamic> doc;
   final ScrollController scrollController;
-  const _DocDetailSheet(
-      {required this.doc, required this.scrollController});
+  const _DocDetailSheet({required this.doc, required this.scrollController});
 
   @override
   State<_DocDetailSheet> createState() => _DocDetailSheetState();
@@ -329,9 +325,7 @@ class _DocDetailSheetState extends State<_DocDetailSheet> {
           ),
           Text(d['title'] as String? ?? 'Ohne Titel',
               style: const TextStyle(
-                  color: _accent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold)),
+                  color: _accent, fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           Text(d['source_name'] as String? ?? '',
               style: const TextStyle(color: Colors.white54, fontSize: 12)),
@@ -341,8 +335,7 @@ class _DocDetailSheetState extends State<_DocDetailSheet> {
               onTap: () async {
                 final uri = Uri.parse(d['original_url'] as String);
                 if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri,
-                      mode: LaunchMode.externalApplication);
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
                 }
               },
               child: Text(d['original_url'] as String,
@@ -359,28 +352,22 @@ class _DocDetailSheetState extends State<_DocDetailSheet> {
                 FilterChip(
                   label: const Text('Original'),
                   selected: !_showTranslation,
-                  onSelected: (_) =>
-                      setState(() => _showTranslation = false),
+                  onSelected: (_) => setState(() => _showTranslation = false),
                   backgroundColor: _surface,
                   selectedColor: _accent,
                   labelStyle: TextStyle(
-                      color: !_showTranslation
-                          ? Colors.white
-                          : Colors.white70,
+                      color: !_showTranslation ? Colors.white : Colors.white70,
                       fontSize: 11),
                 ),
                 const SizedBox(width: 8),
                 FilterChip(
                   label: const Text('Deutsch'),
                   selected: _showTranslation,
-                  onSelected: (_) =>
-                      setState(() => _showTranslation = true),
+                  onSelected: (_) => setState(() => _showTranslation = true),
                   backgroundColor: _surface,
                   selectedColor: _accent,
                   labelStyle: TextStyle(
-                      color: _showTranslation
-                          ? Colors.white
-                          : Colors.white70,
+                      color: _showTranslation ? Colors.white : Colors.white70,
                       fontSize: 11),
                 ),
               ],
@@ -595,8 +582,7 @@ class _UploadTabState extends State<_UploadTab> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Dokument gespeichert'),
-            backgroundColor: _accent),
+            content: Text('Dokument gespeichert'), backgroundColor: _accent),
       );
     } catch (e) {
       setState(() {
@@ -668,8 +654,8 @@ class _UploadTabState extends State<_UploadTab> {
                   ),
                 Expanded(
                   child: Text(_status,
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                 ),
               ],
             ),
@@ -874,15 +860,12 @@ class _SourcesTab extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.bold)),
             subtitle: Text(s.description,
-                style: const TextStyle(
-                    color: Colors.white60, fontSize: 12)),
-            trailing:
-                const Icon(Icons.open_in_new, color: _accent, size: 16),
+                style: const TextStyle(color: Colors.white60, fontSize: 12)),
+            trailing: const Icon(Icons.open_in_new, color: _accent, size: 16),
             onTap: () async {
               final uri = Uri.parse(s.url);
               if (await canLaunchUrl(uri)) {
-                await launchUrl(uri,
-                    mode: LaunchMode.externalApplication);
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
               }
             },
           ),

@@ -123,8 +123,7 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ohne',
-                style: TextStyle(color: Colors.white54)),
+            child: const Text('Ohne', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -146,7 +145,8 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
     if (!granted) {
       // v5.44: HealthDiagnosisDialog diagnostiziert die Ursache und bietet
       // kontextuelle Fix-Actions (Install / Permission / Datenquelle / iOS-Hint)
-      final resolved = await HealthDiagnosisDialog.showAndResolve(context, _bio);
+      final resolved =
+          await HealthDiagnosisDialog.showAndResolve(context, _bio);
       if (!mounted) return;
       if (resolved) {
         setState(() => _measuringBaseline = true);
@@ -273,7 +273,8 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
   @override
   Widget build(BuildContext context) {
     final level = _levels[_selectedLevelIdx];
-    final progress = _isRunning ? _elapsedSeconds / (_durationMinutes * 60) : 0.0;
+    final progress =
+        _isRunning ? _elapsedSeconds / (_durationMinutes * 60) : 0.0;
 
     return Scaffold(
       backgroundColor: _bgDeep,
@@ -352,7 +353,8 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
               Text(
                 level.subtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: _cyan, fontSize: 12, letterSpacing: 1.5),
+                style:
+                    TextStyle(color: _cyan, fontSize: 12, letterSpacing: 1.5),
               ),
               const SizedBox(height: 12),
               Text(
@@ -455,7 +457,9 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
                     ),
                   ),
                   child: Text(
-                    _measuringBaseline ? 'BASELINE MESSUNG …' : 'GATEWAY ÖFFNEN',
+                    _measuringBaseline
+                        ? 'BASELINE MESSUNG …'
+                        : 'GATEWAY ÖFFNEN',
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 3.0,
@@ -541,14 +545,14 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
   }
 
   Widget _sectionLabel(String s) => Text(
-    s,
-    style: TextStyle(
-      color: _cyanAccent.withValues(alpha: 0.7),
-      fontSize: 10,
-      letterSpacing: 3.0,
-      fontWeight: FontWeight.w700,
-    ),
-  );
+        s,
+        style: TextStyle(
+          color: _cyanAccent.withValues(alpha: 0.7),
+          fontSize: 10,
+          letterSpacing: 3.0,
+          fontWeight: FontWeight.w700,
+        ),
+      );
 
   String _fmt(int s) {
     final m = (s ~/ 60).toString().padLeft(2, '0');

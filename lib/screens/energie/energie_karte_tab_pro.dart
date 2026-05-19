@@ -113,39 +113,53 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
   Future<void> _loadYoutubeForLocation(String name) async {
     if (_ytLocationName == name) return;
     if (!mounted) return;
-    setState(() { _ytLoading = true; _ytLocationName = name; });
+    setState(() {
+      _ytLoading = true;
+      _ytLocationName = name;
+    });
     final videos = await YoutubeService.instance.searchVideos(name, max: 5);
     if (!mounted) return;
-    setState(() { _ytVideos = videos; _ytLoading = false; });
+    setState(() {
+      _ytVideos = videos;
+      _ytLoading = false;
+    });
   }
 
   Future<void> _loadWikimediaForLocation(String name) async {
     if (_wikiLocationName == name) return;
     if (!mounted) return;
-    setState(() { _wikiLoading = true; _wikiLocationName = name; });
+    setState(() {
+      _wikiLoading = true;
+      _wikiLocationName = name;
+    });
     final images = await WikimediaService.instance.searchImages(name);
     if (!mounted) return;
-    setState(() { _wikiImages = images; _wikiLoading = false; });
+    setState(() {
+      _wikiImages = images;
+      _wikiLoading = false;
+    });
   }
 
   List<EnergieLocationDetail> get _filteredLocations {
     var locations = allEnergieLocations;
-    
+
     // Filter nach Kategorie (Single-Select)
     if (_selectedCategory != null) {
-      locations = locations.where((loc) => loc.category == _selectedCategory).toList();
+      locations =
+          locations.where((loc) => loc.category == _selectedCategory).toList();
     }
-    
+
     // Filter nach Such-Query
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      locations = locations.where((loc) =>
-        loc.name.toLowerCase().contains(query) ||
-        loc.description.toLowerCase().contains(query) ||
-        loc.keywords.any((k) => k.toLowerCase().contains(query))
-      ).toList();
+      locations = locations
+          .where((loc) =>
+              loc.name.toLowerCase().contains(query) ||
+              loc.description.toLowerCase().contains(query) ||
+              loc.keywords.any((k) => k.toLowerCase().contains(query)))
+          .toList();
     }
-    
+
     return locations;
   }
 
@@ -196,7 +210,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                 PolylineLayer(
                   polylines: _buildLeyLines(),
                 ),
-              
+
               // MARKERS mit Clustering — _buildMarkers() nur 1× pro Build
               // (vorher 2× → O(n²) bei vielen Markern)
               () {
@@ -280,7 +294,8 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              const Color(0xFF9C27B0).withValues(alpha: alpha.clamp(0.0, 0.06)),
+                              const Color(0xFF9C27B0)
+                                  .withValues(alpha: alpha.clamp(0.0, 0.06)),
                               Colors.transparent,
                             ],
                           ),
@@ -313,29 +328,37 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                         right: 0,
                         child: Center(
                           child: GestureDetector(
-                            onTap: () => setState(() => _headerCollapsed = false),
+                            onTap: () =>
+                                setState(() => _headerCollapsed = false),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                filter:
+                                    ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                                 child: Container(
                                   height: 32,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withValues(alpha: 0.45),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                        color: const Color(0xFF9C27B0).withValues(alpha: 0.4)),
+                                        color: const Color(0xFF9C27B0)
+                                            .withValues(alpha: 0.4)),
                                   ),
                                   child: const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.search, color: Colors.white70, size: 16),
+                                      Icon(Icons.search,
+                                          color: Colors.white70, size: 16),
                                       SizedBox(width: 6),
                                       Text('Suchen…',
-                                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                          style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12)),
                                       SizedBox(width: 6),
-                                      Icon(Icons.expand_more, color: Colors.white70, size: 16),
+                                      Icon(Icons.expand_more,
+                                          color: Colors.white70, size: 16),
                                     ],
                                   ),
                                 ),
@@ -358,8 +381,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           ),
 
           // DETAIL PANEL — Feature A: Blur + SlideTransition
-          if (_selectedLocation != null)
-            _buildDetailPanel(),
+          if (_selectedLocation != null) _buildDetailPanel(),
         ],
       ),
     );
@@ -418,7 +440,8 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                 ),
                 if (_searchQuery.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white70, size: 20),
+                    icon: const Icon(Icons.clear,
+                        color: Colors.white70, size: 20),
                     onPressed: () {
                       setState(() {
                         _searchController.clear();
@@ -437,7 +460,8 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                       _showLeyLines = !_showLeyLines;
                     });
                   },
-                  tooltip: 'Ley-Lines ${_showLeyLines ? 'ausblenden' : 'einblenden'}',
+                  tooltip:
+                      'Ley-Lines ${_showLeyLines ? 'ausblenden' : 'einblenden'}',
                 ),
               ],
             ),
@@ -449,7 +473,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
 
   Widget _buildFilterChips() {
     final total = allEnergieLocations.length;
-    
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -468,10 +492,11 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             color: const Color(0xFF9C27B0),
           ),
           const SizedBox(width: 8),
-          
+
           // KATEGORIEN
           ...EnergieCategory.values.map((cat) {
-            final count = allEnergieLocations.where((l) => l.category == cat).length;
+            final count =
+                allEnergieLocations.where((l) => l.category == cat).length;
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: _buildFilterChip(
@@ -517,9 +542,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           color: isSelected ? null : const Color(0xB30C1022),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: isSelected
-                ? color
-                : Colors.white.withValues(alpha: 0.10),
+            color: isSelected ? color : Colors.white.withValues(alpha: 0.10),
             width: isSelected ? 1.5 : 1,
           ),
           boxShadow: isSelected
@@ -628,14 +651,14 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // Sieben Michaelheiligtümer in gerader Linie quer durch Europa.
       Polyline(
         points: _extendLine([
-          const LatLng(50.1689, -5.4759),  // St. Michael's Mount, Cornwall
-          const LatLng(51.1448, -2.6986),  // Glastonbury Tor
-          const LatLng(51.7548, 0.4715),   // Bury St Edmunds
-          const LatLng(48.6360, -1.5115),  // Mont-Saint-Michel
-          const LatLng(45.0975, 7.3429),   // Sacra di San Michele
-          const LatLng(41.7081, 15.9536),  // Monte Sant'Angelo Gargano
-          const LatLng(36.6147, 27.8358),  // Symi-Insel
-          const LatLng(32.8275, 34.9701),  // Stella Maris Berg Karmel
+          const LatLng(50.1689, -5.4759), // St. Michael's Mount, Cornwall
+          const LatLng(51.1448, -2.6986), // Glastonbury Tor
+          const LatLng(51.7548, 0.4715), // Bury St Edmunds
+          const LatLng(48.6360, -1.5115), // Mont-Saint-Michel
+          const LatLng(45.0975, 7.3429), // Sacra di San Michele
+          const LatLng(41.7081, 15.9536), // Monte Sant'Angelo Gargano
+          const LatLng(36.6147, 27.8358), // Symi-Insel
+          const LatLng(32.8275, 34.9701), // Stella Maris Berg Karmel
         ]),
         strokeWidth: 2.5,
         color: const Color(0xFFFFEB3B).withAlpha((0.55 * 255).round()),
@@ -644,9 +667,10 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // ━━━ ST. MARY-LINIE (parallel zu Michael, "weibliche" Linie)
       Polyline(
         points: _extendLine([
-          const LatLng(51.1448, -2.6986),  // Glastonbury (Schnittpunkt mit Michael)
-          const LatLng(51.4286, -1.8542),  // Avebury
-          const LatLng(52.6864, 1.2934),   // Norwich
+          const LatLng(
+              51.1448, -2.6986), // Glastonbury (Schnittpunkt mit Michael)
+          const LatLng(51.4286, -1.8542), // Avebury
+          const LatLng(52.6864, 1.2934), // Norwich
         ]),
         strokeWidth: 2,
         color: const Color(0xFFE91E63).withAlpha((0.5 * 255).round()),
@@ -656,10 +680,10 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       Polyline(
         points: _extendLine([
           const LatLng(27.9881, -15.4165), // Kanarische Inseln
-          const LatLng(29.9792, 31.1342),  // Gizeh
-          const LatLng(31.7683, 35.2137),  // Jerusalem
-          const LatLng(37.9838, 23.7275),  // Athen / Akropolis
-          const LatLng(38.4824, 22.5010),  // Delphi
+          const LatLng(29.9792, 31.1342), // Gizeh
+          const LatLng(31.7683, 35.2137), // Jerusalem
+          const LatLng(37.9838, 23.7275), // Athen / Akropolis
+          const LatLng(38.4824, 22.5010), // Delphi
         ]),
         strokeWidth: 2,
         color: const Color(0xFF00BCD4).withAlpha((0.5 * 255).round()),
@@ -668,13 +692,13 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // ━━━ HIMALAYA-CHAKRA-LINIE
       Polyline(
         points: _extendLine([
-          const LatLng(31.0667, 81.3125),  // Mount Kailash
-          const LatLng(27.9878, 86.9250),  // Mount Everest
-          const LatLng(29.6517, 91.1176),  // Lhasa Potala
-          const LatLng(27.1751, 78.0421),  // Taj Mahal
-          const LatLng(24.6961, 84.9911),  // Bodhgaya
-          const LatLng(25.3176, 82.9739),  // Varanasi
-          const LatLng(19.0760, 72.8777),  // Mumbai
+          const LatLng(31.0667, 81.3125), // Mount Kailash
+          const LatLng(27.9878, 86.9250), // Mount Everest
+          const LatLng(29.6517, 91.1176), // Lhasa Potala
+          const LatLng(27.1751, 78.0421), // Taj Mahal
+          const LatLng(24.6961, 84.9911), // Bodhgaya
+          const LatLng(25.3176, 82.9739), // Varanasi
+          const LatLng(19.0760, 72.8777), // Mumbai
         ]),
         strokeWidth: 2,
         color: const Color(0xFF9C27B0).withAlpha((0.5 * 255).round()),
@@ -686,11 +710,11 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       Polyline(
         points: _extendLine([
           const LatLng(64.9631, -19.0208), // Þingvellir, Island
-          const LatLng(58.9700, 5.7331),   // Stavanger
-          const LatLng(54.5973, -5.9301),  // Belfast
-          const LatLng(53.6948, -6.4753),  // Newgrange
-          const LatLng(51.1789, -1.8262),  // Stonehenge
-          const LatLng(43.5263, 5.4454),   // Aix-en-Provence
+          const LatLng(58.9700, 5.7331), // Stavanger
+          const LatLng(54.5973, -5.9301), // Belfast
+          const LatLng(53.6948, -6.4753), // Newgrange
+          const LatLng(51.1789, -1.8262), // Stonehenge
+          const LatLng(43.5263, 5.4454), // Aix-en-Provence
         ]),
         strokeWidth: 2,
         color: const Color(0xFF4CAF50).withAlpha((0.45 * 255).round()),
@@ -704,7 +728,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           const LatLng(19.4069, -155.2834), // Kilauea
           const LatLng(-25.3444, 131.0369), // Uluru
           const LatLng(-43.5950, 170.1418), // Aoraki / Mt Cook
-          const LatLng(35.3606, 138.7274),  // Mount Fuji
+          const LatLng(35.3606, 138.7274), // Mount Fuji
         ]),
         strokeWidth: 2,
         color: const Color(0xFFFF5722).withAlpha((0.45 * 255).round()),
@@ -713,9 +737,9 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // ━━━ MAYA-INKA-LINIE (Mesoamerika)
       Polyline(
         points: _extendLine([
-          const LatLng(19.6925, -98.8438),  // Teotihuacán
-          const LatLng(20.6843, -88.5678),  // Chichén Itzá
-          const LatLng(17.2229, -89.6230),  // Tikal
+          const LatLng(19.6925, -98.8438), // Teotihuacán
+          const LatLng(20.6843, -88.5678), // Chichén Itzá
+          const LatLng(17.2229, -89.6230), // Tikal
           const LatLng(-13.1631, -72.5450), // Machu Picchu
           const LatLng(-14.6919, -75.1380), // Nazca-Linien
         ]),
@@ -726,9 +750,9 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // ━━━ AFRIKA-EUROPA-LINIE (Sphinx-Akhenaten-Linie)
       Polyline(
         points: _extendLine([
-          const LatLng(29.9753, 31.1376),   // Sphinx Gizeh
-          const LatLng(25.7188, 32.6573),   // Karnak / Luxor
-          const LatLng(-25.6833, 30.5000),  // Adam's Calendar Südafrika
+          const LatLng(29.9753, 31.1376), // Sphinx Gizeh
+          const LatLng(25.7188, 32.6573), // Karnak / Luxor
+          const LatLng(-25.6833, 30.5000), // Adam's Calendar Südafrika
         ]),
         strokeWidth: 2,
         color: const Color(0xFFFFC107).withAlpha((0.45 * 255).round()),
@@ -737,10 +761,10 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // ━━━ DEUTSCH-NORDISCHE LINIE (Wilhelm Teudt "Heilige Linien" 1929)
       Polyline(
         points: _extendLine([
-          const LatLng(51.8689, 8.9152),    // Externsteine
-          const LatLng(53.2350, 9.2725),    // Steinkreis von Boitin
-          const LatLng(54.7833, 11.7000),   // Hünengrab Fehmarn
-          const LatLng(57.7089, 11.9746),   // Göteborg
+          const LatLng(51.8689, 8.9152), // Externsteine
+          const LatLng(53.2350, 9.2725), // Steinkreis von Boitin
+          const LatLng(54.7833, 11.7000), // Hünengrab Fehmarn
+          const LatLng(57.7089, 11.9746), // Göteborg
         ]),
         strokeWidth: 2,
         color: const Color(0xFFCDDC39).withAlpha((0.45 * 255).round()),
@@ -749,10 +773,10 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // ━━━ PETRA-MEKKA-LINIE (semitisch-arabischer Korridor)
       Polyline(
         points: _extendLine([
-          const LatLng(30.3285, 35.4444),   // Petra
-          const LatLng(31.7683, 35.2137),   // Jerusalem
-          const LatLng(21.4225, 39.8262),   // Mekka Kaaba
-          const LatLng(24.4670, 39.6118),   // Medina
+          const LatLng(30.3285, 35.4444), // Petra
+          const LatLng(31.7683, 35.2137), // Jerusalem
+          const LatLng(21.4225, 39.8262), // Mekka Kaaba
+          const LatLng(24.4670, 39.6118), // Medina
         ]),
         strokeWidth: 2,
         color: const Color(0xFF795548).withAlpha((0.5 * 255).round()),
@@ -761,10 +785,10 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // ━━━ KELTISCH-IBERISCHE LINIE
       Polyline(
         points: _extendLine([
-          const LatLng(43.5263, -1.5556),   // Bayonne (keltisches Heiligtum)
-          const LatLng(40.4168, -3.7038),   // Madrid
-          const LatLng(38.7223, -9.1393),   // Lissabon
-          const LatLng(38.7967, -9.3963),   // Sintra Quinta da Regaleira
+          const LatLng(43.5263, -1.5556), // Bayonne (keltisches Heiligtum)
+          const LatLng(40.4168, -3.7038), // Madrid
+          const LatLng(38.7223, -9.1393), // Lissabon
+          const LatLng(38.7967, -9.3963), // Sintra Quinta da Regaleira
         ]),
         strokeWidth: 2,
         color: const Color(0xFF03A9F4).withAlpha((0.45 * 255).round()),
@@ -773,9 +797,9 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       // ━━━ ASIATISCH-OZEANISCHE LINIE
       Polyline(
         points: _extendLine([
-          const LatLng(29.6557, 91.1170),   // Lhasa Potala
-          const LatLng(13.4125, 103.8670),  // Angkor Wat
-          const LatLng(-7.6079, 110.2038),  // Borobudur
+          const LatLng(29.6557, 91.1170), // Lhasa Potala
+          const LatLng(13.4125, 103.8670), // Angkor Wat
+          const LatLng(-7.6079, 110.2038), // Borobudur
           const LatLng(-25.3444, 131.0369), // Uluru
         ]),
         strokeWidth: 2,
@@ -800,115 +824,116 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.6,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.75),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(
-            color: location.category.color.withValues(alpha: 0.4),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: location.category.color.withValues(alpha: 0.15),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            // Handle
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6,
               ),
-            ),
-
-            // Header — Feature A: pulsing icon
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _PulsingIconContainer(
-                    color: location.category.color,
-                    icon: location.category.icon,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.75),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(
+                  color: location.category.color.withValues(alpha: 0.4),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: location.category.color.withValues(alpha: 0.15),
+                    blurRadius: 30,
+                    spreadRadius: 2,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  // Handle
+                  Container(
+                    margin: const EdgeInsets.only(top: 8, bottom: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  // Header — Feature A: pulsing icon
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
                       children: [
-                        Text(
-                          location.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        _PulsingIconContainer(
+                          color: location.category.color,
+                          icon: location.category.icon,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                location.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                location.category.label,
+                                style: TextStyle(
+                                  color: location.category.color,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          location.category.label,
-                          style: TextStyle(
-                            color: location.category.color,
-                            fontSize: 14,
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white70),
+                          onPressed: () {
+                            setState(() {
+                              _selectedLocation = null;
+                              _detailTabIndex = 0;
+                            });
+                          },
                         ),
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: () {
-                      setState(() {
-                        _selectedLocation = null;
-                        _detailTabIndex = 0;
-                      });
-                    },
+
+                  const SizedBox(height: 16),
+
+                  // TABS — immer alle 3 sichtbar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        _buildTab('Info', 0, Icons.info_outline),
+                        _buildTab('Bilder', 1, Icons.image_outlined),
+                        _buildTab('Videos', 2, Icons.play_circle_outline),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _buildTabContent(location),
+                    ),
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // TABS — immer alle 3 sichtbar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _buildTab('Info', 0, Icons.info_outline),
-                  _buildTab('Bilder', 1, Icons.image_outlined),
-                  _buildTab('Videos', 2, Icons.play_circle_outline),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildTabContent(location),
-              ),
-            ),
-          ],
-        ),
-      ), // Container
+            ), // Container
           ), // BackdropFilter
         ), // ClipRRect
       ), // SlideTransition
     ); // Positioned
   }
-  
+
   // TAB-SYSTEM METHODS
   Widget _buildTab(String label, int index, IconData icon) {
     final isSelected = _detailTabIndex == index;
@@ -930,14 +955,18 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             children: [
               Icon(
                 icon,
-                color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                color: isSelected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.5),
                 size: 18,
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.5),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 14,
                 ),
@@ -948,7 +977,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       ),
     );
   }
-  
+
   Widget _buildTabContent(EnergieLocationDetail location) {
     switch (_detailTabIndex) {
       case 0: // INFO
@@ -961,7 +990,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
         return _buildInfoTab(location);
     }
   }
-  
+
   Widget _buildInfoTab(EnergieLocationDetail location) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1008,14 +1037,15 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                   child: LinearProgressIndicator(
                     value: location.energyLevel! / 10,
                     minHeight: 10,
-                    backgroundColor: Colors.white.withAlpha((0.1 * 255).round()),
+                    backgroundColor:
+                        Colors.white.withAlpha((0.1 * 255).round()),
                     valueColor: AlwaysStoppedAnimation(location.category.color),
                   ),
                 ),
               ],
             ),
           ),
-        
+
         // Description
         Text(
           location.description,
@@ -1025,7 +1055,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             height: 1.5,
           ),
         ),
-        
+
         if (location.detailedInfo.isNotEmpty) ...[
           const SizedBox(height: 16),
           Container(
@@ -1045,7 +1075,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             ),
           ),
         ],
-        
+
         // Keywords
         if (location.keywords.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -1054,12 +1084,14 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             runSpacing: 8,
             children: location.keywords.map((keyword) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: location.category.color.withAlpha((0.2 * 255).round()),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: location.category.color.withAlpha((0.5 * 255).round()),
+                    color:
+                        location.category.color.withAlpha((0.5 * 255).round()),
                   ),
                 ),
                 child: Text(
@@ -1073,7 +1105,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             }).toList(),
           ),
         ],
-        
+
         // Sources
         if (location.sources.isNotEmpty) ...[
           const SizedBox(height: 20),
@@ -1087,22 +1119,22 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           ),
           const SizedBox(height: 8),
           ...location.sources.map((source) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              '• $source',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withAlpha((0.6 * 255).round()),
-              ),
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '• $source',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withAlpha((0.6 * 255).round()),
+                  ),
+                ),
+              )),
         ],
-        
+
         const SizedBox(height: 20),
       ],
     );
   }
-  
+
   Widget _buildImagesTab(EnergieLocationDetail location) {
     // genspark.ai URLs sind temporäre KI-Bild-Links die nicht öffentlich zugänglich sind → filtern
     final allImages = [
@@ -1117,7 +1149,8 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           children: [
             CircularProgressIndicator(color: Color(0xFF9C27B0), strokeWidth: 2),
             SizedBox(height: 12),
-            Text('Suche Bilder…', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Suche Bilder…',
+                style: TextStyle(color: Colors.white54, fontSize: 12)),
           ],
         ),
       );
@@ -1217,17 +1250,20 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                                   loadingBuilder: (ctx, child, progress) {
                                     if (progress == null) return child;
                                     return Container(
-                                      color: Colors.white.withValues(alpha: 0.05),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.05),
                                       child: const Center(
                                         child: CircularProgressIndicator(
-                                          color: Colors.white54, strokeWidth: 2),
+                                            color: Colors.white54,
+                                            strokeWidth: 2),
                                       ),
                                     );
                                   },
                                   errorBuilder: (_, __, ___) => Container(
                                     color: Colors.white.withValues(alpha: 0.05),
                                     child: Icon(Icons.broken_image,
-                                        color: Colors.white.withValues(alpha: 0.3),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.3),
                                         size: 48),
                                   ),
                                 ),
@@ -1245,7 +1281,8 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                 top: 8,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(12),
@@ -1272,9 +1309,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
               height: isCurrent ? 10 : 7,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isCurrent
-                    ? const Color(0xFF9C27B0)
-                    : Colors.transparent,
+                color: isCurrent ? const Color(0xFF9C27B0) : Colors.transparent,
                 border: Border.all(
                   color: const Color(0xFF9C27B0).withValues(alpha: 0.7),
                   width: 1.5,
@@ -1306,7 +1341,8 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
     final staticVideos = _hardcodedEnergieVideos(location);
     final allVideos = [
       ...staticVideos,
-      ...(_ytVideos ?? []).where((v) => staticVideos.every((s) => s.videoId != v.videoId)),
+      ...(_ytVideos ?? [])
+          .where((v) => staticVideos.every((s) => s.videoId != v.videoId)),
     ];
 
     if (_ytPlaying != null) {
@@ -1329,7 +1365,8 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           CircularProgressIndicator(color: Color(0xFF9C27B0), strokeWidth: 2),
           SizedBox(height: 12),
-          Text('Suche Videos…', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Suche Videos…',
+              style: TextStyle(color: Colors.white54, fontSize: 12)),
         ]),
       );
     }
@@ -1339,12 +1376,14 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.videocam_off, color: Colors.white24, size: 40),
           SizedBox(height: 8),
-          Text('Keine Videos verfügbar', style: TextStyle(color: Colors.white38, fontSize: 13)),
+          Text('Keine Videos verfügbar',
+              style: TextStyle(color: Colors.white38, fontSize: 13)),
         ]),
       );
     }
 
-    return SingleChildScrollView(child: Column(children: _buildEnergieVideoList(allVideos)));
+    return SingleChildScrollView(
+        child: Column(children: _buildEnergieVideoList(allVideos)));
   }
 
   List<Widget> _buildEnergieVideoList(List<YoutubeVideo> videos) {
@@ -1357,7 +1396,9 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isPlaying ? const Color(0xFF9C27B0) : const Color(0xFF9C27B0).withValues(alpha: 0.3),
+              color: isPlaying
+                  ? const Color(0xFF9C27B0)
+                  : const Color(0xFF9C27B0).withValues(alpha: 0.3),
               width: isPlaying ? 2 : 1,
             ),
             color: Colors.black.withValues(alpha: 0.3),
@@ -1366,46 +1407,70 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           child: Row(children: [
             Stack(children: [
               Image.network(
-                video.thumbnail.isNotEmpty ? video.thumbnail : video.fallbackThumbnail,
-                width: 110, height: 70, fit: BoxFit.cover,
+                video.thumbnail.isNotEmpty
+                    ? video.thumbnail
+                    : video.fallbackThumbnail,
+                width: 110,
+                height: 70,
+                fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  width: 110, height: 70,
+                  width: 110,
+                  height: 70,
                   color: Colors.white.withValues(alpha: 0.05),
-                  child: const Icon(Icons.videocam_off, color: Colors.white24, size: 28),
+                  child: const Icon(Icons.videocam_off,
+                      color: Colors.white24, size: 28),
                 ),
               ),
-              Positioned.fill(child: Center(
+              Positioned.fill(
+                  child: Center(
                 child: Icon(
                   isPlaying ? Icons.stop_circle : Icons.play_circle_fill,
-                  color: const Color(0xFF9C27B0), size: 32,
+                  color: const Color(0xFF9C27B0),
+                  size: 32,
                 ),
               )),
             ]),
-            Expanded(child: Padding(
+            Expanded(
+                child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(video.title,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                    maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Row(children: [
-                  Expanded(child: Text(video.channel,
-                      style: const TextStyle(color: Colors.white38, fontSize: 10),
-                      maxLines: 1, overflow: TextOverflow.ellipsis)),
-                  if (video.isSubtitled)
-                    Container(
-                      margin: const EdgeInsets.only(left: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.blue.withValues(alpha: 0.4), width: 0.8),
-                      ),
-                      child: const Text('🇩🇪 UT',
-                          style: TextStyle(color: Colors.lightBlueAccent, fontSize: 8, fontWeight: FontWeight.w700)),
-                    ),
-                ]),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(video.title,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      Expanded(
+                          child: Text(video.channel,
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 10),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis)),
+                      if (video.isSubtitled)
+                        Container(
+                          margin: const EdgeInsets.only(left: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                                color: Colors.blue.withValues(alpha: 0.4),
+                                width: 0.8),
+                          ),
+                          child: const Text('🇩🇪 UT',
+                              style: TextStyle(
+                                  color: Colors.lightBlueAccent,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w700)),
+                        ),
+                    ]),
+                  ]),
             )),
           ]),
         ),
@@ -1428,7 +1493,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
         return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
     }
   }
-  
+
   // Feature E: Radial circular layer menu
   Widget _buildRadialLayerMenu() {
     const accent = Color(0xFFA855F7);
@@ -1566,7 +1631,6 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
     );
   }
 
-
   // ───────────────────────────────────────────────────────────────────
   // 📍 BUNDLE 9: LIVE MAP PINS (Energie-USP)
   // ───────────────────────────────────────────────────────────────────
@@ -1650,8 +1714,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                 fillColor: accent.withValues(alpha: 0.06),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: accent.withValues(alpha: 0.25)),
+                  borderSide: BorderSide(color: accent.withValues(alpha: 0.25)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1659,8 +1722,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: accent.withValues(alpha: 0.25)),
+                  borderSide: BorderSide(color: accent.withValues(alpha: 0.25)),
                 ),
               ),
             ),
@@ -1682,8 +1744,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: () =>
-                        Navigator.pop(ctx, controller.text.trim()),
+                    onPressed: () => Navigator.pop(ctx, controller.text.trim()),
                     icon: const Icon(Icons.send, size: 18),
                     label: const Text('Pin senden'),
                     style: ElevatedButton.styleFrom(
@@ -1799,13 +1860,16 @@ class _PulsingMarkerState extends State<_PulsingMarker>
               if (widget.label.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
                     color: widget.categoryColor.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    widget.label.length > 10 ? '${widget.label.substring(0, 9)}…' : widget.label,
+                    widget.label.length > 10
+                        ? '${widget.label.substring(0, 9)}…'
+                        : widget.label,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 8,
@@ -2011,18 +2075,18 @@ enum EnergieCategory {
   crystalCaves,
   ancientTemples,
   // NEUE KATEGORIEN FÜR HISTORISCHE EVENTS
-  ancientWisdom,      // Antike Weisheit
+  ancientWisdom, // Antike Weisheit
   spiritualTeachings, // Spirituelle Lehren
   consciousnessShifts, // Bewusstseins-Shifts
-  cosmicEvents,       // Kosmische Ereignisse
-  energyDisasters,    // Energie-Katastrophen
+  cosmicEvents, // Kosmische Ereignisse
+  energyDisasters, // Energie-Katastrophen
   dimensionalPortals, // Dimensionale Portale
-  collectiveTrauma,   // Kollektive Traumata
-  awakeningMoments,   // Erwachensmomente
-  darkEnergies,       // Dunkle Energien
-  lightWarriors,      // Lichtkrieger
-  truthSeekers,       // Wahrheitssucher
-  frequencyShifts;    // Frequenz-Verschiebungen
+  collectiveTrauma, // Kollektive Traumata
+  awakeningMoments, // Erwachensmomente
+  darkEnergies, // Dunkle Energien
+  lightWarriors, // Lichtkrieger
+  truthSeekers, // Wahrheitssucher
+  frequencyShifts; // Frequenz-Verschiebungen
 
   String get label {
     switch (this) {
@@ -2193,7 +2257,8 @@ final List<EnergieLocationDetail> allEnergieLocations = [
   EnergieLocationDetail(
     name: 'Stonehenge - England',
     description: 'Prähistorisches Monument & Ley-Line-Knotenpunkt',
-    detailedInfo: '''Stonehenge ist eines der berühmtesten megalithischen Bauwerke der Welt, gelegen in der Salisbury Plain in Südengland. Erbaut vor etwa 5.000 Jahren (3.000 v. Chr.), besteht es aus massiven Steinkreisen, die perfekt ausgerichtet sind.
+    detailedInfo:
+        '''Stonehenge ist eines der berühmtesten megalithischen Bauwerke der Welt, gelegen in der Salisbury Plain in Südengland. Erbaut vor etwa 5.000 Jahren (3.000 v. Chr.), besteht es aus massiven Steinkreisen, die perfekt ausgerichtet sind.
 
 📘 OFFIZIELLE VERSION (Archäologie):
 Stonehenge war ein prähistorischer Tempel und Begräbnisplatz. Erbaut in mehreren Phasen zwischen 3.000-1.500 v. Chr. Die äußeren Sarsen-Steine (bis 25 Tonnen) wurden 30 km weit transportiert, die inneren Bluestones (bis 4 Tonnen) aus Wales (240 km). Astronomische Ausrichtung: Sonnenwende-Sonnenaufgang am 21. Juni. Funktion: Zeremonielle Stätte für Bestattungen, Feste und Sonnenanbetung. English Heritage: "Ein Monument für die Ahnen".
@@ -2213,7 +2278,16 @@ Stonehenge liegt auf einem kraftvollen Ley-Line-Knotenpunkt - Energielinien, die
 • Aubrey Holes: 56 Löcher bilden perfekten Kreis - mögliche Mondphasen-Berechnung (Gerald Hawkins, 1963)''',
     position: const LatLng(51.1789, -1.8262),
     category: EnergieCategory.leyLines,
-    keywords: ['Stonehenge', 'Megalith', 'Ley-Line', 'Druiden', 'Sonnenwende', 'Bluestones', 'Erdmagnetismus', 'Akustische Resonanz'],
+    keywords: [
+      'Stonehenge',
+      'Megalith',
+      'Ley-Line',
+      'Druiden',
+      'Sonnenwende',
+      'Bluestones',
+      'Erdmagnetismus',
+      'Akustische Resonanz'
+    ],
     energyLevel: 10,
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Stonehenge2007_07_30.jpg/1200px-Stonehenge2007_07_30.jpg',
@@ -2230,11 +2304,12 @@ Stonehenge liegt auf einem kraftvollen Ley-Line-Knotenpunkt - Energielinien, die
       'Mike Parker Pearson: "Stonehenge: Exploring the Greatest Stone Age Mystery" (2012) - 448 Seiten, Ausgrabungsberichte',
     ],
   ),
-  
+
   EnergieLocationDetail(
     name: 'Gizeh-Pyramiden - Ägypten',
     description: 'Antikes Weltwunder & Energie-Zentrum',
-    detailedInfo: '''Die Große Pyramide von Gizeh (Cheops-Pyramide) ist das älteste und einzige erhaltene der Sieben Weltwunder der Antike. Erbaut vor etwa 4.500 Jahren (2.560 v. Chr.), ein architektonisches und mathematisches Meisterwerk.
+    detailedInfo:
+        '''Die Große Pyramide von Gizeh (Cheops-Pyramide) ist das älteste und einzige erhaltene der Sieben Weltwunder der Antike. Erbaut vor etwa 4.500 Jahren (2.560 v. Chr.), ein architektonisches und mathematisches Meisterwerk.
 
 📘 OFFIZIELLE VERSION (Ägyptologie):
 Die Pyramiden von Gizeh wurden als Grabmäler für die Pharaonen Cheops, Chephren und Mykerinos errichtet. Erbaut von tausenden Arbeitern über ~20 Jahre. 2,3 Millionen Steinblöcke (je 2,5 Tonnen). Rampen und Hebelwerkzeuge wurden zum Transport verwendet. Präzise Ausrichtung nach Himmelsrichtungen (Nordkante nur 3,4 Bogenminuten Abweichung). Funktion: Aufstieg des Pharao ins Jenseits, monumentale Machtdemonstration. Keine mysteriösen Technologien - nur ingenieurtechnisches Können der alten Ägypter.
@@ -2254,7 +2329,16 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
 • Alignment: Nord-Ausrichtung genauer als Greenwich-Observatorium (Mark Lehner-Studien)''',
     position: const LatLng(29.9792, 31.1342),
     category: EnergieCategory.leyLines,
-    keywords: ['Pyramiden', 'Gizeh', 'Sphinx', 'Pharaonen', 'Orion', 'Energiekonverter', 'Goldener Schnitt', 'Ancient Aliens'],
+    keywords: [
+      'Pyramiden',
+      'Gizeh',
+      'Sphinx',
+      'Pharaonen',
+      'Orion',
+      'Energiekonverter',
+      'Goldener Schnitt',
+      'Ancient Aliens'
+    ],
     energyLevel: 10,
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/All_Gizah_Pyramids.jpg/1200px-All_Gizah_Pyramids.jpg',
@@ -2271,12 +2355,13 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
       'Egyptian Ministry of Antiquities: Official Excavation Reports (1925-2020) - Archivierte Dokumentation',
     ],
   ),
-  
+
   // CHAKRA-PUNKTE DER ERDE
   EnergieLocationDetail(
     name: 'Mount Kailash - Tibet',
     description: 'Heiligster Berg & Welt-Chakra',
-    detailedInfo: '''Für Hindus, Buddhisten, Jains heilig. Niemand hat ihn je bestiegen. Perfekte Pyramidenform. Zentrum von 4 großen Flüssen. Gilt als Krone-Chakra der Erde. Intensive spirituelle Energie.''',
+    detailedInfo:
+        '''Für Hindus, Buddhisten, Jains heilig. Niemand hat ihn je bestiegen. Perfekte Pyramidenform. Zentrum von 4 großen Flüssen. Gilt als Krone-Chakra der Erde. Intensive spirituelle Energie.''',
     position: const LatLng(31.0666, 81.3111),
     category: EnergieCategory.chakraPoints,
     keywords: ['Kailash', 'Tibet', 'Heiliger Berg', 'Chakra', 'Shiva'],
@@ -2294,11 +2379,12 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
       'NASA Satellite Imagery Database - Hochaufl\u00f6sende Kailash-Topografie',
     ],
   ),
-  
+
   EnergieLocationDetail(
     name: 'Machu Picchu - Peru',
     description: 'Inka-Stadt & Herz-Chakra',
-    detailedInfo: '''15. Jahrhundert Inka-Zitadelle. Auf 2.430m Höhe. Perfekte Integration in die Natur. Astronomische Ausrichtungen. Intihuatana-Stein ("Ort, wo die Sonne angebunden wird"). Starke Herzenergie.''',
+    detailedInfo:
+        '''15. Jahrhundert Inka-Zitadelle. Auf 2.430m Höhe. Perfekte Integration in die Natur. Astronomische Ausrichtungen. Intihuatana-Stein ("Ort, wo die Sonne angebunden wird"). Starke Herzenergie.''',
     position: const LatLng(-13.1631, -72.5450),
     category: EnergieCategory.chakraPoints,
     keywords: ['Machu Picchu', 'Inka', 'Peru', 'Herz-Chakra', 'Anden'],
@@ -2317,12 +2403,13 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
       'Peter Frost: "Exploring Cusco" (2009) - 448 Seiten, detaillierte archäologische Analyse',
     ],
   ),
-  
+
   // KRAFTORTE
   EnergieLocationDetail(
     name: 'Sedona Vortexes - Arizona',
     description: 'Energiewirbel & Heilungsort',
-    detailedInfo: '''Sedona ist berühmt für seine Energie-Vortexe. Rote Felsen, magnetische Anomalien. Beliebter Ort für Meditation, Heilung, spirituelle Retreats. 4 Haupt-Vortexe: Airport Mesa, Cathedral Rock, Bell Rock, Boynton Canyon.''',
+    detailedInfo:
+        '''Sedona ist berühmt für seine Energie-Vortexe. Rote Felsen, magnetische Anomalien. Beliebter Ort für Meditation, Heilung, spirituelle Retreats. 4 Haupt-Vortexe: Airport Mesa, Cathedral Rock, Bell Rock, Boynton Canyon.''',
     position: const LatLng(34.8697, -111.7610),
     category: EnergieCategory.vortexPoints,
     keywords: ['Sedona', 'Vortex', 'Arizona', 'Heilung', 'Rote Felsen'],
@@ -2341,15 +2428,18 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
       'Arizona Geological Society: Magnetite Distribution Maps - Eisenoxid-Konzentrationskarten',
     ],
   ),
-  
+
   EnergieLocationDetail(
     name: 'Uluru (Ayers Rock) - Australien',
     description: 'Heiliger Felsen der Aborigines',
-    detailedInfo: '''Riesiger Sandsteinfelsen. Für Aborigines heilig, spirituelles Zentrum. 348m hoch, 9,4km Umfang. Farbwechsel bei Sonnenauf-/untergang. Traumzeit-Geschichten. Starkes Erdchakra.''',
+    detailedInfo:
+        '''Riesiger Sandsteinfelsen. Für Aborigines heilig, spirituelles Zentrum. 348m hoch, 9,4km Umfang. Farbwechsel bei Sonnenauf-/untergang. Traumzeit-Geschichten. Starkes Erdchakra.''',
     position: const LatLng(-25.3444, 131.0369),
     category: EnergieCategory.kraftorte,
     keywords: ['Uluru', 'Ayers Rock', 'Aborigines', 'Traumzeit', 'Australien'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Uluru_Australia.jpg/1200px-Uluru_Australia.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Uluru_Australia.jpg/1200px-Uluru_Australia.jpg'
+    ],
     videoUrls: ['sLb8tWBf5GM'],
     energyLevel: 9,
   ),
@@ -2358,11 +2448,20 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Bodh Gaya - Indien',
     description: 'Ort der Erleuchtung Buddhas',
-    detailedInfo: '''Unter dem Bodhi-Baum erlangte Siddhartha Gautama vor ~2500 Jahren Erleuchtung. Wichtigster buddhistischer Pilgerort. Mahabodhi-Tempel (UNESCO). Friedliche, meditative Energie.''',
+    detailedInfo:
+        '''Unter dem Bodhi-Baum erlangte Siddhartha Gautama vor ~2500 Jahren Erleuchtung. Wichtigster buddhistischer Pilgerort. Mahabodhi-Tempel (UNESCO). Friedliche, meditative Energie.''',
     position: const LatLng(24.6951, 84.9914),
     category: EnergieCategory.meditationCenters,
-    keywords: ['Bodh Gaya', 'Buddha', 'Erleuchtung', 'Bodhi-Baum', 'Meditation'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Mahabodhi_Temple_Bodhgaya.jpg/1200px-Mahabodhi_Temple_Bodhgaya.jpg'],
+    keywords: [
+      'Bodh Gaya',
+      'Buddha',
+      'Erleuchtung',
+      'Bodhi-Baum',
+      'Meditation'
+    ],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Mahabodhi_Temple_Bodhgaya.jpg/1200px-Mahabodhi_Temple_Bodhgaya.jpg'
+    ],
     videoUrls: ['ZhZ7cDiPmE8'],
     energyLevel: 10,
   ),
@@ -2370,11 +2469,20 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Glastonbury - England',
     description: 'Mystisches Zentrum & Avalon',
-    detailedInfo: '''Legendäres Avalon. Glastonbury Tor, Chalice Well (Heiliger Brunnen), Glastonbury Abbey. Michael & Mary Ley-Lines kreuzen sich hier. König Artus-Legenden. Starke spirituelle Präsenz.''',
+    detailedInfo:
+        '''Legendäres Avalon. Glastonbury Tor, Chalice Well (Heiliger Brunnen), Glastonbury Abbey. Michael & Mary Ley-Lines kreuzen sich hier. König Artus-Legenden. Starke spirituelle Präsenz.''',
     position: const LatLng(51.1489, -2.7140),
     category: EnergieCategory.meditationCenters,
-    keywords: ['Glastonbury', 'Avalon', 'König Artus', 'Ley-Lines', 'Chalice Well'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Glastonbury_Tor_and_Hill.jpg/1200px-Glastonbury_Tor_and_Hill.jpg'],
+    keywords: [
+      'Glastonbury',
+      'Avalon',
+      'König Artus',
+      'Ley-Lines',
+      'Chalice Well'
+    ],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Glastonbury_Tor_and_Hill.jpg/1200px-Glastonbury_Tor_and_Hill.jpg'
+    ],
     videoUrls: ['j8rqzHjNl8c'],
     energyLevel: 9,
   ),
@@ -2383,11 +2491,14 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Angkor Wat - Kambodscha',
     description: 'Größter religiöser Komplex der Welt',
-    detailedInfo: '''12. Jahrhundert Khmer-Tempel. Ursprünglich Vishnu geweiht, später buddhistisch. Präzise astronomische Ausrichtung. Mikrokosmos des Universums. UNESCO-Welterbe. Spirituelle & künstlerische Meisterleistung.''',
+    detailedInfo:
+        '''12. Jahrhundert Khmer-Tempel. Ursprünglich Vishnu geweiht, später buddhistisch. Präzise astronomische Ausrichtung. Mikrokosmos des Universums. UNESCO-Welterbe. Spirituelle & künstlerische Meisterleistung.''',
     position: const LatLng(13.4125, 103.8670),
     category: EnergieCategory.sacredSites,
     keywords: ['Angkor Wat', 'Kambodscha', 'Khmer', 'Tempel', 'UNESCO'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Bayon_face.jpg/1200px-Bayon_face.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Bayon_face.jpg/1200px-Bayon_face.jpg'
+    ],
     videoUrls: ['uqhhZJM0wI0'],
     energyLevel: 9,
   ),
@@ -2395,11 +2506,14 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Mount Shasta - Kalifornien',
     description: 'Heiliger Berg & Energie-Vortex',
-    detailedInfo: '''Vulkan in Nord-Kalifornien. Für Native Americans heilig. Lemurien-Legenden: Versteckte Stadt "Telos" im Berg. UFO-Sichtungen. Starke magnetische Anomalien. Spirituelles Zentrum.''',
+    detailedInfo:
+        '''Vulkan in Nord-Kalifornien. Für Native Americans heilig. Lemurien-Legenden: Versteckte Stadt "Telos" im Berg. UFO-Sichtungen. Starke magnetische Anomalien. Spirituelles Zentrum.''',
     position: const LatLng(41.4092, -122.1949),
     category: EnergieCategory.sacredSites,
     keywords: ['Mount Shasta', 'Lemurien', 'Telos', 'UFO', 'Vortex'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Mount_Shasta_from_the_south.jpg/1200px-Mount_Shasta_from_the_south.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Mount_Shasta_from_the_south.jpg/1200px-Mount_Shasta_from_the_south.jpg'
+    ],
     videoUrls: ['X5KbZlYWhH4'],
     energyLevel: 9,
   ),
@@ -2408,11 +2522,14 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Kristallhöhle Naica - Mexiko',
     description: 'Gigantische Selenit-Kristalle',
-    detailedInfo: '''Höhle der Kristalle: Bis zu 12m lange Selenit-Kristalle. Entdeckt 2000. Extremtemperaturen (~58°C). Für Menschen gefährlich. Geologisches Wunder. Enorme energetische Signatur.''',
+    detailedInfo:
+        '''Höhle der Kristalle: Bis zu 12m lange Selenit-Kristalle. Entdeckt 2000. Extremtemperaturen (~58°C). Für Menschen gefährlich. Geologisches Wunder. Enorme energetische Signatur.''',
     position: const LatLng(27.8518, -105.4971),
     category: EnergieCategory.crystalCaves,
     keywords: ['Naica', 'Kristallhöhle', 'Selenit', 'Mexiko', 'Mineralien'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Naica_crystals2.jpg/1200px-Naica_crystals2.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Naica_crystals2.jpg/1200px-Naica_crystals2.jpg'
+    ],
     videoUrls: ['R5d8mCaFvFE'],
     energyLevel: 10,
   ),
@@ -2421,11 +2538,20 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Göbekli Tepe - Türkei',
     description: 'Ältester Tempel der Menschheit',
-    detailedInfo: '''~12.000 Jahre alt. Älter als Stonehenge & Pyramiden. Erbaut von Jäger-Sammlern. Massive T-förmige Steinsäulen mit Tiersymbolen. Revolutioniert Verständnis früher Zivilisationen. Astronomische Ausrichtungen.''',
+    detailedInfo:
+        '''~12.000 Jahre alt. Älter als Stonehenge & Pyramiden. Erbaut von Jäger-Sammlern. Massive T-förmige Steinsäulen mit Tiersymbolen. Revolutioniert Verständnis früher Zivilisationen. Astronomische Ausrichtungen.''',
     position: const LatLng(37.2233, 38.9225),
     category: EnergieCategory.ancientTemples,
-    keywords: ['Göbekli Tepe', 'Ältester Tempel', 'Steinzeit', 'Türkei', 'Megalith'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/G%C3%B6bekli_Tepe%2C_Urfa.jpg/1200px-G%C3%B6bekli_Tepe%2C_Urfa.jpg'],
+    keywords: [
+      'Göbekli Tepe',
+      'Ältester Tempel',
+      'Steinzeit',
+      'Türkei',
+      'Megalith'
+    ],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/G%C3%B6bekli_Tepe%2C_Urfa.jpg/1200px-G%C3%B6bekli_Tepe%2C_Urfa.jpg'
+    ],
     videoUrls: ['_P6tvRjhZ5k'],
     energyLevel: 10,
   ),
@@ -2433,24 +2559,36 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Teotihuacán - Mexiko',
     description: 'Stadt der Götter',
-    detailedInfo: '''Präkolumbische Stadt. Sonnen- & Mondpyramide. "Avenue of the Dead". Erbaut ~100 v.Chr. Unbekannte Erbauer. Präzise astronomische Ausrichtungen. Starke tellurische Energien.''',
+    detailedInfo:
+        '''Präkolumbische Stadt. Sonnen- & Mondpyramide. "Avenue of the Dead". Erbaut ~100 v.Chr. Unbekannte Erbauer. Präzise astronomische Ausrichtungen. Starke tellurische Energien.''',
     position: const LatLng(19.6925, -98.8438),
     category: EnergieCategory.ancientTemples,
-    keywords: ['Teotihuacán', 'Mexiko', 'Pyramiden', 'Stadt der Götter', 'Azteken'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Pyramid_of_the_Sun%2C_Teotihuacan.jpg/1200px-Pyramid_of_the_Sun%2C_Teotihuacan.jpg'],
+    keywords: [
+      'Teotihuacán',
+      'Mexiko',
+      'Pyramiden',
+      'Stadt der Götter',
+      'Azteken'
+    ],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Pyramid_of_the_Sun%2C_Teotihuacan.jpg/1200px-Pyramid_of_the_Sun%2C_Teotihuacan.jpg'
+    ],
     videoUrls: ['fmfFAw4NLc0'],
     energyLevel: 9,
   ),
-  
+
   // EUROPÄISCHE KRAFTORTE
   EnergieLocationDetail(
     name: 'Chartres Kathedrale - Frankreich',
     description: 'Gotisches Meisterwerk & Labyrinth',
-    detailedInfo: '''12. Jahrhundert Kathedrale. Berühmtes Labyrinth im Boden (spiritueller Pfad). Auf altem Druiden-Heiligtum erbaut. Heilige Geometrie. Notre-Dame-de-Sous-Terre (Krypta). Starke marianische Energie.''',
+    detailedInfo:
+        '''12. Jahrhundert Kathedrale. Berühmtes Labyrinth im Boden (spiritueller Pfad). Auf altem Druiden-Heiligtum erbaut. Heilige Geometrie. Notre-Dame-de-Sous-Terre (Krypta). Starke marianische Energie.''',
     position: const LatLng(48.4473, 1.4884),
     category: EnergieCategory.sacredSites,
     keywords: ['Chartres', 'Kathedrale', 'Labyrinth', 'Gotik', 'Druiden'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Cathedrale.chartres.exterior.JPG/1200px-Cathedrale.chartres.exterior.JPG'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Cathedrale.chartres.exterior.JPG/1200px-Cathedrale.chartres.exterior.JPG'
+    ],
     videoUrls: ['6DVcJj9nkYA'],
     energyLevel: 9,
   ),
@@ -2458,11 +2596,14 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Delphi - Griechenland',
     description: 'Orakel & Nabel der Welt',
-    detailedInfo: '''Antikes Heiligtum des Apollo. Pythia (Orakel) sagte Zukunft voraus. "Omphalos" (Nabel der Welt). Geologische Risse: Aufsteigende Gase (halluzinogen?). Tempelruinen, Theater, Stadion.''',
+    detailedInfo:
+        '''Antikes Heiligtum des Apollo. Pythia (Orakel) sagte Zukunft voraus. "Omphalos" (Nabel der Welt). Geologische Risse: Aufsteigende Gase (halluzinogen?). Tempelruinen, Theater, Stadion.''',
     position: const LatLng(38.4824, 22.5010),
     category: EnergieCategory.ancientTemples,
     keywords: ['Delphi', 'Orakel', 'Apollo', 'Pythia', 'Griechenland'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Temple_of_Apollo_at_Delphi.jpg/1200px-Temple_of_Apollo_at_Delphi.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Temple_of_Apollo_at_Delphi.jpg/1200px-Temple_of_Apollo_at_Delphi.jpg'
+    ],
     videoUrls: ['3YlrP2mjUXU'],
     energyLevel: 9,
   ),
@@ -2471,11 +2612,20 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Shasta-Kalifornien Korridor',
     description: 'Wurzel-Chakra der Erde',
-    detailedInfo: '''Mount Shasta Region gilt als eines der Erd-Chakren. Verbindung zum Wurzel-Chakra. Native American Legenden. Starke Erdenergie. Vulkanische Aktivität verstärkt Energiefeld.''',
+    detailedInfo:
+        '''Mount Shasta Region gilt als eines der Erd-Chakren. Verbindung zum Wurzel-Chakra. Native American Legenden. Starke Erdenergie. Vulkanische Aktivität verstärkt Energiefeld.''',
     position: const LatLng(41.3099, -122.3103),
     category: EnergieCategory.chakraPoints,
-    keywords: ['Mount Shasta', 'Wurzel-Chakra', 'Erdenergie', 'Vulkan', 'Native American'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Mount_Shasta_from_the_south.jpg/1200px-Mount_Shasta_from_the_south.jpg'],
+    keywords: [
+      'Mount Shasta',
+      'Wurzel-Chakra',
+      'Erdenergie',
+      'Vulkan',
+      'Native American'
+    ],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Mount_Shasta_from_the_south.jpg/1200px-Mount_Shasta_from_the_south.jpg'
+    ],
     videoUrls: ['X5KbZlYWhH4'],
     energyLevel: 9,
   ),
@@ -2483,155 +2633,205 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
   EnergieLocationDetail(
     name: 'Glastonbury Tor - Sakral-Chakra',
     description: 'Sakral-Chakra der Erde',
-    detailedInfo: '''Glastonbury Tor (Hügel mit Turm) - zweites Erd-Chakra. Michael & Mary Ley-Lines. Avalon-Mythos. Chalice Well. Starke weibliche Energie. Fruchtbarkeit & Schöpfung.''',
+    detailedInfo:
+        '''Glastonbury Tor (Hügel mit Turm) - zweites Erd-Chakra. Michael & Mary Ley-Lines. Avalon-Mythos. Chalice Well. Starke weibliche Energie. Fruchtbarkeit & Schöpfung.''',
     position: const LatLng(51.1443, -2.6986),
     category: EnergieCategory.chakraPoints,
-    keywords: ['Glastonbury Tor', 'Sakral-Chakra', 'Ley-Lines', 'Avalon', 'Weibliche Energie'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Glastonbury_Tor_and_Hill.jpg/1200px-Glastonbury_Tor_and_Hill.jpg'],
+    keywords: [
+      'Glastonbury Tor',
+      'Sakral-Chakra',
+      'Ley-Lines',
+      'Avalon',
+      'Weibliche Energie'
+    ],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Glastonbury_Tor_and_Hill.jpg/1200px-Glastonbury_Tor_and_Hill.jpg'
+    ],
     videoUrls: ['j8rqzHjNl8c'],
     energyLevel: 9,
   ),
-  
+
   // 🔥 20+ NEUE SPIRITUELLE & ESOTERISCHE KRAFTORTE
-  
+
   EnergieLocationDetail(
     name: 'Machu Picchu - Peru',
     description: 'Inka-Stadt der Energie & kosmisches Portal',
-    detailedInfo: '''15. Jahrhundert Inka-Zitadelle auf 2.430m Höhe. Perfekte Astronomische Ausrichtung zum Sonnenauf- & -untergang. Intihuatana-Stein (Sonnenuhr) - spirituelles Zentrum. Starke tellurische Energien. Portal zu höheren Dimensionen.''',
+    detailedInfo:
+        '''15. Jahrhundert Inka-Zitadelle auf 2.430m Höhe. Perfekte Astronomische Ausrichtung zum Sonnenauf- & -untergang. Intihuatana-Stein (Sonnenuhr) - spirituelles Zentrum. Starke tellurische Energien. Portal zu höheren Dimensionen.''',
     position: const LatLng(-13.1631, -72.5450),
     category: EnergieCategory.sacredSites,
     keywords: ['Machu Picchu', 'Inka', 'Peru', 'Portal', 'Energie'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Machu_Picchu%2C_Peru.jpg/1200px-Machu_Picchu%2C_Peru.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Machu_Picchu%2C_Peru.jpg/1200px-Machu_Picchu%2C_Peru.jpg'
+    ],
     videoUrls: ['fmfFAw4NLc0'],
     energyLevel: 10,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Chichén Itzá - Mexiko',
     description: 'Maya-Pyramide & Schlangengott-Tempel',
-    detailedInfo: '''El Castillo Pyramide - präzise astronomische Ausrichtung. Frühlings-/Herbst-Tagundnachtgleiche: Schlangen-Schatten erscheint. Kukulkan (Gefiederte Schlange) Verehrung. Akustische Anomalien: Händeklatschen erzeugt Vogelschrei. Cenote (heiliger Brunnen) für Opferungen.''',
+    detailedInfo:
+        '''El Castillo Pyramide - präzise astronomische Ausrichtung. Frühlings-/Herbst-Tagundnachtgleiche: Schlangen-Schatten erscheint. Kukulkan (Gefiederte Schlange) Verehrung. Akustische Anomalien: Händeklatschen erzeugt Vogelschrei. Cenote (heiliger Brunnen) für Opferungen.''',
     position: const LatLng(20.6843, -88.5678),
     category: EnergieCategory.sacredSites,
     keywords: ['Chichén Itzá', 'Maya', 'Kukulkan', 'Pyramide', 'Mexiko'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Chichen_Itza_3.jpg/1200px-Chichen_Itza_3.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Chichen_Itza_3.jpg/1200px-Chichen_Itza_3.jpg'
+    ],
     videoUrls: ['i4hIRo89HRM'],
     energyLevel: 9,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Nazca-Linien - Peru',
     description: 'Gigantische Geoglyphen - Botschaften an die Götter',
-    detailedInfo: '''500-2000 Jahre alte riesige Bodenzeichnungen (Kolibri, Affe, Spinne, Kondor). Nur aus der Luft erkennbar. Zweck: Astronomischer Kalender? Botschaften an außerirdische Götter? Rituelle Pfade? Maria Reiche widmete Leben der Forschung. Ley-Line-Verbindungen.''',
+    detailedInfo:
+        '''500-2000 Jahre alte riesige Bodenzeichnungen (Kolibri, Affe, Spinne, Kondor). Nur aus der Luft erkennbar. Zweck: Astronomischer Kalender? Botschaften an außerirdische Götter? Rituelle Pfade? Maria Reiche widmete Leben der Forschung. Ley-Line-Verbindungen.''',
     position: const LatLng(-14.7390, -75.1299),
     category: EnergieCategory.leyLines,
     keywords: ['Nazca', 'Geoglyphen', 'Peru', 'Aliens', 'Linien'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Nazca_Colibri.jpg/1200px-Nazca_Colibri.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Nazca_Colibri.jpg/1200px-Nazca_Colibri.jpg'
+    ],
     videoUrls: ['QF1jfVBjH5Y'],
     energyLevel: 8,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Angkor Thom - Kambodscha',
     description: 'Bayon-Tempel mit 216 lächelnden Gesichtern',
-    detailedInfo: '''12. Jahrhundert Khmer-Hauptstadt. Bayon-Tempel: 54 Türme mit 216 lächelnden Buddha-/Avalokiteshvara-Gesichtern. Spirituelles Kraftzentrum. Hydraulische Systeme & Wassermanagement. Kosmologische Stadtplanung nach Mount Meru (Weltenberg).''',
+    detailedInfo:
+        '''12. Jahrhundert Khmer-Hauptstadt. Bayon-Tempel: 54 Türme mit 216 lächelnden Buddha-/Avalokiteshvara-Gesichtern. Spirituelles Kraftzentrum. Hydraulische Systeme & Wassermanagement. Kosmologische Stadtplanung nach Mount Meru (Weltenberg).''',
     position: const LatLng(13.4412, 103.8590),
     category: EnergieCategory.sacredSites,
     keywords: ['Angkor Thom', 'Bayon', 'Kambodscha', 'Buddha', 'Khmer'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Bayon_face.jpg/1200px-Bayon_face.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Bayon_face.jpg/1200px-Bayon_face.jpg'
+    ],
     videoUrls: ['uqhhZJM0wI0'],
     energyLevel: 9,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Glastonbury Tor - England',
     description: 'Avalon-Insel & Herzchakra der Erde',
-    detailedInfo: '''Heiliger Hügel mit St. Michael Tower. Ley-Line-Kreuzung (St. Michael Ley-Line & Apollo-Athena Linie). Keltische Legenden: Eingang zur Feenwelt. König Artus & Avalon-Mythos. Joseph von Arimathäa brachte Heiligen Gral hierher. Herzchakra-Punkt der Erde.''',
+    detailedInfo:
+        '''Heiliger Hügel mit St. Michael Tower. Ley-Line-Kreuzung (St. Michael Ley-Line & Apollo-Athena Linie). Keltische Legenden: Eingang zur Feenwelt. König Artus & Avalon-Mythos. Joseph von Arimathäa brachte Heiligen Gral hierher. Herzchakra-Punkt der Erde.''',
     position: const LatLng(51.1441, -2.6987),
     category: EnergieCategory.chakraPoints,
     keywords: ['Glastonbury', 'Avalon', 'Ley-Lines', 'Herzchakra', 'England'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Glastonbury_Tor_and_Hill.jpg/1200px-Glastonbury_Tor_and_Hill.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Glastonbury_Tor_and_Hill.jpg/1200px-Glastonbury_Tor_and_Hill.jpg'
+    ],
     videoUrls: ['j8rqzHjNl8c'],
     energyLevel: 10,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Bosnische Pyramiden - Visoko',
     description: 'Kontroverse Pyramiden-Entdeckung (10.000+ Jahre alt?)',
-    detailedInfo: '''Dr. Semir Osmanagić entdeckte 2005 pyramidenförmige Hügel. Behauptung: Älteste & größte Pyramiden der Welt (12.000+ Jahre). Tunnelsysteme mit Keramik-Kugeln. Ultrasound-Frequenzen gemessen. Mainstream-Archäologie bestreitet - sagt Naturformationen. Energie-Anomalien gemessen.''',
+    detailedInfo:
+        '''Dr. Semir Osmanagić entdeckte 2005 pyramidenförmige Hügel. Behauptung: Älteste & größte Pyramiden der Welt (12.000+ Jahre). Tunnelsysteme mit Keramik-Kugeln. Ultrasound-Frequenzen gemessen. Mainstream-Archäologie bestreitet - sagt Naturformationen. Energie-Anomalien gemessen.''',
     position: const LatLng(43.9773, 18.1766),
     category: EnergieCategory.sacredSites,
     keywords: ['Bosnien', 'Pyramiden', 'Visoko', 'Kontrovers', 'Energie'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Pyramid_of_the_Sun_-_Visoko.jpg/1200px-Pyramid_of_the_Sun_-_Visoko.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Pyramid_of_the_Sun_-_Visoko.jpg/1200px-Pyramid_of_the_Sun_-_Visoko.jpg'
+    ],
     videoUrls: ['2lzJwIZRkFI'],
     energyLevel: 7,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Untersberg - Österreich/Deutschland',
     description: 'Zeitanomalien & Parallelwelten-Portal',
-    detailedInfo: '''Dalai Lama nannte ihn "Herzchakra Europas". Zeit-Anomalien: Menschen verschwinden stundenlang, kehren nach Minuten zurück. UFO-Sichtungen. Unterirdische Höhlen & Tunnelsysteme. Kaiser Karl der Große schläft im Berg (Legende). Nazis forschten hier nach Vril-Energie.''',
+    detailedInfo:
+        '''Dalai Lama nannte ihn "Herzchakra Europas". Zeit-Anomalien: Menschen verschwinden stundenlang, kehren nach Minuten zurück. UFO-Sichtungen. Unterirdische Höhlen & Tunnelsysteme. Kaiser Karl der Große schläft im Berg (Legende). Nazis forschten hier nach Vril-Energie.''',
     position: const LatLng(47.7104, 13.0086),
     category: EnergieCategory.leyLines,
     keywords: ['Untersberg', 'Zeitanomalien', 'Portal', 'Dalai Lama', 'Vril'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Untersberg_von_Salzburg.jpg/1200px-Untersberg_von_Salzburg.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Untersberg_von_Salzburg.jpg/1200px-Untersberg_von_Salzburg.jpg'
+    ],
     videoUrls: ['Wt_QgL5Eyis'],
     energyLevel: 9,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Externsteine - Deutschland',
     description: 'Germanisches Heiligtum & Kraftort',
-    detailedInfo: '''Markante Felsformation im Teutoburger Wald. Keltische & germanische Kultstätte. Höhlenkapelle mit Kreuzabnahme-Relief (1115). Astronomische Ausrichtung: Sonnenwende-Beobachtungskammer. Ley-Line-Kreuzungspunkt. Starke tellurische Energien gemessen.''',
+    detailedInfo:
+        '''Markante Felsformation im Teutoburger Wald. Keltische & germanische Kultstätte. Höhlenkapelle mit Kreuzabnahme-Relief (1115). Astronomische Ausrichtung: Sonnenwende-Beobachtungskammer. Ley-Line-Kreuzungspunkt. Starke tellurische Energien gemessen.''',
     position: const LatLng(51.8687, 8.9162),
     category: EnergieCategory.sacredSites,
-    keywords: ['Externsteine', 'Deutschland', 'Germanen', 'Ley-Lines', 'Sonnenwende'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Externsteine_-_panoramio.jpg/1200px-Externsteine_-_panoramio.jpg'],
+    keywords: [
+      'Externsteine',
+      'Deutschland',
+      'Germanen',
+      'Ley-Lines',
+      'Sonnenwende'
+    ],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Externsteine_-_panoramio.jpg/1200px-Externsteine_-_panoramio.jpg'
+    ],
     videoUrls: ['r1xsQc3Jf8o'],
     energyLevel: 8,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Karnak-Tempel - Ägypten',
     description: 'Größter antiker Tempelkomplex der Welt',
-    detailedInfo: '''2.000+ Jahre Bauzeit (2055 v.Chr. - 100 n.Chr.). 134 Säulenhalle (Hypostyl) - 23m hohe Säulen. Amun-Re-Verehrung. Präzise Ost-West-Ausrichtung für Sonnenlicht-Rituale. Obelisken als Energie-Antennen. Hieroglyphen-Wandinschriften mit spirituellem Wissen.''',
+    detailedInfo:
+        '''2.000+ Jahre Bauzeit (2055 v.Chr. - 100 n.Chr.). 134 Säulenhalle (Hypostyl) - 23m hohe Säulen. Amun-Re-Verehrung. Präzise Ost-West-Ausrichtung für Sonnenlicht-Rituale. Obelisken als Energie-Antennen. Hieroglyphen-Wandinschriften mit spirituellem Wissen.''',
     position: const LatLng(25.7188, 32.6573),
     category: EnergieCategory.ancientTemples,
     keywords: ['Karnak', 'Ägypten', 'Tempel', 'Amun-Re', 'Obelisk'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Karnak_temple_complex_02.jpg/1200px-Karnak_temple_complex_02.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Karnak_temple_complex_02.jpg/1200px-Karnak_temple_complex_02.jpg'
+    ],
     videoUrls: ['OjvkVQx8FNA'],
     energyLevel: 9,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Dendera-Tempel - Ägypten',
     description: 'Zodiak-Darstellung & "Dendera Licht" Rätsel',
-    detailedInfo: '''Hathor-Tempel mit berühmter Zodiak-Decke (kreisförmige Sternkarte). "Dendera Licht": Relief zeigt objekte ähnlich Glühbirnen - antike Elektrizität? Unterirdische Krypten. Perfekte Steinmetzkunst. Astronomisches Wissen der Priester. Energie-Messungen zeigen Anomalien.''',
+    detailedInfo:
+        '''Hathor-Tempel mit berühmter Zodiak-Decke (kreisförmige Sternkarte). "Dendera Licht": Relief zeigt objekte ähnlich Glühbirnen - antike Elektrizität? Unterirdische Krypten. Perfekte Steinmetzkunst. Astronomisches Wissen der Priester. Energie-Messungen zeigen Anomalien.''',
     position: const LatLng(26.1418, 32.6699),
     category: EnergieCategory.ancientTemples,
     keywords: ['Dendera', 'Ägypten', 'Zodiak', 'Licht', 'Hathor'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Dendera_ceiling.jpg/1200px-Dendera_ceiling.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Dendera_ceiling.jpg/1200px-Dendera_ceiling.jpg'
+    ],
     videoUrls: ['U-S6nBXp1O0'],
     energyLevel: 8,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Hagia Sophia - Istanbul',
     description: 'Byzantinisches Wunder & spiritueller Schmelztiegel',
-    detailedInfo: '''537 n.Chr. als christliche Kathedrale erbaut. Riesige Kuppel (56m hoch) - architektonisches Wunder. 1453 zur Moschee umgewandelt. Heute Museum. Christliche Mosaike & islamische Kalligraphie. Multi-religiöse Energie: Christentum, Islam, Byzantinisches Erbe. Kraftvolle spirituelle Präsenz.''',
+    detailedInfo:
+        '''537 n.Chr. als christliche Kathedrale erbaut. Riesige Kuppel (56m hoch) - architektonisches Wunder. 1453 zur Moschee umgewandelt. Heute Museum. Christliche Mosaike & islamische Kalligraphie. Multi-religiöse Energie: Christentum, Islam, Byzantinisches Erbe. Kraftvolle spirituelle Präsenz.''',
     position: const LatLng(41.0086, 28.9802),
     category: EnergieCategory.sacredSites,
     keywords: ['Hagia Sophia', 'Istanbul', 'Byzantinisch', 'Kirche', 'Moschee'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Hagia_Sophia_Mars_2013.jpg/1200px-Hagia_Sophia_Mars_2013.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Hagia_Sophia_Mars_2013.jpg/1200px-Hagia_Sophia_Mars_2013.jpg'
+    ],
     videoUrls: ['5j1-2Q2yJig'],
     energyLevel: 9,
   ),
 
   // 🧘 SPIRITUELLE KRAFTORTE (20 neue Marker)
-  
+
   EnergieLocationDetail(
     name: 'Mount Kailash - Tibet',
-    description: 'Heiligster Berg Asiens - Sitz Shivas, Pyramiden-Form, nie bestiegen',
-    detailedInfo: '''Mount Kailash (6.638m) in Tibet ist der heiligste Berg für Buddhisten, Hindus, Jainas und Bön. Perfekte Pyramiden-Form mit 4 Seiten zu Himmelsrichtungen. Nie offiziell bestiegen, trotz niedrigerer Höhe als Everest. Zentrum des Universums?
+    description:
+        'Heiligster Berg Asiens - Sitz Shivas, Pyramiden-Form, nie bestiegen',
+    detailedInfo:
+        '''Mount Kailash (6.638m) in Tibet ist der heiligste Berg für Buddhisten, Hindus, Jainas und Bön. Perfekte Pyramiden-Form mit 4 Seiten zu Himmelsrichtungen. Nie offiziell bestiegen, trotz niedrigerer Höhe als Everest. Zentrum des Universums?
 
 🕉️ SPIRITUELLE BEDEUTUNG:
 Hindus: Sitz von Lord Shiva, Meru-Berg (Weltachse). Buddhisten: Zentrum des Universums, Buddha Chakrasamvara lebt hier. Jainas: Ort wo Rishabhadeva Erleuchtung erlangte. Bön: Sitz der Gottheit Sipaimen. Kailash Kora (Umrundung) wäscht alle Sünden eines Lebens weg. 108 Koras = sofortige Erleuchtung.
@@ -2643,7 +2843,15 @@ Perfekte Pyramiden-Form (natürlich oder künstlich?), 4 Flüsse entspringen hie
 Wurzel-Chakra der Erde, Stärkste Ley-Line-Kreuzung Asiens, Magnetische Anomalien gemessen, Heilige Manasarovar/Rakshastal Seen (Yang/Yin), Geomantischer Mittelpunkt: Kailash = Abstand zu Stonehenge = 6.666 km, zu Nordpol = 6.666 km (!)''',
     position: const LatLng(31.0667, 81.3111),
     category: EnergieCategory.sacredSites,
-    keywords: ['Mount Kailash', 'Tibet', 'Shiva', 'Pyramide', 'Chakra', 'Ley-Lines', 'Meru'],
+    keywords: [
+      'Mount Kailash',
+      'Tibet',
+      'Shiva',
+      'Pyramide',
+      'Chakra',
+      'Ley-Lines',
+      'Meru'
+    ],
     energyLevel: 10,
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Mount_Kailash.jpg/1200px-Mount_Kailash.jpg',
@@ -2656,11 +2864,13 @@ Wurzel-Chakra der Erde, Stärkste Ley-Line-Kreuzung Asiens, Magnetische Anomalie
       'Russian Team Expedition Report (1999)',
     ],
   ),
-  
+
   EnergieLocationDetail(
     name: 'Sedona Vortexe - Arizona',
-    description: '4 energetische Wirbel - Bewusstseins-Erweiterung, UFO-Hotspot, rote Felsen-Mystik',
-    detailedInfo: '''Sedona, Arizona ist weltbekannt für seine 4 energetischen Vortexe - Orte mit intensiver spiritueller Energie. Rote Sandstein-Formationen und Juniper-Bäume wachsen in Spiral-Formen. UFO-Sichtungen, mystische Erfahrungen.
+    description:
+        '4 energetische Wirbel - Bewusstseins-Erweiterung, UFO-Hotspot, rote Felsen-Mystik',
+    detailedInfo:
+        '''Sedona, Arizona ist weltbekannt für seine 4 energetischen Vortexe - Orte mit intensiver spiritueller Energie. Rote Sandstein-Formationen und Juniper-Bäume wachsen in Spiral-Formen. UFO-Sichtungen, mystische Erfahrungen.
 
 🌀 DIE 4 VORTEXE:
 1. Cathedral Rock (weibliche Energie) - emotionale Heilung
@@ -2678,7 +2888,15 @@ Meditationszentren, Chakra-Healing, Vortex-Touren, Retreats, New Age Mekka seit 
 Erhöhte elektromagnetische Felder, Erdmagnetfeld-Anomalien, Negative Ionen-Konzentration (Wohlbefinden), Infraschall-Schwingungen.''',
     position: const LatLng(34.8697, -111.7610),
     category: EnergieCategory.vortexPoints,
-    keywords: ['Sedona', 'Vortex', 'Arizona', 'Chakra', 'UFO', 'Energie-Wirbel', 'Meditation'],
+    keywords: [
+      'Sedona',
+      'Vortex',
+      'Arizona',
+      'Chakra',
+      'UFO',
+      'Energie-Wirbel',
+      'Meditation'
+    ],
     energyLevel: 9,
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cathedral_Rock_Sedona_Arizona.jpg/1200px-Cathedral_Rock_Sedona_Arizona.jpg',
@@ -2691,11 +2909,13 @@ Erhöhte elektromagnetische Felder, Erdmagnetfeld-Anomalien, Negative Ionen-Konz
       'National UFO Reporting Center - Sedona Data',
     ],
   ),
-  
+
   EnergieLocationDetail(
     name: 'Uluru (Ayers Rock) - Australien',
-    description: 'Heiliger Monolith der Aborigines - Traumzeit-Portal, Erdchakra, 600 Mio. Jahre alt',
-    detailedInfo: '''Uluru (Ayers Rock) ist ein 348m hoher Sandstein-Monolith im Herzen Australiens. Für die Anangu-Aborigines der heiligste Ort - Traumzeit-Portal, wo Schöpfung begann. 600 Millionen Jahre geologische Geschichte.
+    description:
+        'Heiliger Monolith der Aborigines - Traumzeit-Portal, Erdchakra, 600 Mio. Jahre alt',
+    detailedInfo:
+        '''Uluru (Ayers Rock) ist ein 348m hoher Sandstein-Monolith im Herzen Australiens. Für die Anangu-Aborigines der heiligste Ort - Traumzeit-Portal, wo Schöpfung begann. 600 Millionen Jahre geologische Geschichte.
 
 🌏 ABORIGINE-TRAUMZEIT:
 Tjukurpa (Traumzeit-Gesetz) sagt: Uluru wurde von Ancestral Beings während der Schöpfung geformt. Höhlen enthalten Felsmalereien 10.000+ Jahre alt. Heilige Zeremonien nur für Eingeweihte. Anangu: "Uluru ist lebendiges Wesen". Klettern war Sakrileg (seit 2019 verboten).
@@ -2710,7 +2930,15 @@ Solar-Plexus-Chakra der Erde (nach Spirituellen Geomanten), Stärkster Energie-P
 Sonnenaufgangs-Meditationen, Traumzeit-Walks, Didgeridoo-Zeremonien, Chakra-Alignment, Erdungs-Rituale.''',
     position: const LatLng(-25.3444, 131.0369),
     category: EnergieCategory.sacredSites,
-    keywords: ['Uluru', 'Ayers Rock', 'Australien', 'Traumzeit', 'Aborigines', 'Erdchakra', 'Monolith'],
+    keywords: [
+      'Uluru',
+      'Ayers Rock',
+      'Australien',
+      'Traumzeit',
+      'Aborigines',
+      'Erdchakra',
+      'Monolith'
+    ],
     energyLevel: 10,
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Uluru_Panorama.jpg/1200px-Uluru_Panorama.jpg',
@@ -2723,11 +2951,13 @@ Sonnenaufgangs-Meditationen, Traumzeit-Walks, Didgeridoo-Zeremonien, Chakra-Alig
       'Paul Devereux: "Places of Power" (1990)',
     ],
   ),
-  
+
   EnergieLocationDetail(
     name: 'Skellig Michael - Irland',
-    description: 'Keltisches Kloster auf Felsenklippe - Star Wars Drehort, Atlantik-Kraftort, Mönchszellen',
-    detailedInfo: '''Skellig Michael ist eine steile Felseninsel 12 km vor der irischen Südwestküste. Christliche Mönche errichteten im 6. Jahrhundert ein Kloster auf 180m Höhe - 600 Steinstufen, beehive-förmige Zellen. Extremer Rückzugsort für Meditation und Gebet.
+    description:
+        'Keltisches Kloster auf Felsenklippe - Star Wars Drehort, Atlantik-Kraftort, Mönchszellen',
+    detailedInfo:
+        '''Skellig Michael ist eine steile Felseninsel 12 km vor der irischen Südwestküste. Christliche Mönche errichteten im 6. Jahrhundert ein Kloster auf 180m Höhe - 600 Steinstufen, beehive-förmige Zellen. Extremer Rückzugsort für Meditation und Gebet.
 
 ⛪ GESCHICHTE:
 6. Jahrhundert: Christliche Mönche gründeten Kloster. 600 handgehauene Steinstufen zu Gipfel. 12./13. Jahrhundert: Kloster aufgegeben wegen zu harten Bedingungen. 1996: UNESCO Weltkulturerbe. 2015-2017: Star Wars Episode VII & VIII Drehort (Luke Skywalkers Exil).
@@ -2742,7 +2972,15 @@ Skellig Michael + Little Skellig (Vogelkolonie 30.000 Basstölpel), Stürmische 
 Pilgerfahrten, Meditations-Retreats (begrenzt), Kontemplation über Mönche die hier 600 Jahre lebten, Star Wars Fans: Luke's "Jedi Temple".''',
     position: const LatLng(51.7706, -10.5400),
     category: EnergieCategory.sacredSites,
-    keywords: ['Skellig Michael', 'Irland', 'Kloster', 'Mönche', 'Meditation', 'Star Wars', 'Atlantik'],
+    keywords: [
+      'Skellig Michael',
+      'Irland',
+      'Kloster',
+      'Mönche',
+      'Meditation',
+      'Star Wars',
+      'Atlantik'
+    ],
     energyLevel: 8,
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Skellig_Michael_from_Sea.jpg/1200px-Skellig_Michael_from_Sea.jpg',

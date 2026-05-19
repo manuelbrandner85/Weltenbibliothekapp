@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
+
 class WebAdminPanel extends StatefulWidget {
   const WebAdminPanel({super.key});
 
@@ -33,6 +34,7 @@ class _WebAdminPanelState extends State<WebAdminPanel>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _surface = Color(0xFF141414);
   static const Color _border = Color(0xFF2A2A2A);
 
@@ -68,12 +70,9 @@ class _WebAdminPanelState extends State<WebAdminPanel>
       final rows = List<Map<String, dynamic>>.from(all);
 
       setState(() {
-        _pending =
-            rows.where((r) => r['status'] == 'pending').toList();
-        _approved =
-            rows.where((r) => r['status'] == 'approved').toList();
-        _rejected =
-            rows.where((r) => r['status'] == 'rejected').toList();
+        _pending = rows.where((r) => r['status'] == 'pending').toList();
+        _approved = rows.where((r) => r['status'] == 'approved').toList();
+        _rejected = rows.where((r) => r['status'] == 'rejected').toList();
         _loading = false;
       });
     } catch (e) {
@@ -134,8 +133,8 @@ class _WebAdminPanelState extends State<WebAdminPanel>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child:
-                const Text('Abbrechen', style: TextStyle(color: Colors.white38)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white38)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -304,8 +303,7 @@ class _WebAdminPanelState extends State<WebAdminPanel>
   }
 
   Widget _badge(int count, Color color) => Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(10),
@@ -328,8 +326,7 @@ class _WebAdminPanelState extends State<WebAdminPanel>
             OutlinedButton(
               onPressed: _loadData,
               style: OutlinedButton.styleFrom(
-                  foregroundColor: _gold,
-                  side: const BorderSide(color: _gold)),
+                  foregroundColor: _gold, side: const BorderSide(color: _gold)),
               child: const Text('Erneut versuchen'),
             ),
           ],
@@ -354,8 +351,7 @@ class _WebAdminPanelState extends State<WebAdminPanel>
             Icon(emptyIcon, color: Colors.white24, size: 56),
             const SizedBox(height: 16),
             Text(emptyText,
-                style:
-                    const TextStyle(color: Colors.white38, fontSize: 15)),
+                style: const TextStyle(color: Colors.white38, fontSize: 15)),
           ],
         ),
       );
@@ -391,8 +387,7 @@ class _WebAdminPanelState extends State<WebAdminPanel>
             name: name,
             subtitle: subtitle,
             status: status,
-            onPrimary:
-                primaryAction != null ? () => primaryAction(item) : null,
+            onPrimary: primaryAction != null ? () => primaryAction(item) : null,
             primaryLabel: primaryLabel,
             onSecondary:
                 secondaryAction != null ? () => secondaryAction(item) : null,
@@ -474,7 +469,8 @@ class _UserCard extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+                decoration:
+                    BoxDecoration(color: bgColor, shape: BoxShape.circle),
                 child: Icon(iconData, color: iconColor, size: 20),
               ),
               const SizedBox(width: 12),

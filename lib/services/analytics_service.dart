@@ -8,35 +8,36 @@ import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
 class CloudflareAnalyticsService {
-  static final CloudflareAnalyticsService _instance = CloudflareAnalyticsService._internal();
+  static final CloudflareAnalyticsService _instance =
+      CloudflareAnalyticsService._internal();
   factory CloudflareAnalyticsService() => _instance;
   CloudflareAnalyticsService._internal();
 
   // Analytics Endpoint (Cloudflare Worker)
   final String _analyticsEndpoint = '${ApiConfig.baseUrl}/analytics';
-  
+
   // Session tracking
   String? _sessionId;
   String? _userId;
   DateTime? _sessionStart;
-  
+
   /// Initialize analytics with user info
   void initialize({String? userId}) {
     _userId = userId;
     _sessionId = _generateSessionId();
     _sessionStart = DateTime.now();
-    
+
     if (kDebugMode) {
       debugPrint('📊 Analytics initialized: User=$userId, Session=$_sessionId');
     }
-    
+
     // Track app launch
     trackEvent('app_launch', properties: {
       'platform': _getPlatform(),
       'user_id': userId,
     });
   }
-  
+
   /// Track page/screen view
   Future<void> trackScreenView(String screenName) async {
     await trackEvent('screen_view', properties: {
@@ -44,7 +45,7 @@ class CloudflareAnalyticsService {
       'timestamp': DateTime.now().toIso8601String(),
     });
   }
-  
+
   /// Track user action/event
   Future<void> trackEvent(
     String eventName, {
@@ -59,24 +60,23 @@ class CloudflareAnalyticsService {
         'platform': _getPlatform(),
         'properties': properties ?? {},
       };
-      
+
       if (kDebugMode) {
         debugPrint('📊 Analytics Event: $eventName');
         if (properties != null && properties.isNotEmpty) {
           debugPrint('   Properties: $properties');
         }
       }
-      
+
       // Send to Cloudflare Worker (non-blocking)
       _sendAnalytics(eventData);
-      
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Analytics Error: $e');
       }
     }
   }
-  
+
   /// Track button click
   Future<void> trackButtonClick(String buttonName, {String? context}) async {
     await trackEvent('button_click', properties: {
@@ -84,7 +84,7 @@ class CloudflareAnalyticsService {
       'context': context,
     });
   }
-  
+
   /// Track message sent
   Future<void> trackMessageSent({
     required String roomId,
@@ -99,7 +99,7 @@ class CloudflareAnalyticsService {
       'is_voice': isVoice,
     });
   }
-  
+
   /// Track article view
   Future<void> trackArticleView({
     required String articleId,
@@ -112,7 +112,7 @@ class CloudflareAnalyticsService {
       'realm': realm,
     });
   }
-  
+
   /// Track search
   Future<void> trackSearch({
     required String query,
@@ -125,7 +125,7 @@ class CloudflareAnalyticsService {
       'result_count': resultCount,
     });
   }
-  
+
   /// Track error
   Future<void> trackError({
     required String errorType,
@@ -140,19 +140,19 @@ class CloudflareAnalyticsService {
       'context': context,
     });
   }
-  
+
   /// Track session duration on app close
   Future<void> trackSessionEnd() async {
     if (_sessionStart != null) {
       final duration = DateTime.now().difference(_sessionStart!);
-      
+
       await trackEvent('session_end', properties: {
         'duration_seconds': duration.inSeconds,
         'duration_minutes': duration.inMinutes,
       });
     }
   }
-  
+
   /// Track performance metric
   Future<void> trackPerformance({
     required String metricName,
@@ -165,14 +165,14 @@ class CloudflareAnalyticsService {
       'metadata': metadata,
     });
   }
-  
+
   /// Track feature usage
   Future<void> trackFeatureUsage(String featureName) async {
     await trackEvent('feature_usage', properties: {
       'feature_name': featureName,
     });
   }
-  
+
   /// Track user engagement
   Future<void> trackEngagement({
     required String actionType,
@@ -185,18 +185,20 @@ class CloudflareAnalyticsService {
       'metadata': metadata,
     });
   }
-  
+
   // Private: Send analytics to backend (non-blocking)
   void _sendAnalytics(Map<String, dynamic> data) {
     // Fire and forget - don't wait for response
-    http.post(
+    http
+        .post(
       Uri.parse(_analyticsEndpoint),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ${ApiConfig.cloudflareApiToken}',
       },
       body: json.encode(data),
-    ).timeout(
+    )
+        .timeout(
       const Duration(seconds: 5),
       onTimeout: () {
         // Silently fail - analytics shouldn't block app
@@ -210,12 +212,12 @@ class CloudflareAnalyticsService {
       return http.Response('error', 500);
     });
   }
-  
+
   // Private: Generate unique session ID
   String _generateSessionId() {
     return 'session_${DateTime.now().millisecondsSinceEpoch}_${_userId ?? "anon"}';
   }
-  
+
   // Private: Get platform info
   String _getPlatform() {
     if (kIsWeb) {
@@ -230,7 +232,6 @@ class CloudflareAnalyticsService {
   }
 }
 
-
 /// 🐛 CRASH REPORTER
 /// Simple crash reporting without Firebase
 
@@ -238,9 +239,9 @@ class CrashReporter {
   static final CrashReporter _instance = CrashReporter._internal();
   factory CrashReporter() => _instance;
   CrashReporter._internal();
-  
+
   final CloudflareAnalyticsService _analytics = CloudflareAnalyticsService();
-  
+
   /// Report a crash/error
   Future<void> reportError({
     required dynamic error,
@@ -257,13 +258,13 @@ class CrashReporter {
         'additional_info': additionalInfo,
         'timestamp': DateTime.now().toIso8601String(),
       };
-      
+
       if (kDebugMode) {
         debugPrint('🐛 Crash Report:');
         debugPrint('   Error: ${error.toString()}');
         debugPrint('   Context: $context');
       }
-      
+
       // Send to analytics as error event
       await _analytics.trackError(
         errorType: error.runtimeType.toString(),
@@ -271,10 +272,9 @@ class CrashReporter {
         stackTrace: stackTrace.toString(),
         context: context,
       );
-      
+
       // Also log to backend crash endpoint
       _sendCrashReport(errorInfo);
-      
     } catch (e) {
       // Silently fail - don't crash while reporting crash
       if (kDebugMode) {
@@ -282,7 +282,7 @@ class CrashReporter {
       }
     }
   }
-  
+
   /// Report a non-fatal error
   Future<void> reportNonFatal({
     required String message,
@@ -295,21 +295,24 @@ class CrashReporter {
       'additional_info': additionalInfo,
     });
   }
-  
+
   // Private: Send crash to backend
   void _sendCrashReport(Map<String, dynamic> data) {
     final endpoint = '${ApiConfig.baseUrl}/crashes';
-    
-    http.post(
-      Uri.parse(endpoint),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${ApiConfig.cloudflareApiToken}',
-      },
-      body: json.encode(data),
-    ).timeout(
-      const Duration(seconds: 5),
-    ).catchError((e) {
+
+    http
+        .post(
+          Uri.parse(endpoint),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${ApiConfig.cloudflareApiToken}',
+          },
+          body: json.encode(data),
+        )
+        .timeout(
+          const Duration(seconds: 5),
+        )
+        .catchError((e) {
       // Silently fail
       if (kDebugMode) {
         debugPrint('⚠️ Crash report send failed: $e');
@@ -319,7 +322,6 @@ class CrashReporter {
   }
 }
 
-
 /// 📊 PERFORMANCE TRACKER
 /// Track app performance metrics
 
@@ -327,19 +329,19 @@ class PerformanceTracker {
   static final PerformanceTracker _instance = PerformanceTracker._internal();
   factory PerformanceTracker() => _instance;
   PerformanceTracker._internal();
-  
+
   final CloudflareAnalyticsService _analytics = CloudflareAnalyticsService();
   final Map<String, DateTime> _startTimes = {};
-  
+
   /// Start tracking a performance metric
   void startTrace(String traceName) {
     _startTimes[traceName] = DateTime.now();
-    
+
     if (kDebugMode) {
       debugPrint('⏱️ Performance trace started: $traceName');
     }
   }
-  
+
   /// Stop tracking and report
   Future<void> stopTrace(
     String traceName, {
@@ -352,21 +354,22 @@ class PerformanceTracker {
       }
       return;
     }
-    
+
     final duration = DateTime.now().difference(startTime);
     _startTimes.remove(traceName);
-    
+
     if (kDebugMode) {
-      debugPrint('⏱️ Performance trace completed: $traceName (${duration.inMilliseconds}ms)');
+      debugPrint(
+          '⏱️ Performance trace completed: $traceName (${duration.inMilliseconds}ms)');
     }
-    
+
     await _analytics.trackPerformance(
       metricName: traceName,
       durationMs: duration.inMilliseconds,
       metadata: metadata,
     );
   }
-  
+
   /// Track a metric directly
   Future<void> trackMetric({
     required String metricName,

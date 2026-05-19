@@ -282,9 +282,8 @@ class _SkillTreeScreenState extends State<SkillTreeScreen>
           child: AnimatedBuilder(
             animation: _pulseAnim,
             builder: (ctx, child) {
-              final glowAlpha = canUnlock && !isUnlocked
-                  ? _pulseAnim.value * 0.3
-                  : 0.0;
+              final glowAlpha =
+                  canUnlock && !isUnlocked ? _pulseAnim.value * 0.3 : 0.0;
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -405,8 +404,8 @@ class _SkillTreeScreenState extends State<SkillTreeScreen>
                           Text(
                             def.descriptionDe,
                             style: TextStyle(
-                              color: Colors.white.withValues(
-                                  alpha: isLocked ? 0.2 : 0.5),
+                              color: Colors.white
+                                  .withValues(alpha: isLocked ? 0.2 : 0.5),
                               fontSize: 12,
                             ),
                           ),
@@ -422,7 +421,9 @@ class _SkillTreeScreenState extends State<SkillTreeScreen>
                                 ),
                               ),
                             ),
-                          if (isUnlocked && node != null && node.level < def.maxLevel)
+                          if (isUnlocked &&
+                              node != null &&
+                              node.level < def.maxLevel)
                             Padding(
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
@@ -527,4 +528,3 @@ class _SkillTreeScreenState extends State<SkillTreeScreen>
     }
   }
 }
-

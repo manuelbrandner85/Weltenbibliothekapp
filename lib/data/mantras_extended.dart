@@ -5,14 +5,14 @@ library;
 
 class MantraEntry {
   final String id;
-  final String sanskrit;       // ॐ नमः शिवाय
-  final String translit;        // Om Namah Shivaya
-  final String pronunciation;   // Om Nah-mah Shi-vai-ah
+  final String sanskrit; // ॐ नमः शिवाय
+  final String translit; // Om Namah Shivaya
+  final String pronunciation; // Om Nah-mah Shi-vai-ah
   final String simpleTranslation; // Verneigung vor Shiva (Bewusstsein)
   final String beginnerExplanation; // Was bedeutet das fuer mich?
-  final List<String> effects;   // 'Beruhigung','Mut','Konzentration'
+  final List<String> effects; // 'Beruhigung','Mut','Konzentration'
   final List<String> situations; // 'Vor Auftritt','Beim Einschlafen'
-  final int? recommendedReps;   // 9/27/54/108
+  final int? recommendedReps; // 9/27/54/108
   final String emoji;
 
   const MantraEntry({
@@ -40,9 +40,13 @@ const List<MantraEntry> mantraLibrary = [
         'weisst womit anfangen: nimm OM. Drei Klangphasen (Aa-Uu-Mmm) entsprechen '
         'Schoepfung, Erhaltung, Aufloesung. Jeder kann OM toenen -- selbst leise '
         'gedacht wirkt es.',
-    effects: ['Beruhigung','Erdung','Meditation','Klarheit'],
-    situations: ['Beim Einschlafen','Vor Meditation','Bei innerer Unruhe',
-        'Beim Spazieren'],
+    effects: ['Beruhigung', 'Erdung', 'Meditation', 'Klarheit'],
+    situations: [
+      'Beim Einschlafen',
+      'Vor Meditation',
+      'Bei innerer Unruhe',
+      'Beim Spazieren'
+    ],
     recommendedReps: 108,
     emoji: '🕉️',
   ),
@@ -55,9 +59,14 @@ const List<MantraEntry> mantraLibrary = [
     beginnerExplanation: 'Das natuerliche Atem-Mantra. Beim Einatmen denkst du '
         '"So", beim Ausatmen "Ham". Dein Atem macht das ohnehin schon -- du '
         'machst es nur bewusst. Perfekt fuer Anfaenger und beim Einschlafen.',
-    effects: ['Beruhigung','Schlaf','Atemarbeit','Sanfte Praxis'],
-    situations: ['Beim Einschlafen','Bei Schlafproblemen','In der U-Bahn',
-        'Bei Angst-Wellen','Vor schwerem Gespraech'],
+    effects: ['Beruhigung', 'Schlaf', 'Atemarbeit', 'Sanfte Praxis'],
+    situations: [
+      'Beim Einschlafen',
+      'Bei Schlafproblemen',
+      'In der U-Bahn',
+      'Bei Angst-Wellen',
+      'Vor schwerem Gespraech'
+    ],
     recommendedReps: 27,
     emoji: '🌬️',
   ),
@@ -71,9 +80,13 @@ const List<MantraEntry> mantraLibrary = [
         'Gott "da oben", sondern das reine Bewusstsein in dir. Du verneigst '
         'dich vor deinem eigenen tiefsten Wesen. Wirkt transformativ bei '
         'tiefen Lebensumbruechen.',
-    effects: ['Transformation','Loslassen','Mut','Spirituelle Vertiefung'],
-    situations: ['Bei Lebenswende','Nach Trennung','Vor wichtiger Entscheidung',
-        'Bei Sinnsuche'],
+    effects: ['Transformation', 'Loslassen', 'Mut', 'Spirituelle Vertiefung'],
+    situations: [
+      'Bei Lebenswende',
+      'Nach Trennung',
+      'Vor wichtiger Entscheidung',
+      'Bei Sinnsuche'
+    ],
     recommendedReps: 108,
     emoji: '🔱',
   ),
@@ -87,9 +100,14 @@ const List<MantraEntry> mantraLibrary = [
         'Du rufst die Qualitaet des Mitgefuehls in dir wach -- fuer dich und '
         'fuer andere. Besonders schoen wenn du wuetend, urteilend oder hart '
         'gegen dich selbst bist.',
-    effects: ['Mitgefuehl','Selbstmitgefuehl','Versoehnung','Sanftheit'],
-    situations: ['Bei Streit','Bei Selbstkritik','Bei Trauer',
-        'Beim Gehen mit anderen','Vor Versoehnungs-Gespraech'],
+    effects: ['Mitgefuehl', 'Selbstmitgefuehl', 'Versoehnung', 'Sanftheit'],
+    situations: [
+      'Bei Streit',
+      'Bei Selbstkritik',
+      'Bei Trauer',
+      'Beim Gehen mit anderen',
+      'Vor Versoehnungs-Gespraech'
+    ],
     recommendedReps: 108,
     emoji: '🪷',
   ),
@@ -102,9 +120,13 @@ const List<MantraEntry> mantraLibrary = [
     beginnerExplanation: 'Das aelteste und ehrwuerdigste Mantra der vedischen '
         'Tradition. Du rufst das Licht der Sonne in deinen Geist. '
         'Klassisch bei Sonnenaufgang gesungen. Wirkt klaerend und erhebend.',
-    effects: ['Klarheit','Erleuchtung','Konzentration','Morgenenergie'],
-    situations: ['Morgens beim Aufstehen','Vor Pruefung','Vor wichtiger Arbeit',
-        'Beim Lernen'],
+    effects: ['Klarheit', 'Erleuchtung', 'Konzentration', 'Morgenenergie'],
+    situations: [
+      'Morgens beim Aufstehen',
+      'Vor Pruefung',
+      'Vor wichtiger Arbeit',
+      'Beim Lernen'
+    ],
     recommendedReps: 27,
     emoji: '☀️',
   ),
@@ -117,9 +139,14 @@ const List<MantraEntry> mantraLibrary = [
     beginnerExplanation: 'Vor jedem Neubeginn klassisch gesungen. Ganesha (der '
         'Elefantenkopf-Gott) steht fuer die Beseitigung von Hindernissen. '
         'Innerlich gesehen: du raeumst innere Blockaden weg.',
-    effects: ['Neuanfang','Hindernis-Loesung','Mut','Klarheit'],
-    situations: ['Vor neuem Projekt','Vor Geschaeftsstart','Bei Blockade',
-        'Vor Job-Wechsel','Vor Umzug'],
+    effects: ['Neuanfang', 'Hindernis-Loesung', 'Mut', 'Klarheit'],
+    situations: [
+      'Vor neuem Projekt',
+      'Vor Geschaeftsstart',
+      'Bei Blockade',
+      'Vor Job-Wechsel',
+      'Vor Umzug'
+    ],
     recommendedReps: 108,
     emoji: '🐘',
   ),
@@ -129,12 +156,17 @@ const List<MantraEntry> mantraLibrary = [
     translit: 'Om Shanti Shanti Shanti',
     pronunciation: 'Om Shaaan-ti Shaaan-ti Shaaan-ti',
     simpleTranslation: 'Friede in Koerper, Geist und Seele',
-    beginnerExplanation: 'Friedens-Mantra. Drei Shanti = Friede auf drei Ebenen '
+    beginnerExplanation:
+        'Friedens-Mantra. Drei Shanti = Friede auf drei Ebenen '
         '(Koerper, Geist, Seele). Ideal als Abschluss von Meditation oder '
         'wenn du zur Ruhe kommen willst.',
-    effects: ['Friede','Beruhigung','Abschluss','Sanftheit'],
-    situations: ['Nach stressigem Tag','Vor dem Schlafen',
-        'Nach Streit','Als Meditations-Abschluss'],
+    effects: ['Friede', 'Beruhigung', 'Abschluss', 'Sanftheit'],
+    situations: [
+      'Nach stressigem Tag',
+      'Vor dem Schlafen',
+      'Nach Streit',
+      'Als Meditations-Abschluss'
+    ],
     recommendedReps: 9,
     emoji: '🕊️',
   ),
@@ -147,9 +179,13 @@ const List<MantraEntry> mantraLibrary = [
     beginnerExplanation: 'Wunsch fuer alle Wesen. Du sendest gutes mit deinem '
         'Atem in die Welt. Wirkt erstaunlich tief auch fuer dich selbst -- '
         'wenn du Gluck wuenscht, wirst du selbst empfaenglicher dafuer.',
-    effects: ['Mitgefuehl','Verbundenheit','Freude','Grosszuegigkeit'],
-    situations: ['Wenn du einsam bist','Bei Frust mit anderen',
-        'Beim Beten','Bei Naturwanderung'],
+    effects: ['Mitgefuehl', 'Verbundenheit', 'Freude', 'Grosszuegigkeit'],
+    situations: [
+      'Wenn du einsam bist',
+      'Bei Frust mit anderen',
+      'Beim Beten',
+      'Bei Naturwanderung'
+    ],
     recommendedReps: 27,
     emoji: '🌍',
   ),
@@ -163,9 +199,12 @@ const List<MantraEntry> mantraLibrary = [
     beginnerExplanation: 'Kundalini-Yoga-Mantra. Sehr direkt: du erinnerst '
         'dich daran, dass dein innerstes Wesen wahr und echt ist. Bei '
         'Unsicherheit ueber dich selbst sehr klaerend.',
-    effects: ['Authentizitaet','Selbstvertrauen','Klarheit'],
-    situations: ['Vor wichtigem Gespraech','Bei Selbstzweifel',
-        'Morgens als Affirmation'],
+    effects: ['Authentizitaet', 'Selbstvertrauen', 'Klarheit'],
+    situations: [
+      'Vor wichtigem Gespraech',
+      'Bei Selbstzweifel',
+      'Morgens als Affirmation'
+    ],
     recommendedReps: 27,
     emoji: '💫',
   ),
@@ -178,9 +217,13 @@ const List<MantraEntry> mantraLibrary = [
     beginnerExplanation: 'Klassisches Wohlstands- und Fuelle-Mantra. Lakshmi '
         'steht fuer Reichtum in allen Formen -- Liebe, Gesundheit, materiell. '
         'Bei chronischer Mangel-Stimmung sehr nuetzlich.',
-    effects: ['Wohlstand','Fuelle','Empfaenglichkeit','Dankbarkeit'],
-    situations: ['Bei Geldsorgen','Vor Verhandlungen','Bei Karriere-Themen',
-        'Beim Vision-Boarding'],
+    effects: ['Wohlstand', 'Fuelle', 'Empfaenglichkeit', 'Dankbarkeit'],
+    situations: [
+      'Bei Geldsorgen',
+      'Vor Verhandlungen',
+      'Bei Karriere-Themen',
+      'Beim Vision-Boarding'
+    ],
     recommendedReps: 108,
     emoji: '💰',
   ),
@@ -193,9 +236,13 @@ const List<MantraEntry> mantraLibrary = [
     beginnerExplanation: 'Tibetisches Mantra der Gruenen Tara. Sie ist die '
         'schnelle, mitfuehlende Beschuetzerin. Bei akuter Angst oder Panik '
         'sehr stark.',
-    effects: ['Schutz','Mut','Angstaufloesung','Sanftheit'],
-    situations: ['Bei Angstattacke','Bei Reise-Angst','Bei Krankheit',
-        'Bei Gefahr'],
+    effects: ['Schutz', 'Mut', 'Angstaufloesung', 'Sanftheit'],
+    situations: [
+      'Bei Angstattacke',
+      'Bei Reise-Angst',
+      'Bei Krankheit',
+      'Bei Gefahr'
+    ],
     recommendedReps: 108,
     emoji: '🛡️',
   ),
@@ -208,9 +255,13 @@ const List<MantraEntry> mantraLibrary = [
     beginnerExplanation: 'Sikh-Mantra des Staunens. "Wahe" ist der Ausruf von '
         'Wow -- das tiefe Staunen vor dem Wunder des Lebens. Wenn du in '
         'Trockenheit lebst, erweckt es Lebendigkeit.',
-    effects: ['Freude','Staunen','Ekstase','Lebendigkeit'],
-    situations: ['Bei depressiver Stimmung','Bei Routine-Stress',
-        'Beim Naturerlebnis','Vor wichtigem Erlebnis'],
+    effects: ['Freude', 'Staunen', 'Ekstase', 'Lebendigkeit'],
+    situations: [
+      'Bei depressiver Stimmung',
+      'Bei Routine-Stress',
+      'Beim Naturerlebnis',
+      'Vor wichtigem Erlebnis'
+    ],
     recommendedReps: 27,
     emoji: '✨',
   ),
@@ -245,25 +296,60 @@ List<MantraEntry> mantrasForSituation(String s) =>
 // ── 21-Tage-Beruhigungs-Praxis ────────────────────────────────────────
 // Bereich M6: Anfaenger-Plan, leichte Steigerung.
 const List<Map<String, String>> mantraJourney21Days = [
-  {'day':'1','mantra':'om','focus':'Erste Beruehrung','reps':'9'},
-  {'day':'2','mantra':'om','focus':'Atem spueren','reps':'9'},
-  {'day':'3','mantra':'soham','focus':'Atem als Mantra','reps':'27'},
-  {'day':'4','mantra':'soham','focus':'Beim Einschlafen','reps':'27'},
-  {'day':'5','mantra':'shanti','focus':'Frieden-Schluss','reps':'9'},
-  {'day':'6','mantra':'om','focus':'Vor dem Frueh-stueck','reps':'27'},
-  {'day':'7','mantra':'soham','focus':'7-Tage-Reflexion','reps':'27'},
-  {'day':'8','mantra':'manipadme','focus':'Selbstmitgefuehl','reps':'27'},
-  {'day':'9','mantra':'manipadme','focus':'Anderen wohlgesonnen','reps':'27'},
-  {'day':'10','mantra':'lokah','focus':'Wuensche fuer alle','reps':'27'},
-  {'day':'11','mantra':'om','focus':'Vertiefen','reps':'54'},
-  {'day':'12','mantra':'soham','focus':'Stille zwischen Atem','reps':'54'},
-  {'day':'13','mantra':'shanti','focus':'Friede mit dem Tag','reps':'27'},
-  {'day':'14','mantra':'manipadme','focus':'2-Wochen-Reflexion','reps':'54'},
-  {'day':'15','mantra':'om-tare','focus':'Schutz fuer dich','reps':'27'},
-  {'day':'16','mantra':'lokah','focus':'Welt-Heilsformel','reps':'27'},
-  {'day':'17','mantra':'wahe-guru','focus':'Staunen','reps':'27'},
-  {'day':'18','mantra':'soham','focus':'Tiefer Atem','reps':'108'},
-  {'day':'19','mantra':'manipadme','focus':'Volles Mitgefuehl','reps':'108'},
-  {'day':'20','mantra':'om','focus':'Mit allem verbunden','reps':'108'},
-  {'day':'21','mantra':'shanti','focus':'Abschluss & Friede','reps':'108'},
+  {'day': '1', 'mantra': 'om', 'focus': 'Erste Beruehrung', 'reps': '9'},
+  {'day': '2', 'mantra': 'om', 'focus': 'Atem spueren', 'reps': '9'},
+  {'day': '3', 'mantra': 'soham', 'focus': 'Atem als Mantra', 'reps': '27'},
+  {'day': '4', 'mantra': 'soham', 'focus': 'Beim Einschlafen', 'reps': '27'},
+  {'day': '5', 'mantra': 'shanti', 'focus': 'Frieden-Schluss', 'reps': '9'},
+  {'day': '6', 'mantra': 'om', 'focus': 'Vor dem Frueh-stueck', 'reps': '27'},
+  {'day': '7', 'mantra': 'soham', 'focus': '7-Tage-Reflexion', 'reps': '27'},
+  {
+    'day': '8',
+    'mantra': 'manipadme',
+    'focus': 'Selbstmitgefuehl',
+    'reps': '27'
+  },
+  {
+    'day': '9',
+    'mantra': 'manipadme',
+    'focus': 'Anderen wohlgesonnen',
+    'reps': '27'
+  },
+  {'day': '10', 'mantra': 'lokah', 'focus': 'Wuensche fuer alle', 'reps': '27'},
+  {'day': '11', 'mantra': 'om', 'focus': 'Vertiefen', 'reps': '54'},
+  {
+    'day': '12',
+    'mantra': 'soham',
+    'focus': 'Stille zwischen Atem',
+    'reps': '54'
+  },
+  {
+    'day': '13',
+    'mantra': 'shanti',
+    'focus': 'Friede mit dem Tag',
+    'reps': '27'
+  },
+  {
+    'day': '14',
+    'mantra': 'manipadme',
+    'focus': '2-Wochen-Reflexion',
+    'reps': '54'
+  },
+  {'day': '15', 'mantra': 'om-tare', 'focus': 'Schutz fuer dich', 'reps': '27'},
+  {'day': '16', 'mantra': 'lokah', 'focus': 'Welt-Heilsformel', 'reps': '27'},
+  {'day': '17', 'mantra': 'wahe-guru', 'focus': 'Staunen', 'reps': '27'},
+  {'day': '18', 'mantra': 'soham', 'focus': 'Tiefer Atem', 'reps': '108'},
+  {
+    'day': '19',
+    'mantra': 'manipadme',
+    'focus': 'Volles Mitgefuehl',
+    'reps': '108'
+  },
+  {'day': '20', 'mantra': 'om', 'focus': 'Mit allem verbunden', 'reps': '108'},
+  {
+    'day': '21',
+    'mantra': 'shanti',
+    'focus': 'Abschluss & Friede',
+    'reps': '108'
+  },
 ];

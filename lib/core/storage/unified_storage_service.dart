@@ -1,5 +1,5 @@
 /// 💾 UNIFIED STORAGE SERVICE - Universal Storage API
-/// 
+///
 /// Provides a unified interface for all storage operations.
 /// Works with Hive and SharedPreferences for local storage.
 library;
@@ -12,7 +12,8 @@ import '../../services/sqlite_storage_service.dart';
 /// 📦 UNIFIED STORAGE SERVICE
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 class UnifiedStorageService {
-  static final UnifiedStorageService _instance = UnifiedStorageService._internal();
+  static final UnifiedStorageService _instance =
+      UnifiedStorageService._internal();
   factory UnifiedStorageService() => _instance;
   UnifiedStorageService._internal();
 
@@ -44,7 +45,8 @@ class UnifiedStorageService {
   /// Get username for world
   String? getUsername(String world) {
     try {
-      return SqliteStorageService.instance.getSync('user_data', 'username_$world') as String?;
+      return SqliteStorageService.instance
+          .getSync('user_data', 'username_$world') as String?;
     } catch (e) {
       debugPrint('❌ Error getting username: $e');
       return null;
@@ -54,7 +56,8 @@ class UnifiedStorageService {
   /// Get user role for world
   String? getRole(String world) {
     try {
-      return SqliteStorageService.instance.getSync('user_data', 'role_$world') as String?;
+      return SqliteStorageService.instance.getSync('user_data', 'role_$world')
+          as String?;
     } catch (e) {
       debugPrint('❌ Error getting role: $e');
       return 'user'; // Default role
@@ -64,7 +67,8 @@ class UnifiedStorageService {
   /// Get user profile for world
   Map<String, dynamic>? getProfile(String world) {
     try {
-      final data = SqliteStorageService.instance.getSync('user_data', 'profile_$world');
+      final data =
+          SqliteStorageService.instance.getSync('user_data', 'profile_$world');
       return data != null ? Map<String, dynamic>.from(data as Map) : null;
     } catch (e) {
       debugPrint('❌ Error getting profile: $e');
@@ -117,8 +121,10 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return;
 
-      final bookmarkId = bookmark['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString();
-      await SqliteStorageService.instance.put('bookmarks_$userId', bookmarkId, bookmark);
+      final bookmarkId = bookmark['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString();
+      await SqliteStorageService.instance
+          .put('bookmarks_$userId', bookmarkId, bookmark);
       debugPrint('✅ Bookmark added: $bookmarkId');
     } catch (e) {
       debugPrint('❌ Error adding bookmark: $e');
@@ -131,7 +137,8 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return;
 
-      await SqliteStorageService.instance.delete('bookmarks_$userId', bookmarkId);
+      await SqliteStorageService.instance
+          .delete('bookmarks_$userId', bookmarkId);
       debugPrint('✅ Bookmark removed: $bookmarkId');
     } catch (e) {
       debugPrint('❌ Error removing bookmark: $e');
@@ -164,9 +171,11 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return;
 
-      final itemId = item['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final itemId = item['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString();
       item['timestamp'] = DateTime.now().toIso8601String();
-      await SqliteStorageService.instance.put('reading_history_$userId', itemId, item);
+      await SqliteStorageService.instance
+          .put('reading_history_$userId', itemId, item);
       debugPrint('✅ Added to reading history: $itemId');
     } catch (e) {
       debugPrint('❌ Error adding to reading history: $e');
@@ -230,7 +239,8 @@ class UnifiedStorageService {
   }
 
   /// Save notification preference (String value)
-  Future<void> saveNotificationPreferenceString(String key, String value) async {
+  Future<void> saveNotificationPreferenceString(
+      String key, String value) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('notif_$key', value);

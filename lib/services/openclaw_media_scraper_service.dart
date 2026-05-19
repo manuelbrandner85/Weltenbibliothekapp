@@ -1,12 +1,12 @@
 /// 🦞 OpenClaw Media Scraper Service
-/// 
+///
 /// Intelligentes Scraping für alle Medientypen:
 /// - 🖼️ Bilder (JPEG, PNG, WebP, GIF, SVG)
 /// - 📄 PDFs (Dokumente, Reports, Papers)
 /// - 🎥 Videos (MP4, WebM, MKV, AVI)
 /// - 🎵 Audio (MP3, WAV, OGG, M4A)
 /// - 🌐 Web-Content (HTML, XML, JSON)
-/// 
+///
 /// Features:
 /// - KI-gestützte Content-Extraktion
 /// - Format-Konvertierung
@@ -23,7 +23,8 @@ import '../config/api_config.dart';
 
 /// OpenClaw Media Scraper für intelligentes Content-Scraping
 class OpenClawMediaScraperService {
-  static final OpenClawMediaScraperService _instance = OpenClawMediaScraperService._internal();
+  static final OpenClawMediaScraperService _instance =
+      OpenClawMediaScraperService._internal();
   factory OpenClawMediaScraperService() => _instance;
   OpenClawMediaScraperService._internal();
 
@@ -40,14 +41,14 @@ class OpenClawMediaScraperService {
   // ════════════════════════════════════════════════════════════
 
   /// Scrapt und optimiert Bilder mit OpenClaw
-  /// 
+  ///
   /// Features:
   /// - Intelligente Qualitäts-Optimierung
   /// - Format-Konvertierung (WebP für Web)
   /// - Größen-Anpassung
   /// - Metadaten-Extraktion
   /// - Thumbnail-Generierung
-  /// 
+  ///
   /// Returns:
   /// {
   ///   'success': true,
@@ -84,26 +85,28 @@ class OpenClawMediaScraperService {
         debugPrint('🖼️ [OpenClaw Media] Scraping image: $url');
       }
 
-      final response = await http.post(
-        Uri.parse('$_gatewayUrl/media/scrape-image'),
-        headers: {
-          'Authorization': 'Bearer $_gatewayToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'url': url,
-          'max_width': maxWidth,
-          'max_height': maxHeight,
-          'format': format ?? 'webp',
-          'quality': quality,
-          'generate_thumbnail': true,
-          'extract_metadata': true,
-        }),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse('$_gatewayUrl/media/scrape-image'),
+            headers: {
+              'Authorization': 'Bearer $_gatewayToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'url': url,
+              'max_width': maxWidth,
+              'max_height': maxHeight,
+              'format': format ?? 'webp',
+              'quality': quality,
+              'generate_thumbnail': true,
+              'extract_metadata': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         // Cache speichern
         _mediaCache[cacheKey] = CachedMedia(
           data: {'service': 'openclaw', 'success': true, ...data},
@@ -134,8 +137,9 @@ class OpenClawMediaScraperService {
   /// Fallback: Direktes Bild-Download
   Future<Map<String, dynamic>> _fallbackImageDownload(String url) async {
     try {
-      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
-      
+      final response =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
+
       if (response.statusCode == 200) {
         return {
           'service': 'fallback',
@@ -164,14 +168,14 @@ class OpenClawMediaScraperService {
   // ════════════════════════════════════════════════════════════
 
   /// Scrapt und verarbeitet PDFs mit OpenClaw
-  /// 
+  ///
   /// Features:
   /// - Text-Extraktion
   /// - Metadaten-Extraktion (Autor, Titel, Seitenzahl)
   /// - Thumbnail-Generierung
   /// - Volltextsuche-Vorbereitung
   /// - Kompression
-  /// 
+  ///
   /// Returns:
   /// {
   ///   'success': true,
@@ -210,24 +214,26 @@ class OpenClawMediaScraperService {
         debugPrint('📄 [OpenClaw Media] Scraping PDF: $url');
       }
 
-      final response = await http.post(
-        Uri.parse('$_gatewayUrl/media/scrape-pdf'),
-        headers: {
-          'Authorization': 'Bearer $_gatewayToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'url': url,
-          'extract_text': extractText,
-          'generate_thumbnails': generateThumbnails,
-          'max_thumbnails': maxThumbnails,
-          'extract_metadata': true,
-        }),
-      ).timeout(const Duration(seconds: 60));
+      final response = await http
+          .post(
+            Uri.parse('$_gatewayUrl/media/scrape-pdf'),
+            headers: {
+              'Authorization': 'Bearer $_gatewayToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'url': url,
+              'extract_text': extractText,
+              'generate_thumbnails': generateThumbnails,
+              'max_thumbnails': maxThumbnails,
+              'extract_metadata': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         // Cache speichern
         _mediaCache[cacheKey] = CachedMedia(
           data: {'service': 'openclaw', 'success': true, ...data},
@@ -258,8 +264,9 @@ class OpenClawMediaScraperService {
   /// Fallback: Direktes PDF-Download
   Future<Map<String, dynamic>> _fallbackPDFDownload(String url) async {
     try {
-      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 30));
-      
+      final response =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 30));
+
       if (response.statusCode == 200) {
         return {
           'service': 'fallback',
@@ -287,14 +294,14 @@ class OpenClawMediaScraperService {
   // ════════════════════════════════════════════════════════════
 
   /// Scrapt und verarbeitet Videos mit OpenClaw
-  /// 
+  ///
   /// Features:
   /// - Format-Konvertierung (MP4 für Web)
   /// - Thumbnail-Generierung
   /// - Metadaten-Extraktion
   /// - Untertitel-Extraktion
   /// - Kompression/Optimierung
-  /// 
+  ///
   /// Returns:
   /// {
   ///   'success': true,
@@ -332,25 +339,27 @@ class OpenClawMediaScraperService {
         debugPrint('🎥 [OpenClaw Media] Scraping video: $url');
       }
 
-      final response = await http.post(
-        Uri.parse('$_gatewayUrl/media/scrape-video'),
-        headers: {
-          'Authorization': 'Bearer $_gatewayToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'url': url,
-          'format': format ?? 'mp4',
-          'max_width': maxWidth,
-          'max_height': maxHeight,
-          'generate_thumbnail': generateThumbnail,
-          'extract_metadata': true,
-        }),
-      ).timeout(const Duration(minutes: 5));
+      final response = await http
+          .post(
+            Uri.parse('$_gatewayUrl/media/scrape-video'),
+            headers: {
+              'Authorization': 'Bearer $_gatewayToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'url': url,
+              'format': format ?? 'mp4',
+              'max_width': maxWidth,
+              'max_height': maxHeight,
+              'generate_thumbnail': generateThumbnail,
+              'extract_metadata': true,
+            }),
+          )
+          .timeout(const Duration(minutes: 5));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         // Cache speichern
         _mediaCache[cacheKey] = CachedMedia(
           data: {'service': 'openclaw', 'success': true, ...data},
@@ -388,14 +397,14 @@ class OpenClawMediaScraperService {
   // ════════════════════════════════════════════════════════════
 
   /// Scrapt und verarbeitet Audio mit OpenClaw
-  /// 
+  ///
   /// Features:
   /// - Format-Konvertierung (MP3 für Web)
   /// - Qualitäts-Optimierung
   /// - Metadaten-Extraktion (ID3 Tags)
   /// - Waveform-Generierung
   /// - Transkription (optional)
-  /// 
+  ///
   /// Returns:
   /// {
   ///   'success': true,
@@ -436,25 +445,27 @@ class OpenClawMediaScraperService {
         debugPrint('🎵 [OpenClaw Media] Scraping audio: $url');
       }
 
-      final response = await http.post(
-        Uri.parse('$_gatewayUrl/media/scrape-audio'),
-        headers: {
-          'Authorization': 'Bearer $_gatewayToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'url': url,
-          'format': format ?? 'mp3',
-          'bitrate': bitrate,
-          'generate_waveform': generateWaveform,
-          'transcribe': transcribe,
-          'extract_metadata': true,
-        }),
-      ).timeout(const Duration(minutes: 3));
+      final response = await http
+          .post(
+            Uri.parse('$_gatewayUrl/media/scrape-audio'),
+            headers: {
+              'Authorization': 'Bearer $_gatewayToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'url': url,
+              'format': format ?? 'mp3',
+              'bitrate': bitrate,
+              'generate_waveform': generateWaveform,
+              'transcribe': transcribe,
+              'extract_metadata': true,
+            }),
+          )
+          .timeout(const Duration(minutes: 3));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         // Cache speichern
         _mediaCache[cacheKey] = CachedMedia(
           data: {'service': 'openclaw', 'success': true, ...data},
@@ -492,7 +503,7 @@ class OpenClawMediaScraperService {
   // ════════════════════════════════════════════════════════════
 
   /// Scrapt und extrahiert Web-Content mit OpenClaw
-  /// 
+  ///
   /// Features:
   /// - Intelligente Content-Extraktion
   /// - HTML→Markdown Konvertierung
@@ -510,28 +521,32 @@ class OpenClawMediaScraperService {
         debugPrint('🌐 [OpenClaw Media] Scraping web content: $url');
       }
 
-      final response = await http.post(
-        Uri.parse('$_gatewayUrl/media/scrape-web'),
-        headers: {
-          'Authorization': 'Bearer $_gatewayToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'url': url,
-          'extract_images': extractImages,
-          'extract_videos': extractVideos,
-          'convert_to_markdown': convertToMarkdown,
-          'extract_metadata': true,
-        }),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse('$_gatewayUrl/media/scrape-web'),
+            headers: {
+              'Authorization': 'Bearer $_gatewayToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'url': url,
+              'extract_images': extractImages,
+              'extract_videos': extractVideos,
+              'convert_to_markdown': convertToMarkdown,
+              'extract_metadata': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (kDebugMode) {
           debugPrint('✅ [OpenClaw Media] Web content scraped');
-          debugPrint('   Images found: ${(data['images'] as List?)?.length ?? 0}');
-          debugPrint('   Videos found: ${(data['videos'] as List?)?.length ?? 0}');
+          debugPrint(
+              '   Images found: ${(data['images'] as List?)?.length ?? 0}');
+          debugPrint(
+              '   Videos found: ${(data['videos'] as List?)?.length ?? 0}');
         }
 
         return {
@@ -564,7 +579,7 @@ class OpenClawMediaScraperService {
   String _getFormatFromUrl(String url) {
     final uri = Uri.tryParse(url);
     if (uri == null) return 'unknown';
-    
+
     final path = uri.path.toLowerCase();
     if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'jpeg';
     if (path.endsWith('.png')) return 'png';
@@ -577,7 +592,7 @@ class OpenClawMediaScraperService {
     if (path.endsWith('.mp3')) return 'mp3';
     if (path.endsWith('.wav')) return 'wav';
     if (path.endsWith('.ogg')) return 'ogg';
-    
+
     return 'unknown';
   }
 

@@ -14,10 +14,10 @@ import 'sqlite_storage_service.dart';
 
 /// Mentor-Persönlichkeiten, eine pro Welt.
 enum MentorPersonality {
-  stratege,  // VORHANG — Machtanalyst, kalt-logisch
+  stratege, // VORHANG — Machtanalyst, kalt-logisch
   alchemist, // URSPRUNG — Bewusstseinsexperte, mystisch
-  heiler,    // ENERGIE — Empathisch, heilend
-  forscher,  // MATERIE — Wissenschaftlich, faktisch
+  heiler, // ENERGIE — Empathisch, heilend
+  forscher, // MATERIE — Wissenschaftlich, faktisch
 }
 
 /// Mapping Welt → Mentor-Persönlichkeit.
@@ -168,8 +168,8 @@ class InvestigationResult {
               .toList() ??
           [],
       sources: (json['sources'] as List<dynamic>?)
-              ?.map(
-                  (s) => InvestigationSource.fromJson(s as Map<String, dynamic>))
+              ?.map((s) =>
+                  InvestigationSource.fromJson(s as Map<String, dynamic>))
               .toList() ??
           [],
       relatedTopics: (json['relatedTopics'] as List<dynamic>?)
@@ -399,8 +399,8 @@ class MentorService {
       final raw = SqliteStorageService.instance.getSync(_boxName, world);
       if (raw == null) return [];
       final list = (raw as List<dynamic>)
-          .map((e) => MentorChatMessage.fromJson(
-              Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              MentorChatMessage.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
       return list;
     } catch (e) {
@@ -410,11 +410,13 @@ class MentorService {
   }
 
   /// Speichere Chat-Verlauf für eine Welt.
-  Future<void> saveHistory(String world, List<MentorChatMessage> messages) async {
+  Future<void> saveHistory(
+      String world, List<MentorChatMessage> messages) async {
     try {
       // Max 200 Nachrichten lokal speichern (ältere abschneiden)
-      final trimmed =
-          messages.length > 200 ? messages.sublist(messages.length - 200) : messages;
+      final trimmed = messages.length > 200
+          ? messages.sublist(messages.length - 200)
+          : messages;
       await SqliteStorageService.instance.put(
         _boxName,
         world,

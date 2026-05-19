@@ -186,9 +186,7 @@ class NumerologyPdfService {
           pw.SizedBox(height: 12),
           pw.Text('Deine Kern-Zahlen',
               style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
-                  color: dark)),
+                  fontSize: 20, fontWeight: pw.FontWeight.bold, color: dark)),
           pw.SizedBox(height: 16),
           pw.Wrap(
             spacing: 14,
@@ -233,9 +231,7 @@ class NumerologyPdfService {
           pw.SizedBox(height: 12),
           pw.Text('Zeitzyklen',
               style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
-                  color: dark)),
+                  fontSize: 20, fontWeight: pw.FontWeight.bold, color: dark)),
           pw.SizedBox(height: 14),
           _infoBox(
             title: 'Persoenliches Jahr: $personalYear',
@@ -268,9 +264,7 @@ class NumerologyPdfService {
           pw.SizedBox(height: 12),
           pw.Text('Inclusion Chart',
               style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
-                  color: dark)),
+                  fontSize: 20, fontWeight: pw.FontWeight.bold, color: dark)),
           pw.SizedBox(height: 6),
           pw.Text(
             'Wie oft jede Zahl 1-9 in deinem Namen vorkommt.',
@@ -334,9 +328,7 @@ class NumerologyPdfService {
             pw.SizedBox(height: 10),
             pw.Text('Karmische Lektionen',
                 style: pw.TextStyle(
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                    color: dark)),
+                    fontSize: 14, fontWeight: pw.FontWeight.bold, color: dark)),
             pw.SizedBox(height: 6),
             ...missing.map((n) => _infoBox(
                   title: 'Zahl $n fehlt',
@@ -360,9 +352,7 @@ class NumerologyPdfService {
           pw.SizedBox(height: 12),
           pw.Text('Brueckenzahlen',
               style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
-                  color: dark)),
+                  fontSize: 20, fontWeight: pw.FontWeight.bold, color: dark)),
           pw.SizedBox(height: 6),
           pw.Text(
             'Die Bruecke zwischen zwei Kernzahlen zeigt, welche Energie '
@@ -395,9 +385,7 @@ class NumerologyPdfService {
             pw.SizedBox(height: 12),
             pw.Text('Affirmationen fuer Lebenszahl $lifePath',
                 style: pw.TextStyle(
-                    fontSize: 20,
-                    fontWeight: pw.FontWeight.bold,
-                    color: dark)),
+                    fontSize: 20, fontWeight: pw.FontWeight.bold, color: dark)),
             pw.SizedBox(height: 14),
             ...affirmations.map(
               (a) => pw.Container(
@@ -452,8 +440,7 @@ class NumerologyPdfService {
                 color: accent,
               )),
           pw.SizedBox(height: 4),
-          pw.Text(body,
-              style: pw.TextStyle(fontSize: 11, color: dark)),
+          pw.Text(body, style: pw.TextStyle(fontSize: 11, color: dark)),
         ],
       ),
     );

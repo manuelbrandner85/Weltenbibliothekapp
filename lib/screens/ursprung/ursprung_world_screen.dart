@@ -28,7 +28,8 @@ class UrsprungWorldScreen extends ConsumerStatefulWidget {
   const UrsprungWorldScreen({super.key});
 
   @override
-  ConsumerState<UrsprungWorldScreen> createState() => _UrsprungWorldScreenState();
+  ConsumerState<UrsprungWorldScreen> createState() =>
+      _UrsprungWorldScreenState();
 }
 
 class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
@@ -134,7 +135,8 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
               activeIndex: _currentIndex,
               items: const [
                 WBFloatingNavItem(icon: Icons.home, label: 'Home'),
-                WBFloatingNavItem(icon: Icons.auto_awesome, label: 'Kaninchenbau'),
+                WBFloatingNavItem(
+                    icon: Icons.auto_awesome, label: 'Kaninchenbau'),
                 WBFloatingNavItem(icon: Icons.people, label: 'Community'),
                 WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
                 WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
@@ -147,7 +149,8 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
     );
   }
 
-  List<Widget> _buildAppBarActions(BuildContext context, AdminState adminState) {
+  List<Widget> _buildAppBarActions(
+      BuildContext context, AdminState adminState) {
     return [
       IconButton(
         tooltip: 'Suchen',
@@ -172,7 +175,8 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const StatsDashboardScreen(world: 'ursprung'),
+              builder: (context) =>
+                  const StatsDashboardScreen(world: 'ursprung'),
             ),
           );
         },

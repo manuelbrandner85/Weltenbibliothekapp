@@ -31,7 +31,8 @@ class _DailyPathWidgetState extends State<DailyPathWidget> {
       _error = false;
     });
     final mood = await AmbientService.instance.getMood();
-    final path = await AmbientService.instance.loadDailyPath(forceRefresh: force);
+    final path =
+        await AmbientService.instance.loadDailyPath(forceRefresh: force);
     if (!mounted) return;
     setState(() {
       _path = path;
@@ -88,7 +89,9 @@ class _DailyPathWidgetState extends State<DailyPathWidget> {
       child: _loading
           ? const _SkeletonView(key: ValueKey('loading'))
           : (_error || _path == null)
-              ? _ErrorView(key: const ValueKey('error'), onRetry: () => _load(force: true))
+              ? _ErrorView(
+                  key: const ValueKey('error'),
+                  onRetry: () => _load(force: true))
               : _buildLoaded(_path!),
     );
   }
@@ -119,7 +122,8 @@ class _DailyPathWidgetState extends State<DailyPathWidget> {
               ),
               child: Row(
                 children: [
-                  Text(_weatherIcon(cond), style: const TextStyle(fontSize: 22)),
+                  Text(_weatherIcon(cond),
+                      style: const TextStyle(fontSize: 22)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -195,8 +199,9 @@ class _DailyPathWidgetState extends State<DailyPathWidget> {
                 scrollDirection: Axis.horizontal,
                 itemCount: p.activities.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (_, i) =>
-                    _ActivityCard(activity: p.activities[i], color: _worldColor(p.activities[i].world)),
+                itemBuilder: (_, i) => _ActivityCard(
+                    activity: p.activities[i],
+                    color: _worldColor(p.activities[i].world)),
               ),
             ),
           ],
@@ -296,19 +301,24 @@ class _ActivityCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   '${activity.durationMin} min',
-                  style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                      color: color, fontSize: 11, fontWeight: FontWeight.w500),
                 ),
                 if (activity.moduleCode != null) ...[
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       activity.moduleCode!,
-                      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -352,7 +362,9 @@ class _MoodPicker extends StatelessWidget {
                   : Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? Colors.amber : Colors.white.withValues(alpha: 0.1),
+                color: isSelected
+                    ? Colors.amber
+                    : Colors.white.withValues(alpha: 0.1),
                 width: isSelected ? 1.4 : 1,
               ),
             ),

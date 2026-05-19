@@ -34,33 +34,62 @@ const double _jdJ2000 = 2451545.0;
 
 /// Deutsche Namen der 12 Tierkreiszeichen, beginnend mit Widder.
 const List<String> zodiacNames = [
-  'Widder', 'Stier', 'Zwillinge', 'Krebs', 'Löwe', 'Jungfrau',
-  'Waage', 'Skorpion', 'Schütze', 'Steinbock', 'Wassermann', 'Fische',
+  'Widder',
+  'Stier',
+  'Zwillinge',
+  'Krebs',
+  'Löwe',
+  'Jungfrau',
+  'Waage',
+  'Skorpion',
+  'Schütze',
+  'Steinbock',
+  'Wassermann',
+  'Fische',
 ];
 
 /// Tierkreiszeichen-Symbole (UTF-8).
 const List<String> zodiacSymbols = [
-  '♈', '♉', '♊', '♋', '♌', '♍',
-  '♎', '♏', '♐', '♑', '♒', '♓',
+  '♈',
+  '♉',
+  '♊',
+  '♋',
+  '♌',
+  '♍',
+  '♎',
+  '♏',
+  '♐',
+  '♑',
+  '♒',
+  '♓',
 ];
 
 /// Element jedes Zeichens (Feuer, Erde, Luft, Wasser).
 const List<String> zodiacElements = [
-  'Feuer', 'Erde', 'Luft', 'Wasser',
-  'Feuer', 'Erde', 'Luft', 'Wasser',
-  'Feuer', 'Erde', 'Luft', 'Wasser',
+  'Feuer',
+  'Erde',
+  'Luft',
+  'Wasser',
+  'Feuer',
+  'Erde',
+  'Luft',
+  'Wasser',
+  'Feuer',
+  'Erde',
+  'Luft',
+  'Wasser',
 ];
 
 /// Mondphasen-Keys (identisch mit moon_rituals.moon_phase in Supabase).
 const List<String> moonPhaseKeys = [
-  'new_moon',          // 0°
-  'waxing_crescent',   // 0°–90°
-  'first_quarter',     // 90°
-  'waxing_gibbous',    // 90°–180°
-  'full_moon',         // 180°
-  'waning_gibbous',    // 180°–270°
-  'last_quarter',      // 270°
-  'waning_crescent',   // 270°–360°
+  'new_moon', // 0°
+  'waxing_crescent', // 0°–90°
+  'first_quarter', // 90°
+  'waxing_gibbous', // 90°–180°
+  'full_moon', // 180°
+  'waning_gibbous', // 180°–270°
+  'last_quarter', // 270°
+  'waning_crescent', // 270°–360°
 ];
 
 const Map<String, String> moonPhaseLabels = {
@@ -249,23 +278,31 @@ double moonEclipticLongitude(double jd) {
 
   // mittlere Mondlänge L'
   final lp = _norm360(218.3164477 +
-      t * (481267.88123421 - t * (0.0015786 - t / 538841.0 - t * t / 65194000.0)));
+      t *
+          (481267.88123421 -
+              t * (0.0015786 - t / 538841.0 - t * t / 65194000.0)));
 
   // mittlere Elongation D
   final d = _norm360(297.8501921 +
-      t * (445267.1114034 - t * (0.0018819 - t / 545868.0 - t * t / 113065000.0)));
+      t *
+          (445267.1114034 -
+              t * (0.0018819 - t / 545868.0 - t * t / 113065000.0)));
 
   // mittlere Anomalie der Sonne M
-  final m = _norm360(357.5291092 +
-      t * (35999.0502909 - t * (0.0001536 - t / 24490000.0)));
+  final m = _norm360(
+      357.5291092 + t * (35999.0502909 - t * (0.0001536 - t / 24490000.0)));
 
   // mittlere Anomalie des Mondes M'
   final mp = _norm360(134.9633964 +
-      t * (477198.8675055 + t * (0.0087414 + t / 69699.0 - t * t / 14712000.0)));
+      t *
+          (477198.8675055 +
+              t * (0.0087414 + t / 69699.0 - t * t / 14712000.0)));
 
   // Argument der Breite F
   final f = _norm360(93.272095 +
-      t * (483202.0175233 - t * (0.0036539 + t / 3526000.0 - t * t / 863310000.0)));
+      t *
+          (483202.0175233 -
+              t * (0.0036539 + t / 3526000.0 - t * t / 863310000.0)));
 
   // Exzentrizitäts-Korrekturfaktor E (für M, 2M)
   final e = 1 - 0.002516 * t - 0.0000074 * t * t;
@@ -277,7 +314,8 @@ double moonEclipticLongitude(double jd) {
 
   double sumL = 0.0;
   for (final term in _moonLonTerms) {
-    final arg = term[0] * dRad + term[1] * mRad + term[2] * mpRad + term[3] * fRad;
+    final arg =
+        term[0] * dRad + term[1] * mRad + term[2] * mpRad + term[3] * fRad;
     double factor = 1.0;
     final absM = term[1].abs();
     if (absM == 1) factor = e;
@@ -447,20 +485,26 @@ double _moonPhaseJde(double k) {
   final e = 1 - 0.002516 * t - 0.0000074 * t2;
 
   // M – mittlere Anomalie der Sonne
-  final m = _norm360(2.5534 + 29.10535670 * k -
-      0.0000014 * t2 - 0.00000011 * t3);
+  final m =
+      _norm360(2.5534 + 29.10535670 * k - 0.0000014 * t2 - 0.00000011 * t3);
 
   // M' – mittlere Anomalie des Mondes
-  final mp = _norm360(201.5643 + 385.81693528 * k +
-      0.0107582 * t2 + 0.00001238 * t3 - 0.000000058 * t4);
+  final mp = _norm360(201.5643 +
+      385.81693528 * k +
+      0.0107582 * t2 +
+      0.00001238 * t3 -
+      0.000000058 * t4);
 
   // F – Argument der Breite
-  final f = _norm360(160.7108 + 390.67050284 * k -
-      0.0016118 * t2 - 0.00000227 * t3 + 0.000000011 * t4);
+  final f = _norm360(160.7108 +
+      390.67050284 * k -
+      0.0016118 * t2 -
+      0.00000227 * t3 +
+      0.000000011 * t4);
 
   // Ω – Knotenlänge
-  final om = _norm360(124.7746 - 1.56375588 * k +
-      0.0020672 * t2 + 0.00000215 * t3);
+  final om =
+      _norm360(124.7746 - 1.56375588 * k + 0.0020672 * t2 + 0.00000215 * t3);
 
   final mR = m * _deg2rad;
   final mpR = mp * _deg2rad;

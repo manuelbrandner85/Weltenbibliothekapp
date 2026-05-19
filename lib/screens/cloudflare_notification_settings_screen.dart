@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../services/cloudflare_push_service.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
@@ -81,7 +81,7 @@ class _CloudflareNotificationSettingsScreenState
   Future<void> _sendTestNotification() async {
     await _pushService.sendTestNotification();
     await _loadSettings(); // Reload to show new notification
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('🔔 Test-Benachrichtigung gesendet!')),
@@ -167,7 +167,8 @@ class _CloudflareNotificationSettingsScreenState
           const SizedBox(height: 12),
           Text(
             'Powered by Cloudflare Workers\nSchnell, zuverlässig & kostenlos',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
           ),
           const SizedBox(height: 12),
           Container(
@@ -201,7 +202,9 @@ class _CloudflareNotificationSettingsScreenState
       child: Row(
         children: [
           Icon(
-            _isSubscribed ? Icons.notifications_active : Icons.notifications_off,
+            _isSubscribed
+                ? Icons.notifications_active
+                : Icons.notifications_off,
             color: _isSubscribed ? Colors.green : Colors.grey,
             size: 32,
           ),
@@ -256,7 +259,7 @@ class _CloudflareNotificationSettingsScreenState
         ),
         ...CloudflarePushService.availableTopics.entries.map((entry) {
           final isSubscribed = _subscribedTopics.contains(entry.key);
-          
+
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
@@ -329,7 +332,8 @@ class _CloudflareNotificationSettingsScreenState
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.notifications_none, size: 48, color: Colors.grey[700]),
+                  Icon(Icons.notifications_none,
+                      size: 48, color: Colors.grey[700]),
                   const SizedBox(height: 12),
                   Text(
                     'Keine Benachrichtigungen',

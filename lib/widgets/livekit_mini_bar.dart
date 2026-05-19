@@ -152,8 +152,7 @@ class _MiniBarContent extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF4CAF50)
-                              .withValues(alpha: 0.6),
+                          color: const Color(0xFF4CAF50).withValues(alpha: 0.6),
                           blurRadius: 8,
                           spreadRadius: 1,
                         ),
@@ -183,9 +182,7 @@ class _MiniBarContent extends StatelessWidget {
                           style: TextStyle(
                             color: accent.withValues(alpha: 0.85),
                             fontSize: 11,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures()
-                            ],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ],
@@ -193,21 +190,17 @@ class _MiniBarContent extends StatelessWidget {
                   ),
                   // Mute-Button
                   IconButton(
-                    tooltip: svc.micEnabled
-                        ? 'Mikrofon stumm'
-                        : 'Mikrofon an',
+                    tooltip: svc.micEnabled ? 'Mikrofon stumm' : 'Mikrofon an',
                     icon: Icon(
                       svc.micEnabled
                           ? Icons.mic_rounded
                           : Icons.mic_off_rounded,
-                      color: svc.micEnabled
-                          ? Colors.white
-                          : Colors.white60,
+                      color: svc.micEnabled ? Colors.white : Colors.white60,
                       size: 20,
                     ),
                     onPressed: () => svc.toggleMicrophone(),
-                    constraints: const BoxConstraints(
-                        minWidth: 36, minHeight: 36),
+                    constraints:
+                        const BoxConstraints(minWidth: 36, minHeight: 36),
                     padding: EdgeInsets.zero,
                   ),
                   // Hangup-Button

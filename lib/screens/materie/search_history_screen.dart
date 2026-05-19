@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../../services/search_history_service.dart';
 import '../../models/search_history.dart';
 import '../../theme/wb_cinematic_tokens.dart';
@@ -7,7 +7,7 @@ import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
 
 /// Search History Screen v8.0
-/// 
+///
 /// Shows all past searches with:
 /// - Search functionality
 /// - Delete individual entries
@@ -24,7 +24,7 @@ class SearchHistoryScreen extends StatefulWidget {
 class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
   String _searchQuery = '';
   bool _showStats = false;
-  
+
   List<SearchHistoryEntry> get _filteredHistory {
     if (_searchQuery.isEmpty) {
       return SearchHistoryService.getAllHistory();
@@ -36,7 +36,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
   Widget build(BuildContext context) {
     final history = _filteredHistory;
     final stats = SearchHistoryService.getStatistics();
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
@@ -52,7 +52,8 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
           // Stats Toggle
           IconButton(
             icon: Icon(_showStats ? Icons.close : Icons.analytics),
-            tooltip: _showStats ? 'Statistiken ausblenden' : 'Statistiken anzeigen',
+            tooltip:
+                _showStats ? 'Statistiken ausblenden' : 'Statistiken anzeigen',
             onPressed: () {
               setState(() => _showStats = !_showStats);
             },
@@ -77,7 +78,8 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'In Historie suchen...',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                hintStyle:
+                    TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                 prefixIcon: const Icon(Icons.search, color: Colors.cyan),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -94,7 +96,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
               ),
             ),
           ),
-          
+
           // Statistics Card
           if (_showStats)
             Container(
@@ -117,13 +119,16 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildStatRow('Gesamt-Suchanfragen', '${stats['totalSearches']}'),
-                  _buildStatRow('Einzigartige Queries', '${stats['uniqueQueries']}'),
-                  _buildStatRow('Ø Ergebnisse', '${stats['averageResultCount']}'),
+                  _buildStatRow(
+                      'Gesamt-Suchanfragen', '${stats['totalSearches']}'),
+                  _buildStatRow(
+                      'Einzigartige Queries', '${stats['uniqueQueries']}'),
+                  _buildStatRow(
+                      'Ø Ergebnisse', '${stats['averageResultCount']}'),
                 ],
               ),
             ),
-          
+
           // History List
           Expanded(
             child: history.isEmpty
@@ -244,7 +249,7 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
   Future<void> _deleteEntry(SearchHistoryEntry entry) async {
     await SearchHistoryService.deleteEntry(entry.id);
     setState(() {});
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

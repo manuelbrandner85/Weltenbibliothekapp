@@ -32,7 +32,8 @@ class _ProfileQuestBannerState extends State<ProfileQuestBanner> {
     final s = StorageService();
     final m = s.getMaterieProfile();
     final e = s.getEnergieProfile();
-    final has = (m?.username.isNotEmpty ?? false) || (e?.username.isNotEmpty ?? false);
+    final has =
+        (m?.username.isNotEmpty ?? false) || (e?.username.isNotEmpty ?? false);
     if (mounted) setState(() => _hasProfile = has);
   }
 
@@ -51,8 +52,7 @@ class _ProfileQuestBannerState extends State<ProfileQuestBanner> {
               MaterialPageRoute(
                 // v95: Unified ProfileEditorScreen statt welt-spezifisches
                 // Onboarding -- EIN Profil pro User fuer alle Welten.
-                builder: (_) =>
-                    const ProfileEditorScreen(world: 'energie'),
+                builder: (_) => const ProfileEditorScreen(world: 'energie'),
                 fullscreenDialog: true,
               ),
             );
@@ -113,10 +113,12 @@ class _ProfileQuestBannerState extends State<ProfileQuestBanner> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: Color(0xFFC9A84C)),
+                const Icon(Icons.chevron_right_rounded,
+                    color: Color(0xFFC9A84C)),
                 IconButton(
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints:
+                      const BoxConstraints(minWidth: 28, minHeight: 28),
                   visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.close_rounded,
                       color: Colors.white38, size: 16),

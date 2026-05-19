@@ -16,12 +16,16 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 enum RoomTheme {
   /// Standard — Welt-spezifischer Painter (bisheriges Aussehen)
   standard,
+
   /// Materie: pulsierendes Netzwerk-Geflecht + blaue Datenpunkte
   netzwerk,
+
   /// Materie: Weltraum-Nebel mit roten Gaswolken + Sternfeld
   kosmos,
+
   /// Energie: rotierendes Mandala-Muster
   mandala,
+
   /// Energie: schwebende Kristall-Scherben mit Prisma-Licht
   kristall,
 }
@@ -169,24 +173,32 @@ class AudioFeedbackService {
       if (i > numSamples - fadeSamples) {
         env = (numSamples - i) / fadeSamples;
       }
-      final sample =
-          (math.sin(2 * math.pi * frequency * i / sampleRate) * 32767 * volume * env)
-              .round()
-              .clamp(-32767, 32767);
+      final sample = (math.sin(2 * math.pi * frequency * i / sampleRate) *
+              32767 *
+              volume *
+              env)
+          .round()
+          .clamp(-32767, 32767);
       data[i] = sample;
     }
 
     // WAV-Header zusammenbauen
     final byteData = ByteData(44 + numSamples * 2);
     // RIFF
-    byteData.setUint8(0, 0x52); byteData.setUint8(1, 0x49);
-    byteData.setUint8(2, 0x46); byteData.setUint8(3, 0x46);
+    byteData.setUint8(0, 0x52);
+    byteData.setUint8(1, 0x49);
+    byteData.setUint8(2, 0x46);
+    byteData.setUint8(3, 0x46);
     byteData.setUint32(4, 36 + numSamples * 2, Endian.little);
-    byteData.setUint8(8, 0x57); byteData.setUint8(9, 0x41);
-    byteData.setUint8(10, 0x56); byteData.setUint8(11, 0x45);
+    byteData.setUint8(8, 0x57);
+    byteData.setUint8(9, 0x41);
+    byteData.setUint8(10, 0x56);
+    byteData.setUint8(11, 0x45);
     // fmt chunk
-    byteData.setUint8(12, 0x66); byteData.setUint8(13, 0x6D);
-    byteData.setUint8(14, 0x74); byteData.setUint8(15, 0x20);
+    byteData.setUint8(12, 0x66);
+    byteData.setUint8(13, 0x6D);
+    byteData.setUint8(14, 0x74);
+    byteData.setUint8(15, 0x20);
     byteData.setUint32(16, 16, Endian.little);
     byteData.setUint16(20, 1, Endian.little); // PCM
     byteData.setUint16(22, 1, Endian.little); // Mono
@@ -195,8 +207,10 @@ class AudioFeedbackService {
     byteData.setUint16(32, 2, Endian.little);
     byteData.setUint16(34, 16, Endian.little);
     // data chunk
-    byteData.setUint8(36, 0x64); byteData.setUint8(37, 0x61);
-    byteData.setUint8(38, 0x74); byteData.setUint8(39, 0x61);
+    byteData.setUint8(36, 0x64);
+    byteData.setUint8(37, 0x61);
+    byteData.setUint8(38, 0x74);
+    byteData.setUint8(39, 0x61);
     byteData.setUint32(40, numSamples * 2, Endian.little);
     for (int i = 0; i < numSamples; i++) {
       byteData.setInt16(44 + i * 2, data[i], Endian.little);

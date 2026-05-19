@@ -1,6 +1,6 @@
 /// **WELTENBIBLIOTHEK - STEP 3 VISUALISIERUNG**
 /// Mindmap Widget für Themenverknüpfungen
-/// 
+///
 /// Zeigt Themen, Konzepte und deren Verbindungen als interaktive Mindmap
 library;
 
@@ -15,7 +15,7 @@ class MindmapKnoten {
   final List<String> unterKnoten; // IDs der Unterthemen
   final int tiefe; // 0 = Hauptthema, 1 = Unterthema, etc.
   final Color? customColor;
-  
+
   const MindmapKnoten({
     required this.id,
     required this.titel,
@@ -29,7 +29,7 @@ class MindmapKnoten {
 class MindmapWidget extends StatefulWidget {
   final String hauptthema;
   final List<MindmapKnoten> knoten;
-  
+
   const MindmapWidget({
     super.key,
     required this.hauptthema,
@@ -43,8 +43,9 @@ class MindmapWidget extends StatefulWidget {
 class _MindmapWidgetState extends State<MindmapWidget> {
   String? _expandedKnotenId;
   String? _selectedKnotenId;
-  final TransformationController _transformationController = TransformationController();
-  
+  final TransformationController _transformationController =
+      TransformationController();
+
   @override
   void dispose() {
     _transformationController.dispose();
@@ -122,7 +123,8 @@ class _MindmapWidgetState extends State<MindmapWidget> {
           onPressed: () {
             // FIX v5.28.0: Zoom mit Matrix4.diagonal3Values statt deprecated scale()
             final current = _transformationController.value;
-            _transformationController.value = current * (Matrix4.diagonal3Values(1.2, 1.2, 1.0));
+            _transformationController.value =
+                current * (Matrix4.diagonal3Values(1.2, 1.2, 1.0));
           },
         ),
         IconButton(
@@ -130,7 +132,8 @@ class _MindmapWidgetState extends State<MindmapWidget> {
           onPressed: () {
             // FIX v5.28.0: Zoom mit Matrix4.diagonal3Values statt deprecated scale()
             final current = _transformationController.value;
-            _transformationController.value = current * (Matrix4.diagonal3Values(0.8, 0.8, 1.0));
+            _transformationController.value =
+                current * (Matrix4.diagonal3Values(0.8, 0.8, 1.0));
           },
         ),
         IconButton(
@@ -146,7 +149,8 @@ class _MindmapWidgetState extends State<MindmapWidget> {
           ),
           onPressed: () {
             setState(() {
-              _expandedKnotenId = _expandedKnotenId == null ? widget.knoten.first.id : null;
+              _expandedKnotenId =
+                  _expandedKnotenId == null ? widget.knoten.first.id : null;
             });
           },
         ),
@@ -159,7 +163,7 @@ class _MindmapWidgetState extends State<MindmapWidget> {
       children: widget.knoten.map((knoten) {
         final position = _calculateNodePosition(knoten);
         final size = _getKnotenSize(knoten.tiefe);
-        
+
         return Positioned(
           left: position.dx - size / 2,
           top: position.dy - size / 2,
@@ -184,35 +188,36 @@ class _MindmapWidgetState extends State<MindmapWidget> {
   Offset _calculateNodePosition(MindmapKnoten knoten) {
     const centerX = 400.0;
     const centerY = 300.0;
-    
+
     if (knoten.tiefe == 0) {
       return const Offset(centerX, centerY);
     }
-    
+
     // Finde Parent-Knoten
     final parentIndex = widget.knoten.indexWhere(
       (k) => k.unterKnoten.contains(knoten.id),
     );
-    
+
     if (parentIndex == -1) {
       return const Offset(centerX, centerY);
     }
-    
+
     final parent = widget.knoten[parentIndex];
     final parentPos = _calculateNodePosition(parent);
-    
+
     // Berechne Position basierend auf Index unter Geschwistern
-    final geschwister = widget.knoten.where((k) => k.tiefe == knoten.tiefe).toList();
+    final geschwister =
+        widget.knoten.where((k) => k.tiefe == knoten.tiefe).toList();
     final index = geschwister.indexOf(knoten);
     final total = geschwister.length;
-    
+
     final radius = 150.0 * knoten.tiefe;
     final angleStep = (2 * math.pi) / math.max(total, 3);
     final angle = angleStep * index;
-    
+
     final x = parentPos.dx + radius * math.cos(angle);
     final y = parentPos.dy + radius * math.sin(angle);
-    
+
     return Offset(x, y);
   }
 
@@ -221,7 +226,7 @@ class _MindmapWidgetState extends State<MindmapWidget> {
     final color = knoten.customColor ?? _getKnotenColor(knoten.tiefe);
     final isSelected = _selectedKnotenId == knoten.id;
     final isExpanded = _expandedKnotenId == knoten.id;
-    
+
     return Container(
       width: size,
       height: size,
@@ -229,14 +234,23 @@ class _MindmapWidgetState extends State<MindmapWidget> {
         shape: BoxShape.circle,
         color: color,
         border: Border.all(
-          color: isSelected ? Colors.yellow : Colors.white.withValues(alpha: 0.5),
+          color:
+              isSelected ? Colors.yellow : Colors.white.withValues(alpha: 0.5),
           width: isSelected ? 3 : 2,
         ),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.5),
-            blurRadius: isSelected ? 15 : isExpanded ? 10 : 5,
-            spreadRadius: isSelected ? 3 : isExpanded ? 2 : 1,
+            blurRadius: isSelected
+                ? 15
+                : isExpanded
+                    ? 10
+                    : 5,
+            spreadRadius: isSelected
+                ? 3
+                : isExpanded
+                    ? 2
+                    : 1,
           ),
         ],
       ),
@@ -249,7 +263,8 @@ class _MindmapWidgetState extends State<MindmapWidget> {
             style: TextStyle(
               color: Colors.white,
               fontSize: knoten.tiefe == 0 ? 14 : 11,
-              fontWeight: knoten.tiefe == 0 ? FontWeight.bold : FontWeight.normal,
+              fontWeight:
+                  knoten.tiefe == 0 ? FontWeight.bold : FontWeight.normal,
             ),
             maxLines: knoten.tiefe == 0 ? 3 : 2,
             overflow: TextOverflow.ellipsis,
@@ -261,10 +276,9 @@ class _MindmapWidgetState extends State<MindmapWidget> {
 
   Widget _buildKnotenDetails() {
     final knoten = widget.knoten.firstWhere((k) => k.id == _selectedKnotenId);
-    final unterThemen = widget.knoten
-        .where((k) => knoten.unterKnoten.contains(k.id))
-        .toList();
-    
+    final unterThemen =
+        widget.knoten.where((k) => knoten.unterKnoten.contains(k.id)).toList();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -315,7 +329,8 @@ class _MindmapWidgetState extends State<MindmapWidget> {
                     Text(
                       knoten.kategorie.toUpperCase(),
                       style: TextStyle(
-                        color: knoten.customColor ?? _getKnotenColor(knoten.tiefe),
+                        color:
+                            knoten.customColor ?? _getKnotenColor(knoten.tiefe),
                         fontSize: 12,
                       ),
                     ),
@@ -344,7 +359,8 @@ class _MindmapWidgetState extends State<MindmapWidget> {
                     unter.titel,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
-                  backgroundColor: _getKnotenColor(unter.tiefe).withValues(alpha: 0.5),
+                  backgroundColor:
+                      _getKnotenColor(unter.tiefe).withValues(alpha: 0.5),
                 );
               }).toList(),
             ),
@@ -381,7 +397,7 @@ class _MindmapPainter extends CustomPainter {
   final String? selectedId;
   final Color Function(int) getColor;
   final double Function(int) getSize;
-  
+
   _MindmapPainter({
     required this.knoten,
     this.expandedId,
@@ -403,12 +419,13 @@ class _MindmapPainter extends CustomPainter {
           (k) => k.id == unterId,
           orElse: () => knoten.first,
         );
-        
+
         final von = _calculatePosition(knotenItem, size);
         final zu = _calculatePosition(unterKnoten, size);
-        
-        paint.color = (knotenItem.customColor ?? getColor(knotenItem.tiefe)).withValues(alpha: 0.5);
-        
+
+        paint.color = (knotenItem.customColor ?? getColor(knotenItem.tiefe))
+            .withValues(alpha: 0.5);
+
         canvas.drawLine(von, zu, paint);
       }
     }
@@ -417,33 +434,34 @@ class _MindmapPainter extends CustomPainter {
   Offset _calculatePosition(MindmapKnoten knotenItem, Size size) {
     const centerX = 400.0;
     const centerY = 300.0;
-    
+
     if (knotenItem.tiefe == 0) {
       return const Offset(centerX, centerY);
     }
-    
+
     final parentIndex = knoten.indexWhere(
       (k) => k.unterKnoten.contains(knotenItem.id),
     );
-    
+
     if (parentIndex == -1) {
       return const Offset(centerX, centerY);
     }
-    
+
     final parent = knoten[parentIndex];
     final parentPos = _calculatePosition(parent, size);
-    
-    final geschwister = knoten.where((k) => k.tiefe == knotenItem.tiefe).toList();
+
+    final geschwister =
+        knoten.where((k) => k.tiefe == knotenItem.tiefe).toList();
     final index = geschwister.indexOf(knotenItem);
     final total = geschwister.length;
-    
+
     final radius = 150.0 * knotenItem.tiefe;
     final angleStep = (2 * math.pi) / math.max(total, 3);
     final angle = angleStep * index;
-    
+
     final x = parentPos.dx + radius * math.cos(angle);
     final y = parentPos.dy + radius * math.sin(angle);
-    
+
     return Offset(x, y);
   }
 

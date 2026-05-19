@@ -308,7 +308,8 @@ const _choices = [
   _WorldChoice(
     key: 'materie',
     title: 'Wissen & Fakten',
-    prompt: 'Was läuft wirklich in der Welt? Geopolitik, Geschichte, Wissenschaft.',
+    prompt:
+        'Was läuft wirklich in der Welt? Geopolitik, Geschichte, Wissenschaft.',
     color: Color(0xFF3B82F6),
     icon: Icons.public,
     wrapper: MaterieWorldWrapper(),
@@ -332,7 +333,8 @@ const _choices = [
   _WorldChoice(
     key: 'ursprung',
     title: 'Ursprung & Verbindung',
-    prompt: 'Wo kommen wir her? Naturvölker, Kosmologie, ursprüngliches Wissen.',
+    prompt:
+        'Wo kommen wir her? Naturvölker, Kosmologie, ursprüngliches Wissen.',
     color: Color(0xFF00D4AA),
     icon: Icons.all_inclusive,
     wrapper: UrsprungWorldWrapper(),

@@ -14,7 +14,8 @@ class AlternativeHealingScreen extends StatefulWidget {
   const AlternativeHealingScreen({super.key, required this.roomId});
 
   @override
-  State<AlternativeHealingScreen> createState() => _AlternativeHealingScreenState();
+  State<AlternativeHealingScreen> createState() =>
+      _AlternativeHealingScreenState();
 }
 
 class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
@@ -52,7 +53,11 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
     setState(() => _loading = true);
     try {
       final items = await _svc.getHealingMethods(roomId: widget.roomId);
-      if (mounted) setState(() { _items = items; _loading = false; });
+      if (mounted)
+        setState(() {
+          _items = items;
+          _loading = false;
+        });
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ healing load: $e');
       if (mounted) setState(() => _loading = false);
@@ -61,9 +66,16 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
 
   Future<void> _loadStudies([String? query]) async {
     final q = query ?? _pubmedQuery;
-    setState(() { _loadingStudies = true; _pubmedQuery = q; });
+    setState(() {
+      _loadingStudies = true;
+      _pubmedQuery = q;
+    });
     final result = await _api.fetchPubMedStudies(q, limit: 8);
-    if (mounted) setState(() { _studies = result; _loadingStudies = false; });
+    if (mounted)
+      setState(() {
+        _studies = result;
+        _loadingStudies = false;
+      });
   }
 
   void _add() {
@@ -74,7 +86,8 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF050310),
-        title: const Text('💚 Heilmethode hinzufügen', style: TextStyle(color: Colors.green)),
+        title: const Text('💚 Heilmethode hinzufügen',
+            style: TextStyle(color: Colors.green)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -101,7 +114,8 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+            child:
+                const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -135,7 +149,10 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () { _load(); _loadStudies(); },
+            onPressed: () {
+              _load();
+              _loadStudies();
+            },
           ),
         ],
         bottom: TabBar(
@@ -170,7 +187,8 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
 
   Widget _buildCommunityTab() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.green));
+      return const Center(
+          child: CircularProgressIndicator(color: Colors.green));
     }
     if (_items.isEmpty) {
       return Center(
@@ -179,7 +197,8 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
           children: [
             const Icon(Icons.healing, size: 64, color: Colors.white24),
             const SizedBox(height: 16),
-            const Text('Noch keine Heilmethoden', style: TextStyle(color: Colors.white54)),
+            const Text('Noch keine Heilmethoden',
+                style: TextStyle(color: Colors.white54)),
             const SizedBox(height: 8),
             const Text('Schau dir wissenschaftliche Studien im PubMed-Tab an!',
                 style: TextStyle(color: Colors.white38, fontSize: 12)),
@@ -206,7 +225,8 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
             leading: const Icon(Icons.healing, color: Colors.green, size: 32),
             title: Text(
               item['method_name'] ?? 'Methode',
-              style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  color: Colors.green, fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
               item['method_description'] ?? '',
@@ -325,9 +345,11 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('PubMed Wissenschaftliche Studien',
-                    style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.teal, fontWeight: FontWeight.bold)),
                 Text('${_studies.length} Ergebnisse für "$_pubmedQuery"',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ),
@@ -343,7 +365,8 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
         children: [
           const Icon(Icons.wifi_off, size: 48, color: Colors.white24),
           const SizedBox(height: 12),
-          const Text('Keine Studien gefunden', style: TextStyle(color: Colors.white54)),
+          const Text('Keine Studien gefunden',
+              style: TextStyle(color: Colors.white54)),
           const SizedBox(height: 6),
           const Text('Versuche einen anderen Suchbegriff',
               style: TextStyle(color: Colors.white38, fontSize: 12)),
@@ -371,7 +394,9 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
               Text(
                 study.title,
                 style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -389,11 +414,15 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
                   if (study.source != null) ...[
                     const Icon(Icons.book, size: 12, color: Colors.white38),
                     const SizedBox(width: 4),
-                    Text(study.source!, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                    Text(study.source!,
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 11)),
                     const SizedBox(width: 10),
                   ],
                   if (study.pubDate != null)
-                    Text(study.pubDate!, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                    Text(study.pubDate!,
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 11)),
                   const Spacer(),
                   const Icon(Icons.open_in_new, size: 14, color: Colors.teal),
                 ],

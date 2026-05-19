@@ -52,8 +52,7 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _bookmarks =
-          (prefs.getStringList(_bookmarkKey) ?? const []).toSet();
+      _bookmarks = (prefs.getStringList(_bookmarkKey) ?? const []).toSet();
     });
   }
 
@@ -73,15 +72,16 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
     // Ägyptisch
     _Symbol('Ankh', '☥', 'Ägyptisch', 'Schlüssel des Lebens, Unsterblichkeit',
         'Ankh'),
-    _Symbol('Auge des Horus', '𓂀', 'Ägyptisch', 'Schutz, königliche Macht, Heilung',
-        'Horusauge'),
+    _Symbol('Auge des Horus', '𓂀', 'Ägyptisch',
+        'Schutz, königliche Macht, Heilung', 'Horusauge'),
     _Symbol('Skarabäus', '🪲', 'Ägyptisch',
         'Wiedergeburt, Sonnengott Chepre, Schöpfung', 'Skarabäus_(Ägypten)'),
     _Symbol('Djed-Pfeiler', '𓊽', 'Ägyptisch',
         'Stabilität, Rückgrat des Osiris, ewige Beständigkeit', 'Djed-Pfeiler'),
 
     // Hindu
-    _Symbol('Om', 'ॐ', 'Hindu', 'Urklang des Universums, Brahman', 'Om_(Hinduismus)'),
+    _Symbol('Om', 'ॐ', 'Hindu', 'Urklang des Universums, Brahman',
+        'Om_(Hinduismus)'),
     _Symbol('Sri Yantra', '🔯', 'Hindu',
         'Yantra der Tripura Sundari, Vereinigung Shiva/Shakti', 'Shri_Yantra'),
     _Symbol('Lotus', '🪷', 'Hindu',
@@ -98,12 +98,12 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
         'Erleuchtung Buddhas unter dem Bodhi-Baum', 'Bodhi-Baum'),
 
     // Christlich
-    _Symbol('Kreuz', '✝️', 'Christlich',
-        'Opfertod und Auferstehung Jesu', 'Kreuz_(Christentum)'),
+    _Symbol('Kreuz', '✝️', 'Christlich', 'Opfertod und Auferstehung Jesu',
+        'Kreuz_(Christentum)'),
     _Symbol('Ichthys', '🐟', 'Christlich',
         'Frühchristliches Erkennungszeichen, Akrostichon', 'Ichthys'),
-    _Symbol('Chi-Rho', '☧', 'Christlich',
-        'Konstantinisches Christusmonogramm', 'Christusmonogramm'),
+    _Symbol('Chi-Rho', '☧', 'Christlich', 'Konstantinisches Christusmonogramm',
+        'Christusmonogramm'),
     _Symbol('Alpha & Omega', 'ΑΩ', 'Christlich',
         'Anfang und Ende, göttliche Allumfassendheit', 'Alpha_und_Omega'),
 
@@ -118,17 +118,20 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
         'Hand der Miriam, Schutz vor bösem Blick', 'Hamsa'),
 
     // Nordisch
-    _Symbol('Mjölnir', '🔨', 'Nordisch',
-        'Thors Hammer, Schutz, Heiligung', 'Mjölnir'),
-    _Symbol('Yggdrasil', '🌲', 'Nordisch',
-        'Weltenbaum, neun Welten der Edda', 'Yggdrasil'),
-    _Symbol('Valknut', '⛤', 'Nordisch',
-        'Knoten der Erschlagenen, Odin-Symbol', 'Valknut'),
+    _Symbol('Mjölnir', '🔨', 'Nordisch', 'Thors Hammer, Schutz, Heiligung',
+        'Mjölnir'),
+    _Symbol('Yggdrasil', '🌲', 'Nordisch', 'Weltenbaum, neun Welten der Edda',
+        'Yggdrasil'),
+    _Symbol('Valknut', '⛤', 'Nordisch', 'Knoten der Erschlagenen, Odin-Symbol',
+        'Valknut'),
     _Symbol('Vegvísir', '🧭', 'Nordisch',
         'Isländischer Wegweiser, Orientierung in Stürmen', 'Vegvísir'),
 
     // Keltisch
-    _Symbol('Triskele', '☘️', 'Keltisch',
+    _Symbol(
+        'Triskele',
+        '☘️',
+        'Keltisch',
         'Dreierspirale, Land/Meer/Himmel oder Vergangenheit/Gegenwart/Zukunft',
         'Triskele'),
     _Symbol('Keltisches Kreuz', '🕀', 'Keltisch',
@@ -137,7 +140,10 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
         'Drei Strahlen göttlicher Inspiration, Druiden-Symbol', 'Awen'),
 
     // Maya/Azteken
-    _Symbol('Hunab Ku', '◯', 'Maya/Azteken',
+    _Symbol(
+        'Hunab Ku',
+        '◯',
+        'Maya/Azteken',
         'Einziger Gott, Zentrum der Galaxis (Wiederentdeckung 20. Jh.)',
         'Hunab_Ku'),
     _Symbol('Quetzalcóatl', '🪶', 'Maya/Azteken',
@@ -200,10 +206,13 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
               style: const TextStyle(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Symbol/Tradition suchen…',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
-                prefixIcon: Icon(Icons.search, color: _accent.withValues(alpha: 0.8), size: 20),
+                hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
+                prefixIcon: Icon(Icons.search,
+                    color: _accent.withValues(alpha: 0.8), size: 20),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 filled: true,
                 fillColor: _surface,
                 border: OutlineInputBorder(
@@ -233,8 +242,7 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.fromLTRB(12, 4, 12, 32),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 childAspectRatio: 0.85,
                 crossAxisSpacing: 8,
@@ -350,7 +358,8 @@ class _Symbol {
   final String tradition;
   final String shortDesc;
   final String wikiQuery;
-  const _Symbol(this.name, this.glyph, this.tradition, this.shortDesc, this.wikiQuery);
+  const _Symbol(
+      this.name, this.glyph, this.tradition, this.shortDesc, this.wikiQuery);
 }
 
 class _SymbolDetailSheet extends StatefulWidget {

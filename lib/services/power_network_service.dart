@@ -40,7 +40,8 @@ class PowerNetworkHit {
     this.sourceUrl,
   });
 
-  String get sourceLabel => source == 'opensanctions' ? 'OpenSanctions' : 'Aleph OCCRP';
+  String get sourceLabel =>
+      source == 'opensanctions' ? 'OpenSanctions' : 'Aleph OCCRP';
 }
 
 class PowerNetworkService {
@@ -68,7 +69,8 @@ class PowerNetworkService {
     return all;
   }
 
-  Future<List<PowerNetworkHit>> _searchOpenSanctions(String q, {int limit = 20}) async {
+  Future<List<PowerNetworkHit>> _searchOpenSanctions(String q,
+      {int limit = 20}) async {
     try {
       final uri = Uri.parse('$_osBase/search/default')
           .replace(queryParameters: {'q': q, 'limit': '$limit'});
@@ -82,18 +84,24 @@ class PowerNetworkService {
       final results = (data['results'] as List?) ?? const [];
       return results.map((r) {
         final m = r as Map<String, dynamic>;
-        final props = (m['properties'] as Map?)?.cast<String, dynamic>() ?? const {};
+        final props =
+            (m['properties'] as Map?)?.cast<String, dynamic>() ?? const {};
         final topics = ((props['topics'] as List?) ?? const []).cast<String>();
-        final country = ((props['country'] as List?) ?? const []).cast<String>();
+        final country =
+            ((props['country'] as List?) ?? const []).cast<String>();
         final alias = ((props['alias'] as List?) ?? const []).cast<String>();
 
         // Risk-Score: Sanktioniert (1.0), PEP (0.6), Adverse-Media (0.4)
         double risk = 0.0;
         for (final t in topics) {
-          if (t == 'sanction') risk = 1.0;
-          else if (t == 'role.pep' && risk < 0.7) risk = 0.7;
-          else if (t == 'mil' && risk < 0.5) risk = 0.5;
-          else if (t == 'crime' && risk < 0.6) risk = 0.6;
+          if (t == 'sanction')
+            risk = 1.0;
+          else if (t == 'role.pep' && risk < 0.7)
+            risk = 0.7;
+          else if (t == 'mil' && risk < 0.5)
+            risk = 0.5;
+          else if (t == 'crime' && risk < 0.6)
+            risk = 0.6;
           else if (t == 'media') risk = math.max(risk, 0.4);
         }
 
@@ -107,7 +115,8 @@ class PowerNetworkService {
         return PowerNetworkHit(
           id: 'os:${m['id']}',
           source: 'opensanctions',
-          name: (m['caption'] as String?) ?? (m['id'] as String? ?? 'Unbekannt'),
+          name:
+              (m['caption'] as String?) ?? (m['id'] as String? ?? 'Unbekannt'),
           alias: alias.isNotEmpty ? alias.first : null,
           tags: tagList,
           country: country.isNotEmpty ? country.first.toUpperCase() : null,
@@ -137,20 +146,31 @@ class PowerNetworkService {
       final results = (data['results'] as List?) ?? const [];
       return results.take(limit).map((r) {
         final m = r as Map<String, dynamic>;
-        final props = (m['properties'] as Map?)?.cast<String, dynamic>() ?? const {};
+        final props =
+            (m['properties'] as Map?)?.cast<String, dynamic>() ?? const {};
         final collection = (m['collection'] as Map?)?.cast<String, dynamic>();
         final collectionLabel = (collection?['label'] as String?) ?? '';
         final schema = m['schema'] as String?;
-        final country = ((props['country'] as List?) ?? const []).cast<dynamic>().map((e) => e.toString()).toList();
+        final country = ((props['country'] as List?) ?? const [])
+            .cast<dynamic>()
+            .map((e) => e.toString())
+            .toList();
 
         final tags = <String>[];
-        if (collectionLabel.toLowerCase().contains('panama')) tags.add('📂 Panama Papers');
-        if (collectionLabel.toLowerCase().contains('pandora')) tags.add('📂 Pandora Papers');
-        if (collectionLabel.toLowerCase().contains('fincen')) tags.add('📂 FinCEN');
-        if (collectionLabel.toLowerCase().contains('luxleaks')) tags.add('📂 LuxLeaks');
-        if (collectionLabel.toLowerCase().contains('suisse')) tags.add('📂 Suisse Secrets');
-        if (collectionLabel.toLowerCase().contains('offshore')) tags.add('📂 Offshore Leaks');
-        if (tags.isEmpty && collectionLabel.isNotEmpty) tags.add('📂 $collectionLabel');
+        if (collectionLabel.toLowerCase().contains('panama'))
+          tags.add('📂 Panama Papers');
+        if (collectionLabel.toLowerCase().contains('pandora'))
+          tags.add('📂 Pandora Papers');
+        if (collectionLabel.toLowerCase().contains('fincen'))
+          tags.add('📂 FinCEN');
+        if (collectionLabel.toLowerCase().contains('luxleaks'))
+          tags.add('📂 LuxLeaks');
+        if (collectionLabel.toLowerCase().contains('suisse'))
+          tags.add('📂 Suisse Secrets');
+        if (collectionLabel.toLowerCase().contains('offshore'))
+          tags.add('📂 Offshore Leaks');
+        if (tags.isEmpty && collectionLabel.isNotEmpty)
+          tags.add('📂 $collectionLabel');
 
         return PowerNetworkHit(
           id: 'aleph:${m['id']}',
@@ -163,7 +183,8 @@ class PowerNetworkService {
           country: country.isNotEmpty ? country.first.toUpperCase() : null,
           schema: schema,
           raw: m,
-          riskScore: 0.5, // Aleph-Treffer = "in einem Leak gelistet" = mittelstark
+          riskScore:
+              0.5, // Aleph-Treffer = "in einem Leak gelistet" = mittelstark
           sourceUrl: 'https://aleph.occrp.org/entities/${m['id']}',
         );
       }).toList();
@@ -176,7 +197,9 @@ class PowerNetworkService {
   /// Hole verbundene Entitäten für einen Aleph-Treffer (1-Hop Netzwerk).
   Future<List<PowerNetworkHit>> getRelated(String alephEntityId) async {
     try {
-      final id = alephEntityId.startsWith('aleph:') ? alephEntityId.substring(6) : alephEntityId;
+      final id = alephEntityId.startsWith('aleph:')
+          ? alephEntityId.substring(6)
+          : alephEntityId;
       final uri = Uri.parse('$_alephBase/api/2/entities/$id/expand')
           .replace(queryParameters: {'limit': '15'});
       final res = await http.get(uri,
@@ -184,28 +207,30 @@ class PowerNetworkService {
       if (res.statusCode != 200) return const [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final results = (data['results'] as List?) ?? const [];
-      return results.map((r) {
-        final m = r as Map<String, dynamic>;
-        final entityList = (m['entities'] as List?) ?? const [];
-        if (entityList.isEmpty) return null;
-        final e = entityList.first as Map<String, dynamic>;
-        return PowerNetworkHit(
-          id: 'aleph:${e['id']}',
-          source: 'aleph',
-          name: (e['caption'] as String?) ?? 'Verbunden',
-          alias: null,
-          tags: const [],
-          country: null,
-          schema: e['schema'] as String?,
-          raw: e,
-          riskScore: 0.3,
-          sourceUrl: 'https://aleph.occrp.org/entities/${e['id']}',
-        );
-      }).whereType<PowerNetworkHit>().toList();
+      return results
+          .map((r) {
+            final m = r as Map<String, dynamic>;
+            final entityList = (m['entities'] as List?) ?? const [];
+            if (entityList.isEmpty) return null;
+            final e = entityList.first as Map<String, dynamic>;
+            return PowerNetworkHit(
+              id: 'aleph:${e['id']}',
+              source: 'aleph',
+              name: (e['caption'] as String?) ?? 'Verbunden',
+              alias: null,
+              tags: const [],
+              country: null,
+              schema: e['schema'] as String?,
+              raw: e,
+              riskScore: 0.3,
+              sourceUrl: 'https://aleph.occrp.org/entities/${e['id']}',
+            );
+          })
+          .whereType<PowerNetworkHit>()
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('Aleph expand error: $e');
       return const [];
     }
   }
 }
-

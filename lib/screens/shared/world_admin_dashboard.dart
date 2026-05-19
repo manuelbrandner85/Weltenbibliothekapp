@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel, PostgresChangeEvent;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show RealtimeChannel, PostgresChangeEvent;
 
 import '../../config/api_config.dart';
 import '../../core/constants/roles.dart';
@@ -85,9 +86,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         icon: Icons.history_rounded, label: 'Audit', kind: 'audit'));
     if (AppRoles.isAdmin(role)) {
       tabs.add(const _AdminTabDef(
-          icon: Icons.monitor_heart_rounded,
-          label: 'System',
-          kind: 'system'));
+          icon: Icons.monitor_heart_rounded, label: 'System', kind: 'system'));
     }
     return tabs;
   }
@@ -110,8 +109,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       final storage = StorageService();
       final m = storage.getMaterieProfile();
       final e = storage.getEnergieProfile();
-      final localUser =
-          provider.username ?? m?.username ?? e?.username ?? '';
+      final localUser = provider.username ?? m?.username ?? e?.username ?? '';
 
       // Wenn weder lokal noch im Provider ein Username steht: nichts zu tun.
       if (localUser.isEmpty) return provider;
@@ -129,8 +127,11 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       final highest = _highestRole(candidates.cast<String>());
       final effectiveRole = highest ?? provider.role;
 
+      // v103 Zugriffsschutz: isAdmin wird ueber canAccessAdminDashboard
+      // geprueft -- explicit gegen role='user'. Damit kann der Fallback
+      // NIE einem normalen User durch Zufall Admin-Rechte geben.
       return AdminState(
-        isAdmin: AppRoles.isAdmin(effectiveRole),
+        isAdmin: AppRoles.canAccessAdminDashboard(effectiveRole),
         isRootAdmin: AppRoles.isRootAdmin(effectiveRole),
         isModerator: AppRoles.isModerator(effectiveRole),
         world: provider.world,
@@ -146,7 +147,14 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   /// Rangliste der Rollen (hoechste zuerst): root_admin > admin >
   /// content_editor > moderator > user.
   String? _highestRole(List<String> roles) {
-    const order = ['root_admin', 'root-admin', 'admin', 'content_editor', 'moderator', 'user'];
+    const order = [
+      'root_admin',
+      'root-admin',
+      'admin',
+      'content_editor',
+      'moderator',
+      'user'
+    ];
     for (final candidate in order) {
       if (roles.contains(candidate)) return candidate;
     }
@@ -192,7 +200,16 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     if (admin.username == null || admin.username!.isEmpty) {
       return _loadingScaffold();
     }
-    if (!admin.isAdmin) return _accessDeniedScaffold();
+    // v103 Zugriffsschutz: hasAccess prueft alle Admin-Rollen explizit
+    // gegen die AppRoles-Whitelist (root_admin/admin/moderator/
+    // content_editor). User mit role='user' werden 100% geblockt --
+    // weder ueber den Button (auch dort gegated) noch ueber direktes
+    // Navigieren auf /admin.
+    final hasAccess = admin.isAdmin ||
+        admin.isRootAdmin ||
+        admin.isModerator ||
+        AppRoles.canAccessAdminDashboard(admin.role ?? '');
+    if (!hasAccess) return _accessDeniedScaffold();
 
     // v103: Tabs dynamisch -- Rollen-Permission steuert Sichtbarkeit.
     final tabDefs = _availableTabs(admin.role);
@@ -209,7 +226,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
               gradient: LinearGradient(colors: [_primary, _accent]),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 18),
+            child: const Icon(Icons.admin_panel_settings,
+                color: Colors.white, size: 18),
           ),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -246,7 +264,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             ),
             child: Row(children: [
               Icon(
-                admin.backendVerified ? Icons.verified_rounded : Icons.sync_rounded,
+                admin.backendVerified
+                    ? Icons.verified_rounded
+                    : Icons.sync_rounded,
                 size: 11,
                 color: admin.backendVerified ? Colors.green : Colors.orange,
               ),
@@ -256,7 +276,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
                 style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: admin.backendVerified ? Colors.green : Colors.orange),
+                    color:
+                        admin.backendVerified ? Colors.green : Colors.orange),
               ),
             ]),
           ),
@@ -274,7 +295,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
                 SizedBox(width: 4),
                 Text('ROOT',
                     style: TextStyle(
-                        fontSize: 10, fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                         color: Colors.white)),
               ]),
             ),
@@ -295,7 +317,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           ),
         ],
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_rounded,
+              color: Colors.white70, size: 20),
           onPressed: () => Navigator.pop(context),
           tooltip: 'Zurück',
         ),
@@ -307,8 +330,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           indicatorSize: TabBarIndicatorSize.tab,
           labelColor: _accentBright,
           unselectedLabelColor: Colors.white38,
-          labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-          unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+          labelStyle:
+              const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+          unselectedLabelStyle:
+              const TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
           tabs: tabDefs
               .map((t) => Tab(icon: Icon(t.icon, size: 18), text: t.label))
               .toList(),
@@ -325,15 +350,25 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     switch (kind) {
       case 'overview':
         return _OverviewTab(
-            world: 'all', admin: admin, accent: _accent, accentBright: _accentBright);
+            world: 'all',
+            admin: admin,
+            accent: _accent,
+            accentBright: _accentBright);
       case 'users':
         return _UsersTab(
-            world: 'all', admin: admin, accent: _accent, accentBright: _accentBright);
+            world: 'all',
+            admin: admin,
+            accent: _accent,
+            accentBright: _accentBright);
       case 'chat':
         return _ChatModerationTab(
-            world: 'all', admin: admin, accent: _accent, accentBright: _accentBright);
+            world: 'all',
+            admin: admin,
+            accent: _accent,
+            accentBright: _accentBright);
       case 'content':
-        return _ContentInsightsTab(accent: _accent, accentBright: _accentBright);
+        return _ContentInsightsTab(
+            accent: _accent, accentBright: _accentBright);
       case 'push':
         return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
       case 'audit':
@@ -351,9 +386,11 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         body: Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             SizedBox(
-              width: 56, height: 56,
+              width: 56,
+              height: 56,
               child: CircularProgressIndicator(
-                color: _accent, strokeWidth: 3,
+                color: _accent,
+                strokeWidth: 3,
               ),
             ),
             const SizedBox(height: 20),
@@ -369,27 +406,34 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   Widget _accessDeniedScaffold({String? reason}) => Scaffold(
         backgroundColor: const Color(0xFF08080F),
         appBar: WBGlassAppBar(
-        world: WBWorld.neutral,
-        title: 'Admin-Dashboard',
-        leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 20),
+          world: WBWorld.neutral,
+          title: 'Admin-Dashboard',
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded,
+                color: Colors.white70, size: 20),
             onPressed: () => Navigator.pop(context),
           ),
-      ),
+        ),
         body: Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Container(
-              width: 80, height: 80,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
                 color: Colors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.red.withValues(alpha: 0.4), width: 2),
+                border: Border.all(
+                    color: Colors.red.withValues(alpha: 0.4), width: 2),
               ),
-              child: const Icon(Icons.lock_rounded, size: 40, color: Colors.red),
+              child:
+                  const Icon(Icons.lock_rounded, size: 40, color: Colors.red),
             ),
             const SizedBox(height: 20),
             const Text('Kein Zugriff',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
             const SizedBox(height: 8),
             Text(
               reason ?? 'Dieser Bereich ist nur für Admins zugänglich.',
@@ -409,8 +453,10 @@ class _OverviewTab extends StatefulWidget {
   final AdminState admin;
   final Color accent, accentBright;
   const _OverviewTab(
-      {required this.world, required this.admin,
-       required this.accent, required this.accentBright});
+      {required this.world,
+      required this.admin,
+      required this.accent,
+      required this.accentBright});
   @override
   State<_OverviewTab> createState() => _OverviewTabState();
 }
@@ -444,7 +490,7 @@ class _OverviewTabState extends State<_OverviewTab> {
             callback: (_) => _load(),
           )
           .subscribe();
-    } catch (_) { /* RT optional */ }
+    } catch (_) {/* RT optional */}
   }
 
   @override
@@ -462,20 +508,36 @@ class _OverviewTabState extends State<_OverviewTab> {
 
   // v98: Sync-Endpoint -- backfillt fehlende profiles aus auth.users.
   Future<void> _syncUsers() async {
-    final result = await WorldAdminServiceV162.syncUsers();
-    if (!mounted) return;
-    if (result == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('🔄 Profile-Sync fehlgeschlagen'),
-      ));
-      return;
+    _toast('🔄 Synchronisation gestartet...');
+    int totalInserted = 0;
+    int totalAuthSeen = 0;
+    try {
+      final result = await WorldAdminServiceV162.syncUsers();
+      if (result != null) {
+        totalInserted += (result['profiles_inserted'] as int?) ?? 0;
+        totalAuthSeen += (result['auth_users_seen'] as int?) ?? 0;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Auth-Sync: $e');
     }
-    final inserted = result['profiles_inserted'] ?? 0;
-    final authSeen = result['auth_users_seen'] ?? 0;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('🔄 $inserted neue Profile (von $authSeen auth-Usern)'),
-      backgroundColor: Colors.green,
-    ));
+    int legacySynced = 0;
+    try {
+      final legacyResult =
+          await WorldAdminServiceV162.syncUsers(extraUsers: []);
+      if (legacyResult != null) {
+        legacySynced = (legacyResult['legacy_profiles_synced'] as int?) ?? 0;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Legacy-Sync: $e');
+    }
+    if (!mounted) return;
+    final total = totalInserted + legacySynced;
+    if (total > 0) {
+      _toast(
+          '✅ $total neue Profile synchronisiert (Auth: $totalInserted, Legacy: $legacySynced)');
+    } else {
+      _toast('✅ Alle Profile sind aktuell ($totalAuthSeen Auth-User geprueft)');
+    }
     _load();
   }
 
@@ -527,6 +589,7 @@ class _OverviewTabState extends State<_OverviewTab> {
         }
         return s;
       }
+
       final buf = StringBuffer()
         ..writeln('timestamp,admin,action,target,old_role,new_role');
       for (final e in logs) {
@@ -562,10 +625,14 @@ class _OverviewTabState extends State<_OverviewTab> {
         backgroundColor: const Color(0xFF050310),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(label,
-            style: TextStyle(color: widget.accentBright, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: widget.accentBright, fontWeight: FontWeight.bold)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('$value',
-              style: TextStyle(color: widget.accent, fontSize: 48, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: widget.accent,
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           const Text('Aktuelle Anzahl ueber ALLE WELTEN',
               style: TextStyle(color: Colors.white54, fontSize: 13)),
@@ -586,10 +653,10 @@ class _OverviewTabState extends State<_OverviewTab> {
       return Center(child: CircularProgressIndicator(color: widget.accent));
     }
 
-    final totalUsers   = _stats['totalUsers']   ?? _stats['total_users']   ?? 0;
-    final totalMsgs    = _stats['totalMessages'] ?? _stats['total_messages'] ?? 0;
-    final newUsers     = _stats['newUsers']      ?? _stats['new_users']      ?? 0;
-    final interactions = _stats['interactions']  ?? 0;
+    final totalUsers = _stats['totalUsers'] ?? _stats['total_users'] ?? 0;
+    final totalMsgs = _stats['totalMessages'] ?? _stats['total_messages'] ?? 0;
+    final newUsers = _stats['newUsers'] ?? _stats['new_users'] ?? 0;
+    final interactions = _stats['interactions'] ?? 0;
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -616,14 +683,18 @@ class _OverviewTabState extends State<_OverviewTab> {
               Icon(Icons.bar_chart_rounded, color: widget.accent, size: 28),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Live-Übersicht · Alle Welten',
-                      style: TextStyle(
-                          color: widget.accentBright,
-                          fontWeight: FontWeight.bold, fontSize: 15)),
-                  const Text('Letzte 7 Tage · Automatische Aktualisierung',
-                      style: TextStyle(color: Colors.white38, fontSize: 11)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Live-Übersicht · Alle Welten',
+                          style: TextStyle(
+                              color: widget.accentBright,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15)),
+                      const Text('Letzte 7 Tage · Automatische Aktualisierung',
+                          style:
+                              TextStyle(color: Colors.white38, fontSize: 11)),
+                    ]),
               ),
               GestureDetector(
                 onTap: _syncUsers,
@@ -646,7 +717,8 @@ class _OverviewTabState extends State<_OverviewTab> {
                     color: widget.accent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.refresh_rounded, color: widget.accent, size: 18),
+                  child: Icon(Icons.refresh_rounded,
+                      color: widget.accent, size: 18),
                 ),
               ),
             ]),
@@ -663,7 +735,8 @@ class _OverviewTabState extends State<_OverviewTab> {
                     label: 'Nutzer gesamt',
                     value: '$totalUsers',
                     color: const Color(0xFF1E88E5),
-                    onTap: () => _showStatsDetail('Nutzer gesamt', totalUsers))),
+                    onTap: () =>
+                        _showStatsDetail('Nutzer gesamt', totalUsers))),
             const SizedBox(width: 12),
             Expanded(
                 child: _ClickableStatCard(
@@ -681,7 +754,8 @@ class _OverviewTabState extends State<_OverviewTab> {
                     label: 'Nachrichten',
                     value: '$totalMsgs',
                     color: const Color(0xFF8E24AA),
-                    onTap: () => _showStatsDetail('Nachrichten gesamt', totalMsgs))),
+                    onTap: () =>
+                        _showStatsDetail('Nachrichten gesamt', totalMsgs))),
             const SizedBox(width: 12),
             Expanded(
                 child: _ClickableStatCard(
@@ -689,13 +763,15 @@ class _OverviewTabState extends State<_OverviewTab> {
                     label: 'Interaktionen',
                     value: '$interactions',
                     color: const Color(0xFFE53935),
-                    onTap: () => _showStatsDetail('Interaktionen', interactions))),
+                    onTap: () =>
+                        _showStatsDetail('Interaktionen', interactions))),
           ]),
 
           const SizedBox(height: 24),
 
           // ── Quick Actions ──────────────────────────────────────────
-          _SectionLabel('Schnellaktionen', Icons.flash_on_rounded, widget.accent),
+          _SectionLabel(
+              'Schnellaktionen', Icons.flash_on_rounded, widget.accent),
           const SizedBox(height: 10),
           Row(children: [
             Expanded(
@@ -705,7 +781,8 @@ class _OverviewTabState extends State<_OverviewTab> {
                 color: const Color(0xFF1E88E5),
                 onTap: () {
                   // Navigate to Users tab
-                  final scaffold = context.findAncestorStateOfType<_WorldAdminDashboardState>();
+                  final scaffold = context
+                      .findAncestorStateOfType<_WorldAdminDashboardState>();
                   scaffold?._tabController?.animateTo(1);
                 },
               ),
@@ -717,7 +794,8 @@ class _OverviewTabState extends State<_OverviewTab> {
                 label: 'Chat moderieren',
                 color: const Color(0xFF8E24AA),
                 onTap: () {
-                  final scaffold = context.findAncestorStateOfType<_WorldAdminDashboardState>();
+                  final scaffold = context
+                      .findAncestorStateOfType<_WorldAdminDashboardState>();
                   scaffold?._tabController?.animateTo(2);
                 },
               ),
@@ -731,7 +809,8 @@ class _OverviewTabState extends State<_OverviewTab> {
                 label: 'System prüfen',
                 color: const Color(0xFF00897B),
                 onTap: () {
-                  final scaffold = context.findAncestorStateOfType<_WorldAdminDashboardState>();
+                  final scaffold = context
+                      .findAncestorStateOfType<_WorldAdminDashboardState>();
                   scaffold?._tabController?.animateTo(3);
                 },
               ),
@@ -775,7 +854,8 @@ class _OverviewTabState extends State<_OverviewTab> {
           const SizedBox(height: 24),
 
           // ── 🔥 Live-User-Heatmap (M2): Welt × Stunde ────────────
-          _SectionLabel('Live-Aktivität (7 Tage)', Icons.local_fire_department_rounded, widget.accent),
+          _SectionLabel('Live-Aktivität (7 Tage)',
+              Icons.local_fire_department_rounded, widget.accent),
           const SizedBox(height: 10),
           _ActivityHeatmapBlock(accent: widget.accent),
 
@@ -784,28 +864,37 @@ class _OverviewTabState extends State<_OverviewTab> {
           // ── 🟢 Live-Online-Roster ───────────────────────────────
           _SectionLabel('Aktuell online', Icons.bolt_rounded, widget.accent),
           const SizedBox(height: 10),
-          _OnlineNowBlock(accent: widget.accent, accentBright: widget.accentBright),
+          _OnlineNowBlock(
+              accent: widget.accent, accentBright: widget.accentBright),
 
           const SizedBox(height: 24),
 
           // ── Letzte Aktivitäten ─────────────────────────────────────
           Row(children: [
-            Expanded(child: _SectionLabel('Letzte Aktionen', Icons.history_rounded, widget.accent)),
+            Expanded(
+                child: _SectionLabel(
+                    'Letzte Aktionen', Icons.history_rounded, widget.accent)),
             if (_activity.isNotEmpty)
               GestureDetector(
                 onTap: _exportActivityCsv,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: widget.accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: widget.accent.withValues(alpha: 0.35)),
+                    border: Border.all(
+                        color: widget.accent.withValues(alpha: 0.35)),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.download_rounded, color: widget.accent, size: 14),
+                    Icon(Icons.download_rounded,
+                        color: widget.accent, size: 14),
                     const SizedBox(width: 6),
                     Text('CSV',
-                        style: TextStyle(color: widget.accent, fontSize: 11, fontWeight: FontWeight.w600)),
+                        style: TextStyle(
+                            color: widget.accent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
                   ]),
                 ),
               ),
@@ -813,7 +902,8 @@ class _OverviewTabState extends State<_OverviewTab> {
           const SizedBox(height: 10),
 
           if (_activity.isEmpty)
-            _EmptyHint('Noch keine Admin-Aktionen aufgezeichnet.\nAktionen erscheinen nach Nutzer-Interaktionen.')
+            _EmptyHint(
+                'Noch keine Admin-Aktionen aufgezeichnet.\nAktionen erscheinen nach Nutzer-Interaktionen.')
           else
             ..._activity.map((e) => _ActivityTile(entry: e)),
 
@@ -832,8 +922,10 @@ class _UsersTab extends StatefulWidget {
   final AdminState admin;
   final Color accent, accentBright;
   const _UsersTab(
-      {required this.world, required this.admin,
-       required this.accent, required this.accentBright});
+      {required this.world,
+      required this.admin,
+      required this.accent,
+      required this.accentBright});
   @override
   State<_UsersTab> createState() => _UsersTabState();
 }
@@ -893,7 +985,11 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _load() async {
-    if (mounted) setState(() { _loading = true; _errorMessage = null; });
+    if (mounted)
+      setState(() {
+        _loading = true;
+        _errorMessage = null;
+      });
     try {
       final users = await WorldAdminService.getAllUsers();
       if (mounted) {
@@ -903,7 +999,8 @@ class _UsersTabState extends State<_UsersTab> {
           _applyFilter();
           _loading = false;
           if (users.isEmpty) {
-            _errorMessage = 'Keine Profile gefunden. Pruefe Worker + Service-Role-Key.';
+            _errorMessage =
+                'Keine Profile gefunden. Pruefe Worker + Service-Role-Key.';
           }
         });
       }
@@ -912,7 +1009,8 @@ class _UsersTabState extends State<_UsersTab> {
         final msg = e.toString();
         setState(() {
           _loading = false;
-          _errorMessage = 'Laden fehlgeschlagen: ${msg.length > 120 ? '${msg.substring(0, 120)}...' : msg}';
+          _errorMessage =
+              'Laden fehlgeschlagen: ${msg.length > 120 ? '${msg.substring(0, 120)}...' : msg}';
         });
       }
     }
@@ -930,9 +1028,11 @@ class _UsersTabState extends State<_UsersTab> {
     }
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
-      list = list.where((u) =>
-          u.username.toLowerCase().contains(q) ||
-          (u.displayName ?? '').toLowerCase().contains(q)).toList();
+      list = list
+          .where((u) =>
+              u.username.toLowerCase().contains(q) ||
+              (u.displayName ?? '').toLowerCase().contains(q))
+          .toList();
     }
     // Sortier-Mode anwenden (nicht-mutativ, Kopie).
     final sortable = [...list];
@@ -988,20 +1088,28 @@ class _UsersTabState extends State<_UsersTab> {
         backgroundColor: const Color(0xFF1A1A2E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(title,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17)),
-        content: Text(msg, style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.4)),
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 17)),
+        content: Text(msg,
+            style: const TextStyle(
+                color: Colors.white70, fontSize: 14, height: 1.4)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: confirmColor ?? Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Bestätigen', style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Bestätigen', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1244,7 +1352,8 @@ class _UsersTabState extends State<_UsersTab> {
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF12121E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(children: [
             Container(
               padding: const EdgeInsets.all(7),
@@ -1253,12 +1362,16 @@ class _UsersTabState extends State<_UsersTab> {
                     colors: [Color(0xFFFFC107), Color(0xFFFF9800)]),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 18),
+              child: const Icon(Icons.auto_awesome_rounded,
+                  color: Colors.white, size: 18),
             ),
             const SizedBox(width: 10),
             const Expanded(
               child: Text('XP-Vergabe',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
             ),
           ]),
           content: SingleChildScrollView(
@@ -1271,10 +1384,13 @@ class _UsersTabState extends State<_UsersTab> {
                 const SizedBox(height: 14),
                 const Text('Schnell-Wahl',
                     style: TextStyle(
-                        color: Colors.white54, fontSize: 11, letterSpacing: 1.2)),
+                        color: Colors.white54,
+                        fontSize: 11,
+                        letterSpacing: 1.2)),
                 const SizedBox(height: 6),
                 Wrap(
-                  spacing: 6, runSpacing: 6,
+                  spacing: 6,
+                  runSpacing: 6,
                   children: presets.map((p) {
                     final sel = selectedPreset == p;
                     final neg = p < 0;
@@ -1284,10 +1400,12 @@ class _UsersTabState extends State<_UsersTab> {
                         amountCtrl.text = p.toString();
                       }),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
                           color: sel
-                              ? (neg ? Colors.red : const Color(0xFFFFC107)).withValues(alpha: 0.2)
+                              ? (neg ? Colors.red : const Color(0xFFFFC107))
+                                  .withValues(alpha: 0.2)
                               : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
@@ -1300,7 +1418,9 @@ class _UsersTabState extends State<_UsersTab> {
                           p > 0 ? '+$p' : '$p',
                           style: TextStyle(
                             color: sel
-                                ? (neg ? Colors.red.shade100 : const Color(0xFFFFE082))
+                                ? (neg
+                                    ? Colors.red.shade100
+                                    : const Color(0xFFFFE082))
                                 : Colors.white70,
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -1313,7 +1433,8 @@ class _UsersTabState extends State<_UsersTab> {
                 const SizedBox(height: 14),
                 TextField(
                   controller: amountCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(signed: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(signed: true),
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: 'Betrag (±, max 10000)',
@@ -1345,7 +1466,8 @@ class _UsersTabState extends State<_UsersTab> {
                     labelStyle: const TextStyle(color: Colors.white54),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.05),
-                    counterStyle: const TextStyle(color: Colors.white24, fontSize: 10),
+                    counterStyle:
+                        const TextStyle(color: Colors.white24, fontSize: 10),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Colors.white12),
@@ -1369,7 +1491,8 @@ class _UsersTabState extends State<_UsersTab> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx, null),
-              child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54)),
             ),
             ElevatedButton.icon(
               onPressed: () {
@@ -1387,11 +1510,14 @@ class _UsersTabState extends State<_UsersTab> {
                 Navigator.pop<Map<String, Object>>(
                     dialogCtx, {'amount': a, 'reason': r});
               },
-              icon: const Icon(Icons.send_rounded, color: Colors.white, size: 16),
-              label: const Text('Vergeben', style: TextStyle(color: Colors.white)),
+              icon:
+                  const Icon(Icons.send_rounded, color: Colors.white, size: 16),
+              label:
+                  const Text('Vergeben', style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFC107),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
             ),
           ],
@@ -1441,11 +1567,13 @@ class _UsersTabState extends State<_UsersTab> {
                   child: Row(children: [
                     // Hauptzahl: X von Y -- klar verstaendlich
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: widget.accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: widget.accent.withValues(alpha: 0.3)),
+                        border: Border.all(
+                            color: widget.accent.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         _filtered.length == _all.length
@@ -1462,7 +1590,8 @@ class _UsersTabState extends State<_UsersTab> {
                     Tooltip(
                       message: 'Web-Profile (via Anmeldung)',
                       child: _MiniPill(
-                        label: '🌐 ${_all.where((u) => u.source == 'web').length}',
+                        label:
+                            '🌐 ${_all.where((u) => u.source == 'web').length}',
                         color: const Color(0xFF4FC3F7),
                       ),
                     ),
@@ -1470,7 +1599,8 @@ class _UsersTabState extends State<_UsersTab> {
                     Tooltip(
                       message: 'App-Profile (InvisibleAuth)',
                       child: _MiniPill(
-                        label: '📱 ${_all.where((u) => u.source == 'app').length}',
+                        label:
+                            '📱 ${_all.where((u) => u.source == 'app').length}',
                         color: const Color(0xFF81C784),
                       ),
                     ),
@@ -1478,16 +1608,19 @@ class _UsersTabState extends State<_UsersTab> {
                     if (_lastLoadedAt != null)
                       Text(
                         'Aktualisiert ${_formatRelative(_lastLoadedAt!)}',
-                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 10),
                       ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _load,
                       child: Row(children: [
-                        Icon(Icons.refresh_rounded, color: Colors.white54, size: 14),
+                        Icon(Icons.refresh_rounded,
+                            color: Colors.white54, size: 14),
                         const SizedBox(width: 3),
                         const Text('Neu laden',
-                            style: TextStyle(color: Colors.white54, fontSize: 11)),
+                            style:
+                                TextStyle(color: Colors.white54, fontSize: 11)),
                       ]),
                     ),
                   ]),
@@ -1503,15 +1636,17 @@ class _UsersTabState extends State<_UsersTab> {
                 decoration: InputDecoration(
                   hintText: 'Nutzer suchen…',
                   hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38),
+                  prefixIcon:
+                      const Icon(Icons.search_rounded, color: Colors.white38),
                   suffixIcon: _search.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, color: Colors.white38),
+                          icon: const Icon(Icons.clear_rounded,
+                              color: Colors.white38),
                           onPressed: () => setState(() {
-                            _search = '';
-                            _searchCtrl.clear();
-                            _applyFilter();
-                          }))
+                                _search = '';
+                                _searchCtrl.clear();
+                                _applyFilter();
+                              }))
                       : null,
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.06),
@@ -1520,10 +1655,12 @@ class _UsersTabState extends State<_UsersTab> {
                       borderSide: BorderSide.none),
                   enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.08))),
                   focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: widget.accent.withValues(alpha: 0.4))),
+                      borderSide: BorderSide(
+                          color: widget.accent.withValues(alpha: 0.4))),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onChanged: (v) => setState(() {
@@ -1536,7 +1673,8 @@ class _UsersTabState extends State<_UsersTab> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: ['all', 'user', 'admin', 'root_admin', 'banned'].map((r) {
+                  children:
+                      ['all', 'user', 'admin', 'root_admin', 'banned'].map((r) {
                     final labels = {
                       'all': '✦ Alle',
                       'user': '👤 User',
@@ -1554,17 +1692,26 @@ class _UsersTabState extends State<_UsersTab> {
                         }),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
                           decoration: BoxDecoration(
-                            color: sel ? widget.accent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.06),
+                            color: sel
+                                ? widget.accent.withValues(alpha: 0.2)
+                                : Colors.white.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: sel ? widget.accent : Colors.transparent, width: 1.5),
+                                color: sel ? widget.accent : Colors.transparent,
+                                width: 1.5),
                           ),
                           child: Text(labels[r]!,
                               style: TextStyle(
-                                  color: sel ? widget.accentBright : Colors.white54,
-                                  fontSize: 12, fontWeight: sel ? FontWeight.bold : FontWeight.normal)),
+                                  color: sel
+                                      ? widget.accentBright
+                                      : Colors.white54,
+                                  fontSize: 12,
+                                  fontWeight: sel
+                                      ? FontWeight.bold
+                                      : FontWeight.normal)),
                         ),
                       ),
                     );
@@ -1579,7 +1726,10 @@ class _UsersTabState extends State<_UsersTab> {
                   selected: _sourceFilter == 'all',
                   accent: widget.accent,
                   accentBright: widget.accentBright,
-                  onTap: () => setState(() { _sourceFilter = 'all'; _applyFilter(); }),
+                  onTap: () => setState(() {
+                    _sourceFilter = 'all';
+                    _applyFilter();
+                  }),
                 ),
                 const SizedBox(width: 6),
                 _ToggleChip(
@@ -1587,7 +1737,10 @@ class _UsersTabState extends State<_UsersTab> {
                   selected: _sourceFilter == 'web',
                   accent: widget.accent,
                   accentBright: widget.accentBright,
-                  onTap: () => setState(() { _sourceFilter = 'web'; _applyFilter(); }),
+                  onTap: () => setState(() {
+                    _sourceFilter = 'web';
+                    _applyFilter();
+                  }),
                 ),
                 const SizedBox(width: 6),
                 _ToggleChip(
@@ -1595,12 +1748,16 @@ class _UsersTabState extends State<_UsersTab> {
                   selected: _sourceFilter == 'app',
                   accent: widget.accent,
                   accentBright: widget.accentBright,
-                  onTap: () => setState(() { _sourceFilter = 'app'; _applyFilter(); }),
+                  onTap: () => setState(() {
+                    _sourceFilter = 'app';
+                    _applyFilter();
+                  }),
                 ),
                 const Spacer(),
                 // Sort-Dropdown
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(20),
@@ -1614,13 +1771,20 @@ class _UsersTabState extends State<_UsersTab> {
                       isDense: true,
                       items: const [
                         DropdownMenuItem(value: 'role', child: Text('↕ Rolle')),
-                        DropdownMenuItem(value: 'newest', child: Text('🕒 Neueste')),
-                        DropdownMenuItem(value: 'oldest', child: Text('📜 Aelteste')),
+                        DropdownMenuItem(
+                            value: 'newest', child: Text('🕒 Neueste')),
+                        DropdownMenuItem(
+                            value: 'oldest', child: Text('📜 Aelteste')),
                         DropdownMenuItem(value: 'az', child: Text('🔤 A-Z')),
-                        DropdownMenuItem(value: 'online', child: Text('🟢 Online zuerst')),
+                        DropdownMenuItem(
+                            value: 'online', child: Text('🟢 Online zuerst')),
                       ],
                       onChanged: (v) {
-                        if (v != null) setState(() { _sortMode = v; _applyFilter(); });
+                        if (v != null)
+                          setState(() {
+                            _sortMode = v;
+                            _applyFilter();
+                          });
                       },
                     ),
                   ),
@@ -1647,7 +1811,9 @@ class _UsersTabState extends State<_UsersTab> {
                           ])
                         : ListView.builder(
                             itemCount: _filtered.length,
-                            padding: EdgeInsets.only(top: 4, bottom: _selectedIds.isNotEmpty ? 90 : 16),
+                            padding: EdgeInsets.only(
+                                top: 4,
+                                bottom: _selectedIds.isNotEmpty ? 90 : 16),
                             itemBuilder: (ctx, i) {
                               final u = _filtered[i];
                               final selected = _selectedIds.contains(u.userId);
@@ -1677,13 +1843,16 @@ class _UsersTabState extends State<_UsersTab> {
                                     onUnban: () => _unban(u),
                                     onPromote: () => _promote(u),
                                     onDemote: () => _demote(u),
-                                    onGrantXp: AppRoles.canGrantXp(widget.admin.role)
-                                        ? () => _grantXp(u)
-                                        : null,
-                                    onDelete: AppRoles.canDeleteUsers(widget.admin.role)
+                                    onGrantXp:
+                                        AppRoles.canGrantXp(widget.admin.role)
+                                            ? () => _grantXp(u)
+                                            : null,
+                                    onDelete: AppRoles.canDeleteUsers(
+                                            widget.admin.role)
                                         ? () => _deleteUser(u)
                                         : null,
-                                    onChangeRole: AppRoles.canPromoteDemote(widget.admin.role)
+                                    onChangeRole: AppRoles.canPromoteDemote(
+                                            widget.admin.role)
                                         ? (newRole) => _changeRole(u, newRole)
                                         : null,
                                   ),
@@ -1698,7 +1867,9 @@ class _UsersTabState extends State<_UsersTab> {
         // Bulk-Action-Bar — schwebt unten wenn _selectedIds nicht leer
         if (_selectedIds.isNotEmpty)
           Positioned(
-            left: 12, right: 12, bottom: 12,
+            left: 12,
+            right: 12,
+            bottom: 12,
             child: _BulkActionBar(
               count: _selectedIds.length,
               accent: widget.accent,
@@ -1706,7 +1877,9 @@ class _UsersTabState extends State<_UsersTab> {
               onSelectAll: () => setState(() {
                 _selectedIds
                   ..clear()
-                  ..addAll(_filtered.map((u) => u.userId).where((id) => id.isNotEmpty));
+                  ..addAll(_filtered
+                      .map((u) => u.userId)
+                      .where((id) => id.isNotEmpty));
               }),
               onPromote: _bulkPromote,
               onDemote: _bulkDemote,
@@ -1724,12 +1897,14 @@ class _UsersTabState extends State<_UsersTab> {
               child: Container(
                 color: Colors.black54,
                 child: Center(
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    CircularProgressIndicator(color: widget.accent),
-                    const SizedBox(height: 16),
-                    const Text('Wird verarbeitet…',
-                        style: TextStyle(color: Colors.white70)),
-                  ]),
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: widget.accent),
+                        const SizedBox(height: 16),
+                        const Text('Wird verarbeitet…',
+                            style: TextStyle(color: Colors.white70)),
+                      ]),
                 ),
               ),
             ),
@@ -1768,7 +1943,8 @@ class _UsersTabState extends State<_UsersTab> {
       _processing = false;
       _selectedIds.clear();
     });
-    _snack('✅ $success erfolgreich${failed > 0 ? ', $failed fehlgeschlagen' : ''}');
+    _snack(
+        '✅ $success erfolgreich${failed > 0 ? ', $failed fehlgeschlagen' : ''}');
     _load();
   }
 
@@ -1813,8 +1989,10 @@ class _ChatModerationTab extends StatefulWidget {
   final AdminState admin;
   final Color accent, accentBright;
   const _ChatModerationTab(
-      {required this.world, required this.admin,
-       required this.accent, required this.accentBright});
+      {required this.world,
+      required this.admin,
+      required this.accent,
+      required this.accentBright});
   @override
   State<_ChatModerationTab> createState() => _ChatModerationTabState();
 }
@@ -1834,8 +2012,9 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
     _rebuildRoomsForWorld();
     _selectedRoom = _rooms.first;
     _loadMessages();
-    _pollTimer = Timer.periodic(const Duration(seconds: 20),
-        (_) { if (_autoRefresh) _loadMessages(); });
+    _pollTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (_autoRefresh) _loadMessages();
+    });
   }
 
   @override
@@ -1854,21 +2033,35 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
 
   void _rebuildRoomsForWorld() {
     const materie = [
-      'materie-politik', 'materie-geschichte', 'materie-ufo',
-      'materie-verschwoerung', 'materie-wissenschaft', 'materie-tech',
-      'materie-gesundheit', 'materie-medien', 'materie-finanzen',
+      'materie-politik',
+      'materie-geschichte',
+      'materie-ufo',
+      'materie-verschwoerung',
+      'materie-wissenschaft',
+      'materie-tech',
+      'materie-gesundheit',
+      'materie-medien',
+      'materie-finanzen',
     ];
     const energie = [
-      'energie-meditation', 'energie-chakra', 'energie-bewusstsein',
-      'energie-heilung', 'energie-kristalle', 'energie-astrologie',
+      'energie-meditation',
+      'energie-chakra',
+      'energie-bewusstsein',
+      'energie-heilung',
+      'energie-kristalle',
+      'energie-astrologie',
       'energie-traumdeutung',
     ];
     const vorhang = [
-      'vorhang-strategie', 'vorhang-macht', 'vorhang-medien',
+      'vorhang-strategie',
+      'vorhang-macht',
+      'vorhang-medien',
       'vorhang-geopolitik',
     ];
     const ursprung = [
-      'ursprung-bewusstsein', 'ursprung-quanten', 'ursprung-realitaet',
+      'ursprung-bewusstsein',
+      'ursprung-quanten',
+      'ursprung-realitaet',
     ];
     // v103: Dashboard ist global -- IMMER alle Raeume aller Welten.
     _rooms = [...materie, ...energie, ...vorhang, ...ursprung];
@@ -1907,52 +2100,69 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
     final username = (msg['username'] ?? 'Unbekannt').toString();
     final content = (msg['content'] ?? msg['message'] ?? '').toString();
 
-    if (id.isEmpty) { _snack('❌ Keine Nachrichten-ID vorhanden'); return; }
+    if (id.isEmpty) {
+      _snack('❌ Keine Nachrichten-ID vorhanden');
+      return;
+    }
 
     final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('🗑️ Nachricht löschen',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Column(mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Von: @$username',
-              style: TextStyle(color: widget.accent, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              content.length > 100 ? '${content.substring(0, 100)}…' : content,
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
-            ),
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('🗑️ Nachricht löschen',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+            content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Von: @$username',
+                      style: TextStyle(
+                          color: widget.accent, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      content.length > 100
+                          ? '${content.substring(0, 100)}…'
+                          : content,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                      'Diese Aktion kann nicht rückgängig gemacht werden.',
+                      style: TextStyle(color: Colors.white38, fontSize: 12)),
+                ]),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: const Icon(Icons.delete_rounded,
+                    color: Colors.white, size: 16),
+                label: const Text('Löschen',
+                    style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          const Text('Diese Aktion kann nicht rückgängig gemacht werden.',
-              style: TextStyle(color: Colors.white38, fontSize: 12)),
-        ]),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.delete_rounded, color: Colors.white, size: 16),
-            label: const Text('Löschen', style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
 
     if (!confirmed) return;
 
@@ -1964,7 +2174,8 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
         username: widget.admin.username ?? 'Weltenbibliothek',
         isAdmin: true,
       );
-      _snack('🗑️ Nachricht von $username gelöscht', color: Colors.red.shade700);
+      _snack('🗑️ Nachricht von $username gelöscht',
+          color: Colors.red.shade700);
       _loadMessages();
     } catch (e) {
       _snack('❌ Löschen fehlgeschlagen: $e', color: Colors.orange);
@@ -1981,34 +2192,41 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
     }
 
     final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('🚫 Sender sperren',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Text(
-          'Soll @$username für Chat-Verstöße gesperrt werden?\n\n'
-          'Der Nutzer kann 24 Stunden lang nicht mehr chatten.',
-          style: const TextStyle(color: Colors.white70, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.block_rounded, color: Colors.white, size: 16),
-            label: const Text('Sperren', style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('🚫 Sender sperren',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+            content: Text(
+              'Soll @$username für Chat-Verstöße gesperrt werden?\n\n'
+              'Der Nutzer kann 24 Stunden lang nicht mehr chatten.',
+              style: const TextStyle(color: Colors.white70, height: 1.4),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: const Icon(Icons.block_rounded,
+                    color: Colors.white, size: 16),
+                label: const Text('Sperren',
+                    style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
 
     if (!confirmed) return;
 
@@ -2031,11 +2249,15 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
           Icon(Icons.chat_bubble_rounded, color: widget.accent, size: 16),
           const SizedBox(width: 8),
           Text('${_messages.length} Nachrichten',
-              style: TextStyle(color: widget.accentBright, fontSize: 12, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: widget.accentBright,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
           const Spacer(),
           // Auto-refresh toggle
           Row(children: [
-            const Text('Auto', style: TextStyle(color: Colors.white38, fontSize: 11)),
+            const Text('Auto',
+                style: TextStyle(color: Colors.white38, fontSize: 11)),
             const SizedBox(width: 4),
             Switch(
               value: _autoRefresh,
@@ -2053,7 +2275,8 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
                 color: widget.accent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.refresh_rounded, color: widget.accent, size: 16),
+              child:
+                  Icon(Icons.refresh_rounded, color: widget.accent, size: 16),
             ),
           ),
         ]),
@@ -2080,12 +2303,16 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
                 decoration: BoxDecoration(
-                  color: sel ? widget.accent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+                  color: sel
+                      ? widget.accent.withValues(alpha: 0.2)
+                      : Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: sel ? widget.accent : Colors.transparent, width: 1.5),
+                      color: sel ? widget.accent : Colors.transparent,
+                      width: 1.5),
                 ),
                 alignment: Alignment.center,
                 child: Text(cap,
@@ -2107,7 +2334,8 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
                 onRefresh: _loadMessages,
                 color: widget.accent,
                 child: _messages.isEmpty
-                    ? _EmptyHint('Keine Nachrichten in diesem Raum.\nZiehe nach unten zum Aktualisieren.')
+                    ? _EmptyHint(
+                        'Keine Nachrichten in diesem Raum.\nZiehe nach unten zum Aktualisieren.')
                     : ListView.builder(
                         reverse: true,
                         itemCount: _messages.length,
@@ -2148,8 +2376,9 @@ class _SystemTabState extends State<_SystemTab> {
   void initState() {
     super.initState();
     _init();
-    _uiTimer = Timer.periodic(
-        const Duration(seconds: 2), (_) { if (mounted) setState(() {}); });
+    _uiTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _init() async {
@@ -2186,17 +2415,22 @@ class _SystemTabState extends State<_SystemTab> {
 
   Color _statusColor(HealthStatus s) {
     switch (s) {
-      case HealthStatus.healthy:   return Colors.green;
-      case HealthStatus.degraded:  return Colors.orange;
-      case HealthStatus.unhealthy: return Colors.red;
-      case HealthStatus.unknown:   return Colors.grey;
+      case HealthStatus.healthy:
+        return Colors.green;
+      case HealthStatus.degraded:
+        return Colors.orange;
+      case HealthStatus.unhealthy:
+        return Colors.red;
+      case HealthStatus.unknown:
+        return Colors.grey;
     }
   }
 
   double _calcUptime() {
     final svcs = _health.serviceHealth;
     if (svcs.isEmpty) return 100;
-    final healthy = svcs.values.where((s) => s.status == HealthStatus.healthy).length;
+    final healthy =
+        svcs.values.where((s) => s.status == HealthStatus.healthy).length;
     return (healthy / svcs.length) * 100;
   }
 
@@ -2207,14 +2441,25 @@ class _SystemTabState extends State<_SystemTab> {
     }
 
     final svcs = _health.serviceHealth;
-    final anyUnhealthy = svcs.values.any((s) => s.status == HealthStatus.unhealthy);
+    final anyUnhealthy =
+        svcs.values.any((s) => s.status == HealthStatus.unhealthy);
     final allOk = svcs.values.every((s) => s.status == HealthStatus.healthy);
 
-    final overallColor = anyUnhealthy ? Colors.red : allOk ? Colors.green : Colors.orange;
-    final overallLabel = anyUnhealthy ? 'Probleme erkannt'
-        : allOk ? 'Alle Systeme OK' : 'Eingeschränkt';
-    final overallIcon = anyUnhealthy ? Icons.error_rounded
-        : allOk ? Icons.check_circle_rounded : Icons.warning_amber_rounded;
+    final overallColor = anyUnhealthy
+        ? Colors.red
+        : allOk
+            ? Colors.green
+            : Colors.orange;
+    final overallLabel = anyUnhealthy
+        ? 'Probleme erkannt'
+        : allOk
+            ? 'Alle Systeme OK'
+            : 'Eingeschränkt';
+    final overallIcon = anyUnhealthy
+        ? Icons.error_rounded
+        : allOk
+            ? Icons.check_circle_rounded
+            : Icons.warning_amber_rounded;
 
     final uptime = _calcUptime();
     final errRate = _health.errorRate;
@@ -2226,7 +2471,8 @@ class _SystemTabState extends State<_SystemTab> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _SectionLabel('System-Status', Icons.monitor_heart_rounded, widget.accent),
+          _SectionLabel(
+              'System-Status', Icons.monitor_heart_rounded, widget.accent),
           const SizedBox(height: 12),
 
           // ── Gesamt-Status ─────────────────────────────────────────
@@ -2241,7 +2487,8 @@ class _SystemTabState extends State<_SystemTab> {
               ),
               child: Row(children: [
                 Container(
-                  width: 56, height: 56,
+                  width: 56,
+                  height: 56,
                   decoration: BoxDecoration(
                     color: overallColor.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
@@ -2250,14 +2497,22 @@ class _SystemTabState extends State<_SystemTab> {
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(overallLabel,
-                        style: TextStyle(color: overallColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('${svcs.length} Dienste überwacht · Tippen zum Prüfen',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(overallLabel,
+                            style: TextStyle(
+                                color: overallColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                        Text(
+                            '${svcs.length} Dienste überwacht · Tippen zum Prüfen',
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 12)),
+                      ]),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded, color: overallColor.withValues(alpha: 0.6), size: 14),
+                Icon(Icons.arrow_forward_ios_rounded,
+                    color: overallColor.withValues(alpha: 0.6), size: 14),
               ]),
             ),
           ),
@@ -2268,26 +2523,29 @@ class _SystemTabState extends State<_SystemTab> {
           _SectionLabel('Metriken', Icons.speed_rounded, widget.accent),
           const SizedBox(height: 10),
           Row(children: [
-            Expanded(child: _ClickableMetricCard(
-                label: 'Ø Latenz',
-                value: '${avgLatency.round()} ms',
-                icon: Icons.timer_rounded,
-                color: _latencyColor(avgLatency),
-                onTap: () {})),
+            Expanded(
+                child: _ClickableMetricCard(
+                    label: 'Ø Latenz',
+                    value: '${avgLatency.round()} ms',
+                    icon: Icons.timer_rounded,
+                    color: _latencyColor(avgLatency),
+                    onTap: () {})),
             const SizedBox(width: 10),
-            Expanded(child: _ClickableMetricCard(
-                label: 'Fehlerrate',
-                value: '${errRate.toStringAsFixed(1)} %',
-                icon: Icons.error_outline_rounded,
-                color: errRate > 10 ? Colors.red : Colors.green,
-                onTap: () {})),
+            Expanded(
+                child: _ClickableMetricCard(
+                    label: 'Fehlerrate',
+                    value: '${errRate.toStringAsFixed(1)} %',
+                    icon: Icons.error_outline_rounded,
+                    color: errRate > 10 ? Colors.red : Colors.green,
+                    onTap: () {})),
             const SizedBox(width: 10),
-            Expanded(child: _ClickableMetricCard(
-                label: 'Uptime',
-                value: '${uptime.toStringAsFixed(0)} %',
-                icon: Icons.power_rounded,
-                color: uptime > 95 ? Colors.green : Colors.orange,
-                onTap: () {})),
+            Expanded(
+                child: _ClickableMetricCard(
+                    label: 'Uptime',
+                    value: '${uptime.toStringAsFixed(0)} %',
+                    icon: Icons.power_rounded,
+                    color: uptime > 95 ? Colors.green : Colors.orange,
+                    onTap: () {})),
           ]),
 
           const SizedBox(height: 20),
@@ -2308,18 +2566,25 @@ class _SystemTabState extends State<_SystemTab> {
                       context: context,
                       builder: (_) => AlertDialog(
                         backgroundColor: const Color(0xFF1A1A2E),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
                         title: Text(e.key,
-                            style: TextStyle(color: widget.accentBright, fontWeight: FontWeight.bold)),
-                        content: Column(mainAxisSize: MainAxisSize.min, children: [
-                          _InfoRow2(Icons.speed_rounded, 'Latenz: ${e.value.latencyMs} ms'),
+                            style: TextStyle(
+                                color: widget.accentBright,
+                                fontWeight: FontWeight.bold)),
+                        content:
+                            Column(mainAxisSize: MainAxisSize.min, children: [
+                          _InfoRow2(Icons.speed_rounded,
+                              'Latenz: ${e.value.latencyMs} ms'),
                           const SizedBox(height: 6),
-                          _InfoRow2(Icons.circle, 'Status: ${e.value.statusText}'),
+                          _InfoRow2(
+                              Icons.circle, 'Status: ${e.value.statusText}'),
                         ]),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: Text('OK', style: TextStyle(color: widget.accent)),
+                            child: Text('OK',
+                                style: TextStyle(color: widget.accent)),
                           ),
                         ],
                       ),
@@ -2336,15 +2601,19 @@ class _SystemTabState extends State<_SystemTab> {
               onPressed: _checking ? null : _checkAll,
               icon: _checking
                   ? SizedBox(
-                      width: 16, height: 16,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.refresh_rounded, color: Colors.white),
               label: Text(_checking ? 'Prüfe…' : 'Jetzt prüfen',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: widget.accent,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
               ),
             ),
@@ -2380,8 +2649,10 @@ class _SectionLabel extends StatelessWidget {
         const SizedBox(width: 8),
         Text(text,
             style: TextStyle(
-                color: accent, fontWeight: FontWeight.bold,
-                fontSize: 13, letterSpacing: 0.3)),
+                color: accent,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 0.3)),
       ]);
 }
 
@@ -2396,7 +2667,8 @@ class _EmptyHint extends StatelessWidget {
             Icon(Icons.inbox_rounded, color: Colors.white24, size: 48),
             const SizedBox(height: 12),
             Text(text,
-                style: const TextStyle(color: Colors.white38, fontSize: 14, height: 1.5),
+                style: const TextStyle(
+                    color: Colors.white38, fontSize: 14, height: 1.5),
                 textAlign: TextAlign.center),
           ]),
         ),
@@ -2426,7 +2698,9 @@ class _ToggleChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: selected ? accent.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.05),
+          color: selected
+              ? accent.withValues(alpha: 0.18)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? accent : Colors.transparent,
@@ -2493,12 +2767,14 @@ class _ErrorBanner extends StatelessWidget {
           border: Border.all(color: Colors.red.withValues(alpha: 0.35)),
         ),
         child: Row(children: [
-          const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 22),
+          const Icon(Icons.error_outline_rounded,
+              color: Colors.redAccent, size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 12, height: 1.4),
             ),
           ),
           const SizedBox(width: 8),
@@ -2511,7 +2787,8 @@ class _ErrorBanner extends StatelessWidget {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               minimumSize: const Size(0, 32),
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              textStyle:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),
         ]),
@@ -2525,8 +2802,11 @@ class _ClickableStatCard extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   const _ClickableStatCard(
-      {required this.icon, required this.label, required this.value,
-       required this.color, required this.onTap});
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.color,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -2538,7 +2818,8 @@ class _ClickableStatCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Container(
                 padding: const EdgeInsets.all(7),
@@ -2549,7 +2830,8 @@ class _ClickableStatCard extends StatelessWidget {
                 child: Icon(icon, color: color, size: 18),
               ),
               const Spacer(),
-              Icon(Icons.open_in_new_rounded, color: color.withValues(alpha: 0.4), size: 12),
+              Icon(Icons.open_in_new_rounded,
+                  color: color.withValues(alpha: 0.4), size: 12),
             ]),
             const SizedBox(height: 10),
             Text(value,
@@ -2570,8 +2852,10 @@ class _QuickActionBtn extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   const _QuickActionBtn(
-      {required this.icon, required this.label,
-       required this.color, required this.onTap});
+      {required this.icon,
+      required this.label,
+      required this.color,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -2586,9 +2870,14 @@ class _QuickActionBtn extends StatelessWidget {
           child: Row(children: [
             Icon(icon, color: color, size: 18),
             const SizedBox(width: 8),
-            Expanded(child: Text(label,
-                style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600))),
-            Icon(Icons.arrow_forward_ios_rounded, color: color.withValues(alpha: 0.5), size: 12),
+            Expanded(
+                child: Text(label,
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600))),
+            Icon(Icons.arrow_forward_ios_rounded,
+                color: color.withValues(alpha: 0.5), size: 12),
           ]),
         ),
       );
@@ -2602,30 +2891,30 @@ class _ActivityTile extends StatelessWidget {
   // dart2js stolpert über const Map<String, Record> → final Map mit
   // expliziten Tupel-Klassen umgangen.
   static final Map<String, (IconData, Color)> _icons = {
-    'edit_message':   (Icons.edit_rounded,           const Color(0xFF1E88E5)),
-    'delete_message': (Icons.delete_rounded,          const Color(0xFFE53935)),
-    'promote':        (Icons.arrow_upward_rounded,    const Color(0xFF43A047)),
-    'demote':         (Icons.arrow_downward_rounded,  const Color(0xFFFB8C00)),
-    'ban':            (Icons.block_rounded,           const Color(0xFFE53935)),
-    'unban':          (Icons.check_circle_rounded,    const Color(0xFF00ACC1)),
+    'edit_message': (Icons.edit_rounded, const Color(0xFF1E88E5)),
+    'delete_message': (Icons.delete_rounded, const Color(0xFFE53935)),
+    'promote': (Icons.arrow_upward_rounded, const Color(0xFF43A047)),
+    'demote': (Icons.arrow_downward_rounded, const Color(0xFFFB8C00)),
+    'ban': (Icons.block_rounded, const Color(0xFFE53935)),
+    'unban': (Icons.check_circle_rounded, const Color(0xFF00ACC1)),
   };
 
   static const _labels = {
-    'edit_message':   'Nachricht bearbeitet',
+    'edit_message': 'Nachricht bearbeitet',
     'delete_message': 'Nachricht gelöscht',
-    'promote':        'Zum Admin befördert',
-    'demote':         'Degradiert',
-    'ban':            'Nutzer gesperrt',
-    'unban':          'Sperre aufgehoben',
+    'promote': 'Zum Admin befördert',
+    'demote': 'Degradiert',
+    'ban': 'Nutzer gesperrt',
+    'unban': 'Sperre aufgehoben',
   };
 
   @override
   Widget build(BuildContext context) {
     final key = entry.action.toLowerCase();
     final iconData = _icons[key]?.$1 ?? Icons.info_outline_rounded;
-    final color    = _icons[key]?.$2 ?? Colors.grey;
-    final label    = _labels[key] ?? entry.action;
-    final ts       = _fmt(entry.timestamp);
+    final color = _icons[key]?.$2 ?? Colors.grey;
+    final label = _labels[key] ?? entry.action;
+    final ts = _fmt(entry.timestamp);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2644,10 +2933,13 @@ class _ActivityTile extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(label,
                 style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13)),
             Text('${entry.adminUsername} → ${entry.targetUsername}',
                 style: const TextStyle(color: Colors.white54, fontSize: 11)),
           ]),
@@ -2662,7 +2954,9 @@ class _ActivityTile extends StatelessWidget {
       final dt = DateTime.parse(ts).toLocal();
       return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')} '
           '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (_) { return ts; }
+    } catch (_) {
+      return ts;
+    }
   }
 }
 
@@ -2698,18 +2992,18 @@ class _UserTile extends StatelessWidget {
 
   Color get _roleColor => switch (user.role) {
         'root_admin' => Colors.amber,
-        'admin'      => Colors.blue,
+        'admin' => Colors.blue,
         'content_editor' => Colors.purpleAccent,
         'moderator' => Colors.tealAccent,
-        _            => Colors.white38,
+        _ => Colors.white38,
       };
 
   String get _roleLabel => switch (user.role) {
         'root_admin' => '👑 ROOT',
-        'admin'      => '🛡️ Admin',
+        'admin' => '🛡️ Admin',
         'content_editor' => '✍️ Editor',
         'moderator' => '🧹 Mod',
-        _            => '👤 User',
+        _ => '👤 User',
       };
 
   // Erlaubte Rollen-Ziele abhaengig von Berechtigung. Root-Admin darf zu
@@ -2751,7 +3045,9 @@ class _UserTile extends StatelessWidget {
                 child: Text(
                   user.avatarEmoji?.isNotEmpty == true
                       ? user.avatarEmoji!
-                      : (user.username.isEmpty ? '?' : user.username[0].toUpperCase()),
+                      : (user.username.isEmpty
+                          ? '?'
+                          : user.username[0].toUpperCase()),
                   style: const TextStyle(fontSize: 18),
                 ),
               ),
@@ -2765,19 +3061,23 @@ class _UserTile extends StatelessWidget {
           ),
           title: Text(user.displayName ?? user.username,
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14)),
           subtitle: Wrap(
             spacing: 6,
             runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('@${user.username}',
-                  style: TextStyle(color: accent.withValues(alpha: 0.7), fontSize: 11)),
+                  style: TextStyle(
+                      color: accent.withValues(alpha: 0.7), fontSize: 11)),
               if (user.world != null)
                 _MiniPill(
                   label: user.world == 'materie' ? 'M' : 'E',
                   color: user.world == 'materie' ? Colors.orange : Colors.teal,
-                  tooltip: user.world == 'materie' ? 'Materie-Welt' : 'Energie-Welt',
+                  tooltip:
+                      user.world == 'materie' ? 'Materie-Welt' : 'Energie-Welt',
                 ),
               // 🔑 Herkunfts-Badge: Web (Supabase-Auth) vs. App (InvisibleAuth)
               if (user.source == 'web')
@@ -2813,12 +3113,9 @@ class _UserTile extends StatelessWidget {
                     child: Row(children: [
                       Text(_roleMenuLabel(r),
                           style: TextStyle(
-                              color: isCurrent
-                                  ? Colors.white38
-                                  : Colors.white,
-                              fontWeight: isCurrent
-                                  ? FontWeight.w400
-                                  : FontWeight.w600,
+                              color: isCurrent ? Colors.white38 : Colors.white,
+                              fontWeight:
+                                  isCurrent ? FontWeight.w400 : FontWeight.w600,
                               fontSize: 13)),
                       if (isCurrent) ...[
                         const Spacer(),
@@ -2829,8 +3126,8 @@ class _UserTile extends StatelessWidget {
                   );
                 }).toList(),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: _roleColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
@@ -2851,13 +3148,11 @@ class _UserTile extends StatelessWidget {
               )
             else
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _roleColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border:
-                      Border.all(color: _roleColor.withValues(alpha: 0.3)),
+                  border: Border.all(color: _roleColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(_roleLabel,
                     style: TextStyle(
@@ -2866,14 +3161,16 @@ class _UserTile extends StatelessWidget {
                         fontWeight: FontWeight.bold)),
               ),
             const SizedBox(width: 6),
-            const Icon(Icons.expand_more_rounded, color: Colors.white38, size: 18),
+            const Icon(Icons.expand_more_rounded,
+                color: Colors.white38, size: 18),
           ]),
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
               child: Column(children: [
                 const Divider(color: Colors.white10, height: 16),
-                _InfoRow(Icons.access_time_rounded, 'Erstellt: ${_fmtDate(user.createdAt)}'),
+                _InfoRow(Icons.access_time_rounded,
+                    'Erstellt: ${_fmtDate(user.createdAt)}'),
                 const SizedBox(height: 4),
                 _InfoRow(Icons.fingerprint_rounded,
                     'ID: ${user.userId.isEmpty ? "Unbekannt" : user.userId}'),
@@ -2881,15 +3178,17 @@ class _UserTile extends StatelessWidget {
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   // v100: Promote/Demote nur fuer Admin+ (canPromoteDemote).
                   if (AppRoles.canPromoteDemote(actorRole) && !user.isAdmin)
-                    _ActionBtn(
-                        Icons.arrow_upward_rounded, 'Befoerdern', Colors.green, onPromote),
-                  if (AppRoles.canPromoteDemote(actorRole)
-                      && user.isAdmin && !user.isRootAdmin)
-                    _ActionBtn(
-                        Icons.arrow_downward_rounded, 'Degradieren', Colors.orange, onDemote),
+                    _ActionBtn(Icons.arrow_upward_rounded, 'Befoerdern',
+                        Colors.green, onPromote),
+                  if (AppRoles.canPromoteDemote(actorRole) &&
+                      user.isAdmin &&
+                      !user.isRootAdmin)
+                    _ActionBtn(Icons.arrow_downward_rounded, 'Degradieren',
+                        Colors.orange, onDemote),
                   // Ban/Unban fuer Moderator+.
                   if (AppRoles.canBanUsers(actorRole))
-                    _ActionBtn(Icons.block_rounded, 'Sperren', Colors.red, onBan),
+                    _ActionBtn(
+                        Icons.block_rounded, 'Sperren', Colors.red, onBan),
                   if (AppRoles.canBanUsers(actorRole))
                     _ActionBtn(Icons.check_circle_outline_rounded, 'Entsperren',
                         Colors.teal, onUnban),
@@ -2910,7 +3209,9 @@ class _UserTile extends StatelessWidget {
     try {
       final dt = DateTime.parse(ts).toLocal();
       return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
-    } catch (_) { return '–'; }
+    } catch (_) {
+      return '–';
+    }
   }
 }
 
@@ -2922,9 +3223,10 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) => Row(children: [
         Icon(icon, size: 12, color: Colors.white38),
         const SizedBox(width: 6),
-        Expanded(child: Text(text,
-            style: const TextStyle(color: Colors.white38, fontSize: 11),
-            overflow: TextOverflow.ellipsis)),
+        Expanded(
+            child: Text(text,
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                overflow: TextOverflow.ellipsis)),
       ]);
 }
 
@@ -2962,7 +3264,8 @@ class _ActionBtn extends StatelessWidget {
             Icon(icon, color: color, size: 14),
             const SizedBox(width: 6),
             Text(label,
-                style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+                style: TextStyle(
+                    color: color, fontSize: 12, fontWeight: FontWeight.w600)),
           ]),
         ),
       );
@@ -3000,7 +3303,8 @@ class _BulkActionBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF0B0817).withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accentBright.withValues(alpha: 0.45), width: 1.2),
+          border: Border.all(
+              color: accentBright.withValues(alpha: 0.45), width: 1.2),
           boxShadow: [
             BoxShadow(
               color: accent.withValues(alpha: 0.35),
@@ -3019,25 +3323,32 @@ class _BulkActionBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text('$count ausgewählt',
-                  style: TextStyle(color: accentBright, fontSize: 12, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: accentBright,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
             ),
             const SizedBox(width: 8),
             if (onSelectAll != null) ...[
               TextButton.icon(
                 onPressed: onSelectAll,
-                icon: const Icon(Icons.select_all_rounded, size: 16, color: Colors.white70),
+                icon: const Icon(Icons.select_all_rounded,
+                    size: 16, color: Colors.white70),
                 label: const Text('Alle waehlen',
                     style: TextStyle(color: Colors.white70, fontSize: 11)),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   minimumSize: const Size(0, 28),
                 ),
               ),
               const SizedBox(width: 4),
             ],
-            _ActionBtn(Icons.arrow_upward, 'Befördern', Colors.green, onPromote),
+            _ActionBtn(
+                Icons.arrow_upward, 'Befördern', Colors.green, onPromote),
             const SizedBox(width: 6),
-            _ActionBtn(Icons.arrow_downward, 'Degradieren', Colors.orange, onDemote),
+            _ActionBtn(
+                Icons.arrow_downward, 'Degradieren', Colors.orange, onDemote),
             const SizedBox(width: 6),
             _ActionBtn(Icons.block, 'Bannen', Colors.red, onBan),
             const SizedBox(width: 6),
@@ -3063,15 +3374,19 @@ class _ChatMsgTile extends StatelessWidget {
   final Color accent, accentBright;
   final VoidCallback onDelete, onBan;
   const _ChatMsgTile(
-      {required this.msg, required this.accent, required this.accentBright,
-       required this.onDelete, required this.onBan});
+      {required this.msg,
+      required this.accent,
+      required this.accentBright,
+      required this.onDelete,
+      required this.onBan});
 
   @override
   Widget build(BuildContext context) {
     final username = (msg['username'] ?? 'Anonym').toString();
-    final content  = (msg['content'] ?? msg['message'] ?? '').toString();
-    final ts       = _fmt(msg['created_at'] ?? msg['timestamp'] ?? '');
-    final emoji    = (msg['avatarEmoji'] ?? msg['avatar_emoji'] ?? '👤').toString();
+    final content = (msg['content'] ?? msg['message'] ?? '').toString();
+    final ts = _fmt(msg['created_at'] ?? msg['timestamp'] ?? '');
+    final emoji =
+        (msg['avatarEmoji'] ?? msg['avatar_emoji'] ?? '👤').toString();
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -3085,24 +3400,31 @@ class _ChatMsgTile extends StatelessWidget {
         Text(emoji, style: const TextStyle(fontSize: 22)),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Text(username,
                   style: TextStyle(
-                      color: accentBright, fontWeight: FontWeight.bold, fontSize: 13)),
+                      color: accentBright,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13)),
               const Spacer(),
-              Text(ts, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+              Text(ts,
+                  style: const TextStyle(color: Colors.white38, fontSize: 10)),
             ]),
             const SizedBox(height: 4),
             Text(content,
-                style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
-                maxLines: 5, overflow: TextOverflow.ellipsis),
+                style: const TextStyle(
+                    color: Colors.white70, fontSize: 13, height: 1.4),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis),
           ]),
         ),
         const SizedBox(width: 6),
         Column(children: [
           IconButton(
-            icon: const Icon(Icons.delete_rounded, color: Colors.redAccent, size: 20),
+            icon: const Icon(Icons.delete_rounded,
+                color: Colors.redAccent, size: 20),
             tooltip: 'Nachricht löschen',
             onPressed: onDelete,
             padding: const EdgeInsets.all(4),
@@ -3110,7 +3432,8 @@ class _ChatMsgTile extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           IconButton(
-            icon: const Icon(Icons.block_rounded, color: Colors.orange, size: 20),
+            icon:
+                const Icon(Icons.block_rounded, color: Colors.orange, size: 20),
             tooltip: 'Sender sperren',
             onPressed: onBan,
             padding: const EdgeInsets.all(4),
@@ -3125,7 +3448,9 @@ class _ChatMsgTile extends StatelessWidget {
     try {
       final dt = DateTime.parse(ts).toLocal();
       return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    } catch (_) { return ''; }
+    } catch (_) {
+      return '';
+    }
   }
 }
 
@@ -3136,8 +3461,10 @@ class _ClickableServiceRow extends StatelessWidget {
   final Color statusColor;
   final VoidCallback onTap;
   const _ClickableServiceRow(
-      {required this.name, required this.health,
-       required this.statusColor, required this.onTap});
+      {required this.name,
+      required this.health,
+      required this.statusColor,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -3152,12 +3479,16 @@ class _ClickableServiceRow extends StatelessWidget {
           ),
           child: Row(children: [
             Container(
-              width: 10, height: 10,
-              decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+              width: 10,
+              height: 10,
+              decoration:
+                  BoxDecoration(color: statusColor, shape: BoxShape.circle),
             ),
             const SizedBox(width: 12),
-            Expanded(child: Text(name,
-                style: const TextStyle(color: Colors.white70, fontSize: 13))),
+            Expanded(
+                child: Text(name,
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 13))),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
@@ -3165,12 +3496,17 @@ class _ClickableServiceRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text('${health.latencyMs} ms',
-                  style: TextStyle(color: statusColor.withValues(alpha: 0.8), fontSize: 11,
+                  style: TextStyle(
+                      color: statusColor.withValues(alpha: 0.8),
+                      fontSize: 11,
                       fontWeight: FontWeight.w600)),
             ),
             const SizedBox(width: 8),
             Text(health.statusText,
-                style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(width: 6),
             Icon(Icons.chevron_right_rounded, color: Colors.white24, size: 16),
           ]),
@@ -3185,8 +3521,11 @@ class _ClickableMetricCard extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
   const _ClickableMetricCard(
-      {required this.label, required this.value, required this.icon,
-       required this.color, required this.onTap});
+      {required this.label,
+      required this.value,
+      required this.icon,
+      required this.color,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -3202,7 +3541,8 @@ class _ClickableMetricCard extends StatelessWidget {
             Icon(icon, color: color.withValues(alpha: 0.8), size: 18),
             const SizedBox(height: 6),
             Text(value,
-                style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: color, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(label,
                 style: const TextStyle(color: Colors.white38, fontSize: 10),
@@ -3236,7 +3576,8 @@ class _OnlineDot extends StatelessWidget {
       return const _OnlineDotState(Color(0xFF4CAF50), 'Online');
     }
     if (delta.inMinutes < 15) {
-      return _OnlineDotState(const Color(0xFFFFC107), 'Vor ${delta.inMinutes} Min');
+      return _OnlineDotState(
+          const Color(0xFFFFC107), 'Vor ${delta.inMinutes} Min');
     }
     final h = delta.inHours;
     if (h < 24) {
@@ -3307,7 +3648,11 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
     if (!mounted) return;
     try {
       final users = await WorldAdminService.getAllUsers();
-      if (mounted) setState(() { _all = users; _loading = false; });
+      if (mounted)
+        setState(() {
+          _all = users;
+          _loading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -3351,7 +3696,8 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
           children: [
             Center(
               child: Container(
-                width: 42, height: 4,
+                width: 42,
+                height: 4,
                 decoration: BoxDecoration(
                   color: Colors.white24,
                   borderRadius: BorderRadius.circular(2),
@@ -3363,10 +3709,14 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
               Icon(Icons.bolt_rounded, color: widget.accent, size: 20),
               const SizedBox(width: 8),
               Text('Live-Roster',
-                  style: TextStyle(color: widget.accentBright, fontWeight: FontWeight.bold, fontSize: 16)),
+                  style: TextStyle(
+                      color: widget.accentBright,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
               const Spacer(),
               Text('< $_onlineCutoffMin min: ${online.length}',
-                  style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 11)),
+                  style:
+                      const TextStyle(color: Color(0xFF4CAF50), fontSize: 11)),
             ]),
             const SizedBox(height: 14),
             if (online.isEmpty)
@@ -3379,8 +3729,10 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
               ...online.map((u) => _rosterTile(u, isOnline: true)),
             if (recent.isNotEmpty) ...[
               const SizedBox(height: 14),
-              Text('Vor $_onlineCutoffMin–$_recentCutoffMin min · ${recent.length}',
-                  style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1)),
+              Text(
+                  'Vor $_onlineCutoffMin–$_recentCutoffMin min · ${recent.length}',
+                  style: const TextStyle(
+                      color: Colors.white38, fontSize: 11, letterSpacing: 1)),
               const SizedBox(height: 6),
               ...recent.map((u) => _rosterTile(u, isOnline: false)),
             ],
@@ -3395,11 +3747,14 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
     final String worldLabel;
     final Color worldColor;
     if (u.world == 'materie') {
-      worldLabel = 'M'; worldColor = Colors.orange;
+      worldLabel = 'M';
+      worldColor = Colors.orange;
     } else if (u.world == 'energie') {
-      worldLabel = 'E'; worldColor = Colors.teal;
+      worldLabel = 'E';
+      worldColor = Colors.teal;
     } else {
-      worldLabel = '?'; worldColor = Colors.white24;
+      worldLabel = '?';
+      worldColor = Colors.white24;
     }
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 3),
@@ -3426,7 +3781,8 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
             ),
           ),
           Positioned(
-            right: -2, bottom: -2,
+            right: -2,
+            bottom: -2,
             child: _OnlineDot(lastSeenAtIso: u.lastSeenAt),
           ),
         ]),
@@ -3437,10 +3793,14 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
             children: [
               Text(u.displayName ?? u.username,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis),
               Text('@${u.username}',
-                  style: TextStyle(color: widget.accent.withValues(alpha: 0.7), fontSize: 10),
+                  style: TextStyle(
+                      color: widget.accent.withValues(alpha: 0.7),
+                      fontSize: 10),
                   overflow: TextOverflow.ellipsis),
             ],
           ),
@@ -3475,7 +3835,9 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
-        child: Center(child: CircularProgressIndicator(color: widget.accent, strokeWidth: 2)),
+        child: Center(
+            child: CircularProgressIndicator(
+                color: widget.accent, strokeWidth: 2)),
       );
     }
 
@@ -3513,26 +3875,33 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
             ],
           ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.25)),
+          border: Border.all(
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.25)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
               Container(
-                width: 10, height: 10,
+                width: 10,
+                height: 10,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0xFF4CAF50),
                   boxShadow: [
-                    BoxShadow(color: Color(0x884CAF50), blurRadius: 6, spreadRadius: 1),
+                    BoxShadow(
+                        color: Color(0x884CAF50),
+                        blurRadius: 6,
+                        spreadRadius: 1),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
               Text('${onlineNow.length}',
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(width: 6),
               const Text('online',
                   style: TextStyle(color: Colors.white60, fontSize: 13)),
@@ -3540,7 +3909,8 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
               Text('E ${byWorld['energie']}  ·  M ${byWorld['materie']}',
                   style: const TextStyle(color: Colors.white54, fontSize: 11)),
               const SizedBox(width: 6),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 18),
+              const Icon(Icons.chevron_right_rounded,
+                  color: Colors.white38, size: 18),
             ]),
             const SizedBox(height: 10),
             if (preview.isEmpty)
@@ -3548,16 +3918,18 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
                   style: TextStyle(color: Colors.white54, fontSize: 12))
             else
               Wrap(
-                spacing: 6, runSpacing: 6,
+                spacing: 6,
+                runSpacing: 6,
                 children: preview.map((u) {
                   final ageMin = _ageMin(u);
-                  final initial = u.username.isEmpty
-                      ? '?'
-                      : u.username[0].toUpperCase();
+                  final initial =
+                      u.username.isEmpty ? '?' : u.username[0].toUpperCase();
                   return Tooltip(
-                    message: '@${u.username} · ${ageMin == null ? "?" : ageMin < 1 ? "jetzt" : "${ageMin}m"}',
+                    message:
+                        '@${u.username} · ${ageMin == null ? "?" : ageMin < 1 ? "jetzt" : "${ageMin}m"}',
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(12),
@@ -3568,13 +3940,17 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
                           radius: 9,
                           backgroundColor: widget.accent.withValues(alpha: 0.2),
                           child: Text(
-                            u.avatarEmoji?.isNotEmpty == true ? u.avatarEmoji! : initial,
-                            style: const TextStyle(fontSize: 9, color: Colors.white),
+                            u.avatarEmoji?.isNotEmpty == true
+                                ? u.avatarEmoji!
+                                : initial,
+                            style: const TextStyle(
+                                fontSize: 9, color: Colors.white),
                           ),
                         ),
                         const SizedBox(width: 5),
                         Text(u.username,
-                            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 11)),
                       ]),
                     ),
                   );
@@ -3582,7 +3958,8 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
               ),
             if (onlineNow.length > preview.length) ...[
               const SizedBox(height: 6),
-              Text('+${onlineNow.length - preview.length} weitere · Tippen für Liste',
+              Text(
+                  '+${onlineNow.length - preview.length} weitere · Tippen für Liste',
                   style: TextStyle(color: widget.accent, fontSize: 11)),
             ],
           ],
@@ -3639,8 +4016,8 @@ class _ActivityHeatmapBlockState extends State<_ActivityHeatmapBlock> {
           borderRadius: BorderRadius.circular(14),
         ),
         child: Center(
-          child: CircularProgressIndicator(
-            color: widget.accent, strokeWidth: 2),
+          child:
+              CircularProgressIndicator(color: widget.accent, strokeWidth: 2),
         ),
       );
     }
@@ -3733,7 +4110,8 @@ class _ActivityHeatmapBlockState extends State<_ActivityHeatmapBlock> {
                             message: '$w · ${h}h: $v Msg',
                             child: Container(
                               height: 22,
-                              margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 0.5),
                               decoration: BoxDecoration(
                                 color: _worldColors[w]!.withValues(
                                     alpha: 0.08 + (intensity * 0.85)),
@@ -3899,8 +4277,8 @@ class _ModerationQueueScreenState extends State<_ModerationQueueScreen> {
           Text(
             'Gemeldet von @${r.reporterName ?? r.reporterId}'
             '${r.targetUser != null ? " · gegen @${r.targetUser}" : ""}',
-            style:
-                TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
           ),
           if (r.notes?.isNotEmpty ?? false) ...[
             const SizedBox(height: 6),
@@ -4004,10 +4382,13 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
           indicatorColor: widget.accent,
           labelColor: widget.accentBright,
           unselectedLabelColor: Colors.white38,
-          labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+          labelStyle:
+              const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
           tabs: const [
             Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Progress'),
-            Tab(icon: Icon(Icons.auto_awesome_rounded, size: 16), text: 'Spirit'),
+            Tab(
+                icon: Icon(Icons.auto_awesome_rounded, size: 16),
+                text: 'Spirit'),
             Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Editor'),
             Tab(icon: Icon(Icons.report_rounded, size: 16), text: 'Reports'),
           ],
@@ -4017,10 +4398,14 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
         child: TabBarView(
           controller: _ctrl,
           children: [
-            _ModuleProgressTab(accent: widget.accent, accentBright: widget.accentBright),
-            _SpiritStatsTab(accent: widget.accent, accentBright: widget.accentBright),
-            _ModuleEditorTab(accent: widget.accent, accentBright: widget.accentBright),
-            _PostReportsTab(accent: widget.accent, accentBright: widget.accentBright),
+            _ModuleProgressTab(
+                accent: widget.accent, accentBright: widget.accentBright),
+            _SpiritStatsTab(
+                accent: widget.accent, accentBright: widget.accentBright),
+            _ModuleEditorTab(
+                accent: widget.accent, accentBright: widget.accentBright),
+            _PostReportsTab(
+                accent: widget.accent, accentBright: widget.accentBright),
           ],
         ),
       ),
@@ -4061,7 +4446,10 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final res = await http
           .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'))
@@ -4078,7 +4466,11 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = 'Netzwerk: $e'; _loading = false; });
+      if (mounted)
+        setState(() {
+          _error = 'Netzwerk: $e';
+          _loading = false;
+        });
     }
   }
 
@@ -4086,7 +4478,8 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
     // Volles Modul vom Worker laden
     try {
       final res = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'))
           .timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -4109,16 +4502,25 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
     }
   }
 
-  Future<void> _showEditorSheet(String moduleType, String moduleCode, Map<String, dynamic> module) async {
-    final title = TextEditingController(text: module['title']?.toString() ?? '');
-    final subtitle = TextEditingController(text: module['subtitle']?.toString() ?? '');
-    final theory = TextEditingController(text: module['theory_content']?.toString() ?? '');
-    final caseStudy = TextEditingController(text: module['case_study']?.toString() ?? '');
-    final exercise = TextEditingController(text: module['exercise_description']?.toString() ?? '');
-    final duration = TextEditingController(text: '${module['exercise_duration_minutes'] ?? 15}');
+  Future<void> _showEditorSheet(
+      String moduleType, String moduleCode, Map<String, dynamic> module) async {
+    final title =
+        TextEditingController(text: module['title']?.toString() ?? '');
+    final subtitle =
+        TextEditingController(text: module['subtitle']?.toString() ?? '');
+    final theory =
+        TextEditingController(text: module['theory_content']?.toString() ?? '');
+    final caseStudy =
+        TextEditingController(text: module['case_study']?.toString() ?? '');
+    final exercise = TextEditingController(
+        text: module['exercise_description']?.toString() ?? '');
+    final duration = TextEditingController(
+        text: '${module['exercise_duration_minutes'] ?? 15}');
     final xp = TextEditingController(text: '${module['xp_reward'] ?? 50}');
-    final youtube = TextEditingController(text: module['youtube_search_query']?.toString() ?? '');
-    final freq = TextEditingController(text: module['audio_frequency_hz']?.toString() ?? '');
+    final youtube = TextEditingController(
+        text: module['youtube_search_query']?.toString() ?? '');
+    final freq = TextEditingController(
+        text: module['audio_frequency_hz']?.toString() ?? '');
 
     bool saving = false;
 
@@ -4139,30 +4541,42 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
             controller: scroll,
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
             children: [
-              Center(child: Container(
-                width: 42, height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              Center(
+                  child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2)),
               )),
               const SizedBox(height: 14),
               Row(children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: widget.accent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(moduleCode,
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(moduleType.toUpperCase(),
-                      style: const TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1)),
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                          letterSpacing: 1)),
                 ),
               ]),
               const SizedBox(height: 14),
@@ -4172,12 +4586,17 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
               _editorField('Case Study', caseStudy, maxLines: 4),
               _editorField('Exercise Description', exercise, maxLines: 5),
               Row(children: [
-                Expanded(child: _editorField('Dauer (Min.)', duration, keyboardType: TextInputType.number)),
+                Expanded(
+                    child: _editorField('Dauer (Min.)', duration,
+                        keyboardType: TextInputType.number)),
                 const SizedBox(width: 10),
-                Expanded(child: _editorField('XP-Reward', xp, keyboardType: TextInputType.number)),
+                Expanded(
+                    child: _editorField('XP-Reward', xp,
+                        keyboardType: TextInputType.number)),
               ]),
               _editorField('YouTube-Suchquery', youtube),
-              _editorField('Audio-Frequenz Hz (z.B. 432)', freq, keyboardType: TextInputType.number),
+              _editorField('Audio-Frequenz Hz (z.B. 432)', freq,
+                  keyboardType: TextInputType.number),
               const SizedBox(height: 22),
               Row(children: [
                 Expanded(
@@ -4195,55 +4614,69 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: saving ? null : () async {
-                      setSheet(() => saving = true);
-                      final payload = <String, dynamic>{
-                        'title': title.text.trim(),
-                        'subtitle': subtitle.text.trim(),
-                        'theory_content': theory.text.trim(),
-                        'case_study': caseStudy.text.trim(),
-                        'exercise_description': exercise.text.trim(),
-                        'youtube_search_query': youtube.text.trim(),
-                        'admin': 'admin',
-                      };
-                      final d = int.tryParse(duration.text.trim());
-                      if (d != null) payload['exercise_duration_minutes'] = d;
-                      final x = int.tryParse(xp.text.trim());
-                      if (x != null) payload['xp_reward'] = x;
-                      final f = double.tryParse(freq.text.trim());
-                      if (f != null) payload['audio_frequency_hz'] = f;
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            setSheet(() => saving = true);
+                            final payload = <String, dynamic>{
+                              'title': title.text.trim(),
+                              'subtitle': subtitle.text.trim(),
+                              'theory_content': theory.text.trim(),
+                              'case_study': caseStudy.text.trim(),
+                              'exercise_description': exercise.text.trim(),
+                              'youtube_search_query': youtube.text.trim(),
+                              'admin': 'admin',
+                            };
+                            final d = int.tryParse(duration.text.trim());
+                            if (d != null)
+                              payload['exercise_duration_minutes'] = d;
+                            final x = int.tryParse(xp.text.trim());
+                            if (x != null) payload['xp_reward'] = x;
+                            final f = double.tryParse(freq.text.trim());
+                            if (f != null) payload['audio_frequency_hz'] = f;
 
-                      try {
-                        final res = await http.patch(
-                          Uri.parse('${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'),
-                          headers: const {'Content-Type': 'application/json'},
-                          body: jsonEncode(payload),
-                        ).timeout(const Duration(seconds: 12));
-                        if (!mounted) return;
-                        if (res.statusCode == 200) {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text('✅ $moduleCode gespeichert'),
-                            backgroundColor: widget.accent,
-                          ));
-                          _load();
-                        } else {
-                          setSheet(() => saving = false);
-                          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                            content: Text('❌ HTTP ${res.statusCode}: ${res.body.substring(0, 100)}'),
-                            backgroundColor: Colors.redAccent,
-                          ));
-                        }
-                      } catch (e) {
-                        setSheet(() => saving = false);
-                        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                          content: Text('Netzwerk: $e'),
-                          backgroundColor: Colors.redAccent,
-                        ));
-                      }
-                    },
+                            try {
+                              final res = await http
+                                  .patch(
+                                    Uri.parse(
+                                        '${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'),
+                                    headers: const {
+                                      'Content-Type': 'application/json'
+                                    },
+                                    body: jsonEncode(payload),
+                                  )
+                                  .timeout(const Duration(seconds: 12));
+                              if (!mounted) return;
+                              if (res.statusCode == 200) {
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(SnackBar(
+                                  content: Text('✅ $moduleCode gespeichert'),
+                                  backgroundColor: widget.accent,
+                                ));
+                                _load();
+                              } else {
+                                setSheet(() => saving = false);
+                                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                                  content: Text(
+                                      '❌ HTTP ${res.statusCode}: ${res.body.substring(0, 100)}'),
+                                  backgroundColor: Colors.redAccent,
+                                ));
+                              }
+                            } catch (e) {
+                              setSheet(() => saving = false);
+                              ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                                content: Text('Netzwerk: $e'),
+                                backgroundColor: Colors.redAccent,
+                              ));
+                            }
+                          },
                     icon: saving
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.save_rounded),
                     label: Text(saving ? 'Speichere…' : 'Speichern'),
                     style: ElevatedButton.styleFrom(
@@ -4303,7 +4736,8 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+            const Icon(Icons.error_outline_rounded,
+                color: Colors.redAccent, size: 40),
             const SizedBox(height: 12),
             Text(_error!,
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -4314,10 +4748,12 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
         ),
       );
     }
-    final vorhangModules = (((_data?['vorhang'] as Map?)?['modules'] as List?) ?? const [])
-        .cast<Map<String, dynamic>>();
-    final ursprungModules = (((_data?['ursprung'] as Map?)?['modules'] as List?) ?? const [])
-        .cast<Map<String, dynamic>>();
+    final vorhangModules =
+        (((_data?['vorhang'] as Map?)?['modules'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>();
+    final ursprungModules =
+        (((_data?['ursprung'] as Map?)?['modules'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>();
 
     final all = <Map<String, dynamic>>[
       ...vorhangModules.map((m) => {...m, '__type': 'vorhang'}),
@@ -4328,7 +4764,9 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
       if (_typeFilter != 'all' && m['__type'] != _typeFilter) return false;
       if (_search.isNotEmpty) {
         final q = _search.toLowerCase();
-        final blob = '${m['code'] ?? ''} ${m['title'] ?? ''} ${m['branch'] ?? ''}'.toLowerCase();
+        final blob =
+            '${m['code'] ?? ''} ${m['title'] ?? ''} ${m['branch'] ?? ''}'
+                .toLowerCase();
         if (!blob.contains(q)) return false;
       }
       return true;
@@ -4346,15 +4784,24 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
             decoration: InputDecoration(
               hintText: 'Suche Code / Title / Branch',
               hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-              prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 18),
+              prefixIcon: const Icon(Icons.search_rounded,
+                  color: Colors.white38, size: 18),
               isDense: true,
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-              suffixIcon: _search.isEmpty ? null : IconButton(
-                icon: const Icon(Icons.clear_rounded, color: Colors.white38, size: 16),
-                onPressed: () { _searchCtrl.clear(); setState(() => _search = ''); },
-              ),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none),
+              suffixIcon: _search.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.clear_rounded,
+                          color: Colors.white38, size: 16),
+                      onPressed: () {
+                        _searchCtrl.clear();
+                        setState(() => _search = '');
+                      },
+                    ),
             ),
             onChanged: (v) => setState(() => _search = v),
           ),
@@ -4367,16 +4814,24 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                 child: GestureDetector(
                   onTap: () => setState(() => _typeFilter = t),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: sel ? widget.accent.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.04),
+                      color: sel
+                          ? widget.accent.withValues(alpha: 0.25)
+                          : Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: sel ? widget.accent : Colors.transparent),
+                      border: Border.all(
+                          color: sel ? widget.accent : Colors.transparent),
                     ),
-                    child: Text(t == 'all' ? 'Alle' : t[0].toUpperCase() + t.substring(1),
+                    child: Text(
+                        t == 'all'
+                            ? 'Alle'
+                            : t[0].toUpperCase() + t.substring(1),
                         style: TextStyle(
                           color: sel ? widget.accentBright : Colors.white60,
-                          fontSize: 11, fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         )),
                   ),
                 ),
@@ -4399,7 +4854,8 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                     child: Padding(
                       padding: EdgeInsets.all(24),
                       child: Text('Keine Module für diesen Filter.',
-                          style: TextStyle(color: Colors.white54, fontSize: 13)),
+                          style:
+                              TextStyle(color: Colors.white54, fontSize: 13)),
                     ),
                   ),
                 ])
@@ -4421,7 +4877,8 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                           borderRadius: BorderRadius.circular(10),
                           onTap: () => _openEditor(type, code),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
                               color: const Color(0xFF12121E),
                               borderRadius: BorderRadius.circular(10),
@@ -4429,7 +4886,8 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                             ),
                             child: Row(children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: type == 'vorhang'
                                       ? Colors.purple.withValues(alpha: 0.2)
@@ -4437,25 +4895,43 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(code,
-                                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold)),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
-                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  Text(title,
-                                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                                  const SizedBox(height: 1),
-                                  Text(branch,
-                                      style: const TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: 0.6),
-                                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                                ]),
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(title,
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      const SizedBox(height: 1),
+                                      Text(branch,
+                                          style: const TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 9,
+                                              letterSpacing: 0.6),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                    ]),
                               ),
                               if (xpReward > 0)
                                 Text('+$xpReward',
-                                    style: const TextStyle(color: Color(0xFFFFC107), fontSize: 11, fontWeight: FontWeight.bold)),
+                                    style: const TextStyle(
+                                        color: Color(0xFFFFC107),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold)),
                               const SizedBox(width: 6),
-                              const Icon(Icons.edit_rounded, color: Colors.white38, size: 16),
+                              const Icon(Icons.edit_rounded,
+                                  color: Colors.white38, size: 16),
                             ]),
                           ),
                         ),
@@ -4513,27 +4989,34 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final res = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/spirit-stats?days=$_days'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/admin/spirit-stats?days=$_days'))
           .timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
-        if (mounted) setState(() {
-          _data = jsonDecode(res.body) as Map<String, dynamic>;
-          _loading = false;
-        });
+        if (mounted)
+          setState(() {
+            _data = jsonDecode(res.body) as Map<String, dynamic>;
+            _loading = false;
+          });
       } else {
-        if (mounted) setState(() {
-          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
-          _loading = false;
-        });
+        if (mounted)
+          setState(() {
+            _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+            _loading = false;
+          });
       }
     } catch (e) {
-      if (mounted) setState(() {
-        _error = 'Netzwerk: $e';
-        _loading = false;
-      });
+      if (mounted)
+        setState(() {
+          _error = 'Netzwerk: $e';
+          _loading = false;
+        });
     }
   }
 
@@ -4547,7 +5030,8 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+            const Icon(Icons.error_outline_rounded,
+                color: Colors.redAccent, size: 40),
             const SizedBox(height: 12),
             Text(_error!,
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -4567,13 +5051,18 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
     final totalReadings = (_data?['total_readings'] ?? 0) as int;
     final totalUsers = (_data?['total_users'] ?? 0) as int;
     final recentReadings = (_data?['recent_readings'] ?? 0) as int;
-    final toolsAll = ((_data?['tools_all'] as List?) ?? const []).cast<Map<String, dynamic>>();
-    final toolsRecent = ((_data?['tools_recent'] as List?) ?? const []).cast<Map<String, dynamic>>();
-    final daily = ((_data?['daily'] as List?) ?? const []).cast<Map<String, dynamic>>();
+    final toolsAll = ((_data?['tools_all'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>();
+    final toolsRecent = ((_data?['tools_recent'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>();
+    final daily =
+        ((_data?['daily'] as List?) ?? const []).cast<Map<String, dynamic>>();
 
     final maxAllTotal = toolsAll.isEmpty ? 1 : toolsAll.first['total'] as int;
-    final maxRecentTotal = toolsRecent.isEmpty ? 1 : (toolsRecent.first['total'] as int);
-    final maxDaily = daily.fold<int>(0, (m, d) => (d['count'] as int) > m ? (d['count'] as int) : m);
+    final maxRecentTotal =
+        toolsRecent.isEmpty ? 1 : (toolsRecent.first['total'] as int);
+    final maxDaily = daily.fold<int>(
+        0, (m, d) => (d['count'] as int) > m ? (d['count'] as int) : m);
 
     return RefreshIndicator(
       color: widget.accent,
@@ -4583,39 +5072,56 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
         children: [
           // Top stats
           Row(children: [
-            Expanded(child: _MiniMetric('Readings gesamt', '$totalReadings', Icons.auto_awesome_rounded, widget.accent)),
+            Expanded(
+                child: _MiniMetric('Readings gesamt', '$totalReadings',
+                    Icons.auto_awesome_rounded, widget.accent)),
             const SizedBox(width: 10),
-            Expanded(child: _MiniMetric('Unique User', '$totalUsers', Icons.people_rounded, const Color(0xFF1E88E5))),
+            Expanded(
+                child: _MiniMetric('Unique User', '$totalUsers',
+                    Icons.people_rounded, const Color(0xFF1E88E5))),
           ]),
           const SizedBox(height: 10),
           Row(children: [
-            Expanded(child: _MiniMetric('Letzte $_days Tage', '$recentReadings', Icons.bolt_rounded, const Color(0xFF43A047))),
+            Expanded(
+                child: _MiniMetric('Letzte $_days Tage', '$recentReadings',
+                    Icons.bolt_rounded, const Color(0xFF43A047))),
             const SizedBox(width: 10),
-            Expanded(child: _MiniMetric('Aktive Tools', '${toolsRecent.length}', Icons.category_rounded, const Color(0xFFFFC107))),
+            Expanded(
+                child: _MiniMetric('Aktive Tools', '${toolsRecent.length}',
+                    Icons.category_rounded, const Color(0xFFFFC107))),
           ]),
           const SizedBox(height: 18),
 
           // Window-Switch
           Row(children: [
-            const Text('Zeitraum:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+            const Text('Zeitraum:',
+                style: TextStyle(color: Colors.white54, fontSize: 11)),
             const SizedBox(width: 10),
             ...[7, 30, 90].map((d) {
               final sel = d == _days;
               return Padding(
                 padding: const EdgeInsets.only(right: 6),
                 child: GestureDetector(
-                  onTap: () { setState(() => _days = d); _load(); },
+                  onTap: () {
+                    setState(() => _days = d);
+                    _load();
+                  },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: sel ? widget.accent.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.05),
+                      color: sel
+                          ? widget.accent.withValues(alpha: 0.25)
+                          : Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: sel ? widget.accent : Colors.transparent),
+                      border: Border.all(
+                          color: sel ? widget.accent : Colors.transparent),
                     ),
                     child: Text('${d}d',
                         style: TextStyle(
                           color: sel ? widget.accentBright : Colors.white60,
-                          fontSize: 11, fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         )),
                   ),
                 ),
@@ -4625,7 +5131,8 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
           const SizedBox(height: 16),
 
           // Sparkline
-          _SectionLabel('Readings pro Tag', Icons.show_chart_rounded, widget.accent),
+          _SectionLabel(
+              'Readings pro Tag', Icons.show_chart_rounded, widget.accent),
           const SizedBox(height: 8),
           Container(
             height: 80,
@@ -4636,7 +5143,9 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
               border: Border.all(color: Colors.white12),
             ),
             child: daily.isEmpty
-                ? const Center(child: Text('Keine Daten', style: TextStyle(color: Colors.white38)))
+                ? const Center(
+                    child: Text('Keine Daten',
+                        style: TextStyle(color: Colors.white38)))
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: daily.map((d) {
@@ -4654,7 +5163,8 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
                                   height: h.clamp(2, 60),
                                   decoration: BoxDecoration(
                                     color: widget.accent.withValues(alpha: 0.7),
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                                    borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(2)),
                                   ),
                                 ),
                               ],
@@ -4667,10 +5177,12 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
           ),
 
           const SizedBox(height: 22),
-          _SectionLabel('Top-Tools · Letzte $_days Tage', Icons.local_fire_department_rounded, widget.accent),
+          _SectionLabel('Top-Tools · Letzte $_days Tage',
+              Icons.local_fire_department_rounded, widget.accent),
           const SizedBox(height: 8),
           if (toolsRecent.isEmpty)
-            _EmptyHint('In den letzten $_days Tagen wurden keine Readings gespeichert.')
+            _EmptyHint(
+                'In den letzten $_days Tagen wurden keine Readings gespeichert.')
           else
             ...toolsRecent.take(10).map((t) => _SpiritToolBar(
                   label: _labelFor(t['tool'] as String),
@@ -4681,7 +5193,8 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
                 )),
 
           const SizedBox(height: 22),
-          _SectionLabel('Top-Tools · All-Time', Icons.emoji_events_rounded, widget.accent),
+          _SectionLabel('Top-Tools · All-Time', Icons.emoji_events_rounded,
+              widget.accent),
           const SizedBox(height: 8),
           if (toolsAll.isEmpty)
             _EmptyHint('Noch keine Readings gespeichert.')
@@ -4729,7 +5242,8 @@ class _MiniMetric extends StatelessWidget {
             ]),
             const SizedBox(height: 6),
             Text(value,
-                style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: color, fontSize: 22, fontWeight: FontWeight.bold)),
           ],
         ),
       );
@@ -4764,11 +5278,15 @@ class _SpiritToolBar extends StatelessWidget {
         Row(children: [
           Expanded(
             child: Text(label,
-                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600),
                 overflow: TextOverflow.ellipsis),
           ),
           Text('$total',
-              style: TextStyle(color: accent, fontSize: 14, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: accent, fontSize: 14, fontWeight: FontWeight.bold)),
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
@@ -4828,27 +5346,33 @@ class _ModuleProgressTabState extends State<_ModuleProgressTab>
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final res = await http
           .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'))
           .timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
-        if (mounted) setState(() {
-          _data = jsonDecode(res.body) as Map<String, dynamic>;
-          _loading = false;
-        });
+        if (mounted)
+          setState(() {
+            _data = jsonDecode(res.body) as Map<String, dynamic>;
+            _loading = false;
+          });
       } else {
-        if (mounted) setState(() {
-          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
-          _loading = false;
-        });
+        if (mounted)
+          setState(() {
+            _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+            _loading = false;
+          });
       }
     } catch (e) {
-      if (mounted) setState(() {
-        _error = 'Netzwerk: $e';
-        _loading = false;
-      });
+      if (mounted)
+        setState(() {
+          _error = 'Netzwerk: $e';
+          _loading = false;
+        });
     }
   }
 
@@ -4862,7 +5386,8 @@ class _ModuleProgressTabState extends State<_ModuleProgressTab>
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+            Icon(Icons.error_outline_rounded,
+                color: Colors.redAccent, size: 40),
             const SizedBox(height: 12),
             Text(_error!,
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -4889,7 +5414,8 @@ class _ModuleProgressTabState extends State<_ModuleProgressTab>
           indicatorColor: widget.accent,
           labelColor: widget.accentBright,
           unselectedLabelColor: Colors.white38,
-          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          labelStyle:
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
           tabs: [
             Tab(text: 'Vorhang (${vorhang['total'] ?? 0})'),
             Tab(text: 'Ursprung (${ursprung['total'] ?? 0})'),
@@ -4900,8 +5426,16 @@ class _ModuleProgressTabState extends State<_ModuleProgressTab>
         child: TabBarView(
           controller: _inner,
           children: [
-            _ProgressBranch(data: vorhang, accent: widget.accent, accentBright: widget.accentBright, onReload: _load),
-            _ProgressBranch(data: ursprung, accent: widget.accent, accentBright: widget.accentBright, onReload: _load),
+            _ProgressBranch(
+                data: vorhang,
+                accent: widget.accent,
+                accentBright: widget.accentBright,
+                onReload: _load),
+            _ProgressBranch(
+                data: ursprung,
+                accent: widget.accent,
+                accentBright: widget.accentBright,
+                onReload: _load),
           ],
         ),
       ),
@@ -4938,7 +5472,10 @@ class _ProgressBranch extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [accent.withValues(alpha: 0.15), accent.withValues(alpha: 0.05)],
+                colors: [
+                  accent.withValues(alpha: 0.15),
+                  accent.withValues(alpha: 0.05)
+                ],
               ),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: accent.withValues(alpha: 0.3)),
@@ -4947,14 +5484,24 @@ class _ProgressBranch extends StatelessWidget {
               Icon(Icons.school_rounded, color: accent),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('$total Module verfügbar',
-                      style: TextStyle(color: accentBright, fontWeight: FontWeight.bold, fontSize: 15)),
-                  Text(branches.isEmpty
-                      ? 'Keine Branches'
-                      : branches.map((b) => '${b['branch']} (${b['modules']})').join(' · '),
-                      style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('$total Module verfügbar',
+                          style: TextStyle(
+                              color: accentBright,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15)),
+                      Text(
+                          branches.isEmpty
+                              ? 'Keine Branches'
+                              : branches
+                                  .map(
+                                      (b) => '${b['branch']} (${b['modules']})')
+                                  .join(' · '),
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 11)),
+                    ]),
               ),
             ]),
           ),
@@ -4971,7 +5518,8 @@ class _ProgressBranch extends StatelessWidget {
               final modules = (m['modules'] ?? 0) as int;
               final started = (m['users_started'] ?? 0) as int;
               final completed = (m['users_completed'] ?? 0) as int;
-              final rate = started > 0 ? (completed * 100 / started).round() : 0;
+              final rate =
+                  started > 0 ? (completed * 100 / started).round() : 0;
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
@@ -4982,26 +5530,42 @@ class _ProgressBranch extends StatelessWidget {
                 ),
                 child: Row(children: [
                   Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(m['branch']?.toString().toUpperCase() ?? '?',
-                          style: TextStyle(color: accentBright, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1)),
-                      const SizedBox(height: 4),
-                      Text('$modules Module · $started gestartet · $completed komplett durch',
-                          style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                    ]),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m['branch']?.toString().toUpperCase() ?? '?',
+                              style: TextStyle(
+                                  color: accentBright,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  letterSpacing: 1)),
+                          const SizedBox(height: 4),
+                          Text(
+                              '$modules Module · $started gestartet · $completed komplett durch',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11)),
+                        ]),
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: rate >= 50 ? Colors.green.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.18),
+                      color: rate >= 50
+                          ? Colors.green.withValues(alpha: 0.2)
+                          : Colors.orange.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: (rate >= 50 ? Colors.green : Colors.orange).withValues(alpha: 0.5)),
+                      border: Border.all(
+                          color: (rate >= 50 ? Colors.green : Colors.orange)
+                              .withValues(alpha: 0.5)),
                     ),
                     child: Text('$rate%',
                         style: TextStyle(
-                          color: rate >= 50 ? Colors.green.shade300 : Colors.orange.shade300,
-                          fontWeight: FontWeight.bold, fontSize: 14,
+                          color: rate >= 50
+                              ? Colors.green.shade300
+                              : Colors.orange.shade300,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         )),
                   ),
                 ]),
@@ -5009,7 +5573,8 @@ class _ProgressBranch extends StatelessWidget {
             }),
 
           const SizedBox(height: 22),
-          _SectionLabel('Top-Module · höchste Completion-Rate', Icons.trending_up_rounded, accent),
+          _SectionLabel('Top-Module · höchste Completion-Rate',
+              Icons.trending_up_rounded, accent),
           const SizedBox(height: 10),
           if (top.isEmpty)
             _EmptyHint('Noch nicht genug Daten (≥3 Starter pro Modul nötig).')
@@ -5021,7 +5586,8 @@ class _ProgressBranch extends StatelessWidget {
                 )),
 
           const SizedBox(height: 22),
-          _SectionLabel('Hängen-bleiben · niedrigste Completion-Rate', Icons.trending_down_rounded, accent),
+          _SectionLabel('Hängen-bleiben · niedrigste Completion-Rate',
+              Icons.trending_down_rounded, accent),
           const SizedBox(height: 10),
           if (stuck.isEmpty)
             _EmptyHint('Keine kritischen Module gefunden.')
@@ -5042,7 +5608,8 @@ class _ModuleStatTile extends StatelessWidget {
   final Map<String, dynamic> m;
   final Color accent;
   final MaterialColor goodColor;
-  const _ModuleStatTile({required this.m, required this.accent, required this.goodColor});
+  const _ModuleStatTile(
+      {required this.m, required this.accent, required this.goodColor});
 
   @override
   Widget build(BuildContext context) {
@@ -5070,7 +5637,10 @@ class _ModuleStatTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(code,
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 6),
           Container(
@@ -5080,24 +5650,35 @@ class _ModuleStatTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(branch,
-                style: const TextStyle(color: Colors.white60, fontSize: 9, letterSpacing: 1)),
+                style: const TextStyle(
+                    color: Colors.white60, fontSize: 9, letterSpacing: 1)),
           ),
           const Spacer(),
           if (xpReward > 0)
             Text('+$xpReward XP',
-                style: const TextStyle(color: Color(0xFFFFC107), fontSize: 11, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    color: Color(0xFFFFC107),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(height: 6),
         Text(title,
-            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-            maxLines: 2, overflow: TextOverflow.ellipsis),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis),
         const SizedBox(height: 8),
         Row(children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('$completed/$started',
-                  style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
-              const Text('komplett/gestartet', style: TextStyle(color: Colors.white38, fontSize: 9)),
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold)),
+              const Text('komplett/gestartet',
+                  style: TextStyle(color: Colors.white38, fontSize: 9)),
             ]),
           ),
           Container(
@@ -5108,7 +5689,10 @@ class _ModuleStatTile extends StatelessWidget {
               border: Border.all(color: goodColor.withValues(alpha: 0.5)),
             ),
             child: Text('$rate%',
-                style: TextStyle(color: goodColor.shade300, fontWeight: FontWeight.bold, fontSize: 13)),
+                style: TextStyle(
+                    color: goodColor.shade300,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13)),
           ),
         ]),
       ]),
@@ -5151,9 +5735,11 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
   Future<void> _loadHistory() async {
     setState(() => _loadingHistory = true);
     try {
-      final res = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/api/admin/push/history'),
-      ).timeout(const Duration(seconds: 10));
+      final res = await http
+          .get(
+            Uri.parse('${ApiConfig.workerUrl}/api/admin/push/history'),
+          )
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final list = (data['broadcasts'] as List?) ?? const [];
@@ -5179,22 +5765,26 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
     }
     setState(() => _sending = true);
     try {
-      final res = await http.post(
-        Uri.parse('${ApiConfig.workerUrl}/api/admin/push/broadcast'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'target': _target,
-          'title': _title.text.trim(),
-          'body': _body.text.trim(),
-          if (_deeplink.text.trim().isNotEmpty) 'deeplink': _deeplink.text.trim(),
-        }),
-      ).timeout(const Duration(seconds: 30));
+      final res = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/admin/push/broadcast'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'target': _target,
+              'title': _title.text.trim(),
+              'body': _body.text.trim(),
+              if (_deeplink.text.trim().isNotEmpty)
+                'deeplink': _deeplink.text.trim(),
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final enq = data['enqueued'] ?? 0;
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('✅ $enq Empfänger in Queue · Cron sendet via FCM (max 5min)'),
+            content: Text(
+                '✅ $enq Empfänger in Queue · Cron sendet via FCM (max 5min)'),
             backgroundColor: widget.accent,
           ));
           _title.clear();
@@ -5232,7 +5822,10 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [widget.accent.withValues(alpha: 0.35), widget.accent.withValues(alpha: 0.1)]),
+              gradient: LinearGradient(colors: [
+                widget.accent.withValues(alpha: 0.35),
+                widget.accent.withValues(alpha: 0.1)
+              ]),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: widget.accent.withValues(alpha: 0.4)),
             ),
@@ -5240,29 +5833,33 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('🔔 PUSH BROADCAST',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                _field('Empfänger-Zielgruppe',
-                    children: [
-                      for (final t in [
-                        'all',
-                        'admins',
-                        'active',
-                        'materie',
-                        'energie',
-                        'vorhang',
-                        'ursprung'
-                      ])
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: ChoiceChip(
-                            label: Text(t.toUpperCase(), style: const TextStyle(fontSize: 10)),
-                            selected: _target == t,
-                            onSelected: (_) => setState(() => _target = t),
-                            selectedColor: widget.accent,
-                          ),
-                        ),
-                    ]),
+                _field('Empfänger-Zielgruppe', children: [
+                  for (final t in [
+                    'all',
+                    'admins',
+                    'active',
+                    'materie',
+                    'energie',
+                    'vorhang',
+                    'ursprung'
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(t.toUpperCase(),
+                            style: const TextStyle(fontSize: 10)),
+                        selected: _target == t,
+                        onSelected: (_) => setState(() => _target = t),
+                        selectedColor: widget.accent,
+                      ),
+                    ),
+                ]),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _title,
@@ -5282,7 +5879,8 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
                 TextField(
                   controller: _deeplink,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _inputDeco('Deeplink (optional, z.B. /vorhang/module)'),
+                  decoration:
+                      _inputDeco('Deeplink (optional, z.B. /vorhang/module)'),
                 ),
                 const SizedBox(height: 14),
                 SizedBox(
@@ -5290,10 +5888,15 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
                   child: ElevatedButton.icon(
                     onPressed: _sending ? null : _send,
                     icon: _sending
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.send),
                     label: Text(_sending ? 'Sende…' : 'BROADCAST SENDEN',
-                        style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, letterSpacing: 1.5)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: widget.accent,
                       foregroundColor: Colors.white,
@@ -5306,7 +5909,11 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
           const SizedBox(height: 18),
           Row(children: [
             Text('VERLAUF · letzte ${_history.length}',
-                style: TextStyle(color: widget.accentBright, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: widget.accentBright,
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold)),
             const Spacer(),
             IconButton(
               icon: Icon(Icons.refresh, color: widget.accent),
@@ -5320,7 +5927,8 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text('Noch keine Broadcasts', style: TextStyle(color: Colors.white60)),
+                child: Text('Noch keine Broadcasts',
+                    style: TextStyle(color: Colors.white60)),
               ),
             )
           else
@@ -5346,10 +5954,14 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text((b['title'] as String?) ?? '',
-              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold)),
           Text((b['body'] as String?) ?? '',
               style: const TextStyle(color: Colors.white70, fontSize: 11),
-              maxLines: 2, overflow: TextOverflow.ellipsis),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
           const SizedBox(height: 6),
           Row(children: [
             Text((b['created_at'] as String?)?.substring(0, 16) ?? '',
@@ -5368,8 +5980,12 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
 
   Widget _stat(String icon, int n, Color c) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(color: c.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-        child: Text('$icon $n', style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.bold)),
+        decoration: BoxDecoration(
+            color: c.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8)),
+        child: Text('$icon $n',
+            style:
+                TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.bold)),
       );
 
   InputDecoration _inputDeco(String hint) => InputDecoration(
@@ -5378,7 +5994,9 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
         isDense: true,
         filled: true,
         fillColor: Colors.black.withValues(alpha: 0.4),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none),
         counterStyle: const TextStyle(color: Colors.white38, fontSize: 10),
       );
 
@@ -5387,9 +6005,14 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: TextStyle(color: widget.accentBright, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: widget.accentBright,
+                fontSize: 10,
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
-        SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: children)),
+        SingleChildScrollView(
+            scrollDirection: Axis.horizontal, child: Row(children: children)),
       ],
     );
   }
@@ -5432,11 +6055,13 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
   Future<void> _loadReportsCount() async {
     try {
       final res = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/reports?status=open&limit=1'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/admin/reports?status=open&limit=1'))
           .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final counts = (data['counts'] as Map?)?.cast<String, dynamic>() ?? const {};
+        final counts =
+            (data['counts'] as Map?)?.cast<String, dynamic>() ?? const {};
         setState(() => _openReports = (counts['open'] as int?) ?? 0);
       }
     } catch (_) {}
@@ -5445,12 +6070,13 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
   Future<void> _loadUsernameRequestsCount() async {
     try {
       final res = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/username-change-requests'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/admin/username-change-requests'))
           .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final total = (data['total'] as int?) ??
-            (data['requests'] as List?)?.length ?? 0;
+        final total =
+            (data['total'] as int?) ?? (data['requests'] as List?)?.length ?? 0;
         setState(() => _openUsernameRequests = total);
       }
     } catch (_) {}
@@ -5472,23 +6098,30 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
           indicatorColor: widget.accent,
           labelColor: widget.accentBright,
           unselectedLabelColor: Colors.white38,
-          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          labelStyle:
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
           tabs: [
-            const Tab(icon: Icon(Icons.history_rounded, size: 16), text: 'Audit-Log'),
+            const Tab(
+                icon: Icon(Icons.history_rounded, size: 16), text: 'Audit-Log'),
             Tab(
               icon: Stack(clipBehavior: Clip.none, children: [
                 const Icon(Icons.flag_rounded, size: 16),
                 if (_openReports > 0)
                   Positioned(
-                    right: -8, top: -4,
+                    right: -8,
+                    top: -4,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: Colors.redAccent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text('$_openReports',
-                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
               ]),
@@ -5499,15 +6132,20 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
                 const Icon(Icons.edit_note_rounded, size: 16),
                 if (_openUsernameRequests > 0)
                   Positioned(
-                    right: -8, top: -4,
+                    right: -8,
+                    top: -4,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
                         color: Colors.amberAccent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text('$_openUsernameRequests',
-                          style: const TextStyle(color: Colors.black87, fontSize: 8, fontWeight: FontWeight.bold)),
+                          style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
               ]),
@@ -5520,7 +6158,10 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
         child: TabBarView(
           controller: _ctrl,
           children: [
-            _AuditLogTab(world: widget.world, accent: widget.accent, accentBright: widget.accentBright),
+            _AuditLogTab(
+                world: widget.world,
+                accent: widget.accent,
+                accentBright: widget.accentBright),
             _ReportsInboxTab(
               accent: widget.accent,
               accentBright: widget.accentBright,
@@ -5572,7 +6213,10 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final uri = Uri.parse('${ApiConfig.workerUrl}/api/admin/reports')
           .replace(queryParameters: {
@@ -5584,11 +6228,14 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {
-          _reports = ((data['reports'] as List?) ?? const []).cast<Map<String, dynamic>>();
-          _counts = ((data['counts'] as Map?)?.cast<String, dynamic>() ?? const {})
-              .map((k, v) => MapEntry(k, (v as num).toInt()));
-          _byType = ((data['by_type'] as Map?)?.cast<String, dynamic>() ?? const {})
-              .map((k, v) => MapEntry(k, (v as num).toInt()));
+          _reports = ((data['reports'] as List?) ?? const [])
+              .cast<Map<String, dynamic>>();
+          _counts =
+              ((data['counts'] as Map?)?.cast<String, dynamic>() ?? const {})
+                  .map((k, v) => MapEntry(k, (v as num).toInt()));
+          _byType =
+              ((data['by_type'] as Map?)?.cast<String, dynamic>() ?? const {})
+                  .map((k, v) => MapEntry(k, (v as num).toInt()));
           _loading = false;
         });
       } else if (mounted) {
@@ -5598,19 +6245,30 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = 'Netzwerk: $e'; _loading = false; });
+      if (mounted)
+        setState(() {
+          _error = 'Netzwerk: $e';
+          _loading = false;
+        });
     }
   }
 
-  Future<void> _setStatus(Map<String, dynamic> report, String status, {String? note}) async {
+  Future<void> _setStatus(Map<String, dynamic> report, String status,
+      {String? note}) async {
     final id = report['id'] as String?;
     if (id == null) return;
     try {
-      final res = await http.patch(
-        Uri.parse('${ApiConfig.workerUrl}/api/admin/reports/$id'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({'status': status, if (note != null) 'resolution_note': note, 'admin': 'admin'}),
-      ).timeout(const Duration(seconds: 10));
+      final res = await http
+          .patch(
+            Uri.parse('${ApiConfig.workerUrl}/api/admin/reports/$id'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'status': status,
+              if (note != null) 'resolution_note': note,
+              'admin': 'admin'
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('✅ Status: $status'),
@@ -5650,9 +6308,13 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
           controller: scroll,
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           children: [
-            Center(child: Container(
-              width: 42, height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            Center(
+                child: Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2)),
             )),
             const SizedBox(height: 16),
             Row(children: [
@@ -5664,9 +6326,13 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
             ]),
             const SizedBox(height: 14),
             Text(r['title']?.toString() ?? '',
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
-            Text('@${r['username'] ?? 'anonym'} · ${_fmt(r['created_at'] as String? ?? '')}',
+            Text(
+                '@${r['username'] ?? 'anonym'} · ${_fmt(r['created_at'] as String? ?? '')}',
                 style: const TextStyle(color: Colors.white54, fontSize: 12)),
             if ((r['body'] as String?)?.isNotEmpty == true) ...[
               const SizedBox(height: 14),
@@ -5677,30 +6343,37 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: SelectableText(r['body'].toString(),
-                    style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 13, height: 1.5)),
               ),
             ],
             if ((r['target_id'] as String?)?.isNotEmpty == true) ...[
               const SizedBox(height: 10),
               _InfoRow(Icons.gps_fixed_rounded, 'Target: ${r['target_id']}'),
             ],
-            if ((r['context'] != null) && (r['context'] is Map) && (r['context'] as Map).isNotEmpty) ...[
+            if ((r['context'] != null) &&
+                (r['context'] is Map) &&
+                (r['context'] as Map).isNotEmpty) ...[
               const SizedBox(height: 10),
-              _InfoRow(Icons.info_outline_rounded, 'Context: ${jsonEncode(r['context'])}'),
+              _InfoRow(Icons.info_outline_rounded,
+                  'Context: ${jsonEncode(r['context'])}'),
             ],
             if ((r['resolution_note'] as String?)?.isNotEmpty == true) ...[
               const SizedBox(height: 14),
               const Text('AUFLÖSUNG',
-                  style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 2)),
+                  style: TextStyle(
+                      color: Colors.white38, fontSize: 10, letterSpacing: 2)),
               const SizedBox(height: 4),
               Text(r['resolution_note'].toString(),
                   style: const TextStyle(color: Colors.white70, fontSize: 13)),
-              Text('— @${r['reviewed_by'] ?? '?'} · ${_fmt(r['reviewed_at'] as String? ?? '')}',
+              Text(
+                  '— @${r['reviewed_by'] ?? '?'} · ${_fmt(r['reviewed_at'] as String? ?? '')}',
                   style: const TextStyle(color: Colors.white38, fontSize: 10)),
             ],
             const SizedBox(height: 22),
             const Text('Bearbeiten',
-                style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1.5)),
+                style: TextStyle(
+                    color: Colors.white54, fontSize: 11, letterSpacing: 1.5)),
             const SizedBox(height: 8),
             TextField(
               controller: noteCtrl,
@@ -5725,28 +6398,57 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
             const SizedBox(height: 10),
             Wrap(spacing: 8, runSpacing: 8, children: [
               ElevatedButton.icon(
-                onPressed: () { Navigator.pop(ctx); _setStatus(r, 'reviewing', note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim()); },
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _setStatus(r, 'reviewing',
+                      note: noteCtrl.text.trim().isEmpty
+                          ? null
+                          : noteCtrl.text.trim());
+                },
                 icon: const Icon(Icons.remove_red_eye_rounded, size: 16),
                 label: const Text('In Bearbeitung'),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFC107), foregroundColor: Colors.black),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFC107),
+                    foregroundColor: Colors.black),
               ),
               ElevatedButton.icon(
-                onPressed: () { Navigator.pop(ctx); _setStatus(r, 'resolved', note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim()); },
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _setStatus(r, 'resolved',
+                      note: noteCtrl.text.trim().isEmpty
+                          ? null
+                          : noteCtrl.text.trim());
+                },
                 icon: const Icon(Icons.check_circle_rounded, size: 16),
                 label: const Text('Erledigt'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade700,
+                    foregroundColor: Colors.white),
               ),
               ElevatedButton.icon(
-                onPressed: () { Navigator.pop(ctx); _setStatus(r, 'dismissed', note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim()); },
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _setStatus(r, 'dismissed',
+                      note: noteCtrl.text.trim().isEmpty
+                          ? null
+                          : noteCtrl.text.trim());
+                },
                 icon: const Icon(Icons.close_rounded, size: 16),
                 label: const Text('Verwerfen'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade700, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey.shade700,
+                    foregroundColor: Colors.white),
               ),
               ElevatedButton.icon(
-                onPressed: () { Navigator.pop(ctx); _setStatus(r, 'open'); },
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _setStatus(r, 'open');
+                },
                 icon: const Icon(Icons.replay_rounded, size: 16),
                 label: const Text('Erneut öffnen'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueGrey,
+                    foregroundColor: Colors.white),
               ),
             ]),
           ],
@@ -5759,20 +6461,39 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
     final String label;
     final Color color;
     switch (type) {
-      case 'bug':      label = '🐛 Bug';      color = Colors.red;    break;
-      case 'content':  label = '🚩 Inhalt';   color = Colors.orange; break;
-      case 'feedback': label = '💬 Feedback'; color = Colors.blue;   break;
-      case 'voice':    label = '🎙️ Voice';    color = Colors.purple; break;
-      default:         label = '?';            color = Colors.grey;
+      case 'bug':
+        label = '🐛 Bug';
+        color = Colors.red;
+        break;
+      case 'content':
+        label = '🚩 Inhalt';
+        color = Colors.orange;
+        break;
+      case 'feedback':
+        label = '💬 Feedback';
+        color = Colors.blue;
+        break;
+      case 'voice':
+        label = '🎙️ Voice';
+        color = Colors.purple;
+        break;
+      default:
+        label = '?';
+        color = Colors.grey;
     }
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: big ? 10 : 6, vertical: big ? 5 : 2),
+      padding:
+          EdgeInsets.symmetric(horizontal: big ? 10 : 6, vertical: big ? 5 : 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(big ? 10 : 6),
         border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: big ? 12 : 10, fontWeight: FontWeight.bold)),
+      child: Text(label,
+          style: TextStyle(
+              color: color,
+              fontSize: big ? 12 : 10,
+              fontWeight: FontWeight.bold)),
     );
   }
 
@@ -5780,11 +6501,22 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
     final String label;
     final Color color;
     switch (sev) {
-      case 'low':      label = 'Niedrig';  color = Colors.grey;   break;
-      case 'high':     label = 'Hoch';     color = Colors.orange; break;
-      case 'critical': label = 'KRITISCH'; color = Colors.red;    break;
+      case 'low':
+        label = 'Niedrig';
+        color = Colors.grey;
+        break;
+      case 'high':
+        label = 'Hoch';
+        color = Colors.orange;
+        break;
+      case 'critical':
+        label = 'KRITISCH';
+        color = Colors.red;
+        break;
       case 'medium':
-      default:         label = 'Medium';   color = Colors.blue;
+      default:
+        label = 'Medium';
+        color = Colors.blue;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -5793,7 +6525,11 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,
-          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+          style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5)),
     );
   }
 
@@ -5801,11 +6537,22 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
     final String label;
     final Color color;
     switch (status) {
-      case 'reviewing': label = 'IN BEARB.'; color = const Color(0xFFFFC107); break;
-      case 'resolved':  label = 'ERLEDIGT';  color = Colors.green;            break;
-      case 'dismissed': label = 'VERWORFEN'; color = Colors.grey;             break;
+      case 'reviewing':
+        label = 'IN BEARB.';
+        color = const Color(0xFFFFC107);
+        break;
+      case 'resolved':
+        label = 'ERLEDIGT';
+        color = Colors.green;
+        break;
+      case 'dismissed':
+        label = 'VERWORFEN';
+        color = Colors.grey;
+        break;
       case 'open':
-      default:          label = 'OFFEN';     color = Colors.redAccent;
+      default:
+        label = 'OFFEN';
+        color = Colors.redAccent;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -5815,18 +6562,25 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(label,
-          style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1)),
+          style: TextStyle(
+              color: color,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1)),
     );
   }
 
   String _fmt(String iso) {
     try {
       final dt = DateTime.parse(iso).toLocal();
-      return '${dt.day.toString().padLeft(2,'0')}.${dt.month.toString().padLeft(2,'0')}. ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}';
-    } catch (_) { return iso; }
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}. ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return iso;
+    }
   }
 
-  Widget _filterPill(String label, String value, String current, int? count, void Function(String) onTap) {
+  Widget _filterPill(String label, String value, String current, int? count,
+      void Function(String) onTap) {
     final sel = current == value;
     return GestureDetector(
       onTap: () => onTap(value),
@@ -5834,13 +6588,18 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         margin: const EdgeInsets.only(right: 6),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: sel ? widget.accent.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.04),
+          color: sel
+              ? widget.accent.withValues(alpha: 0.25)
+              : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: sel ? widget.accent : Colors.transparent),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(label,
-              style: TextStyle(color: sel ? widget.accentBright : Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: sel ? widget.accentBright : Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600)),
           if (count != null && count > 0) ...[
             const SizedBox(width: 6),
             Container(
@@ -5850,7 +6609,10 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text('$count',
-                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold)),
             ),
           ],
         ]),
@@ -5868,31 +6630,79 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('STATUS', style: TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: 1.5)),
+            const Text('STATUS',
+                style: TextStyle(
+                    color: Colors.white38, fontSize: 9, letterSpacing: 1.5)),
             const SizedBox(height: 4),
-            SizedBox(height: 30, child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _filterPill('Offen', 'open', _filterStatus, _counts['open'], (v) { setState(() => _filterStatus = v); _load(); }),
-                _filterPill('In Bearb.', 'reviewing', _filterStatus, _counts['reviewing'], (v) { setState(() => _filterStatus = v); _load(); }),
-                _filterPill('Erledigt', 'resolved', _filterStatus, _counts['resolved'], (v) { setState(() => _filterStatus = v); _load(); }),
-                _filterPill('Verworfen', 'dismissed', _filterStatus, _counts['dismissed'], (v) { setState(() => _filterStatus = v); _load(); }),
-                _filterPill('Alle', 'all', _filterStatus, null, (v) { setState(() => _filterStatus = v); _load(); }),
-              ],
-            )),
+            SizedBox(
+                height: 30,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _filterPill('Offen', 'open', _filterStatus, _counts['open'],
+                        (v) {
+                      setState(() => _filterStatus = v);
+                      _load();
+                    }),
+                    _filterPill('In Bearb.', 'reviewing', _filterStatus,
+                        _counts['reviewing'], (v) {
+                      setState(() => _filterStatus = v);
+                      _load();
+                    }),
+                    _filterPill('Erledigt', 'resolved', _filterStatus,
+                        _counts['resolved'], (v) {
+                      setState(() => _filterStatus = v);
+                      _load();
+                    }),
+                    _filterPill('Verworfen', 'dismissed', _filterStatus,
+                        _counts['dismissed'], (v) {
+                      setState(() => _filterStatus = v);
+                      _load();
+                    }),
+                    _filterPill('Alle', 'all', _filterStatus, null, (v) {
+                      setState(() => _filterStatus = v);
+                      _load();
+                    }),
+                  ],
+                )),
             const SizedBox(height: 8),
-            const Text('TYP', style: TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: 1.5)),
+            const Text('TYP',
+                style: TextStyle(
+                    color: Colors.white38, fontSize: 9, letterSpacing: 1.5)),
             const SizedBox(height: 4),
-            SizedBox(height: 30, child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                _filterPill('Alle', 'all', _filterType, null, (v) { setState(() => _filterType = v); _load(); }),
-                _filterPill('🐛 Bug', 'bug', _filterType, _byType['bug'], (v) { setState(() => _filterType = v); _load(); }),
-                _filterPill('🚩 Inhalt', 'content', _filterType, _byType['content'], (v) { setState(() => _filterType = v); _load(); }),
-                _filterPill('💬 Feedback', 'feedback', _filterType, _byType['feedback'], (v) { setState(() => _filterType = v); _load(); }),
-                _filterPill('🎙️ Voice', 'voice', _filterType, _byType['voice'], (v) { setState(() => _filterType = v); _load(); }),
-              ],
-            )),
+            SizedBox(
+                height: 30,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _filterPill('Alle', 'all', _filterType, null, (v) {
+                      setState(() => _filterType = v);
+                      _load();
+                    }),
+                    _filterPill('🐛 Bug', 'bug', _filterType, _byType['bug'],
+                        (v) {
+                      setState(() => _filterType = v);
+                      _load();
+                    }),
+                    _filterPill(
+                        '🚩 Inhalt', 'content', _filterType, _byType['content'],
+                        (v) {
+                      setState(() => _filterType = v);
+                      _load();
+                    }),
+                    _filterPill('💬 Feedback', 'feedback', _filterType,
+                        _byType['feedback'], (v) {
+                      setState(() => _filterType = v);
+                      _load();
+                    }),
+                    _filterPill(
+                        '🎙️ Voice', 'voice', _filterType, _byType['voice'],
+                        (v) {
+                      setState(() => _filterType = v);
+                      _load();
+                    }),
+                  ],
+                )),
           ],
         ),
       ),
@@ -5905,13 +6715,16 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+                        const Icon(Icons.error_outline_rounded,
+                            color: Colors.redAccent, size: 40),
                         const SizedBox(height: 12),
                         Text(_error!,
-                            style: const TextStyle(color: Colors.white70, fontSize: 13),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 13),
                             textAlign: TextAlign.center),
                         const SizedBox(height: 12),
-                        ElevatedButton(onPressed: _load, child: const Text('Neu laden')),
+                        ElevatedButton(
+                            onPressed: _load, child: const Text('Neu laden')),
                       ]),
                     ),
                   )
@@ -5925,10 +6738,12 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                             child: Padding(
                               padding: EdgeInsets.all(24),
                               child: Column(children: [
-                                Icon(Icons.inbox_rounded, color: Colors.white24, size: 60),
+                                Icon(Icons.inbox_rounded,
+                                    color: Colors.white24, size: 60),
                                 SizedBox(height: 12),
                                 Text('Keine Reports in diesem Filter.',
-                                    style: TextStyle(color: Colors.white54, fontSize: 13)),
+                                    style: TextStyle(
+                                        color: Colors.white54, fontSize: 13)),
                               ]),
                             ),
                           ),
@@ -5957,28 +6772,46 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                                       border: Border.all(color: Colors.white12),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(children: [
-                                          _typeChip(r['type'] as String? ?? '?'),
+                                          _typeChip(
+                                              r['type'] as String? ?? '?'),
                                           const SizedBox(width: 6),
-                                          _severityChip(r['severity'] as String? ?? 'medium'),
+                                          _severityChip(
+                                              r['severity'] as String? ??
+                                                  'medium'),
                                           const Spacer(),
-                                          _statusChip(r['status'] as String? ?? 'open'),
+                                          _statusChip(
+                                              r['status'] as String? ?? 'open'),
                                         ]),
                                         const SizedBox(height: 8),
                                         Text(r['title']?.toString() ?? '',
-                                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
-                                            maxLines: 2, overflow: TextOverflow.ellipsis),
-                                        if ((r['body'] as String?)?.isNotEmpty == true) ...[
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis),
+                                        if ((r['body'] as String?)
+                                                ?.isNotEmpty ==
+                                            true) ...[
                                           const SizedBox(height: 4),
                                           Text(r['body'].toString(),
-                                              style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.3),
-                                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                                              style: const TextStyle(
+                                                  color: Colors.white54,
+                                                  fontSize: 11,
+                                                  height: 1.3),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis),
                                         ],
                                         const SizedBox(height: 6),
-                                        Text('@${r['username'] ?? 'anonym'} · ${_fmt(r['created_at'] as String? ?? '')}',
-                                            style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                                        Text(
+                                            '@${r['username'] ?? 'anonym'} · ${_fmt(r['created_at'] as String? ?? '')}',
+                                            style: const TextStyle(
+                                                color: Colors.white38,
+                                                fontSize: 10)),
                                       ],
                                     ),
                                   ),
@@ -5997,7 +6830,8 @@ class _AuditLogTab extends StatefulWidget {
   final String world;
   final Color accent;
   final Color accentBright;
-  const _AuditLogTab({required this.world, required this.accent, required this.accentBright});
+  const _AuditLogTab(
+      {required this.world, required this.accent, required this.accentBright});
 
   @override
   State<_AuditLogTab> createState() => _AuditLogTabState();
@@ -6056,9 +6890,12 @@ class _AuditLogTabState extends State<_AuditLogTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/api/admin/audit/${widget.world}?limit=200'),
-      ).timeout(const Duration(seconds: 12));
+      final res = await http
+          .get(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/admin/audit/${widget.world}?limit=200'),
+          )
+          .timeout(const Duration(seconds: 12));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final list = (data['logs'] as List?) ?? const [];
@@ -6089,19 +6926,29 @@ class _AuditLogTabState extends State<_AuditLogTab> {
 
   @override
   Widget build(BuildContext context) {
-    final actions = {'all', ..._logs.map((l) => (l['action'] as String? ?? 'unknown')).toSet()};
+    final actions = {
+      'all',
+      ..._logs.map((l) => (l['action'] as String? ?? 'unknown')).toSet()
+    };
     final dayCounts = _last7DaysCounts();
-    final maxCount =
-        dayCounts.isEmpty ? 1 : (dayCounts.reduce((a, b) => a > b ? a : b).clamp(1, 9999));
+    final maxCount = dayCounts.isEmpty
+        ? 1
+        : (dayCounts.reduce((a, b) => a > b ? a : b).clamp(1, 9999));
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
           child: Row(children: [
             Text('${_filtered.length}/${_logs.length} EINTRÄGE',
-                style: TextStyle(color: widget.accentBright, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: widget.accentBright,
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold)),
             const Spacer(),
-            IconButton(icon: Icon(Icons.refresh, color: widget.accent), onPressed: _load),
+            IconButton(
+                icon: Icon(Icons.refresh, color: widget.accent),
+                onPressed: _load),
           ]),
         ),
         // v103 Phase 4f: Mini-Balkendiagramm letzte 7 Tage.
@@ -6143,8 +6990,7 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                                   color: dayCounts[i] > 0
                                       ? widget.accent
                                       : widget.accent.withValues(alpha: 0.15),
-                                  borderRadius:
-                                      BorderRadius.circular(3),
+                                  borderRadius: BorderRadius.circular(3),
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -6181,8 +7027,7 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                   child: ChoiceChip(
                     label: Text(r.$2, style: const TextStyle(fontSize: 10)),
                     selected: _filterRange == r.$1,
-                    onSelected: (_) =>
-                        setState(() => _filterRange = r.$1),
+                    onSelected: (_) => setState(() => _filterRange = r.$1),
                     selectedColor: widget.accentBright,
                   ),
                 ),
@@ -6213,7 +7058,9 @@ class _AuditLogTabState extends State<_AuditLogTab> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _filtered.isEmpty
-                  ? const Center(child: Text('Keine Einträge', style: TextStyle(color: Colors.white60)))
+                  ? const Center(
+                      child: Text('Keine Einträge',
+                          style: TextStyle(color: Colors.white60)))
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
                       itemCount: _filtered.length,
@@ -6252,17 +7099,25 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             children: [
               Row(children: [
                 Text(action,
-                    style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold)),
                 const Spacer(),
-                Text(ts.substring(0, ts.length >= 16 ? 16 : ts.length).replaceAll('T', ' '),
-                    style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                Text(
+                    ts
+                        .substring(0, ts.length >= 16 ? 16 : ts.length)
+                        .replaceAll('T', ' '),
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 10)),
               ]),
               Text('$admin → $target',
                   style: const TextStyle(color: Colors.white, fontSize: 12)),
               if (details.isNotEmpty)
                 Text(details,
                     style: const TextStyle(color: Colors.white70, fontSize: 11),
-                    maxLines: 3, overflow: TextOverflow.ellipsis),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis),
             ],
           ),
         ),
@@ -6310,8 +7165,7 @@ class _UsernameRequestsTab extends ConsumerStatefulWidget {
       _UsernameRequestsTabState();
 }
 
-class _UsernameRequestsTabState
-    extends ConsumerState<_UsernameRequestsTab> {
+class _UsernameRequestsTabState extends ConsumerState<_UsernameRequestsTab> {
   List<Map<String, dynamic>> _requests = [];
   bool _loading = true;
   bool _processing = false;
@@ -6337,10 +7191,8 @@ class _UsernameRequestsTabState
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final raw = (data['requests'] as List?) ?? const [];
-        final list = raw
-            .whereType<Map>()
-            .map((e) => e.cast<String, dynamic>())
-            .toList();
+        final list =
+            raw.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
         if (mounted) {
           setState(() {
             _requests = list;
@@ -6368,8 +7220,7 @@ class _UsernameRequestsTabState
     ));
   }
 
-  Future<bool> _confirm(String title, String msg,
-      {Color? confirmColor}) async {
+  Future<bool> _confirm(String title, String msg, {Color? confirmColor}) async {
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -6497,8 +7348,8 @@ class _UsernameRequestsTabState
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Ablehnen',
-                style: TextStyle(color: Colors.white)),
+            child:
+                const Text('Ablehnen', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -6561,8 +7412,7 @@ class _UsernameRequestsTabState
                     BorderSide(color: Colors.white.withValues(alpha: 0.05))),
           ),
           child: Row(children: [
-            const Text('📝',
-                style: TextStyle(fontSize: 18)),
+            const Text('📝', style: TextStyle(fontSize: 18)),
             const SizedBox(width: 8),
             const Text('Username-Aenderungsantraege',
                 style: TextStyle(
@@ -6571,13 +7421,11 @@ class _UsernameRequestsTabState
                     fontWeight: FontWeight.w700)),
             const SizedBox(width: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: widget.accent.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                    color: widget.accent.withValues(alpha: 0.4)),
+                border: Border.all(color: widget.accent.withValues(alpha: 0.4)),
               ),
               child: Text(
                 '${_requests.length}',
@@ -6598,8 +7446,7 @@ class _UsernameRequestsTabState
         ),
         Expanded(
           child: _loading
-              ? Center(
-                  child: CircularProgressIndicator(color: widget.accent))
+              ? Center(child: CircularProgressIndicator(color: widget.accent))
               : _requests.isEmpty
                   ? Center(
                       child: Column(
@@ -6618,7 +7465,8 @@ class _UsernameRequestsTabState
                       child: ListView.builder(
                         padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
                         itemCount: _requests.length,
-                        itemBuilder: (ctx, i) => _buildRequestCard(_requests[i]),
+                        itemBuilder: (ctx, i) =>
+                            _buildRequestCard(_requests[i]),
                       ),
                     ),
         ),
@@ -6627,14 +7475,13 @@ class _UsernameRequestsTabState
         Container(
           color: Colors.black54,
           child: Center(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: widget.accent),
-                  const SizedBox(height: 12),
-                  const Text('Wird verarbeitet...',
-                      style: TextStyle(color: Colors.white70)),
-                ]),
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              CircularProgressIndicator(color: widget.accent),
+              const SizedBox(height: 12),
+              const Text('Wird verarbeitet...',
+                  style: TextStyle(color: Colors.white70)),
+            ]),
           ),
         ),
     ]);
@@ -6719,23 +7566,21 @@ class _UsernameRequestsTabState
                   ),
                 ),
                 Text(_relativeTime(created),
-                    style: const TextStyle(
-                        color: Colors.white38, fontSize: 11)),
+                    style:
+                        const TextStyle(color: Colors.white38, fontSize: 11)),
               ]),
               if (reason.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text('Reason: $reason',
                       style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          height: 1.35)),
+                          color: Colors.white70, fontSize: 12, height: 1.35)),
                 ),
               ],
               const SizedBox(height: 10),
@@ -6753,11 +7598,9 @@ class _UsernameRequestsTabState
                           color: Colors.redAccent.withValues(alpha: 0.4)),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    onPressed:
-                        _processing ? null : () => _reject(req),
+                    onPressed: _processing ? null : () => _reject(req),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -6771,11 +7614,9 @@ class _UsernameRequestsTabState
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    onPressed:
-                        _processing ? null : () => _approve(req),
+                    onPressed: _processing ? null : () => _approve(req),
                   ),
                 ),
               ]),
@@ -6791,7 +7632,8 @@ class _AdminTabDef {
   final IconData icon;
   final String label;
   final String kind;
-  const _AdminTabDef({required this.icon, required this.label, required this.kind});
+  const _AdminTabDef(
+      {required this.icon, required this.label, required this.kind});
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -6896,8 +7738,8 @@ class _PostReportsTabState extends State<_PostReportsTab> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                    color: widget.accent
-                                        .withValues(alpha: 0.18),
+                                    color:
+                                        widget.accent.withValues(alpha: 0.18),
                                     borderRadius: BorderRadius.circular(4)),
                                 child: Text(r.reason.toUpperCase(),
                                     style: TextStyle(
@@ -6930,7 +7772,8 @@ class _PostReportsTabState extends State<_PostReportsTab> {
                               ),
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
-                              child: Text('Reporter: @${r.reporterName ?? r.reporterId}',
+                              child: Text(
+                                  'Reporter: @${r.reporterName ?? r.reporterId}',
                                   style: const TextStyle(
                                       color: Colors.white38, fontSize: 11)),
                             ),
@@ -6946,8 +7789,7 @@ class _PostReportsTabState extends State<_PostReportsTab> {
                               Row(children: [
                                 Expanded(
                                   child: OutlinedButton(
-                                    onPressed: () =>
-                                        _review(r.id, 'dismissed'),
+                                    onPressed: () => _review(r.id, 'dismissed'),
                                     style: OutlinedButton.styleFrom(
                                         foregroundColor: Colors.white60,
                                         side: const BorderSide(
@@ -6959,8 +7801,7 @@ class _PostReportsTabState extends State<_PostReportsTab> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: ElevatedButton(
-                                    onPressed: () =>
-                                        _review(r.id, 'actioned'),
+                                    onPressed: () => _review(r.id, 'actioned'),
                                     style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.redAccent),
                                     child: const Text('Aktion',

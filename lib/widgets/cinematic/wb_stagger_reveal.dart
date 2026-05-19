@@ -52,8 +52,7 @@ class _WBStaggerRevealState extends State<WBStaggerReveal>
       end: Offset.zero,
     ).animate(curved);
 
-    final delay = widget.baseDelay +
-        widget.staggerStep * widget.index;
+    final delay = widget.baseDelay + widget.staggerStep * widget.index;
 
     Future.delayed(delay, () {
       if (mounted) _ctrl.forward();

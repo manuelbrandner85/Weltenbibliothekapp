@@ -154,7 +154,8 @@ class _DialogContentState extends State<_DialogContent> {
             if (!_loading && _existing != null && _existing!.voteCount > 0) ...[
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: widget.accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
@@ -175,7 +176,8 @@ class _DialogContentState extends State<_DialogContent> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+                  onPressed:
+                      _saving ? null : () => Navigator.of(context).pop(false),
                   child: const Text('Abbrechen',
                       style: TextStyle(color: Colors.white60)),
                 ),

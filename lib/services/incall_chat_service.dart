@@ -77,8 +77,7 @@ class InCallChatService {
     try {
       final text = data['text'] as String?;
       if (text == null || text.isEmpty) return;
-      final identity =
-          data['identity'] as String? ?? from?.identity ?? '?';
+      final identity = data['identity'] as String? ?? from?.identity ?? '?';
       final name = data['name'] as String? ??
           (from?.name.isNotEmpty == true ? from!.name : identity);
 

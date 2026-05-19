@@ -49,7 +49,8 @@ class ChatMarkdownText extends StatelessWidget {
   static final _urlRe = RegExp(r'https?://[^\s)]+');
   static final _codeRe = RegExp(r'`([^`]+)`');
   static final _boldRe = RegExp(r'\*\*([^\*]+)\*\*|\*([^\*\s][^\*]*?)\*');
-  static final _italicRe = RegExp(r'__([^_]+)__|(?<![\w_])_([^_\s][^_]*?)_(?![\w_])');
+  static final _italicRe =
+      RegExp(r'__([^_]+)__|(?<![\w_])_([^_\s][^_]*?)_(?![\w_])');
   static final _strikeRe = RegExp(r'~~([^~]+)~~');
 
   List<InlineSpan> _parse(String input, TextStyle base, Color linkColor) {
@@ -74,10 +75,12 @@ class ChatMarkdownText extends StatelessWidget {
       hits.add(_Hit(m.start, m.end, m.group(1)!, _HitType.code));
     }
     for (final m in _boldRe.allMatches(input)) {
-      hits.add(_Hit(m.start, m.end, m.group(1) ?? m.group(2) ?? '', _HitType.bold));
+      hits.add(
+          _Hit(m.start, m.end, m.group(1) ?? m.group(2) ?? '', _HitType.bold));
     }
     for (final m in _italicRe.allMatches(input)) {
-      hits.add(_Hit(m.start, m.end, m.group(1) ?? m.group(2) ?? '', _HitType.italic));
+      hits.add(_Hit(
+          m.start, m.end, m.group(1) ?? m.group(2) ?? '', _HitType.italic));
     }
     for (final m in _strikeRe.allMatches(input)) {
       hits.add(_Hit(m.start, m.end, m.group(1)!, _HitType.strike));
@@ -117,8 +120,7 @@ class ChatMarkdownText extends StatelessWidget {
             color: linkColor,
             decoration: TextDecoration.underline,
           ),
-          recognizer: TapGestureRecognizer()
-            ..onTap = () => _openUrl(h.content),
+          recognizer: TapGestureRecognizer()..onTap = () => _openUrl(h.content),
         );
       case _HitType.code:
         return TextSpan(

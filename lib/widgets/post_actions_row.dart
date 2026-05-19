@@ -14,20 +14,21 @@ class PostActionsRow extends StatefulWidget {
   final CommunityPost post;
   final Color accentColor;
   final VoidCallback onPostUpdated;
-  
+
   const PostActionsRow({
     super.key,
     required this.post,
     required this.accentColor,
     required this.onPostUpdated,
   });
-  
+
   @override
   State<PostActionsRow> createState() => _PostActionsRowState();
 }
 
 class _PostActionsRowState extends State<PostActionsRow> {
-  final CommunityService _communityService = CommunityService(); // ignore: unused_field
+  final CommunityService _communityService =
+      CommunityService(); // ignore: unused_field
   final CloudflareApiService _cloudflareApi = CloudflareApiService();
   int _localLikes = 0;
   int _localComments = 0;
@@ -35,7 +36,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
   bool _isSaved = false;
   bool _isLiked = false;
   bool _energySent = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -43,14 +44,15 @@ class _PostActionsRowState extends State<PostActionsRow> {
     _localComments = widget.post.comments;
     _localShares = widget.post.shares ?? 0;
   }
-  
+
   Future<void> _likePost() async {
     final currentUser = Supabase.instance.client.auth.currentUser;
-    final userId = currentUser?.id ?? 'anon_${DateTime.now().millisecondsSinceEpoch}';
-    final username = currentUser?.userMetadata?['username'] as String?
-        ?? currentUser?.email?.split('@').first
-        ?? 'Anonym';
-    
+    final userId =
+        currentUser?.id ?? 'anon_${DateTime.now().millisecondsSinceEpoch}';
+    final username = currentUser?.userMetadata?['username'] as String? ??
+        currentUser?.email?.split('@').first ??
+        'Anonym';
+
     try {
       if (_isLiked) {
         // Unlike
@@ -58,7 +60,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
           articleId: widget.post.id,
           userId: userId,
         );
-        
+
         setState(() {
           _isLiked = false;
           _localLikes = _localLikes > 0 ? _localLikes - 1 : 0;
@@ -70,15 +72,15 @@ class _PostActionsRowState extends State<PostActionsRow> {
           userId: userId,
           username: username,
         );
-        
+
         setState(() {
           _isLiked = true;
           _localLikes++;
         });
       }
-      
+
       widget.onPostUpdated();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -95,7 +97,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
       }
     }
   }
-  
+
   void _showComments() async {
     final result = await showDialog<bool>(
       context: context,
@@ -103,20 +105,20 @@ class _PostActionsRowState extends State<PostActionsRow> {
         post: widget.post,
       ),
     );
-    
+
     // Reload post data after dialog closes
     if (result == true || result == null) {
       widget.onPostUpdated();
     }
   }
-  
+
   void _sharePost() async {
     try {
       final shareText = '${widget.post.content}\n\n'
           'Von: ${widget.post.authorUsername} ${widget.post.authorAvatar}\n'
           '${widget.post.mediaUrl != null ? "\n📸 Mit Bild: ${widget.post.mediaUrl}" : ""}\n\n'
           '🌟 Weltenbibliothek - Wissens- und Bewusstseins-Plattform';
-      
+
       // Web-Plattform: Kopiere in Zwischenablage statt Share-Dialog
       if (kIsWeb) {
         // Für Web: Zeige Text im Dialog zum manuellen Kopieren
@@ -134,7 +136,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
               ],
             ),
           );
-          
+
           setState(() {
             _localShares++;
           });
@@ -145,11 +147,11 @@ class _PostActionsRowState extends State<PostActionsRow> {
           shareText,
           subject: 'Weltenbibliothek Post von ${widget.post.authorUsername}',
         );
-        
+
         setState(() {
           _localShares++;
         });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -167,25 +169,26 @@ class _PostActionsRowState extends State<PostActionsRow> {
       }
     }
   }
-  
+
   void _savePost() {
     setState(() {
       _isSaved = !_isSaved;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isSaved ? '💾 Beitrag gespeichert!' : '🗑️ Speicherung entfernt'),
+        content: Text(
+            _isSaved ? '💾 Beitrag gespeichert!' : '🗑️ Speicherung entfernt'),
         duration: const Duration(seconds: 1),
       ),
     );
   }
-  
+
   void _sendEnergy() {
     setState(() {
       _energySent = true;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('✨ Energie gesendet!'),
@@ -193,7 +196,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
         backgroundColor: Colors.purple,
       ),
     );
-    
+
     // Nach 2 Sekunden Animation zurücksetzen
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
@@ -203,13 +206,13 @@ class _PostActionsRowState extends State<PostActionsRow> {
       }
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     // ✅ RESPONSIVE UTILITIES
     final responsive = context.responsive;
     final textStyles = context.textStyles;
-    
+
     return Row(
       children: [
         // Like Button
@@ -223,7 +226,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
           style: textStyles.labelSmall.copyWith(color: Colors.grey),
         ),
         SizedBox(width: responsive.spacingMd),
-        
+
         // Comment Button
         IconButton(
           icon: Icon(Icons.comment_outlined, size: responsive.iconSizeMd),
@@ -235,7 +238,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
           style: textStyles.labelSmall.copyWith(color: Colors.grey),
         ),
         SizedBox(width: responsive.spacingMd),
-        
+
         // Share Button
         IconButton(
           icon: Icon(Icons.share_outlined, size: responsive.iconSizeMd),
@@ -246,9 +249,9 @@ class _PostActionsRowState extends State<PostActionsRow> {
           '$_localShares',
           style: textStyles.labelSmall.copyWith(color: Colors.grey),
         ),
-        
+
         const Spacer(),
-        
+
         // Energie senden Button (nur für Energie-Welt)
         if (widget.post.worldType == WorldType.energie)
           IconButton(
@@ -260,7 +263,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
             onPressed: _sendEnergy,
             tooltip: 'Energie senden',
           ),
-        
+
         // Save Button
         IconButton(
           icon: Icon(

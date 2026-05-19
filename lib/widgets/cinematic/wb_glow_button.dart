@@ -81,8 +81,7 @@ class _WBGlowButtonState extends State<WBGlowButton> {
           color: wb.glassBase,
           borderRadius: BorderRadius.circular(WBRadius.md),
           border: Border.all(
-              color:
-                  palette.primary.withValues(alpha: _pressed ? 0.85 : 0.55),
+              color: palette.primary.withValues(alpha: _pressed ? 0.85 : 0.55),
               width: 1.2),
           boxShadow: disabled || !_pressed
               ? const []

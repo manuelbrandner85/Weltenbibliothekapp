@@ -12,10 +12,10 @@ class UnreadTrackerService extends ChangeNotifier {
   UnreadTrackerService._();
   static final UnreadTrackerService instance = UnreadTrackerService._();
 
-  static const _prefixUnread   = 'chat_unread_';
+  static const _prefixUnread = 'chat_unread_';
   static const _prefixLastSeen = 'chat_last_seen_';
 
-  final Map<String, int>      _unread   = <String, int>{};
+  final Map<String, int> _unread = <String, int>{};
   final Map<String, DateTime> _lastSeen = <String, DateTime>{};
   bool _loaded = false;
 
@@ -60,11 +60,12 @@ class UnreadTrackerService extends ChangeNotifier {
   /// Raum als gelesen markieren: Counter → 0, lastSeen = jetzt.
   Future<void> markSeen(String roomId) async {
     await _ensureLoaded();
-    _unread[roomId]   = 0;
+    _unread[roomId] = 0;
     _lastSeen[roomId] = DateTime.now().toUtc();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('$_prefixUnread$roomId', 0);
-    await prefs.setString('$_prefixLastSeen$roomId', _lastSeen[roomId]!.toIso8601String());
+    await prefs.setString(
+        '$_prefixLastSeen$roomId', _lastSeen[roomId]!.toIso8601String());
     notifyListeners();
   }
 

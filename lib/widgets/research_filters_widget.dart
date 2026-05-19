@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Research Filters Widget v7.5
-/// 
+///
 /// Erweiterte Filter für Recherche-Ergebnisse
 class ResearchFiltersWidget extends StatefulWidget {
   final Function(ResearchFilters) onFiltersChanged;
@@ -487,6 +487,9 @@ class ResearchFilters {
 
 // Enums
 enum SourceType { all, mainstream, alternative, leaks, independent }
+
 enum MediaType { all, documents, images, videos, telegram }
+
 enum DateRange { all, lastWeek, lastMonth, lastYear, historical }
+
 enum Language { all, german, english }

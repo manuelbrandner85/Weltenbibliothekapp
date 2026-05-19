@@ -8,7 +8,8 @@ import '../core/db/app_database.dart';
 ///
 /// Offline-First Chat-Speicherung — ersetzt Hive-Boxen.
 class LocalChatStorageService {
-  static final LocalChatStorageService _instance = LocalChatStorageService._internal();
+  static final LocalChatStorageService _instance =
+      LocalChatStorageService._internal();
   factory LocalChatStorageService() => _instance;
   LocalChatStorageService._internal();
 
@@ -73,7 +74,8 @@ class LocalChatStorageService {
     await _ensureInitialized();
     final db = await AppDatabase.instance.db;
     final key = '${realm}_$roomId';
-    final messageId = 'msg_${DateTime.now().millisecondsSinceEpoch}_${userId.hashCode}';
+    final messageId =
+        'msg_${DateTime.now().millisecondsSinceEpoch}_${userId.hashCode}';
     final timestamp = DateTime.now().toIso8601String();
 
     final chatMessage = {
@@ -96,8 +98,11 @@ class LocalChatStorageService {
 
     // Keep only last 500 messages – delete oldest if over limit
     final count = (await db.rawQuery(
-      'SELECT COUNT(*) as c FROM chat_messages WHERE room_id = ?', [key],
-    )).first['c'] as int? ?? 0;
+          'SELECT COUNT(*) as c FROM chat_messages WHERE room_id = ?',
+          [key],
+        ))
+            .first['c'] as int? ??
+        0;
     if (count >= 500) {
       await db.rawDelete(
         '''DELETE FROM chat_messages WHERE room_id = ? AND id IN
@@ -116,7 +121,8 @@ class LocalChatStorageService {
     await _addToPendingSync(chatMessage);
     await _updateRoomActivity(realm, roomId, timestamp);
 
-    if (kDebugMode) debugPrint('💬 Message sent locally: $messageId in $roomId');
+    if (kDebugMode)
+      debugPrint('💬 Message sent locally: $messageId in $roomId');
     return {'success': true, 'message': chatMessage};
   }
 
@@ -136,8 +142,10 @@ class LocalChatStorageService {
         where: 'id = ? AND room_id = ?', whereArgs: [messageId, key]);
     if (rows.isEmpty) throw Exception('Message not found');
 
-    final msg = jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
-    if (msg['userId'] != userId) throw Exception('Not authorized to edit this message');
+    final msg =
+        jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
+    if (msg['userId'] != userId)
+      throw Exception('Not authorized to edit this message');
 
     msg['message'] = newMessage;
     msg['edited'] = true;
@@ -167,7 +175,8 @@ class LocalChatStorageService {
         where: 'id = ? AND room_id = ?', whereArgs: [messageId, key]);
     if (rows.isEmpty) throw Exception('Message not found');
 
-    final msg = jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
+    final msg =
+        jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
     if (msg['userId'] != userId && !isAdmin) {
       throw Exception('Not authorized to delete this message');
     }
@@ -203,19 +212,23 @@ class LocalChatStorageService {
   ) async {
     await _ensureInitialized();
     final db = await AppDatabase.instance.db;
-    await db.insert('chat_presence', {
-      'user_id': userId,
-      'room_id': '${realm}_$roomId',
-      'data': jsonEncode({
-        'username': username,
-        'avatarEmoji': avatarEmoji,
-        'lastSeen': DateTime.now().toIso8601String(),
-        'status': 'online',
-      }),
-    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+        'chat_presence',
+        {
+          'user_id': userId,
+          'room_id': '${realm}_$roomId',
+          'data': jsonEncode({
+            'username': username,
+            'avatarEmoji': avatarEmoji,
+            'lastSeen': DateTime.now().toIso8601String(),
+            'status': 'online',
+          }),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<List<Map<String, dynamic>>> getOnlineUsers(String realm, String roomId) async {
+  Future<List<Map<String, dynamic>>> getOnlineUsers(
+      String realm, String roomId) async {
     await _ensureInitialized();
     final db = await AppDatabase.instance.db;
     final rows = await db.query('chat_presence',
@@ -250,11 +263,13 @@ class LocalChatStorageService {
   // PRIVATE HELPERS
   // ──────────────────────────────────────────────────────
 
-  Future<void> _updateRoomActivity(String realm, String roomId, String timestamp) async {
+  Future<void> _updateRoomActivity(
+      String realm, String roomId, String timestamp) async {
     try {
       final db = await AppDatabase.instance.db;
       final key = '${realm}_$roomId';
-      final rows = await db.query('chat_rooms', where: 'room_id = ?', whereArgs: [key]);
+      final rows =
+          await db.query('chat_rooms', where: 'room_id = ?', whereArgs: [key]);
       final info = rows.isEmpty
           ? <String, dynamic>{}
           : jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
@@ -272,10 +287,13 @@ class LocalChatStorageService {
   Future<void> _addToPendingSync(Map<String, dynamic> message) async {
     try {
       final db = await AppDatabase.instance.db;
-      await db.insert('chat_pending_sync', {
-        'id': message['id'] as String,
-        'data': jsonEncode(message),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert(
+          'chat_pending_sync',
+          {
+            'id': message['id'] as String,
+            'data': jsonEncode(message),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error adding to pending sync: $e');
     }
@@ -286,7 +304,8 @@ class LocalChatStorageService {
     return [
       {
         'id': 'msg_welcome_$roomId',
-        'message': '✨ Willkommen im ${_getRoomDisplayName(roomId, realm)} Chat!',
+        'message':
+            '✨ Willkommen im ${_getRoomDisplayName(roomId, realm)} Chat!',
         'username': 'Weltenbibliothek',
         'userId': 'system',
         'timestamp': now.subtract(const Duration(hours: 2)).toIso8601String(),
@@ -299,7 +318,8 @@ class LocalChatStorageService {
       },
       {
         'id': 'msg_voice_$roomId',
-        'message': '🎤 Voice Chat ist aktiviert! Klicke auf den Voice Button oben rechts.',
+        'message':
+            '🎤 Voice Chat ist aktiviert! Klicke auf den Voice Button oben rechts.',
         'username': 'System',
         'userId': 'system',
         'timestamp': now.subtract(const Duration(hours: 1)).toIso8601String(),
@@ -315,7 +335,8 @@ class LocalChatStorageService {
         'message': '💬 Schreibe deine erste Nachricht um den Chat zu starten!',
         'username': 'Weltenbibliothek',
         'userId': 'admin',
-        'timestamp': now.subtract(const Duration(minutes: 30)).toIso8601String(),
+        'timestamp':
+            now.subtract(const Duration(minutes: 30)).toIso8601String(),
         'roomId': roomId,
         'realm': realm,
         'avatarEmoji': '👨‍💼',

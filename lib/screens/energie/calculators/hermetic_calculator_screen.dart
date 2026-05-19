@@ -414,8 +414,7 @@ class _HermeticCalculatorScreenState extends State<HermeticCalculatorScreen>
                     style: TextStyle(
                       fontSize: 60,
                       height: 0.7,
-                      color:
-                          const Color(0xFFFFD54F).withValues(alpha: 0.4),
+                      color: const Color(0xFFFFD54F).withValues(alpha: 0.4),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -631,23 +630,19 @@ class _LawCardState extends State<_LawCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _infoSection(
-                            'Erklärung',
-                            widget.law['explanation'] as String,
-                            color),
+                        _infoSection('Erklärung',
+                            widget.law['explanation'] as String, color),
                         const SizedBox(height: 14),
                         _infoSection(
-                            'Praxis',
-                            widget.law['practice'] as String,
-                            color),
+                            'Praxis', widget.law['practice'] as String, color),
                         const SizedBox(height: 14),
                         Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: color.withValues(alpha: 0.3)),
+                            border:
+                                Border.all(color: color.withValues(alpha: 0.3)),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -853,7 +848,8 @@ const List<Map<String, dynamic>> _kLaws = [
     'name': 'Das Polaritätsgesetz',
     'latin': 'Polaritas',
     'color': Color(0xFFEC407A),
-    'summary': 'Alles ist dual; alles hat zwei Pole; Gegensätze sind identisch.',
+    'summary':
+        'Alles ist dual; alles hat zwei Pole; Gegensätze sind identisch.',
     'explanation':
         'Heiß und kalt, Licht und Dunkel, Liebe und Hass sind nur verschiedene Grade derselben Qualität. Durch mentale Transmutation kannst du Pole verschieben.',
     'practice':
@@ -896,7 +892,8 @@ const List<Map<String, dynamic>> _kLaws = [
         'Das maskuline Prinzip (Initiierung, Aktivität, Wille) und das feminine Prinzip (Empfang, Kreativität, Intuition) existieren in allem — in der Natur, im Menschen, im Kosmos.',
     'practice':
         'Kultiviere beide Prinzipien in dir. Wann bist du zu sehr im Tun (maskulin)? Wann zu sehr im Warten (feminin)?',
-    'affirmation': 'Ich integriere Aktion und Empfangen in harmonischer Balance.',
+    'affirmation':
+        'Ich integriere Aktion und Empfangen in harmonischer Balance.',
   },
 ];
 

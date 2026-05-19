@@ -113,7 +113,8 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
 
   @override
   Widget build(BuildContext context) {
-    final name = (_displayName?.isNotEmpty ?? false) ? _displayName! : widget.username;
+    final name =
+        (_displayName?.isNotEmpty ?? false) ? _displayName! : widget.username;
     final badge = _badge(_role);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
@@ -167,7 +168,8 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
                   color: widget.accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),

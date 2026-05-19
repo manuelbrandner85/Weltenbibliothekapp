@@ -88,18 +88,111 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
   // 12 Fragen mit jeweils 4 Antwort-Optionen.
   // Jede Antwort gibt Punkte auf eine Farbe (Index 0..6).
   static final _questions = [
-    (q: 'Bei einer Party bist du eher...', a: ['Tanzfläche-First', 'Im tiefen Gespräch', 'Mit Kreativen am Buffet', 'Außen am Rand mit dem Hund'], p: [0, 4, 1, 5]),
-    (q: 'Dein Lieblings-Wochenende?', a: ['Sport, Abenteuer, Action', 'Buch, Tee, Schreiben', 'Konzert, Galerie, Performance', 'Meditation, Retreat, Stille'], p: [0, 4, 1, 6]),
-    (q: 'Wie reagierst du auf Stress?', a: ['Mehr Sport, ausagieren', 'Analyse, Plan machen', 'Schöpferisch verarbeiten', 'Rückzug, beten/meditieren'], p: [0, 2, 1, 6]),
-    (q: 'Was zieht dich beim Menschen an?', a: ['Energie & Leidenschaft', 'Intellekt & Witz', 'Tiefe & Mysterium', 'Wärme & Fürsorge'], p: [0, 4, 5, 3]),
-    (q: 'Welche Farbe trägst du am liebsten?', a: ['Rot/Schwarz', 'Blau/Grau', 'Lila/Schwarz', 'Grün/Erdtöne'], p: [0, 4, 5, 3]),
-    (q: 'Was tust du in einer Krise?', a: ['Sofort handeln', 'Analyse & Strategie', 'Bei Freunden Rat holen', 'In mich gehen, fühlen'], p: [0, 2, 3, 5]),
-    (q: 'Welcher Beruf reizt dich am meisten?', a: ['Sportler/Soldat/Chirurg', 'Wissenschaftler/Autor', 'Künstler/Designer', 'Heiler/Therapeut'], p: [0, 4, 1, 3]),
-    (q: 'Was magst du am wenigsten?', a: ['Stillsitzen', 'Oberflächlichkeit', 'Routine', 'Kalte Logik'], p: [0, 4, 1, 3]),
-    (q: 'Wie äußerst du Liebe?', a: ['Körperliche Nähe', 'Tiefe Gespräche', 'Geschenke/Kreatives', 'Praktische Fürsorge'], p: [0, 4, 1, 3]),
-    (q: 'Welche Krankheiten plagen dich am ehesten?', a: ['Verspannung/Verletzung', 'Halsweh/Stimmprobleme', 'Hormone/Bauch', 'Augen/Kopf/Migräne'], p: [0, 4, 1, 5]),
-    (q: 'Dein größter Lehrer im Leben?', a: ['Der Körper', 'Die Sprache', 'Die Kunst', 'Die Stille'], p: [0, 4, 1, 6]),
-    (q: 'Was bedeutet "Erfolg" für dich?', a: ['Körperliche Vitalität', 'Geistige Klarheit', 'Schöpferische Freiheit', 'Innerer Frieden'], p: [0, 2, 1, 6]),
+    (
+      q: 'Bei einer Party bist du eher...',
+      a: [
+        'Tanzfläche-First',
+        'Im tiefen Gespräch',
+        'Mit Kreativen am Buffet',
+        'Außen am Rand mit dem Hund'
+      ],
+      p: [0, 4, 1, 5]
+    ),
+    (
+      q: 'Dein Lieblings-Wochenende?',
+      a: [
+        'Sport, Abenteuer, Action',
+        'Buch, Tee, Schreiben',
+        'Konzert, Galerie, Performance',
+        'Meditation, Retreat, Stille'
+      ],
+      p: [0, 4, 1, 6]
+    ),
+    (
+      q: 'Wie reagierst du auf Stress?',
+      a: [
+        'Mehr Sport, ausagieren',
+        'Analyse, Plan machen',
+        'Schöpferisch verarbeiten',
+        'Rückzug, beten/meditieren'
+      ],
+      p: [0, 2, 1, 6]
+    ),
+    (
+      q: 'Was zieht dich beim Menschen an?',
+      a: [
+        'Energie & Leidenschaft',
+        'Intellekt & Witz',
+        'Tiefe & Mysterium',
+        'Wärme & Fürsorge'
+      ],
+      p: [0, 4, 5, 3]
+    ),
+    (
+      q: 'Welche Farbe trägst du am liebsten?',
+      a: ['Rot/Schwarz', 'Blau/Grau', 'Lila/Schwarz', 'Grün/Erdtöne'],
+      p: [0, 4, 5, 3]
+    ),
+    (
+      q: 'Was tust du in einer Krise?',
+      a: [
+        'Sofort handeln',
+        'Analyse & Strategie',
+        'Bei Freunden Rat holen',
+        'In mich gehen, fühlen'
+      ],
+      p: [0, 2, 3, 5]
+    ),
+    (
+      q: 'Welcher Beruf reizt dich am meisten?',
+      a: [
+        'Sportler/Soldat/Chirurg',
+        'Wissenschaftler/Autor',
+        'Künstler/Designer',
+        'Heiler/Therapeut'
+      ],
+      p: [0, 4, 1, 3]
+    ),
+    (
+      q: 'Was magst du am wenigsten?',
+      a: ['Stillsitzen', 'Oberflächlichkeit', 'Routine', 'Kalte Logik'],
+      p: [0, 4, 1, 3]
+    ),
+    (
+      q: 'Wie äußerst du Liebe?',
+      a: [
+        'Körperliche Nähe',
+        'Tiefe Gespräche',
+        'Geschenke/Kreatives',
+        'Praktische Fürsorge'
+      ],
+      p: [0, 4, 1, 3]
+    ),
+    (
+      q: 'Welche Krankheiten plagen dich am ehesten?',
+      a: [
+        'Verspannung/Verletzung',
+        'Halsweh/Stimmprobleme',
+        'Hormone/Bauch',
+        'Augen/Kopf/Migräne'
+      ],
+      p: [0, 4, 1, 5]
+    ),
+    (
+      q: 'Dein größter Lehrer im Leben?',
+      a: ['Der Körper', 'Die Sprache', 'Die Kunst', 'Die Stille'],
+      p: [0, 4, 1, 6]
+    ),
+    (
+      q: 'Was bedeutet "Erfolg" für dich?',
+      a: [
+        'Körperliche Vitalität',
+        'Geistige Klarheit',
+        'Schöpferische Freiheit',
+        'Innerer Frieden'
+      ],
+      p: [0, 2, 1, 6]
+    ),
   ];
 
   final Map<int, int> _answers = {};
@@ -162,19 +255,24 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFFAD1457), Color(0xFF6A1B9A)]),
+            gradient: const LinearGradient(
+                colors: [Color(0xFFAD1457), Color(0xFF6A1B9A)]),
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('12-Fragen-Quiz',
-                  style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold)),
               SizedBox(height: 4),
               Text(
                 'Psychologisches Profil deiner dominanten Aura-Farbe. '
                 'Basiert auf Farbpsychologie und Chakra-Korrespondenz.',
-                style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+                style:
+                    TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
               ),
             ],
           ),
@@ -189,10 +287,12 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFAD1457),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
             child: const Text('AURA BERECHNEN',
-                style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
           ),
         ),
       ],
@@ -213,32 +313,45 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('${i + 1}. ${q.q}',
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           for (var j = 0; j < q.a.length; j++)
             GestureDetector(
               onTap: () => setState(() => _answers[i] = j),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _answers[i] == j ? const Color(0xFFAD1457).withValues(alpha: 0.25) : Colors.transparent,
+                  color: _answers[i] == j
+                      ? const Color(0xFFAD1457).withValues(alpha: 0.25)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _answers[i] == j ? const Color(0xFFAD1457) : Colors.white.withValues(alpha: 0.1),
+                    color: _answers[i] == j
+                        ? const Color(0xFFAD1457)
+                        : Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 child: Row(children: [
                   Icon(
-                    _answers[i] == j ? Icons.radio_button_checked : Icons.radio_button_off,
+                    _answers[i] == j
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
                     size: 16,
-                    color: _answers[i] == j ? const Color(0xFFAD1457) : Colors.white38,
+                    color: _answers[i] == j
+                        ? const Color(0xFFAD1457)
+                        : Colors.white38,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(q.a[j],
                         style: TextStyle(
-                          color: _answers[i] == j ? Colors.white : Colors.white70,
+                          color:
+                              _answers[i] == j ? Colors.white : Colors.white70,
                           fontSize: 12.5,
                         )),
                   ),
@@ -262,7 +375,10 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: RadialGradient(colors: [dominant.color, dominant.color.withValues(alpha: 0.4)]),
+            gradient: RadialGradient(colors: [
+              dominant.color,
+              dominant.color.withValues(alpha: 0.4)
+            ]),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -277,13 +393,24 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
               Text(dominant.emoji, style: const TextStyle(fontSize: 72)),
               const SizedBox(height: 10),
               const Text('DEINE DOMINANTE AURA-FARBE',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2.5, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      letterSpacing: 2.5,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               Text(dominant.name,
-                  style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 4)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4)),
               const SizedBox(height: 4),
               Text(dominant.trait,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontStyle: FontStyle.italic)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic)),
             ],
           ),
         ),
@@ -296,11 +423,16 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
             border: Border.all(color: dominant.color.withValues(alpha: 0.4)),
           ),
           child: Text(dominant.description,
-              style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 14, height: 1.6)),
         ),
         const SizedBox(height: 18),
         const Text('AURA-VERTEILUNG',
-            style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         for (var i = 0; i < _colors.length; i++)
           _buildScoreBar(_colors[i], scores[i], maxScore),
@@ -313,10 +445,13 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
               _answers.clear();
             }),
             icon: const Icon(Icons.refresh, color: Colors.white),
-            label: const Text('Quiz nochmal', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: const Text('Quiz nochmal',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
@@ -325,8 +460,15 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
   }
 
   Widget _buildScoreBar(
-      ({String name, String emoji, Color color, String trait, String description}) c,
-      int score, int maxScore) {
+      ({
+        String name,
+        String emoji,
+        Color color,
+        String trait,
+        String description
+      }) c,
+      int score,
+      int maxScore) {
     final percent = maxScore == 0 ? 0.0 : score / maxScore;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -352,7 +494,8 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           width: 22,
           child: Text('$score',
               textAlign: TextAlign.right,
-              style: TextStyle(color: c.color, fontSize: 11, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: c.color, fontSize: 11, fontWeight: FontWeight.bold)),
         ),
       ]),
     );

@@ -74,9 +74,9 @@ class _EnhancedSourceCardState extends State<EnhancedSourceCard> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // METADATA: Domain + Kategorie
             Row(
               children: [
@@ -93,9 +93,11 @@ class _EnhancedSourceCardState extends State<EnhancedSourceCard> {
                   const SizedBox(width: 16),
                 ],
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _getCategoryColor(category).withAlpha((0.2 * 255).round()),
+                    color: _getCategoryColor(category)
+                        .withAlpha((0.2 * 255).round()),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -109,10 +111,10 @@ class _EnhancedSourceCardState extends State<EnhancedSourceCard> {
                 ),
               ],
             ),
-            
+
             if (snippet.isNotEmpty) ...[
               const SizedBox(height: 12),
-              
+
               // ✅ EXPANDABLE TEXT - Shows full content
               Text(
                 snippet,
@@ -122,9 +124,10 @@ class _EnhancedSourceCardState extends State<EnhancedSourceCard> {
                   height: 1.5,
                 ),
                 maxLines: _isExpanded ? null : 5,
-                overflow: _isExpanded ? TextOverflow.visible : TextOverflow.fade,
+                overflow:
+                    _isExpanded ? TextOverflow.visible : TextOverflow.fade,
               ),
-              
+
               // ✅ SHOW MORE / SHOW LESS BUTTON
               if (needsExpansion) ...[
                 const SizedBox(height: 8),
@@ -205,16 +208,15 @@ class _EnhancedSourceCardState extends State<EnhancedSourceCard> {
   Future<void> _launchUrl(BuildContext context, String url) async {
     try {
       final Uri uri = Uri.parse(url);
-      
+
       if (!await canLaunchUrl(uri)) {
         throw 'Kann URL nicht öffnen: $url';
       }
-      
+
       await launchUrl(
         uri,
         mode: LaunchMode.externalApplication,
       );
-      
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

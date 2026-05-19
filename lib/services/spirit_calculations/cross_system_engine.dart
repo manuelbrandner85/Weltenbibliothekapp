@@ -121,7 +121,8 @@ class CrossSystemEngine {
         'symbol': 'ג',
         'element': 'Mond',
         'tarot': 'II - Die Hohepriesterin',
-        'description': 'Das Kamel, Bruecke zwischen Bewusstsein und Unbewusstem.',
+        'description':
+            'Das Kamel, Bruecke zwischen Bewusstsein und Unbewusstem.',
       },
       4: {
         'letter': 'Daleth',
@@ -221,7 +222,8 @@ class CrossSystemEngine {
       7: {
         'card': 'Der Wagen',
         'roman': 'VII',
-        'description': 'Triumph durch fokussierten Willen und Selbstbeherrschung.',
+        'description':
+            'Triumph durch fokussierten Willen und Selbstbeherrschung.',
       },
       8: {
         'card': 'Die Kraft',
@@ -268,7 +270,8 @@ class CrossSystemEngine {
       4: {
         'planet': 'Uranus / Rahu',
         'symbol': '♅',
-        'description': 'Disziplin, ploetzliche Erkenntnis, technische Praezision.',
+        'description':
+            'Disziplin, ploetzliche Erkenntnis, technische Praezision.',
       },
       5: {
         'planet': 'Merkur',

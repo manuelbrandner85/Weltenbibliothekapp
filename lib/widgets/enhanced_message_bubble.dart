@@ -8,7 +8,7 @@ import 'dart:convert';
 import '../services/cloudflare_api_service.dart';
 import '../services/file_upload_service.dart';
 // import '../services/voice_message_service.dart'; // ❌ Web-only - Disabled for Android
-import 'voice_message_player.dart' show ChatVoicePlayer;  // 🎵 CHAT VOICE PLAYER
+import 'voice_message_player.dart' show ChatVoicePlayer; // 🎵 CHAT VOICE PLAYER
 // 🎤 TELEGRAM VOICE PLAYER (Backup)
 import 'read_receipts_indicator.dart'; // 📖 READ RECEIPTS
 import 'chat/chat_markdown_text.dart'; // ✨ Markdown-Light
@@ -24,7 +24,7 @@ class EnhancedMessageBubble extends StatefulWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final Color worldColor; // ENERGIE: purple, MATERIE: red
-  
+
   const EnhancedMessageBubble({
     super.key,
     required this.message,
@@ -45,10 +45,24 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
   List<Map<String, dynamic>> _reactions = [];
   bool _showReactionPicker = false;
   bool _isLoadingReactions = false;
-  
+
   final List<String> _availableEmojis = [
-    '👍', '❤️', '😂', '🔥', '✨', '🙏', '💯', '🎉',
-    '👁️', '🤔', '💫', '🌟', '🔮', '🧘', '⚡', '🌈'
+    '👍',
+    '❤️',
+    '😂',
+    '🔥',
+    '✨',
+    '🙏',
+    '💯',
+    '🎉',
+    '👁️',
+    '🤔',
+    '💫',
+    '🌟',
+    '🔮',
+    '🧘',
+    '⚡',
+    '🌈'
   ];
 
   @override
@@ -59,9 +73,9 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
 
   Future<void> _loadReactions() async {
     if (_isLoadingReactions) return;
-    
+
     setState(() => _isLoadingReactions = true);
-    
+
     try {
       final messageId = widget.message['id'];
       if (messageId == null) {
@@ -70,14 +84,15 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
         return;
       }
       final response = await http.get(
-        Uri.parse('${CloudflareApiService.chatFeaturesApiUrl}/messages/$messageId/reactions'),
+        Uri.parse(
+            '${CloudflareApiService.chatFeaturesApiUrl}/messages/$messageId/reactions'),
         headers: {'Content-Type': 'application/json'},
       );
-      
+
       if (response.statusCode == 200 && mounted) {
         final Map<String, dynamic> data = json.decode(response.body);
         final Map<String, dynamic> reactions = data['reactions'] ?? {};
-        
+
         // Convert { emoji: [users] } to List<Map> format
         final List<Map<String, dynamic>> reactionsList = [];
         reactions.forEach((emoji, users) {
@@ -89,14 +104,15 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
             });
           }
         });
-        
+
         setState(() {
           _reactions = reactionsList;
           _isLoadingReactions = false;
         });
-        
+
         if (kDebugMode) {
-          debugPrint('👍 Loaded ${reactionsList.length} reactions for message $messageId');
+          debugPrint(
+              '👍 Loaded ${reactionsList.length} reactions for message $messageId');
         }
       }
     } catch (e) {
@@ -109,13 +125,15 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
     try {
       final messageId = widget.message['id'];
       if (messageId == null) {
-        if (kDebugMode) debugPrint('⚠️ Cannot add reaction: Message missing ID');
+        if (kDebugMode)
+          debugPrint('⚠️ Cannot add reaction: Message missing ID');
         return;
       }
-      
+
       // 🆕 Direct call to Chat Features Worker
       final response = await http.post(
-        Uri.parse('${CloudflareApiService.chatFeaturesApiUrl}/messages/$messageId/react'),
+        Uri.parse(
+            '${CloudflareApiService.chatFeaturesApiUrl}/messages/$messageId/react'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userId': widget.currentUserId,
@@ -123,12 +141,13 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
           'emoji': emoji,
         }),
       );
-      
+
       if (response.statusCode == 200) {
         setState(() => _showReactionPicker = false);
         await _loadReactions();
       } else {
-        if (kDebugMode) debugPrint('❌ Add reaction failed: ${response.statusCode}');
+        if (kDebugMode)
+          debugPrint('❌ Add reaction failed: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Add reaction error: $e');
@@ -139,13 +158,15 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
     try {
       final messageId = widget.message['id'];
       if (messageId == null) {
-        if (kDebugMode) debugPrint('⚠️ Cannot remove reaction: Message missing ID');
+        if (kDebugMode)
+          debugPrint('⚠️ Cannot remove reaction: Message missing ID');
         return;
       }
-      
+
       // 🆕 Toggle reaction (same endpoint - Worker handles toggle)
       final response = await http.post(
-        Uri.parse('${CloudflareApiService.chatFeaturesApiUrl}/messages/$messageId/react'),
+        Uri.parse(
+            '${CloudflareApiService.chatFeaturesApiUrl}/messages/$messageId/react'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userId': widget.currentUserId,
@@ -153,11 +174,12 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
           'emoji': emoji,
         }),
       );
-      
+
       if (response.statusCode == 200) {
         await _loadReactions();
       } else {
-        if (kDebugMode) debugPrint('❌ Remove reaction failed: ${response.statusCode}');
+        if (kDebugMode)
+          debugPrint('❌ Remove reaction failed: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Remove reaction error: $e');
@@ -176,7 +198,8 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
     final mediaUrl = message['media_url'];
 
     return Align(
-      alignment: widget.isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
+      alignment:
+          widget.isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
       child: _SwipeToReply(
         enabled: widget.onReply != null,
         isMyMessage: widget.isMyMessage,
@@ -194,252 +217,256 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
               _showMessageActions(context);
             }
           },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
-          ),
-          child: Column(
-            crossAxisAlignment: widget.isMyMessage
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
-            children: [
-              // Telegram-Style Reply-Preview (Quote-Snapshot).
-              if (hasReply)
-                _buildReplyPreview(
-                  senderName: replyToSender,
-                  content: replyToContent,
-                ),
-              
-              // ✨ v5.44.7: Glassmorphism Message Bubble - BackdropFilter Blur
-              // statt opaker Hintergrund. Eigene Nachrichten in Welt-Farbe
-              // getoent, Fremd-Nachrichten in dunklem Glas-Look.
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: widget.isMyMessage
-                            ? [
-                                widget.worldColor.withValues(alpha: 0.32),
-                                widget.worldColor.withValues(alpha: 0.18),
-                              ]
-                            : [
-                                Colors.white.withValues(alpha: 0.10),
-                                Colors.white.withValues(alpha: 0.04),
-                              ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: widget.worldColor.withValues(
-                          alpha: widget.isMyMessage ? 0.55 : 0.22,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
+            child: Column(
+              crossAxisAlignment: widget.isMyMessage
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                // Telegram-Style Reply-Preview (Quote-Snapshot).
+                if (hasReply)
+                  _buildReplyPreview(
+                    senderName: replyToSender,
+                    content: replyToContent,
+                  ),
+
+                // ✨ v5.44.7: Glassmorphism Message Bubble - BackdropFilter Blur
+                // statt opaker Hintergrund. Eigene Nachrichten in Welt-Farbe
+                // getoent, Fremd-Nachrichten in dunklem Glas-Look.
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: widget.isMyMessage
+                              ? [
+                                  widget.worldColor.withValues(alpha: 0.32),
+                                  widget.worldColor.withValues(alpha: 0.18),
+                                ]
+                              : [
+                                  Colors.white.withValues(alpha: 0.10),
+                                  Colors.white.withValues(alpha: 0.04),
+                                ],
                         ),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
                           color: widget.worldColor.withValues(
-                            alpha: widget.isMyMessage ? 0.18 : 0.08,
+                            alpha: widget.isMyMessage ? 0.55 : 0.22,
                           ),
-                          blurRadius: 10,
-                          spreadRadius: 0,
+                          width: 1,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // User info
-                    Row(
-                      children: [
-                        // Avatar
-                        if (message['avatar_url'] != null && 
-                            (message['avatar_url'] as String).startsWith('http'))
-                          ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: message['avatar_url'],
-                              width: 24,
-                              height: 24,
-                              fit: BoxFit.cover,
-                              errorWidget: (context, url, error) => Text(
-                                message['avatar'] ?? '👤',
-                                style: const TextStyle(fontSize: 20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.worldColor.withValues(
+                              alpha: widget.isMyMessage ? 0.18 : 0.08,
+                            ),
+                            blurRadius: 10,
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // User info
+                          Row(
+                            children: [
+                              // Avatar
+                              if (message['avatar_url'] != null &&
+                                  (message['avatar_url'] as String)
+                                      .startsWith('http'))
+                                ClipOval(
+                                  child: CachedNetworkImage(
+                                    imageUrl: message['avatar_url'],
+                                    width: 24,
+                                    height: 24,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (context, url, error) => Text(
+                                      message['avatar'] ?? '👤',
+                                      style: const TextStyle(fontSize: 20),
+                                    ),
+                                  ),
+                                )
+                              else if (message['avatar'] != null)
+                                Text(
+                                  message['avatar'],
+                                  style: const TextStyle(fontSize: 20),
+                                )
+                              else if (!widget.isMyMessage)
+                                const Text('👤',
+                                    style: TextStyle(fontSize: 20)),
+
+                              const SizedBox(width: 8),
+
+                              // Username
+                              Text(
+                                message['username'] ?? 'Unknown',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: widget.isMyMessage
+                                      ? Colors.white70
+                                      : widget.worldColor,
+                                ),
+                              ),
+
+                              // Edited indicator
+                              if (message['edited'] == 1 ||
+                                  message['edited'] == true) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '(bearbeitet)',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontStyle: FontStyle.italic,
+                                    color: widget.isMyMessage
+                                        ? Colors.white60
+                                        : Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          // Media (Image/Voice)
+                          if (mediaType != null && mediaUrl != null)
+                            _buildMediaContent(mediaType, mediaUrl),
+
+                          // Text message (mit Markdown-Light + klickbaren Links)
+                          if (message['message'] != null &&
+                              (message['message'] as String).isNotEmpty)
+                            ChatMarkdownText(
+                              message['message'] as String,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                height: 1.35,
                               ),
                             ),
-                          )
-                        else if (message['avatar'] != null) 
-                          Text(
-                            message['avatar'],
-                            style: const TextStyle(fontSize: 20),
-                          )
-                        else if (!widget.isMyMessage) 
-                          const Text('👤', style: TextStyle(fontSize: 20)),
-                        
-                        const SizedBox(width: 8),
-                        
-                        // Username
-                        Text(
-                          message['username'] ?? 'Unknown',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                            color: widget.isMyMessage 
-                                ? Colors.white70 
-                                : widget.worldColor,
-                          ),
-                        ),
-                        
-                        // Edited indicator
-                        if (message['edited'] == 1 || message['edited'] == true) ...[
-                          const SizedBox(width: 4),
-                          Text(
-                            '(bearbeitet)',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontStyle: FontStyle.italic,
-                              color: widget.isMyMessage 
-                                  ? Colors.white60 
-                                  : Colors.grey[500],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Media (Image/Voice)
-                    if (mediaType != null && mediaUrl != null)
-                      _buildMediaContent(mediaType, mediaUrl),
-                    
-                    // Text message (mit Markdown-Light + klickbaren Links)
-                    if (message['message'] != null &&
-                        (message['message'] as String).isNotEmpty)
-                      ChatMarkdownText(
-                        message['message'] as String,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          height: 1.35,
-                        ),
-                      ),
-                    
-                    // Timestamp + Pending-Indicator
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _formatTimestamp(message['timestamp'] ?? ''),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: widget.isMyMessage
-                                ? Colors.white60
-                                : Colors.grey[500],
-                          ),
-                        ),
-                        if (message['is_pending'] == true) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.schedule,
-                            size: 12,
-                            color: widget.isMyMessage
-                                ? Colors.white60
-                                : Colors.grey[500],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-                ), // BackdropFilter
-              ), // ClipRRect
 
-              // Reactions
-              if (_reactions.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Wrap(
-                    spacing: 4,
-                    children: _reactions.map((reaction) {
-                      return InkWell(
-                        onTap: () => _removeReaction(reaction['emoji']),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: widget.worldColor.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: widget.worldColor.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: Row(
+                          // Timestamp + Pending-Indicator
+                          const SizedBox(height: 4),
+                          Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                reaction['emoji'],
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${reaction['count']}',
-                                style: const TextStyle(
+                                _formatTimestamp(message['timestamp'] ?? ''),
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: Colors.white70,
+                                  color: widget.isMyMessage
+                                      ? Colors.white60
+                                      : Colors.grey[500],
                                 ),
                               ),
+                              if (message['is_pending'] == true) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.schedule,
+                                  size: 12,
+                                  color: widget.isMyMessage
+                                      ? Colors.white60
+                                      : Colors.grey[500],
+                                ),
+                              ],
                             ],
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
+                        ],
+                      ),
+                    ),
+                  ), // BackdropFilter
+                ), // ClipRRect
 
-              // Reaction Picker
-              if (_showReactionPicker)
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2A),
-                    borderRadius: BorderRadius.circular(8),
+                // Reactions
+                if (_reactions.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Wrap(
+                      spacing: 4,
+                      children: _reactions.map((reaction) {
+                        return InkWell(
+                          onTap: () => _removeReaction(reaction['emoji']),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: widget.worldColor.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: widget.worldColor.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  reaction['emoji'],
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${reaction['count']}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                  child: Wrap(
-                    spacing: 4,
-                    children: _availableEmojis.map((emoji) {
-                      return InkWell(
-                        onTap: () => _addReaction(emoji),
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          child: Text(emoji, style: const TextStyle(fontSize: 24)),
-                        ),
-                      );
-                    }).toList(),
+
+                // Reaction Picker
+                if (_showReactionPicker)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2A2A2A),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Wrap(
+                      spacing: 4,
+                      children: _availableEmojis.map((emoji) {
+                        return InkWell(
+                          onTap: () => _addReaction(emoji),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            child: Text(emoji,
+                                style: const TextStyle(fontSize: 24)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
-              
-              // 📖 READ RECEIPTS (nur für eigene Nachrichten)
-              if (widget.isMyMessage && widget.message['id'] != null)
-                ReadReceiptsIndicator(
-                  messageId: widget.message['id'],
-                  currentUserId: widget.currentUserId,
-                  worldColor: widget.worldColor,
-                ),
-            ],
+
+                // 📖 READ RECEIPTS (nur für eigene Nachrichten)
+                if (widget.isMyMessage && widget.message['id'] != null)
+                  ReadReceiptsIndicator(
+                    messageId: widget.message['id'],
+                    currentUserId: widget.currentUserId,
+                    worldColor: widget.worldColor,
+                  ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -448,9 +475,8 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
   /// + gekürzter Zitatinhalt. Snapshot-Felder aus der DB, daher bleibt die
   /// Quote auch sichtbar wenn die Original-Nachricht gelöscht wurde.
   Widget _buildReplyPreview({String? senderName, String? content}) {
-    final name = (senderName ?? '').trim().isEmpty
-        ? 'Nachricht'
-        : senderName!.trim();
+    final name =
+        (senderName ?? '').trim().isEmpty ? 'Nachricht' : senderName!.trim();
     final snippet = (content ?? '').trim();
     final displayContent = snippet.isEmpty ? '[gelöscht]' : snippet;
     return Container(
@@ -490,7 +516,7 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
       ),
     );
   }
-  
+
   Widget _buildMediaContent(String mediaType, String mediaUrl) {
     if (mediaType == 'image') {
       return Padding(
@@ -540,7 +566,8 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.broken_image, color: Colors.white54, size: 32),
+                        const Icon(Icons.broken_image,
+                            color: Colors.white54, size: 32),
                         const SizedBox(height: 8),
                         Text(
                           'Bild konnte nicht geladen werden',
@@ -555,10 +582,12 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                           onPressed: () {
                             (context as Element).markNeedsBuild();
                           },
-                          icon: const Icon(Icons.refresh, size: 16, color: Colors.white70),
+                          icon: const Icon(Icons.refresh,
+                              size: 16, color: Colors.white70),
                           label: const Text(
                             'Erneut versuchen',
-                            style: TextStyle(color: Colors.white70, fontSize: 11),
+                            style:
+                                TextStyle(color: Colors.white70, fontSize: 11),
                           ),
                         ),
                       ],
@@ -574,20 +603,20 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
       // 🎵 VOICE MESSAGE PLAYER (REAL)
       final audioUrl = widget.message['media_url'] as String?;
       final durationSeconds = widget.message['duration'] as int?;
-      
+
       if (audioUrl != null) {
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           child: ChatVoicePlayer(
             audioUrl: audioUrl,
-            duration: durationSeconds != null 
+            duration: durationSeconds != null
                 ? Duration(seconds: durationSeconds)
                 : Duration.zero,
             accentColor: widget.worldColor,
           ),
         );
       }
-      
+
       // Fallback wenn keine URL
       return Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -601,7 +630,8 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
           children: [
             Icon(Icons.play_arrow, color: widget.worldColor),
             const SizedBox(width: 8),
-            const Text('Sprachnachricht', style: TextStyle(color: Colors.white70)),
+            const Text('Sprachnachricht',
+                style: TextStyle(color: Colors.white70)),
           ],
         ),
       );
@@ -610,7 +640,7 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
       final fileUrl = mediaUrl; // ignore: unused_local_variable
       final filename = widget.message['filename'] as String? ?? 'Datei';
       final fileSize = widget.message['file_size'] as int? ?? 0;
-      
+
       final isImage = FileUploadService.isImageFile(filename);
       final isDocument = FileUploadService.isDocumentFile(filename);
       final isVideo = FileUploadService.isVideoFile(filename);
@@ -681,7 +711,7 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
     }
     return const SizedBox.shrink();
   }
-  
+
   void _showMessageActions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -693,7 +723,8 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
             children: [
               ListTile(
                 leading: Icon(Icons.add_reaction, color: widget.worldColor),
-                title: const Text('Reagieren', style: TextStyle(color: Colors.white)),
+                title: const Text('Reagieren',
+                    style: TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(ctx);
                   setState(() => _showReactionPicker = !_showReactionPicker);
@@ -701,7 +732,8 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
               ),
               ListTile(
                 leading: const Icon(Icons.reply, color: Colors.blue),
-                title: const Text('Antworten', style: TextStyle(color: Colors.white)),
+                title: const Text('Antworten',
+                    style: TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(ctx);
                   widget.onReply?.call();
@@ -710,7 +742,8 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
               if (widget.isMyMessage) ...[
                 ListTile(
                   leading: const Icon(Icons.edit, color: Colors.orange),
-                  title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+                  title: const Text('Bearbeiten',
+                      style: TextStyle(color: Colors.white)),
                   onTap: () {
                     Navigator.pop(ctx);
                     widget.onEdit?.call();
@@ -718,7 +751,8 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
-                  title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+                  title: const Text('Löschen',
+                      style: TextStyle(color: Colors.white)),
                   onTap: () {
                     Navigator.pop(ctx);
                     widget.onDelete?.call();
@@ -731,18 +765,18 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
       },
     );
   }
-  
+
   String _formatTimestamp(String timestamp) {
     try {
       final dt = DateTime.parse(timestamp);
       final now = DateTime.now();
       final diff = now.difference(dt);
-      
+
       if (diff.inMinutes < 1) return 'Gerade eben';
       if (diff.inHours < 1) return '${diff.inMinutes}m';
       if (diff.inDays < 1) return '${diff.inHours}h';
       if (diff.inDays < 7) return '${diff.inDays}d';
-      
+
       return '${dt.day}.${dt.month}.${dt.year}';
     } catch (e) {
       return '';
@@ -823,17 +857,14 @@ class _SwipeToReplyState extends State<_SwipeToReply>
 
   @override
   Widget build(BuildContext context) {
-    final iconOpacity =
-        (_dragOffset.abs() / _kTriggerDistance).clamp(0.0, 1.0);
+    final iconOpacity = (_dragOffset.abs() / _kTriggerDistance).clamp(0.0, 1.0);
     final showOnRight = widget.isMyMessage; // own swipe left → icon on right
     return GestureDetector(
       onHorizontalDragUpdate: _onUpdate,
       onHorizontalDragEnd: _onEnd,
       behavior: HitTestBehavior.translucent,
       child: Stack(
-        alignment: showOnRight
-            ? Alignment.centerRight
-            : Alignment.centerLeft,
+        alignment: showOnRight ? Alignment.centerRight : Alignment.centerLeft,
         children: [
           Opacity(
             opacity: iconOpacity,

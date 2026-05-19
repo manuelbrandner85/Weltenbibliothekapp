@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Related Topics Widget v7.5
-/// 
+///
 /// Zeigt verwandte Themen und Vorschläge nach Recherche
 class RelatedTopicsWidget extends StatelessWidget {
   final String currentQuery;
@@ -136,7 +136,7 @@ class RelatedTopicsWidget extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            
+
             // Topic Title
             Text(
               topic.title,
@@ -149,14 +149,16 @@ class RelatedTopicsWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 6),
-            
+
             // Relevance Score
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ...List.generate(5, (index) {
                   return Icon(
-                    index < topic.relevanceScore ? Icons.star : Icons.star_border,
+                    index < topic.relevanceScore
+                        ? Icons.star
+                        : Icons.star_border,
                     color: Colors.amber,
                     size: 14,
                   );

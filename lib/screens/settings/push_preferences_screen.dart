@@ -57,98 +57,110 @@ class _PushPreferencesScreenState extends State<PushPreferencesScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),
           ),
           const Positioned.fill(child: IgnorePointer(child: WBVignette())),
           _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(WbDesign.space16),
-              children: [
-                _buildMasterCard(),
-                const SizedBox(height: WbDesign.space20),
-                _buildSection(
-                  icon: Icons.chat_bubble_outline,
-                  title: 'Chat & Erwähnungen',
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                  padding: const EdgeInsets.all(WbDesign.space16),
                   children: [
-                    _buildToggle(
-                      icon: '💬',
-                      title: 'Chat-Nachrichten',
-                      subtitle: 'Neue Nachrichten in Räumen',
-                      value: _prefs.chat,
-                      onChanged: (v) => _toggleAndRefresh(() => _prefs.setChat(v)),
+                    _buildMasterCard(),
+                    const SizedBox(height: WbDesign.space20),
+                    _buildSection(
+                      icon: Icons.chat_bubble_outline,
+                      title: 'Chat & Erwähnungen',
+                      children: [
+                        _buildToggle(
+                          icon: '💬',
+                          title: 'Chat-Nachrichten',
+                          subtitle: 'Neue Nachrichten in Räumen',
+                          value: _prefs.chat,
+                          onChanged: (v) =>
+                              _toggleAndRefresh(() => _prefs.setChat(v)),
+                        ),
+                        _buildToggle(
+                          icon: '📣',
+                          title: 'Erwähnungen',
+                          subtitle: 'Wenn dich jemand mit @username markiert',
+                          value: _prefs.mention,
+                          onChanged: (v) =>
+                              _toggleAndRefresh(() => _prefs.setMention(v)),
+                        ),
+                        _buildToggle(
+                          icon: '↩️',
+                          title: 'Antworten',
+                          subtitle: 'Antworten auf deine Nachrichten',
+                          value: _prefs.reply,
+                          onChanged: (v) =>
+                              _toggleAndRefresh(() => _prefs.setReply(v)),
+                        ),
+                      ],
                     ),
-                    _buildToggle(
-                      icon: '📣',
-                      title: 'Erwähnungen',
-                      subtitle: 'Wenn dich jemand mit @username markiert',
-                      value: _prefs.mention,
-                      onChanged: (v) => _toggleAndRefresh(() => _prefs.setMention(v)),
+                    _buildSection(
+                      icon: Icons.favorite_border,
+                      title: 'Social',
+                      children: [
+                        _buildToggle(
+                          icon: '❤️',
+                          title: 'Likes',
+                          subtitle: 'Wenn jemand deinen Beitrag mag',
+                          value: _prefs.like,
+                          onChanged: (v) =>
+                              _toggleAndRefresh(() => _prefs.setLike(v)),
+                        ),
+                        _buildToggle(
+                          icon: '💬',
+                          title: 'Kommentare',
+                          subtitle: 'Wenn jemand deinen Beitrag kommentiert',
+                          value: _prefs.comment,
+                          onChanged: (v) =>
+                              _toggleAndRefresh(() => _prefs.setComment(v)),
+                        ),
+                        _buildToggle(
+                          icon: '👤',
+                          title: 'Neue Follower',
+                          subtitle: 'Wenn dir jemand folgt',
+                          value: _prefs.follow,
+                          onChanged: (v) =>
+                              _toggleAndRefresh(() => _prefs.setFollow(v)),
+                        ),
+                      ],
                     ),
-                    _buildToggle(
-                      icon: '↩️',
-                      title: 'Antworten',
-                      subtitle: 'Antworten auf deine Nachrichten',
-                      value: _prefs.reply,
-                      onChanged: (v) => _toggleAndRefresh(() => _prefs.setReply(v)),
+                    _buildSection(
+                      icon: Icons.article_outlined,
+                      title: 'Inhalte & System',
+                      children: [
+                        _buildToggle(
+                          icon: '📰',
+                          title: 'Neue Artikel',
+                          subtitle: 'In abonnierten Welten',
+                          value: _prefs.article,
+                          onChanged: (v) =>
+                              _toggleAndRefresh(() => _prefs.setArticle(v)),
+                        ),
+                        _buildToggle(
+                          icon: '🏆',
+                          title: 'Achievements & System',
+                          subtitle: 'Belohnungen, Updates, wichtige Hinweise',
+                          value: _prefs.system,
+                          onChanged: (v) =>
+                              _toggleAndRefresh(() => _prefs.setSystem(v)),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: WbDesign.space24),
+                    _buildHint(),
+                    const SizedBox(height: WbDesign.space40),
                   ],
                 ),
-                _buildSection(
-                  icon: Icons.favorite_border,
-                  title: 'Social',
-                  children: [
-                    _buildToggle(
-                      icon: '❤️',
-                      title: 'Likes',
-                      subtitle: 'Wenn jemand deinen Beitrag mag',
-                      value: _prefs.like,
-                      onChanged: (v) => _toggleAndRefresh(() => _prefs.setLike(v)),
-                    ),
-                    _buildToggle(
-                      icon: '💬',
-                      title: 'Kommentare',
-                      subtitle: 'Wenn jemand deinen Beitrag kommentiert',
-                      value: _prefs.comment,
-                      onChanged: (v) => _toggleAndRefresh(() => _prefs.setComment(v)),
-                    ),
-                    _buildToggle(
-                      icon: '👤',
-                      title: 'Neue Follower',
-                      subtitle: 'Wenn dir jemand folgt',
-                      value: _prefs.follow,
-                      onChanged: (v) => _toggleAndRefresh(() => _prefs.setFollow(v)),
-                    ),
-                  ],
-                ),
-                _buildSection(
-                  icon: Icons.article_outlined,
-                  title: 'Inhalte & System',
-                  children: [
-                    _buildToggle(
-                      icon: '📰',
-                      title: 'Neue Artikel',
-                      subtitle: 'In abonnierten Welten',
-                      value: _prefs.article,
-                      onChanged: (v) => _toggleAndRefresh(() => _prefs.setArticle(v)),
-                    ),
-                    _buildToggle(
-                      icon: '🏆',
-                      title: 'Achievements & System',
-                      subtitle: 'Belohnungen, Updates, wichtige Hinweise',
-                      value: _prefs.system,
-                      onChanged: (v) => _toggleAndRefresh(() => _prefs.setSystem(v)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: WbDesign.space24),
-                _buildHint(),
-                const SizedBox(height: WbDesign.space40),
-              ],
-            ),
         ],
       ),
     );
@@ -322,7 +334,8 @@ class _PushPreferencesScreenState extends State<PushPreferencesScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF00E5FF).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(WbDesign.radiusMedium),
-        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.20)),
+        border:
+            Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.20)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

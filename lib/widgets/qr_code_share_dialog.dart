@@ -4,7 +4,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// QR Code Share Dialog v8.0
-/// 
+///
 /// Zeigt QR-Code für Recherche-Links
 class QrCodeShareDialog extends StatelessWidget {
   final String url;
@@ -49,9 +49,9 @@ class QrCodeShareDialog extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // QR Code
             Container(
               padding: const EdgeInsets.all(16),
@@ -78,9 +78,9 @@ class QrCodeShareDialog extends StatelessWidget {
                 },
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Title
             Text(
               title,
@@ -92,9 +92,9 @@ class QrCodeShareDialog extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Actions
             Row(
               children: [

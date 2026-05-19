@@ -9,23 +9,23 @@ import 'dart:convert';
 
 /// Achievement Category Types
 enum AchievementCategory {
-  researcher,    // Research & Search related
-  explorer,      // Content discovery
-  community,     // Social interactions
-  knowledge,     // Learning & Reading
-  streak,        // Daily usage
-  collector,     // Content saving
-  creator,       // Content creation
-  master,        // Special achievements
+  researcher, // Research & Search related
+  explorer, // Content discovery
+  community, // Social interactions
+  knowledge, // Learning & Reading
+  streak, // Daily usage
+  collector, // Content saving
+  creator, // Content creation
+  master, // Special achievements
 }
 
 /// Achievement Rarity
 enum AchievementRarity {
-  common,        // Easy to get
-  uncommon,      // Medium difficulty
-  rare,          // Hard to get
-  epic,          // Very hard
-  legendary,     // Extremely rare
+  common, // Easy to get
+  uncommon, // Medium difficulty
+  rare, // Hard to get
+  epic, // Very hard
+  legendary, // Extremely rare
 }
 
 /// Single Achievement Definition
@@ -53,32 +53,32 @@ class Achievement {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'description': description,
-    'icon': icon,
-    'category': category.name,
-    'rarity': rarity.name,
-    'xpReward': xpReward,
-    'maxProgress': maxProgress,
-    'secretHint': secretHint,
-  };
+        'id': id,
+        'name': name,
+        'description': description,
+        'icon': icon,
+        'category': category.name,
+        'rarity': rarity.name,
+        'xpReward': xpReward,
+        'maxProgress': maxProgress,
+        'secretHint': secretHint,
+      };
 
   factory Achievement.fromJson(Map<String, dynamic> json) => Achievement(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    description: json['description'] as String,
-    icon: json['icon'] as String,
-    category: AchievementCategory.values.firstWhere(
-      (e) => e.name == json['category'],
-    ),
-    rarity: AchievementRarity.values.firstWhere(
-      (e) => e.name == json['rarity'],
-    ),
-    xpReward: json['xpReward'] as int,
-    maxProgress: json['maxProgress'] as int? ?? 1,
-    secretHint: json['secretHint'] as String?,
-  );
+        id: json['id'] as String,
+        name: json['name'] as String,
+        description: json['description'] as String,
+        icon: json['icon'] as String,
+        category: AchievementCategory.values.firstWhere(
+          (e) => e.name == json['category'],
+        ),
+        rarity: AchievementRarity.values.firstWhere(
+          (e) => e.name == json['rarity'],
+        ),
+        xpReward: json['xpReward'] as int,
+        maxProgress: json['maxProgress'] as int? ?? 1,
+        secretHint: json['secretHint'] as String?,
+      );
 }
 
 /// Achievement Progress
@@ -98,12 +98,12 @@ class AchievementProgress {
   });
 
   Map<String, dynamic> toJson() => {
-    'achievementId': achievementId,
-    'currentProgress': currentProgress,
-    'isUnlocked': isUnlocked,
-    'isViewed': isViewed,
-    'unlockedAt': unlockedAt?.toIso8601String(),
-  };
+        'achievementId': achievementId,
+        'currentProgress': currentProgress,
+        'isUnlocked': isUnlocked,
+        'isViewed': isViewed,
+        'unlockedAt': unlockedAt?.toIso8601String(),
+      };
 
   factory AchievementProgress.fromJson(Map<String, dynamic> json) =>
       AchievementProgress(
@@ -140,16 +140,16 @@ class UserLevel {
   }
 
   Map<String, dynamic> toJson() => {
-    'level': level,
-    'currentXP': currentXP,
-    'totalXP': totalXP,
-  };
+        'level': level,
+        'currentXP': currentXP,
+        'totalXP': totalXP,
+      };
 
   factory UserLevel.fromJson(Map<String, dynamic> json) => UserLevel(
-    level: json['level'] as int? ?? 1,
-    currentXP: json['currentXP'] as int? ?? 0,
-    totalXP: json['totalXP'] as int? ?? 0,
-  );
+        level: json['level'] as int? ?? 1,
+        currentXP: json['currentXP'] as int? ?? 0,
+        totalXP: json['totalXP'] as int? ?? 0,
+      );
 }
 
 /// Achievement Service - Singleton
@@ -159,10 +159,10 @@ class AchievementService {
   AchievementService._internal();
 
   static const String _kProgress = 'ach_progress';
-  static const String _kLevel    = 'ach_level';
+  static const String _kLevel = 'ach_level';
 
-  final Map<String, Achievement>       _achievements = {};
-  final Map<String, AchievementProgress> _progress   = {};
+  final Map<String, Achievement> _achievements = {};
+  final Map<String, AchievementProgress> _progress = {};
   UserLevel _userLevel = UserLevel();
 
   final List<Function(Achievement, AchievementProgress)> _unlockListeners = [];
@@ -177,8 +177,10 @@ class AchievementService {
       if (kDebugMode) {
         debugPrint('✅ AchievementService initialized');
         debugPrint('📊 Total Achievements: ${_achievements.length}');
-        debugPrint('🏆 Unlocked: ${_progress.values.where((p) => p.isUnlocked).length}');
-        debugPrint('⭐ User Level: ${_userLevel.level} (${_userLevel.currentXP}/${_userLevel.xpForNextLevel} XP)');
+        debugPrint(
+            '🏆 Unlocked: ${_progress.values.where((p) => p.isUnlocked).length}');
+        debugPrint(
+            '⭐ User Level: ${_userLevel.level} (${_userLevel.currentXP}/${_userLevel.xpForNextLevel} XP)');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ AchievementService init error: $e');
@@ -515,19 +517,22 @@ class AchievementService {
       if (progressData != null) {
         final List<dynamic> progressList = jsonDecode(progressData);
         for (var json in progressList) {
-          final progress = AchievementProgress.fromJson(json as Map<String, dynamic>);
+          final progress =
+              AchievementProgress.fromJson(json as Map<String, dynamic>);
           _progress[progress.achievementId] = progress;
         }
       }
 
       final levelData = prefs.getString(_kLevel);
       if (levelData != null) {
-        _userLevel = UserLevel.fromJson(jsonDecode(levelData) as Map<String, dynamic>);
+        _userLevel =
+            UserLevel.fromJson(jsonDecode(levelData) as Map<String, dynamic>);
       }
 
       for (var achievementId in _achievements.keys) {
         if (!_progress.containsKey(achievementId)) {
-          _progress[achievementId] = AchievementProgress(achievementId: achievementId);
+          _progress[achievementId] =
+              AchievementProgress(achievementId: achievementId);
         }
       }
     } catch (e) {
@@ -594,7 +599,8 @@ class AchievementService {
     }
 
     if (kDebugMode) {
-      debugPrint('🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xpReward} XP)');
+      debugPrint(
+          '🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xpReward} XP)');
     }
 
     _checkPerfectionist();
@@ -655,12 +661,10 @@ class AchievementService {
   UserLevel get currentLevel => _userLevel;
 
   List<Achievement> get unlockedAchievements {
-    return _achievements.values
-        .where((achievement) {
-          final progress = _progress[achievement.id];
-          return progress != null && progress.isUnlocked;
-        })
-        .toList();
+    return _achievements.values.where((achievement) {
+      final progress = _progress[achievement.id];
+      return progress != null && progress.isUnlocked;
+    }).toList();
   }
 
   List<Achievement> get allAchievements => _achievements.values.toList();
@@ -683,7 +687,8 @@ class AchievementService {
     return _achievements.values.where((a) => a.category == category).toList();
   }
 
-  AchievementProgress? getProgress(String achievementId) => _progress[achievementId];
+  AchievementProgress? getProgress(String achievementId) =>
+      _progress[achievementId];
 
   UserLevel getUserLevel() => _userLevel;
 

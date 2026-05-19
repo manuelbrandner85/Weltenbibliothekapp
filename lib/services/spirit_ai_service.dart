@@ -13,7 +13,8 @@ class SpiritAIService {
 
   /// G2: nimmt eine Liste von Tool-Ergebnissen (jeweils tool + summary) und
   /// fordert vom Worker eine kurze Gesamtsynthese.
-  Future<String?> synthesize(List<({String tool, String summary})> readings) async {
+  Future<String?> synthesize(
+      List<({String tool, String summary})> readings) async {
     if (readings.isEmpty) return null;
     try {
       final res = await http

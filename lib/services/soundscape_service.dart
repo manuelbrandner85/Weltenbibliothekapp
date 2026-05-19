@@ -39,7 +39,8 @@ class SoundscapeService {
   SoundscapeService._();
   static final SoundscapeService instance = SoundscapeService._();
 
-  static const int _sampleRate = 22050; // 22 kHz — guter Kompromiss Qualität/Größe
+  static const int _sampleRate =
+      22050; // 22 kHz — guter Kompromiss Qualität/Größe
   static const int _durationSec = 5; // 5-Sekunden-Loop
   static const double _defaultVolume = 0.12; // 12 % — sehr leise im Hintergrund
 
@@ -176,7 +177,8 @@ class SoundscapeService {
     final fadeSamples = (_sampleRate * 0.020).round();
 
     final samples = Int16List(totalSamples);
-    final amplitude = (32767 * volume * 0.5).round(); // 0.5 weil 2 Wellen summiert
+    final amplitude =
+        (32767 * volume * 0.5).round(); // 0.5 weil 2 Wellen summiert
 
     for (int i = 0; i < totalSamples; i++) {
       final t = i / _sampleRate;
@@ -185,8 +187,8 @@ class SoundscapeService {
       if (i >= totalSamples - fadeSamples) {
         fade = (totalSamples - i) / fadeSamples;
       }
-      final raw = math.sin(2 * math.pi * hz1 * t) +
-          math.sin(2 * math.pi * hz2 * t);
+      final raw =
+          math.sin(2 * math.pi * hz1 * t) + math.sin(2 * math.pi * hz2 * t);
       samples[i] = (raw * amplitude * fade).round().clamp(-32768, 32767);
     }
     return _buildWav(samples);
@@ -204,23 +206,36 @@ class SoundscapeService {
     int offset = 0;
 
     // RIFF header
-    _writeAscii(out, offset, 'RIFF'); offset += 4;
-    out.setUint32(offset, fileSize - 8, Endian.little); offset += 4;
-    _writeAscii(out, offset, 'WAVE'); offset += 4;
+    _writeAscii(out, offset, 'RIFF');
+    offset += 4;
+    out.setUint32(offset, fileSize - 8, Endian.little);
+    offset += 4;
+    _writeAscii(out, offset, 'WAVE');
+    offset += 4;
 
     // fmt chunk
-    _writeAscii(out, offset, 'fmt '); offset += 4;
-    out.setUint32(offset, 16, Endian.little); offset += 4; // chunk size
-    out.setUint16(offset, 1, Endian.little); offset += 2; // PCM
-    out.setUint16(offset, channels, Endian.little); offset += 2;
-    out.setUint32(offset, _sampleRate, Endian.little); offset += 4;
-    out.setUint32(offset, byteRate, Endian.little); offset += 4;
-    out.setUint16(offset, channels * (bitsPerSample ~/ 8), Endian.little); offset += 2; // block align
-    out.setUint16(offset, bitsPerSample, Endian.little); offset += 2;
+    _writeAscii(out, offset, 'fmt ');
+    offset += 4;
+    out.setUint32(offset, 16, Endian.little);
+    offset += 4; // chunk size
+    out.setUint16(offset, 1, Endian.little);
+    offset += 2; // PCM
+    out.setUint16(offset, channels, Endian.little);
+    offset += 2;
+    out.setUint32(offset, _sampleRate, Endian.little);
+    offset += 4;
+    out.setUint32(offset, byteRate, Endian.little);
+    offset += 4;
+    out.setUint16(offset, channels * (bitsPerSample ~/ 8), Endian.little);
+    offset += 2; // block align
+    out.setUint16(offset, bitsPerSample, Endian.little);
+    offset += 2;
 
     // data chunk
-    _writeAscii(out, offset, 'data'); offset += 4;
-    out.setUint32(offset, dataSize, Endian.little); offset += 4;
+    _writeAscii(out, offset, 'data');
+    offset += 4;
+    out.setUint32(offset, dataSize, Endian.little);
+    offset += 4;
 
     for (final sample in samples) {
       out.setInt16(offset, sample, Endian.little);

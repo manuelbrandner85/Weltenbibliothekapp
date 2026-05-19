@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import 'package:shared_preferences/shared_preferences.dart';
 import '../portal_home_screen.dart'; // 🌀 PORTAL
 
 /// 🎓 ENHANCED ONBOARDING FLOW v8.0
-/// 
+///
 /// 6-Screen Tutorial mit Features:
 /// - Swipe-Gestures (PageView)
 /// - Skip-Button
@@ -16,7 +16,8 @@ class OnboardingEnhancedScreen extends StatefulWidget {
   const OnboardingEnhancedScreen({super.key});
 
   @override
-  State<OnboardingEnhancedScreen> createState() => _OnboardingEnhancedScreenState();
+  State<OnboardingEnhancedScreen> createState() =>
+      _OnboardingEnhancedScreenState();
 }
 
 class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
@@ -87,7 +88,7 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
         duration: const Duration(milliseconds: 1200),
       ),
     );
-    
+
     // Start first animation
     _animationControllers[0].forward();
   }
@@ -103,7 +104,7 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
 
   void _onPageChanged(int index) {
     setState(() => _currentPage = index);
-    
+
     // Trigger animation for new page
     if (index < _animationControllers.length) {
       _animationControllers[index].forward();
@@ -112,13 +113,13 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
 
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // ✅ Mark onboarding as seen (wichtig für IntroImageScreen!)
     await prefs.setBool('has_seen_onboarding', true);
     await prefs.setBool('enhanced_onboarding_completed', true);
     await prefs.setBool('new_onboarding_completed', true);
     await prefs.setBool('onboarding_completed', true);
-    
+
     if (mounted) {
       // ✅ Navigate direkt zum Portal (KEIN Loop mehr!)
       Navigator.of(context).pushReplacement(
@@ -159,7 +160,8 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
                     },
                     style: TextButton.styleFrom(
                       backgroundColor: Colors.black.withValues(alpha: 0.3),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -304,7 +306,7 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(flex: 1),
-              
+
               // Animated Icon
               FadeTransition(
                 opacity: CurvedAnimation(

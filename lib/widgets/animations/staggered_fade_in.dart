@@ -59,8 +59,8 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
     super.initState();
     _ctrl = AnimationController(vsync: this, duration: widget.duration);
     _fade = CurvedAnimation(parent: _ctrl, curve: widget.curve);
-    _slide = Tween<Offset>(begin: widget.slideFrom, end: Offset.zero)
-        .animate(_fade);
+    _slide =
+        Tween<Offset>(begin: widget.slideFrom, end: Offset.zero).animate(_fade);
   }
 
   @override
@@ -68,8 +68,7 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
     super.didChangeDependencies();
     if (_scheduled) return;
     _scheduled = true;
-    final totalDelay =
-        widget.initialDelay + widget.perItemDelay * widget.index;
+    final totalDelay = widget.initialDelay + widget.perItemDelay * widget.index;
     Future.delayed(totalDelay, () {
       if (mounted) _ctrl.forward();
     });

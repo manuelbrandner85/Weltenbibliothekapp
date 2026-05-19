@@ -5,17 +5,18 @@ import '../widgets/lesson_series_screen.dart';
 
 const List<LessonSeriesEntry> sacredGeometry12 = [
   LessonSeriesEntry(
-    code: 'sg01', symbol: '○',
+    code: 'sg01',
+    symbol: '○',
     title: 'Tag 1 — Der Kreis',
     subtitle: 'Einheit · Ganzheit · Anfang',
-    meaning:
-        'Erste Form. Kein Anfang, kein Ende. Die Sonne, der volle Mond, '
+    meaning: 'Erste Form. Kein Anfang, kein Ende. Die Sonne, der volle Mond, '
         'das Mandala. Symbol der Unendlichkeit und Vollständigkeit.',
     reflection:
         'Welcher Lebensbereich fühlt sich gerade "rund" an, welcher "eckig"?',
   ),
   LessonSeriesEntry(
-    code: 'sg02', symbol: '👁️',
+    code: 'sg02',
+    symbol: '👁️',
     title: 'Tag 2 — Vesica Piscis',
     subtitle: 'Schöpfung aus zwei Kreisen',
     meaning:
@@ -25,27 +26,28 @@ const List<LessonSeriesEntry> sacredGeometry12 = [
         'Welche zwei Pole in dir suchen gerade ihre fruchtbare Überschneidung?',
   ),
   LessonSeriesEntry(
-    code: 'sg03', symbol: '△',
+    code: 'sg03',
+    symbol: '△',
     title: 'Tag 3 — Das Dreieck',
     subtitle: 'Stabilität · Trinität · Aufstieg',
     meaning:
         'Erste flache Form. Drei Punkte halten alles. Vater-Sohn-Heiliger Geist, '
         'Körper-Geist-Seele, Maslow-Pyramide.',
-    reflection:
-        'Welche drei Säulen tragen dein Leben — und welche wackelt?',
+    reflection: 'Welche drei Säulen tragen dein Leben — und welche wackelt?',
   ),
   LessonSeriesEntry(
-    code: 'sg04', symbol: '⊕',
+    code: 'sg04',
+    symbol: '⊕',
     title: 'Tag 4 — Das Kreuz im Kreis',
     subtitle: 'Vier Himmelsrichtungen · Medizinrad',
-    meaning:
-        'Kreis geteilt durch Kreuz. Vier Elemente, vier Jahreszeiten, '
+    meaning: 'Kreis geteilt durch Kreuz. Vier Elemente, vier Jahreszeiten, '
         'vier Lebensphasen. Keltisches Sonnenrad, indianisches Medizinrad.',
     reflection:
         'In welcher Himmelsrichtung deines inneren Medizinrades stehst du gerade?',
   ),
   LessonSeriesEntry(
-    code: 'sg05', symbol: '⬢',
+    code: 'sg05',
+    symbol: '⬢',
     title: 'Tag 5 — Hexagon · Bienenwabe',
     subtitle: 'Effizienz · Kooperation',
     meaning:
@@ -55,7 +57,8 @@ const List<LessonSeriesEntry> sacredGeometry12 = [
         'Wo könntest du gerade effizienter zusammenarbeiten statt allein zu kämpfen?',
   ),
   LessonSeriesEntry(
-    code: 'sg06', symbol: '✡️',
+    code: 'sg06',
+    symbol: '✡️',
     title: 'Tag 6 — Hexagramm · Davidstern',
     subtitle: 'Vereinigung der Polaritäten',
     meaning:
@@ -65,17 +68,18 @@ const List<LessonSeriesEntry> sacredGeometry12 = [
         'In welcher Polarität deines Lebens darf jetzt Versöhnung passieren?',
   ),
   LessonSeriesEntry(
-    code: 'sg07', symbol: '🌸',
+    code: 'sg07',
+    symbol: '🌸',
     title: 'Tag 7 — Blume des Lebens',
     subtitle: '19 Kreise · alle Formen entstehen daraus',
-    meaning:
-        '19 überlappende Kreise. Enthält alle platonischen Körper, alle '
+    meaning: '19 überlappende Kreise. Enthält alle platonischen Körper, alle '
         'biologischen Formen-Muster. Heiligstes Symbol der heiligen Geometrie.',
     reflection:
         'Welches Urmuster wiederholt sich in vielen Bereichen deines Lebens?',
   ),
   LessonSeriesEntry(
-    code: 'sg08', symbol: '🔯',
+    code: 'sg08',
+    symbol: '🔯',
     title: 'Tag 8 — Sri Yantra',
     subtitle: '9 verschränkte Dreiecke · Tantra',
     meaning:
@@ -85,7 +89,8 @@ const List<LessonSeriesEntry> sacredGeometry12 = [
         'Welches männliche und welches weibliche Prinzip in dir sucht gerade Balance?',
   ),
   LessonSeriesEntry(
-    code: 'sg09', symbol: '🕯️',
+    code: 'sg09',
+    symbol: '🕯️',
     title: 'Tag 9 — Metatrons Würfel',
     subtitle: '13 Kreise · alle 5 platonischen Körper',
     meaning:
@@ -95,7 +100,8 @@ const List<LessonSeriesEntry> sacredGeometry12 = [
         'Welches Element (Feuer/Erde/Luft/Wasser/Äther) fehlt dir gerade?',
   ),
   LessonSeriesEntry(
-    code: 'sg10', symbol: '🌀',
+    code: 'sg10',
+    symbol: '🌀',
     title: 'Tag 10 — Goldene Spirale',
     subtitle: 'Phi · Fibonacci · Wachstum',
     meaning:
@@ -105,7 +111,8 @@ const List<LessonSeriesEntry> sacredGeometry12 = [
         'In welcher Phase deiner persönlichen Spirale stehst du — Außenkurve oder Innenkurve?',
   ),
   LessonSeriesEntry(
-    code: 'sg11', symbol: '🔺',
+    code: 'sg11',
+    symbol: '🔺',
     title: 'Tag 11 — Merkaba',
     subtitle: 'Zwei verschränkte Tetraeder · Lichtkörper',
     meaning:
@@ -115,7 +122,8 @@ const List<LessonSeriesEntry> sacredGeometry12 = [
         'Wenn du dir deinen energetischen Schutzraum aufbaust — wie groß und welche Farbe?',
   ),
   LessonSeriesEntry(
-    code: 'sg12', symbol: '♾️',
+    code: 'sg12',
+    symbol: '♾️',
     title: 'Tag 12 — Torus',
     subtitle: 'Selbst-zirkulierende Energie · Apfelform',
     meaning:

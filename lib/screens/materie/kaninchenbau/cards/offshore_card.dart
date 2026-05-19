@@ -13,7 +13,8 @@ class OffshoreCard extends StatelessWidget {
   final List<OffshoreEntity> entities;
   final bool loading;
 
-  const OffshoreCard({super.key, required this.entities, required this.loading});
+  const OffshoreCard(
+      {super.key, required this.entities, required this.loading});
 
   static const _accent = Color(0xFF00BCD4);
 
@@ -29,15 +30,22 @@ class OffshoreCard extends StatelessWidget {
             const Icon(Icons.water, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('OFFSHORE-LEAKS',
-                style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold)),
             const Spacer(),
             if (entities.isNotEmpty)
               Text('${entities.length}',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 11)),
           ]),
           const SizedBox(height: 4),
           Text('ICIJ · Panama Papers · Pandora Papers · Paradise Papers',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
           const SizedBox(height: 14),
           if (loading)
             _buildLoading()
@@ -53,7 +61,10 @@ class OffshoreCard extends StatelessWidget {
   Widget _buildLoading() => const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: SizedBox(width: 28, height: 28, child: CircularProgressIndicator(color: _accent, strokeWidth: 2)),
+          child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(color: _accent, strokeWidth: 2)),
         ),
       );
 
@@ -72,7 +83,8 @@ class OffshoreCard extends StatelessWidget {
             : () async {
                 HapticFeedback.lightImpact();
                 final uri = Uri.tryParse(e.url!);
-                if (uri != null && await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                if (uri != null && await canLaunchUrl(uri))
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
               },
         borderRadius: BorderRadius.circular(10),
         child: Container(
@@ -84,7 +96,8 @@ class OffshoreCard extends StatelessWidget {
           ),
           child: Row(children: [
             Container(
-              width: 32, height: 32,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _accent.withValues(alpha: 0.14),
@@ -94,19 +107,28 @@ class OffshoreCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(e.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                    maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 3),
-                Wrap(spacing: 6, children: [
-                  if (e.type.isNotEmpty) _badge(e.type, _accent),
-                  if (e.jurisdiction.isNotEmpty) _badge(e.jurisdiction, Colors.white38),
-                  if (e.leakType.isNotEmpty) _badge(e.leakType, const Color(0xFFFF7043)),
-                ]),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(e.name,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 3),
+                    Wrap(spacing: 6, children: [
+                      if (e.type.isNotEmpty) _badge(e.type, _accent),
+                      if (e.jurisdiction.isNotEmpty)
+                        _badge(e.jurisdiction, Colors.white38),
+                      if (e.leakType.isNotEmpty)
+                        _badge(e.leakType, const Color(0xFFFF7043)),
+                    ]),
+                  ]),
             ),
-            if (e.url != null) Icon(Icons.open_in_new, color: _accent, size: 14),
+            if (e.url != null)
+              Icon(Icons.open_in_new, color: _accent, size: 14),
           ]),
         ),
       ),
@@ -119,7 +141,9 @@ class OffshoreCard extends StatelessWidget {
           color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(text, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700)),
+        child: Text(text,
+            style: TextStyle(
+                color: color, fontSize: 9, fontWeight: FontWeight.w700)),
       );
 
   IconData _iconForType(String type) {

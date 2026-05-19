@@ -23,8 +23,8 @@ class _ChakraScanEntry {
     final raw = (j['scores'] as Map?) ?? {};
     return _ChakraScanEntry(
       ts: DateTime.tryParse(j['ts'] as String? ?? '') ?? DateTime.now(),
-      scores: raw.map((k, v) => MapEntry(k.toString(),
-          (v as num?)?.toDouble() ?? 0.5)),
+      scores: raw.map(
+          (k, v) => MapEntry(k.toString(), (v as num?)?.toDouble() ?? 0.5)),
     );
   }
 }
@@ -72,13 +72,17 @@ class _ChakraHistoryScreenState extends State<ChakraHistoryScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final list = prefs.getStringList('chakra_scans_v1') ?? <String>[];
-      final entries = list.map((s) {
-        try {
-          return _ChakraScanEntry.fromJson(jsonDecode(s) as Map<String, dynamic>);
-        } catch (_) {
-          return null;
-        }
-      }).whereType<_ChakraScanEntry>().toList();
+      final entries = list
+          .map((s) {
+            try {
+              return _ChakraScanEntry.fromJson(
+                  jsonDecode(s) as Map<String, dynamic>);
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<_ChakraScanEntry>()
+          .toList();
       if (!mounted) return;
       setState(() {
         _scans = entries;
@@ -142,7 +146,8 @@ class _ChakraHistoryScreenState extends State<ChakraHistoryScreen> {
             const Text(
               'Noch keine Chakra-Scans.\nMache deinen ersten Scan!',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white60, fontSize: 14, height: 1.5),
+              style:
+                  TextStyle(color: Colors.white60, fontSize: 14, height: 1.5),
             ),
           ],
         ),
@@ -156,8 +161,8 @@ class _ChakraHistoryScreenState extends State<ChakraHistoryScreen> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -306,8 +311,8 @@ class _ChakraHistoryScreenState extends State<ChakraHistoryScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF7C4DFF).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: const Color(0xFF7C4DFF).withValues(alpha: 0.4)),
+        border:
+            Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -354,7 +359,8 @@ class _ChakraHistoryScreenState extends State<ChakraHistoryScreen> {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(children: [
                 Container(
-                  width: 8, height: 8,
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
                     color: _chakraColors[c],
                     shape: BoxShape.circle,
@@ -363,17 +369,20 @@ class _ChakraHistoryScreenState extends State<ChakraHistoryScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(c.split('-').first,
-                      style: const TextStyle(color: Colors.white, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 12)),
                 ),
                 Text('${(va * 100).toInt()}%',
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 11)),
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 11)),
                 const SizedBox(width: 8),
                 Icon(icon, color: iconCol, size: 14),
                 const SizedBox(width: 8),
                 Text('${(vb * 100).toInt()}%',
                     style: TextStyle(
-                        color: iconCol, fontSize: 11, fontWeight: FontWeight.w700)),
+                        color: iconCol,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700)),
               ]),
             );
           }),
@@ -441,7 +450,8 @@ class _ChakraHistoryScreenState extends State<ChakraHistoryScreen> {
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700)),
                         const SizedBox(height: 6),
-                        Row(children: _chakraOrder.map((c) {
+                        Row(
+                            children: _chakraOrder.map((c) {
                           final v = s.scores[c] ?? 0.0;
                           return Expanded(
                             child: Container(

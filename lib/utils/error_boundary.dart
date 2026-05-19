@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
 /// Global Error Boundary - Verhindert App-Crashes
-/// 
+///
 /// VERWENDUNG in main.dart:
 /// ```dart
 /// void main() {
@@ -12,13 +12,13 @@ import 'package:flutter/foundation.dart';
 /// ```
 class ErrorBoundary {
   ErrorBoundary._(); // Private constructor
-  
+
   /// Initialisiere Error Handling
   static void initialize() {
     // 🛡️ Flutter Framework Errors abfangen
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
-      
+
       if (kDebugMode) {
         // Debug: Vollständiger Stack Trace
         debugPrint('🔴 FLUTTER ERROR CAUGHT:');
@@ -28,11 +28,11 @@ class ErrorBoundary {
         // Production: Kurze Error-Info
         debugPrint('❌ Error: ${details.exception}');
       }
-      
+
       // Optional: Error an Backend senden (Cloudflare Worker)
       _reportErrorToBackend(details);
     };
-    
+
     // 🛡️ Async Errors abfangen (außerhalb Flutter Framework)
     PlatformDispatcher.instance.onError = (error, stack) {
       if (kDebugMode) {
@@ -42,15 +42,15 @@ class ErrorBoundary {
       } else {
         debugPrint('❌ Async Error: $error');
       }
-      
+
       return true; // Error wurde behandelt
     };
-    
+
     if (kDebugMode) {
       debugPrint('✅ Error Boundary initialized');
     }
   }
-  
+
   /// Sende Error-Report an Backend (optional)
   static Future<void> _reportErrorToBackend(FlutterErrorDetails details) async {
     try {
@@ -79,7 +79,7 @@ class ErrorBoundary {
 class AppErrorWidget extends StatelessWidget {
   final FlutterErrorDetails? errorDetails;
   final String? customMessage;
-  
+
   const AppErrorWidget({
     super.key,
     this.errorDetails,
@@ -103,9 +103,9 @@ class AppErrorWidget extends StatelessWidget {
                   size: 80,
                   color: Colors.red.withValues(alpha: 0.8),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Error Titel
                 const Text(
                   '⚠️ Oops! Etwas ist schiefgelaufen',
@@ -116,23 +116,23 @@ class AppErrorWidget extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Error Nachricht
                 Text(
-                  customMessage ?? 
-                  'Die App hat einen unerwarteten Fehler festgestellt.\n'
-                  'Bitte starte die App neu.',
+                  customMessage ??
+                      'Die App hat einen unerwarteten Fehler festgestellt.\n'
+                          'Bitte starte die App neu.',
                   style: const TextStyle(
                     fontSize: 16,
                     color: Colors.white70,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Reload Button
                 ElevatedButton.icon(
                   onPressed: () {
@@ -157,7 +157,7 @@ class AppErrorWidget extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 // Debug Info (nur in Debug Mode)
                 if (kDebugMode && errorDetails != null) ...[
                   const SizedBox(height: 32),

@@ -78,19 +78,19 @@ class ShareDialog extends StatelessWidget {
                 children: [
                   // QR Code Section
                   _buildQRCodeSection(deepLink, context),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Link Section
                   _buildLinkSection(deepLink, context),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Share Platforms
                   _buildSharePlatforms(shareText, deepLink, context),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Generic Share Button
                   _buildGenericShareButton(shareText, context),
                 ],
@@ -124,7 +124,7 @@ class ShareDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // QR Code
           Container(
             padding: const EdgeInsets.all(16),
@@ -137,12 +137,14 @@ class ShareDialog extends StatelessWidget {
               version: QrVersions.auto,
               size: 200,
               backgroundColor: Colors.white,
-              eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
-
-              dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+              eyeStyle:
+                  QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+              dataModuleStyle: QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: Colors.black),
             ),
           ),
-          
+
           const SizedBox(height: 12),
           Text(
             'Scanne mit deiner Kamera',
@@ -179,7 +181,7 @@ class ShareDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Link Display + Copy Button
           Row(
             children: [
@@ -224,7 +226,8 @@ class ShareDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildSharePlatforms(String shareText, String deepLink, BuildContext context) {
+  Widget _buildSharePlatforms(
+      String shareText, String deepLink, BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -237,7 +240,7 @@ class ShareDialog extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        
+
         // Platform Grid
         GridView.count(
           crossAxisCount: 3,
@@ -365,7 +368,7 @@ class ShareDialog extends StatelessWidget {
 
   Future<void> _copyToClipboard(String text, BuildContext context) async {
     await Clipboard.setData(ClipboardData(text: text));
-    
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -384,15 +387,16 @@ class ShareDialog extends StatelessWidget {
     );
   }
 
-  Future<void> _shareToWhatsApp(String text, String link, BuildContext context) async {
+  Future<void> _shareToWhatsApp(
+      String text, String link, BuildContext context) async {
     final message = '$text\n\n$link';
     // URL encode for WhatsApp
     final encoded = Uri.encodeComponent(message);
     final url = 'https://wa.me/?text=$encoded';
-    
+
     try {
       await Share.shareUri(Uri.parse(url));
-      
+
       // Track share
       await CommunityInteractionService().trackShare(
         postId: postId,
@@ -406,14 +410,15 @@ class ShareDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _shareToTelegram(String text, String link, BuildContext context) async {
+  Future<void> _shareToTelegram(
+      String text, String link, BuildContext context) async {
     final message = '$text\n\n$link';
     final encoded = Uri.encodeComponent(message);
     final url = 'https://t.me/share/url?url=$encoded';
-    
+
     try {
       await Share.shareUri(Uri.parse(url));
-      
+
       await CommunityInteractionService().trackShare(
         postId: postId,
         userId: userId,
@@ -426,14 +431,16 @@ class ShareDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _shareToTwitter(String text, String link, BuildContext context) async {
+  Future<void> _shareToTwitter(
+      String text, String link, BuildContext context) async {
     final encoded = Uri.encodeComponent(text);
     final urlEncoded = Uri.encodeComponent(link);
-    final url = 'https://twitter.com/intent/tweet?text=$encoded&url=$urlEncoded';
-    
+    final url =
+        'https://twitter.com/intent/tweet?text=$encoded&url=$urlEncoded';
+
     try {
       await Share.shareUri(Uri.parse(url));
-      
+
       await CommunityInteractionService().trackShare(
         postId: postId,
         userId: userId,
@@ -446,14 +453,15 @@ class ShareDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _shareViaEmail(String text, String link, BuildContext context) async {
+  Future<void> _shareViaEmail(
+      String text, String link, BuildContext context) async {
     final subject = Uri.encodeComponent(postTitle);
     final body = Uri.encodeComponent('$text\n\n$link');
     final url = 'mailto:?subject=$subject&body=$body';
-    
+
     try {
       await Share.shareUri(Uri.parse(url));
-      
+
       await CommunityInteractionService().trackShare(
         postId: postId,
         userId: userId,
@@ -466,13 +474,14 @@ class ShareDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _shareViaSMS(String text, String link, BuildContext context) async {
+  Future<void> _shareViaSMS(
+      String text, String link, BuildContext context) async {
     final message = Uri.encodeComponent('$text\n\n$link');
     final url = 'sms:?body=$message';
-    
+
     try {
       await Share.shareUri(Uri.parse(url));
-      
+
       await CommunityInteractionService().trackShare(
         postId: postId,
         userId: userId,
@@ -491,7 +500,7 @@ class ShareDialog extends StatelessWidget {
         '$text\n\n${_generateDeepLink()}',
         subject: postTitle,
       );
-      
+
       await CommunityInteractionService().trackShare(
         postId: postId,
         userId: userId,

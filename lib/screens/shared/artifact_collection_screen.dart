@@ -170,10 +170,18 @@ class _ArtifactCollectionScreenState extends State<ArtifactCollectionScreen>
   Widget _buildRarityFilter() {
     final rarities = [
       ('all', 'Alle', 0xFFFFFFFF),
-      ('common', 'Gewöhnlich', GamificationService.rarityColor(ArtifactRarity.common)),
+      (
+        'common',
+        'Gewöhnlich',
+        GamificationService.rarityColor(ArtifactRarity.common)
+      ),
       ('rare', 'Selten', GamificationService.rarityColor(ArtifactRarity.rare)),
       ('epic', 'Episch', GamificationService.rarityColor(ArtifactRarity.epic)),
-      ('legendary', 'Legendär', GamificationService.rarityColor(ArtifactRarity.legendary)),
+      (
+        'legendary',
+        'Legendär',
+        GamificationService.rarityColor(ArtifactRarity.legendary)
+      ),
     ];
 
     return SingleChildScrollView(
@@ -190,7 +198,8 @@ class _ArtifactCollectionScreenState extends State<ArtifactCollectionScreen>
               label: Text(
                 r.$2,
                 style: TextStyle(
-                  color: isSelected ? Colors.black : color.withValues(alpha: 0.8),
+                  color:
+                      isSelected ? Colors.black : color.withValues(alpha: 0.8),
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
@@ -433,8 +442,7 @@ class _ArtifactCollectionScreenState extends State<ArtifactCollectionScreen>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
                     color: rarityCol.withValues(alpha: 0.3),
-                    border:
-                        Border.all(color: rarityCol.withValues(alpha: 0.6)),
+                    border: Border.all(color: rarityCol.withValues(alpha: 0.6)),
                   ),
                   child: Text(
                     'Ausgerüstet',
@@ -623,7 +631,8 @@ class _ArtifactCollectionScreenState extends State<ArtifactCollectionScreen>
       ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+        style:
+            TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
   }

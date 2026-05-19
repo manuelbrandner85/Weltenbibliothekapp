@@ -28,7 +28,8 @@ class WorldSubscriptionService {
           .maybeSingle();
       return res != null;
     } catch (e) {
-      if (kDebugMode) debugPrint('WorldSubscriptionService.isSubscribed error: $e');
+      if (kDebugMode)
+        debugPrint('WorldSubscriptionService.isSubscribed error: $e');
       return false;
     }
   }
@@ -44,7 +45,8 @@ class WorldSubscriptionService {
       );
       return true;
     } catch (e) {
-      if (kDebugMode) debugPrint('WorldSubscriptionService.subscribe error: $e');
+      if (kDebugMode)
+        debugPrint('WorldSubscriptionService.subscribe error: $e');
       return false;
     }
   }
@@ -61,7 +63,8 @@ class WorldSubscriptionService {
           .eq('world', world);
       return true;
     } catch (e) {
-      if (kDebugMode) debugPrint('WorldSubscriptionService.unsubscribe error: $e');
+      if (kDebugMode)
+        debugPrint('WorldSubscriptionService.unsubscribe error: $e');
       return false;
     }
   }

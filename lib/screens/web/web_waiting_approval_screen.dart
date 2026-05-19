@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
+
 class WebWaitingApprovalScreen extends StatefulWidget {
   const WebWaitingApprovalScreen({super.key});
 

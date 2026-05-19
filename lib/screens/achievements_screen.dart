@@ -3,7 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../services/achievement_service.dart';
 import '../services/haptic_service.dart';
 import '../theme/wb_cinematic_tokens.dart';
@@ -21,9 +21,10 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     with SingleTickerProviderStateMixin {
   final _achievementService = AchievementService();
   late TabController _tabController;
-  
-  AchievementCategory _selectedCategory = AchievementCategory.researcher; // ignore: unused_field
-  
+
+  AchievementCategory _selectedCategory =
+      AchievementCategory.researcher; // ignore: unused_field
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +32,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
       length: AchievementCategory.values.length,
       vsync: this,
     );
-    
+
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {
@@ -139,28 +140,33 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),
           ),
           const Positioned.fill(child: IgnorePointer(child: WBVignette())),
           Column(
-        children: [
-          // User Stats Header
-          _buildStatsHeader(userLevel, unlockedCount, totalCount, completionPercent),
-          
-          // Achievement Grid
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: AchievementCategory.values.map((category) {
-                return _buildAchievementGrid(category);
-              }).toList(),
-            ),
+            children: [
+              // User Stats Header
+              _buildStatsHeader(
+                  userLevel, unlockedCount, totalCount, completionPercent),
+
+              // Achievement Grid
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: AchievementCategory.values.map((category) {
+                    return _buildAchievementGrid(category);
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
         ],
       ),
     );
@@ -268,7 +274,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                       child: LinearProgressIndicator(
                         value: userLevel.progressToNextLevel,
                         backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.amber),
                         minHeight: 8,
                       ),
                     ),
@@ -334,7 +341,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                       child: LinearProgressIndicator(
                         value: unlockedCount / totalCount,
                         backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.blue),
                         minHeight: 8,
                       ),
                     ),
@@ -349,8 +357,9 @@ class _AchievementsScreenState extends State<AchievementsScreen>
   }
 
   Widget _buildAchievementGrid(AchievementCategory category) {
-    final achievements = _achievementService.getAchievementsByCategory(category);
-    
+    final achievements =
+        _achievementService.getAchievementsByCategory(category);
+
     if (achievements.isEmpty) {
       return Center(
         child: Text(
@@ -382,7 +391,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     final progress = _achievementService.getProgress(achievement.id);
     final isUnlocked = progress?.isUnlocked ?? false;
     final currentProgress = progress?.currentProgress ?? 0;
-    final progressPercent = (currentProgress / achievement.maxProgress).clamp(0.0, 1.0);
+    final progressPercent =
+        (currentProgress / achievement.maxProgress).clamp(0.0, 1.0);
 
     Color rarityColor;
     switch (achievement.rarity) {
@@ -455,7 +465,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                   achievement.icon,
                   style: TextStyle(
                     fontSize: 40,
-                    color: isUnlocked ? null : Colors.white.withValues(alpha: 0.3),
+                    color:
+                        isUnlocked ? null : Colors.white.withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -469,7 +480,9 @@ class _AchievementsScreenState extends State<AchievementsScreen>
               child: Text(
                 achievement.name,
                 style: TextStyle(
-                  color: isUnlocked ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                  color: isUnlocked
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.5),
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -562,9 +575,10 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     );
   }
 
-  void _showAchievementDetails(Achievement achievement, AchievementProgress? progress) {
+  void _showAchievementDetails(
+      Achievement achievement, AchievementProgress? progress) {
     final isUnlocked = progress?.isUnlocked ?? false;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

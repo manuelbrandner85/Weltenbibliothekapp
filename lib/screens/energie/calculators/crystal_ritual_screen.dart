@@ -53,9 +53,8 @@ class _CrystalRitualScreenState extends State<CrystalRitualScreen> {
     HapticFeedback.lightImpact();
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_kStorageKey);
-    final names = raw == null
-        ? <String>[]
-        : ((jsonDecode(raw) as List).cast<String>());
+    final names =
+        raw == null ? <String>[] : ((jsonDecode(raw) as List).cast<String>());
     if (names.contains(widget.crystal.name)) {
       names.remove(widget.crystal.name);
     } else {
@@ -138,10 +137,13 @@ class _CrystalRitualScreenState extends State<CrystalRitualScreen> {
         actions: [
           IconButton(
             icon: Icon(
-              _inCollection ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
+              _inCollection
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_outline_rounded,
               color: _gold,
             ),
-            tooltip: _inCollection ? 'Aus Sammlung entfernen' : 'Zu Meine Kristalle',
+            tooltip:
+                _inCollection ? 'Aus Sammlung entfernen' : 'Zu Meine Kristalle',
             onPressed: _toggleCollection,
           ),
         ],
@@ -216,7 +218,8 @@ class _CrystalRitualScreenState extends State<CrystalRitualScreen> {
   }
 
   Widget _stepIndicator() {
-    return Row(children: List.generate(_steps.length, (i) {
+    return Row(
+        children: List.generate(_steps.length, (i) {
       final active = i == _step;
       final past = i < _step;
       return Expanded(
@@ -226,7 +229,9 @@ class _CrystalRitualScreenState extends State<CrystalRitualScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 3),
             height: 6,
             decoration: BoxDecoration(
-              color: (active || past) ? _gold : Colors.white.withValues(alpha: 0.15),
+              color: (active || past)
+                  ? _gold
+                  : Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -252,7 +257,8 @@ class _CrystalRitualScreenState extends State<CrystalRitualScreen> {
             children: [
               Row(children: [
                 Container(
-                  width: 42, height: 42,
+                  width: 42,
+                  height: 42,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -284,9 +290,7 @@ class _CrystalRitualScreenState extends State<CrystalRitualScreen> {
                 child: SingleChildScrollView(
                   child: Text(s.body,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.5,
-                          height: 1.65)),
+                          color: Colors.white, fontSize: 14.5, height: 1.65)),
                 ),
               ),
             ],
@@ -313,9 +317,8 @@ class _CrystalRitualScreenState extends State<CrystalRitualScreen> {
       const SizedBox(width: 10),
       Expanded(
         child: ElevatedButton.icon(
-          onPressed: _step < _steps.length - 1
-              ? () => setState(() => _step++)
-              : null,
+          onPressed:
+              _step < _steps.length - 1 ? () => setState(() => _step++) : null,
           icon: const Icon(Icons.arrow_forward_rounded),
           label: const Text('Weiter'),
           style: ElevatedButton.styleFrom(

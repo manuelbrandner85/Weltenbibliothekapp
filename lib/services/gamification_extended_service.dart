@@ -42,10 +42,8 @@ class GamificationExtendedService {
   Future<List<Map<String, dynamic>>> todayChallenges({String? world}) async {
     try {
       final today = DateTime.now().toIso8601String().substring(0, 10);
-      var q = _s
-          .from('daily_challenges_active')
-          .select()
-          .eq('active_date', today);
+      var q =
+          _s.from('daily_challenges_active').select().eq('active_date', today);
       if (world != null) q = q.eq('world', world);
       final res = await q;
       return (res as List).cast<Map<String, dynamic>>();
@@ -65,7 +63,8 @@ class GamificationExtendedService {
         .substring(0, 10);
   }
 
-  Future<List<Map<String, dynamic>>> weeklyTop(String world, {int limit = 20}) async {
+  Future<List<Map<String, dynamic>>> weeklyTop(String world,
+      {int limit = 20}) async {
     try {
       final week = _weekStart();
       final res = await _s
@@ -82,7 +81,8 @@ class GamificationExtendedService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> hallOfFame(String world, {int limit = 30}) async {
+  Future<List<Map<String, dynamic>>> hallOfFame(String world,
+      {int limit = 30}) async {
     try {
       final res = await _s
           .from('leaderboard_weekly')

@@ -26,7 +26,8 @@ class StudyPaper {
   final List<String> fields; // Topics
   final String? doi;
   final String? url;
-  final String studyType; // 'rct' | 'meta' | 'review' | 'observational' | 'unknown'
+  final String
+      studyType; // 'rct' | 'meta' | 'review' | 'observational' | 'unknown'
   final int? sampleSize;
   final double qualityScore; // 0..1
   final Map<String, dynamic> raw;
@@ -61,25 +62,39 @@ class StudyPaper {
 
   String get studyTypeLabel {
     switch (studyType) {
-      case 'rct': return '🥇 RCT';
-      case 'meta': return '🏆 Meta-Analyse';
-      case 'review': return '📚 Review';
-      case 'cohort': return '📊 Kohorte';
-      case 'observational': return '👁️ Beobachtung';
-      case 'case': return '📝 Fall-Studie';
-      default: return '📄 Studie';
+      case 'rct':
+        return '🥇 RCT';
+      case 'meta':
+        return '🏆 Meta-Analyse';
+      case 'review':
+        return '📚 Review';
+      case 'cohort':
+        return '📊 Kohorte';
+      case 'observational':
+        return '👁️ Beobachtung';
+      case 'case':
+        return '📝 Fall-Studie';
+      default:
+        return '📄 Studie';
     }
   }
 
   Color get studyTypeColor {
     switch (studyType) {
-      case 'rct': return const Color(0xFF66BB6A);
-      case 'meta': return const Color(0xFFFFD54F);
-      case 'review': return const Color(0xFF42A5F5);
-      case 'cohort': return const Color(0xFF26C6DA);
-      case 'observational': return const Color(0xFFAB47BC);
-      case 'case': return const Color(0xFFFF7043);
-      default: return Colors.white60;
+      case 'rct':
+        return const Color(0xFF66BB6A);
+      case 'meta':
+        return const Color(0xFFFFD54F);
+      case 'review':
+        return const Color(0xFF42A5F5);
+      case 'cohort':
+        return const Color(0xFF26C6DA);
+      case 'observational':
+        return const Color(0xFFAB47BC);
+      case 'case':
+        return const Color(0xFFFF7043);
+      default:
+        return Colors.white60;
     }
   }
 }
@@ -114,11 +129,13 @@ class StudyAnalystService {
 
   Future<List<StudyPaper>> _searchSemantic(String q, {int limit = 20}) async {
     try {
-      final uri = Uri.parse('https://api.semanticscholar.org/graph/v1/paper/search')
-          .replace(queryParameters: {
+      final uri =
+          Uri.parse('https://api.semanticscholar.org/graph/v1/paper/search')
+              .replace(queryParameters: {
         'query': q,
         'limit': '$limit',
-        'fields': 'title,abstract,authors,year,citationCount,influentialCitationCount,tldr,venue,fieldsOfStudy,externalIds,publicationTypes',
+        'fields':
+            'title,abstract,authors,year,citationCount,influentialCitationCount,tldr,venue,fieldsOfStudy,externalIds,publicationTypes',
       });
       final res = await http.get(uri,
           headers: const {'Accept': 'application/json'}).timeout(_timeout);
@@ -134,16 +151,22 @@ class StudyAnalystService {
             .map((a) => ((a as Map<String, dynamic>)['name'] as String?) ?? '')
             .where((s) => s.isNotEmpty)
             .toList();
-        final fields = ((m['fieldsOfStudy'] as List?) ?? const [])
-            .cast<String>().toList();
+        final fields =
+            ((m['fieldsOfStudy'] as List?) ?? const []).cast<String>().toList();
         final pubTypes = ((m['publicationTypes'] as List?) ?? const [])
-            .cast<String>().toList();
+            .cast<String>()
+            .toList();
         final tldr = (m['tldr'] as Map?)?.cast<String, dynamic>();
         final tldrText = tldr?['text'] as String?;
-        final extIds = (m['externalIds'] as Map?)?.cast<String, dynamic>() ?? const {};
+        final extIds =
+            (m['externalIds'] as Map?)?.cast<String, dynamic>() ?? const {};
         final doi = extIds['DOI'] as String?;
         final type = _detectStudyType(
-          (m['title'] as String? ?? '') + ' ' + (m['abstract'] as String? ?? '') + ' ' + pubTypes.join(' '),
+          (m['title'] as String? ?? '') +
+              ' ' +
+              (m['abstract'] as String? ?? '') +
+              ' ' +
+              pubTypes.join(' '),
         );
         final citation = (m['citationCount'] as int?) ?? 0;
         final influential = (m['influentialCitationCount'] as int?) ?? 0;
@@ -185,7 +208,7 @@ class StudyAnalystService {
     try {
       // 1. ESearch: get IDs
       final searchUri = Uri.parse(
-          'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi')
+              'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi')
           .replace(queryParameters: {
         'db': 'pubmed',
         'term': q,
@@ -197,13 +220,14 @@ class StudyAnalystService {
           headers: const {'Accept': 'application/json'}).timeout(_timeout);
       if (searchRes.statusCode != 200) return const [];
       final searchData = jsonDecode(searchRes.body) as Map<String, dynamic>;
-      final esr = (searchData['esearchresult'] as Map?)?.cast<String, dynamic>();
+      final esr =
+          (searchData['esearchresult'] as Map?)?.cast<String, dynamic>();
       final ids = ((esr?['idlist'] as List?) ?? const []).cast<String>();
       if (ids.isEmpty) return const [];
 
       // 2. ESummary: details
       final sumUri = Uri.parse(
-          'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi')
+              'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi')
           .replace(queryParameters: {
         'db': 'pubmed',
         'id': ids.join(','),
@@ -213,48 +237,57 @@ class StudyAnalystService {
           headers: const {'Accept': 'application/json'}).timeout(_timeout);
       if (sumRes.statusCode != 200) return const [];
       final sumData = jsonDecode(sumRes.body) as Map<String, dynamic>;
-      final result = (sumData['result'] as Map?)?.cast<String, dynamic>() ?? const {};
-      return ids.map((id) {
-        final m = (result[id] as Map?)?.cast<String, dynamic>();
-        if (m == null) return null;
-        final authors = ((m['authors'] as List?) ?? const [])
-            .map((a) => ((a as Map<String, dynamic>)['name'] as String?) ?? '')
-            .where((s) => s.isNotEmpty)
-            .toList();
-        final yearStr = m['pubdate'] as String? ?? '';
-        final yearMatch = RegExp(r'(\d{4})').firstMatch(yearStr);
-        final year = yearMatch != null ? int.tryParse(yearMatch.group(1)!) : null;
-        final pubTypeList = ((m['pubtype'] as List?) ?? const []).cast<String>();
-        final fullTitle = m['title'] as String? ?? '';
-        final type = _detectStudyType('$fullTitle ${pubTypeList.join(" ")}');
-        final score = _qualityScore(
-          type: type,
-          year: year,
-          citation: null,
-          influential: null,
-        );
-        return StudyPaper(
-          id: 'pm:$id',
-          source: 'pubmed',
-          title: fullTitle.replaceAll(RegExp(r'<[^>]+>'), ''),
-          authors: authors,
-          abstractText: null, // ESummary hat keinen Abstract, müsste efetch
-          year: year,
-          journal: m['fulljournalname'] as String?,
-          citationCount: null,
-          influentialCitationCount: null,
-          tldr: null,
-          fields: const [],
-          doi: ((m['articleids'] as List?) ?? const [])
-              .cast<Map>()
-              .firstWhere((x) => x['idtype'] == 'doi', orElse: () => {})['value'] as String?,
-          url: 'https://pubmed.ncbi.nlm.nih.gov/$id/',
-          studyType: type,
-          sampleSize: null,
-          qualityScore: score,
-          raw: m,
-        );
-      }).whereType<StudyPaper>().toList();
+      final result =
+          (sumData['result'] as Map?)?.cast<String, dynamic>() ?? const {};
+      return ids
+          .map((id) {
+            final m = (result[id] as Map?)?.cast<String, dynamic>();
+            if (m == null) return null;
+            final authors = ((m['authors'] as List?) ?? const [])
+                .map((a) =>
+                    ((a as Map<String, dynamic>)['name'] as String?) ?? '')
+                .where((s) => s.isNotEmpty)
+                .toList();
+            final yearStr = m['pubdate'] as String? ?? '';
+            final yearMatch = RegExp(r'(\d{4})').firstMatch(yearStr);
+            final year =
+                yearMatch != null ? int.tryParse(yearMatch.group(1)!) : null;
+            final pubTypeList =
+                ((m['pubtype'] as List?) ?? const []).cast<String>();
+            final fullTitle = m['title'] as String? ?? '';
+            final type =
+                _detectStudyType('$fullTitle ${pubTypeList.join(" ")}');
+            final score = _qualityScore(
+              type: type,
+              year: year,
+              citation: null,
+              influential: null,
+            );
+            return StudyPaper(
+              id: 'pm:$id',
+              source: 'pubmed',
+              title: fullTitle.replaceAll(RegExp(r'<[^>]+>'), ''),
+              authors: authors,
+              abstractText: null, // ESummary hat keinen Abstract, müsste efetch
+              year: year,
+              journal: m['fulljournalname'] as String?,
+              citationCount: null,
+              influentialCitationCount: null,
+              tldr: null,
+              fields: const [],
+              doi: ((m['articleids'] as List?) ?? const [])
+                  .cast<Map>()
+                  .firstWhere((x) => x['idtype'] == 'doi',
+                      orElse: () => {})['value'] as String?,
+              url: 'https://pubmed.ncbi.nlm.nih.gov/$id/',
+              studyType: type,
+              sampleSize: null,
+              qualityScore: score,
+              raw: m,
+            );
+          })
+          .whereType<StudyPaper>()
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('PubMed error: $e');
       return const [];
@@ -266,22 +299,28 @@ class StudyAnalystService {
     final t = text.toLowerCase();
     if (RegExp(r'meta[\s-]?analy').hasMatch(t)) return 'meta';
     if (RegExp(r'systematic\s+review').hasMatch(t)) return 'review';
-    if (RegExp(r'\brct\b|randomi[sz]ed\s+controlled\s+trial|randomi[sz]ed\s+clinical\s+trial').hasMatch(t)) return 'rct';
+    if (RegExp(
+            r'\brct\b|randomi[sz]ed\s+controlled\s+trial|randomi[sz]ed\s+clinical\s+trial')
+        .hasMatch(t)) return 'rct';
     if (RegExp(r'cohort\s+study').hasMatch(t)) return 'cohort';
     if (RegExp(r'case\s+report|case\s+series').hasMatch(t)) return 'case';
     if (RegExp(r'\breview\b').hasMatch(t)) return 'review';
-    if (RegExp(r'observational\s+study|cross[\s-]?sectional|case[\s-]?control').hasMatch(t)) return 'observational';
+    if (RegExp(r'observational\s+study|cross[\s-]?sectional|case[\s-]?control')
+        .hasMatch(t)) return 'observational';
     return 'unknown';
   }
 
   int? _extractSampleSize(String abstract) {
     // Hint: "n=1234" oder "1234 patients" oder "1,234 participants"
-    final m = RegExp(r'(?:n\s*=\s*|N\s*=\s*)(\d[\d,]{1,8})').firstMatch(abstract);
+    final m =
+        RegExp(r'(?:n\s*=\s*|N\s*=\s*)(\d[\d,]{1,8})').firstMatch(abstract);
     if (m != null) {
       return int.tryParse(m.group(1)!.replaceAll(',', ''));
     }
-    final m2 = RegExp(r'(\d[\d,]{1,8})\s+(?:patients|participants|subjects|individuals)',
-        caseSensitive: false).firstMatch(abstract);
+    final m2 = RegExp(
+            r'(\d[\d,]{1,8})\s+(?:patients|participants|subjects|individuals)',
+            caseSensitive: false)
+        .firstMatch(abstract);
     if (m2 != null) {
       return int.tryParse(m2.group(1)!.replaceAll(',', ''));
     }
@@ -297,13 +336,26 @@ class StudyAnalystService {
     double score = 0;
     // Study-Type-Gewicht (Evidence-Pyramide)
     switch (type) {
-      case 'meta': score += 0.4; break;
-      case 'review': score += 0.3; break;
-      case 'rct': score += 0.35; break;
-      case 'cohort': score += 0.25; break;
-      case 'observational': score += 0.15; break;
-      case 'case': score += 0.05; break;
-      default: score += 0.1;
+      case 'meta':
+        score += 0.4;
+        break;
+      case 'review':
+        score += 0.3;
+        break;
+      case 'rct':
+        score += 0.35;
+        break;
+      case 'cohort':
+        score += 0.25;
+        break;
+      case 'observational':
+        score += 0.15;
+        break;
+      case 'case':
+        score += 0.05;
+        break;
+      default:
+        score += 0.1;
     }
     // Aktualität (max 0.2 für jünger als 5 Jahre)
     if (year != null) {
@@ -324,4 +376,3 @@ class StudyAnalystService {
     return score.clamp(0.0, 1.0);
   }
 }
-

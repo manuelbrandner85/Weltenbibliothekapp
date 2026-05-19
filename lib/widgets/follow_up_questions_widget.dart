@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Follow-Up Questions Widget
-/// 
+///
 /// Zeigt vorgeschlagene Folge-Recherchen an
 class FollowUpQuestionsWidget extends StatelessWidget {
   final List<String> questions;
@@ -16,7 +16,7 @@ class FollowUpQuestionsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (questions.isEmpty) return const SizedBox.shrink();
-    
+
     return Card(
       color: const Color(0xFF1A1A1A),
       margin: const EdgeInsets.all(0),
@@ -44,22 +44,22 @@ class FollowUpQuestionsWidget extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Divider
             Container(
               height: 1,
               color: Colors.grey[800],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Questions List
             ...questions.map((question) => _buildQuestionChip(
-              context,
-              question,
-            )),
+                  context,
+                  question,
+                )),
           ],
         ),
       ),
@@ -127,7 +127,7 @@ class QuerySuggestionsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (suggestions.isEmpty) return const SizedBox.shrink();
-    
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),

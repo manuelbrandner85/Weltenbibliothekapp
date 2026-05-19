@@ -44,7 +44,8 @@ class AppDatabase {
             created_at INTEGER NOT NULL
           )
         ''');
-        await db.execute('CREATE INDEX IF NOT EXISTS idx_cm_room ON chat_messages(room_id)');
+        await db.execute(
+            'CREATE INDEX IF NOT EXISTS idx_cm_room ON chat_messages(room_id)');
         await db.execute('''
           CREATE TABLE IF NOT EXISTS chat_rooms (
             room_id TEXT PRIMARY KEY,

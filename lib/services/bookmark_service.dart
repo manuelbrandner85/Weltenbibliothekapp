@@ -30,30 +30,30 @@ class Bookmark {
         tags = tags ?? [];
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'url': url,
-    'description': description,
-    'thumbnailUrl': thumbnailUrl,
-    'category': category,
-    'createdAt': createdAt.toIso8601String(),
-    'tags': tags,
-    'metadata': metadata,
-  };
+        'id': id,
+        'title': title,
+        'url': url,
+        'description': description,
+        'thumbnailUrl': thumbnailUrl,
+        'category': category,
+        'createdAt': createdAt.toIso8601String(),
+        'tags': tags,
+        'metadata': metadata,
+      };
 
   factory Bookmark.fromJson(Map<String, dynamic> json) => Bookmark(
-    id: json['id'] as String,
-    title: json['title'] as String,
-    url: json['url'] as String,
-    description: json['description'] as String?,
-    thumbnailUrl: json['thumbnailUrl'] as String?,
-    category: json['category'] as String? ?? 'general',
-    createdAt: json['createdAt'] != null
-        ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
-        : DateTime.now(),
-    tags: (json['tags'] as List?)?.cast<String>() ?? [],
-    metadata: json['metadata'] as Map<String, dynamic>?,
-  );
+        id: json['id'] as String,
+        title: json['title'] as String,
+        url: json['url'] as String,
+        description: json['description'] as String?,
+        thumbnailUrl: json['thumbnailUrl'] as String?,
+        category: json['category'] as String? ?? 'general',
+        createdAt: json['createdAt'] != null
+            ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
+            : DateTime.now(),
+        tags: (json['tags'] as List?)?.cast<String>() ?? [],
+        metadata: json['metadata'] as Map<String, dynamic>?,
+      );
 }
 
 class BookmarkService {
@@ -74,7 +74,8 @@ class BookmarkService {
       }
       _loaded = true;
       if (kDebugMode) {
-        debugPrint('🔖 BookmarkService initialized: ${_bookmarks.length} bookmarks');
+        debugPrint(
+            '🔖 BookmarkService initialized: ${_bookmarks.length} bookmarks');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error initializing BookmarkService: $e');
@@ -98,7 +99,8 @@ class BookmarkService {
     try {
       await _ensureLoaded();
       if (_bookmarks.any((b) => b.id == bookmark.id)) {
-        if (kDebugMode) debugPrint('⚠️ Bookmark already exists: ${bookmark.id}');
+        if (kDebugMode)
+          debugPrint('⚠️ Bookmark already exists: ${bookmark.id}');
         return false;
       }
       _bookmarks.add(bookmark);
@@ -139,9 +141,7 @@ class BookmarkService {
   /// Get bookmarks by category
   Future<List<Bookmark>> getBookmarksByCategory(String category) async {
     await _ensureLoaded();
-    return _bookmarks
-        .where((b) => b.category == category)
-        .toList()
+    return _bookmarks.where((b) => b.category == category).toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
@@ -197,29 +197,35 @@ class BookmarkService {
   Map<String, dynamic> getStatistics() {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
-    final weekStart  = todayStart.subtract(Duration(days: todayStart.weekday - 1));
+    final weekStart =
+        todayStart.subtract(Duration(days: todayStart.weekday - 1));
 
     int recherche = 0, narratives = 0, andere = 0;
     int addedToday = 0, addedThisWeek = 0;
 
     for (final b in _bookmarks) {
       switch (b.category) {
-        case 'Recherche':  recherche++; break;
-        case 'Narratives': narratives++; break;
-        default:           andere++;
+        case 'Recherche':
+          recherche++;
+          break;
+        case 'Narratives':
+          narratives++;
+          break;
+        default:
+          andere++;
       }
       if (!b.createdAt.isBefore(todayStart)) addedToday++;
-      if (!b.createdAt.isBefore(weekStart))  addedThisWeek++;
+      if (!b.createdAt.isBefore(weekStart)) addedThisWeek++;
     }
 
     return {
       'total': _bookmarks.length,
       'byCategory': {
-        'Recherche':  recherche,
+        'Recherche': recherche,
         'Narratives': narratives,
-        'Andere':     andere,
+        'Andere': andere,
       },
-      'addedToday':    addedToday,
+      'addedToday': addedToday,
       'addedThisWeek': addedThisWeek,
     };
   }

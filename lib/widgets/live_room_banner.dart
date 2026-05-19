@@ -67,8 +67,8 @@ class _LiveRoomBannerState extends State<LiveRoomBanner>
   }
 
   Future<void> _loadSessions() async {
-    final data = await VoiceSessionService.instance
-        .getActiveSessions(widget.world);
+    final data =
+        await VoiceSessionService.instance.getActiveSessions(widget.world);
     if (mounted) setState(() => _sessions = data);
   }
 
@@ -92,9 +92,8 @@ class _LiveRoomBannerState extends State<LiveRoomBanner>
   @override
   Widget build(BuildContext context) {
     // Nur Räume anzeigen die nicht der aktuelle Raum des Users ist
-    final activeRooms = _sessions.entries
-        .where((e) => e.value.isNotEmpty)
-        .toList();
+    final activeRooms =
+        _sessions.entries.where((e) => e.value.isNotEmpty).toList();
 
     if (activeRooms.isEmpty) return const SizedBox.shrink();
 
@@ -109,9 +108,8 @@ class _LiveRoomBannerState extends State<LiveRoomBanner>
             .take(3)
             .map((p) => p['display_name'] ?? p['username'] ?? '?')
             .join(', ');
-        final extra = participants.length > 3
-            ? ' +${participants.length - 3}'
-            : '';
+        final extra =
+            participants.length > 3 ? ' +${participants.length - 3}' : '';
 
         return GestureDetector(
           onTap: () {
@@ -120,8 +118,7 @@ class _LiveRoomBannerState extends State<LiveRoomBanner>
           },
           child: Container(
             width: double.infinity,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -186,8 +183,8 @@ class _LiveRoomBannerState extends State<LiveRoomBanner>
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(12),

@@ -69,7 +69,8 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
     _Series(
       title: '7-Tage-Kybalion',
       emoji: '✨',
-      tradition: 'Hermetisch — Die 7 universellen Prinzipien (Three Initiates, 1908)',
+      tradition:
+          'Hermetisch — Die 7 universellen Prinzipien (Three Initiates, 1908)',
       storageKey: 'lr_hermetic_7',
       accent: Color(0xFFFF9800),
       entries: hermeticLaws7,
@@ -85,7 +86,8 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
     _Series(
       title: '7-Tage-Ahnen-Linien',
       emoji: '🕯️',
-      tradition: 'Systemisch — Hellinger-orientiert, weibliche & männliche Linien',
+      tradition:
+          'Systemisch — Hellinger-orientiert, weibliche & männliche Linien',
       storageKey: 'lr_ancestral_7',
       accent: Color(0xFFD4A24C),
       entries: ancestralLines7,
@@ -141,7 +143,8 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
     _Series(
       title: '21-Tage-Mantras',
       emoji: '🕉️',
-      tradition: '7 Sanskrit-Mantras über 3 Wochen (OM, So Ham, Gayatri, Shiva...)',
+      tradition:
+          '7 Sanskrit-Mantras über 3 Wochen (OM, So Ham, Gayatri, Shiva...)',
       storageKey: 'lr_mantras_21',
       accent: Color(0xFFE65100),
       entries: mantraPath21,
@@ -206,8 +209,7 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
     final prefs = await SharedPreferences.getInstance();
     _progress = {
       for (final s in _series)
-        s.storageKey:
-            (prefs.getStringList(s.storageKey) ?? const []).length,
+        s.storageKey: (prefs.getStringList(s.storageKey) ?? const []).length,
     };
     if (mounted) setState(() => _loading = false);
   }
@@ -258,8 +260,7 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
 
   Widget _buildIntro() {
     final totalEntries = _series.fold<int>(0, (a, b) => a + b.entries.length);
-    final completed =
-        _progress.values.fold<int>(0, (a, b) => a + b);
+    final completed = _progress.values.fold<int>(0, (a, b) => a + b);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

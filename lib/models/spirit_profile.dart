@@ -1,7 +1,7 @@
 /// Spirit-Welt Benutzerprofil
 /// Vollständige Geburtsdaten für spirituelle Berechnungen
 class SpiritProfile {
-  final String username;       // Benutzername (Pflicht)
+  final String username; // Benutzername (Pflicht)
   final String firstName;
   final String lastName;
   final DateTime birthDate;
@@ -10,7 +10,7 @@ class SpiritProfile {
   final String? avatarUrl; // 🆕 Profilbild URL
   final String? bio; // 🆕 Bio/Beschreibung
   final String? avatarEmoji; // 🆕 Emoji-Avatar als Fallback
-  
+
   SpiritProfile({
     required this.username,
     required this.firstName,
@@ -22,18 +22,18 @@ class SpiritProfile {
     this.bio,
     this.avatarEmoji,
   });
-  
+
   // Display-Name: Vollständiger Name
   String get displayName => fullName;
-  
+
   // Vollständiger Name
   String get fullName => '$firstName $lastName';
-  
+
   // Formatiertes Geburtsdatum
   String get formattedBirthDate {
     return '${birthDate.day.toString().padLeft(2, '0')}.${birthDate.month.toString().padLeft(2, '0')}.${birthDate.year}';
   }
-  
+
   // Für Hive Storage
   Map<String, dynamic> toJson() {
     return {
@@ -48,13 +48,13 @@ class SpiritProfile {
       'avatar_emoji': avatarEmoji,
     };
   }
-  
+
   factory SpiritProfile.fromJson(Map<String, dynamic> json) {
     return SpiritProfile(
       username: json['username'] as String? ?? '',
       firstName: json['firstName'] as String? ?? '',
       lastName: json['lastName'] as String? ?? '',
-      birthDate: json['birthDate'] != null 
+      birthDate: json['birthDate'] != null
           ? DateTime.parse(json['birthDate'] as String)
           : DateTime.now(),
       birthPlace: json['birthPlace'] as String? ?? '',
@@ -64,7 +64,7 @@ class SpiritProfile {
       avatarEmoji: json['avatar_emoji'] as String?,
     );
   }
-  
+
   // Leeres Profil erstellen
   factory SpiritProfile.empty() {
     return SpiritProfile(
@@ -75,12 +75,12 @@ class SpiritProfile {
       birthPlace: '',
     );
   }
-  
+
   // Validierung
   bool get isValid {
     return username.isNotEmpty &&
-           firstName.isNotEmpty && 
-           lastName.isNotEmpty && 
-           birthPlace.isNotEmpty;
+        firstName.isNotEmpty &&
+        lastName.isNotEmpty &&
+        birthPlace.isNotEmpty;
   }
 }

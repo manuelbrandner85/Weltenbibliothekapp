@@ -13,11 +13,11 @@ class OfflineIndicator extends StatefulWidget {
   State<OfflineIndicator> createState() => _OfflineIndicatorState();
 }
 
-class _OfflineIndicatorState extends State<OfflineIndicator> 
+class _OfflineIndicatorState extends State<OfflineIndicator>
     with SingleTickerProviderStateMixin {
   final OfflineSyncService _syncService = OfflineSyncService();
   late AnimationController _pulseController;
-  
+
   NetworkState _networkState = NetworkState.unknown;
   bool _isSyncing = false;
   int _pendingActions = 0;
@@ -25,27 +25,27 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
   @override
   void initState() {
     super.initState();
-    
+
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _networkState = _syncService.networkState;
     _pendingActions = _syncService.pendingActionsCount;
-    
+
     _syncService.networkStateStream.listen((state) {
       if (mounted) {
         setState(() => _networkState = state);
       }
     });
-    
+
     _syncService.syncStatusStream.listen((syncing) {
       if (mounted) {
         setState(() => _isSyncing = syncing);
       }
     });
-    
+
     _syncService.pendingActionsStream.listen((count) {
       if (mounted) {
         setState(() => _pendingActions = count);
@@ -62,10 +62,12 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
   @override
   Widget build(BuildContext context) {
     // Only show when offline or syncing
-    if (_networkState == NetworkState.online && !_isSyncing && _pendingActions == 0) {
+    if (_networkState == NetworkState.online &&
+        !_isSyncing &&
+        _pendingActions == 0) {
       return const SizedBox.shrink();
     }
-    
+
     return Material(
       color: _getBackgroundColor(),
       child: InkWell(
@@ -88,9 +90,9 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
                   );
                 },
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Status Text
               Flexible(
                 child: Text(
@@ -103,12 +105,13 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              
+
               // Pending Actions Count
               if (_pendingActions > 0) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
@@ -123,7 +126,7 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
                   ),
                 ),
               ],
-              
+
               // Sync Progress
               if (_isSyncing) ...[
                 const SizedBox(width: 8),
@@ -197,7 +200,9 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
             _buildInfoRow(
               'Netzwerk',
               _networkState == NetworkState.online ? 'Online' : 'Offline',
-              _networkState == NetworkState.online ? Icons.wifi : Icons.wifi_off,
+              _networkState == NetworkState.online
+                  ? Icons.wifi
+                  : Icons.wifi_off,
             ),
             const Divider(),
             _buildInfoRow(
@@ -267,7 +272,7 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
   String _formatLastSync(DateTime time) {
     final now = DateTime.now();
     final difference = now.difference(time);
-    
+
     if (difference.inMinutes < 1) {
       return 'Gerade eben';
     } else if (difference.inMinutes < 60) {

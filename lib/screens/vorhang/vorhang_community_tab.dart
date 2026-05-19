@@ -25,7 +25,8 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
 
   String get _userId => _client.auth.currentUser?.id ?? '';
   String get _username =>
-      _client.auth.currentUser?.userMetadata?['username']?.toString() ?? 'Anonym';
+      _client.auth.currentUser?.userMetadata?['username']?.toString() ??
+      'Anonym';
 
   @override
   void initState() {
@@ -55,19 +56,22 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
   }
 
   List<CommunityPost> _parseRows(List<dynamic> rows) {
-    return rows.map<CommunityPost>((r) => CommunityPost(
-          id: r['id']?.toString() ?? '',
-          authorUsername:
-              r['author']?.toString() ?? r['username']?.toString() ?? 'Anonym',
-          authorAvatar: r['author_avatar']?.toString() ?? '👤',
-          content: r['content']?.toString() ?? '',
-          createdAt:
-              DateTime.tryParse(r['created_at']?.toString() ?? '') ?? DateTime.now(),
-          likes: (r['likes_count'] as num?)?.toInt() ?? 0,
-          comments: (r['comments_count'] as num?)?.toInt() ?? 0,
-          tags: [],
-          worldType: WorldType.energie,
-        )).toList();
+    return rows
+        .map<CommunityPost>((r) => CommunityPost(
+              id: r['id']?.toString() ?? '',
+              authorUsername: r['author']?.toString() ??
+                  r['username']?.toString() ??
+                  'Anonym',
+              authorAvatar: r['author_avatar']?.toString() ?? '👤',
+              content: r['content']?.toString() ?? '',
+              createdAt: DateTime.tryParse(r['created_at']?.toString() ?? '') ??
+                  DateTime.now(),
+              likes: (r['likes_count'] as num?)?.toInt() ?? 0,
+              comments: (r['comments_count'] as num?)?.toInt() ?? 0,
+              tags: [],
+              worldType: WorldType.energie,
+            ))
+        .toList();
   }
 
   void _showCreatePost() {
@@ -91,7 +95,8 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
           children: [
             const Text(
               'Neuer Post',
-              style: TextStyle(color: _gold, fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(
+                  color: _gold, fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -101,7 +106,8 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Teile deine Erkenntnisse...',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                hintStyle:
+                    TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                 filled: true,
                 fillColor: const Color(0xFF1A1500),
                 border: OutlineInputBorder(
@@ -238,7 +244,8 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
           const SizedBox(height: 4),
           Text(
             'Teile deine Erkenntnisse',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
           ),
         ],
       ),
@@ -272,7 +279,8 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
         decoration: BoxDecoration(
           color: selected ? _gold : _gold.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? _gold : _gold.withValues(alpha: 0.3)),
+          border: Border.all(
+              color: selected ? _gold : _gold.withValues(alpha: 0.3)),
         ),
         child: Text(
           label,
@@ -316,18 +324,21 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
                   child: Text(
                     post.authorUsername,
                     style: const TextStyle(
-                        color: _gold, fontWeight: FontWeight.w600, fontSize: 13),
+                        color: _gold,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13),
                   ),
                 ),
                 Text(
                   _timeAgo(post.createdAt),
-                  style:
-                      TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Text(post.content, style: const TextStyle(color: Colors.white, fontSize: 14)),
+            Text(post.content,
+                style: const TextStyle(color: Colors.white, fontSize: 14)),
           ],
         ),
       ),

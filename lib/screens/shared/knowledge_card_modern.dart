@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../../models/knowledge_extended_models.dart';
 
 /// ============================================
@@ -32,7 +32,7 @@ class KnowledgeCardModern extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final categoryColor = _getCategoryColor(entry.category);
-    
+
     return Hero(
       tag: 'knowledge_${entry.id}',
       child: Material(
@@ -89,7 +89,7 @@ class KnowledgeCardModern extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 // Content
                 Padding(
                   padding: const EdgeInsets.all(20),
@@ -104,9 +104,9 @@ class KnowledgeCardModern extends StatelessWidget {
                           _buildFavoriteButton(),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 12),
-                      
+
                       // Title
                       Text(
                         entry.title,
@@ -119,23 +119,24 @@ class KnowledgeCardModern extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       // Description
                       Text(
                         entry.description,
                         style: TextStyle(
                           fontSize: 14,
-                          color: (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.7),
+                          color: (isDark ? Colors.white : Colors.black87)
+                              .withValues(alpha: 0.7),
                           height: 1.5,
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Bottom Row: Tags & Reading Time
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -160,7 +161,7 @@ class KnowledgeCardModern extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          
+
                           // Reading Time Badge
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -168,7 +169,7 @@ class KnowledgeCardModern extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: isDark 
+                              color: isDark
                                   ? Colors.white.withValues(alpha: 0.1)
                                   : Colors.black.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(12),
@@ -179,8 +180,9 @@ class KnowledgeCardModern extends StatelessWidget {
                                 Icon(
                                   Icons.access_time,
                                   size: 14,
-                                  color: (isDark ? Colors.white : Colors.black87)
-                                      .withValues(alpha: 0.6),
+                                  color:
+                                      (isDark ? Colors.white : Colors.black87)
+                                          .withValues(alpha: 0.6),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -188,8 +190,9 @@ class KnowledgeCardModern extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
-                                    color: (isDark ? Colors.white : Colors.black87)
-                                        .withValues(alpha: 0.6),
+                                    color:
+                                        (isDark ? Colors.white : Colors.black87)
+                                            .withValues(alpha: 0.6),
                                   ),
                                 ),
                               ],
@@ -210,7 +213,7 @@ class KnowledgeCardModern extends StatelessWidget {
 
   Widget _buildCategoryBadge(Color categoryColor, bool isDark) {
     final icon = _getCategoryIcon(entry.category);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(

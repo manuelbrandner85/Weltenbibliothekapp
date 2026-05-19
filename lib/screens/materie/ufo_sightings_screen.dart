@@ -167,7 +167,8 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
     final lat = double.tryParse(_latCtrl.text.trim());
     final lon = double.tryParse(_lonCtrl.text.trim());
     if (lat == null || lon == null) {
-      setState(() => _radarError = 'Bitte gültige Koordinaten eingeben (z.B. 48.8 / 2.35).');
+      setState(() => _radarError =
+          'Bitte gültige Koordinaten eingeben (z.B. 48.8 / 2.35).');
       return;
     }
     setState(() {
@@ -192,12 +193,14 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
         });
       } else if (resp.statusCode == 429) {
         setState(() {
-          _radarError = 'Rate-Limit erreicht. Bitte 10 Sekunden warten und erneut versuchen.';
+          _radarError =
+              'Rate-Limit erreicht. Bitte 10 Sekunden warten und erneut versuchen.';
           _loadingRadar = false;
         });
       } else {
         setState(() {
-          _radarError = 'OpenSky-Server antwortete mit Status ${resp.statusCode}.';
+          _radarError =
+              'OpenSky-Server antwortete mit Status ${resp.statusCode}.';
           _loadingRadar = false;
         });
       }
@@ -240,7 +243,8 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
               children: [
                 _dlgField(titleCtrl, 'Titel', Icons.title),
                 const SizedBox(height: 12),
-                _dlgField(locationCtrl, 'Ort / Region', Icons.location_on_outlined),
+                _dlgField(
+                    locationCtrl, 'Ort / Region', Icons.location_on_outlined),
                 const SizedBox(height: 12),
                 _dlgField(descCtrl, 'Beschreibung', Icons.description_outlined,
                     maxLines: 3),
@@ -250,7 +254,8 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Abbrechen', style: TextStyle(color: _kTextMuted)),
+              child:
+                  const Text('Abbrechen', style: TextStyle(color: _kTextMuted)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -363,9 +368,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
             const Text(
               'UFO-Sichtungen',
               style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: _kText),
+                  fontWeight: FontWeight.bold, fontSize: 18, color: _kText),
             ),
           ],
         ),
@@ -377,7 +380,9 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
           indicatorWeight: 2.5,
           tabs: const [
             Tab(icon: Icon(Icons.people_outline, size: 18), text: 'Community'),
-            Tab(icon: Icon(Icons.local_fire_department_outlined, size: 18), text: 'NASA'),
+            Tab(
+                icon: Icon(Icons.local_fire_department_outlined, size: 18),
+                text: 'NASA'),
             Tab(icon: Icon(Icons.radar, size: 18), text: 'Radar'),
           ],
         ),
@@ -408,8 +413,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
 
   Widget _buildCommunityTab() {
     if (_loadingSightings) {
-      return const Center(
-          child: CircularProgressIndicator(color: _kAccent));
+      return const Center(child: CircularProgressIndicator(color: _kAccent));
     }
     if (_sightingsError != null) {
       return _errorView(_sightingsError!, _loadSightings);
@@ -431,7 +435,8 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
       onRefresh: _loadSightings,
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: _statsBanner(_sightings.length, latestDate)),
+          SliverToBoxAdapter(
+              child: _statsBanner(_sightings.length, latestDate)),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
             sliver: SliverList(
@@ -479,9 +484,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
           children: [
             Text(value,
                 style: const TextStyle(
-                    color: _kText,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13)),
+                    color: _kText, fontWeight: FontWeight.bold, fontSize: 13)),
             Text(label,
                 style: const TextStyle(color: _kTextMuted, fontSize: 10)),
           ],
@@ -518,8 +521,8 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
                     color: _kAccent.withAlpha(25),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(_shapeIcon(objectType),
-                      color: _kAccent, size: 22),
+                  child:
+                      Icon(_shapeIcon(objectType), color: _kAccent, size: 22),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -538,7 +541,8 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
                     ],
                   ),
                 ),
-                _badge(Icons.person_outline, '$witnesses Zeuge${witnesses != 1 ? 'n' : ''}'),
+                _badge(Icons.person_outline,
+                    '$witnesses Zeuge${witnesses != 1 ? 'n' : ''}'),
               ],
             ),
             if (desc.isNotEmpty) ...[
@@ -580,8 +584,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
 
   Widget _buildNasaTab() {
     if (_loadingFireballs) {
-      return const Center(
-          child: CircularProgressIndicator(color: _kAccent));
+      return const Center(child: CircularProgressIndicator(color: _kAccent));
     }
     if (_fireballsError != null) {
       return _errorView(_fireballsError!, _loadFireballs);
@@ -650,15 +653,15 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
         children: [
           _statChip(Icons.local_fire_department, '$count', 'Bolide'),
           const SizedBox(width: 16),
-          _statChip(Icons.bolt_outlined,
+          _statChip(
+              Icons.bolt_outlined,
               maxEnergy > 0 ? '${maxEnergy.toStringAsFixed(1)} GJ' : '–',
               'Max. Energie'),
           const Spacer(),
           GestureDetector(
             onTap: () {},
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: _kAccent.withAlpha(25),
                 borderRadius: BorderRadius.circular(6),
@@ -668,7 +671,8 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
                 children: [
                   Icon(Icons.info_outline, color: _kTextMuted, size: 12),
                   SizedBox(width: 4),
-                  Text('NASA SSD', style: TextStyle(color: _kTextMuted, fontSize: 10)),
+                  Text('NASA SSD',
+                      style: TextStyle(color: _kTextMuted, fontSize: 10)),
                 ],
               ),
             ),
@@ -832,8 +836,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
         children: [
           Icon(icon, color: _kTextMuted, size: 11),
           const SizedBox(width: 3),
-          Text(label,
-              style: const TextStyle(color: _kTextMuted, fontSize: 10)),
+          Text(label, style: const TextStyle(color: _kTextMuted, fontSize: 10)),
         ],
       ),
     );
@@ -856,11 +859,10 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
               if (_loadingRadar)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(
-                      child: CircularProgressIndicator(color: _kAccent)),
+                  child:
+                      Center(child: CircularProgressIndicator(color: _kAccent)),
                 ),
-              if (!_loadingRadar && _aircraft.isNotEmpty)
-                _aircraftListHeader(),
+              if (!_loadingRadar && _aircraft.isNotEmpty) _aircraftListHeader(),
             ],
           ),
         ),
@@ -904,9 +906,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
               Text(
                 'Radar-Check: Konventionelle Flugzeuge?',
                 style: TextStyle(
-                    color: _kText,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14),
+                    color: _kText, fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ],
           ),
@@ -987,14 +987,12 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: _kTextMuted, fontSize: 11)),
+        Text(label, style: const TextStyle(color: _kTextMuted, fontSize: 11)),
         const SizedBox(height: 4),
         TextField(
           controller: ctrl,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true, signed: true),
+          keyboardType: const TextInputType.numberWithOptions(
+              decimal: true, signed: true),
           style: const TextStyle(color: _kText),
           decoration: InputDecoration(
             hintText: hint,
@@ -1051,9 +1049,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
           Text(
             '${_aircraft.length} Luftfahrzeug${_aircraft.length != 1 ? 'e' : ''} im Umkreis',
             style: const TextStyle(
-                color: _kText,
-                fontWeight: FontWeight.bold,
-                fontSize: 13),
+                color: _kText, fontWeight: FontWeight.bold, fontSize: 13),
           ),
         ],
       ),
@@ -1088,24 +1084,22 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
                 Text(
                   ac.callsign.isNotEmpty ? ac.callsign : '(kein Rufzeichen)',
                   style: const TextStyle(
-                      color: _kText,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13),
+                      color: _kText, fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     if (ac.altitude != null)
-                      _infoChip(Icons.height_outlined,
-                          '${ac.altitude!.round()} m'),
+                      _infoChip(
+                          Icons.height_outlined, '${ac.altitude!.round()} m'),
                     if (ac.altitude != null) const SizedBox(width: 6),
                     if (ac.velocity != null)
-                      _infoChip(Icons.speed_outlined,
-                          '${ac.velocity!.round()} m/s'),
+                      _infoChip(
+                          Icons.speed_outlined, '${ac.velocity!.round()} m/s'),
                     if (ac.velocity != null) const SizedBox(width: 6),
                     if (ac.heading != null)
-                      _infoChip(Icons.navigation_outlined,
-                          '${ac.heading!.round()}°'),
+                      _infoChip(
+                          Icons.navigation_outlined, '${ac.heading!.round()}°'),
                   ],
                 ),
               ],
@@ -1135,8 +1129,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
         children: [
           Icon(icon, color: _kTextMuted, size: 11),
           const SizedBox(width: 3),
-          Text(label,
-              style: const TextStyle(color: _kTextMuted, fontSize: 10)),
+          Text(label, style: const TextStyle(color: _kTextMuted, fontSize: 10)),
         ],
       ),
     );
@@ -1179,9 +1172,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
             const SizedBox(height: 16),
             Text(title,
                 style: const TextStyle(
-                    color: _kText,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16)),
+                    color: _kText, fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             Text(subtitle,
                 textAlign: TextAlign.center,

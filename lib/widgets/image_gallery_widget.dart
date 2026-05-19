@@ -4,7 +4,7 @@ import 'package:photo_view/photo_view_gallery.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// In-App Image Gallery für themen-relevante Bilder
-/// 
+///
 /// Zeigt Bilder direkt in der App mit Zoom, Pan und Galerie-Navigation
 class InAppImageGallery extends StatelessWidget {
   final List<Map<String, dynamic>> images;
@@ -91,7 +91,7 @@ class InAppImageGallery extends StatelessWidget {
               itemCount: images.length > 6 ? 6 : images.length,
               itemBuilder: (context, index) {
                 final image = images[index];
-                
+
                 return GestureDetector(
                   onTap: () => _openGallery(context, index),
                   child: Hero(
@@ -264,7 +264,7 @@ class _ImageGalleryFullscreenState extends State<ImageGalleryFullscreen> {
             builder: (context, index) {
               final image = widget.images[index];
               final imageUrl = (image['url'] ?? image['src'] ?? '') as String;
-              
+
               return PhotoViewGalleryPageOptions(
                 imageProvider: NetworkImage(imageUrl),
                 minScale: PhotoViewComputedScale.contained,
@@ -292,9 +292,11 @@ class _ImageGalleryFullscreenState extends State<ImageGalleryFullscreen> {
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
                           onPressed: () async {
-                            final uri = Uri.parse((image['url'] ?? '') as String);
+                            final uri =
+                                Uri.parse((image['url'] ?? '') as String);
                             if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              await launchUrl(uri,
+                                  mode: LaunchMode.externalApplication);
                             }
                           },
                           icon: const Icon(Icons.open_in_new),
@@ -319,7 +321,8 @@ class _ImageGalleryFullscreenState extends State<ImageGalleryFullscreen> {
               child: CircularProgressIndicator(
                 value: event == null
                     ? 0
-                    : event.cumulativeBytesLoaded / (event.expectedTotalBytes ?? 1),
+                    : event.cumulativeBytesLoaded /
+                        (event.expectedTotalBytes ?? 1),
                 color: Colors.blue,
               ),
             ),
@@ -332,7 +335,8 @@ class _ImageGalleryFullscreenState extends State<ImageGalleryFullscreen> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(20),

@@ -115,8 +115,7 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
-            border:
-                Border.all(color: accent.withValues(alpha: 0.3), width: 1),
+            border: Border.all(color: accent.withValues(alpha: 0.3), width: 1),
           ),
           child: Column(
             children: [
@@ -132,8 +131,7 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.play_circle_rounded,
-                        color: accent, size: 18),
+                    Icon(Icons.play_circle_rounded, color: accent, size: 18),
                     const SizedBox(width: 8),
                     const Text(
                       'Co-Watch',
@@ -183,8 +181,7 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
                     WebViewWidget(controller: _controller),
                     if (!_webViewReady)
                       const Center(
-                        child: CircularProgressIndicator(
-                            color: Colors.white54),
+                        child: CircularProgressIndicator(color: Colors.white54),
                       ),
                     if (!widget.isHost)
                       // Overlay-Hinweis für Nicht-Host
@@ -518,8 +515,8 @@ class _CoWatchPickerDialogState extends State<_CoWatchPickerDialog> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       'Keine Videos gefunden. YouTube API Key nötig oder anderes Thema versuchen.',
-                      style: TextStyle(
-                          color: WbDesign.textTertiary, fontSize: 12),
+                      style:
+                          TextStyle(color: WbDesign.textTertiary, fontSize: 12),
                     ),
                   )
                 else if (_results != null && _results!.isNotEmpty)
@@ -593,8 +590,8 @@ class _SearchResultTile extends StatelessWidget {
                   ),
                   Positioned.fill(
                     child: Center(
-                      child: Icon(Icons.play_circle_fill,
-                          color: accent, size: 24),
+                      child:
+                          Icon(Icons.play_circle_fill, color: accent, size: 24),
                     ),
                   ),
                 ],
@@ -618,8 +615,7 @@ class _SearchResultTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     video.channel,
-                    style: const TextStyle(
-                        color: Colors.white54, fontSize: 10),
+                    style: const TextStyle(color: Colors.white54, fontSize: 10),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

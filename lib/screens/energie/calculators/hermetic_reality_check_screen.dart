@@ -25,13 +25,21 @@ class _HermeticRealityCheckScreenState
   final Map<int, int> _answers = {};
   bool _submitted = false;
 
-  static final List<({String prinzip, String emoji, String frage, List<String> antworten, String hinweis})> _checks = [
+  static final List<
+      ({
+        String prinzip,
+        String emoji,
+        String frage,
+        List<String> antworten,
+        String hinweis
+      })> _checks = [
     (
       prinzip: 'Mentalismus',
       emoji: '🧠',
       frage: 'Wie oft denkst du an diese Situation pro Tag?',
       antworten: ['Selten', '2-3x', 'Ständig', 'Obsessiv'],
-      hinweis: 'Hohe Frequenz = mentale Verfestigung. Das Außen entsteht aus dem Inneren — '
+      hinweis:
+          'Hohe Frequenz = mentale Verfestigung. Das Außen entsteht aus dem Inneren — '
           'was du oft denkst, manifestiert sich. Beobachte deinen Gedankenstrom als wäre er nicht "du".',
     ),
     (
@@ -39,7 +47,8 @@ class _HermeticRealityCheckScreenState
       emoji: '🔁',
       frage: 'Hattest du in deinem Leben schon ähnliche Situationen?',
       antworten: ['Nie', 'Einmal', '2-3x', 'Immer wieder'],
-      hinweis: 'Wiederholung = Muster. Wie oben, so unten — die äußere Situation '
+      hinweis:
+          'Wiederholung = Muster. Wie oben, so unten — die äußere Situation '
           'spiegelt ein inneres Thema. Frage: was lebt in mir, das dieses Außen anzieht?',
     ),
     (
@@ -47,7 +56,8 @@ class _HermeticRealityCheckScreenState
       emoji: '〰️',
       frage: 'Welche Emotion dominiert wenn du an die Situation denkst?',
       antworten: ['Angst', 'Wut', 'Trauer', 'Ruhe'],
-      hinweis: 'Emotion = Schwingungsfrequenz. Niedrige Frequenzen (Angst/Wut) ziehen ähnliche '
+      hinweis:
+          'Emotion = Schwingungsfrequenz. Niedrige Frequenzen (Angst/Wut) ziehen ähnliche '
           'Situationen an. Bewege dich aktiv in höhere Frequenz (Atemarbeit, Bewegung, Musik).',
     ),
     (
@@ -55,7 +65,8 @@ class _HermeticRealityCheckScreenState
       emoji: '⚖️',
       frage: 'Wo siehst du im Aktuellen einen positiven Aspekt?',
       antworten: ['Keinen', 'Schwach', 'Deutlich', 'Beide gleichwertig'],
-      hinweis: 'Wenn du nur eine Seite siehst, fehlt der andere Pol. Heiß und kalt sind '
+      hinweis:
+          'Wenn du nur eine Seite siehst, fehlt der andere Pol. Heiß und kalt sind '
           'auf gleicher Skala — du kannst dich auf der Skala BEWEGEN, indem du den Gegenpol bewusst denkst.',
     ),
     (
@@ -63,23 +74,38 @@ class _HermeticRealityCheckScreenState
       emoji: '🌊',
       frage: 'In welcher Phase fühlst du dich gerade?',
       antworten: ['Aufstieg', 'Höhepunkt', 'Abstieg', 'Tiefpunkt'],
-      hinweis: 'Alles fließt. Tiefe ist gefolgt von Aufschwung. Forciere nicht, was Reife '
+      hinweis:
+          'Alles fließt. Tiefe ist gefolgt von Aufschwung. Forciere nicht, was Reife '
           'braucht. Surfe die Welle, kämpfe nicht gegen sie.',
     ),
     (
       prinzip: 'Ursache & Wirkung',
       emoji: '🎯',
-      frage: 'Welche deiner Handlungen vor 3-12 Monaten könnte diese Situation verursacht haben?',
-      antworten: ['Keine erkennbar', 'Unklar', '1-2 mögliche', 'Klar erkennbar'],
-      hinweis: 'Jede Wirkung hat ihre Ursache. Was du gesät hast (auch Unbewusstes), erntest '
+      frage:
+          'Welche deiner Handlungen vor 3-12 Monaten könnte diese Situation verursacht haben?',
+      antworten: [
+        'Keine erkennbar',
+        'Unklar',
+        '1-2 mögliche',
+        'Klar erkennbar'
+      ],
+      hinweis:
+          'Jede Wirkung hat ihre Ursache. Was du gesät hast (auch Unbewusstes), erntest '
           'du jetzt. Identifiziere die Wurzel — dort liegt der Hebel für Veränderung.',
     ),
     (
       prinzip: 'Geschlecht',
       emoji: '☯️',
-      frage: 'Bist du in der Situation eher aktiv-projizierend oder empfangend-aufnehmend?',
-      antworten: ['Sehr aktiv', 'Eher aktiv', 'Eher empfangend', 'Sehr empfangend'],
-      hinweis: 'Schöpfung braucht beide Pole. Wenn du nur aktiv bist: erschöpft. Wenn nur '
+      frage:
+          'Bist du in der Situation eher aktiv-projizierend oder empfangend-aufnehmend?',
+      antworten: [
+        'Sehr aktiv',
+        'Eher aktiv',
+        'Eher empfangend',
+        'Sehr empfangend'
+      ],
+      hinweis:
+          'Schöpfung braucht beide Pole. Wenn du nur aktiv bist: erschöpft. Wenn nur '
           'empfangend: gestaut. Frage: welchen Pol nutze ich aktuell weniger?',
     ),
   ];
@@ -87,7 +113,8 @@ class _HermeticRealityCheckScreenState
   void _submit() {
     if (_situation.text.trim().isEmpty || _answers.length < _checks.length) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Bitte Situation beschreiben und alle 7 Fragen beantworten'),
+        content:
+            Text('Bitte Situation beschreiben und alle 7 Fragen beantworten'),
         backgroundColor: Colors.redAccent,
       ));
       return;
@@ -139,7 +166,8 @@ class _HermeticRealityCheckScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [_accent.withValues(alpha: 0.35), _surface]),
+            gradient: LinearGradient(
+                colors: [_accent.withValues(alpha: 0.35), _surface]),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _accent.withValues(alpha: 0.4)),
           ),
@@ -147,27 +175,36 @@ class _HermeticRealityCheckScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Hermetische Reality-Check',
-                  style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold)),
               SizedBox(height: 6),
               Text(
                 'Beschreibe eine aktuelle Lebenssituation. Beantworte dann die 7 Fragen — '
                 'jede entspricht einem hermetischen Prinzip. Du erfährst, welche Gesetze gerade '
                 'am stärksten in deinem Leben wirken und wie du den Hebel ansetzen kannst.',
-                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                style:
+                    TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
               ),
             ],
           ),
         ),
         const SizedBox(height: 18),
         const Text('AKTUELLE SITUATION',
-            style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         TextField(
           controller: _situation,
           maxLines: 4,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
-            hintText: 'z.B. Konflikt mit Kollege, Geld-Sorgen, Beziehungs-Krise...',
+            hintText:
+                'z.B. Konflikt mit Kollege, Geld-Sorgen, Beziehungs-Krise...',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
             filled: true,
             fillColor: _surface,
@@ -191,10 +228,12 @@ class _HermeticRealityCheckScreenState
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
             child: const Text('AUSWERTEN',
-                style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
           ),
         ),
       ],
@@ -203,7 +242,13 @@ class _HermeticRealityCheckScreenState
 
   Widget _buildQuestion(
       int i,
-      ({String prinzip, String emoji, String frage, List<String> antworten, String hinweis}) c) {
+      ({
+        String prinzip,
+        String emoji,
+        String frage,
+        List<String> antworten,
+        String hinweis
+      }) c) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -219,28 +264,42 @@ class _HermeticRealityCheckScreenState
             Text(c.emoji, style: const TextStyle(fontSize: 22)),
             const SizedBox(width: 8),
             Text(c.prinzip,
-                style: TextStyle(color: _accent, fontSize: 12, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: _accent,
+                    fontSize: 12,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.bold)),
           ]),
           const SizedBox(height: 6),
           Text(c.frage,
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           for (var j = 0; j < c.antworten.length; j++)
             GestureDetector(
               onTap: () => setState(() => _answers[i] = j),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _answers[i] == j ? _accent.withValues(alpha: 0.2) : Colors.transparent,
+                  color: _answers[i] == j
+                      ? _accent.withValues(alpha: 0.2)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _answers[i] == j ? _accent : Colors.white.withValues(alpha: 0.1),
+                    color: _answers[i] == j
+                        ? _accent
+                        : Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 child: Row(children: [
                   Icon(
-                    _answers[i] == j ? Icons.radio_button_checked : Icons.radio_button_off,
+                    _answers[i] == j
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
                     size: 16,
                     color: _answers[i] == j ? _accent : Colors.white38,
                   ),
@@ -248,7 +307,8 @@ class _HermeticRealityCheckScreenState
                   Expanded(
                     child: Text(c.antworten[j],
                         style: TextStyle(
-                          color: _answers[i] == j ? Colors.white : Colors.white70,
+                          color:
+                              _answers[i] == j ? Colors.white : Colors.white70,
                           fontSize: 13,
                         )),
                   ),
@@ -268,17 +328,25 @@ class _HermeticRealityCheckScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [_accent, _accent.withValues(alpha: 0.5)]),
+            gradient: LinearGradient(
+                colors: [_accent, _accent.withValues(alpha: 0.5)]),
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('DEINE HERMETISCHE ANALYSE',
-                  style: TextStyle(color: Colors.black, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 11,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.bold)),
               SizedBox(height: 4),
               Text('Die 2 stärksten Prinzipien in deiner Situation',
-                  style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
         ),
@@ -304,10 +372,12 @@ class _HermeticRealityCheckScreenState
           child: OutlinedButton.icon(
             onPressed: _reset,
             icon: const Icon(Icons.refresh, color: _accent),
-            label: const Text('Neuer Check', style: TextStyle(color: _accent, fontWeight: FontWeight.bold)),
+            label: const Text('Neuer Check',
+                style: TextStyle(color: _accent, fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: _accent.withValues(alpha: 0.6)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ),
@@ -316,7 +386,13 @@ class _HermeticRealityCheckScreenState
   }
 
   Widget _buildResultCard(
-      ({String prinzip, String emoji, String frage, List<String> antworten, String hinweis}) c,
+      ({
+        String prinzip,
+        String emoji,
+        String frage,
+        List<String> antworten,
+        String hinweis
+      }) c,
       int answerIdx) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -337,16 +413,24 @@ class _HermeticRealityCheckScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('PRINZIP DES ${c.prinzip.toUpperCase()}',
-                      style: TextStyle(color: _accent, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          color: _accent,
+                          fontSize: 10,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold)),
                   Text('Deine Antwort: ${c.antworten[answerIdx]}',
-                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
           ]),
           const SizedBox(height: 10),
           Text(c.hinweis,
-              style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, height: 1.6)),
         ],
       ),
     );

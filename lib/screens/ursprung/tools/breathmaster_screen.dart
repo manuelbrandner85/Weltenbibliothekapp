@@ -112,8 +112,7 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ohne',
-                style: TextStyle(color: Colors.white54)),
+            child: const Text('Ohne', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -134,7 +133,8 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
     if (!mounted) return;
     if (!granted) {
       // v5.44: HealthDiagnosisDialog mit auto-Diagnose + kontextueller Fix-Action
-      final resolved = await HealthDiagnosisDialog.showAndResolve(context, _bio);
+      final resolved =
+          await HealthDiagnosisDialog.showAndResolve(context, _bio);
       if (!mounted) return;
       if (resolved) {
         setState(() => _measuringBaseline = true);
@@ -272,9 +272,8 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
                   child: AnimatedBuilder(
                     animation: _scaleCtrl,
                     builder: (_, __) {
-                      final scale = _running
-                          ? (0.55 + 0.45 * _scaleCtrl.value)
-                          : 0.7;
+                      final scale =
+                          _running ? (0.55 + 0.45 * _scaleCtrl.value) : 0.7;
                       return Container(
                         width: 240 * scale,
                         height: 240 * scale,
@@ -443,9 +442,7 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
                     ),
                   ),
                   child: Text(
-                    _measuringBaseline
-                        ? 'BASELINE MESSUNG …'
-                        : 'STARTE ATMUNG',
+                    _measuringBaseline ? 'BASELINE MESSUNG …' : 'STARTE ATMUNG',
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 3.0,

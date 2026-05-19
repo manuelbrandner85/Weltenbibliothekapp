@@ -2,10 +2,8 @@
 // sich im Browser ohnehin nicht direkt anzeigen — daher Platzhalter.
 import 'package:flutter/material.dart';
 
-Widget localFileImage(
-  String path,
-  {BoxFit fit = BoxFit.cover, Widget? errorWidget}
-) {
+Widget localFileImage(String path,
+    {BoxFit fit = BoxFit.cover, Widget? errorWidget}) {
   return errorWidget ??
       Container(
         color: const Color(0xFF1A1A2E),

@@ -29,10 +29,12 @@ class OsintApis {
       {int limit = 6}) async {
     try {
       // Über Worker-Proxy damit Titel auf Deutsch übersetzt werden
-      final resp = await http.get(
-        Uri.parse(
-            '${ApiConfig.workerUrl}/api/kaninchenbau/openalex?topic=${Uri.encodeComponent(topic)}&limit=$limit'),
-      ).timeout(const Duration(seconds: 18));
+      final resp = await http
+          .get(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/kaninchenbau/openalex?topic=${Uri.encodeComponent(topic)}&limit=$limit'),
+          )
+          .timeout(const Duration(seconds: 18));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
         final results = (data['results'] as List?) ?? const [];
@@ -56,7 +58,10 @@ class OsintApis {
       final resp2 = await http.get(
         Uri.parse(
             'https://api.openalex.org/works?search=${Uri.encodeComponent(topic)}&per_page=$limit&sort=cited_by_count:desc'),
-        headers: {'User-Agent': 'WeltenbibliothekKaninchenbau/1.0 (mailto:dev@weltenbibliothek.app)'},
+        headers: {
+          'User-Agent':
+              'WeltenbibliothekKaninchenbau/1.0 (mailto:dev@weltenbibliothek.app)'
+        },
       ).timeout(const Duration(seconds: 12));
       if (resp2.statusCode != 200) return [];
       final data = jsonDecode(resp2.body) as Map<String, dynamic>;
@@ -174,7 +179,8 @@ class OsintApis {
       final resp = await http.get(url).timeout(const Duration(seconds: 12));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      final results = ((data['results'] as Map?)?['companies'] as List?) ?? const [];
+      final results =
+          ((data['results'] as Map?)?['companies'] as List?) ?? const [];
       return results.map((raw) {
         final r = raw as Map<String, dynamic>;
         final c = (r['company'] as Map?) ?? {};
@@ -224,8 +230,7 @@ class OsintApis {
         return PowerRelation(
           entity1: (r['entity1_label'] ?? '').toString(),
           entity2: (r['entity2_label'] ?? '').toString(),
-          relationType:
-              _categorizeLittleSis((r['category_id'] as int?) ?? 0),
+          relationType: _categorizeLittleSis((r['category_id'] as int?) ?? 0),
           description: (r['description'] ?? '').toString(),
           amount: r['amount'] as int?,
           url: 'https://littlesis.org/relationships/${m['id']}',
@@ -362,8 +367,7 @@ class OsintApis {
       // Worker-Proxy aufrufen (API-Key bleibt server-side im Worker)
       final url = Uri.parse(
           '${ApiConfig.workerUrl}/api/factcheck/search?q=${Uri.encodeComponent(topic)}');
-      final resp =
-          await http.get(url).timeout(const Duration(seconds: 12));
+      final resp = await http.get(url).timeout(const Duration(seconds: 12));
       if (resp.statusCode != 200) return fallbackLinks;
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
       if (data['fallback'] == true) return fallbackLinks;
@@ -391,5 +395,3 @@ class OsintApis {
     }
   }
 }
-
-

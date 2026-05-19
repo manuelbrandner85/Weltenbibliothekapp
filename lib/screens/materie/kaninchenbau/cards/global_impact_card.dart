@@ -32,8 +32,7 @@ class GlobalImpactCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.public,
-                  color: Color(0xFF42A5F5), size: 18),
+              const Icon(Icons.public, color: Color(0xFF42A5F5), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'GLOBALE AUSWIRKUNGEN',
@@ -99,8 +98,7 @@ class GlobalImpactCard extends StatelessWidget {
             children: [
               Container(
                 width: 36,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
                   color: Colors.white.withValues(alpha: 0.08),

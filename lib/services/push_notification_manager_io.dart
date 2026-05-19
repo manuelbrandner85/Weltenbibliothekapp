@@ -145,7 +145,8 @@ Future<void> fcmBackgroundHandler(RemoteMessage message) async {
   try {
     await Firebase.initializeApp();
   } catch (e) {
-    if (kDebugMode) debugPrint('⚠️ fcmBackgroundHandler Firebase.initializeApp: $e');
+    if (kDebugMode)
+      debugPrint('⚠️ fcmBackgroundHandler Firebase.initializeApp: $e');
   }
   if (message.notification == null) {
     final data = message.data;
@@ -178,7 +179,8 @@ Future<void> fcmBackgroundHandler(RemoteMessage message) async {
         payload: jsonEncode(data),
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ fcmBackgroundHandler localPlugin.show: $e');
+      if (kDebugMode)
+        debugPrint('⚠️ fcmBackgroundHandler localPlugin.show: $e');
     }
   }
 }
@@ -255,6 +257,7 @@ class PushNotificationManager with WidgetsBindingObserver {
   bool _subscribed = false;
   String? _fcmToken;
   DeepLinkHandler? _deepLinkHandler;
+
   /// Dedup-Set für Notification-IDs. Begrenzt auf [_seenIdsMax] damit es
   /// in Long-Running-Sessions nicht unbegrenzt wächst (Bundle 4.2).
   final Set<String> _seenIds = <String>{};
@@ -288,9 +291,8 @@ class PushNotificationManager with WidgetsBindingObserver {
     );
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      final impl = _localPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final impl = _localPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
       await impl?.createNotificationChannel(_chatChannel);
       await impl?.createNotificationChannel(_socialChannel);
       await impl?.createNotificationChannel(_systemChannel);
@@ -327,10 +329,13 @@ class PushNotificationManager with WidgetsBindingObserver {
       final fcm = FirebaseMessaging.instance;
       await fcm.requestPermission(alert: true, badge: true, sound: true);
       await fcm.setForegroundNotificationPresentationOptions(
-        alert: true, badge: true, sound: true,
+        alert: true,
+        badge: true,
+        sound: true,
       );
       _fcmForegroundSub = FirebaseMessaging.onMessage.listen(_onFcmForeground);
-      _fcmOpenedSub = FirebaseMessaging.onMessageOpenedApp.listen(_onFcmOpenedApp);
+      _fcmOpenedSub =
+          FirebaseMessaging.onMessageOpenedApp.listen(_onFcmOpenedApp);
       _fcmTokenSub = fcm.onTokenRefresh.listen((token) {
         _fcmToken = token;
         final uid = Supabase.instance.client.auth.currentUser?.id;
@@ -339,7 +344,8 @@ class PushNotificationManager with WidgetsBindingObserver {
       _fcmToken = await fcm.getToken();
       _firebaseReady = _fcmToken != null;
       if (kDebugMode) {
-        debugPrint('🔔 FCM ready=$_firebaseReady token=${_fcmToken?.substring(0, 16) ?? "null"}…');
+        debugPrint(
+            '🔔 FCM ready=$_firebaseReady token=${_fcmToken?.substring(0, 16) ?? "null"}…');
       }
     } catch (e) {
       _firebaseReady = false;
@@ -370,7 +376,8 @@ class PushNotificationManager with WidgetsBindingObserver {
     try {
       final payload = <String, dynamic>{
         'user_id': userId,
-        'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+        'platform':
+            defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
       };
       if (_fcmToken != null && _fcmToken!.isNotEmpty) {
         payload['fcm_token'] = _fcmToken;
@@ -378,13 +385,16 @@ class PushNotificationManager with WidgetsBindingObserver {
       } else {
         payload['endpoint'] = 'inapp-poll-$userId';
       }
-      final res = await http.post(
-        Uri.parse('${ApiConfig.workerUrl}/api/push/subscribe'),
-        headers: const {'Content-Type': 'application/json'},
-        body: json.encode(payload),
-      ).timeout(const Duration(seconds: 10));
+      final res = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/push/subscribe'),
+            headers: const {'Content-Type': 'application/json'},
+            body: json.encode(payload),
+          )
+          .timeout(const Duration(seconds: 10));
       if (kDebugMode) {
-        debugPrint('🔔 push subscribe → ${res.statusCode} fcm=${_fcmToken != null} retry=$retry');
+        debugPrint(
+            '🔔 push subscribe → ${res.statusCode} fcm=${_fcmToken != null} retry=$retry');
       }
       if (res.statusCode >= 200 && res.statusCode < 300) {
         _subscribed = true;
@@ -436,15 +446,18 @@ class PushNotificationManager with WidgetsBindingObserver {
     final uid = Supabase.instance.client.auth.currentUser?.id;
     if (uid == null) return;
     try {
-      final res = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/api/push/debug?user_id=$uid'),
-      ).timeout(const Duration(seconds: 8));
+      final res = await http
+          .get(
+            Uri.parse('${ApiConfig.workerUrl}/api/push/debug?user_id=$uid'),
+          )
+          .timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return;
       final body = json.decode(res.body);
       final subs = body is Map ? (body['subscriptions'] as List? ?? []) : [];
       final hasActive = subs.any((s) => s is Map && s['is_active'] == true);
       if (!hasActive) {
-        if (kDebugMode) debugPrint('🩹 push: keine aktive Subscription → re-register');
+        if (kDebugMode)
+          debugPrint('🩹 push: keine aktive Subscription → re-register');
         _subscribed = false;
         await _registerSubscription(uid);
       }
@@ -457,9 +470,12 @@ class PushNotificationManager with WidgetsBindingObserver {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
     try {
-      final res = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/api/push/pending?user_id=$userId'),
-      ).timeout(const Duration(seconds: 10));
+      final res = await http
+          .get(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/push/pending?user_id=$userId'),
+          )
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return;
       final body = json.decode(res.body);
       final list = body is Map
@@ -490,7 +506,9 @@ class PushNotificationManager with WidgetsBindingObserver {
     final title = item['title']?.toString() ?? 'Weltenbibliothek';
     final body = item['body']?.toString() ?? '';
     final dataRaw = item['data'];
-    final data = dataRaw is Map ? Map<String, dynamic>.from(dataRaw) : <String, dynamic>{};
+    final data = dataRaw is Map
+        ? Map<String, dynamic>.from(dataRaw)
+        : <String, dynamic>{};
     final type = data['type']?.toString() ?? '';
     final roomId = data['room_id']?.toString();
     final payload = data.isNotEmpty ? json.encode(data) : null;
@@ -499,7 +517,8 @@ class PushNotificationManager with WidgetsBindingObserver {
     // (oder Master-Toggle aus), Notification verwerfen. In-App-Center
     // zeigt sie trotzdem (nutzt eigenen Fetch auf `notifications`-Tabelle).
     if (!PushPreferencesService.instance.isTypeEnabled(type)) {
-      if (kDebugMode) debugPrint('🔕 push gefiltert (type=$type per Pref deaktiviert)');
+      if (kDebugMode)
+        debugPrint('🔕 push gefiltert (type=$type per Pref deaktiviert)');
       return;
     }
 
@@ -549,13 +568,18 @@ class PushNotificationManager with WidgetsBindingObserver {
     );
 
     // Gruppen-Zusammenfassung ab 2 Nachrichten (Android)
-    if (count >= 2 && !kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    if (count >= 2 &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android) {
       final summaryId = (groupKey + '_summary').hashCode & 0x7FFFFFFF;
       await _localPlugin.show(
         summaryId,
         'Weltenbibliothek · Chat',
         '$count neue Nachrichten',
-        _chatDetails(body: '$count neue Nachrichten', groupKey: groupKey, isGroupSummary: true),
+        _chatDetails(
+            body: '$count neue Nachrichten',
+            groupKey: groupKey,
+            isGroupSummary: true),
         payload: payload,
       );
     }
@@ -568,7 +592,8 @@ class PushNotificationManager with WidgetsBindingObserver {
     String? payload,
   ) async {
     final type = data['type']?.toString() ?? 'social';
-    final notifId = (data['article_id']?.toString() ?? type).hashCode & 0x7FFFFFFF;
+    final notifId =
+        (data['article_id']?.toString() ?? type).hashCode & 0x7FFFFFFF;
     final count = (_groupCounts['wb_social'] ?? 0) + 1;
     _groupCounts['wb_social'] = count;
 
@@ -580,7 +605,9 @@ class PushNotificationManager with WidgetsBindingObserver {
       payload: payload,
     );
 
-    if (count >= 3 && !kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    if (count >= 3 &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android) {
       await _localPlugin.show(
         'wb_social_summary'.hashCode & 0x7FFFFFFF,
         'Weltenbibliothek',
@@ -597,9 +624,12 @@ class PushNotificationManager with WidgetsBindingObserver {
     Map<String, dynamic> data,
     String? payload,
   ) async {
-    final notifId = (data['achievement_id']?.toString() ?? 'system_${DateTime.now().millisecondsSinceEpoch}')
-        .hashCode & 0x7FFFFFFF;
-    await _localPlugin.show(notifId, title, body, _systemDetails(body: body), payload: payload);
+    final notifId = (data['achievement_id']?.toString() ??
+                'system_${DateTime.now().millisecondsSinceEpoch}')
+            .hashCode &
+        0x7FFFFFFF;
+    await _localPlugin.show(notifId, title, body, _systemDetails(body: body),
+        payload: payload);
   }
 
   // ── FCM Foreground / Opened ──────────────────────────────────────────────────
@@ -622,9 +652,8 @@ class PushNotificationManager with WidgetsBindingObserver {
     final title = message.notification?.title ??
         message.data['title']?.toString() ??
         'Weltenbibliothek';
-    final body = message.notification?.body ??
-        message.data['body']?.toString() ??
-        '';
+    final body =
+        message.notification?.body ?? message.data['body']?.toString() ?? '';
     final type = message.data['type']?.toString() ?? '';
     final roomId = message.data['room_id']?.toString();
     final payload = message.data.isNotEmpty ? jsonEncode(message.data) : null;
@@ -697,17 +726,19 @@ class PushNotificationManager with WidgetsBindingObserver {
     }
     try {
       final endpoint = _fcmToken ?? 'local-$uid';
-      await http.post(
-        Uri.parse('${ApiConfig.workerUrl}/api/push/unsubscribe'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${ApiConfig.supabaseAnonKey}',
-        },
-        body: jsonEncode({
-          'userId': uid,
-          'endpoint': endpoint,
-        }),
-      ).timeout(const Duration(seconds: 5));
+      await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/push/unsubscribe'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ${ApiConfig.supabaseAnonKey}',
+            },
+            body: jsonEncode({
+              'userId': uid,
+              'endpoint': endpoint,
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ unsubscribeCurrent failed: $e');
     } finally {

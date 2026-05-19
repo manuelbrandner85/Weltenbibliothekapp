@@ -75,8 +75,7 @@ class _NetworkCardState extends State<NetworkCard>
         children: [
           Row(
             children: [
-              Icon(Icons.hub,
-                  color: KbDesign.neonRedSoft, size: 18),
+              Icon(Icons.hub, color: KbDesign.neonRedSoft, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'NETZWERK',
@@ -103,8 +102,8 @@ class _NetworkCardState extends State<NetworkCard>
                   },
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       color: KbDesign.neonRed.withValues(alpha: 0.18),
@@ -349,8 +348,7 @@ class _NetworkCardState extends State<NetworkCard>
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-                color: KbDesign.neonRed.withValues(alpha: 0.2)),
+            border: Border.all(color: KbDesign.neonRed.withValues(alpha: 0.2)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -514,7 +512,5 @@ class _LabeledEdgePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LabeledEdgePainter old) =>
-      old.breath != breath ||
-      old.edges != edges ||
-      old.positions != positions;
+      old.breath != breath || old.edges != edges || old.positions != positions;
 }

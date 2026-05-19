@@ -34,8 +34,7 @@ class KeyPersonsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.diversity_3,
-                  color: _accent, size: 18),
+              const Icon(Icons.diversity_3, color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'SCHLÜSSELPERSONEN',
@@ -51,8 +50,7 @@ class KeyPersonsCard extends StatelessWidget {
                 Text(
                   '${persons.length}',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 11),
+                      color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
                 ),
             ],
           ),
@@ -94,8 +92,7 @@ class KeyPersonsCard extends StatelessWidget {
           child: SizedBox(
             width: 28,
             height: 28,
-            child: CircularProgressIndicator(
-                color: _accent, strokeWidth: 2),
+            child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
           ),
         ),
       );
@@ -161,8 +158,8 @@ class _PersonTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: KeyPersonsCard._accent.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(4),

@@ -46,8 +46,7 @@ class FriendlyChangelog {
 
   bool get isEmpty => categories.every((c) => c.isEmpty);
 
-  int get totalItems =>
-      categories.fold(0, (sum, c) => sum + c.items.length);
+  int get totalItems => categories.fold(0, (sum, c) => sum + c.items.length);
 }
 
 /// ── TEMPLATES ──────────────────────────────────────────────────────────
@@ -209,7 +208,12 @@ const List<_Template> _templates = [
     _Category.improvements,
   ),
   _Template(
-    ['push prefs', 'push-pref', 'notification-settings', 'notification settings'],
+    [
+      'push prefs',
+      'push-pref',
+      'notification-settings',
+      'notification settings'
+    ],
     'Du kannst jetzt einstellen welche Benachrichtigungen du bekommst',
     _Category.features,
   ),

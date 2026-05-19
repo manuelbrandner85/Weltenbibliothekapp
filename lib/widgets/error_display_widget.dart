@@ -23,22 +23,26 @@ class ErrorDisplayWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine error type and styling
-    final bool isNetworkError = error.contains('Internetverbindung') || 
-                                 error.contains('Network') ||
-                                 error.contains('Verbindung');
-    
+    final bool isNetworkError = error.contains('Internetverbindung') ||
+        error.contains('Network') ||
+        error.contains('Verbindung');
+
     final bool isServerError = error.contains('Server') ||
-                               error.contains('503') ||
-                               error.contains('502');
-    
-    final IconData displayIcon = errorIcon ?? 
-        (isNetworkError ? Icons.wifi_off : 
-         isServerError ? Icons.cloud_off : 
-         Icons.error_outline);
-    
-    final Color displayColor = isNetworkError ? Colors.orange :
-                               isServerError ? Colors.red :
-                               Colors.red.shade400;
+        error.contains('503') ||
+        error.contains('502');
+
+    final IconData displayIcon = errorIcon ??
+        (isNetworkError
+            ? Icons.wifi_off
+            : isServerError
+                ? Icons.cloud_off
+                : Icons.error_outline);
+
+    final Color displayColor = isNetworkError
+        ? Colors.orange
+        : isServerError
+            ? Colors.red
+            : Colors.red.shade400;
 
     return Center(
       child: Container(
@@ -70,9 +74,9 @@ class ErrorDisplayWidget extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Error Title
             Text(
               _getErrorTitle(error),
@@ -83,9 +87,9 @@ class ErrorDisplayWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Error Message
             Text(
               _getErrorMessage(error),
@@ -96,10 +100,10 @@ class ErrorDisplayWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             if (onRetry != null) ...[
               const SizedBox(height: 32),
-              
+
               // Retry Button
               SizedBox(
                 width: double.infinity,
@@ -122,7 +126,7 @@ class ErrorDisplayWidget extends StatelessWidget {
                 ),
               ),
             ],
-            
+
             // Help Text
             if (isNetworkError) ...[
               const SizedBox(height: 16),
@@ -165,7 +169,9 @@ class ErrorDisplayWidget extends StatelessWidget {
   String _getErrorTitle(String error) {
     if (error.contains('Internetverbindung') || error.contains('Network')) {
       return '⚠️ Keine Verbindung';
-    } else if (error.contains('Server') || error.contains('503') || error.contains('502')) {
+    } else if (error.contains('Server') ||
+        error.contains('503') ||
+        error.contains('502')) {
       return '🔧 Server-Problem';
     } else if (error.contains('401') || error.contains('Authentifizierung')) {
       return '🔐 Authentifizierung fehlgeschlagen';
@@ -181,15 +187,14 @@ class ErrorDisplayWidget extends StatelessWidget {
   String _getErrorMessage(String error) {
     // Remove technical details in parentheses for user display
     final cleanError = error.split('(').first.trim();
-    
+
     if (cleanError.isEmpty || cleanError.length < 10) {
       return error; // Show full error if too short
     }
-    
+
     return cleanError;
   }
 }
-
 
 /// 🎨 LOADING STATE WIDGET
 /// Professional skeleton loader with shimmer effect
@@ -261,7 +266,7 @@ class _LoadingStateWidgetState extends State<LoadingStateWidget>
               ),
             ),
           ),
-          
+
           if (widget.message != null) ...[
             const SizedBox(height: 24),
             Text(
@@ -273,7 +278,7 @@ class _LoadingStateWidgetState extends State<LoadingStateWidget>
               textAlign: TextAlign.center,
             ),
           ],
-          
+
           if (widget.showProgress) ...[
             const SizedBox(height: 16),
             SizedBox(
@@ -291,7 +296,6 @@ class _LoadingStateWidgetState extends State<LoadingStateWidget>
     );
   }
 }
-
 
 /// 🎨 EMPTY STATE WIDGET
 /// Professional empty state with action button
@@ -334,9 +338,9 @@ class EmptyStateWidget extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.3),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Title
             Text(
               title,
@@ -347,9 +351,9 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Message
             Text(
               message,
@@ -360,7 +364,7 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            
+
             if (onAction != null && actionText != null) ...[
               const SizedBox(height: 32),
               ElevatedButton(

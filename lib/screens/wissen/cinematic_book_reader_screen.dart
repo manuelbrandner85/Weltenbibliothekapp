@@ -515,12 +515,14 @@ class _CinematicBookReaderScreenState extends State<CinematicBookReaderScreen>
             Positioned(
               top: -120,
               left: -80,
-              child: _orb(220, _palette.accent.withValues(alpha: 0.10 * pulse1)),
+              child:
+                  _orb(220, _palette.accent.withValues(alpha: 0.10 * pulse1)),
             ),
             Positioned(
               bottom: -120,
               right: -80,
-              child: _orb(260, _palette.primary.withValues(alpha: 0.12 * pulse2)),
+              child:
+                  _orb(260, _palette.primary.withValues(alpha: 0.12 * pulse2)),
             ),
           ],
         );
@@ -1076,7 +1078,8 @@ class _CinematicBookReaderScreenState extends State<CinematicBookReaderScreen>
     );
   }
 
-  Widget _fabAction(IconData icon, String label, Color color, VoidCallback tap) {
+  Widget _fabAction(
+      IconData icon, String label, Color color, VoidCallback tap) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1456,7 +1459,8 @@ List<_Quote> _extractQuotes(String src) {
         pendingQuote = inner;
       }
     } else if (line.startsWith('--') && pendingQuote != null) {
-      list.add(_Quote(_stripQuoteMarks(pendingQuote), line.replaceAll(RegExp(r'^-+\s*'), '').trim()));
+      list.add(_Quote(_stripQuoteMarks(pendingQuote),
+          line.replaceAll(RegExp(r'^-+\s*'), '').trim()));
       pendingQuote = null;
     } else {
       if (pendingQuote != null) {
@@ -1626,7 +1630,8 @@ class _QuoteCardsOverlayState extends State<_QuoteCardsOverlay> {
                                     fontWeight: FontWeight.w500,
                                     shadows: [
                                       Shadow(
-                                        color: p.primary.withValues(alpha: 0.55),
+                                        color:
+                                            p.primary.withValues(alpha: 0.55),
                                         blurRadius: 18,
                                       ),
                                     ],
@@ -1723,9 +1728,7 @@ class _QuoteCardsOverlayState extends State<_QuoteCardsOverlay> {
     required bool filled,
   }) {
     return Material(
-      color: filled
-          ? p.primary
-          : Colors.white.withValues(alpha: 0.08),
+      color: filled ? p.primary : Colors.white.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,

@@ -10,12 +10,13 @@ final List<KnowledgeEntry> energieKnowledgeDatabase = [
   // ==========================================
   // KATEGORIE: MEDITATION (15)
   // ==========================================
-  
+
   KnowledgeEntry(
     id: 'ene_001',
     world: 'energie',
     title: 'Vipassana Meditation - Der Weg zur Selbsterkenntnis',
-    description: '2500 Jahre alte buddhistische Meditationstechnik zur Beobachtung der Realität wie sie ist',
+    description:
+        '2500 Jahre alte buddhistische Meditationstechnik zur Beobachtung der Realität wie sie ist',
     fullContent: '''
 # Vipassana Meditation
 
@@ -102,7 +103,13 @@ Vipassana ist eine Technik der **Selbstbeobachtung** durch **Achtsamkeit auf kö
 ''',
     category: 'meditation',
     type: 'practice',
-    tags: ['Vipassana', 'Meditation', 'Buddha', 'Achtsamkeit', 'Selbsterkenntnis'],
+    tags: [
+      'Vipassana',
+      'Meditation',
+      'Buddha',
+      'Achtsamkeit',
+      'Selbsterkenntnis'
+    ],
     createdAt: DateTime(2024, 1, 15),
     author: 'S.N. Goenka',
     yearPublished: 1969,
@@ -113,7 +120,8 @@ Vipassana ist eine Technik der **Selbstbeobachtung** durch **Achtsamkeit auf kö
     id: 'ene_002',
     world: 'energie',
     title: 'Kundalini Erweckung - Die Schlangenkraft aktivieren',
-    description: 'Erweckung der schlafenden Energie an der Wirbelsäulenbasis durch spezielle Yoga-Techniken',
+    description:
+        'Erweckung der schlafenden Energie an der Wirbelsäulenbasis durch spezielle Yoga-Techniken',
     fullContent: '''
 # Kundalini Erweckung
 
@@ -254,7 +262,8 @@ Vipassana ist eine Technik der **Selbstbeobachtung** durch **Achtsamkeit auf kö
     id: 'ene_003',
     world: 'energie',
     title: 'Astralreisen (Out-of-Body Experience) - Anleitung',
-    description: 'Systematische Techniken zur bewussten Trennung des Astralkörpers vom physischen Körper',
+    description:
+        'Systematische Techniken zur bewussten Trennung des Astralkörpers vom physischen Körper',
     fullContent: '''
 # Astralreisen - Die Kunst des außerkörperlichen Reisens
 
@@ -489,7 +498,8 @@ Vipassana ist eine Technik der **Selbstbeobachtung** durch **Achtsamkeit auf kö
     id: 'ene_004',
     world: 'energie',
     title: 'Luzides Träumen - Bewusste Traumkontrolle',
-    description: 'Techniken zum bewussten Erleben und Steuern von Träumen - Gateway zur Astralreise',
+    description:
+        'Techniken zum bewussten Erleben und Steuern von Träumen - Gateway zur Astralreise',
     fullContent: '''
 # Luzides Träumen - Die Kunst der bewussten Träume
 
@@ -661,7 +671,13 @@ Entwickelt von Stephen LaBerge
 ''',
     category: 'consciousness',
     type: 'practice',
-    tags: ['Luzides Träumen', 'Traumkontrolle', 'REM-Schlaf', 'Bewusstsein', 'LaBerge'],
+    tags: [
+      'Luzides Träumen',
+      'Traumkontrolle',
+      'REM-Schlaf',
+      'Bewusstsein',
+      'LaBerge'
+    ],
     createdAt: DateTime(2024, 1, 18),
     author: 'Stephen LaBerge',
     yearPublished: 1985,
@@ -672,7 +688,8 @@ Entwickelt von Stephen LaBerge
     id: 'ene_005',
     world: 'energie',
     title: 'Reiki Heilung - Die universelle Lebensenergie',
-    description: 'Japanische Energieheilkunst durch Handauflegen zur Aktivierung der Selbstheilungskräfte',
+    description:
+        'Japanische Energieheilkunst durch Handauflegen zur Aktivierung der Selbstheilungskräfte',
     fullContent: '''
 # Reiki - Die Kraft der Hände
 

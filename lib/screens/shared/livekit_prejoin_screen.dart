@@ -43,7 +43,8 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
   // aber Kamera bleibt für den User jederzeit zuschaltbar. Wer Bandbreite
   // sparen will, kann den Toggle hier manuell aktivieren.
   bool _audioOnly = false;
-  bool _micEnabled = true; // default = Mikrofon an (User kann als Zuhörer deaktivieren)
+  bool _micEnabled =
+      true; // default = Mikrofon an (User kann als Zuhörer deaktivieren)
   bool _micGranted = false;
   bool _camGranted = false;
   bool _checkingPerms = true;
@@ -222,7 +223,9 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
             ),
             const SizedBox(height: 4),
             Text(
-              isMaterie ? 'Weltenbibliothek · Materie' : 'Weltenbibliothek · Energie',
+              isMaterie
+                  ? 'Weltenbibliothek · Materie'
+                  : 'Weltenbibliothek · Energie',
               style: TextStyle(
                 color: accent.withValues(alpha: 0.8),
                 fontSize: 12,
@@ -248,7 +251,8 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
                               ? Icons.mic_rounded
                               : Icons.mic_off_rounded,
                           label: 'Mikrofon',
-                          status: _micGranted ? 'Bereit' : 'Tippen zum Erlauben',
+                          status:
+                              _micGranted ? 'Bereit' : 'Tippen zum Erlauben',
                           ok: _micGranted,
                           accent: accent,
                           onTap: _micGranted ? null : _requestMic,
@@ -389,8 +393,7 @@ class _PermissionCard extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(icon,
-                        size: 20,
-                        color: ok ? accent : WbDesign.textTertiary),
+                        size: 20, color: ok ? accent : WbDesign.textTertiary),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -415,9 +418,10 @@ class _PermissionCard extends StatelessWidget {
                     ),
                   ),
                   Icon(
-                    ok ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
-                    color:
-                        ok ? const Color(0xFF4CAF50) : WbDesign.textTertiary,
+                    ok
+                        ? Icons.check_circle_rounded
+                        : Icons.chevron_right_rounded,
+                    color: ok ? const Color(0xFF4CAF50) : WbDesign.textTertiary,
                     size: 22,
                   ),
                 ],

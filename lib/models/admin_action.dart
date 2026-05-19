@@ -3,23 +3,23 @@
 library;
 
 enum AdminActionType {
-  kick,           // User aus Voice Chat entfernen
-  mute,           // User stummschalten (Voice)
-  unmute,         // Stummschaltung aufheben
-  ban,            // Permanenter Ban
-  unban,          // Ban aufheben
-  timeout,        // Temporärer Ban
-  warning,        // Verwarnung aussprechen
-  deleteMessage,  // Nachricht löschen
-  slowMode,       // Slow Mode aktivieren/deaktivieren
+  kick, // User aus Voice Chat entfernen
+  mute, // User stummschalten (Voice)
+  unmute, // Stummschaltung aufheben
+  ban, // Permanenter Ban
+  unban, // Ban aufheben
+  timeout, // Temporärer Ban
+  warning, // Verwarnung aussprechen
+  deleteMessage, // Nachricht löschen
+  slowMode, // Slow Mode aktivieren/deaktivieren
 }
 
 enum BanDuration {
-  fiveMinutes,    // 5 Minuten
-  thirtyMinutes,  // 30 Minuten
-  oneHour,        // 1 Stunde
-  oneDay,         // 24 Stunden
-  permanent,      // Permanent
+  fiveMinutes, // 5 Minuten
+  thirtyMinutes, // 30 Minuten
+  oneHour, // 1 Stunde
+  oneDay, // 24 Stunden
+  permanent, // Permanent
 }
 
 class AdminAction {
@@ -34,7 +34,7 @@ class AdminAction {
   final String? roomId;
   final BanDuration? duration;
   final DateTime? expiresAt;
-  
+
   AdminAction({
     required this.id,
     required this.adminId,
@@ -48,7 +48,7 @@ class AdminAction {
     this.duration,
     this.expiresAt,
   });
-  
+
   // Für Firestore Storage
   Map<String, dynamic> toJson() {
     return {
@@ -65,7 +65,7 @@ class AdminAction {
       'expires_at': expiresAt?.toIso8601String(),
     };
   }
-  
+
   factory AdminAction.fromJson(Map<String, dynamic> json) {
     return AdminAction(
       id: json['id'] as String,
@@ -91,7 +91,7 @@ class AdminAction {
           : null,
     );
   }
-  
+
   // Human-readable action description
   String get description {
     switch (type) {
@@ -115,7 +115,7 @@ class AdminAction {
         return 'changed slow mode settings';
     }
   }
-  
+
   String _durationText() {
     if (duration == null) return '';
     switch (duration!) {
@@ -131,7 +131,7 @@ class AdminAction {
         return 'permanent';
     }
   }
-  
+
   // Emoji icon for action type
   String get icon {
     switch (type) {
@@ -167,7 +167,7 @@ class UserBanInfo {
   final DateTime bannedAt;
   final DateTime? expiresAt;
   final bool isPermanent;
-  
+
   UserBanInfo({
     required this.userId,
     required this.username,
@@ -178,35 +178,35 @@ class UserBanInfo {
     this.expiresAt,
     required this.isPermanent,
   });
-  
+
   bool get isActive {
     if (isPermanent) return true;
     if (expiresAt == null) return true;
     return DateTime.now().isBefore(expiresAt!);
   }
-  
+
   Duration? get remainingDuration {
     if (isPermanent || expiresAt == null) return null;
     final now = DateTime.now();
     if (now.isAfter(expiresAt!)) return Duration.zero;
     return expiresAt!.difference(now);
   }
-  
+
   String get remainingTimeText {
     final remaining = remainingDuration;
     if (remaining == null) return 'Permanent';
     if (remaining == Duration.zero) return 'Abgelaufen';
-    
+
     final hours = remaining.inHours;
     final minutes = remaining.inMinutes % 60;
-    
+
     if (hours > 0) {
       return '$hours Stunden, $minutes Minuten';
     } else {
       return '$minutes Minuten';
     }
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'user_id': userId,
@@ -219,7 +219,7 @@ class UserBanInfo {
       'is_permanent': isPermanent,
     };
   }
-  
+
   factory UserBanInfo.fromJson(Map<String, dynamic> json) {
     return UserBanInfo(
       userId: json['user_id'] as String,
@@ -246,7 +246,7 @@ class UserWarning {
   final String reason;
   final DateTime timestamp;
   final String? roomId;
-  
+
   UserWarning({
     required this.id,
     required this.userId,
@@ -257,7 +257,7 @@ class UserWarning {
     required this.timestamp,
     this.roomId,
   });
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -270,7 +270,7 @@ class UserWarning {
       'room_id': roomId,
     };
   }
-  
+
   factory UserWarning.fromJson(Map<String, dynamic> json) {
     return UserWarning(
       id: json['id'] as String,

@@ -63,7 +63,8 @@ class DeviceLocationService {
       final raw = prefs.getString(_cacheKey);
       if (raw != null) {
         try {
-          final loc = DeviceLocation.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+          final loc =
+              DeviceLocation.fromJson(jsonDecode(raw) as Map<String, dynamic>);
           if (loc.isFresh) {
             _memCache = loc;
             return loc;
@@ -75,7 +76,8 @@ class DeviceLocationService {
     // Wenn der User Permission abgelehnt hat, in dieser Session nicht
     // erneut nerven (User kann manuell in Settings re-enablen).
     if (prefs.getBool(_deniedKey) ?? false) {
-      if (kDebugMode) debugPrint('📍 Location previously denied — skipping prompt');
+      if (kDebugMode)
+        debugPrint('📍 Location previously denied — skipping prompt');
       return null;
     }
 

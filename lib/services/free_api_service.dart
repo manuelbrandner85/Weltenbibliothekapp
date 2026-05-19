@@ -48,7 +48,9 @@ class FreeApiService {
       if (res.statusCode != 200) return [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final articles = (data['articles'] as List? ?? []);
-      return articles.map((a) => GdeltArticle.fromJson(a as Map<String, dynamic>)).toList();
+      return articles
+          .map((a) => GdeltArticle.fromJson(a as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ GDELT: $e');
       return [];
@@ -115,7 +117,8 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sucht PubMed-Studien zu [query] und gibt bis zu [limit] Ergebnisse zurück.
-  Future<List<PubMedStudy>> fetchPubMedStudies(String query, {int limit = 8}) async {
+  Future<List<PubMedStudy>> fetchPubMedStudies(String query,
+      {int limit = 8}) async {
     try {
       // Schritt 1: IDs suchen
       final searchUrl = Uri.parse(
@@ -143,7 +146,8 @@ class FreeApiService {
 
       return ids
           .where((id) => result.containsKey(id))
-          .map((id) => PubMedStudy.fromJson(id, result[id] as Map<String, dynamic>))
+          .map((id) =>
+              PubMedStudy.fromJson(id, result[id] as Map<String, dynamic>))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ PubMed: $e');
@@ -156,7 +160,8 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sucht Guardian-Artikel zu [query]. Nutzt den kostenlosen 'test'-Key.
-  Future<List<GuardianArticle>> fetchGuardianNews(String query, {int limit = 10}) async {
+  Future<List<GuardianArticle>> fetchGuardianNews(String query,
+      {int limit = 10}) async {
     final url = Uri.parse(
       'https://content.guardianapis.com/search'
       '?q=${Uri.encodeComponent(query)}'
@@ -184,7 +189,8 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sucht Wikidata-Entitäten zu [query] (Ereignisse, Personen, Orte).
-  Future<List<WikidataEntry>> fetchWikidataEntries(String query, {int limit = 10}) async {
+  Future<List<WikidataEntry>> fetchWikidataEntries(String query,
+      {int limit = 10}) async {
     final url = Uri.parse(
       'https://www.wikidata.org/w/api.php'
       '?action=wbsearchentities'
@@ -244,7 +250,8 @@ class FreeApiService {
       // Sammle Target-IDs pro Property + sammle alle Target-IDs fuer
       // Batch-Label-Lookup.
       final targetIds = <String>{};
-      final pairs = <(String, String, String)>[]; // (propId, propLabel, targetId)
+      final pairs =
+          <(String, String, String)>[]; // (propId, propLabel, targetId)
       _wikidataRelationProps.forEach((propId, propLabel) {
         final values = claims[propId] as List?;
         if (values == null) return;
@@ -258,7 +265,7 @@ class FreeApiService {
               targetIds.add(tid);
               pairs.add((propId, propLabel, tid));
             }
-          } catch (_) { /* skip malformed */ }
+          } catch (_) {/* skip malformed */}
         }
       });
 
@@ -267,13 +274,15 @@ class FreeApiService {
       // Batch-Label-Lookup ueber wbgetentities (max 50 ids).
       final labels = await _fetchWikidataLabels(targetIds.toList());
 
-      return pairs.map((p) => WikidataRelation(
-            sourceId: entityId,
-            targetId: p.$3,
-            targetLabel: labels[p.$3] ?? p.$3,
-            propertyId: p.$1,
-            propertyLabel: p.$2,
-          )).toList();
+      return pairs
+          .map((p) => WikidataRelation(
+                sourceId: entityId,
+                targetId: p.$3,
+                targetLabel: labels[p.$3] ?? p.$3,
+                propertyId: p.$1,
+                propertyLabel: p.$2,
+              ))
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Wikidata-Relations: $e');
       return [];
@@ -344,7 +353,8 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Liefert ein zufälliges Zitat (optional gefiltert nach [tags]).
-  Future<DailyQuote?> fetchDailyQuote({String tags = 'wisdom,inspirational'}) async {
+  Future<DailyQuote?> fetchDailyQuote(
+      {String tags = 'wisdom,inspirational'}) async {
     final url = Uri.parse('https://api.quotable.io/random?tags=$tags');
     try {
       final res = await http.get(url).timeout(_timeout);
@@ -404,9 +414,8 @@ class FreeApiService {
   // 11. Cloudflare Workers AI — Llama 3.1 8B (via eigenem Worker)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static const _workerBase =
-      String.fromEnvironment('CLOUDFLARE_WORKER_URL',
-          defaultValue: 'https://weltenbibliothek-api.brandy13062.workers.dev');
+  static const _workerBase = String.fromEnvironment('CLOUDFLARE_WORKER_URL',
+      defaultValue: 'https://weltenbibliothek-api.brandy13062.workers.dev');
 
   /// Stellt eine Frage an Llama 3.1 8B via Cloudflare Workers AI.
   /// [systemPrompt] optional; Antwort immer auf Deutsch.
@@ -417,15 +426,17 @@ class FreeApiService {
   }) async {
     final uri = Uri.parse('$_workerBase/api/ai/ask');
     try {
-      final res = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'question': question,
-          if (systemPrompt != null) 'system': systemPrompt,
-          'max_tokens': maxTokens,
-        }),
-      ).timeout(_timeout);
+      final res = await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'question': question,
+              if (systemPrompt != null) 'system': systemPrompt,
+              'max_tokens': maxTokens,
+            }),
+          )
+          .timeout(_timeout);
       if (res.statusCode != 200) return null;
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       return data['answer'] as String?;
@@ -440,7 +451,8 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sucht 250M+ akademische Arbeiten über OpenAlex. Kein API-Key nötig.
-  Future<List<OpenAlexWork>> fetchOpenAlexWorks(String query, {int limit = 15}) async {
+  Future<List<OpenAlexWork>> fetchOpenAlexWorks(String query,
+      {int limit = 15}) async {
     final url = Uri.parse(
       'https://api.openalex.org/works'
       '?search=${Uri.encodeComponent(query)}'
@@ -450,7 +462,8 @@ class FreeApiService {
       '&mailto=app@weltenbibliothek.de',
     );
     try {
-      final res = await http.get(url, headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
+      final res = await http.get(url,
+          headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
       if (res.statusCode != 200) return [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final results = (data['results'] as List? ?? []);
@@ -475,7 +488,8 @@ class FreeApiService {
     final dd = d.day.toString().padLeft(2, '0');
     final url = Uri.parse('https://history.muffinlabs.com/date/$mm/$dd');
     try {
-      final res = await http.get(url, headers: {'Accept': 'application/json'}).timeout(_timeout);
+      final res = await http
+          .get(url, headers: {'Accept': 'application/json'}).timeout(_timeout);
       if (res.statusCode != 200) return [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final events = (data['data']?['Events'] as List? ?? []);
@@ -494,7 +508,8 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Liefert semantisch verwandte Begriffe zu [word] (kein API-Key).
-  Future<List<String>> fetchWordAssociations(String word, {int limit = 8}) async {
+  Future<List<String>> fetchWordAssociations(String word,
+      {int limit = 8}) async {
     final url = Uri.parse(
       'https://api.datamuse.com/words?ml=${Uri.encodeComponent(word)}&max=$limit',
     );
@@ -535,18 +550,22 @@ class FreeApiService {
   // 17. CrossRef — 165M+ DOIs, kein API-Key
   // ─────────────────────────────────────────────────────────────────────────
 
-  Future<List<CrossRefWork>> fetchCrossRefWorks(String query, {int limit = 15}) async {
+  Future<List<CrossRefWork>> fetchCrossRefWorks(String query,
+      {int limit = 15}) async {
     final url = Uri.parse(
       'https://api.crossref.org/works?query=${Uri.encodeComponent(query)}'
       '&rows=$limit&mailto=app@weltenbibliothek.de'
       '&select=title,author,published-print,DOI,publisher,is-referenced-by-count',
     );
     try {
-      final res = await http.get(url, headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
+      final res = await http.get(url,
+          headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
       if (res.statusCode != 200) return [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final items = (data['message']?['items'] as List? ?? []);
-      return items.map((i) => CrossRefWork.fromJson(i as Map<String, dynamic>)).toList();
+      return items
+          .map((i) => CrossRefWork.fromJson(i as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ CrossRef: $e');
       return [];
@@ -558,7 +577,8 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   Future<String?> fetchUnpaywallPdf(String doi) async {
-    final url = Uri.parse('https://api.unpaywall.org/v2/${Uri.encodeComponent(doi)}?email=app@weltenbibliothek.de');
+    final url = Uri.parse(
+        'https://api.unpaywall.org/v2/${Uri.encodeComponent(doi)}?email=app@weltenbibliothek.de');
     try {
       final res = await http.get(url).timeout(_timeout);
       if (res.statusCode != 200) return null;
@@ -814,7 +834,7 @@ class WikidataRelation {
   final String sourceId;
   final String targetId;
   final String targetLabel;
-  final String propertyId;   // 'P361','P463',...
+  final String propertyId; // 'P361','P463',...
   final String propertyLabel; // 'Teil von','Mitglied von',...
 
   const WikidataRelation({
@@ -865,8 +885,10 @@ class DonkiEvent {
   String get intensityLabel {
     if (note == null) return 'Unbekannt';
     final n = note!.toLowerCase();
-    if (n.contains('x-class') || n.contains('x1') || n.contains('extreme')) return 'X-Klasse (Extrem)';
-    if (n.contains('m-class') || n.contains('m1') || n.contains('strong')) return 'M-Klasse (Stark)';
+    if (n.contains('x-class') || n.contains('x1') || n.contains('extreme'))
+      return 'X-Klasse (Extrem)';
+    if (n.contains('m-class') || n.contains('m1') || n.contains('strong'))
+      return 'M-Klasse (Stark)';
     if (n.contains('c-class')) return 'C-Klasse (Mittel)';
     return 'Gemessen';
   }
@@ -1068,10 +1090,10 @@ class PubChemResult {
   });
 
   factory PubChemResult.fromJson(Map<String, dynamic> j) => PubChemResult(
-    cid: j['CID'] as int? ?? 0,
-    formula: j['MolecularFormula'] as String? ?? '',
-    iupacName: j['IUPACName'] as String? ?? '',
-  );
+        cid: j['CID'] as int? ?? 0,
+        formula: j['MolecularFormula'] as String? ?? '',
+        iupacName: j['IUPACName'] as String? ?? '',
+      );
 }
 
 // ─── CrossRef Work ────────────────────────────────────────────────────────────
@@ -1095,7 +1117,9 @@ class CrossRefWork {
 
   factory CrossRefWork.fromJson(Map<String, dynamic> j) {
     final titleList = j['title'] as List?;
-    final title = (titleList != null && titleList.isNotEmpty) ? titleList[0] as String : '';
+    final title = (titleList != null && titleList.isNotEmpty)
+        ? titleList[0] as String
+        : '';
 
     final authorList = j['author'] as List? ?? [];
     final authors = authorList

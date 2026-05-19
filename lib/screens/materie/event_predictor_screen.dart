@@ -273,8 +273,7 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border:
-                  Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: TextField(
               controller: _searchController,
@@ -308,8 +307,7 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
         const SizedBox(height: 12),
         Expanded(
           child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: _accent))
+              ? const Center(child: CircularProgressIndicator(color: _accent))
               : (_filteredPredictions?.isEmpty ?? true)
                   ? Center(
                       child: Text('Keine Vorhersagen gefunden',
@@ -336,8 +334,7 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
         label: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 14, color: sel ? Colors.white : Colors.white70),
+            Icon(icon, size: 14, color: sel ? Colors.white : Colors.white70),
             const SizedBox(width: 4),
             Text(label),
           ],
@@ -387,8 +384,8 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
                         fontWeight: FontWeight.bold)),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(10),
@@ -402,12 +399,10 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
           const SizedBox(height: 10),
           Row(
             children: [
-              const Icon(Icons.access_time,
-                  color: Colors.white70, size: 14),
+              const Icon(Icons.access_time, color: Colors.white70, size: 14),
               const SizedBox(width: 6),
               Text(pred['timeframe'],
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 12)),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
             ],
           ),
           const SizedBox(height: 12),
@@ -442,9 +437,7 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
                       const SizedBox(height: 4),
                       Text(pred['alternativePerspektive'],
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              height: 1.4)),
+                              color: Colors.white, fontSize: 12, height: 1.4)),
                     ],
                   ),
                 ),
@@ -543,8 +536,7 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
             const SizedBox(height: 12),
             const Text(
               'Synthese aus Mustern und Indikatoren:',
-              style:
-                  TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(color: Colors.white70, fontSize: 12),
             ),
             const SizedBox(height: 10),
             Text(
@@ -560,8 +552,7 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.amber.withValues(alpha: 0.1),
-                border:
-                    Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
@@ -637,11 +628,13 @@ class _LiveIndicatorsTabState extends State<_LiveIndicatorsTab>
   Future<void> _load() async {
     setState(() => _loading = true);
     final results = await Future.wait<dynamic>([
-      _api.fetchGdeltEvents(query: 'crisis OR election OR conflict')
+      _api
+          .fetchGdeltEvents(query: 'crisis OR election OR conflict')
           .catchError((_) => <GdeltArticle>[]),
       _api.fetchEarthquakes(period: 'week').catchError((_) => <Earthquake>[]),
       _api.fetchDonkiEvents(daysBack: 7).catchError((_) => <DonkiEvent>[]),
-      _api.fetchGuardianNews('forecast', limit: 10)
+      _api
+          .fetchGuardianNews('forecast', limit: 10)
           .catchError((_) => <GuardianArticle>[]),
     ]);
     if (!mounted) return;
@@ -722,7 +715,8 @@ class _LiveIndicatorsTabState extends State<_LiveIndicatorsTab>
         final q = _quakes[i];
         return _tile(
             title: '${q.magnitudeLabel} M${q.magnitude.toStringAsFixed(1)}',
-            subtitle: '${q.place} - ${q.time.toIso8601String().substring(0, 16)}',
+            subtitle:
+                '${q.place} - ${q.time.toIso8601String().substring(0, 16)}',
             url: q.url,
             icon: Icons.terrain,
             color: q.magnitude >= 7
@@ -789,19 +783,16 @@ class _LiveIndicatorsTabState extends State<_LiveIndicatorsTab>
         title: Text(title,
             style: const TextStyle(color: Colors.white, fontSize: 13)),
         subtitle: Text(subtitle,
-            style:
-                const TextStyle(color: Colors.white60, fontSize: 11)),
+            style: const TextStyle(color: Colors.white60, fontSize: 11)),
         trailing: url == null
             ? null
-            : const Icon(Icons.open_in_new,
-                color: Colors.white38, size: 16),
+            : const Icon(Icons.open_in_new, color: Colors.white38, size: 16),
         onTap: url == null
             ? null
             : () async {
                 final uri = Uri.parse(url);
                 if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri,
-                      mode: LaunchMode.externalApplication);
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
                 }
               },
       ),
@@ -942,12 +933,12 @@ class _CommunityVotingTabState extends State<_CommunityVotingTab> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(r['id'] as String,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13)),
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 13)),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -997,8 +988,9 @@ class _ArchivTabState extends State<_ArchivTab> {
           .limit(50);
       if (!mounted) return;
       setState(() {
-        _outcomes =
-            (res as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _outcomes = (res as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
         _loading = false;
       });
     } catch (_) {
@@ -1083,8 +1075,8 @@ class _ArchivTabState extends State<_ArchivTab> {
                 if (o['notes'] != null) ...[
                   const SizedBox(height: 6),
                   Text(o['notes'].toString(),
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ],
             ),

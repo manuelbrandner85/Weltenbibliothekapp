@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
 // ⚡ PERFORMANCE HELPER
 import 'knowledge_reader_mode.dart';
 
 /// 🔍 ERWEITERTE SUCHE MIT FILTER & SORTIERUNG
-/// 
+///
 /// Features:
 /// - Volltext-Suche (Titel, Beschreibung, Tags, Content)
 /// - Multi-Category Filter
@@ -16,23 +16,24 @@ import 'knowledge_reader_mode.dart';
 class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
   final String world;
   final UnifiedKnowledgeService _knowledgeService = UnifiedKnowledgeService();
-  
+
   // Filter & Sort State
   final Set<String> _selectedCategories = {};
-  String _sortBy = 'relevance'; // relevance, newest, oldest, popular, az, readtime
-  
-  AdvancedSearchDelegate({required this.world}) : super(
-    searchFieldLabel: 'Suche in $world...',
-    searchFieldStyle: const TextStyle(fontSize: 16),
-  );
+  String _sortBy =
+      'relevance'; // relevance, newest, oldest, popular, az, readtime
+
+  AdvancedSearchDelegate({required this.world})
+      : super(
+          searchFieldLabel: 'Suche in $world...',
+          searchFieldStyle: const TextStyle(fontSize: 16),
+        );
 
   @override
   ThemeData appBarTheme(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final worldColor = world == 'materie' 
-        ? const Color(0xFF1E88E5) 
-        : const Color(0xFF7E57C2);
+    final worldColor =
+        world == 'materie' ? const Color(0xFF1E88E5) : const Color(0xFF7E57C2);
 
     return theme.copyWith(
       appBarTheme: AppBarTheme(
@@ -68,7 +69,7 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
           },
           tooltip: 'Löschen',
         ),
-      
+
       // Filter button
       IconButton(
         icon: Badge(
@@ -79,7 +80,7 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
         onPressed: () => _showFilterDialog(context),
         tooltip: 'Filter',
       ),
-      
+
       // Sort button
       PopupMenuButton<String>(
         icon: const Icon(Icons.sort),
@@ -119,14 +120,13 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
         }
 
         final history = snapshot.data!;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Quick Category Filters
-            if (_selectedCategories.isEmpty)
-              _buildQuickFilters(context),
-            
+            if (_selectedCategories.isEmpty) _buildQuickFilters(context),
+
             // Search History
             if (query.isEmpty && history.isNotEmpty) ...[
               Padding(
@@ -134,27 +134,27 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
                 child: Text(
                   'Letzte Suchen',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ),
               ...history.map((term) => ListTile(
-                leading: const Icon(Icons.history),
-                title: Text(term),
-                trailing: IconButton(
-                  icon: const Icon(Icons.arrow_upward, size: 20),
-                  onPressed: () {
-                    query = term;
-                    showResults(context);
-                  },
-                ),
-                onTap: () {
-                  query = term;
-                  showResults(context);
-                },
-              )),
+                    leading: const Icon(Icons.history),
+                    title: Text(term),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.arrow_upward, size: 20),
+                      onPressed: () {
+                        query = term;
+                        showResults(context);
+                      },
+                    ),
+                    onTap: () {
+                      query = term;
+                      showResults(context);
+                    },
+                  )),
             ],
-            
+
             // Popular Searches
             if (query.isEmpty && history.isEmpty)
               _buildPopularSearches(context),
@@ -167,7 +167,8 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
   @override
   Widget buildResults(BuildContext context) {
     if (query.isEmpty && _selectedCategories.isEmpty) {
-      return _buildEmptyState(context, 'Gib einen Suchbegriff ein oder wähle einen Filter.');
+      return _buildEmptyState(
+          context, 'Gib einen Suchbegriff ein oder wähle einen Filter.');
     }
 
     // Save to history
@@ -187,11 +188,11 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
         }
 
         final results = snapshot.data ?? [];
-        
+
         if (results.isEmpty) {
           return _buildEmptyState(
             context,
-            query.isNotEmpty 
+            query.isNotEmpty
                 ? 'Keine Ergebnisse für "$query"'
                 : 'Keine Einträge in den gewählten Kategorien',
           );
@@ -238,7 +239,7 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
                 ],
               ),
             ),
-            
+
             // Results list
             Expanded(
               child: ListView.builder(
@@ -256,30 +257,32 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
 
   Future<List<KnowledgeEntry>> _performSearch() async {
     await _knowledgeService.init();
-    
+
     // Get all entries for this world
-    List<KnowledgeEntry> entries = await _knowledgeService.getAllEntries(world: world);
-    
+    List<KnowledgeEntry> entries =
+        await _knowledgeService.getAllEntries(world: world);
+
     // Filter by categories
     if (_selectedCategories.isNotEmpty) {
-      entries = entries.where((e) => 
-        _selectedCategories.contains(e.category)
-      ).toList();
+      entries = entries
+          .where((e) => _selectedCategories.contains(e.category))
+          .toList();
     }
-    
+
     // Search in text
     if (query.isNotEmpty) {
       final searchLower = query.toLowerCase();
       entries = entries.where((e) {
         final titleMatch = e.title.toLowerCase().contains(searchLower);
         final descMatch = e.description.toLowerCase().contains(searchLower);
-        final tagsMatch = e.tags.any((tag) => tag.toLowerCase().contains(searchLower));
+        final tagsMatch =
+            e.tags.any((tag) => tag.toLowerCase().contains(searchLower));
         final contentMatch = e.fullContent.toLowerCase().contains(searchLower);
-        
+
         return titleMatch || descMatch || tagsMatch || contentMatch;
       }).toList();
     }
-    
+
     // Sort
     switch (_sortBy) {
       case 'newest':
@@ -295,14 +298,15 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
         entries.sort((a, b) => a.title.compareTo(b.title));
         break;
       case 'readtime':
-        entries.sort((a, b) => a.readingTimeMinutes.compareTo(b.readingTimeMinutes));
+        entries.sort(
+            (a, b) => a.readingTimeMinutes.compareTo(b.readingTimeMinutes));
         break;
       case 'relevance':
       default:
         // Keep search relevance order
         break;
     }
-    
+
     return entries;
   }
 
@@ -363,7 +367,8 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(entry.category).withValues(alpha: 0.2),
+                  color:
+                      _getCategoryColor(entry.category).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -406,8 +411,8 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
           Text(
             'Quick-Filter',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -449,8 +454,8 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
           Text(
             'Beliebte Suchen',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 12),
           Wrap(

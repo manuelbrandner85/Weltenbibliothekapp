@@ -22,11 +22,25 @@ import '../services/livekit_call_service.dart';
 /// Pro Welt eine eigene Mischung — Energie eher esoterisch,
 /// Materie eher kraftvoll/wissenschaftlich.
 const List<String> kEnergieReactions = [
-  '✨', '💜', '🙏', '🕊️', '🪷', '🔮', '🌙', '⭐',
+  '✨',
+  '💜',
+  '🙏',
+  '🕊️',
+  '🪷',
+  '🔮',
+  '🌙',
+  '⭐',
 ];
 
 const List<String> kMaterieReactions = [
-  '🔥', '💪', '🚀', '👁️', '⚡', '🛸', '🧠', '🌍',
+  '🔥',
+  '💪',
+  '🚀',
+  '👁️',
+  '⚡',
+  '🛸',
+  '🧠',
+  '🌍',
 ];
 
 class LiveKitReactionsOverlay extends StatefulWidget {
@@ -112,7 +126,8 @@ class _FloatingEmojiData {
 class _FloatingEmoji extends StatefulWidget {
   final _FloatingEmojiData data;
   final VoidCallback onComplete;
-  const _FloatingEmoji({super.key, required this.data, required this.onComplete});
+  const _FloatingEmoji(
+      {super.key, required this.data, required this.onComplete});
 
   @override
   State<_FloatingEmoji> createState() => _FloatingEmojiState();
@@ -168,9 +183,8 @@ class _FloatingEmojiState extends State<_FloatingEmoji>
             : 1.4 - ((t - 0.2) / 0.8) * 0.6; // 1.4 → 0.8
 
         // Opacity: in → halten → out
-        final opacity = t < 0.15
-            ? t / 0.15
-            : (t > 0.7 ? (1.0 - (t - 0.7) / 0.3) : 1.0);
+        final opacity =
+            t < 0.15 ? t / 0.15 : (t > 0.7 ? (1.0 - (t - 0.7) / 0.3) : 1.0);
 
         return Positioned(
           left: x - 24,

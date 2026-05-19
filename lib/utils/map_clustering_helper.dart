@@ -1,6 +1,6 @@
 /// 🗺️ MAP CLUSTERING HELPER
 /// Wiederverwendbare Marker-Clustering Funktionalität für flutter_map
-/// 
+///
 /// Features:
 /// - Automatisches Clustering bei vielen Markern
 /// - Zoom-responsive Cluster-Größen
@@ -30,7 +30,7 @@ class MapClusteringHelper {
         padding: const EdgeInsets.all(50),
         maxZoom: 15,
         markers: markers,
-        
+
         // Cluster-Builder: Zeigt Anzahl der Marker
         builder: (context, markers) {
           return Container(
@@ -57,16 +57,18 @@ class MapClusteringHelper {
             ),
           );
         },
-        
+
         // Popup beim Tap auf Cluster (optional)
-        onClusterTap: showPopup ? (cluster) {
-          // Könnte hier einen Dialog öffnen mit Liste der Marker
-          debugPrint('Cluster tapped: ${cluster.markers.length} markers');
-        } : null,
+        onClusterTap: showPopup
+            ? (cluster) {
+                // Könnte hier einen Dialog öffnen mit Liste der Marker
+                debugPrint('Cluster tapped: ${cluster.markers.length} markers');
+              }
+            : null,
       ),
     );
   }
-  
+
   /// Erstellt Marker mit einheitlichem Styling
   static Marker createMarker({
     required LatLng point,
@@ -88,7 +90,7 @@ class MapClusteringHelper {
       ),
     );
   }
-  
+
   /// Standard-Marker-Icon mit Farbe und Icon
   static Widget createMarkerIcon({
     required IconData icon,
@@ -114,7 +116,7 @@ class MapClusteringHelper {
       ),
     );
   }
-  
+
   /// Berechnet optimalen MaxClusterRadius basierend auf Marker-Anzahl
   static int calculateOptimalClusterRadius(int markerCount) {
     if (markerCount < 10) return 0; // Kein Clustering
@@ -123,32 +125,32 @@ class MapClusteringHelper {
     if (markerCount < 500) return 100;
     return 120; // Sehr viele Marker
   }
-  
+
   /// Gruppiert Marker nach Typ für verschiedene Cluster-Farben
   static Map<String, List<Marker>> groupMarkersByType(
     List<Marker> markers,
     String Function(Marker) typeExtractor,
   ) {
     final Map<String, List<Marker>> grouped = {};
-    
+
     for (final marker in markers) {
       final type = typeExtractor(marker);
       grouped.putIfAbsent(type, () => []).add(marker);
     }
-    
+
     return grouped;
   }
-  
+
   /// Standard-Farben für verschiedene Marker-Typen
   static const Map<String, Color> typeColors = {
-    'energie': Color(0xFF9C27B0),      // Lila
-    'materie': Color(0xFF2196F3),      // Blau
-    'wichtig': Color(0xFFFF5722),      // Rot
-    'neutral': Color(0xFF9E9E9E),      // Grau
-    'positiv': Color(0xFF4CAF50),      // Grün
-    'warning': Color(0xFFFF9800),      // Orange
+    'energie': Color(0xFF9C27B0), // Lila
+    'materie': Color(0xFF2196F3), // Blau
+    'wichtig': Color(0xFFFF5722), // Rot
+    'neutral': Color(0xFF9E9E9E), // Grau
+    'positiv': Color(0xFF4CAF50), // Grün
+    'warning': Color(0xFFFF9800), // Orange
   };
-  
+
   /// Holt Farbe basierend auf Typ
   static Color getColorForType(String type) {
     return typeColors[type.toLowerCase()] ?? typeColors['neutral']!;

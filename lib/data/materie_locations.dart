@@ -3,10 +3,10 @@ import '../models/materie_location_detail.dart';
 import '../models/location_category.dart';
 
 /// Materie Location Data
-/// 
+///
 /// Enthält alle 100+ Location-Markierungen für die Materie-Weltkarte.
 /// Ausgelagert aus materie_karte_tab_pro.dart für bessere Wartbarkeit.
-/// 
+///
 /// Kategorien:
 /// - Antike Zivilisationen (10.000 Jahre Geschichte)
 /// - Geopolitik & Deep State
@@ -17,21 +17,31 @@ import '../models/location_category.dart';
 
 final List<MaterieLocationDetail> allMaterieLocations = [
   // 🏛️ ANTIKE ZIVILISATIONEN (10.000 Jahre Geschichte!)
-  
+
   MaterieLocationDetail(
     name: 'Göbekli Tepe - Ältester Tempel',
-    description: 'Älteste bekannte megalithische Tempelanlage der Welt (ca. 9600 v.Chr.)',
-    detailedInfo: '''OFFIZIELL: Göbekli Tepe in der heutigen Türkei ist die älteste bekannte Tempelanlage der Menschheit. Erbaut um 9600 v.Chr., noch vor der Erfindung der Landwirtschaft. Monumentale T-förmige Steinpfeiler mit Tierreliefs. Archäologische Sensation - widerlegt bisherige Theorien zur Zivilisationsentwicklung.
+    description:
+        'Älteste bekannte megalithische Tempelanlage der Welt (ca. 9600 v.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL: Göbekli Tepe in der heutigen Türkei ist die älteste bekannte Tempelanlage der Menschheit. Erbaut um 9600 v.Chr., noch vor der Erfindung der Landwirtschaft. Monumentale T-förmige Steinpfeiler mit Tierreliefs. Archäologische Sensation - widerlegt bisherige Theorien zur Zivilisationsentwicklung.
 
 ALTERNATIVE: Manche Forscher spekulieren über fortgeschrittene prähistorische Zivilisationen. Astronomische Ausrichtungen der Pfeiler. Mögliche Verbindung zu Atlantis-Legenden. Frage: Wer baute solche Monumentalbauten vor der Sesshaftwerdung?
 
 BEWEISE: Klaus Schmidt Ausgrabungen (1995-2014); Radiokarbondatierung bestätigt 9600 v.Chr.; T-Pfeiler bis 5,5m hoch, 10 Tonnen schwer; komplexe Tierreliefs (Füchse, Schlangen, Skorpione); keine Siedlungsspuren - reine Kultstätte; 20+ Steinkreise entdeckt.''',
     position: const LatLng(37.2233, 38.9225),
     category: LocationCategory.ancientCivilizations,
-    keywords: ['Göbekli Tepe', 'Steinzeit', 'Megalithen', 'Türkei', 'Neolithikum', 'Tempel'],
+    keywords: [
+      'Göbekli Tepe',
+      'Steinzeit',
+      'Megalithen',
+      'Türkei',
+      'Neolithikum',
+      'Tempel'
+    ],
     date: DateTime(-9600, 1, 1),
-    imageUrls: ['https://www.genspark.ai/api/files/s/oPY0luBZ?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/oPY0luBZ?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/G%C3%B6bekli_Tepe%2C_Urfa.jpg/1200px-G%C3%B6bekli_Tepe%2C_Urfa.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Gobekli_Tepe_pillar.jpg/800px-Gobekli_Tepe_pillar.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Göbekli_Tepe_excavation.jpg/1200px-Göbekli_Tepe_excavation.jpg',
@@ -46,11 +56,13 @@ BEWEISE: Klaus Schmidt Ausgrabungen (1995-2014); Radiokarbondatierung bestätigt
       'UNESCO World Heritage Nomination (2018) - 150 Seiten',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Stonehenge Megalithen',
-    description: 'Prähistorisches Monument mit astronomischer Bedeutung (ca. 3000-2000 v.Chr.)',
-    detailedInfo: '''OFFIZIELL: Stonehenge wurde zwischen 3000-2000 v.Chr. in mehreren Phasen erbaut. Monumentale Steinkreise mit Sarsen-Steinen (bis 25 Tonnen) und Blausteinen (aus Wales, 240km entfernt). Astronomische Ausrichtung zur Sommersonnenwende. UNESCO Weltkulturerbe.
+    description:
+        'Prähistorisches Monument mit astronomischer Bedeutung (ca. 3000-2000 v.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL: Stonehenge wurde zwischen 3000-2000 v.Chr. in mehreren Phasen erbaut. Monumentale Steinkreise mit Sarsen-Steinen (bis 25 Tonnen) und Blausteinen (aus Wales, 240km entfernt). Astronomische Ausrichtung zur Sommersonnenwende. UNESCO Weltkulturerbe.
 
 ALTERNATIVE: Mögliche Ley-Line-Kreuzung. Energiezentrum der Antike. Heilstätte und astronomisches Observatorium. Fragezeichen über Transport der Blausteine. Stonehenge als Teil eines größeren megalithischen Netzwerks in Großbritannien.
 
@@ -59,8 +71,9 @@ BEWEISE: Radiokarbondatierung 3000-2000 v.Chr.; Sarsen-Steine 25 Tonnen; Blauste
     category: LocationCategory.ancientCivilizations,
     keywords: ['Stonehenge', 'England', 'Megalithen', 'Druiden', 'Astronomie'],
     date: DateTime(-3000, 1, 1),
-    imageUrls: ['https://www.genspark.ai/api/files/s/hTwsqNWv?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/hTwsqNWv?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Stonehenge2007_07_30.jpg/1200px-Stonehenge2007_07_30.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Stonehenge_Closeup.jpg/1200px-Stonehenge_Closeup.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Stonehenge_Summer_Solstice.jpg/1200px-Stonehenge_Summer_Solstice.jpg',
@@ -75,21 +88,30 @@ BEWEISE: Radiokarbondatierung 3000-2000 v.Chr.; Sarsen-Steine 25 Tonnen; Blauste
       'Radiokarbondatierung English Heritage (1995-2008)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Große Pyramide von Gizeh',
     description: 'Einziges erhaltenes Weltwunder der Antike (ca. 2560 v.Chr.)',
-    detailedInfo: '''OFFIZIELL: Die Cheops-Pyramide wurde um 2560 v.Chr. als Grabmal für Pharao Cheops erbaut. Höhe ursprünglich 146,6m. Ca. 2,3 Millionen Steinblöcke (durchschnittlich 2,5 Tonnen). Bauzeit laut Herodot: 20 Jahre. Präzise astronomische Ausrichtung. UNESCO Weltkulturerbe.
+    detailedInfo:
+        '''OFFIZIELL: Die Cheops-Pyramide wurde um 2560 v.Chr. als Grabmal für Pharao Cheops erbaut. Höhe ursprünglich 146,6m. Ca. 2,3 Millionen Steinblöcke (durchschnittlich 2,5 Tonnen). Bauzeit laut Herodot: 20 Jahre. Präzise astronomische Ausrichtung. UNESCO Weltkulturerbe.
 
 ALTERNATIVE: Technologie-Rätsel: Wie wurden Millionen Tonnen Steine ohne moderne Werkzeuge bewegt? Innere Hohlräume noch unentdeckt? Mögliche Energiemaschine (Pyramiden-Energie-Theorien). Präzision deutet auf fortgeschrittenes Wissen hin. Alternative Datierung?
 
 BEWEISE: Radiokarbondatierung ~2550 v.Chr.; 2,3 Millionen Steinblöcke; Präzision: Abweichung <1%; Königskammer aus Granit (800km Transport); vier Luftschächte; Pyramidion (Spitze) fehlt; Teil der Pyramiden von Gizeh (Cheops, Chephren, Mykerinos).''',
     position: const LatLng(29.9792, 31.1342),
     category: LocationCategory.ancientCivilizations,
-    keywords: ['Gizeh', 'Pyramiden', 'Ägypten', 'Cheops', 'Pharao', 'Weltwunder'],
+    keywords: [
+      'Gizeh',
+      'Pyramiden',
+      'Ägypten',
+      'Cheops',
+      'Pharao',
+      'Weltwunder'
+    ],
     date: DateTime(-2560, 1, 1),
-    imageUrls: ['https://www.genspark.ai/api/files/s/Jf0BCsdJ?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/Jf0BCsdJ?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/All_Gizah_Pyramids.jpg/1200px-All_Gizah_Pyramids.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Kheops-Pyramid.jpg/1200px-Kheops-Pyramid.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Great_Pyramid_of_Giza_Interior.jpg/800px-Great_Pyramid_of_Giza_Interior.jpg',
@@ -104,21 +126,30 @@ BEWEISE: Radiokarbondatierung ~2550 v.Chr.; 2,3 Millionen Steinblöcke; Präzisi
       'Egyptian Antiquities Organization Excavation Reports (1880-2020)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Untergang von Atlantis',
-    description: 'Legendäre versunkene Zivilisation nach Platon (ca. 9600 v.Chr.)',
-    detailedInfo: '''OFFIZIELL (PLATON): Platon beschrieb Atlantis in "Timaios" und "Kritias" (ca. 360 v.Chr.). Fortgeschrittene Inselzivilisation westlich der "Säulen des Herakles" (Gibraltar). Untergang durch Katastrophe "in einem Tag und einer Nacht". Moderne Wissenschaft: Möglicherweise Allegorie oder Erinnerung an Thera-Eruption (Santorin).
+    description:
+        'Legendäre versunkene Zivilisation nach Platon (ca. 9600 v.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL (PLATON): Platon beschrieb Atlantis in "Timaios" und "Kritias" (ca. 360 v.Chr.). Fortgeschrittene Inselzivilisation westlich der "Säulen des Herakles" (Gibraltar). Untergang durch Katastrophe "in einem Tag und einer Nacht". Moderne Wissenschaft: Möglicherweise Allegorie oder Erinnerung an Thera-Eruption (Santorin).
 
 ALTERNATIVE: Echte versunkene Hochzivilisation. Mögliche Standorte: Azoren, Antarktis, Karibik. Atlantis als Ursprung späterer Kulturen (Ägypten, Sumerer). Fortgeschrittene Technologie verloren. Verbindung zu anderen Sintflut-Mythen weltweit.
 
 BEWEISE: Platon Dialoge "Timaios" & "Kritias" (360 v.Chr.); keine archäologischen Beweise; Thera-Eruption ~1600 v.Chr. (Santorin); weltweite Sintflut-Mythen; Bimini Road (Bahamas) kontrovers; Richat-Struktur (Mauretanien) als Kandidat.''',
     position: const LatLng(36.4, -25.5),
     category: LocationCategory.ancientCivilizations,
-    keywords: ['Atlantis', 'Platon', 'Versunkene Zivilisation', 'Azoren', 'Santorin'],
+    keywords: [
+      'Atlantis',
+      'Platon',
+      'Versunkene Zivilisation',
+      'Azoren',
+      'Santorin'
+    ],
     date: DateTime(-9600, 1, 1),
-    imageUrls: ['https://www.genspark.ai/api/files/s/Jybe15oz?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/Jybe15oz?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Atlantis_map_Kircher_1669.jpg/1200px-Atlantis_map_Kircher_1669.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Santorini_Landsat.jpg/1200px-Santorini_Landsat.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Richat_Structure.jpg/1200px-Richat_Structure.jpg',
@@ -133,21 +164,31 @@ BEWEISE: Platon Dialoge "Timaios" & "Kritias" (360 v.Chr.); keine archäologisch
       'Graham Hancock: "Underworld" (2002) - Versunkene Zivilisationen',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Sumerische Zivilisation - Uruk',
-    description: 'Erste Hochkultur der Menschheit in Mesopotamien (ca. 4000 v.Chr.)',
-    detailedInfo: '''OFFIZIELL: Sumer in Mesopotamien (heute Irak) gilt als erste Hochkultur. Entstehung um 4000 v.Chr. Erfindung der Keilschrift (~3200 v.Chr.). Stadt Uruk war das erste urbane Zentrum (50.000 Einwohner). Entwicklung von Recht, Verwaltung, Astronomie, Mathematik.
+    description:
+        'Erste Hochkultur der Menschheit in Mesopotamien (ca. 4000 v.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL: Sumer in Mesopotamien (heute Irak) gilt als erste Hochkultur. Entstehung um 4000 v.Chr. Erfindung der Keilschrift (~3200 v.Chr.). Stadt Uruk war das erste urbane Zentrum (50.000 Einwohner). Entwicklung von Recht, Verwaltung, Astronomie, Mathematik.
 
 ALTERNATIVE: Sumerer behaupteten, Wissen von "Göttern" (Anunnaki) erhalten zu haben. Plötzliches Auftauchen fortgeschrittener Zivilisation ohne Vorstufen. Astronomische Kenntnisse (Planeten, Präzession) erstaunlich präzise. Verbindung zu Alien-Theorien (Zecharia Sitchin).
 
 BEWEISE: Keilschrift-Tafeln 3200 v.Chr.; Uruk größte Stadt der Welt (~3000 v.Chr.); Gilgamesch-Epos; Ur Königsgräber (2600 v.Chr.); Ziggurat von Ur; Sumerische Königsliste; mathematisches Sexagesimalsystem (Basis 60); astronomische Tafeln mit Planetenbahnen.''',
     position: const LatLng(31.3242, 45.6364),
     category: LocationCategory.ancientCivilizations,
-    keywords: ['Sumer', 'Mesopotamien', 'Keilschrift', 'Uruk', 'Anunnaki', 'Gilgamesch'],
+    keywords: [
+      'Sumer',
+      'Mesopotamien',
+      'Keilschrift',
+      'Uruk',
+      'Anunnaki',
+      'Gilgamesch'
+    ],
     date: DateTime(-4000, 1, 1),
-    imageUrls: ['https://www.genspark.ai/api/files/s/575YEhXB?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/575YEhXB?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Uruk_archaeological_site.jpg/1200px-Uruk_archaeological_site.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Cuneiform_script2.jpg/1200px-Cuneiform_script2.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Ziggurat_of_Ur_001.jpg/1200px-Ziggurat_of_Ur_001.jpg',
@@ -162,13 +203,15 @@ BEWEISE: Keilschrift-Tafeln 3200 v.Chr.; Uruk größte Stadt der Welt (~3000 v.C
       'Jean Bottéro: "Mesopotamia: Writing, Reasoning, and the Gods" (1992)',
     ],
   ),
-  
+
   // 🕉️ RELIGIONEN & SPIRITUALITÄT
-  
+
   MaterieLocationDetail(
     name: 'Exodus aus Ägypten',
-    description: 'Biblischer Auszug der Israeliten unter Moses (ca. 1300 v.Chr.)',
-    detailedInfo: '''OFFIZIELL (BIBEL): Der Exodus beschreibt die Befreiung der Israeliten aus ägyptischer Sklaverei durch Moses. 10 Plagen zwingen Pharao zur Freilassung. Teilung des Roten Meeres. 40 Jahre Wüstenwanderung. Empfang der 10 Gebote am Berg Sinai. Zentrales Ereignis des Judentums.
+    description:
+        'Biblischer Auszug der Israeliten unter Moses (ca. 1300 v.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL (BIBEL): Der Exodus beschreibt die Befreiung der Israeliten aus ägyptischer Sklaverei durch Moses. 10 Plagen zwingen Pharao zur Freilassung. Teilung des Roten Meeres. 40 Jahre Wüstenwanderung. Empfang der 10 Gebote am Berg Sinai. Zentrales Ereignis des Judentums.
 
 ALTERNATIVE/HISTORISCH: Archäologische Beweise umstritten. Keine ägyptischen Aufzeichnungen über Massenflucht. Mögliche historische Basis: Hyksos-Vertreibung (~1550 v.Chr.) oder kleinere Emigrationswellen. Theologische vs. historische Interpretation.
 
@@ -177,8 +220,9 @@ BEWEISE: Torah/Altes Testament (Exodus-Buch); keine ägyptischen Quellen; archä
     category: LocationCategory.religion,
     keywords: ['Exodus', 'Moses', 'Ägypten', 'Bibel', 'Sinai', 'Zehn Gebote'],
     date: DateTime(-1300, 1, 1),
-    imageUrls: ['https://www.genspark.ai/api/files/s/ySdzMiYf?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/ySdzMiYf?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Foster_Bible_Pictures_0074-1_The_Israelites_Leaving_Egypt.jpg/1200px-Foster_Bible_Pictures_0074-1_The_Israelites_Leaving_Egypt.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Mount_Sinai.jpg/1200px-Mount_Sinai.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Ten_Commandments_tablets.jpg/800px-Ten_Commandments_tablets.jpg',
@@ -193,11 +237,13 @@ BEWEISE: Torah/Altes Testament (Exodus-Buch); keine ägyptischen Quellen; archä
       'William G. Dever: "What Did the Biblical Writers Know?" (2001)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Geburt Buddha - Lumbini',
-    description: 'Geburt von Siddhartha Gautama, Begründer des Buddhismus (ca. 563 v.Chr.)',
-    detailedInfo: '''OFFIZIELL: Siddhartha Gautama wurde als Prinz in Lumbini (Nepal) geboren. Verließ mit 29 Jahren den Palast, suchte Erleuchtung. Erlangung der Erleuchtung unter Bodhi-Baum in Bodh Gaya (ca. 528 v.Chr.). Gründung des Buddhismus. 45 Jahre Lehrtätigkeit. Tod mit 80 Jahren.
+    description:
+        'Geburt von Siddhartha Gautama, Begründer des Buddhismus (ca. 563 v.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL: Siddhartha Gautama wurde als Prinz in Lumbini (Nepal) geboren. Verließ mit 29 Jahren den Palast, suchte Erleuchtung. Erlangung der Erleuchtung unter Bodhi-Baum in Bodh Gaya (ca. 528 v.Chr.). Gründung des Buddhismus. 45 Jahre Lehrtätigkeit. Tod mit 80 Jahren.
 
 SPIRITUELL: Buddhas Lehren: Vier Edle Wahrheiten, Achtfacher Pfad. Konzepte: Karma, Wiedergeburt, Nirvana. Verbreitung in ganz Asien. Heute über 500 Millionen Buddhisten weltweit. Verschiedene Schulen (Theravada, Mahayana, Vajrayana).
 
@@ -206,8 +252,9 @@ BEWEISE: Ashoka-Säule in Lumbini (249 v.Chr., UNESCO Weltkulturerbe); Pali-Kano
     category: LocationCategory.religion,
     keywords: ['Buddha', 'Buddhismus', 'Lumbini', 'Erleuchtung', 'Nepal'],
     date: DateTime(-563, 1, 1),
-    imageUrls: ['https://www.genspark.ai/api/files/s/m1bTOcsd?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/m1bTOcsd?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Lumbini_birthplace_of_Buddha.jpg/1200px-Lumbini_birthplace_of_Buddha.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Buddha_statue_Bodhgaya.jpg/800px-Buddha_statue_Bodhgaya.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Ashoka_Pillar_Lumbini.jpg/800px-Ashoka_Pillar_Lumbini.jpg',
@@ -222,21 +269,30 @@ BEWEISE: Ashoka-Säule in Lumbini (249 v.Chr., UNESCO Weltkulturerbe); Pali-Kano
       'Archäologische Ausgrabungen Lumbini (1896-2013)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Kreuzigung Jesu Christi',
-    description: 'Kreuzigung und Auferstehung von Jesus Christus (ca. 33 n.Chr.)',
-    detailedInfo: '''OFFIZIELL (CHRISTLICH): Jesus von Nazareth wurde unter Pontius Pilatus in Jerusalem gekreuzigt (ca. 30-33 n.Chr.). Auferstehung nach drei Tagen. Gründung des Christentums. Apostel verbreiten Lehre. Heute größte Weltreligion (2,4 Milliarden Christen).
+    description:
+        'Kreuzigung und Auferstehung von Jesus Christus (ca. 33 n.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL (CHRISTLICH): Jesus von Nazareth wurde unter Pontius Pilatus in Jerusalem gekreuzigt (ca. 30-33 n.Chr.). Auferstehung nach drei Tagen. Gründung des Christentums. Apostel verbreiten Lehre. Heute größte Weltreligion (2,4 Milliarden Christen).
 
 HISTORISCH: Außerchristliche Quellen bestätigen Existenz (Tacitus, Josephus). Kreuzigung als römische Hinrichtungsmethode belegt. Datierung: unter Pilatus (26-36 n.Chr.), wahrscheinlich 30 oder 33 n.Chr. Auferstehung Glaubensfrage, keine historischen Beweise.
 
 BEWEISE: Evangelien (Matthäus, Markus, Lukas, Johannes, ca. 70-100 n.Chr.); Tacitus "Annalen" (116 n.Chr.); Josephus "Antiquitates" (93 n.Chr.); Paulusbriefe (ab 50 n.Chr.); Grabtuch von Turin (umstritten); archäologische Funde in Jerusalem (Kreuzigungsnägel).''',
     position: const LatLng(31.7683, 35.2137),
     category: LocationCategory.religion,
-    keywords: ['Jesus', 'Christentum', 'Kreuzigung', 'Jerusalem', 'Auferstehung'],
+    keywords: [
+      'Jesus',
+      'Christentum',
+      'Kreuzigung',
+      'Jerusalem',
+      'Auferstehung'
+    ],
     date: DateTime(33, 4, 3),
-    imageUrls: ['https://www.genspark.ai/api/files/s/vZXarQFh?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/vZXarQFh?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Jerusalem_Holy_Sepulchre_BW_19.JPG/1200px-Jerusalem_Holy_Sepulchre_BW_19.JPG',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Christ_Carrying_the_Cross_1580.jpg/800px-Christ_Carrying_the_Cross_1580.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Golgotha_Jerusalem.jpg/1200px-Golgotha_Jerusalem.jpg',
@@ -251,11 +307,13 @@ BEWEISE: Evangelien (Matthäus, Markus, Lukas, Johannes, ca. 70-100 n.Chr.); Tac
       'Bart D. Ehrman: "Did Jesus Exist?" HarperOne (2012) - 405 Seiten',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Offenbarung Mohammed - Mekka',
-    description: 'Erste Offenbarung des Korans an den Propheten Mohammed (610 n.Chr.)',
-    detailedInfo: '''OFFIZIELL (ISLAM): Mohammed erhielt 610 n.Chr. in der Höhle Hira bei Mekka die erste Offenbarung durch Erzengel Gabriel. Beginn der Verkündung des Islam. Hidschra (Auswanderung nach Medina) 622 n.Chr. markiert Beginn islamischer Zeitrechnung. Tod 632 n.Chr. Heute 1,9 Milliarden Muslime weltweit.
+    description:
+        'Erste Offenbarung des Korans an den Propheten Mohammed (610 n.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL (ISLAM): Mohammed erhielt 610 n.Chr. in der Höhle Hira bei Mekka die erste Offenbarung durch Erzengel Gabriel. Beginn der Verkündung des Islam. Hidschra (Auswanderung nach Medina) 622 n.Chr. markiert Beginn islamischer Zeitrechnung. Tod 632 n.Chr. Heute 1,9 Milliarden Muslime weltweit.
 
 HISTORISCH: Mohammed historische Person, archäologisch belegt. Frühe islamische Quellen: Koran (ab 610 n.Chr.), Hadith-Sammlungen (ab 9. Jh.). Rasche Expansion des Islam nach Mohammeds Tod. Eroberung Arabiens, Persiens, Nordafrikas innerhalb weniger Jahrzehnte.
 
@@ -263,8 +321,9 @@ BEWEISE: Koran (Sammlung unter Kalif Uthman, 650 n.Chr.); Hadith-Sammlungen (Buk
     position: const LatLng(21.4225, 39.8262),
     category: LocationCategory.religion,
     keywords: ['Mohammed', 'Islam', 'Koran', 'Mekka', 'Offenbarung', 'Prophet'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/Ye99UeDb?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/Ye99UeDb?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Masjid_al-Haram_aerial_view.jpg/1200px-Masjid_al-Haram_aerial_view.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Hira_cave_-_Flickr.jpg/1200px-Hira_cave_-_Flickr.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Quran_manuscript_8th_century.jpg/800px-Quran_manuscript_8th_century.jpg',
@@ -279,11 +338,13 @@ BEWEISE: Koran (Sammlung unter Kalif Uthman, 650 n.Chr.); Hadith-Sammlungen (Buk
       'UNESCO World Heritage: Historische Stätten in Mekka & Medina',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Ermordung Julius Caesar',
-    description: 'Attentat auf Julius Caesar im römischen Senat (15. März 44 v.Chr.)',
-    detailedInfo: '''OFFIZIELL: Julius Caesar wurde am 15. März 44 v.Chr. (Iden des März) im Theater des Pompeius von einer Gruppe Senatoren ermordet. Angeführt von Marcus Brutus und Cassius Longinus. 23 Messerstiche. Caesars letzte Worte laut Sueton: "Et tu, Brute?" (Auch du, Brutus?). Beginn der Bürgerkriege, die zur Gründung des Römischen Kaiserreichs führten.
+    description:
+        'Attentat auf Julius Caesar im römischen Senat (15. März 44 v.Chr.)',
+    detailedInfo:
+        '''OFFIZIELL: Julius Caesar wurde am 15. März 44 v.Chr. (Iden des März) im Theater des Pompeius von einer Gruppe Senatoren ermordet. Angeführt von Marcus Brutus und Cassius Longinus. 23 Messerstiche. Caesars letzte Worte laut Sueton: "Et tu, Brute?" (Auch du, Brutus?). Beginn der Bürgerkriege, die zur Gründung des Römischen Kaiserreichs führten.
 
 VERSCHWÖRUNG: Ca. 60 Senatoren beteiligt. Motiv: Angst vor Diktatur und Königswerdung Caesars. Politische Intrigen zwischen Optimaten und Popularen. Brutus als idealistischer Tyrannenmörder vs. politischer Opportunist. Folgen: Machtvakuum, Aufstieg Octavians (Augustus).
 
@@ -292,8 +353,9 @@ BEWEISE: Sueton "De Vita Caesarum" (121 n.Chr.); Plutarch "Bioi Paralleloi" (ca.
     category: LocationCategory.assassinations,
     keywords: ['Caesar', 'Rom', 'Senat', 'Brutus', 'Iden des März', 'Attentat'],
     date: DateTime(-44, 3, 15),
-    imageUrls: ['https://www.genspark.ai/api/files/s/VBaBIs3B?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/VBaBIs3B?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Death_of_Caesar_by_Vincenzo_Camuccini.jpg/1200px-Death_of_Caesar_by_Vincenzo_Camuccini.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Julius_Caesar_Coustou_Louvre_MR1798.jpg/800px-Julius_Caesar_Coustou_Louvre_MR1798.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Roman_Forum_Ruins.jpg/1200px-Roman_Forum_Ruins.jpg',
@@ -308,13 +370,15 @@ BEWEISE: Sueton "De Vita Caesarum" (121 n.Chr.); Plutarch "Bioi Paralleloi" (ca.
       'Archäologische Ausgrabungen Forum Romanum (1788-2024)',
     ],
   ),
-  
+
   // 🏛️ REVOLUTIONEN & NEUZEIT
-  
+
   MaterieLocationDetail(
     name: 'Französische Revolution',
-    description: 'Sturm auf die Bastille - Beginn der Französischen Revolution (14. Juli 1789)',
-    detailedInfo: '''OFFIZIELL: Am 14. Juli 1789 stürmten Pariser Bürger die Bastille-Festung, Symbol königlicher Willkür. Auslöser: Wirtschaftskrise, Hungersnöte, politische Repression. Forderungen: Freiheit, Gleichheit, Brüderlichkeit. Abschaffung der Monarchie (1792). Hinrichtung Ludwig XVI. (1793). Terrorherrschaft unter Robespierre. Aufstieg Napoleons.
+    description:
+        'Sturm auf die Bastille - Beginn der Französischen Revolution (14. Juli 1789)',
+    detailedInfo:
+        '''OFFIZIELL: Am 14. Juli 1789 stürmten Pariser Bürger die Bastille-Festung, Symbol königlicher Willkür. Auslöser: Wirtschaftskrise, Hungersnöte, politische Repression. Forderungen: Freiheit, Gleichheit, Brüderlichkeit. Abschaffung der Monarchie (1792). Hinrichtung Ludwig XVI. (1793). Terrorherrschaft unter Robespierre. Aufstieg Napoleons.
 
 REVOLUTION: Grundlegende Umwälzung der Gesellschaftsordnung. Ende des Absolutismus in Europa. Erklärung der Menschen- und Bürgerrechte (1789). Enteignung der Kirche. Erste moderne Republik. Vorbild für spätere Revolutionen weltweit.
 
@@ -323,8 +387,9 @@ BEWEISE: Sturm auf Bastille 14. Juli 1789 (heute Nationalfeiertag); "Déclaratio
     category: LocationCategory.revolution,
     keywords: ['Revolution', 'Frankreich', 'Bastille', 'Aufklärung', '1789'],
     date: DateTime(1789, 7, 14),
-    imageUrls: ['https://www.genspark.ai/api/files/s/QDKsOrn3?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/QDKsOrn3?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Prise_de_la_Bastille.jpg/1200px-Prise_de_la_Bastille.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Declaration_of_the_Rights_of_Man_and_of_the_Citizen.jpg/800px-Declaration_of_the_Rights_of_Man_and_of_the_Citizen.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Execution_of_Louis_XVI.jpg/1200px-Execution_of_Louis_XVI.jpg',
@@ -339,11 +404,12 @@ BEWEISE: Sturm auf Bastille 14. Juli 1789 (heute Nationalfeiertag); "Déclaratio
       'Eric Hobsbawm: "The Age of Revolution" (1962) - 416 Seiten',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Amerikanische Unabhängigkeit',
     description: 'Unabhängigkeitserklärung der USA (4. Juli 1776)',
-    detailedInfo: '''OFFIZIELL: Am 4. Juli 1776 verabschiedete der Kontinentalkongress in Philadelphia die Unabhängigkeitserklärung. Hauptautor: Thomas Jefferson. 13 britische Kolonien erklären Trennung von Großbritannien. "Life, Liberty and the pursuit of Happiness". Amerikanischer Unabhängigkeitskrieg (1775-1783). Sieg bei Yorktown 1781. USA als erste moderne Demokratie.
+    detailedInfo:
+        '''OFFIZIELL: Am 4. Juli 1776 verabschiedete der Kontinentalkongress in Philadelphia die Unabhängigkeitserklärung. Hauptautor: Thomas Jefferson. 13 britische Kolonien erklären Trennung von Großbritannien. "Life, Liberty and the pursuit of Happiness". Amerikanischer Unabhängigkeitskrieg (1775-1783). Sieg bei Yorktown 1781. USA als erste moderne Demokratie.
 
 REVOLUTION: Erste erfolgreiche Kolonialrevolution. Ideen der Aufklärung (Locke, Montesquieu) in Praxis umgesetzt. Gewaltenteilung, Checks & Balances. Bill of Rights (1791). Vorbild für spätere Demokratien. Widerspruch: Sklaverei existiert weiter bis 1865.
 
@@ -352,8 +418,9 @@ BEWEISE: Unabhängigkeitserklärung 4. Juli 1776 (Originalurkunde in Washington 
     category: LocationCategory.revolution,
     keywords: ['USA', 'Unabhängigkeit', 'Philadelphia', 'Declaration', '1776'],
     date: DateTime(1776, 7, 4),
-    imageUrls: ['https://www.genspark.ai/api/files/s/Qr4HnbNx?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/Qr4HnbNx?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Declaration_independence.jpg/1200px-Declaration_independence.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/United_States_Declaration_of_Independence.jpg/1200px-United_States_Declaration_of_Independence.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Independence_Hall_Assembly_Room.jpg/1200px-Independence_Hall_Assembly_Room.jpg',
@@ -368,11 +435,12 @@ BEWEISE: Unabhängigkeitserklärung 4. Juli 1776 (Originalurkunde in Washington 
       'Treaty of Paris (1783) - Offizielle Anerkennung der Unabhängigkeit',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Gutenberg Druckerpresse',
     description: 'Erfindung des Buchdrucks mit beweglichen Lettern (ca. 1440)',
-    detailedInfo: '''OFFIZIELL: Johannes Gutenberg erfand um 1440 in Mainz den modernen Buchdruck mit beweglichen Metalllettern. Erste gedruckte Bibel (Gutenberg-Bibel, ca. 1455). Revolution der Informationsverbreitung. Wissen für Massen zugänglich. Voraussetzung für Reformation, Aufklärung, wissenschaftliche Revolution.
+    detailedInfo:
+        '''OFFIZIELL: Johannes Gutenberg erfand um 1440 in Mainz den modernen Buchdruck mit beweglichen Metalllettern. Erste gedruckte Bibel (Gutenberg-Bibel, ca. 1455). Revolution der Informationsverbreitung. Wissen für Massen zugänglich. Voraussetzung für Reformation, Aufklärung, wissenschaftliche Revolution.
 
 TECHNOLOGIE: Kombination aus Metallguss, Druckerpresse (Weinpresse-Prinzip), ölbasierter Druckfarbe. Pro Tag 300-3.600 Seiten möglich (vs. Handschrift: 1-2 Seiten). Gutenberg-Bibel: 180 Exemplare (48 erhalten). Verbreitung in Europa innerhalb weniger Jahrzehnte.
 
@@ -380,8 +448,9 @@ BEWEISE: Gutenberg-Bibel (ca. 1455, 48 erhaltene Exemplare); Straßburger Gerich
     position: const LatLng(50.0, 8.2711),
     category: LocationCategory.technology,
     keywords: ['Gutenberg', 'Buchdruck', 'Mainz', 'Revolution', 'Bibel'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/PxpY6FGn?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/PxpY6FGn?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Gutenberg_Bible.jpg/800px-Gutenberg_Bible.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Gutenberg_press.jpg/1200px-Gutenberg_press.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Gutenberg.jpg/800px-Gutenberg.jpg',
@@ -396,21 +465,31 @@ BEWEISE: Gutenberg-Bibel (ca. 1455, 48 erhaltene Exemplare); Straßburger Gerich
       'Stephan Füssel: "Gutenberg and the Impact of Printing" Routledge (2005)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Erster Weltkrieg Beginn',
-    description: 'Beginn des Ersten Weltkriegs nach Attentat auf Franz Ferdinand (1914)',
-    detailedInfo: '''OFFIZIELL: Am 28. Juni 1914 wurde Erzherzog Franz Ferdinand in Sarajevo von Gavrilo Princip erschossen. Österreich-Ungarn stellt Ultimatum an Serbien. Ablehnung führt zu Kriegserklärung (28. Juli 1914). Bündnissysteme führen zu Kettenreaktion. Erster Weltkrieg: 17 Millionen Tote. Ende 1918 mit Versailler Vertrag.
+    description:
+        'Beginn des Ersten Weltkriegs nach Attentat auf Franz Ferdinand (1914)',
+    detailedInfo:
+        '''OFFIZIELL: Am 28. Juni 1914 wurde Erzherzog Franz Ferdinand in Sarajevo von Gavrilo Princip erschossen. Österreich-Ungarn stellt Ultimatum an Serbien. Ablehnung führt zu Kriegserklärung (28. Juli 1914). Bündnissysteme führen zu Kettenreaktion. Erster Weltkrieg: 17 Millionen Tote. Ende 1918 mit Versailler Vertrag.
 
 URSACHEN: Imperialismus, Nationalismus, Bündnissysteme, Rüstungswettlauf. "Juli-Krise" 1914. Deutschland unterstützt Österreich ("Blankoscheck"). Russland mobilisiert für Serbien. Deutschland erklärt Frankreich & Russland Krieg. Britisches Eingreifen nach Belgien-Invasion.
 
 BEWEISE: Attentat Sarajevo 28. Juni 1914; Österreichisches Ultimatum 23. Juli; Kriegserklärungen Juli-August 1914; Schlieffen-Plan (deutsche Kriegsstrategie); Bündnisverträge (Dreibund, Entente); Versailler Vertrag 1919; Kriegsarchive aller beteiligten Nationen.''',
     position: const LatLng(44.8176, 20.4564),
     category: LocationCategory.wars,
-    keywords: ['WW1', 'Sarajevo', 'Gavrilo Princip', 'Attentat', '1914', 'Weltkrieg'],
+    keywords: [
+      'WW1',
+      'Sarajevo',
+      'Gavrilo Princip',
+      'Attentat',
+      '1914',
+      'Weltkrieg'
+    ],
     date: DateTime(1914, 7, 28),
-    imageUrls: ['https://www.genspark.ai/api/files/s/BTzHP7Gl?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/BTzHP7Gl?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Gavrilo_Princip_captured_in_Sarajevo_1914.jpg/1200px-Gavrilo_Princip_captured_in_Sarajevo_1914.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/WWI_Trench_Warfare.jpg/1200px-WWI_Trench_Warfare.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Archduke_Franz_Ferdinand_and_Sophie_before_assassination.jpg/1200px-Archduke_Franz_Ferdinand_and_Sophie_before_assassination.jpg',
@@ -425,11 +504,12 @@ BEWEISE: Attentat Sarajevo 28. Juni 1914; Österreichisches Ultimatum 23. Juli; 
       'Margaret MacMillan: "The War That Ended Peace" Random House (2013)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Hiroshima Atombombe',
     description: 'Erster Atombombenabwurf auf Hiroshima (6. August 1945)',
-    detailedInfo: '''OFFIZIELL: Am 6. August 1945 warf die USA die Atombombe "Little Boy" über Hiroshima ab. 70.000-80.000 Tote sofort. Bis Ende 1945: 140.000 Tote. Zweite Bombe auf Nagasaki am 9. August (70.000 Tote). Japan kapituliert am 15. August 1945. Ende des Zweiten Weltkriegs.
+    detailedInfo:
+        '''OFFIZIELL: Am 6. August 1945 warf die USA die Atombombe "Little Boy" über Hiroshima ab. 70.000-80.000 Tote sofort. Bis Ende 1945: 140.000 Tote. Zweite Bombe auf Nagasaki am 9. August (70.000 Tote). Japan kapituliert am 15. August 1945. Ende des Zweiten Weltkriegs.
 
 KONTROVERSE: War Atombombe militärisch notwendig? Alternative: Japanische Kapitulation stand bevor. Sowjetische Kriegserklärung (8. August) als Faktor. Demonstration der Macht gegenüber Sowjetunion? Ethische Debatte über zivile Opfer.
 
@@ -438,8 +518,9 @@ BEWEISE: Abwurf 6. August 1945, 8:15 Uhr; Enola Gay (B-29 Bomber); Manhattan Pro
     category: LocationCategory.wars,
     keywords: ['Hiroshima', 'Atombombe', 'Japan', 'Manhattan Project', 'WW2'],
     date: DateTime(1945, 8, 6),
-    imageUrls: ['https://www.genspark.ai/api/files/s/UIaxERGc?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/UIaxERGc?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Atomic_cloud_over_Hiroshima.jpg/1200px-Atomic_cloud_over_Hiroshima.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Hiroshima_aftermath.jpg/1200px-Hiroshima_aftermath.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Atomic_Dome_Hiroshima.jpg/1200px-Atomic_Dome_Hiroshima.jpg',
@@ -454,12 +535,14 @@ BEWEISE: Abwurf 6. August 1945, 8:15 Uhr; Enola Gay (B-29 Bomber); Manhattan Pro
       'Hibakusha Testimonies - Survivor Accounts (1945-2024)',
     ],
   ),
-  
+
   // EVENT 26: GUTENBERG DRUCKERPRESSE (1440)
   MaterieLocationDetail(
     name: 'Gutenberg Druckerpresse - Mainz',
-    description: 'Johannes Gutenberg erfindet den Buchdruck mit beweglichen Lettern (ca. 1440) - Revolution der Informationsverbreitung',
-    detailedInfo: '''Um 1440 revolutionierte Johannes Gutenberg in Mainz die Welt mit der Erfindung des Buchdrucks mit beweglichen Metall-Lettern. Diese Innovation ermöglichte die Massenproduktion von Büchern und leitete das Zeitalter der Informationsverbreitung ein.
+    description:
+        'Johannes Gutenberg erfindet den Buchdruck mit beweglichen Lettern (ca. 1440) - Revolution der Informationsverbreitung',
+    detailedInfo:
+        '''Um 1440 revolutionierte Johannes Gutenberg in Mainz die Welt mit der Erfindung des Buchdrucks mit beweglichen Metall-Lettern. Diese Innovation ermöglichte die Massenproduktion von Büchern und leitete das Zeitalter der Informationsverbreitung ein.
 
 📘 OFFIZIELLE VERSION:
 Gutenberg entwickelte eine Druckpresse mit austauschbaren Metall-Lettern, die wiederverwendet werden konnten. Die erste große Anwendung war die Gutenberg-Bibel (1452-1455), von der 180 Exemplare gedruckt wurden. Die Erfindung verbreitete sich schnell in ganz Europa: Bis 1500 existierten ca. 250 Druckereien in Europa, die über 20 Millionen Bücher produzierten. Der Buchdruck ermöglichte die Verbreitung von Wissen, wissenschaftlichen Erkenntnissen und religiösen Texten und war maßgeblich für die Renaissance und Reformation verantwortlich.
@@ -476,14 +559,24 @@ Gutenbergs Erfindung basierte möglicherweise auf ostasiatischen Techniken - Chi
 • Gutenberg starb 1468 in Armut - sein Partner Fust profitierte vom Erfolg''',
     position: LatLng(50.0012, 8.2737), // Mainz, Deutschland
     category: LocationCategory.technology,
-    keywords: ['Gutenberg', 'Buchdruck', 'Mainz', 'Renaissance', 'Information', 'Reformation'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/HRchkbKx?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    keywords: [
+      'Gutenberg',
+      'Buchdruck',
+      'Mainz',
+      'Renaissance',
+      'Information',
+      'Reformation'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/HRchkbKx?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/5/58/Gutenberg_Bible%2C_Lenox_Copy%2C_New_York_Public_Library%2C_2009._Pic_01.jpg', // Gutenberg-Bibel
       'https://upload.wikimedia.org/wikipedia/commons/3/33/PrintMus_038.jpg', // Gutenberg-Druckerpresse Replik
       'https://upload.wikimedia.org/wikipedia/commons/e/e6/Gutenberg.jpg', // Johannes Gutenberg Portrait
     ],
-    videoUrls: ['4ce8eb_17mU'], // ZDF Terra X: Gutenberg und der Buchdruck (Deutsch)
+    videoUrls: [
+      '4ce8eb_17mU'
+    ], // ZDF Terra X: Gutenberg und der Buchdruck (Deutsch)
     sources: [
       'Gutenberg-Museum Mainz - Original B-42 Bibel Exemplar',
       'New York Public Library - Lenox Copy der Gutenberg-Bibel',
@@ -493,12 +586,14 @@ Gutenbergs Erfindung basierte möglicherweise auf ostasiatischen Techniken - Chi
       'UNESCO Memory of the World Register: Gutenberg Bible (2001)',
     ],
   ),
-  
+
   // EVENT 27: NEWTON GRAVITATION (1687)
   MaterieLocationDetail(
     name: 'Newtons Gravitationsgesetz - Cambridge',
-    description: 'Isaac Newton veröffentlicht "Philosophiae Naturalis Principia Mathematica" (1687) - Grundlagen der klassischen Mechanik',
-    detailedInfo: '''1687 veröffentlichte Isaac Newton sein Hauptwerk "Philosophiae Naturalis Principia Mathematica", in dem er die drei Newtonschen Axiome und das universelle Gravitationsgesetz formulierte. Dieses Werk legte die Grundlagen der klassischen Mechanik und Physik für die nächsten 200 Jahre.
+    description:
+        'Isaac Newton veröffentlicht "Philosophiae Naturalis Principia Mathematica" (1687) - Grundlagen der klassischen Mechanik',
+    detailedInfo:
+        '''1687 veröffentlichte Isaac Newton sein Hauptwerk "Philosophiae Naturalis Principia Mathematica", in dem er die drei Newtonschen Axiome und das universelle Gravitationsgesetz formulierte. Dieses Werk legte die Grundlagen der klassischen Mechanik und Physik für die nächsten 200 Jahre.
 
 📘 OFFIZIELLE VERSION:
 Newton formulierte drei grundlegende Bewegungsgesetze und das universelle Gravitationsgesetz: F = G × (m1 × m2) / r². Diese Gesetze erklärten die Bewegung von Planeten, den freien Fall, Gezeiten und Kometen-Bahnen. Newton bewies, dass die gleichen Gesetze sowohl auf der Erde als auch im Weltraum gelten. Die "Principia" gilt als eines der wichtigsten wissenschaftlichen Werke aller Zeiten. Newton war auch ein brillanter Mathematiker und entwickelte die Infinitesimalrechnung (parallel zu Leibniz).
@@ -515,10 +610,18 @@ Die berühmte "Apfel-Geschichte" ist höchstwahrscheinlich eine Legende, die New
 • Newton als Warden der Royal Mint: Verfolgte Falschmünzer gnadenlos''',
     position: LatLng(52.2053, 0.1218), // Cambridge, England - Trinity College
     category: LocationCategory.science,
-    keywords: ['Newton', 'Gravitation', 'Physik', 'Cambridge', 'Principia', 'Mathematik'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/1CSj3Kjj?cache_control=3600', // 🎨 HYPERREALISTISCH
+    keywords: [
+      'Newton',
+      'Gravitation',
+      'Physik',
+      'Cambridge',
+      'Principia',
+      'Mathematik'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/1CSj3Kjj?cache_control=3600', // 🎨 HYPERREALISTISCH
       'https://www.genspark.ai/api/files/s/yqVLyikO?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+
       'https://upload.wikimedia.org/wikipedia/commons/b/b2/Prinicipia-title.png', // Principia Titelseite
       'https://upload.wikimedia.org/wikipedia/commons/3/3b/Portrait_of_Sir_Isaac_Newton%2C_1689.jpg', // Newton Portrait 1689
       'https://upload.wikimedia.org/wikipedia/commons/f/f7/Newtons_cradle_animation_book_2.gif', // Newtons Wiege (Impulserhaltung)
@@ -533,12 +636,14 @@ Die berühmte "Apfel-Geschichte" ist höchstwahrscheinlich eine Legende, die New
       'Royal Society Archives - Leibniz-Newton Prioritätsstreit Dokumente (1684-1716)',
     ],
   ),
-  
+
   // EVENT 28: DARWIN EVOLUTION (1859)
   MaterieLocationDetail(
     name: 'Darwins Evolutionstheorie - London',
-    description: 'Charles Darwin veröffentlicht "On the Origin of Species" (1859) - Theorie der natürlichen Selektion revolutioniert Biologie',
-    detailedInfo: '''Am 24. November 1859 veröffentlichte Charles Darwin sein bahnbrechendes Werk "On the Origin of Species", in dem er die Theorie der Evolution durch natürliche Selektion darlegte. Dieses Buch revolutionierte unser Verständnis des Lebens und löste heftige Debatten aus.
+    description:
+        'Charles Darwin veröffentlicht "On the Origin of Species" (1859) - Theorie der natürlichen Selektion revolutioniert Biologie',
+    detailedInfo:
+        '''Am 24. November 1859 veröffentlichte Charles Darwin sein bahnbrechendes Werk "On the Origin of Species", in dem er die Theorie der Evolution durch natürliche Selektion darlegte. Dieses Buch revolutionierte unser Verständnis des Lebens und löste heftige Debatten aus.
 
 📘 OFFIZIELLE VERSION:
 Darwin beobachtete während seiner 5-jährigen Reise auf der HMS Beagle (1831-1836) verschiedene Tier- und Pflanzenarten, insbesondere auf den Galapagos-Inseln. Er entwickelte die Theorie, dass alle Arten durch natürliche Selektion entstanden sind: Individuen mit vorteilhaften Eigenschaften überleben und pflanzen sich fort. Über lange Zeiträume führt dies zur Entstehung neuer Arten. Darwins Theorie wurde durch fossile Funde, vergleichende Anatomie und später durch Genetik bestätigt. Sie bildet die Grundlage der modernen Biologie.
@@ -553,12 +658,21 @@ Darwin zögerte 20 Jahre mit der Veröffentlichung seiner Theorie aus Angst vor 
 • Erste Ausgabe "On the Origin of Species" (1859) - 1.250 Exemplare, am ersten Tag ausverkauft
 • Darwin-Wallace Gemeinsame Präsentation bei der Linnean Society (1. Juli 1858)
 • Huxley-Wilberforce Debatte über Evolution (30. Juni 1860) - Oxford University''',
-    position: LatLng(51.5074, -0.1278), // London, England - Down House (Darwins Wohnort)
+    position: LatLng(
+        51.5074, -0.1278), // London, England - Down House (Darwins Wohnort)
     category: LocationCategory.science,
-    keywords: ['Darwin', 'Evolution', 'Biologie', 'Galapagos', 'Natürliche Selektion', 'HMS Beagle'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/szkMwJnu?cache_control=3600', // 🎨 HYPERREALISTISCH
+    keywords: [
+      'Darwin',
+      'Evolution',
+      'Biologie',
+      'Galapagos',
+      'Natürliche Selektion',
+      'HMS Beagle'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/szkMwJnu?cache_control=3600', // 🎨 HYPERREALISTISCH
       'https://www.genspark.ai/api/files/s/gQQtz0Su?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+
       'https://upload.wikimedia.org/wikipedia/commons/2/2e/Origin_of_Species_title_page.jpg', // Origin of Species Titelseite
       'https://upload.wikimedia.org/wikipedia/commons/1/1e/Charles_Darwin_1854.jpg', // Darwin 1854
       'https://upload.wikimedia.org/wikipedia/commons/e/e0/Geospiza_magnirostris_%28Darwin%27s_finch%29.jpg', // Galapagos-Fink
@@ -573,12 +687,14 @@ Darwin zögerte 20 Jahre mit der Veröffentlichung seiner Theorie aus Angst vor 
       'Linnean Society Archives - Darwin-Wallace Joint Paper (1. Juli 1858)',
     ],
   ),
-  
+
   // EVENT 29: EINSTEIN RELATIVITÄT (1905)
   MaterieLocationDetail(
     name: 'Einsteins Relativitätstheorie - Bern',
-    description: 'Albert Einstein veröffentlicht die Spezielle Relativitätstheorie (1905) - E=mc² revolutioniert Physik',
-    detailedInfo: '''1905 war Einsteins "Annus Mirabilis" (Wunderjahr): Der 26-jährige Patentamtsangestellte veröffentlichte vier bahnbrechende Arbeiten, darunter die Spezielle Relativitätstheorie mit der berühmten Formel E=mc². Diese Theorie revolutionierte unser Verständnis von Raum, Zeit, Masse und Energie.
+    description:
+        'Albert Einstein veröffentlicht die Spezielle Relativitätstheorie (1905) - E=mc² revolutioniert Physik',
+    detailedInfo:
+        '''1905 war Einsteins "Annus Mirabilis" (Wunderjahr): Der 26-jährige Patentamtsangestellte veröffentlichte vier bahnbrechende Arbeiten, darunter die Spezielle Relativitätstheorie mit der berühmten Formel E=mc². Diese Theorie revolutionierte unser Verständnis von Raum, Zeit, Masse und Energie.
 
 📘 OFFIZIELLE VERSION:
 Einstein postulierte zwei Prinzipien: 1) Die Lichtgeschwindigkeit ist konstant für alle Beobachter, und 2) Die Naturgesetze sind für alle Beobachter in Inertialsystemen gleich. Daraus folgte, dass Zeit und Raum relativ sind - bewegte Uhren gehen langsamer (Zeitdilatation) und bewegte Objekte schrumpfen (Längenkontraktion). Die Masse-Energie-Äquivalenz E=mc² zeigte, dass Masse und Energie austauschbar sind. 1915 erweiterte Einstein dies zur Allgemeinen Relativitätstheorie, die Gravitation als Krümmung der Raumzeit beschreibt. Beide Theorien wurden vielfach experimentell bestätigt (z.B. Sonnenfinsternis 1919, GPS-Satelliten, Gravitationswellen 2015).
@@ -595,15 +711,25 @@ Einstein war 1905 ein unbekannter Patentamtsbeamter in Bern - seine Theorien wur
 • LIGO Gravitationswellen-Detektion (2015) - Endgültige Bestätigung der Allgemeinen Relativität''',
     position: LatLng(46.9480, 7.4474), // Bern, Schweiz - Einsteins Wohnort 1905
     category: LocationCategory.science,
-    keywords: ['Einstein', 'Relativität', 'Physik', 'E=mc²', 'Bern', 'Quantenphysik'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/Gyj7wtFi?cache_control=3600', // 🎨 HYPERREALISTISCH
+    keywords: [
+      'Einstein',
+      'Relativität',
+      'Physik',
+      'E=mc²',
+      'Bern',
+      'Quantenphysik'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/Gyj7wtFi?cache_control=3600', // 🎨 HYPERREALISTISCH
       'https://www.genspark.ai/api/files/s/yV9ZfkoJ?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+
       'https://upload.wikimedia.org/wikipedia/commons/d/d3/Albert_Einstein_Head.jpg', // Einstein Portrait
       'https://upload.wikimedia.org/wikipedia/commons/f/f5/Einsteins_office_at_the_Patent_Office_in_Bern%2C_Switzerland.jpg', // Einsteins Patentamtbüro Bern
       'https://upload.wikimedia.org/wikipedia/commons/4/4f/E%3Dmc2.svg', // E=mc² Formel
     ],
-    videoUrls: ['7bw3C2M6tqw'], // ZDF: Einstein und die Relativitätstheorie (Deutsch)
+    videoUrls: [
+      '7bw3C2M6tqw'
+    ], // ZDF: Einstein und die Relativitätstheorie (Deutsch)
     sources: [
       'Einstein Archive Online - Digitale Sammlung von Einsteins Manuskripten und Briefen',
       'Annalen der Physik (1905) - Einsteins vier "Annus Mirabilis" Publikationen',
@@ -613,12 +739,14 @@ Einstein war 1905 ein unbekannter Patentamtsbeamter in Bern - seine Theorien wur
       'Arthur Eddington Sonnenfinsternis-Expedition Fotos (29. Mai 1919) - Royal Society',
     ],
   ),
-  
+
   // EVENT 30: DNA STRUKTUR (1953)
   MaterieLocationDetail(
     name: 'DNA Doppelhelix entdeckt - Cambridge',
-    description: 'Watson & Crick entdecken die DNA-Struktur (1953) - Grundlage der modernen Genetik und Biotechnologie',
-    detailedInfo: '''Am 25. April 1953 veröffentlichten James Watson und Francis Crick in der Zeitschrift "Nature" einen einseitigen Artikel, der die Doppelhelix-Struktur der DNA beschrieb. Diese Entdeckung revolutionierte die Biologie und legte den Grundstein für Genetik, Biotechnologie und Medizin.
+    description:
+        'Watson & Crick entdecken die DNA-Struktur (1953) - Grundlage der modernen Genetik und Biotechnologie',
+    detailedInfo:
+        '''Am 25. April 1953 veröffentlichten James Watson und Francis Crick in der Zeitschrift "Nature" einen einseitigen Artikel, der die Doppelhelix-Struktur der DNA beschrieb. Diese Entdeckung revolutionierte die Biologie und legte den Grundstein für Genetik, Biotechnologie und Medizin.
 
 📘 OFFIZIELLE VERSION:
 Watson und Crick nutzten Röntgenkristallographie-Daten und bauten ein physisches Modell der DNA-Struktur: Eine Doppelhelix mit Zucker-Phosphat-Rückgrat und komplementären Basenpaaren (Adenin-Thymin, Guanin-Cytosin) im Inneren. Die Struktur erklärte, wie genetische Information gespeichert, kopiert und weitergegeben wird. Watson, Crick und Maurice Wilkins erhielten 1962 den Nobelpreis für Physiologie oder Medizin. Die Entdeckung führte zur modernen Molekularbiologie, Gentechnik und dem Human Genome Project (2003).
@@ -633,12 +761,14 @@ Die wahre Heldin der DNA-Entdeckung war Rosalind Franklin, eine brillante Chemik
 • Rosalind Franklin starb 1958 (37 Jahre alt) - Kein Nobelpreis für sie
 • Nobelpreis 1962 für Watson, Crick, Wilkins - Franklin wurde übergangen
 • Watson "The Double Helix" (1968) - Kontroverse Darstellung von Franklin als "Rosy"''',
-    position: LatLng(52.2053, 0.1218), // Cambridge, England - Cavendish Laboratory
+    position:
+        LatLng(52.2053, 0.1218), // Cambridge, England - Cavendish Laboratory
     category: LocationCategory.science,
     keywords: ['DNA', 'Watson', 'Crick', 'Franklin', 'Genetik', 'Doppelhelix'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/ybhttWEk?cache_control=3600', // 🎨 HYPERREALISTISCH
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/ybhttWEk?cache_control=3600', // 🎨 HYPERREALISTISCH
       'https://www.genspark.ai/api/files/s/BXC66y7i?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+
       'https://upload.wikimedia.org/wikipedia/commons/d/d4/Photo_51.jpg', // Rosalind Franklins Photo 51
       'https://upload.wikimedia.org/wikipedia/commons/4/4c/DNA_Structure%2BKey%2BLabelled.pn_NoBB.png', // DNA Doppelhelix Modell
       'https://upload.wikimedia.org/wikipedia/commons/c/c1/Rosalind_Franklin.jpg', // Rosalind Franklin Portrait
@@ -653,12 +783,14 @@ Die wahre Heldin der DNA-Entdeckung war Rosalind Franklin, eine brillante Chemik
       'Lynne Osman Elkin: "Rosalind Franklin and the Double Helix" (2003) - Physics Today',
     ],
   ),
-  
+
   // EVENT 31: TUNGUSKA EXPLOSION (1908)
   MaterieLocationDetail(
     name: 'Tunguska Explosion - Sibirien',
-    description: 'Mysteriöse Explosion über Sibirien (30. Juni 1908) - 2.000 km² Wald zerstört, keine Krater',
-    detailedInfo: '''Am 30. Juni 1908 um 7:17 Uhr explodierte ein Objekt über dem dünn besiedelten Gebiet der Steinigen Tunguska in Sibirien. Die Explosion hatte die Kraft von 10-15 Megatonnen TNT (1.000x stärker als Hiroshima) und zerstörte 80 Millionen Bäume auf 2.000 km² - aber hinterließ keinen Einschlagskrater.
+    description:
+        'Mysteriöse Explosion über Sibirien (30. Juni 1908) - 2.000 km² Wald zerstört, keine Krater',
+    detailedInfo:
+        '''Am 30. Juni 1908 um 7:17 Uhr explodierte ein Objekt über dem dünn besiedelten Gebiet der Steinigen Tunguska in Sibirien. Die Explosion hatte die Kraft von 10-15 Megatonnen TNT (1.000x stärker als Hiroshima) und zerstörte 80 Millionen Bäume auf 2.000 km² - aber hinterließ keinen Einschlagskrater.
 
 📘 OFFIZIELLE VERSION (Meteoriten-Theorie):
 Ein Asteroid oder Komet mit einem Durchmesser von 50-100 Metern drang in die Erdatmosphäre ein und explodierte in 5-10 km Höhe über dem Boden (Luftexplosion). Die Druckwelle und Hitze verwüsteten das Gebiet, aber es gab keinen direkten Einschlag, daher keinen Krater. Seismographen weltweit registrierten die Explosion. Zeugen berichteten von einem blendenden Lichtblitz, gefolgt von einer gewaltigen Druckwelle. Expeditionen in den 1920er Jahren (Leonid Kulik) fanden umgestürzte Bäume in radialer Anordnung, aber kein Meteoritenmaterial.
@@ -675,9 +807,17 @@ Mehrere alternative Theorien existieren: 1) UFO-Absturz oder außerirdische Raum
 • Zeugenbericht: "Die Sonne schien zweimal an diesem Tag" (Augenzeugen 800 km entfernt)''',
     position: LatLng(60.8833, 101.8833), // Tunguska, Sibirien, Russland
     category: LocationCategory.disasters,
-    keywords: ['Tunguska', 'Explosion', 'Sibirien', 'Meteor', 'Mysterium', 'Katastrophe'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/bIljx3eB?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    keywords: [
+      'Tunguska',
+      'Explosion',
+      'Sibirien',
+      'Meteor',
+      'Mysterium',
+      'Katastrophe'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/bIljx3eB?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/c/c4/Tunguska_event_fallen_trees.jpg', // Umgestürzte Bäume Tunguska
       'https://upload.wikimedia.org/wikipedia/commons/1/15/Tunguska_Ereignis.png', // Karte der Explosion
       'https://upload.wikimedia.org/wikipedia/commons/2/2b/Kulik_expedition.jpg', // Leonid Kulik Expedition Foto 1927
@@ -692,12 +832,14 @@ Mehrere alternative Theorien existieren: 1) UFO-Absturz oder außerirdische Raum
       'Ewenken-Völker Oral Histories - Indigene Berichte über "Feurige Himmelsgötter"',
     ],
   ),
-  
+
   // EVENT 32: TITANIC UNTERGANG (1912)
   MaterieLocationDetail(
     name: 'Titanic Untergang - Nordatlantik',
-    description: 'RMS Titanic sinkt nach Eisberg-Kollision (15. April 1912) - 1.517 Tote, "unsinkbares Schiff"',
-    detailedInfo: '''In der Nacht vom 14. auf 15. April 1912 kollidierte die "unsinkbare" RMS Titanic auf ihrer Jungfernfahrt von Southampton nach New York mit einem Eisberg. Das größte Passagierschiff der Welt sank in nur 2 Stunden und 40 Minuten. Von 2.224 Menschen an Bord starben 1.517.
+    description:
+        'RMS Titanic sinkt nach Eisberg-Kollision (15. April 1912) - 1.517 Tote, "unsinkbares Schiff"',
+    detailedInfo:
+        '''In der Nacht vom 14. auf 15. April 1912 kollidierte die "unsinkbare" RMS Titanic auf ihrer Jungfernfahrt von Southampton nach New York mit einem Eisberg. Das größte Passagierschiff der Welt sank in nur 2 Stunden und 40 Minuten. Von 2.224 Menschen an Bord starben 1.517.
 
 📘 OFFIZIELLE VERSION:
 Die Titanic streifte um 23:40 Uhr einen Eisberg an der Steuerbordseite, der sechs Kompartimente unterhalb der Wasserlinie aufriss. Das Schiff war für maximal vier geflutete Kompartimente ausgelegt. Kapitän Edward Smith und Chefingenieur Thomas Andrews erkannten schnell, dass das Schiff sinken würde. Es gab nur 20 Rettungsboote für 2.224 Menschen (Platz für 1.178). Das Schiff sank um 2:20 Uhr. Die RMS Carpathia rettete 710 Überlebende. Hauptursachen: Zu hohe Geschwindigkeit (22,5 Knoten) trotz Eisbergwarnungen, unzureichende Rettungsboote, Fehlalarm der nahegelegenen SS Californian ignoriert.
@@ -714,14 +856,24 @@ Mehrere kontroverse Theorien: 1) Versicherungsbetrug: Die Titanic war in Wahrhei
 • SS Californian Logs: Nur 10-20 Meilen entfernt, ignorierte Notraketen''',
     position: LatLng(41.7325, -49.9469), // Titanic Wrack Position, Nordatlantik
     category: LocationCategory.disasters,
-    keywords: ['Titanic', 'Untergang', 'Eisberg', 'Katastrophe', 'J.P. Morgan', 'Verschwörung'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/7n5zUubs?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    keywords: [
+      'Titanic',
+      'Untergang',
+      'Eisberg',
+      'Katastrophe',
+      'J.P. Morgan',
+      'Verschwörung'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/7n5zUubs?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/f/fd/RMS_Titanic_3.jpg', // Titanic in Southampton 1912
       'https://upload.wikimedia.org/wikipedia/commons/1/10/Titanic_wreck_bow.jpg', // Titanic Wrack 1985
       'https://upload.wikimedia.org/wikipedia/commons/c/c4/Stöwer_Titanic.jpg', // Titanic Untergang Gemälde (Stöwer)
     ],
-    videoUrls: ['FSGeskFzE0s'], // ZDF History: Titanic - Die wahre Geschichte (Deutsch)
+    videoUrls: [
+      'FSGeskFzE0s'
+    ], // ZDF History: Titanic - Die wahre Geschichte (Deutsch)
     sources: [
       'Robert Ballard Wrack-Entdeckung (1. September 1985) - 3.800 m Tiefe',
       'British Wreck Commissioner\'s Inquiry Report (1912) - Offizielle Untersuchung',
@@ -731,12 +883,14 @@ Mehrere kontroverse Theorien: 1) Versicherungsbetrug: Die Titanic war in Wahrhei
       'Encyclopedia Titanica - Vollständige Passagier- und Besatzungsliste mit Schicksalen',
     ],
   ),
-  
+
   // EVENT 33: HINDENBURG KATASTROPHE (1937)
   MaterieLocationDetail(
     name: 'Hindenburg Katastrophe - Lakehurst',
-    description: 'Luftschiff Hindenburg explodiert bei der Landung (6. Mai 1937) - 36 Tote, Live im Radio übertragen',
-    detailedInfo: '''Am 6. Mai 1937 explodierte das größte jemals gebaute Luftschiff, die LZ 129 Hindenburg, bei der Landung in Lakehurst, New Jersey. Das mit Wasserstoff gefüllte Luftschiff ging in 34 Sekunden in Flammen auf. Von 97 Menschen an Bord starben 35 plus ein Bodenpersonal. Die Katastrophe wurde live im Radio übertragen und markierte das Ende der Luftschiff-Ära.
+    description:
+        'Luftschiff Hindenburg explodiert bei der Landung (6. Mai 1937) - 36 Tote, Live im Radio übertragen',
+    detailedInfo:
+        '''Am 6. Mai 1937 explodierte das größte jemals gebaute Luftschiff, die LZ 129 Hindenburg, bei der Landung in Lakehurst, New Jersey. Das mit Wasserstoff gefüllte Luftschiff ging in 34 Sekunden in Flammen auf. Von 97 Menschen an Bord starben 35 plus ein Bodenpersonal. Die Katastrophe wurde live im Radio übertragen und markierte das Ende der Luftschiff-Ära.
 
 📘 OFFIZIELLE VERSION:
 Die Hindenburg war auf einem Transatlantikflug von Frankfurt nach New York. Bei der Landung um 19:25 Uhr entzündete sich das Wasserstoffgas, vermutlich durch statische Elektrizität oder ein Leck. Das Feuer breitete sich blitzschnell aus - das gesamte Luftschiff verbrannte in 34 Sekunden. Reporter Herbert Morrison übertrug die Katastrophe live im Radio mit den berühmten Worten: "Oh, the humanity!" Die Untersuchung kam zu dem Schluss, dass elektrostatische Entladung oder Blitzschlag die Ursache war. Die Hindenburg war mit 7 Millionen Kubikfuß Wasserstoff gefüllt (hochexplosiv), da die USA Helium-Exporte nach Deutschland verboten hatten.
@@ -751,11 +905,20 @@ Mehrere Theorien deuten auf Sabotage: 1) Anti-Nazi-Sabotage: Das Luftschiff war 
 • US Commerce Department Untersuchung (1937) - Elektrostatische Entladung als Ursache
 • Wasserstoff statt Helium: USA verboten Helium-Export nach Deutschland (1936)
 • Addison Bain NASA-Forschung (1997): Lack entzündete sich zuerst, nicht Wasserstoff''',
-    position: LatLng(40.0328, -74.3238), // Lakehurst, New Jersey, USA - Naval Air Station
+    position: LatLng(
+        40.0328, -74.3238), // Lakehurst, New Jersey, USA - Naval Air Station
     category: LocationCategory.disasters,
-    keywords: ['Hindenburg', 'Luftschiff', 'Explosion', 'Katastrophe', 'Lakehurst', 'Nazi'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/iKN5H31o?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    keywords: [
+      'Hindenburg',
+      'Luftschiff',
+      'Explosion',
+      'Katastrophe',
+      'Lakehurst',
+      'Nazi'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/iKN5H31o?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/1/1c/Hindenburg_disaster.jpg', // Hindenburg Explosion Foto
       'https://upload.wikimedia.org/wikipedia/commons/6/6c/Hindenburg_at_lakehurst.jpg', // Hindenburg vor der Landung
       'https://upload.wikimedia.org/wikipedia/commons/9/94/Bundesarchiv_Bild_146-1978-043-28%2C_Lakehurst%2C_Explosion_des_Zeppelin_LZ_129.jpg', // Hindenburg Explosion Sequenz
@@ -770,12 +933,14 @@ Mehrere Theorien deuten auf Sabotage: 1) Anti-Nazi-Sabotage: Das Luftschiff war 
       'British Pathé Newsreel Footage (6. Mai 1937) - Original Filmaufnahmen der Katastrophe',
     ],
   ),
-  
+
   // EVENT 34: TSCHERNOBYL KATASTROPHE (1986)
   MaterieLocationDetail(
     name: 'Tschernobyl Reaktor-Katastrophe - Ukraine',
-    description: 'Reaktor 4 explodiert (26. April 1986) - Größte nukleare Katastrophe der Geschichte, radioaktive Wolke über Europa',
-    detailedInfo: '''In den frühen Morgenstunden des 26. April 1986 explodierte Reaktor 4 des Kernkraftwerks Tschernobyl während eines missglückten Sicherheitstests. Die Explosion setzte radioaktive Strahlung frei, die 400-mal stärker war als die Hiroshima-Bombe. Die radioaktive Wolke verbreitete sich über ganz Europa. Die Sowjetunion versuchte zunächst, die Katastrophe zu vertuschen.
+    description:
+        'Reaktor 4 explodiert (26. April 1986) - Größte nukleare Katastrophe der Geschichte, radioaktive Wolke über Europa',
+    detailedInfo:
+        '''In den frühen Morgenstunden des 26. April 1986 explodierte Reaktor 4 des Kernkraftwerks Tschernobyl während eines missglückten Sicherheitstests. Die Explosion setzte radioaktive Strahlung frei, die 400-mal stärker war als die Hiroshima-Bombe. Die radioaktive Wolke verbreitete sich über ganz Europa. Die Sowjetunion versuchte zunächst, die Katastrophe zu vertuschen.
 
 📘 OFFIZIELLE VERSION:
 Um 1:23 Uhr explodierte Reaktor 4 während eines Tests der Notstromversorgung. Menschliches Versagen und Konstruktionsfehler führten zu einer unkontrollierten Kettenreaktion. Die Explosion zerstörte das Reaktorgebäude und setzte radioaktive Materialien frei. 31 Menschen starben sofort oder innerhalb weniger Wochen (meist Feuerwehrleute und Kraftwerksarbeiter). 350.000 Menschen wurden evakuiert. Die Sowjetunion mobilisierte 600.000 "Liquidatoren" zur Eindämmung. Die 30-km-Sperrzone existiert bis heute. Die WHO schätzt langfristig bis zu 4.000 zusätzliche Krebstote.
@@ -792,9 +957,17 @@ Massive sowjetische Vertuschung: Die Katastrophe wurde erst 36 Stunden später �
 • New Safe Confinement (2016): 1,5 Milliarden Euro Stahlbogen über Reaktor 4''',
     position: LatLng(51.3886, 30.0996), // Tschernobyl, Ukraine - Reaktor 4
     category: LocationCategory.disasters,
-    keywords: ['Tschernobyl', 'Reaktor', 'Nuklear', 'Katastrophe', 'Radioaktiv', 'Sowjetunion'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/sJY751PZ?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    keywords: [
+      'Tschernobyl',
+      'Reaktor',
+      'Nuklear',
+      'Katastrophe',
+      'Radioaktiv',
+      'Sowjetunion'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/sJY751PZ?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/2/23/Chernobyl_Disaster.jpg', // Reaktor 4 nach Explosion
       'https://upload.wikimedia.org/wikipedia/commons/9/9a/Chernobyl_radiation_map_1996.svg', // Radioaktivität-Karte Europa
       'https://upload.wikimedia.org/wikipedia/commons/0/00/Pripyat_abandoned_city.jpg', // Verlassene Stadt Pripyat
@@ -809,12 +982,14 @@ Massive sowjetische Vertuschung: Die Katastrophe wurde erst 36 Stunden später �
       'New Safe Confinement (2016) - 1,5 Milliarden Euro Stahlbogen über Reaktor 4',
     ],
   ),
-  
+
   // EVENT 35: FUKUSHIMA KATASTROPHE (2011)
   MaterieLocationDetail(
     name: 'Fukushima Nuklearkatastrophe - Japan',
-    description: 'Tōhoku Erdbeben und Tsunami zerstören Fukushima Dai-ichi Kraftwerk (11. März 2011) - Dreifach-Kernschmelze',
-    detailedInfo: '''Am 11. März 2011 löste ein Erdbeben der Stärke 9,1 vor der Küste Japans einen verheerenden Tsunami aus. Die bis zu 15 Meter hohen Wellen überfluteten das Kernkraftwerk Fukushima Dai-ichi, führten zu Stromausfällen und schließlich zur Kernschmelze in drei Reaktoren - die größte nukleare Katastrophe seit Tschernobyl.
+    description:
+        'Tōhoku Erdbeben und Tsunami zerstören Fukushima Dai-ichi Kraftwerk (11. März 2011) - Dreifach-Kernschmelze',
+    detailedInfo:
+        '''Am 11. März 2011 löste ein Erdbeben der Stärke 9,1 vor der Küste Japans einen verheerenden Tsunami aus. Die bis zu 15 Meter hohen Wellen überfluteten das Kernkraftwerk Fukushima Dai-ichi, führten zu Stromausfällen und schließlich zur Kernschmelze in drei Reaktoren - die größte nukleare Katastrophe seit Tschernobyl.
 
 📘 OFFIZIELLE VERSION:
 Das Tōhoku-Erdbeben (9,1) um 14:46 Uhr löste einen Tsunami mit bis zu 40 Meter hohen Wellen aus. Das Fukushima Dai-ichi Kraftwerk wurde von 15-Meter-Wellen getroffen, die die Notstromaggregate fluteten. Ohne Kühlung kam es in den Reaktoren 1, 2 und 3 zur Kernschmelze. Wasserstoff-Explosionen zerstörten die Gebäude der Reaktoren 1, 3 und 4. Radioaktives Material wurde freigesetzt. 160.000 Menschen wurden evakuiert. Der Unfall wurde als Level 7 (höchste Stufe) eingestuft, genau wie Tschernobyl. Die Dekontamination und Bergung wird Jahrzehnte dauern.
@@ -831,14 +1006,24 @@ Massive Vertuschung durch Betreiber TEPCO (Tokyo Electric Power Company): TEPCO 
 • Radioaktives Wasser ins Meer geleitet - Millionen Liter kontaminiert Pazifik''',
     position: LatLng(37.4213, 141.0325), // Fukushima Dai-ichi, Japan
     category: LocationCategory.disasters,
-    keywords: ['Fukushima', 'Erdbeben', 'Tsunami', 'Nuklear', 'Katastrophe', 'TEPCO'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/BhkhME2p?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    keywords: [
+      'Fukushima',
+      'Erdbeben',
+      'Tsunami',
+      'Nuklear',
+      'Katastrophe',
+      'TEPCO'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/BhkhME2p?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/5/50/Fukushima_I_by_Digital_Globe.jpg', // Fukushima nach Explosion
       'https://upload.wikimedia.org/wikipedia/commons/9/98/2011_Tohoku_earthquake_tsunami_flooding_Sendai_Airport.jpg', // Tsunami Sendai
       'https://upload.wikimedia.org/wikipedia/commons/b/bf/Radiation_dose_chart_%28XKCD%29.svg', // Strahlungsdosis Vergleich
     ],
-    videoUrls: ['XVgnjh8sT7k'], // ARTE: Fukushima - Die ganze Geschichte (Deutsch)
+    videoUrls: [
+      'XVgnjh8sT7k'
+    ], // ARTE: Fukushima - Die ganze Geschichte (Deutsch)
     sources: [
       'IAEA Fukushima Report (2015) - Internationale Atomenergiebehörde',
       'Japanese National Diet Fukushima Nuclear Accident Independent Investigation Commission (2012)',
@@ -848,12 +1033,14 @@ Massive Vertuschung durch Betreiber TEPCO (Tokyo Electric Power Company): TEPCO 
       'NHK Documentary Archives - Original Aufnahmen von Erdbeben, Tsunami und Reaktor-Explosionen',
     ],
   ),
-  
+
   // EVENT 36: ROSWELL UFO CRASH (1947)
   MaterieLocationDetail(
     name: 'Roswell UFO Crash - New Mexico',
-    description: 'Mysteriöser Absturz bei Roswell (Juli 1947) - US-Militär behauptet zuerst "Fliegende Untertasse", dann "Wetterballon"',
-    detailedInfo: '''Im Juli 1947 stürzte ein unbekanntes Objekt auf einer Ranch nahe Roswell, New Mexico ab. Die US-Luftwaffe gab zunächst eine Pressemitteilung heraus, dass eine "fliegende Untertasse" geborgen wurde - nur um dies 24 Stunden später zu widerrufen und zu behaupten, es sei nur ein Wetterballon gewesen. Dieser Vorfall wurde zum berühmtesten UFO-Fall der Geschichte.
+    description:
+        'Mysteriöser Absturz bei Roswell (Juli 1947) - US-Militär behauptet zuerst "Fliegende Untertasse", dann "Wetterballon"',
+    detailedInfo:
+        '''Im Juli 1947 stürzte ein unbekanntes Objekt auf einer Ranch nahe Roswell, New Mexico ab. Die US-Luftwaffe gab zunächst eine Pressemitteilung heraus, dass eine "fliegende Untertasse" geborgen wurde - nur um dies 24 Stunden später zu widerrufen und zu behaupten, es sei nur ein Wetterballon gewesen. Dieser Vorfall wurde zum berühmtesten UFO-Fall der Geschichte.
 
 📘 OFFIZIELLE VERSION (Wetterballon-Theorie):
 Im Juni/Juli 1947 stürzte ein Wetterballon des geheimen Project Mogul auf der Foster-Ranch ab. Farmer Mac Brazel fand Trümmer und meldete dies dem Sheriff, der die Luftwaffe informierte. Die Roswell Army Air Field (RAAF) veröffentlichte am 8. Juli 1947 eine Pressemitteilung über die Bergung einer "fliegenden Untertasse". Einen Tag später widerrief General Roger Ramey dies und erklärte, es sei ein Wetterballon gewesen. Project Mogul war ein geheimes Programm zur Überwachung sowjetischer Atomtests mit Hochaltitude-Ballons. Die Verwirrung entstand durch Geheimhaltung und übereifrige Presseoffiziere. Es gab keine Außerirdischen.
@@ -871,13 +1058,16 @@ Zahlreiche Zeugen berichteten, dass die Trümmer ungewöhnlich waren: Metall, da
     position: LatLng(33.3943, -104.5230), // Roswell, New Mexico, USA
     category: LocationCategory.ufo,
     keywords: ['Roswell', 'UFO', 'Aliens', 'Crash', 'Vertuschung', 'Area 51'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/xy08DS0W?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/xy08DS0W?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/f/fb/RoswellDailyRecordJuly8%2C1947.jpg', // Roswell Daily Record Schlagzeile
       'https://upload.wikimedia.org/wikipedia/commons/e/ed/General_Ramey_and_Colonel_Dubose_with_weather_balloon.jpg', // General Ramey mit Wetterballon
       'https://upload.wikimedia.org/wikipedia/commons/4/44/Roswell_crash_site.jpg', // Foster Ranch Crash-Site
     ],
-    videoUrls: ['GmRr5_vPOIY'], // ZDF: Roswell - Was geschah wirklich? (Deutsch)
+    videoUrls: [
+      'GmRr5_vPOIY'
+    ], // ZDF: Roswell - Was geschah wirklich? (Deutsch)
     sources: [
       'Roswell Daily Record Newspaper (8. Juli 1947) - Original "Flying Saucer" Schlagzeile',
       'USAF Roswell Report (1994) - "The Roswell Report: Fact vs. Fiction in the New Mexico Desert"',
@@ -887,12 +1077,14 @@ Zahlreiche Zeugen berichteten, dass die Trümmer ungewöhnlich waren: Metall, da
       'FBI Memo vom 22. März 1950 (veröffentlicht 2011) - "Guy Hottel Memo" über drei abgestürzte Untertassen',
     ],
   ),
-  
+
   // EVENT 37: AREA 51 GRÜNDUNG (1955)
   MaterieLocationDetail(
     name: 'Area 51 Gründung - Nevada',
-    description: 'Geheime Militärbasis Area 51 gegründet (1955) - Entwicklung von Spionageflugzeugen, UFO-Gerüchte, "Dreamland"',
-    detailedInfo: '''1955 gründete die CIA eine hochgeheime Testanlage in der Nevada-Wüste, bekannt als Area 51 oder "Dreamland". Offiziell für die Entwicklung von Spionageflugzeugen wie der U-2 und SR-71 Blackbird gedacht, wurde die Basis zum Zentrum von UFO-Verschwörungstheorien, Alien-Technologie-Gerüchten und Regierungsvertuschungen.
+    description:
+        'Geheime Militärbasis Area 51 gegründet (1955) - Entwicklung von Spionageflugzeugen, UFO-Gerüchte, "Dreamland"',
+    detailedInfo:
+        '''1955 gründete die CIA eine hochgeheime Testanlage in der Nevada-Wüste, bekannt als Area 51 oder "Dreamland". Offiziell für die Entwicklung von Spionageflugzeugen wie der U-2 und SR-71 Blackbird gedacht, wurde die Basis zum Zentrum von UFO-Verschwörungstheorien, Alien-Technologie-Gerüchten und Regierungsvertuschungen.
 
 📘 OFFIZIELLE VERSION:
 Area 51 wurde 1955 von der CIA und Lockheed als Testgelände für das U-2 Spionageflugzeug ausgewählt. Die abgelegene Lage am Groom Lake (trockener Salzsee) bot perfekte Bedingungen für geheime Flugtests. Später wurden hier auch die SR-71 Blackbird, F-117 Stealth Fighter und andere fortschrittliche Flugzeuge getestet. Viele UFO-Sichtungen in der Region waren in Wahrheit Tests von experimentellen Flugzeugen. Die Geheimhaltung war notwendig, um technologische Überlegenheit gegenüber der Sowjetunion zu bewahren. Die CIA gab die Existenz von Area 51 erst 2013 offiziell zu.
@@ -910,13 +1102,16 @@ Area 51 ist das Zentrum zahlreicher Verschwörungstheorien: 1) Alien-Technologie
     position: LatLng(37.2350, -115.8111), // Area 51, Nevada, USA - Groom Lake
     category: LocationCategory.ufo,
     keywords: ['Area 51', 'UFO', 'Aliens', 'CIA', 'Geheim', 'Dreamland'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/Bqrmr9ta?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/Bqrmr9ta?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/9/9c/Area_51_satellite_image.jpg', // Area 51 Satellitenbild
       'https://upload.wikimedia.org/wikipedia/commons/8/88/Lockheed_U-2.jpg', // U-2 Spionageflugzeug
       'https://upload.wikimedia.org/wikipedia/commons/f/f0/%22This_Is_the_Place%22_-_Area_51_-_panoramio.jpg', // Area 51 Warning Sign
     ],
-    videoUrls: ['SVEYyHYwfG4'], // National Geographic: Area 51 - Streng Geheim (Deutsch)
+    videoUrls: [
+      'SVEYyHYwfG4'
+    ], // National Geographic: Area 51 - Streng Geheim (Deutsch)
     sources: [
       'CIA Declassified Documents (2013) - Offizielle Bestätigung der Existenz von Area 51',
       'Bob Lazar Interviews (1989) - KLAS-TV Las Vegas, George Knapp',
@@ -926,12 +1121,14 @@ Area 51 ist das Zentrum zahlreicher Verschwörungstheorien: 1) Alien-Technologie
       '"Storm Area 51" Facebook Event (Juli 2019) - 2 Millionen RSVPs, viraler Meme',
     ],
   ),
-  
+
   // EVENT 38: BETTY & BARNEY HILL ENTFÜHRUNG (1961)
   MaterieLocationDetail(
     name: 'Betty & Barney Hill UFO-Entführung - New Hampshire',
-    description: 'Erste dokumentierte Alien-Entführung (19. September 1961) - Star Map, verlorene Zeit, Hypnose-Rückführung',
-    detailedInfo: '''In der Nacht vom 19. September 1961 erlebten Betty und Barney Hill auf einer einsamen Straße in New Hampshire eine mysteriöse "verlorene Zeit" von 2 Stunden. Unter Hypnose erinnerten sie sich an eine Entführung durch außerirdische Wesen - der erste öffentlich bekannte Fall von Alien Abduction, der die moderne UFO-Kultur prägte.
+    description:
+        'Erste dokumentierte Alien-Entführung (19. September 1961) - Star Map, verlorene Zeit, Hypnose-Rückführung',
+    detailedInfo:
+        '''In der Nacht vom 19. September 1961 erlebten Betty und Barney Hill auf einer einsamen Straße in New Hampshire eine mysteriöse "verlorene Zeit" von 2 Stunden. Unter Hypnose erinnerten sie sich an eine Entführung durch außerirdische Wesen - der erste öffentlich bekannte Fall von Alien Abduction, der die moderne UFO-Kultur prägte.
 
 📘 OFFIZIELLE VERSION (Psychologische Erklärung):
 Betty und Barney Hill fuhren von Kanada zurück nach New Hampshire. Gegen Mitternacht sahen sie ein helles Licht am Himmel, das ihnen folgte. Sie kamen 2 Stunden zu spät nach Hause - "verlorene Zeit". Betty hatte danach wiederkehrende Alpträume von Alien-Entführung. 1963 suchten sie Dr. Benjamin Simon auf, der sie unter Hypnose befragte. Beide erinnerten sich an Entführung durch graue Aliens, medizinische Untersuchungen an Bord eines Raumschiffs und eine "Star Map", die Betty sah. Skeptiker erklären dies als Schlafparalyse, False Memory Syndrome und Konfabulation unter Hypnose. Der Fall wurde 1966 im Buch "The Interrupted Journey" von John Fuller populär gemacht.
@@ -946,16 +1143,27 @@ Betty und Barney Hills Berichte waren konsistent und detailliert: Graue Aliens m
 • Physische Spuren: Beschädigte Uhren, Flecken auf Kleid, Kratzer auf Auto
 • Barney Hill starb 1969 (46 Jahre) an Gehirnblutung - Stress durch Entführung?
 • John Fuller: "The Interrupted Journey" (1966) - Erstes Buch über Alien-Entführung''',
-    position: LatLng(44.2901, -71.6200), // US Route 3, New Hampshire - Entführungsort
+    position:
+        LatLng(44.2901, -71.6200), // US Route 3, New Hampshire - Entführungsort
     category: LocationCategory.ufo,
-    keywords: ['Betty Hill', 'Barney Hill', 'Alien', 'Entführung', 'UFO', 'Greys'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/XaCN9nx2?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    keywords: [
+      'Betty Hill',
+      'Barney Hill',
+      'Alien',
+      'Entführung',
+      'UFO',
+      'Greys'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/XaCN9nx2?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/2/28/Betty_and_Barney_Hill.jpg', // Betty & Barney Hill Foto
       'https://upload.wikimedia.org/wikipedia/commons/f/f4/Betty_Hill_Star_Map.jpg', // Betty Hills Star Map
       'https://upload.wikimedia.org/wikipedia/commons/e/ef/Grey_alien.jpg', // Grey Alien Darstellung (basiert auf Hills Beschreibung)
     ],
-    videoUrls: ['fSFo3wXYwO0'], // History Channel: Betty & Barney Hill Entführung (Deutsch)
+    videoUrls: [
+      'fSFo3wXYwO0'
+    ], // History Channel: Betty & Barney Hill Entführung (Deutsch)
     sources: [
       'John G. Fuller: "The Interrupted Journey" (1966) - Erstes Buch über den Fall',
       'Dr. Benjamin Simon Hypnose-Aufzeichnungen (1963-1964) - Original Sessions',
@@ -965,12 +1173,14 @@ Betty und Barney Hills Berichte waren konsistent und detailliert: Graue Aliens m
       'NH Historical Marker #171 - Indian Head Resort, Lincoln NH - Offizielle Anerkennung des Falls',
     ],
   ),
-  
+
   // EVENT 39: PHOENIX LIGHTS (1997)
   MaterieLocationDetail(
     name: 'Phoenix Lights - Arizona',
-    description: 'Massenhafte UFO-Sichtung über Phoenix (13. März 1997) - Tausende Zeugen, V-förmiges Objekt, militärische Vertuschung',
-    detailedInfo: '''Am 13. März 1997 beobachteten Tausende Menschen in Arizona ein massives V-förmiges Objekt mit leuchtenden Lichtern, das lautlos über Phoenix flog. Die Sichtung dauerte über 2 Stunden und erstreckte sich über 300 Meilen. Trotz der Vielzahl an Zeugen, darunter Piloten und Polizisten, bleibt die Erklärung umstritten.
+    description:
+        'Massenhafte UFO-Sichtung über Phoenix (13. März 1997) - Tausende Zeugen, V-förmiges Objekt, militärische Vertuschung',
+    detailedInfo:
+        '''Am 13. März 1997 beobachteten Tausende Menschen in Arizona ein massives V-förmiges Objekt mit leuchtenden Lichtern, das lautlos über Phoenix flog. Die Sichtung dauerte über 2 Stunden und erstreckte sich über 300 Meilen. Trotz der Vielzahl an Zeugen, darunter Piloten und Polizisten, bleibt die Erklärung umstritten.
 
 📘 OFFIZIELLE VERSION (Militär-Erklärung):
 Die US-Luftwaffe erklärte die Lichter als Leuchtraketen (Flares), die von A-10 Thunderbolt Kampfjets während einer Trainingsübung abgeworfen wurden. Die Flares fielen über der Barry M. Goldwater Range, einem Militär-Übungsgebiet südwestlich von Phoenix. Die Lichter blieben scheinbar stationär aufgrund optischer Täuschung. Es gab zwei separate Ereignisse: 1) Ein V-förmiges Objekt um 20:15 Uhr, das von Nevada nach Arizona flog, und 2) Leuchtraketen um 22:00 Uhr über Phoenix. Das Militär bestätigte die Leuchtraketen-Übung.
@@ -987,14 +1197,24 @@ Tausende Augenzeugen beschrieben ein massives, solides V-förmiges Objekt, nicht
 • Peter Davenport (National UFO Reporting Center) - 700+ Zeugenberichte dokumentiert''',
     position: LatLng(33.4484, -112.0740), // Phoenix, Arizona, USA
     category: LocationCategory.ufo,
-    keywords: ['Phoenix Lights', 'UFO', 'Massenbeobachtung', 'Arizona', 'V-förmig', 'Vertuschung'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/AkESZIlO?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    keywords: [
+      'Phoenix Lights',
+      'UFO',
+      'Massenbeobachtung',
+      'Arizona',
+      'V-förmig',
+      'Vertuschung'
+    ],
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/AkESZIlO?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/8/87/Phoenix_Lights_1997.jpg', // Phoenix Lights Foto 1997
       'https://upload.wikimedia.org/wikipedia/commons/5/5b/Phoenix_lights_formation.jpg', // V-Formation Illustration
       'https://upload.wikimedia.org/wikipedia/commons/3/3a/Fife_Symington_official_photo.jpg', // Gouverneur Fife Symington
     ],
-    videoUrls: ['v1Fh0g5wJ7A'], // National Geographic: Phoenix Lights - Die Wahrheit (Deutsch)
+    videoUrls: [
+      'v1Fh0g5wJ7A'
+    ], // National Geographic: Phoenix Lights - Die Wahrheit (Deutsch)
     sources: [
       'Dr. Lynne Kitei: "The Phoenix Lights: A Skeptic\'s Discovery That We Are Not Alone" (2004)',
       'Gouverneur Fife Symington III CNN Interview (2007) - Geständnis über UFO-Sichtung',
@@ -1004,12 +1224,14 @@ Tausende Augenzeugen beschrieben ein massives, solides V-förmiges Objekt, nicht
       'Arizona Republic Newspaper Archive (14. März 1997) - Original Berichterstattung',
     ],
   ),
-  
+
   // EVENT 40: PENTAGON UFO VIDEOS (2017)
   MaterieLocationDetail(
     name: 'Pentagon UFO Videos veröffentlicht',
-    description: 'US-Militär veröffentlicht drei UFO-Videos (2017/2020) - "UAPs", US-Kongress Anhörungen, Offizielle Anerkennung',
-    detailedInfo: '''Zwischen 2017 und 2020 veröffentlichte das US-Verteidigungsministerium drei authentische Videos von unidentifizierten Flugobjekten (UAPs - Unidentified Aerial Phenomena), die von US-Navy-Piloten aufgenommen wurden. Diese Videos zeigen Objekte mit Flugmanövern, die mit bekannter Technologie nicht erklärbar sind. Die Veröffentlichung markierte einen Wendepunkt in der offiziellen Haltung zu UFOs.
+    description:
+        'US-Militär veröffentlicht drei UFO-Videos (2017/2020) - "UAPs", US-Kongress Anhörungen, Offizielle Anerkennung',
+    detailedInfo:
+        '''Zwischen 2017 und 2020 veröffentlichte das US-Verteidigungsministerium drei authentische Videos von unidentifizierten Flugobjekten (UAPs - Unidentified Aerial Phenomena), die von US-Navy-Piloten aufgenommen wurden. Diese Videos zeigen Objekte mit Flugmanövern, die mit bekannter Technologie nicht erklärbar sind. Die Veröffentlichung markierte einen Wendepunkt in der offiziellen Haltung zu UFOs.
 
 📘 OFFIZIELLE VERSION (Pentagon & US-Militär):
 Im Dezember 2017 veröffentlichte die New York Times zwei Videos ("Gimbal" und "GoFast"), die 2004 und 2015 von F/A-18 Super Hornet Piloten aufgenommen wurden. Ein drittes Video ("FLIR1" oder "Tic Tac") wurde später hinzugefügt. Das Pentagon bestätigte 2020 die Authentizität aller drei Videos und erklärte, sie zeigen "unidentifizierte Luft-Phänomene" (UAPs). 2020 richtete das Pentagon die UAP Task Force ein, um solche Sichtungen zu untersuchen. Im Juni 2021 veröffentlichte der Director of National Intelligence einen Bericht über 144 UAP-Sichtungen zwischen 2004-2021 - nur 1 konnte erklärt werden (Luftballon). Die übrigen 143 bleiben ungeklärt. Das Pentagon räumte ein, dass einige UAPs "Technologie zeigen, die unsere aktuellen Fähigkeiten übersteigt".
@@ -1027,13 +1249,16 @@ US-Navy-Piloten beschrieben unglaubliche Flugmanöver: Objekte, die von 24.000 M
     position: LatLng(38.8719, -77.0563), // Pentagon, Arlington, Virginia, USA
     category: LocationCategory.ufo,
     keywords: ['Pentagon', 'UFO', 'UAP', 'Navy', 'Tic Tac', 'Offenlegung'],
-    imageUrls: ['https://www.genspark.ai/api/files/s/NSp3ceOr?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/NSp3ceOr?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/1/1a/GIMBAL.jpg', // Pentagon "Gimbal" UFO Video Screenshot
       'https://upload.wikimedia.org/wikipedia/commons/3/30/Unidentified_flying_object_-_Aerial_Phenomena_-_US_Navy.jpg', // Pentagon UFO Video Frame
       'https://upload.wikimedia.org/wikipedia/commons/e/e7/The_Pentagon_January_2008.jpg', // Pentagon Gebäude
     ],
-    videoUrls: ['rO_M0hLlJ-Q'], // ARTE: Pentagon UFO-Videos - Die Wahrheit (Deutsch)
+    videoUrls: [
+      'rO_M0hLlJ-Q'
+    ], // ARTE: Pentagon UFO-Videos - Die Wahrheit (Deutsch)
     sources: [
       'Pentagon UAP Videos (2017-2020) - "FLIR1", "Gimbal", "GoFast" - Offizielle Veröffentlichung',
       'New York Times (16. Dezember 2017) - "Glowing Auras and \'Black Money\': The Pentagon\'s Mysterious U.F.O. Program"',
@@ -1043,12 +1268,14 @@ US-Navy-Piloten beschrieben unglaubliche Flugmanöver: Objekte, die von 24.000 M
       'David Grusch Whistleblower Testimony (Juni 2023) - Behauptung über abgestürzte UFOs und Alien-Biologika',
     ],
   ),
-  
+
   // EVENT 41: PEARL HARBOR (1941)
   MaterieLocationDetail(
     name: 'Pearl Harbor Angriff - Hawaii',
-    description: 'Japanischer Überraschungsangriff auf US-Pazifikflotte (7. Dezember 1941) - USA Kriegseintritt WWII',
-    detailedInfo: '''Am 7. Dezember 1941 um 7:48 Uhr griffen 353 japanische Flugzeuge die US-Marine-Basis Pearl Harbor auf Hawaii an. Der Überraschungsangriff tötete 2.403 Amerikaner, versenkte 4 Schlachtschiffe und zerstörte 188 Flugzeuge. Der Angriff führte zum Eintritt der USA in den Zweiten Weltkrieg.
+    description:
+        'Japanischer Überraschungsangriff auf US-Pazifikflotte (7. Dezember 1941) - USA Kriegseintritt WWII',
+    detailedInfo:
+        '''Am 7. Dezember 1941 um 7:48 Uhr griffen 353 japanische Flugzeuge die US-Marine-Basis Pearl Harbor auf Hawaii an. Der Überraschungsangriff tötete 2.403 Amerikaner, versenkte 4 Schlachtschiffe und zerstörte 188 Flugzeuge. Der Angriff führte zum Eintritt der USA in den Zweiten Weltkrieg.
 
 📘 OFFIZIELLE VERSION:
 Japan plante den Angriff wegen US-Wirtschaftssanktionen (Öl-Embargo) und territorialer Spannungen im Pazifik. Die USA wurden überrascht, obwohl es Warnungen gab. Der Angriff wurde in zwei Wellen durchgeführt: 1. Welle (7:48 Uhr) traf Schlachtschiffe, 2. Welle (8:40 Uhr) zielte auf Flugfelder und Infrastruktur. Am nächsten Tag erklärte Präsident Franklin D. Roosevelt Japan den Krieg mit der berühmten Rede: "A date which will live in infamy" (Ein Datum, das in Schande fortleben wird).
@@ -1065,10 +1292,18 @@ Mehrere Theorien behaupten, Roosevelt wusste vom Angriff im Voraus und ließ ihn
 • Robert Stinnett: "Day of Deceit" (1999) - 30+ Dokumente über Roosevelts Vorwissen''',
     position: LatLng(21.3677, -157.9447), // Pearl Harbor, Hawaii
     category: LocationCategory.wars,
-    keywords: ['Pearl Harbor', 'WWII', 'Japan', 'Roosevelt', 'USA', 'Kriegseintritt'],
+    keywords: [
+      'Pearl Harbor',
+      'WWII',
+      'Japan',
+      'Roosevelt',
+      'USA',
+      'Kriegseintritt'
+    ],
     date: DateTime(1941, 12, 7),
-    imageUrls: ['https://www.genspark.ai/api/files/s/F91TV8h1?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/F91TV8h1?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/0/09/The_USS_Arizona_%28BB-39%29_burning_after_the_Japanese_attack_on_Pearl_Harbor_-_NARA_195617_-_Edit.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/4/49/Battleship_row_USS_California_sinking.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/5/54/Pearl_Harbor_attack.jpg',
@@ -1083,12 +1318,14 @@ Mehrere Theorien behaupten, Roosevelt wusste vom Angriff im Voraus und ließ ihn
       'MAGIC Diplomatic Summaries (declassified 1978) - NSA Archives',
     ],
   ),
-  
+
   // EVENT 42: D-DAY (1944)
   MaterieLocationDetail(
     name: 'D-Day Landung - Normandie',
-    description: 'Operation Overlord - Alliierte Invasion in der Normandie (6. Juni 1944) - Wendepunkt WWII',
-    detailedInfo: '''Am 6. Juni 1944, bekannt als D-Day, landeten 156.000 alliierte Soldaten an fünf Stränden der Normandie (Codenames: Utah, Omaha, Gold, Juno, Sword). Die größte Seeinvasion der Geschichte markierte den Anfang vom Ende des Nazi-Regimes in Europa.
+    description:
+        'Operation Overlord - Alliierte Invasion in der Normandie (6. Juni 1944) - Wendepunkt WWII',
+    detailedInfo:
+        '''Am 6. Juni 1944, bekannt als D-Day, landeten 156.000 alliierte Soldaten an fünf Stränden der Normandie (Codenames: Utah, Omaha, Gold, Juno, Sword). Die größte Seeinvasion der Geschichte markierte den Anfang vom Ende des Nazi-Regimes in Europa.
 
 📘 OFFIZIELLE VERSION:
 Operation Overlord wurde von General Dwight D. Eisenhower geleitet. 5.000 Schiffe und 11.000 Flugzeuge unterstützten die Invasion. Die schwersten Kämpfe fanden am Omaha Beach statt - 2.000+ US-Soldaten starben dort. Die Alliierten täuschten die Nazis mit Operation Fortitude - eine Scheinarmee unter General Patton ließ Hitler glauben, die Invasion käme bei Calais. Bis August 1944 waren 2 Millionen alliierte Soldaten in Frankreich. Paris wurde am 25. August 1944 befreit.
@@ -1105,10 +1342,18 @@ Kontroverse Aspekte: 1) Stalin drängte seit 1942 auf eine Zweite Front - die Ve
 • Rommel war am D-Day in Deutschland (Geburtstag seiner Frau) - fataler Fehler''',
     position: LatLng(49.3508, -0.8818), // Omaha Beach, Normandie, Frankreich
     category: LocationCategory.wars,
-    keywords: ['D-Day', 'Normandie', 'WWII', 'Eisenhower', 'Omaha Beach', 'Operation Overlord'],
+    keywords: [
+      'D-Day',
+      'Normandie',
+      'WWII',
+      'Eisenhower',
+      'Omaha Beach',
+      'Operation Overlord'
+    ],
     date: DateTime(1944, 6, 6),
-    imageUrls: ['https://www.genspark.ai/api/files/s/f0jiWdnL?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/f0jiWdnL?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/a/a5/Into_the_Jaws_of_Death_23-0455M_edit.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/f/f9/Bundesarchiv_Bild_101I-299-1805-16%2C_Nordfrankreich%2C_Soldaten_hinter_Strandhindernissen.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/7/78/Normandy_Invasion%2C_June_1944.jpg',
@@ -1123,12 +1368,14 @@ Kontroverse Aspekte: 1) Stalin drängte seit 1942 auf eine Zweite Front - die Ve
       'Operation Fortitude Declassified Documents (1970er) - MI5/MI6 Archives',
     ],
   ),
-  
+
   // EVENT 43: KALTER KRIEG BEGINN (1947)
   MaterieLocationDetail(
     name: 'Kalter Krieg Beginn - Berlin',
-    description: 'Eiserner Vorhang fällt (1947) - USA vs UdSSR, Nukleares Wettrüsten, Spionage-Ära beginnt',
-    detailedInfo: '''1947 begann offiziell der Kalte Krieg - ein ideologischer, politischer und militärischer Konflikt zwischen den USA (Kapitalismus) und der UdSSR (Kommunismus), der bis 1991 andauerte. Der Begriff "Eiserner Vorhang" wurde von Winston Churchill geprägt.
+    description:
+        'Eiserner Vorhang fällt (1947) - USA vs UdSSR, Nukleares Wettrüsten, Spionage-Ära beginnt',
+    detailedInfo:
+        '''1947 begann offiziell der Kalte Krieg - ein ideologischer, politischer und militärischer Konflikt zwischen den USA (Kapitalismus) und der UdSSR (Kommunismus), der bis 1991 andauerte. Der Begriff "Eiserner Vorhang" wurde von Winston Churchill geprägt.
 
 📘 OFFIZIELLE VERSION:
 Nach WWII spaltete sich Europa: Westeuropa (US-unterstützt) vs. Osteuropa (Sowjet-kontrolliert). Die Truman-Doktrin (1947) versprach Unterstützung gegen kommunistische Expansion. Der Marshall-Plan (1948) finanzierte den Wiederaufbau Westeuropas. Berlin wurde zum Symbol des Kalten Krieges - eine geteilte Stadt in einem geteilten Land. NATO (1949) und Warschauer Pakt (1955) bildeten militärische Blöcke. Das nukleare Wettrüsten begann: USA testete Atombombe 1945, UdSSR 1949. Der Kalte Krieg führte zu Stellvertreterkriegen (Korea, Vietnam, Afghanistan).
@@ -1143,12 +1390,22 @@ Nach WWII spaltete sich Europa: Westeuropa (US-unterstützt) vs. Osteuropa (Sowj
 • Operation Gladio Declassified (1990) - NATO Stay-Behind-Armeen
 • MKUltra Declassified (1977) - CIA Gedankenkontroll-Experimente
 • Stanislaw Petrow rettete die Welt (26. September 1983) - verhinderte nuklearen Fehlalarm''',
-    position: LatLng(52.5200, 13.4050), // Berlin, Deutschland - Symbol des Kalten Krieges
+    position: LatLng(
+        52.5200, 13.4050), // Berlin, Deutschland - Symbol des Kalten Krieges
     category: LocationCategory.deepState,
-    keywords: ['Kalter Krieg', 'USA', 'UdSSR', 'NATO', 'Berlin', 'MKUltra', 'Gladio'],
+    keywords: [
+      'Kalter Krieg',
+      'USA',
+      'UdSSR',
+      'NATO',
+      'Berlin',
+      'MKUltra',
+      'Gladio'
+    ],
     date: DateTime(1947, 3, 12),
-    imageUrls: ['https://www.genspark.ai/api/files/s/UdbT7XJX?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/UdbT7XJX?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/0/05/Iron_Curtain_map.svg',
       'https://upload.wikimedia.org/wikipedia/commons/1/1a/Berlinermauer.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/c/c8/Churchill_waves_to_crowds.jpg',
@@ -1163,12 +1420,14 @@ Nach WWII spaltete sich Europa: Westeuropa (US-unterstützt) vs. Osteuropa (Sowj
       'Stanislaw Petrov Interview (2010) - Mann, der Atomkrieg verhinderte',
     ],
   ),
-  
+
   // EVENT 44: BERLINER MAUERFALL (1989)
   MaterieLocationDetail(
     name: 'Berliner Mauerfall',
-    description: 'Fall der Berliner Mauer (9. November 1989) - Ende des Kalten Krieges, Deutsche Wiedervereinigung',
-    detailedInfo: '''Am 9. November 1989 fiel die Berliner Mauer nach 28 Jahren Teilung. Eine missverständliche Pressekonferenz führte dazu, dass Tausende Ost-Berliner die Grenzübergänge stürmten. Das Ereignis markierte das Ende des Kalten Krieges und führte zur Wiedervereinigung Deutschlands 1990.
+    description:
+        'Fall der Berliner Mauer (9. November 1989) - Ende des Kalten Krieges, Deutsche Wiedervereinigung',
+    detailedInfo:
+        '''Am 9. November 1989 fiel die Berliner Mauer nach 28 Jahren Teilung. Eine missverständliche Pressekonferenz führte dazu, dass Tausende Ost-Berliner die Grenzübergänge stürmten. Das Ereignis markierte das Ende des Kalten Krieges und führte zur Wiedervereinigung Deutschlands 1990.
 
 📘 OFFIZIELLE VERSION:
 Die Berliner Mauer wurde 1961 errichtet, um die Flucht von DDR-Bürgern in den Westen zu stoppen. 1989 schwächte sich die Sowjetunion unter Gorbatschow (Glasnost & Perestroika). Massenproteste in der DDR ("Wir sind das Volk!") führten zu politischem Druck. Am 9. November 1989 um 18:53 Uhr verkündete SED-Funktionär Günter Schabowski versehentlich, dass Reisebeschränkungen "sofort, unverzüglich" aufgehoben seien - eigentlich sollte es erst am nächsten Tag in Kraft treten. Tausende stürmten die Grenzübergänge. Grenzschützer gaben nach und öffneten die Tore. Menschen feierten auf der Mauer. Deutschland wurde am 3. Oktober 1990 wiedervereinigt.
@@ -1185,15 +1444,25 @@ Die Berliner Mauer wurde 1961 errichtet, um die Flucht von DDR-Bürgern in den W
 • Kosten der Wiedervereinigung: über 2 Billionen Euro (1990-2020)''',
     position: LatLng(52.5163, 13.3777), // Brandenburger Tor, Berlin
     category: LocationCategory.geopolitics,
-    keywords: ['Berlin', 'Mauerfall', 'DDR', 'Wiedervereinigung', 'Kalter Krieg', 'Stasi'],
+    keywords: [
+      'Berlin',
+      'Mauerfall',
+      'DDR',
+      'Wiedervereinigung',
+      'Kalter Krieg',
+      'Stasi'
+    ],
     date: DateTime(1989, 11, 9),
-    imageUrls: ['https://www.genspark.ai/api/files/s/2Lw79HpV?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/2Lw79HpV?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/8/89/Thefalloftheberlinwall1989.JPG',
       'https://upload.wikimedia.org/wikipedia/commons/1/1a/Berlinermauer.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/d/da/Bundesarchiv_Bild_183-1989-1118-028%2C_Berlin%2C_Brandenburger_Tor%2C_%C3%96ffnung.jpg',
     ],
-    videoUrls: ['DobbAaF5UhA'], // ZDF: 9. November 1989 - Der Mauerfall (Deutsch)
+    videoUrls: [
+      'DobbAaF5UhA'
+    ], // ZDF: 9. November 1989 - Der Mauerfall (Deutsch)
     sources: [
       'Günter Schabowski Pressekonferenz Video (9. November 1989) - ARD/ZDF Archive',
       'Stasi Records Archive - 6 Millionen Akten (Bundesbeauftragte für Stasi-Unterlagen)',
@@ -1203,12 +1472,14 @@ Die Berliner Mauer wurde 1961 errichtet, um die Flucht von DDR-Bürgern in den W
       'Wiedervereinigungsvertrag (3. Oktober 1990) - Bundesgesetzblatt',
     ],
   ),
-  
+
   // EVENT 45: SPUTNIK (1957)
   MaterieLocationDetail(
     name: 'Sputnik 1 Start - Weltraumrennen',
-    description: 'Erster künstlicher Satellit (4. Oktober 1957) - Sowjetischer Triumph, USA "Sputnik-Schock", Raumfahrtzeitalter beginnt',
-    detailedInfo: '''Am 4. Oktober 1957 startete die Sowjetunion Sputnik 1, den ersten künstlichen Satelliten der Menschheit. Der 58 cm große Kugel-Satellit sendete 21 Tage lang Piep-Signale und löste in den USA den "Sputnik-Schock" aus - eine Kombination aus Angst und Demütigung.
+    description:
+        'Erster künstlicher Satellit (4. Oktober 1957) - Sowjetischer Triumph, USA "Sputnik-Schock", Raumfahrtzeitalter beginnt',
+    detailedInfo:
+        '''Am 4. Oktober 1957 startete die Sowjetunion Sputnik 1, den ersten künstlichen Satelliten der Menschheit. Der 58 cm große Kugel-Satellit sendete 21 Tage lang Piep-Signale und löste in den USA den "Sputnik-Schock" aus - eine Kombination aus Angst und Demütigung.
 
 📘 OFFIZIELLE VERSION:
 Sputnik 1 wog 83,6 kg und umkreiste die Erde in 96 Minuten. Der Start markierte den Beginn des Weltraumrennens zwischen USA und UdSSR. Die USA reagierten mit der Gründung der NASA (1958) und dem Apollo-Programm. Der Sputnik-Schock führte zu massiven Investitionen in Wissenschaft und Bildung (National Defense Education Act 1958). Die UdSSR war der USA technologisch voraus: Sputnik 2 (1957) trug Hündin Laika ins All, Juri Gagarin (1961) war der erste Mensch im All.
@@ -1225,10 +1496,18 @@ Sputnik 1 wog 83,6 kg und umkreiste die Erde in 96 Minuten. Der Start markierte 
 • Laika (Hündin) starb nach 5-7 Stunden in Sputnik 2 (3. November 1957) - Hitzekollaps''',
     position: LatLng(45.9644, 63.3050), // Baikonur Kosmodrom, Kasachstan
     category: LocationCategory.technology,
-    keywords: ['Sputnik', 'Weltraumrennen', 'UdSSR', 'NASA', 'Kalter Krieg', 'Raumfahrt'],
+    keywords: [
+      'Sputnik',
+      'Weltraumrennen',
+      'UdSSR',
+      'NASA',
+      'Kalter Krieg',
+      'Raumfahrt'
+    ],
     date: DateTime(1957, 10, 4),
-    imageUrls: ['https://www.genspark.ai/api/files/s/ojuaqNZJ?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/ojuaqNZJ?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/b/be/Sputnik_asm.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/0/0f/Sputnik_1_replica.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/4/44/Laika_ac_Sputnik_2_%28cropped%29.jpg',
@@ -1243,12 +1522,14 @@ Sputnik 1 wog 83,6 kg und umkreiste die Erde in 96 Minuten. Der Start markierte 
       'National Defense Education Act (1958) - US Response to Sputnik Crisis',
     ],
   ),
-  
+
   // EVENT 46: MONDLANDUNG APOLLO 11 (1969)
   MaterieLocationDetail(
     name: 'Apollo 11 Mondlandung',
-    description: 'Erste bemannte Mondlandung (20. Juli 1969) - Neil Armstrong "Ein kleiner Schritt" - Triumph oder Hollywood?',
-    detailedInfo: '''Am 20. Juli 1969 landete Apollo 11 auf dem Mond. Neil Armstrong betrat als erster Mensch die Mondoberfläche mit den Worten: "That's one small step for man, one giant leap for mankind." 600 Millionen Menschen sahen live zu - aber Verschwörungstheorien behaupten bis heute, die Landung sei in Hollywood gefälscht worden.
+    description:
+        'Erste bemannte Mondlandung (20. Juli 1969) - Neil Armstrong "Ein kleiner Schritt" - Triumph oder Hollywood?',
+    detailedInfo:
+        '''Am 20. Juli 1969 landete Apollo 11 auf dem Mond. Neil Armstrong betrat als erster Mensch die Mondoberfläche mit den Worten: "That's one small step for man, one giant leap for mankind." 600 Millionen Menschen sahen live zu - aber Verschwörungstheorien behaupten bis heute, die Landung sei in Hollywood gefälscht worden.
 
 📘 OFFIZIELLE VERSION:
 Apollo 11 startete am 16. Juli 1969 mit Neil Armstrong, Buzz Aldrin und Michael Collins. Die Mondlandefähre "Eagle" landete am 20. Juli 1969 um 20:17 UTC im Mare Tranquillitatis (Meer der Ruhe). Armstrong stieg um 02:56 UTC (21. Juli) aus - sein berühmter Satz wurde live übertragen. Die Astronauten sammelten 21,5 kg Mondgestein, pflanzten die US-Flagge und führten Experimente durch. Insgesamt gab es 6 erfolgreiche Mondlandungen (Apollo 11, 12, 14, 15, 16, 17) mit 12 Menschen auf dem Mond (alle US-Astronauten). Die Mission kostete 25,4 Milliarden Dollar (heute ~180 Milliarden).
@@ -1263,17 +1544,28 @@ Die Mondlandung ist eine der meistdiskutierten Verschwörungstheorien: 1) Fehlen
 • Lunar Reconnaissance Orbiter (2009) fotografierte Apollo-Landestellen - Fußspuren sichtbar
 • 400.000 NASA-Mitarbeiter arbeiteten am Apollo-Programm - keine Whistleblower
 • MythBusters Episode (2008) widerlegte alle Mondlandungs-Verschwörungstheorien''',
-    position: LatLng(0.6734, 23.4731), // Mare Tranquillitatis, Mond (Koordinaten relativ zur Erde)
+    position: LatLng(0.6734,
+        23.4731), // Mare Tranquillitatis, Mond (Koordinaten relativ zur Erde)
     category: LocationCategory.technology,
-    keywords: ['Mondlandung', 'Apollo 11', 'Neil Armstrong', 'NASA', 'Verschwörung', 'Weltraum'],
+    keywords: [
+      'Mondlandung',
+      'Apollo 11',
+      'Neil Armstrong',
+      'NASA',
+      'Verschwörung',
+      'Weltraum'
+    ],
     date: DateTime(1969, 7, 20),
-    imageUrls: ['https://www.genspark.ai/api/files/s/OwMvihGp?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/OwMvihGp?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/9/98/Aldrin_Apollo_11_original.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/2/27/Apollo_11_bootprint.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/a/a8/Apollo_11_first_step.jpg',
     ],
-    videoUrls: ['cwZb2mqId0A'], // ARTE: Mondlandung - Fakt oder Fiktion? (Deutsch)
+    videoUrls: [
+      'cwZb2mqId0A'
+    ], // ARTE: Mondlandung - Fakt oder Fiktion? (Deutsch)
     sources: [
       'NASA Apollo 11 Mission Report (1969) - Official Documentation',
       'Apollo Lunar Surface Journal - Vollständige Transkripte & Fotos',
@@ -1283,12 +1575,14 @@ Die Mondlandung ist eine der meistdiskutierten Verschwörungstheorien: 1) Fehlen
       'Ralph René: "NASA Mooned America!" (1992) - Verschwörungstheorie-Buch',
     ],
   ),
-  
+
   // EVENT 47: COVID-19 PANDEMIE (2019)
   MaterieLocationDetail(
     name: 'COVID-19 Pandemie - Wuhan',
-    description: 'Globale Coronavirus-Pandemie beginnt (Dezember 2019) - Millionen Tote, Lockdowns, Impfung, Labor-Ursprung?',
-    detailedInfo: '''Im Dezember 2019 traten in Wuhan, China, erste Fälle einer mysteriösen Lungenkrankheit auf. Das neuartige Coronavirus SARS-CoV-2 verbreitete sich weltweit und wurde zur größten Pandemie seit der Spanischen Grippe (1918). COVID-19 tötete über 7 Millionen Menschen (offiziell) und veränderte die Welt für immer.
+    description:
+        'Globale Coronavirus-Pandemie beginnt (Dezember 2019) - Millionen Tote, Lockdowns, Impfung, Labor-Ursprung?',
+    detailedInfo:
+        '''Im Dezember 2019 traten in Wuhan, China, erste Fälle einer mysteriösen Lungenkrankheit auf. Das neuartige Coronavirus SARS-CoV-2 verbreitete sich weltweit und wurde zur größten Pandemie seit der Spanischen Grippe (1918). COVID-19 tötete über 7 Millionen Menschen (offiziell) und veränderte die Welt für immer.
 
 📘 OFFIZIELLE VERSION (WHO & CHINA):
 COVID-19 wurde erstmals am 31. Dezember 2019 von China an die WHO gemeldet. Ursprung: Huanan Seafood Market in Wuhan - möglicherweise Übertragung von Tier (Fledermaus/Schuppentier) auf Mensch. Die WHO erklärte am 11. März 2020 eine Pandemie. Lockdowns, Maskenpflicht und Impfkampagnen wurden weltweit eingeführt. Impfstoffe (Pfizer/BioNTech, Moderna, AstraZeneca) wurden in Rekordzeit entwickelt. Über 13 Milliarden Impfdosen verabreicht (bis 2024). Die Pandemie endete offiziell am 5. Mai 2023 (WHO).
@@ -1305,15 +1599,26 @@ Kontroverse Theorien: 1) Wuhan Labor-Ursprung: Das Wuhan Institute of Virology l
 • US Energy Department Report (2023): "Lab-Ursprung wahrscheinlich" (niedrige Konfidenz)''',
     position: LatLng(30.5728, 114.3055), // Wuhan, China
     category: LocationCategory.biotech,
-    keywords: ['COVID-19', 'Pandemie', 'Wuhan', 'Labor', 'Impfung', 'Lockdown', 'WHO'],
+    keywords: [
+      'COVID-19',
+      'Pandemie',
+      'Wuhan',
+      'Labor',
+      'Impfung',
+      'Lockdown',
+      'WHO'
+    ],
     date: DateTime(2019, 12, 31),
-    imageUrls: ['https://www.genspark.ai/api/files/s/GyguPnOp?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/GyguPnOp?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/f/f0/Wuhan_Institute_of_Virology_main_entrance.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/8/82/SARS-CoV-2_without_background.png',
       'https://upload.wikimedia.org/wikipedia/commons/3/3b/COVID-19_Outbreak_World_Map.svg',
     ],
-    videoUrls: ['Ha_C0SX9GDQ'], // ZDF: Corona - Die Wahrheit über den Ursprung (Deutsch)
+    videoUrls: [
+      'Ha_C0SX9GDQ'
+    ], // ZDF: Corona - Die Wahrheit über den Ursprung (Deutsch)
     sources: [
       'WHO COVID-19 Timeline (2019-2023) - Official Chronology',
       'Wuhan Institute of Virology Research Papers (2015-2019) - Gain-of-Function Studies',
@@ -1323,12 +1628,14 @@ Kontroverse Theorien: 1) Wuhan Labor-Ursprung: Das Wuhan Institute of Virology l
       'Lancet Commission Report (2022) - "Lab Origin cannot be ruled out"',
     ],
   ),
-  
+
   // EVENT 48: MH370 VERSCHWINDEN (2014)
   MaterieLocationDetail(
     name: 'Malaysia Airlines MH370 verschwindet',
-    description: 'Boeing 777 verschwindet spurlos (8. März 2014) - 239 Menschen an Bord, größtes Luftfahrt-Mysterium',
-    detailedInfo: '''Am 8. März 2014 verschwand Malaysia Airlines Flug MH370 mit 239 Menschen an Bord auf dem Weg von Kuala Lumpur nach Peking. Das Flugzeug änderte seinen Kurs, schaltete Transponder ab und flog 7+ Stunden in die falsche Richtung. Trotz der größten Such-Operation der Luftfahrtgeschichte (160 Millionen Dollar) wurde das Wrack nie gefunden - nur 33 Trümmerteile an Stränden.
+    description:
+        'Boeing 777 verschwindet spurlos (8. März 2014) - 239 Menschen an Bord, größtes Luftfahrt-Mysterium',
+    detailedInfo:
+        '''Am 8. März 2014 verschwand Malaysia Airlines Flug MH370 mit 239 Menschen an Bord auf dem Weg von Kuala Lumpur nach Peking. Das Flugzeug änderte seinen Kurs, schaltete Transponder ab und flog 7+ Stunden in die falsche Richtung. Trotz der größten Such-Operation der Luftfahrtgeschichte (160 Millionen Dollar) wurde das Wrack nie gefunden - nur 33 Trümmerteile an Stränden.
 
 📘 OFFIZIELLE VERSION (MALAYSISCHE REGIERUNG):
 MH370 startete um 00:41 Uhr. Um 01:21 Uhr schaltete sich der Transponder ab. Das Flugzeug änderte seinen Kurs und flog zurück über Malaysia, dann Richtung Süden über den Indischen Ozean. Um 08:19 Uhr brach der Kontakt ab - vermutlich Treibstoffmangel. Offiziell: Piloten-Suizid (Kapitän Zaharie Ahmad Shah) oder Hypoxie (Sauerstoffmangel) der Crew. Suchgebiet: 120.000 km² im südlichen Indischen Ozean. 2018 wurde die Suche eingestellt.
@@ -1343,17 +1650,28 @@ Dutzende Theorien: 1) Piloten-Suizid-Mordplan: Kapitän Zaharie simulierte den K
 • Inmarsat Satellitendaten: Flugzeug flog 7+ Stunden nach Transponder-Abschaltung
 • 33 Trümmerteile gefunden (2015-2017) an Stränden (La Réunion, Mauritius, Südafrika)
 • Kapitän Zaharie Flugsimulator-Daten: Route zum südlichen Indischen Ozean simuliert''',
-    position: LatLng(-38.0, 88.0), // Geschätzter Absturzort südlicher Indischer Ozean
+    position:
+        LatLng(-38.0, 88.0), // Geschätzter Absturzort südlicher Indischer Ozean
     category: LocationCategory.disasters,
-    keywords: ['MH370', 'Malaysia Airlines', 'Verschwinden', 'Mysterium', 'Flugzeug', 'Diego Garcia'],
+    keywords: [
+      'MH370',
+      'Malaysia Airlines',
+      'Verschwinden',
+      'Mysterium',
+      'Flugzeug',
+      'Diego Garcia'
+    ],
     date: DateTime(2014, 3, 8),
-    imageUrls: ['https://www.genspark.ai/api/files/s/g5oWHXwN?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/g5oWHXwN?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/3/3c/9M-MRO_Malaysia_Airlines_Boeing_777-200ER_%2819826016672%29.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/b/b4/MH370_search_area.svg',
       'https://upload.wikimedia.org/wikipedia/commons/6/62/MH370_Flaperon_debris_found_on_R%C3%A9union.jpg',
     ],
-    videoUrls: ['avxLfjd0l-s'], // Netflix: MH370 - Das Flugzeug, das verschwand (Deutsch)
+    videoUrls: [
+      'avxLfjd0l-s'
+    ], // Netflix: MH370 - Das Flugzeug, das verschwand (Deutsch)
     sources: [
       'Malaysian ICAO Annex 13 Safety Investigation Report (2018) - 822 Seiten',
       'Inmarsat Satellite Data Analysis (2014) - Beweis für südliche Route',
@@ -1363,12 +1681,14 @@ Dutzende Theorien: 1) Piloten-Suizid-Mordplan: Kapitän Zaharie simulierte den K
       '33 bestätigte Trümmerteile (2015-2017) - Gefunden an Stränden Indischer Ozean',
     ],
   ),
-  
+
   // EVENT 49: EDWARD SNOWDEN NSA-LEAKS (2013)
   MaterieLocationDetail(
     name: 'Edward Snowden NSA-Leaks',
-    description: 'Whistleblower enthüllt globale Massenüberwachung (Juni 2013) - PRISM, XKeyscore, NSA spioniert Welt aus',
-    detailedInfo: '''Im Juni 2013 enthüllte Edward Snowden, ein ehemaliger CIA- und NSA-Mitarbeiter, eines der größten Überwachungs-Programme der Geschichte. Die NSA spionierte Millionen Menschen weltweit aus - Telefonate, E-Mails, Internet-Aktivitäten. Snowden floh nach Hongkong, dann Russland, wo er bis heute lebt.
+    description:
+        'Whistleblower enthüllt globale Massenüberwachung (Juni 2013) - PRISM, XKeyscore, NSA spioniert Welt aus',
+    detailedInfo:
+        '''Im Juni 2013 enthüllte Edward Snowden, ein ehemaliger CIA- und NSA-Mitarbeiter, eines der größten Überwachungs-Programme der Geschichte. Die NSA spionierte Millionen Menschen weltweit aus - Telefonate, E-Mails, Internet-Aktivitäten. Snowden floh nach Hongkong, dann Russland, wo er bis heute lebt.
 
 📘 OFFIZIELLE VERSION (US-REGIERUNG):
 Snowden stahl ca. 1,7 Millionen klassifizierte NSA-Dokumente und veröffentlichte sie über Journalisten (Glenn Greenwald, Laura Poitras, The Guardian, Washington Post). Die Leaks enthüllten Programme wie PRISM (Überwachung von Google, Facebook, Microsoft, Apple), XKeyscore (globale Internetüberwachung), Tempora (britisches GCHQ-Programm). Die US-Regierung klagte Snowden wegen Spionage an (Espionage Act 1917). Snowden wird als Verräter betrachtet, der nationale Sicherheit gefährdete.
@@ -1383,12 +1703,21 @@ Snowden sieht sich als Whistleblower, nicht Verräter: 1) Massenüberwachung ist
 • Angela Merkel Handy abgehört (2013) - diplomatische Krise
 • Snowden lebt in Moskau seit 2013 - russische Aufenthaltsgenehmigung bis 2020, dann verlängert
 • Pulitzer-Preis für Public Service (2014) - The Guardian & Washington Post für Snowden-Berichterstattung''',
-    position: LatLng(22.3193, 114.1694), // Hongkong - Snowdens erste Fluchtstation
+    position:
+        LatLng(22.3193, 114.1694), // Hongkong - Snowdens erste Fluchtstation
     category: LocationCategory.surveillance,
-    keywords: ['Snowden', 'NSA', 'Überwachung', 'PRISM', 'Whistleblower', 'Spionage'],
+    keywords: [
+      'Snowden',
+      'NSA',
+      'Überwachung',
+      'PRISM',
+      'Whistleblower',
+      'Spionage'
+    ],
     date: DateTime(2013, 6, 6),
-    imageUrls: ['https://www.genspark.ai/api/files/s/ih0OegSW?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/ih0OegSW?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/6/60/Edward_Snowden-2.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/c/c7/Prism_slide_5.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/3/32/NSA_headquarters%2C_Fort_Meade%2C_Maryland.jpg',
@@ -1403,12 +1732,14 @@ Snowden sieht sich als Whistleblower, nicht Verräter: 1) Massenüberwachung ist
       'US Espionage Act Charges (June 2013) - Department of Justice',
     ],
   ),
-  
+
   // EVENT 50: JEFFREY EPSTEIN TOD (2019)
   MaterieLocationDetail(
     name: 'Jeffrey Epstein Tod - New York',
-    description: 'Milliardär stirbt in Gefängnis (10. August 2019) - Selbstmord oder Mord? Mächtiges Netzwerk, Missbrauch, Vertuschung',
-    detailedInfo: '''Am 10. August 2019 wurde Jeffrey Epstein, ein verurteilter Sexualstraftäter und Milliardär mit Verbindungen zu mächtigen Eliten, tot in seiner Gefängniszelle gefunden. Offizielle Todesursache: Selbstmord durch Erhängen. Aber zahlreiche Ungereimtheiten führten zu einer der größten Verschwörungstheorien der modernen Zeit: "Epstein didn't kill himself."
+    description:
+        'Milliardär stirbt in Gefängnis (10. August 2019) - Selbstmord oder Mord? Mächtiges Netzwerk, Missbrauch, Vertuschung',
+    detailedInfo:
+        '''Am 10. August 2019 wurde Jeffrey Epstein, ein verurteilter Sexualstraftäter und Milliardär mit Verbindungen zu mächtigen Eliten, tot in seiner Gefängniszelle gefunden. Offizielle Todesursache: Selbstmord durch Erhängen. Aber zahlreiche Ungereimtheiten führten zu einer der größten Verschwörungstheorien der modernen Zeit: "Epstein didn't kill himself."
 
 📘 OFFIZIELLE VERSION (US-REGIERUNG):
 Epstein wurde am 6. Juli 2019 wegen Sexhandels mit Minderjährigen verhaftet. Er sass in Metropolitan Correctional Center (MCC) in Manhattan. Am 10. August 2019 um 06:30 Uhr wurde er tot aufgefunden. Todesursache: Selbstmord durch Erhängen (laut Gerichtsmediziner). Epstein hatte Zugang zu einem internationalen Netzwerk von Mädchen/Frauen, die er missbrauchte und an mächtige Männer "verlieh". Seine private Insel "Little St. James" (Virgin Islands) wurde als "Pädophilen-Insel" bezeichnet. Epstein hatte Verbindungen zu Bill Clinton, Donald Trump, Prinz Andrew, Bill Gates, und vielen anderen.
@@ -1424,17 +1755,28 @@ Ungereimtheiten und Verdachtsmomente: 1) Kameras fielen aus: CCTV vor Epsteins Z
 • Zwei Wachen fälschten Logbücher und sahen Netflix statt zu patrouillieren
 • Little St. James Insel (Virgin Islands) - "Pädophilen-Insel", zahlreiche Besucher
 • Ghislaine Maxwell verurteilt zu 20 Jahren Haft (2022) - aber keine Namen genannt''',
-    position: LatLng(40.7143, -74.0000), // Metropolitan Correctional Center, Manhattan
+    position: LatLng(
+        40.7143, -74.0000), // Metropolitan Correctional Center, Manhattan
     category: LocationCategory.epstein, // 🔥 GESONDERTE KATEGORIE
-    keywords: ['Epstein', 'Selbstmord', 'Verschwörung', 'Missbrauch', 'Mord', 'Eliten'],
+    keywords: [
+      'Epstein',
+      'Selbstmord',
+      'Verschwörung',
+      'Missbrauch',
+      'Mord',
+      'Eliten'
+    ],
     date: DateTime(2019, 8, 10),
-    imageUrls: ['https://www.genspark.ai/api/files/s/HYIcKq1T?cache_control=3600', // 🎨 HYPERREALISTISCH
-      
+    imageUrls: [
+      'https://www.genspark.ai/api/files/s/HYIcKq1T?cache_control=3600', // 🎨 HYPERREALISTISCH
+
       'https://upload.wikimedia.org/wikipedia/commons/8/8f/Jeffrey_Epstein_mug_shot.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/d/d8/Little_Saint_James%2C_U.S._Virgin_Islands.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/5/51/Metropolitan_Correctional_Center_New_York.JPG',
     ],
-    videoUrls: ['B3zj27WOrWE'], // Netflix: Jeffrey Epstein - Stinkreich (Deutsch)
+    videoUrls: [
+      'B3zj27WOrWE'
+    ], // Netflix: Jeffrey Epstein - Stinkreich (Deutsch)
     sources: [
       'New York City Medical Examiner Report (August 2019) - Selbstmord durch Erhängen',
       'Dr. Michael Baden Autopsy Review (Oktober 2019) - "Strangulation-Verletzungen"',
@@ -1444,12 +1786,14 @@ Ungereimtheiten und Verdachtsmomente: 1) Kameras fielen aus: CCTV vor Epsteins Z
       'Virginia Giuffre Lawsuit Documents (2015-2019) - Vorwürfe gegen Prinz Andrew & andere',
     ],
   ),
-  
+
   // EVENT 51: WIKILEAKS GRÜNDUNG (2006)
   MaterieLocationDetail(
     name: 'WikiLeaks Gründung - Julian Assange',
-    description: 'Whistleblower-Plattform gegründet (2006) - Veröffentlicht geheime Dokumente, US-Kriegsverbrechen, Clinton-E-Mails',
-    detailedInfo: '''2006 gründete Julian Assange WikiLeaks, eine Plattform zur Veröffentlichung geheimer Dokumente. WikiLeaks enthüllte US-Kriegsverbrechen (Collateral Murder Video 2010), Afghanistan & Irak War Logs, diplomatische Kabelbotschaften und DNC-E-Mails (2016). Assange sitzt seit 2019 im britischen Hochsicherheitsgefängnis Belmarsh und kämpft gegen Auslieferung an die USA.
+    description:
+        'Whistleblower-Plattform gegründet (2006) - Veröffentlicht geheime Dokumente, US-Kriegsverbrechen, Clinton-E-Mails',
+    detailedInfo:
+        '''2006 gründete Julian Assange WikiLeaks, eine Plattform zur Veröffentlichung geheimer Dokumente. WikiLeaks enthüllte US-Kriegsverbrechen (Collateral Murder Video 2010), Afghanistan & Irak War Logs, diplomatische Kabelbotschaften und DNC-E-Mails (2016). Assange sitzt seit 2019 im britischen Hochsicherheitsgefängnis Belmarsh und kämpft gegen Auslieferung an die USA.
 
 📘 OFFIZIELLE VERSION (WIKILEAKS & ASSANGE):
 WikiLeaks ist eine gemeinnützige Organisation, die geheime Informationen von anonymen Quellen veröffentlicht. Ziel: Transparenz und Rechenschaftspflicht von Regierungen und Konzernen. Wichtigste Veröffentlichungen: 1) Collateral Murder Video (2010): US-Hubschrauber tötet 12 Zivilisten in Bagdad, darunter Reuters-Journalisten. 2) Afghanistan War Logs (2010): 91.000 Dokumente über Kriegsverbrechen. 3) Cablegate (2010): 251.287 diplomatische Depeschen aus US-Botschaften. 4) DNC E-Mails (2016): Demokratische Partei manipulierte Vorwahlen gegen Bernie Sanders.
@@ -1464,16 +1808,26 @@ Assange wird von den USA wegen Spionage angeklagt (18 Anklagepunkte, bis zu 175 
 • Julian Assange in Ecuador-Botschaft (2012-2019) - 7 Jahre Asyl
 • Julian Assange in Belmarsh Gefängnis seit 2019 - kämpft gegen US-Auslieferung
 • 18 US-Anklagepunkte wegen Spionage - bis zu 175 Jahre Gefängnis''',
-    position: LatLng(51.4934, -0.0098), // Belmarsh Gefängnis, London - Assanges aktueller Aufenthaltsort
+    position: LatLng(51.4934,
+        -0.0098), // Belmarsh Gefängnis, London - Assanges aktueller Aufenthaltsort
     category: LocationCategory.transparency,
-    keywords: ['WikiLeaks', 'Assange', 'Whistleblower', 'Transparenz', 'Kriegsverbrechen', 'DNC'],
+    keywords: [
+      'WikiLeaks',
+      'Assange',
+      'Whistleblower',
+      'Transparenz',
+      'Kriegsverbrechen',
+      'DNC'
+    ],
     date: DateTime(2006, 10, 4),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/7/75/Julian_Assange_%28Norway%2C_March_2010%29.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/9/96/Wikileaks_logo.svg',
       'https://upload.wikimedia.org/wikipedia/commons/b/b5/HMP_Belmarsh.jpg',
     ],
-    videoUrls: ['2hNxJCy-zEQ'], // ARTE: WikiLeaks - Geheimnisse und Lügen (Deutsch)
+    videoUrls: [
+      '2hNxJCy-zEQ'
+    ], // ARTE: WikiLeaks - Geheimnisse und Lügen (Deutsch)
     sources: [
       'WikiLeaks Archive (2006-2024) - Über 10 Millionen veröffentlichte Dokumente',
       'Collateral Murder Video (5. April 2010) - Original WikiLeaks Veröffentlichung',
@@ -1483,12 +1837,14 @@ Assange wird von den USA wegen Spionage angeklagt (18 Anklagepunkte, bis zu 175 
       'DNC E-Mails (July 2016) - WikiLeaks Veröffentlichung während US-Wahlkampf',
     ],
   ),
-  
+
   // EVENT 52: QANON VERSCHWÖRUNGSTHEORIE (2017)
   MaterieLocationDetail(
     name: 'QAnon Verschwörungstheorie entsteht',
-    description: '4chan-Post startet Massenbewegung (Oktober 2017) - "Deep State", "Sturm", Trump-Kult, Capitol-Sturm',
-    detailedInfo: '''Im Oktober 2017 tauchte auf dem Imageboard 4chan ein anonymer Nutzer namens "Q" auf, der behauptete, hochrangiger Regierungsmitarbeiter ("Q Clearance") zu sein. Q verbreitete kryptische Botschaften ("Q Drops"), die eine globale Verschwörung von Eliten, Pädophilen und Satanisten beschrieben. QAnon wurde zur größten Verschwörungstheorie-Bewegung der modernen Zeit.
+    description:
+        '4chan-Post startet Massenbewegung (Oktober 2017) - "Deep State", "Sturm", Trump-Kult, Capitol-Sturm',
+    detailedInfo:
+        '''Im Oktober 2017 tauchte auf dem Imageboard 4chan ein anonymer Nutzer namens "Q" auf, der behauptete, hochrangiger Regierungsmitarbeiter ("Q Clearance") zu sein. Q verbreitete kryptische Botschaften ("Q Drops"), die eine globale Verschwörung von Eliten, Pädophilen und Satanisten beschrieben. QAnon wurde zur größten Verschwörungstheorie-Bewegung der modernen Zeit.
 
 📘 QANON-NARRATIVE (VERSCHWÖRUNGSTHEORIE):
 Die Kernbehauptungen von QAnon: 1) "Deep State": Eine geheime Kabale von Eliten (Politiker, Hollywood, Medien) kontrolliert die Welt. 2) Pädophilen-Netzwerk: Eliten betreiben einen globalen Kinderhandel-Ring und trinken Kinderblut (Adrenochrom). 3) Trump als Retter: Donald Trump kämpft im Geheimen gegen die Kabale. 4) "Der Sturm kommt": Massenverhaftungen von Eliten stehen bevor - Hillary Clinton, Obama, Soros, Gates, etc. 5) "Trust the Plan": Q hat alles unter Kontrolle, Geduld ist erforderlich. 6) "WWG1WGA" (Where We Go One, We Go All) - QAnon-Slogan.
@@ -1503,16 +1859,26 @@ QAnon ist eine gefährliche Verschwörungstheorie ohne Beweise: 1) Keine Massenv
 • FBI Memo (Mai 2019): QAnon als "inländische Terror-Gefahr" eingestuft
 • Ron Watkins verdächtigt: "Reply All" Podcast & "Q: Into the Storm" (HBO 2021)
 • Social Media Purge (2020-2021): Twitter löschte 70.000+ QAnon-Konten''',
-    position: LatLng(38.8899, -77.0091), // US-Kapitol, Washington D.C. - Capitol-Sturm
+    position: LatLng(
+        38.8899, -77.0091), // US-Kapitol, Washington D.C. - Capitol-Sturm
     category: LocationCategory.propaganda,
-    keywords: ['QAnon', 'Verschwörung', 'Trump', 'Deep State', '4chan', 'Capitol-Sturm'],
+    keywords: [
+      'QAnon',
+      'Verschwörung',
+      'Trump',
+      'Deep State',
+      '4chan',
+      'Capitol-Sturm'
+    ],
     date: DateTime(2017, 10, 28),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/8/8b/QAnon_flag_%22Q%22_letter_with_stars_and_stripes.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/2/25/2021_storming_of_the_United_States_Capitol_DSC09156_%2850814347231%29.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/4/4a/4chan_Logo.svg',
     ],
-    videoUrls: ['8Bux8s8WQE8'], // ARD: QAnon - Die Verschwörungstheorie (Deutsch)
+    videoUrls: [
+      '8Bux8s8WQE8'
+    ], // ARD: QAnon - Die Verschwörungstheorie (Deutsch)
     sources: [
       'First Q Drop Archive (28. Oktober 2017) - 4chan /pol/ Board',
       'FBI Domestic Terrorism Threat Assessment (Mai 2019) - QAnon as threat',
@@ -1522,12 +1888,14 @@ QAnon ist eine gefährliche Verschwörungstheorie ohne Beweise: 1) Keine Massenv
       'Mike Rothschild: "The Storm Is Upon Us: How QAnon Became a Movement" (2021)',
     ],
   ),
-  
+
   // EVENT 53: PANAMA PAPERS (2016)
   MaterieLocationDetail(
     name: 'Panama Papers Leak',
-    description: '11,5 Millionen Dokumente geleakt (April 2016) - Offshore-Steueroasen, Korruption, Politiker, Oligarchen entlarvt',
-    detailedInfo: '''Im April 2016 veröffentlichte das International Consortium of Investigative Journalists (ICIJ) die Panama Papers - 11,5 Millionen geleakte Dokumente der panamaischen Anwaltskanzlei Mossack Fonseca. Die Dokumente enthüllten, wie Politiker, Oligarchen, Sportler und Kriminelle Offshore-Firmen nutzten, um Steuern zu hinterziehen und Geld zu waschen.
+    description:
+        '11,5 Millionen Dokumente geleakt (April 2016) - Offshore-Steueroasen, Korruption, Politiker, Oligarchen entlarvt',
+    detailedInfo:
+        '''Im April 2016 veröffentlichte das International Consortium of Investigative Journalists (ICIJ) die Panama Papers - 11,5 Millionen geleakte Dokumente der panamaischen Anwaltskanzlei Mossack Fonseca. Die Dokumente enthüllten, wie Politiker, Oligarchen, Sportler und Kriminelle Offshore-Firmen nutzten, um Steuern zu hinterziehen und Geld zu waschen.
 
 📘 PANAMA PAPERS ENTHÜLLUNGEN:
 Die Dokumente zeigten Offshore-Verbindungen von: 1) 140+ Politiker aus 50 Ländern, darunter 12 aktuelle oder ehemalige Staats- und Regierungschefs. 2) Wladimir Putin: Engste Freunde und Musiker Sergej Roldugin besaßen Offshore-Firmen mit 2 Milliarden Dollar. 3) Nawaz Sharif (Premierminister Pakistan): Besaß Londoner Luxusimmobilien über Offshore-Firmen - wurde abgesetzt. 4) FIFA-Korruption: Verbindungen zu Fußball-Funktionären. 5) Nordkorea, Syrien, Simbabwe: Diktatoren umgingen Sanktionen. 6) Lionel Messi: Fußballstar nutzte Offshore-Firmen (später verurteilt wegen Steuerhinterziehung). 7) Über 214.000 Offshore-Firmen in 21 Steueroasen (British Virgin Islands, Panama, Bahamas, etc.).
@@ -1542,9 +1910,17 @@ Die Dokumente zeigten Offshore-Verbindungen von: 1) 140+ Politiker aus 50 Lände
 • Wladimir Putin: 2 Milliarden Dollar in Offshore-Firmen (Freund Roldugin)
 • Nawaz Sharif abgesetzt (Juli 2017) nach Panama Papers Enthüllungen
 • Daphne Caruana Galizia ermordet (16. Oktober 2017) - Autobombe in Malta''',
-    position: LatLng(8.9824, -79.5199), // Panama City, Panama - Mossack Fonseca Hauptsitz
+    position: LatLng(
+        8.9824, -79.5199), // Panama City, Panama - Mossack Fonseca Hauptsitz
     category: LocationCategory.finance,
-    keywords: ['Panama Papers', 'Offshore', 'Steueroase', 'Korruption', 'Putin', 'Mossack Fonseca'],
+    keywords: [
+      'Panama Papers',
+      'Offshore',
+      'Steueroase',
+      'Korruption',
+      'Putin',
+      'Mossack Fonseca'
+    ],
     date: DateTime(2016, 4, 3),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/9/91/Panama_Papers_Source_Timeline.svg',
@@ -1561,12 +1937,14 @@ Die Dokumente zeigten Offshore-Verbindungen von: 1) 140+ Politiker aus 50 Lände
       'Pandora Papers (2021) - Nachfolger mit 11,9 Millionen Dokumenten',
     ],
   ),
-  
+
   // EVENT 54: CAMBRIDGE ANALYTICA SKANDAL (2018)
   MaterieLocationDetail(
     name: 'Cambridge Analytica Skandal',
-    description: 'Facebook-Datenmissbrauch enthüllt (März 2018) - 87 Millionen Profile, Trump-Wahlkampf, Brexit, Manipulation',
-    detailedInfo: '''Im März 2018 enthüllten Whistleblower Christopher Wylie und The Guardian/New York Times, wie Cambridge Analytica 87 Millionen Facebook-Profile ohne Zustimmung erntete und diese Daten für politische Kampagnen nutzte - darunter Donald Trumps Präsidentschaftswahlkampf 2016 und die Brexit-Kampagne.
+    description:
+        'Facebook-Datenmissbrauch enthüllt (März 2018) - 87 Millionen Profile, Trump-Wahlkampf, Brexit, Manipulation',
+    detailedInfo:
+        '''Im März 2018 enthüllten Whistleblower Christopher Wylie und The Guardian/New York Times, wie Cambridge Analytica 87 Millionen Facebook-Profile ohne Zustimmung erntete und diese Daten für politische Kampagnen nutzte - darunter Donald Trumps Präsidentschaftswahlkampf 2016 und die Brexit-Kampagne.
 
 📘 CAMBRIDGE ANALYTICA METHODE:
 1) Facebook-Quiz "This Is Your Digital Life" (2014): Dr. Aleksandr Kogan entwickelte Quiz-App, die Daten von Nutzern UND deren Freunden sammelte. 2) 270.000 Nutzer installierten die App - aber 87 Millionen Profile wurden erfasst (Freundes-Daten). 3) Psychometrische Profile: Cambridge Analytica nutzte Big-5-Persönlichkeitsmodell, um Wähler zu profilieren. 4) Mikro-Targeting: Personalisierte politische Werbung basierend auf psychologischen Profilen. 5) Trump-Kampagne 2016: Cambridge Analytica arbeitete für Trump - gezielte Facebook-Ads. 6) Brexit-Kampagne: Arbeit für "Leave.EU" (Arron Banks) - Beeinflussung von Brexit-Abstimmung.
@@ -1581,9 +1959,17 @@ Die Dokumente zeigten Offshore-Verbindungen von: 1) 140+ Politiker aus 50 Lände
 • Brexit-Kampagne: Arbeit für "Leave.EU" (Arron Banks)
 • Facebook Strafe: 5 Milliarden Dollar (FTC, Juli 2019)
 • Cambridge Analytica schloss Mai 2018 - Nachfolgefirma Emerdata gegründet''',
-    position: LatLng(37.4848, -122.1476), // Facebook HQ, Menlo Park, Kalifornien
+    position:
+        LatLng(37.4848, -122.1476), // Facebook HQ, Menlo Park, Kalifornien
     category: LocationCategory.propaganda,
-    keywords: ['Cambridge Analytica', 'Facebook', 'Datenmissbrauch', 'Trump', 'Brexit', 'Manipulation'],
+    keywords: [
+      'Cambridge Analytica',
+      'Facebook',
+      'Datenmissbrauch',
+      'Trump',
+      'Brexit',
+      'Manipulation'
+    ],
     date: DateTime(2018, 3, 17),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/5/5a/Cambridge_Analytica_Logo.svg',
@@ -1600,12 +1986,14 @@ Die Dokumente zeigten Offshore-Verbindungen von: 1) 140+ Politiker aus 50 Lände
       'Netflix: "The Great Hack" (2019) - Dokumentation über Cambridge Analytica Skandal',
     ],
   ),
-  
+
   // EVENT 55: GREAT RESET / WEF AGENDA (2020)
   MaterieLocationDetail(
     name: 'Great Reset - World Economic Forum',
-    description: 'WEF startet "Great Reset" Initiative (Juni 2020) - Klaus Schwab, COVID-Reaktion, "Nichts besitzen und glücklich sein"',
-    detailedInfo: '''Im Juni 2020 startete Klaus Schwab (Gründer des World Economic Forum) die "Great Reset"-Initiative als Reaktion auf COVID-19. Die Idee: Die Pandemie als Gelegenheit nutzen, um Wirtschaft, Gesellschaft und Umwelt neu zu gestalten. Kritiker sehen darin eine Verschwörung zur Kontrolle der Weltbevölkerung.
+    description:
+        'WEF startet "Great Reset" Initiative (Juni 2020) - Klaus Schwab, COVID-Reaktion, "Nichts besitzen und glücklich sein"',
+    detailedInfo:
+        '''Im Juni 2020 startete Klaus Schwab (Gründer des World Economic Forum) die "Great Reset"-Initiative als Reaktion auf COVID-19. Die Idee: Die Pandemie als Gelegenheit nutzen, um Wirtschaft, Gesellschaft und Umwelt neu zu gestalten. Kritiker sehen darin eine Verschwörung zur Kontrolle der Weltbevölkerung.
 
 📘 OFFIZIELLE GREAT RESET AGENDA (WEF):
 Die drei Säulen: 1) Wirtschaftsreform: Stakeholder-Kapitalismus statt Shareholder-Kapitalismus - Unternehmen sollen gesellschaftliche Verantwortung übernehmen. 2) Nachhaltigkeit & Klimaschutz: Grüne Transformation, erneuerbare Energien, CO2-Reduktion. 3) Digitale Revolution: KI, Robotik, Biotechnologie, Internet der Dinge (IoT). Ziel: "Build Back Better" (besser wieder aufbauen) nach COVID-19. WEF arbeitet mit Regierungen, Unternehmen und NGOs zusammen, um globale Probleme zu lösen.
@@ -1622,7 +2010,14 @@ Der Great Reset löste massive Kontroversen aus: 1) "You'll own nothing and be h
 • Agenda 2030 (UN, 2015) - 17 Sustainable Development Goals''',
     position: LatLng(46.2044, 6.1432), // Geneva, Schweiz - WEF Hauptsitz
     category: LocationCategory.deepState,
-    keywords: ['Great Reset', 'WEF', 'Klaus Schwab', 'COVID', 'Agenda 2030', 'Kontrolle'],
+    keywords: [
+      'Great Reset',
+      'WEF',
+      'Klaus Schwab',
+      'COVID',
+      'Agenda 2030',
+      'Kontrolle'
+    ],
     date: DateTime(2020, 6, 3),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/7/7b/Klaus_Schwab_-_World_Economic_Forum_Annual_Meeting_2011.jpg',
@@ -1639,12 +2034,14 @@ Der Great Reset löste massive Kontroversen aus: 1) "You'll own nothing and be h
       'Marc Morano: "The Great Reset: Global Elites and the Permanent Lockdown" (2022)',
     ],
   ),
-  
+
   // EVENT 56: WATERGATE-SKANDAL (1972)
   MaterieLocationDetail(
     name: 'Watergate-Skandal - Washington D.C.',
-    description: 'Politischer Skandal führt zu Nixons Rücktritt (1972-1974) - Einbruch, Vertuschung, Deep Throat, Präsident tritt zurück',
-    detailedInfo: '''Der Watergate-Skandal begann am 17. Juni 1972 mit einem Einbruch ins Democratic National Committee Hauptquartier im Watergate-Komplex. Die Aufdeckung der Vertuschung durch Präsident Richard Nixon führte zum ersten und einzigen Rücktritt eines US-Präsidenten in der Geschichte (9. August 1974).
+    description:
+        'Politischer Skandal führt zu Nixons Rücktritt (1972-1974) - Einbruch, Vertuschung, Deep Throat, Präsident tritt zurück',
+    detailedInfo:
+        '''Der Watergate-Skandal begann am 17. Juni 1972 mit einem Einbruch ins Democratic National Committee Hauptquartier im Watergate-Komplex. Die Aufdeckung der Vertuschung durch Präsident Richard Nixon führte zum ersten und einzigen Rücktritt eines US-Präsidenten in der Geschichte (9. August 1974).
 
 📘 OFFIZIELLE VERSION & ABLAUF:
 Fünf Männer wurden beim Einbruch ins DNC-Büro verhaftet - sie wollten Abhörgeräte installieren und Dokumente fotografieren. FBI-Ermittlungen führten zu White House Mitarbeitern. Washington Post Journalisten Bob Woodward und Carl Bernstein deckten die Vertuschung auf. Ihre Quelle "Deep Throat" (später als FBI-Vizedirektor Mark Felt enthüllt) lieferte Insider-Informationen. Nixon behauptete Unschuld, aber Tonbandaufnahmen bewiesen seine Beteiligung an der Vertuschung ("Smoking Gun Tape", 23. Juni 1972). Der Supreme Court zwang Nixon, die Bänder herauszugeben. Das Repräsentantenhaus leitete ein Impeachment-Verfahren ein. Am 8. August 1974 kündigte Nixon seinen Rücktritt an (wirksam 9. August). Vizepräsident Gerald Ford wurde Präsident und begnadigte Nixon einen Monat später.
@@ -1661,7 +2058,14 @@ Fünf Männer wurden beim Einbruch ins DNC-Büro verhaftet - sie wollten Abhörg
 • Ford begnadigt Nixon (8. September 1974) - Kontroverse Entscheidung''',
     position: LatLng(38.8977, -77.0365), // Watergate Complex, Washington D.C.
     category: LocationCategory.geopolitics,
-    keywords: ['Watergate', 'Nixon', 'Skandal', 'Deep Throat', 'Rücktritt', 'Vertuschung'],
+    keywords: [
+      'Watergate',
+      'Nixon',
+      'Skandal',
+      'Deep Throat',
+      'Rücktritt',
+      'Vertuschung'
+    ],
     date: DateTime(1972, 6, 17),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/f/f7/Watergate_complex.jpg',
@@ -1678,12 +2082,14 @@ Fünf Männer wurden beim Einbruch ins DNC-Büro verhaftet - sie wollten Abhörg
       'Stanley Kutler: "The Wars of Watergate" (1990) - Comprehensive History',
     ],
   ),
-  
+
   // EVENT 57: OKLAHOMA CITY BOMBING (1995)
   MaterieLocationDetail(
     name: 'Oklahoma City Bombing',
-    description: 'Schwerster Terroranschlag in USA vor 9/11 (19. April 1995) - 168 Tote, Timothy McVeigh, Regierungsgebäude zerstört',
-    detailedInfo: '''Am 19. April 1995 um 09:02 Uhr explodierte eine riesige LKW-Bombe vor dem Alfred P. Murrah Federal Building in Oklahoma City. Die Explosion tötete 168 Menschen (darunter 19 Kinder in einer Kindertagesstätte) und verletzte über 680. Es war der schwerste Terroranschlag auf US-Boden vor 9/11.
+    description:
+        'Schwerster Terroranschlag in USA vor 9/11 (19. April 1995) - 168 Tote, Timothy McVeigh, Regierungsgebäude zerstört',
+    detailedInfo:
+        '''Am 19. April 1995 um 09:02 Uhr explodierte eine riesige LKW-Bombe vor dem Alfred P. Murrah Federal Building in Oklahoma City. Die Explosion tötete 168 Menschen (darunter 19 Kinder in einer Kindertagesstätte) und verletzte über 680. Es war der schwerste Terroranschlag auf US-Boden vor 9/11.
 
 📘 OFFIZIELLE VERSION:
 Timothy McVeigh (US-Army-Veteran) und Terry Nichols bauten eine 2.300 kg Ammoniumnitrat-Bombe. Motiv: Rache für das Waco-Massaker (19. April 1993) und Ruby Ridge (1992) - beides FBI-Operationen gegen Regierungskritiker. McVeigh war ein Anti-Regierungs-Extremist, beeinflusst von "The Turner Diaries" (rassistischer Roman über Regierungssturz). Er parkte den Ryder-LKW mit der Bombe vor dem Gebäude und floh. 90 Minuten später wurde er wegen Fahrens ohne Nummernschild angehalten - Waffe gefunden, verhaftet. FBI identifizierte ihn als Bomber. McVeigh wurde 2001 durch Giftspritze hingerichtet. Nichols erhielt lebenslange Haft.
@@ -1699,16 +2105,26 @@ Zahlreiche Ungereimtheiten führen zu Verschwörungstheorien: 1) Mehrere Bomben:
 • 2.300 kg Ammoniumnitrat-Bombe in Ryder-LKW
 • John Doe #2 nie gefunden - FBI behauptet, er existiert nicht
 • Seismographische Daten: Zwei Explosionen 10 Sekunden auseinander (Oklahoma Geological Survey)''',
-    position: LatLng(35.4730, -97.5171), // Oklahoma City, Oklahoma - Bombing Site
+    position:
+        LatLng(35.4730, -97.5171), // Oklahoma City, Oklahoma - Bombing Site
     category: LocationCategory.falseFlags,
-    keywords: ['Oklahoma City', 'Bombing', 'McVeigh', 'Terror', 'Waco', 'Verschwörung'],
+    keywords: [
+      'Oklahoma City',
+      'Bombing',
+      'McVeigh',
+      'Terror',
+      'Waco',
+      'Verschwörung'
+    ],
     date: DateTime(1995, 4, 19),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/9/93/Oklahomacitybombing-DF-ST-98-01356.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/2/2c/Timothy_McVeigh.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/8/89/Oklahoma_City_National_Memorial_%26_Museum.jpg',
     ],
-    videoUrls: ['C_l8FL6e72U'], // History Channel: Oklahoma City Bombing (Deutsch)
+    videoUrls: [
+      'C_l8FL6e72U'
+    ], // History Channel: Oklahoma City Bombing (Deutsch)
     sources: [
       'FBI Oklahoma City Bombing Case File (1995-2001) - Official Investigation',
       'Timothy McVeigh Trial Transcripts (1997) - Denver Federal Court',
@@ -1718,12 +2134,14 @@ Zahlreiche Ungereimtheiten führen zu Verschwörungstheorien: 1) Mehrere Bomben:
       'Andrew Gumbel & Roger Charles: "Oklahoma City: What the Investigation Missed" (2012)',
     ],
   ),
-  
+
   // EVENT 58: JULIAN ASSANGE VERHAFTUNG (2019)
   MaterieLocationDetail(
     name: 'Julian Assange Verhaftung - London',
-    description: 'WikiLeaks-Gründer aus Ecuador-Botschaft geholt (11. April 2019) - 7 Jahre Asyl beendet, Belmarsh-Gefängnis, Auslieferungskampf',
-    detailedInfo: '''Am 11. April 2019 wurde Julian Assange nach 7 Jahren Asyl aus der ecuadorianischen Botschaft in London gezerrt. Die britische Polizei verhaftete ihn auf Ersuchen der USA. Seitdem sitzt Assange im Hochsicherheitsgefängnis Belmarsh und kämpft gegen seine Auslieferung an die USA, wo ihm bis zu 175 Jahre Haft wegen Spionage drohen.
+    description:
+        'WikiLeaks-Gründer aus Ecuador-Botschaft geholt (11. April 2019) - 7 Jahre Asyl beendet, Belmarsh-Gefängnis, Auslieferungskampf',
+    detailedInfo:
+        '''Am 11. April 2019 wurde Julian Assange nach 7 Jahren Asyl aus der ecuadorianischen Botschaft in London gezerrt. Die britische Polizei verhaftete ihn auf Ersuchen der USA. Seitdem sitzt Assange im Hochsicherheitsgefängnis Belmarsh und kämpft gegen seine Auslieferung an die USA, wo ihm bis zu 175 Jahre Haft wegen Spionage drohen.
 
 📘 OFFIZIELLE VERSION (UK & USA):
 Assange suchte 2012 Asyl in der Ecuador-Botschaft, um Auslieferung nach Schweden (Sexualvorwürfe) zu vermeiden. Er fürchtete, von Schweden an die USA ausgeliefert zu werden. WikiLeaks veröffentlichte 2010 über 700.000 klassifizierte US-Dokumente (Afghanistan & Irak War Logs, Cablegate). 2019 entzog Ecuador unter Präsident Lenín Moreno Assange das Asyl - angeblich wegen "wiederholter Verstöße gegen Asylbedingungen". Britische Polizei verhaftete Assange wegen Verstoßes gegen Kautionsauflagen (2012). Die USA stellten 18 Anklagepunkte unter dem Espionage Act - maximale Strafe 175 Jahre. Vorwürfe: Verschwörung zur Computerhacking, Veröffentlichung geheimer Informationen. Seit 2019 sitzt Assange in Belmarsh (Hochsicherheitsgefängnis). Auslieferungsverfahren läuft seit 2020.
@@ -1739,16 +2157,26 @@ Assange-Unterstützer sehen ihn als politischen Gefangenen: 1) UN-Sonderberichte
 • CIA Mordpläne enthüllt (September 2021) - Yahoo News Investigation
 • Ecuador erhielt \$4,2 Milliarden IWF-Kredit (März 2019) - einen Monat vor Assange-Auslieferung
 • Stella Moris & 2 Kinder - geboren während Botschaftsasyl (2017, 2019)''',
-    position: LatLng(51.4934, -0.0098), // Belmarsh Gefängnis, London - Assanges aktueller Aufenthaltsort
+    position: LatLng(51.4934,
+        -0.0098), // Belmarsh Gefängnis, London - Assanges aktueller Aufenthaltsort
     category: LocationCategory.transparency,
-    keywords: ['Assange', 'WikiLeaks', 'Verhaftung', 'Pressefreiheit', 'Belmarsh', 'Auslieferung'],
+    keywords: [
+      'Assange',
+      'WikiLeaks',
+      'Verhaftung',
+      'Pressefreiheit',
+      'Belmarsh',
+      'Auslieferung'
+    ],
     date: DateTime(2019, 4, 11),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/b/bc/Julian_Assange_arrested_in_London_%2847561516881%29_%28cropped%29.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/7/75/Julian_Assange_%28Norway%2C_March_2010%29.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/b/b5/HMP_Belmarsh.jpg',
     ],
-    videoUrls: ['64tje8vCE_c'], // DW Documentary: Julian Assange - Held oder Verräter? (Deutsch)
+    videoUrls: [
+      '64tje8vCE_c'
+    ], // DW Documentary: Julian Assange - Held oder Verräter? (Deutsch)
     sources: [
       'UK Metropolitan Police Arrest Statement (11. April 2019)',
       'US DOJ Indictment (2019) - 18 Counts under Espionage Act',
@@ -1758,13 +2186,15 @@ Assange-Unterstützer sehen ihn als politischen Gefangenen: 1) UN-Sonderberichte
       'Stella Moris Interviews (2020-2024) - Campaign for Assange\'s Freedom',
     ],
   ),
-  
+
   // BESTEHENDE EVENTS (JFK, 9/11, etc.)
-  
+
   MaterieLocationDetail(
     name: 'JFK Attentat - Dallas',
-    description: 'Ermordung von Präsident John F. Kennedy am 22. November 1963 in Dallas, Texas',
-    detailedInfo: '''Am 22. November 1963 wurde der 35. Präsident der USA, John F. Kennedy, in seinem offenen Wagen erschossen, während er durch die Dealey Plaza in Dallas fuhr. Dieses Ereignis erschütterte die Welt und bleibt eines der kontroversesten der Geschichte.
+    description:
+        'Ermordung von Präsident John F. Kennedy am 22. November 1963 in Dallas, Texas',
+    detailedInfo:
+        '''Am 22. November 1963 wurde der 35. Präsident der USA, John F. Kennedy, in seinem offenen Wagen erschossen, während er durch die Dealey Plaza in Dallas fuhr. Dieses Ereignis erschütterte die Welt und bleibt eines der kontroversesten der Geschichte.
 
 📘 OFFIZIELLE VERSION (Warren Commission 1964):
 Lee Harvey Oswald handelte als Einzeltäter. Er feuerte drei Schüsse aus dem 6. Stock des Texas School Book Depository ab. Zwei Schüsse trafen Kennedy, einer davon tödlich. Die Warren Commission kam nach monatelanger Untersuchung zu diesem Schluss. Motiv: Oswalds kommunistische Überzeugungen und psychische Instabilität. Jack Ruby erschoss Oswald zwei Tage später aus emotionaler Erregung.
@@ -1783,14 +2213,26 @@ Zahlreiche Ungereimtheiten führten zu alternativen Theorien: Multiple Schützen
 • 2017 wurden tausende CIA-Dokumente freigegeben - viele bleiben klassifiziert''',
     position: const LatLng(32.7767, -96.7970),
     category: LocationCategory.assassinations,
-    keywords: ['JFK', 'Kennedy', 'Oswald', 'CIA', 'Grassy Knoll', 'Warren Commission', 'Zapruder Film', 'Einzeltäter', 'Verschwörung'],
+    keywords: [
+      'JFK',
+      'Kennedy',
+      'Oswald',
+      'CIA',
+      'Grassy Knoll',
+      'Warren Commission',
+      'Zapruder Film',
+      'Einzeltäter',
+      'Verschwörung'
+    ],
     date: DateTime(1963, 11, 22),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Jfk_motorcade%2C_dallas.png/1200px-Jfk_motorcade%2C_dallas.png', // Kennedy Motorcade - Sekunden vor dem Attentat
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Dealey_Plaza_2003.jpg/1200px-Dealey_Plaza_2003.jpg', // Dealey Plaza heute - der Tatort
       'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Lee_Harvey_Oswald_arrest_card_1963-crop.jpg/800px-Lee_Harvey_Oswald_arrest_card_1963-crop.jpg', // Lee Harvey Oswald Mugshot - Dallas Police 23.11.1963
     ],
-    videoUrls: ['K1_baZWd7Zs'], // "JFK-Attentat: Verschwörung oder Einzeltäter?" (DEUTSCHE Dokumentation)
+    videoUrls: [
+      'K1_baZWd7Zs'
+    ], // "JFK-Attentat: Verschwörung oder Einzeltäter?" (DEUTSCHE Dokumentation)
     sources: [
       'Warren Commission Report (1964) - Offizielle US-Regierungs-Untersuchung, 888 Seiten',
       'HSCA Report (1979) - House Select Committee on Assassinations: "Wahrscheinlich Verschwörung"',
@@ -1800,38 +2242,45 @@ Zahlreiche Ungereimtheiten führten zu alternativen Theorien: Multiple Schützen
       'National Archives JFK Assassination Records Collection - Offizielle Dokumentensammlung',
     ],
   ),
-  
+
   // Kriege
   MaterieLocationDetail(
     name: 'Ukraine-Konflikt - Kiew',
     description: 'Russisch-Ukrainischer Krieg seit 2022',
-    detailedInfo: '''Geopolitischer Konflikt mit globalen Auswirkungen. NATO-Osterweiterung, Energiekrieg, Propaganda auf beiden Seiten. Tiefe historische Wurzeln und komplexe Interessenlage.''',
+    detailedInfo:
+        '''Geopolitischer Konflikt mit globalen Auswirkungen. NATO-Osterweiterung, Energiekrieg, Propaganda auf beiden Seiten. Tiefe historische Wurzeln und komplexe Interessenlage.''',
     position: const LatLng(50.4501, 30.5234),
     category: LocationCategory.wars,
     keywords: ['Ukraine', 'Russland', 'NATO', 'Krieg', '2022'],
     date: DateTime(2022, 2, 24),
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/20220224_Russian_invasion_of_Ukraine.jpg/1200px-20220224_Russian_invasion_of_Ukraine.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/20220224_Russian_invasion_of_Ukraine.jpg/1200px-20220224_Russian_invasion_of_Ukraine.jpg'
+    ],
     videoUrls: ['XJDuLfNlGS8'],
   ),
-  
-  
+
   // Weitere Attentate
   MaterieLocationDetail(
     name: 'MLK Attentat - Memphis',
     description: 'Ermordung von Martin Luther King Jr. am 4. April 1968',
-    detailedInfo: '''Dr. Martin Luther King Jr. wurde im Lorraine Motel erschossen. Offiziell James Earl Ray als Täter, aber viele Fragen offen: FBI-Überwachung, COINTELPRO, mögliche Regierungsbeteiligung.''',
+    detailedInfo:
+        '''Dr. Martin Luther King Jr. wurde im Lorraine Motel erschossen. Offiziell James Earl Ray als Täter, aber viele Fragen offen: FBI-Überwachung, COINTELPRO, mögliche Regierungsbeteiligung.''',
     position: const LatLng(35.1345, -90.0568),
     category: LocationCategory.assassinations,
     keywords: ['MLK', 'Martin Luther King', 'FBI', 'COINTELPRO', '1968'],
     date: DateTime(1968, 4, 4),
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/I_Have_a_Dream_Martin_Luther_King.jpg/1200px-I_Have_a_Dream_Martin_Luther_King.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/I_Have_a_Dream_Martin_Luther_King.jpg/1200px-I_Have_a_Dream_Martin_Luther_King.jpg'
+    ],
     videoUrls: ['T9IcKFpjW2w'],
   ),
-  
+
   MaterieLocationDetail(
     name: '9/11 - World Trade Center',
-    description: 'Terroranschläge vom 11. September 2001 auf das World Trade Center, New York',
-    detailedInfo: '''Am Morgen des 11. September 2001 rasten zwei entführte Passagierflugzeuge in die Twin Towers des World Trade Centers in New York. Beide Türme stürzten innerhalb weniger Stunden ein. Ein drittes Flugzeug traf das Pentagon, ein viertes stürzte in Pennsylvania ab. Fast 3.000 Menschen starben. Dieser Tag veränderte die Welt für immer und führte zum "Krieg gegen den Terror".
+    description:
+        'Terroranschläge vom 11. September 2001 auf das World Trade Center, New York',
+    detailedInfo:
+        '''Am Morgen des 11. September 2001 rasten zwei entführte Passagierflugzeuge in die Twin Towers des World Trade Centers in New York. Beide Türme stürzten innerhalb weniger Stunden ein. Ein drittes Flugzeug traf das Pentagon, ein viertes stürzte in Pennsylvania ab. Fast 3.000 Menschen starben. Dieser Tag veränderte die Welt für immer und führte zum "Krieg gegen den Terror".
 
 📘 OFFIZIELLE VERSION (9/11 Commission Report 2004):
 19 Al-Qaida-Terroristen unter Führung von Osama Bin Laden entführten vier Passagierflugzeuge. American Airlines Flug 11 und United Airlines Flug 175 flogen in die Twin Towers (WTC 1 & 2). American Airlines Flug 77 traf das Pentagon. United Airlines Flug 93 stürzte in Pennsylvania ab, nachdem Passagiere die Entführer angriffen. Die Twin Towers stürzten aufgrund der massiven Schäden durch die Einschläge und der extremen Hitze der brennenden Treibstoffs ein, was die Stahlträger schwächte. WTC 7 (47-stöckiges Gebäude) stürzte später am Abend aufgrund von unkontrolliertem Feuer und strukturellen Schäden ein. Motiv: Hass auf die USA wegen ihrer Nahost-Politik, Unterstützung Israels und Militärpräsenz in Saudi-Arabien.
@@ -1851,14 +2300,27 @@ Die "Inside Job"-Theorie besagt, dass die US-Regierung oder Elemente im "Deep St
 • NORAD Stand-Down: US-Luftabwehr griff trotz 4 entführter Flugzeuge über 1,5 Stunden nicht ein - ungewöhnlich''',
     position: const LatLng(40.7128, -74.0060),
     category: LocationCategory.assassinations,
-    keywords: ['9/11', 'WTC', 'Twin Towers', 'Al-Qaida', 'Inside Job', 'WTC 7', 'Pentagon', 'Controlled Demolition', 'Thermit', 'False Flag'],
+    keywords: [
+      '9/11',
+      'WTC',
+      'Twin Towers',
+      'Al-Qaida',
+      'Inside Job',
+      'WTC 7',
+      'Pentagon',
+      'Controlled Demolition',
+      'Thermit',
+      'False Flag'
+    ],
     date: DateTime(2001, 9, 11),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/WTC_smoking_on_9-11.jpeg/1200px-WTC_smoking_on_9-11.jpeg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/National_September_11_Memorial_%26_Museum.jpg/1200px-National_September_11_Memorial_%26_Museum.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/WTC_floor_debris_SFA.jpg/1200px-WTC_floor_debris_SFA.jpg',
     ],
-    videoUrls: ['qMTd_xpHChQ'], // "9/11 Verschwörungstheorien – Was steckt wirklich dahinter?" (DEUTSCHE Dokumentation)
+    videoUrls: [
+      'qMTd_xpHChQ'
+    ], // "9/11 Verschwörungstheorien – Was steckt wirklich dahinter?" (DEUTSCHE Dokumentation)
     sources: [
       '9/11 Commission Report (2004) - Offizielle Untersuchung',
       'NIST Investigation Report - World Trade Center Collapse',
@@ -1867,60 +2329,74 @@ Die "Inside Job"-Theorie besagt, dass die US-Regierung oder Elemente im "Deep St
       'Declassified Documents (2016-2021)',
     ],
   ),
-  
+
   // Kriege
   MaterieLocationDetail(
     name: 'Syrien-Konflikt - Damaskus',
     description: 'Syrischer Bürgerkrieg seit 2011',
-    detailedInfo: '''Komplexer Proxy-Krieg mit internationalen Akteuren: USA, Russland, Iran, Türkei. Chemiewaffen-Vorwürfe, ISIS, Kurden, Assad-Regime. Millionen Flüchtlinge.''',
+    detailedInfo:
+        '''Komplexer Proxy-Krieg mit internationalen Akteuren: USA, Russland, Iran, Türkei. Chemiewaffen-Vorwürfe, ISIS, Kurden, Assad-Regime. Millionen Flüchtlinge.''',
     position: const LatLng(33.5138, 36.2765),
     category: LocationCategory.wars,
     keywords: ['Syrien', 'Assad', 'ISIS', 'Proxy-Krieg', 'Chemiewaffen'],
     date: DateTime(2011, 3, 15),
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Syrian_civil_war_map.svg/1200px-Syrian_civil_war_map.svg.png'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Syrian_civil_war_map.svg/1200px-Syrian_civil_war_map.svg.png'
+    ],
     videoUrls: ['VqYT7fJJVOk'],
   ),
 
   MaterieLocationDetail(
     name: 'Vietnam-Krieg - Saigon',
     description: 'Vietnam-Krieg 1955-1975',
-    detailedInfo: '''USA gegen Nordvietnam. Napalm, Agent Orange, My-Lai-Massaker. Erster TV-Krieg, Anti-Kriegs-Bewegung. Pentagon Papers offenbarten systematische Lügen.''',
+    detailedInfo:
+        '''USA gegen Nordvietnam. Napalm, Agent Orange, My-Lai-Massaker. Erster TV-Krieg, Anti-Kriegs-Bewegung. Pentagon Papers offenbarten systematische Lügen.''',
     position: const LatLng(10.8231, 106.6297),
     category: LocationCategory.wars,
     keywords: ['Vietnam', 'USA', 'Pentagon Papers', 'Agent Orange', 'Napalm'],
     date: DateTime(1955, 11, 1),
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Nick_Ut-_The_Terror_of_War.jpg/1200px-Nick_Ut-_The_Terror_of_War.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Nick_Ut-_The_Terror_of_War.jpg/1200px-Nick_Ut-_The_Terror_of_War.jpg'
+    ],
     videoUrls: ['i4Oc0M8V1vE'],
   ),
-  
+
   // Finanz-Zentren
   MaterieLocationDetail(
     name: 'Wall Street - New York',
     description: 'Finanzzentrum & Machtkonzentration',
-    detailedInfo: '''NYSE, Federal Reserve, Goldman Sachs. Symbol der Finanzmacht. 2008 Finanzkrise, Lehman Brothers, Too-Big-To-Fail. Regulatorische Gefangennahme, Hochfrequenzhandel.''',
+    detailedInfo:
+        '''NYSE, Federal Reserve, Goldman Sachs. Symbol der Finanzmacht. 2008 Finanzkrise, Lehman Brothers, Too-Big-To-Fail. Regulatorische Gefangennahme, Hochfrequenzhandel.''',
     position: const LatLng(40.7069, -74.0113),
     category: LocationCategory.finance,
     keywords: ['Wall Street', 'NYSE', 'Federal Reserve', 'Finanzkrise', '2008'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/New_york_stock_exchange_2.jpg/1200px-New_york_stock_exchange_2.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/New_york_stock_exchange_2.jpg/1200px-New_york_stock_exchange_2.jpg'
+    ],
     videoUrls: ['IFuAOuQlEFo'],
   ),
 
   MaterieLocationDetail(
     name: 'City of London - Finanzdistrikt',
     description: 'Globales Finanzzentrum mit Sonderstatus',
-    detailedInfo: '''Die City of London Corporation ist ein eigenständiger Staat im Staat. Offshore-Zentrum, Steueroase-Netzwerk, undurchsichtige Strukturen. Bank of England, Lloyd's of London.''',
+    detailedInfo:
+        '''Die City of London Corporation ist ein eigenständiger Staat im Staat. Offshore-Zentrum, Steueroase-Netzwerk, undurchsichtige Strukturen. Bank of England, Lloyd's of London.''',
     position: const LatLng(51.5155, -0.0922),
     category: LocationCategory.finance,
     keywords: ['City of London', 'Offshore', 'Steueroase', 'Bank of England'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/City_of_London_skyline_from_London_City_Hall_-_Oct_2008.jpg/1200px-City_of_London_skyline_from_London_City_Hall_-_Oct_2008.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/City_of_London_skyline_from_London_City_Hall_-_Oct_2008.jpg/1200px-City_of_London_skyline_from_London_City_Hall_-_Oct_2008.jpg'
+    ],
     videoUrls: ['bMSqLy3bNio'],
   ),
-  
+
   // Geheimgesellschaften
   MaterieLocationDetail(
     name: 'Bohemian Grove - Kalifornien',
-    description: 'Geheimes Elite-Retreat im Redwood-Wald - "Cremation of Care" Ritual',
-    detailedInfo: '''Bohemian Grove ist ein 1.100 Hektar großes abgeschirmtes Waldgebiet in Monte Rio, Kalifornien, das dem exklusiven Bohemian Club gehört. Jeden Juli versammeln sich hier seit 1899 die mächtigsten Männer der Welt für ein zweiwöchiges "Summer Camp" - Politiker, Industrielle, Banker, Künstler.
+    description:
+        'Geheimes Elite-Retreat im Redwood-Wald - "Cremation of Care" Ritual',
+    detailedInfo:
+        '''Bohemian Grove ist ein 1.100 Hektar großes abgeschirmtes Waldgebiet in Monte Rio, Kalifornien, das dem exklusiven Bohemian Club gehört. Jeden Juli versammeln sich hier seit 1899 die mächtigsten Männer der Welt für ein zweiwöchiges "Summer Camp" - Politiker, Industrielle, Banker, Künstler.
 
 📘 OFFIZIELLE VERSION:
 Bohemian Grove ist ein privater Retreat für erfolgreiche Männer zum Entspannen, Networking und künstlerischen Austausch. Der Bohemian Club (gegründet 1872) war ursprünglich ein Künstlerclub in San Francisco. Das "Cremation of Care"-Ritual ist eine theatralische Aufführung - eine Allegorie, um Alltagssorgen symbolisch zu "verbrennen" und das Camp zu eröffnen. Mitglieder halten Vorträge ("Lakeside Talks"), genießen Natur, Musik, Theater. Es ist wie ein exklusives Feriencamp für erfolgreiche Menschen - private Zeit ohne Medien, Telefone, Geschäfte. Kein politischer Einfluss - nur persönliche Freundschaften und Entspannung.
@@ -1941,7 +2417,16 @@ Bohemian Grove ist ein okkultes Elite-Ritual-Zentrum, wo die Mächtigsten der We
 • Mock-Menschenopfer-Ritual: Selbst wenn "nur Theater" - warum dieses spezifische Ritual? Kultureller/okkulter Hintergrund?''',
     position: const LatLng(38.4104, -123.0041),
     category: LocationCategory.secretSocieties,
-    keywords: ['Bohemian Grove', 'Elite', 'Ritual', 'Cremation of Care', 'Moloch', 'Alex Jones', 'Manhattan Project', 'Geheimgesellschaft'],
+    keywords: [
+      'Bohemian Grove',
+      'Elite',
+      'Ritual',
+      'Cremation of Care',
+      'Moloch',
+      'Alex Jones',
+      'Manhattan Project',
+      'Geheimgesellschaft'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Bohemian_Club_logo.jpg/800px-Bohemian_Club_logo.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Bohemian_Grove_entrance.jpg/1200px-Bohemian_Grove_entrance.jpg',
@@ -1956,23 +2441,28 @@ Bohemian Grove ist ein okkultes Elite-Ritual-Zentrum, wo die Mächtigsten der We
       'Historical Bohemian Club Records',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Skull and Bones - Yale University',
     description: 'Geheimbund der Elite',
-    detailedInfo: '''1832 gegründet. Mitglieder: Bush-Familie, Kerry, viele CIA-Direktoren. "The Order", "322". Grab-Raub, Rituale, lebenslange Netzwerke.''',
+    detailedInfo:
+        '''1832 gegründet. Mitglieder: Bush-Familie, Kerry, viele CIA-Direktoren. "The Order", "322". Grab-Raub, Rituale, lebenslange Netzwerke.''',
     position: const LatLng(41.3163, -72.9223),
     category: LocationCategory.secretSocieties,
     keywords: ['Skull and Bones', 'Yale', 'Bush', 'CIA', 'The Order'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Skull_and_bones_yale.jpg/800px-Skull_and_bones_yale.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Skull_and_bones_yale.jpg/800px-Skull_and_bones_yale.jpg'
+    ],
     videoUrls: ['KxUTPTIx6uM'],
   ),
-  
+
   // UFO-Hotspots
   MaterieLocationDetail(
     name: 'Area 51 - Nevada',
-    description: 'Hochgeheime US-Militärbasis in der Wüste Nevadas - Zentrum der UFO-Mythen',
-    detailedInfo: '''Area 51, offiziell als "Groom Lake" oder "Homey Airport" bekannt, ist eine der geheimnisvollsten Militärbasen der Welt. Die Anlage liegt in der abgelegenen Wüste Nevadas, etwa 150 km nordwestlich von Las Vegas. Der Luftraum ist gesperrt, Eindringlinge werden mit tödlicher Gewalt bedroht.
+    description:
+        'Hochgeheime US-Militärbasis in der Wüste Nevadas - Zentrum der UFO-Mythen',
+    detailedInfo:
+        '''Area 51, offiziell als "Groom Lake" oder "Homey Airport" bekannt, ist eine der geheimnisvollsten Militärbasen der Welt. Die Anlage liegt in der abgelegenen Wüste Nevadas, etwa 150 km nordwestlich von Las Vegas. Der Luftraum ist gesperrt, Eindringlinge werden mit tödlicher Gewalt bedroht.
 
 📘 OFFIZIELLE VERSION (US Air Force):
 Area 51 ist ein Testgelände für experimentelle Flugzeuge und Waffensysteme der United States Air Force. Hier wurden geheime Spionageflugzeuge wie die U-2, SR-71 Blackbird und die F-117 Stealth-Bomber entwickelt und getestet. Die extreme Geheimhaltung dient dem Schutz militärischer Technologie vor ausländischen Geheimdiensten. Die CIA bestätigte 2013 erstmals offiziell die Existenz von Area 51, nachdem jahrzehntelang jede Verbindung geleugnet wurde. Die "UFO-Sichtungen" in der Region seien Verwechslungen mit experimentellen Flugzeugen gewesen.
@@ -1992,7 +2482,17 @@ Area 51 beherbergt außerirdische Technologie und möglicherweise lebende oder t
 • Satellitenbilder zeigen riesige Hangars und mysteriöse Start-/Landebahnen''',
     position: const LatLng(37.2350, -115.8111),
     category: LocationCategory.ufo,
-    keywords: ['Area 51', 'UFO', 'Roswell', 'Alien', 'USAF', 'Bob Lazar', 'Reverse Engineering', 'S-4', 'Janet Airlines'],
+    keywords: [
+      'Area 51',
+      'UFO',
+      'Roswell',
+      'Alien',
+      'USAF',
+      'Bob Lazar',
+      'Reverse Engineering',
+      'S-4',
+      'Janet Airlines'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Groom_Lake_-_Area_51_-_Flickr_-_Cobatfor.jpg/1200px-Groom_Lake_-_Area_51_-_Flickr_-_Cobatfor.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Area_51_warning_sign.jpg/800px-Area_51_warning_sign.jpg',
@@ -2008,24 +2508,29 @@ Area 51 beherbergt außerirdische Technologie und möglicherweise lebende oder t
       'Annie Jacobsen: "Area 51: An Uncensored History" (2011) - 521 Seiten, 74 Interviews mit ehemaligen Mitarbeitern',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Roswell - New Mexico',
     description: 'UFO-Absturz 1947',
-    detailedInfo: '''Am 7. Juli 1947 stürzte angeblich ein UFO ab. Militär: Erst "fliegende Untertasse", dann "Wetterballon". Zeugenaussagen, Alien-Autopsie-Videos (umstritten), Vertuschungsvorwürfe.''',
+    detailedInfo:
+        '''Am 7. Juli 1947 stürzte angeblich ein UFO ab. Militär: Erst "fliegende Untertasse", dann "Wetterballon". Zeugenaussagen, Alien-Autopsie-Videos (umstritten), Vertuschungsvorwürfe.''',
     position: const LatLng(33.3943, -104.5230),
     category: LocationCategory.ufo,
     keywords: ['Roswell', 'UFO-Absturz', '1947', 'Alien', 'Vertuschung'],
     date: DateTime(1947, 7, 7),
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Roswell_UFO_Museum.jpg/1200px-Roswell_UFO_Museum.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Roswell_UFO_Museum.jpg/1200px-Roswell_UFO_Museum.jpg'
+    ],
     videoUrls: ['NqRuEMbNMW8'],
   ),
-  
+
   // Deep State
   MaterieLocationDetail(
     name: 'Pentagon - Arlington',
-    description: 'Hauptquartier des US-Verteidigungsministeriums - Symbol des militärisch-industriellen Komplexes',
-    detailedInfo: '''Das Pentagon ist das größte Bürogebäude der Welt und Sitz des US-Verteidigungsministeriums. Über 23.000 Militär- und Zivilpersonal arbeiten hier. Mit einem Jahresbudget von über 800 Milliarden US-Dollar (2023) kontrolliert das Pentagon die mächtigste Militärmaschinerie der Geschichte.
+    description:
+        'Hauptquartier des US-Verteidigungsministeriums - Symbol des militärisch-industriellen Komplexes',
+    detailedInfo:
+        '''Das Pentagon ist das größte Bürogebäude der Welt und Sitz des US-Verteidigungsministeriums. Über 23.000 Militär- und Zivilpersonal arbeiten hier. Mit einem Jahresbudget von über 800 Milliarden US-Dollar (2023) kontrolliert das Pentagon die mächtigste Militärmaschinerie der Geschichte.
 
 📘 OFFIZIELLE VERSION:
 Das Pentagon koordiniert die US-Streitkräfte zum Schutz der nationalen Sicherheit und amerikanischer Interessen weltweit. Es verwaltet das Militärbudget transparent durch den Kongress, entwickelt Verteidigungsstrategien und führt genehmigte Militäroperationen durch. Das Budget ist öffentlich einsehbar und demokratisch kontrolliert. Das Pentagon arbeitet im Rahmen der Gesetze und unter ziviler Kontrolle des Präsidenten.
@@ -2045,13 +2550,23 @@ Das Pentagon ist das Herz des "Deep State" - ein permanenter Machtapparat, der u
 • Permanente Kriege seit 1945 - Frieden bedroht das System''',
     position: const LatLng(38.8719, -77.0563),
     category: LocationCategory.deepState,
-    keywords: ['Pentagon', 'Military-Industrial Complex', 'Black Budget', 'Deep State', 'Eisenhower', 'Operation Northwoods', 'Special Access Programs'],
+    keywords: [
+      'Pentagon',
+      'Military-Industrial Complex',
+      'Black Budget',
+      'Deep State',
+      'Eisenhower',
+      'Operation Northwoods',
+      'Special Access Programs'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/The_Pentagon_January_2008.jpg/1200px-The_Pentagon_January_2008.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/US-DeptOfDefense-Seal.svg/800px-US-DeptOfDefense-Seal.svg.png',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Pentagon_City_-_aerial_view.jpg/1200px-Pentagon_City_-_aerial_view.jpg',
     ],
-    videoUrls: ['S0OUfqSk7sI'], // Pentagon & Military-Industrial Complex Documentary
+    videoUrls: [
+      'S0OUfqSk7sI'
+    ], // Pentagon & Military-Industrial Complex Documentary
     sources: [
       'Eisenhower Farewell Address (17. Januar 1961) - Warnung vor "military-industrial complex", vollständiges Transkript',
       'Pentagon Papers (1971) - 7.000 Seiten geheime DoD-Dokumente zum Vietnam-Krieg, geleakt von Daniel Ellsberg',
@@ -2061,11 +2576,13 @@ Das Pentagon ist das Herz des "Deep State" - ein permanenter Machtapparat, der u
       'Seymour Hersh: "Chain of Command" (2004) - 394 Seiten, Investigativ-Journalismus zu geheimen Pentagon-Programmen',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'CIA Hauptquartier - Langley',
-    description: 'Zentrale der Central Intelligence Agency - Amerikas mächtigster Geheimdienst',
-    detailedInfo: '''Das CIA-Hauptquartier in Langley, Virginia, ist das Nervenzentrum des amerikanischen Auslandsgeheimdienstes. Seit 1961 koordiniert die CIA Geheimoperationen weltweit - offiziell zum Schutz nationaler Interessen, inoffiziell als "Schattenregierung" bezeichnet.
+    description:
+        'Zentrale der Central Intelligence Agency - Amerikas mächtigster Geheimdienst',
+    detailedInfo:
+        '''Das CIA-Hauptquartier in Langley, Virginia, ist das Nervenzentrum des amerikanischen Auslandsgeheimdienstes. Seit 1961 koordiniert die CIA Geheimoperationen weltweit - offiziell zum Schutz nationaler Interessen, inoffiziell als "Schattenregierung" bezeichnet.
 
 📘 OFFIZIELLE VERSION:
 Die CIA sammelt und analysiert Informationen über ausländische Regierungen, Organisationen und Personen zur Unterstützung der US-Außenpolitik. Sie führt verdeckte Operationen durch, die vom Präsidenten genehmigt werden. Alle Aktivitäten unterliegen der Aufsicht durch den Kongress (Intelligence Oversight Committees). Die CIA arbeitet im Rahmen amerikanischer Gesetze und internationaler Vereinbarungen zum Schutz der nationalen Sicherheit und zur Verhinderung von Terrorismus.
@@ -2086,7 +2603,17 @@ Die CIA ist die operative Zentrale des Deep State - ein unkontrollierbarer Gehei
 • Gary Webb (Journalist): Aufgedeckter CIA-Kokainhandel - 2004 "Selbstmord" mit 2 Kopfschüssen''',
     position: const LatLng(38.9517, -77.1467),
     category: LocationCategory.deepState,
-    keywords: ['CIA', 'Langley', 'MK-Ultra', 'Operation Mockingbird', 'Regime Change', 'Deep State', 'Church Committee', 'Drug Trafficking', 'Allen Dulles'],
+    keywords: [
+      'CIA',
+      'Langley',
+      'MK-Ultra',
+      'Operation Mockingbird',
+      'Regime Change',
+      'Deep State',
+      'Church Committee',
+      'Drug Trafficking',
+      'Allen Dulles'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Aerial_view_of_CIA_headquarters%2C_Langley%2C_Virginia.jpg/1200px-Aerial_view_of_CIA_headquarters%2C_Langley%2C_Virginia.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Seal_of_the_Central_Intelligence_Agency.svg/800px-Seal_of_the_Central_Intelligence_Agency.svg.png',
@@ -2102,12 +2629,14 @@ Die CIA ist die operative Zentrale des Deep State - ein unkontrollierbarer Gehei
       'Tim Weiner: "Legacy of Ashes: The History of the CIA" (2007) - 702 Seiten, Pulitzer Prize Winner',
     ],
   ),
-  
+
   // Überwachung
   MaterieLocationDetail(
     name: 'NSA Hauptquartier - Fort Meade',
-    description: 'National Security Agency - Globales Überwachungszentrum und größte Spionageorganisation',
-    detailedInfo: '''Die NSA in Fort Meade, Maryland, ist die größte und technologisch fortschrittlichste Überwachungsorganisation der Welt. Mit einem geschätzten Budget von 10+ Milliarden Dollar jährlich und über 30.000 Mitarbeitern sammelt die NSA täglich Milliarden von Kommunikationsdaten weltweit.
+    description:
+        'National Security Agency - Globales Überwachungszentrum und größte Spionageorganisation',
+    detailedInfo:
+        '''Die NSA in Fort Meade, Maryland, ist die größte und technologisch fortschrittlichste Überwachungsorganisation der Welt. Mit einem geschätzten Budget von 10+ Milliarden Dollar jährlich und über 30.000 Mitarbeitern sammelt die NSA täglich Milliarden von Kommunikationsdaten weltweit.
 
 📘 OFFIZIELLE VERSION:
 Die NSA ist für Signals Intelligence (SIGINT) zuständig - das Abfangen ausländischer Kommunikation zur Terrorismusbekämpfung und zum Schutz nationaler Sicherheit. Nach 9/11 wurden die Befugnisse erweitert, um Terroranschläge zu verhindern. Alle Programme werden vom FISA Court (Foreign Intelligence Surveillance Court) überwacht. Die NSA sammelt nur Metadaten (wer, wann, wo), keine Inhalte. US-Bürger werden nur bei Terrorverdacht und mit richterlicher Genehmigung überwacht. Die Überwachung dient dem Schutz vor terroristischen Bedrohungen.
@@ -2128,7 +2657,17 @@ Die NSA betreibt die größte massenhafte Überwachung in der Geschichte - JEDER
 • Stellar Wind: Geheimes Bush-Programm (2001) begann massenhafte Überwachung OHNE Gerichtsbeschlüsse''',
     position: const LatLng(39.1081, -76.7703),
     category: LocationCategory.surveillance,
-    keywords: ['NSA', 'Snowden', 'PRISM', 'XKeyscore', 'Five Eyes', 'Überwachung', 'FISA Court', 'Crypto AG', 'Upstream Collection'],
+    keywords: [
+      'NSA',
+      'Snowden',
+      'PRISM',
+      'XKeyscore',
+      'Five Eyes',
+      'Überwachung',
+      'FISA Court',
+      'Crypto AG',
+      'Upstream Collection'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/National_Security_Agency_headquarters%2C_Fort_Meade%2C_Maryland.jpg/1200px-National_Security_Agency_headquarters%2C_Fort_Meade%2C_Maryland.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/National_Security_Agency.svg/800px-National_Security_Agency.svg.png',
@@ -2144,15 +2683,18 @@ Die NSA betreibt die größte massenhafte Überwachung in der Geschichte - JEDER
       'US Privacy and Civil Liberties Oversight Board Report (2014) - 238 Seiten, offizielle US-Regierungsuntersuchung',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'GCHQ - Cheltenham',
     description: 'Britischer Geheimdienst & Überwachung',
-    detailedInfo: '''Government Communications Headquarters. Partner der NSA. Tempora-Programm, Glasfaser-Überwachung, Five Eyes. "Doughnut"-Gebäude.''',
+    detailedInfo:
+        '''Government Communications Headquarters. Partner der NSA. Tempora-Programm, Glasfaser-Überwachung, Five Eyes. "Doughnut"-Gebäude.''',
     position: const LatLng(51.8989, -2.0797),
     category: LocationCategory.surveillance,
     keywords: ['GCHQ', 'Tempora', 'Five Eyes', 'UK', 'Überwachung'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/GCHQ-aerial.jpg/1200px-GCHQ-aerial.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/GCHQ-aerial.jpg/1200px-GCHQ-aerial.jpg'
+    ],
     videoUrls: ['JeA1otPYNOk'],
   ),
 
@@ -2160,18 +2702,23 @@ Die NSA betreibt die größte massenhafte Überwachung in der Geschichte - JEDER
   MaterieLocationDetail(
     name: 'CDC - Atlanta',
     description: 'Centers for Disease Control and Prevention',
-    detailedInfo: '''US-Seuchenschutzbehörde. COVID-19-Pandemie, Gain-of-Function-Forschung-Debatten, Impfstoff-Kontroversen, Biowaffen-Forschung-Vorwürfe.''',
+    detailedInfo:
+        '''US-Seuchenschutzbehörde. COVID-19-Pandemie, Gain-of-Function-Forschung-Debatten, Impfstoff-Kontroversen, Biowaffen-Forschung-Vorwürfe.''',
     position: const LatLng(33.7985, -84.3255),
     category: LocationCategory.biotech,
     keywords: ['CDC', 'COVID-19', 'Gain-of-Function', 'Biowaffen', 'Pandemie'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/CDC-buildings.jpg/1200px-CDC-buildings.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/CDC-buildings.jpg/1200px-CDC-buildings.jpg'
+    ],
     videoUrls: ['pHr0GbDInyQ'],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Wuhan Institute of Virology',
-    description: 'Chinesisches BSL-4-Labor - Zentrum der COVID-19-Ursprungsdebatte',
-    detailedInfo: '''Das Wuhan Institute of Virology (WIV) ist Chinas führendes Virologie-Labor mit Biosafety Level 4 (BSL-4) Zertifizierung - die höchste Sicherheitsstufe für gefährliche Pathogene. Nur wenige Kilometer vom Huanan Seafood Market entfernt, wo die ersten COVID-19-Fälle auftraten.
+    description:
+        'Chinesisches BSL-4-Labor - Zentrum der COVID-19-Ursprungsdebatte',
+    detailedInfo:
+        '''Das Wuhan Institute of Virology (WIV) ist Chinas führendes Virologie-Labor mit Biosafety Level 4 (BSL-4) Zertifizierung - die höchste Sicherheitsstufe für gefährliche Pathogene. Nur wenige Kilometer vom Huanan Seafood Market entfernt, wo die ersten COVID-19-Fälle auftraten.
 
 📘 OFFIZIELLE VERSION (China/WHO 2021):
 COVID-19 entstand natürlich durch Übertragung von Fledermäusen über ein Zwischenwirt-Tier (möglicherweise Pangolin) auf den Menschen auf dem Huanan Seafood Market in Wuhan. Das Virus entwickelte sich durch natürliche Evolution. Das Wuhan Institute of Virology hat NICHTS mit dem Ausbruch zu tun. Die WHO-Untersuchung (Januar 2021) kam zum Schluss: "Extrem unwahrscheinlich", dass das Virus aus einem Labor stammt. China kooperiert vollständig mit internationalen Untersuchungen. Gain-of-Function-Forschung am WIV war streng reguliert und sicher.
@@ -2193,7 +2740,17 @@ COVID-19 stammt aus dem Wuhan Institute of Virology - ein Labor-Leck, möglicher
 • Keine Zwischenwirt-Tiere gefunden: 80.000+ Proben, kein Tier mit SARS-CoV-2 - wo ist der natürliche Ursprung?''',
     position: const LatLng(30.5391, 114.3538),
     category: LocationCategory.biotech,
-    keywords: ['Wuhan', 'COVID-19', 'Lab-Leak', 'Coronavirus', 'Gain-of-Function', 'WHO', 'Dr. Shi Zhengli', 'EcoHealth Alliance', 'Peter Daszak'],
+    keywords: [
+      'Wuhan',
+      'COVID-19',
+      'Lab-Leak',
+      'Coronavirus',
+      'Gain-of-Function',
+      'WHO',
+      'Dr. Shi Zhengli',
+      'EcoHealth Alliance',
+      'Peter Daszak'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Wuhan_Institute_of_Virology_main_entrance.jpg/1200px-Wuhan_Institute_of_Virology_main_entrance.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/SARS-CoV-2_without_background.png/800px-SARS-CoV-2_without_background.png',
@@ -2209,12 +2766,14 @@ COVID-19 stammt aus dem Wuhan Institute of Virology - ein Labor-Leck, möglicher
       'The Lancet Commission on COVID-19 (September 2022) - Umfassende wissenschaftliche Analyse der Pandemie-Ursprünge',
     ],
   ),
-  
+
   // Geopolitik
   MaterieLocationDetail(
     name: 'Davos - World Economic Forum',
-    description: 'Jährliches Treffen der globalen Elite - Zentrum der "Great Reset"-Agenda',
-    detailedInfo: '''Jedes Jahr im Januar versammeln sich in Davos, Schweiz, die mächtigsten Menschen der Welt: Staatschefs, CEOs der größten Konzerne, Banker, Tech-Giganten und Milliardäre. Das World Economic Forum (WEF), gegründet 1971 von Klaus Schwab, gilt als inoffizielle "Weltregierung".
+    description:
+        'Jährliches Treffen der globalen Elite - Zentrum der "Great Reset"-Agenda',
+    detailedInfo:
+        '''Jedes Jahr im Januar versammeln sich in Davos, Schweiz, die mächtigsten Menschen der Welt: Staatschefs, CEOs der größten Konzerne, Banker, Tech-Giganten und Milliardäre. Das World Economic Forum (WEF), gegründet 1971 von Klaus Schwab, gilt als inoffizielle "Weltregierung".
 
 📘 OFFIZIELLE VERSION:
 Das WEF ist eine gemeinnützige internationale Organisation, die öffentlich-private Zusammenarbeit fördert. Es bringt führende Persönlichkeiten zusammen, um globale Herausforderungen zu diskutieren: Klimawandel, Armut, Gesundheit, Technologie. Die Agenda 2030 und der "Great Reset" (2020) zielen darauf ab, nach COVID-19 eine nachhaltigere, gerechtere Welt zu schaffen. "Stakeholder Capitalism" soll Unternehmen verpflichten, nicht nur Profit, sondern auch soziale Verantwortung zu übernehmen. Das WEF hat keinen politischen Einfluss - es ist nur eine Diskussionsplattform.
@@ -2236,7 +2795,17 @@ Das WEF ist die Schaltzentrale einer globalen Elite-Verschwörung zur Errichtung
 • Keine demokratische Legitimation: Private Organisation, aber enormer Einfluss auf Regierungen weltweit''',
     position: const LatLng(46.8029, 9.8357),
     category: LocationCategory.geopolitics,
-    keywords: ['Davos', 'WEF', 'Great Reset', 'Klaus Schwab', 'Elite', 'New World Order', 'Young Global Leaders', 'Stakeholder Capitalism', 'Agenda 2030'],
+    keywords: [
+      'Davos',
+      'WEF',
+      'Great Reset',
+      'Klaus Schwab',
+      'Elite',
+      'New World Order',
+      'Young Global Leaders',
+      'Stakeholder Capitalism',
+      'Agenda 2030'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Davos_-_Ortszentrum.jpg/1200px-Davos_-_Ortszentrum.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/World_Economic_Forum_logo.svg/800px-World_Economic_Forum_logo.svg.png',
@@ -2252,16 +2821,25 @@ Das WEF ist die Schaltzentrale einer globalen Elite-Verschwörung zur Errichtung
       'Young Global Leaders Program Alumni List (1993-2024) - Dokumentierte WEF-Netzwerk-Mitglieder',
     ],
   ),
-  
+
   // Transparenz
   MaterieLocationDetail(
     name: 'WikiLeaks - (Symbolisch)',
     description: 'Whistleblowing-Plattform',
-    detailedInfo: '''Julian Assange. Collateral Murder Video, Afghanistan Papers, Cablegate, DNC-Leaks. Verfolgung, Auslieferung, Pressefreiheit-Debatte.''',
+    detailedInfo:
+        '''Julian Assange. Collateral Murder Video, Afghanistan Papers, Cablegate, DNC-Leaks. Verfolgung, Auslieferung, Pressefreiheit-Debatte.''',
     position: const LatLng(51.5074, -0.1278), // London (symbolisch)
     category: LocationCategory.transparency,
-    keywords: ['WikiLeaks', 'Assange', 'Whistleblowing', 'Cablegate', 'Pressefreiheit'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Julian_Assange_cropped_(Norway,_March_2010).jpg/800px-Julian_Assange_cropped_(Norway,_March_2010).jpg'],
+    keywords: [
+      'WikiLeaks',
+      'Assange',
+      'Whistleblowing',
+      'Cablegate',
+      'Pressefreiheit'
+    ],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Julian_Assange_cropped_(Norway,_March_2010).jpg/800px-Julian_Assange_cropped_(Norway,_March_2010).jpg'
+    ],
     videoUrls: ['FieaFTCHkUQ'],
   ),
 
@@ -2269,19 +2847,24 @@ Das WEF ist die Schaltzentrale einer globalen Elite-Verschwörung zur Errichtung
   MaterieLocationDetail(
     name: 'Austin - Infowars HQ',
     description: 'Alternative Medien-Zentrum',
-    detailedInfo: '''Alex Jones, Infowars. Kontroverse alternative Medien, Verschwörungstheorien, Zensur-Debatten, Deplatforming.''',
+    detailedInfo:
+        '''Alex Jones, Infowars. Kontroverse alternative Medien, Verschwörungstheorien, Zensur-Debatten, Deplatforming.''',
     position: const LatLng(30.2672, -97.7431),
     category: LocationCategory.alternativeMedia,
     keywords: ['Infowars', 'Alex Jones', 'Alternative Medien', 'Zensur'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Alex_Jones_2013.jpg/800px-Alex_Jones_2013.jpg'],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Alex_Jones_2013.jpg/800px-Alex_Jones_2013.jpg'
+    ],
     videoUrls: ['GbkTfMOCnDg'],
   ),
-  
+
   // Forschung
   MaterieLocationDetail(
     name: 'CERN - Genf',
-    description: 'Europäisches Zentrum für Teilchenphysik - Größter Teilchenbeschleuniger der Welt',
-    detailedInfo: '''CERN (Conseil Européen pour la Recherche Nucléaire) in Genf, Schweiz, betreibt den Large Hadron Collider (LHC) - einen 27 km langen unterirdischen Teilchenbeschleuniger. Hier kollidieren Protonen mit nahezu Lichtgeschwindigkeit, um die fundamentalen Bausteine des Universums zu erforschen.
+    description:
+        'Europäisches Zentrum für Teilchenphysik - Größter Teilchenbeschleuniger der Welt',
+    detailedInfo:
+        '''CERN (Conseil Européen pour la Recherche Nucléaire) in Genf, Schweiz, betreibt den Large Hadron Collider (LHC) - einen 27 km langen unterirdischen Teilchenbeschleuniger. Hier kollidieren Protonen mit nahezu Lichtgeschwindigkeit, um die fundamentalen Bausteine des Universums zu erforschen.
 
 📘 OFFIZIELLE VERSION:
 CERN ist das weltweit führende Forschungszentrum für Teilchenphysik. Der LHC erforscht die Grundbausteine der Materie und fundamentale Kräfte. 2012 Durchbruch: Entdeckung des Higgs-Bosons - bestätigt das Standardmodell der Physik, Nobelpreis 2013. CERN erfand das World Wide Web (1989, Tim Berners-Lee). Die Experimente sind absolut sicher - kontrollierte Bedingungen, keine Gefahr von Schwarzen Löchern (würden sofort verdampfen durch Hawking-Strahlung). Internationale Zusammenarbeit: 10.000+ Wissenschaftler aus 100+ Ländern. Reine Grundlagenforschung zum Verständnis des Universums.
@@ -2302,7 +2885,17 @@ CERN experimentiert mit gefährlichen Technologien, die das Universum bedrohen k
 • CERN-Budget: 1+ Milliarde Euro jährlich - wofür genau? Alle Experimente öffentlich?''',
     position: const LatLng(46.2044, 6.1432),
     category: LocationCategory.research,
-    keywords: ['CERN', 'LHC', 'Higgs-Boson', 'Teilchenphysik', 'Schwarze Löcher', 'Dimensionsportale', 'Shiva', 'Mandela-Effekt', 'Gotthard Tunnel'],
+    keywords: [
+      'CERN',
+      'LHC',
+      'Higgs-Boson',
+      'Teilchenphysik',
+      'Schwarze Löcher',
+      'Dimensionsportale',
+      'Shiva',
+      'Mandela-Effekt',
+      'Gotthard Tunnel'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/CERN_Aerial_View.jpg/1200px-CERN_Aerial_View.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/CMS_Higgs-event.jpg/1200px-CMS_Higgs-event.jpg',
@@ -2318,17 +2911,19 @@ CERN experimentiert mit gefährlichen Technologien, die das Universum bedrohen k
       'Stephen Hawking: "Black Holes and Baby Universes" (1993) - Kapitel zu Hawking-Strahlung und LHC-Sicherheit',
     ],
   ),
-  
+
   // ========================================
-  // 🔥 50+ NEUE HOCHWERTIGE EVENT-MARKER  
+  // 🔥 50+ NEUE HOCHWERTIGE EVENT-MARKER
   // ========================================
-  
+
   // ⚔️ KRIEGE & KONFLIKTE (10+ neue Marker)
-  
+
   MaterieLocationDetail(
     name: '9/11 World Trade Center - New York',
-    description: 'Terroranschläge auf das World Trade Center (11. September 2001) - 2.977 Tote, Inside Job?',
-    detailedInfo: '''Am 11. September 2001 steuerten Terroristen zwei entführte Passagierflugzeuge in die Twin Towers des World Trade Centers in New York. Beide 110-stöckigen Türme stürzten innerhalb von Stunden ein. Ein drittes Flugzeug traf das Pentagon, ein viertes stürzte in Pennsylvania ab. 2.977 Menschen starben in den schwersten Terroranschlägen der Geschichte.
+    description:
+        'Terroranschläge auf das World Trade Center (11. September 2001) - 2.977 Tote, Inside Job?',
+    detailedInfo:
+        '''Am 11. September 2001 steuerten Terroristen zwei entführte Passagierflugzeuge in die Twin Towers des World Trade Centers in New York. Beide 110-stöckigen Türme stürzten innerhalb von Stunden ein. Ein drittes Flugzeug traf das Pentagon, ein viertes stürzte in Pennsylvania ab. 2.977 Menschen starben in den schwersten Terroranschlägen der Geschichte.
 
 📘 OFFIZIELLE VERSION:
 Al-Qaida-Terroristen unter Führung von Osama bin Laden kaperten 4 Flugzeuge. American Airlines Flug 11 und United Airlines Flug 175 trafen WTC. United Airlines Flug 77 traf Pentagon. United Airlines Flug 93 stürzte bei Shanksville ab, Passagiere kämpften gegen Entführer. Die Twin Towers stürzten aufgrund strukturellen Versagens durch Kerosin-Feuer ein. 9/11 Commission Report (2004): 19 Terroristen, Versagen von FBI & CIA.
@@ -2343,9 +2938,19 @@ WTC 7 (47-stöckiges Gebäude) stürzte um 17:20 Uhr symmetrisch ein, OHNE von F
 • Pentagon Surveillance Videos: 5 Frames veröffentlicht - Rest klassifiziert
 • "Architects & Engineers for 9/11 Truth" - 3.500+ Unterschriften von Experten
 • Operation Northwoods: Declassified CIA Documents (1997)''',
-    position: LatLng(40.7127, -74.0134), // World Trade Center Ground Zero, New York
+    position:
+        LatLng(40.7127, -74.0134), // World Trade Center Ground Zero, New York
     category: LocationCategory.falseFlags,
-    keywords: ['9/11', 'World Trade Center', 'Twin Towers', 'Inside Job', 'Al-Qaida', 'Pentagon', 'WTC 7', 'False Flag'],
+    keywords: [
+      '9/11',
+      'World Trade Center',
+      'Twin Towers',
+      'Inside Job',
+      'Al-Qaida',
+      'Pentagon',
+      'WTC 7',
+      'False Flag'
+    ],
     date: DateTime(2001, 9, 11),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/WTC_smoking_on_9-11.jpeg/1200px-WTC_smoking_on_9-11.jpeg',
@@ -2362,11 +2967,13 @@ WTC 7 (47-stöckiges Gebäude) stürzte um 17:20 Uhr symmetrisch ein, OHNE von F
       'Pentagon Security Camera Footage - 5 Frames veröffentlicht, Rest klassifiziert',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Pearl Harbor Angriff - Hawaii',
-    description: 'Japanischer Überraschungsangriff auf US-Flotte (7. Dezember 1941) - Kriegseintritt USA in WW2',
-    detailedInfo: '''Am 7. Dezember 1941 griffen japanische Streitkräfte ohne Kriegserklärung die US-Marinebasis Pearl Harbor auf Hawaii an. 353 japanische Flugzeuge zerstörten 19 Schiffe und 188 Flugzeuge. 2.403 Amerikaner starben, 1.178 wurden verwundet. Der Angriff zwang die USA in den Zweiten Weltkrieg einzutreten.
+    description:
+        'Japanischer Überraschungsangriff auf US-Flotte (7. Dezember 1941) - Kriegseintritt USA in WW2',
+    detailedInfo:
+        '''Am 7. Dezember 1941 griffen japanische Streitkräfte ohne Kriegserklärung die US-Marinebasis Pearl Harbor auf Hawaii an. 353 japanische Flugzeuge zerstörten 19 Schiffe und 188 Flugzeuge. 2.403 Amerikaner starben, 1.178 wurden verwundet. Der Angriff zwang die USA in den Zweiten Weltkrieg einzutreten.
 
 📘 OFFIZIELLE VERSION:
 Japan plante den Überraschungsangriff monatelang. Ziel: US-Pazifikflotte ausschalten, Japan freie Hand in Asien geben. Die USA wurden komplett überrascht - Radar wurde ignoriert, Warnungen nicht ernst genommen. Präsident Roosevelt erklärte 8. Dezember 1941 Japan den Krieg: "A date which will live in infamy". Pearl Harbor mobilisierte amerikanische Öffentlichkeit für WW2.
@@ -2383,7 +2990,14 @@ Roosevelt wusste von Angriff, ließ ihn geschehen um USA in Krieg zu ziehen: 1) 
 • Robert Stinnett: "Day of Deceit" (2000) - LIHOP-Theorie mit Dokumenten''',
     position: LatLng(21.3652, -157.9530), // Pearl Harbor, Hawaii
     category: LocationCategory.falseFlags,
-    keywords: ['Pearl Harbor', 'Japan', 'WW2', 'Roosevelt', 'Überraschungsangriff', 'LIHOP'],
+    keywords: [
+      'Pearl Harbor',
+      'Japan',
+      'WW2',
+      'Roosevelt',
+      'Überraschungsangriff',
+      'LIHOP'
+    ],
     date: DateTime(1941, 12, 7),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/USS_Arizona_during_the_Japanese_attack_on_Pearl_Harbor.jpg/1200px-USS_Arizona_during_the_Japanese_attack_on_Pearl_Harbor.jpg',
@@ -2400,11 +3014,13 @@ Roosevelt wusste von Angriff, ließ ihn geschehen um USA in Krieg zu ziehen: 1) 
       'Gordon Prange: "At Dawn We Slept" (1981) - 873 Seiten, Standardwerk',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'JFK Attentat - Dallas',
-    description: 'Ermordung von Präsident John F. Kennedy (22. November 1963) - Oswald Einzeltäter oder Verschwörung?',
-    detailedInfo: '''Am 22. November 1963 wurde US-Präsident John F. Kennedy während einer Autofahrt in Dallas, Texas, erschossen. Lee Harvey Oswald wurde als Täter verhaftet, aber 2 Tage später von Jack Ruby ermordet. Die Warren Commission erklärte Oswald zum Einzeltäter - aber zahlreiche Inkonsistenzen führten zu jahrzehntelangen Verschwörungstheorien.
+    description:
+        'Ermordung von Präsident John F. Kennedy (22. November 1963) - Oswald Einzeltäter oder Verschwörung?',
+    detailedInfo:
+        '''Am 22. November 1963 wurde US-Präsident John F. Kennedy während einer Autofahrt in Dallas, Texas, erschossen. Lee Harvey Oswald wurde als Täter verhaftet, aber 2 Tage später von Jack Ruby ermordet. Die Warren Commission erklärte Oswald zum Einzeltäter - aber zahlreiche Inkonsistenzen führten zu jahrzehntelangen Verschwörungstheorien.
 
 📘 OFFIZIELLE VERSION (WARREN COMMISSION 1964):
 Lee Harvey Oswald feuerte 3 Schüsse aus dem 6. Stock des Texas School Book Depository. 2 Schüsse trafen Kennedy, der tödliche Schuss traf seinen Kopf. Oswald war kommunistischer Einzeltäter, hatte in Sowjetunion gelebt, war frustrierter Marxist. Jack Ruby tötete Oswald aus Rache. Keine Verschwörung.
@@ -2421,7 +3037,16 @@ Massive Inkonsistenzen: 1) "Magic Bullet Theory": Eine Kugel soll 7 Wunden verur
 • JFK Executive Order 11110 (4. Juni 1963): Federal Reserve entmachten - Motiv?''',
     position: LatLng(32.7801, -96.8089), // Dealey Plaza, Dallas, Texas
     category: LocationCategory.assassinations,
-    keywords: ['JFK', 'Kennedy', 'Oswald', 'Dallas', 'Zapruder', 'CIA', 'Verschwörung', 'Grassy Knoll'],
+    keywords: [
+      'JFK',
+      'Kennedy',
+      'Oswald',
+      'Dallas',
+      'Zapruder',
+      'CIA',
+      'Verschwörung',
+      'Grassy Knoll'
+    ],
     date: DateTime(1963, 11, 22),
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/John_F._Kennedy%2C_White_House_color_photo_portrait.jpg/800px-John_F._Kennedy%2C_White_House_color_photo_portrait.jpg',
@@ -2438,11 +3063,13 @@ Massive Inkonsistenzen: 1) "Magic Bullet Theory": Eine Kugel soll 7 Wunden verur
       'JFK Executive Order 11110 (4. Juni 1963) - Federal Reserve Dokument',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Area 51 - Nevada',
-    description: 'Top-Secret US-Militärbasis (1955-heute) - UFO-Testgelände, Reverse Engineering außerirdischer Technologie?',
-    detailedInfo: '''Area 51 ist eine hochgeheime US-Luftwaffenbasis in der Nevada-Wüste, etwa 130 km nordwestlich von Las Vegas. Die Basis existierte offiziell nicht bis 2013. Seit Jahrzehnten ranken sich Verschwörungstheorien um UFO-Tests, außerirdische Technologie und Geheimprojekte.
+    description:
+        'Top-Secret US-Militärbasis (1955-heute) - UFO-Testgelände, Reverse Engineering außerirdischer Technologie?',
+    detailedInfo:
+        '''Area 51 ist eine hochgeheime US-Luftwaffenbasis in der Nevada-Wüste, etwa 130 km nordwestlich von Las Vegas. Die Basis existierte offiziell nicht bis 2013. Seit Jahrzehnten ranken sich Verschwörungstheorien um UFO-Tests, außerirdische Technologie und Geheimprojekte.
 
 📘 OFFIZIELLE VERSION:
 Area 51 ist eine Testbasis für experimentelle Flugzeuge und Waffensysteme. In den 1950er-60er Jahren wurden hier U-2 und SR-71 Blackbird Spionageflugzeuge entwickelt. F-117 Nighthawk Stealth-Bomber wurde hier getestet. Die Geheimhaltung diente dem Schutz vor sowjetischer Spionage. Area 51 existierte offiziell nicht bis CIA-Freigabe 2013. Keine Aliens - nur Flugzeugtechnologie.
@@ -2459,7 +3086,16 @@ Bob Lazar (1989): Behauptete, bei Area 51 (S-4 Sektor) an 9 außerirdischen Raum
 • Janet Airlines: Geheime Airline fliegt täglich Mitarbeiter nach Area 51 (Boeing 737)''',
     position: LatLng(37.2350, -115.8111), // Area 51, Nevada (Groom Lake)
     category: LocationCategory.ufo,
-    keywords: ['Area 51', 'UFO', 'Bob Lazar', 'Aliens', 'Roswell', 'S-4', 'Element 115', 'Nevada'],
+    keywords: [
+      'Area 51',
+      'UFO',
+      'Bob Lazar',
+      'Aliens',
+      'Roswell',
+      'S-4',
+      'Element 115',
+      'Nevada'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Groom_Lake.jpg/1200px-Groom_Lake.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Area_51_warning_sign.jpg/1200px-Area_51_warning_sign.jpg',
@@ -2475,13 +3111,15 @@ Bob Lazar (1989): Behauptete, bei Area 51 (S-4 Sektor) an 9 außerirdischen Raum
       'Janet Airlines Boeing 737 Flight Logs - Daily flights from Las Vegas to Groom Lake',
     ],
   ),
-  
+
   // 🌍 GEOPOLITIK & MACHTKÄMPFE (15+ neue Marker)
-  
+
   MaterieLocationDetail(
     name: 'Bilderberg-Treffen - Verschiedene Orte',
-    description: 'Geheime Elite-Konferenz seit 1954 - Globalisten planen Weltherrschaft?',
-    detailedInfo: '''Die Bilderberg-Konferenz ist ein jährliches privates Treffen von ca. 120-150 Spitzenpolitikern, Industriellen, Bankern und Medienmagnaten. Gegründet 1954. Absolute Geheimhaltung: Keine Presse, keine Protokolle veröffentlicht. Teilnehmer sprechen nicht über Inhalte. Wer regiert wirklich die Welt?
+    description:
+        'Geheime Elite-Konferenz seit 1954 - Globalisten planen Weltherrschaft?',
+    detailedInfo:
+        '''Die Bilderberg-Konferenz ist ein jährliches privates Treffen von ca. 120-150 Spitzenpolitikern, Industriellen, Bankern und Medienmagnaten. Gegründet 1954. Absolute Geheimhaltung: Keine Presse, keine Protokolle veröffentlicht. Teilnehmer sprechen nicht über Inhalte. Wer regiert wirklich die Welt?
 
 📘 OFFIZIELLE VERSION:
 Bilderberg-Treffen fördern Dialog zwischen Europa und Nordamerika. Informelle Diskussionen über Politik, Wirtschaft, Sicherheit. Keine Beschlüsse, nur Gedankenaustausch. Teilnehmer: Staats- und Regierungschefs, CEOs, Nobelpreisträger. Chatham House Rule: Vertrauliche Diskussionen für offenen Dialog. Ziel: Transatlantische Verständigung.
@@ -2497,9 +3135,18 @@ Schattenregierung: Die echten Machthaber treffen sich bei Bilderberg - nicht bei
 • Tony Blair: Teilnahme 1993 - wurde Premier 1997
 • Chatham House Rule: "Participants are free to use information, but cannot identify source"
 • Alternative Medien: Jahrzehntelang ignoriert von Mainstream - jetzt bestätigt''',
-    position: LatLng(52.0893, 5.1127), // Hotel de Bilderberg, Oosterbeek, Niederlande (erstes Treffen)
+    position: LatLng(52.0893,
+        5.1127), // Hotel de Bilderberg, Oosterbeek, Niederlande (erstes Treffen)
     category: LocationCategory.secretSocieties,
-    keywords: ['Bilderberg', 'Elite', 'Geheimtreffen', 'NWO', 'Illuminati', 'Globalisten', 'Kissinger'],
+    keywords: [
+      'Bilderberg',
+      'Elite',
+      'Geheimtreffen',
+      'NWO',
+      'Illuminati',
+      'Globalisten',
+      'Kissinger'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Hotel_de_Bilderberg.jpg/1200px-Hotel_de_Bilderberg.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Bilderberg_Meeting_2018.jpg/1200px-Bilderberg_Meeting_2018.jpg',
@@ -2515,11 +3162,13 @@ Schattenregierung: Die echten Machthaber treffen sich bei Bilderberg - nicht bei
       'Pre-Bilderberg Politicians: Tony Blair (1993), Bill Clinton (1991), Angela Merkel (2005)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Bohemian Grove - Kalifornien',
-    description: 'Geheimer Eliten-Club im Wald (seit 1872) - Okkulte Rituale, "Cremation of Care" Zeremonie',
-    detailedInfo: '''Bohemian Grove ist ein 1.100 Hektar großes Waldgebiet in Kalifornien, wo sich seit 1872 die Elite der USA zu geheimen Treffen versammelt. Mitglieder: US-Präsidenten, Industrielle, Medienmagnaten. Jeden Juli treffen sich ca. 2.000 mächtigste Männer für 2 Wochen. Bizarre okkulte Zeremonien vor 12 Meter hoher Eule.
+    description:
+        'Geheimer Eliten-Club im Wald (seit 1872) - Okkulte Rituale, "Cremation of Care" Zeremonie',
+    detailedInfo:
+        '''Bohemian Grove ist ein 1.100 Hektar großes Waldgebiet in Kalifornien, wo sich seit 1872 die Elite der USA zu geheimen Treffen versammelt. Mitglieder: US-Präsidenten, Industrielle, Medienmagnaten. Jeden Juli treffen sich ca. 2.000 mächtigste Männer für 2 Wochen. Bizarre okkulte Zeremonien vor 12 Meter hoher Eule.
 
 📘 OFFIZIELLE VERSION:
 Bohemian Grove ist ein privater Gentlemen's Club für Entspannung und Networking. Gegründet 1872 von San Francisco Künstlern und Journalisten. Mitglieder sind erfolgreiche Männer aus Politik, Wirtschaft, Kunst. "Weaving Spiders Come Not Here" - keine geschäftlichen Deals, nur Freundschaft. Theater-Aufführungen, Vorträge, Lagerfeuer-Gespräche. "Cremation of Care"-Zeremonie: Symbolische Verbrennung von Sorgen.
@@ -2534,9 +3183,18 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 • Manhattan-Projekt Konzeption (1942): Ernest Lawrence diskutierte Atombombe bei Bohemian Grove
 • "Cremation of Care" Zeremonie: Jährlich am ersten Samstag im Juli - 40 Minuten langes Ritual
 • 12 Meter hohe Eule-Statue: "Owl of Bohemia" - Moloch-Symbolik?''',
-    position: LatLng(38.6070, -123.0236), // Bohemian Grove, Monte Rio, Kalifornien
+    position:
+        LatLng(38.6070, -123.0236), // Bohemian Grove, Monte Rio, Kalifornien
     category: LocationCategory.secretSocieties,
-    keywords: ['Bohemian Grove', 'Eule', 'Moloch', 'Ritual', 'Elite', 'Alex Jones', 'Okkult'],
+    keywords: [
+      'Bohemian Grove',
+      'Eule',
+      'Moloch',
+      'Ritual',
+      'Elite',
+      'Alex Jones',
+      'Okkult'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Bohemian_Grove_owl_shrine.jpg/1200px-Bohemian_Grove_owl_shrine.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Bohemian_Grove_entrance.jpg/1200px-Bohemian_Grove_entrance.jpg',
@@ -2554,11 +3212,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
   ),
 
   // 🔥 KATASTROPHEN & MYSTERIEN (20 neue Marker)
-  
+
   MaterieLocationDetail(
     name: 'Tunguska-Ereignis - Sibirien',
-    description: 'Mysteriöse Explosion 1908 - 2.000 km² Wald zerstört, UFO oder Meteorit?',
-    detailedInfo: '''Am 30. Juni 1908 explodierte etwas über der sibirischen Tunguska-Region mit der Kraft von 1.000 Hiroshima-Bomben. 80 Millionen Bäume auf 2.000 km² wurden umgeworfen, aber KEIN Krater gefunden. Was war es?
+    description:
+        'Mysteriöse Explosion 1908 - 2.000 km² Wald zerstört, UFO oder Meteorit?',
+    detailedInfo:
+        '''Am 30. Juni 1908 explodierte etwas über der sibirischen Tunguska-Region mit der Kraft von 1.000 Hiroshima-Bomben. 80 Millionen Bäume auf 2.000 km² wurden umgeworfen, aber KEIN Krater gefunden. Was war es?
 
 📘 OFFIZIELLE VERSION: Meteoriten-Airburst in 5-10 km Höhe. Asteroid oder Komet explodierte vor Bodenaufprall. Schockwelle zerstörte Wald. Kleine Meteoritenfragmente gefunden.
 
@@ -2567,7 +3227,15 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 🔬 BEWEISE: 80 Mio. Bäume zerstört, Seismische Wellen weltweit registriert, Kein Krater trotz massiver Zerstörung, Magnetische Anomalien in der Region, Tesla's Wardenclyffe Tower-Experimente zeitgleich.''',
     position: const LatLng(60.8858, 101.8939),
     category: LocationCategory.disasters,
-    keywords: ['Tunguska', 'Explosion', 'UFO', 'Meteorit', 'Mystery', 'Sibirien', 'Tesla'],
+    keywords: [
+      'Tunguska',
+      'Explosion',
+      'UFO',
+      'Meteorit',
+      'Mystery',
+      'Sibirien',
+      'Tesla'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Tunguska_event_fallen_trees.jpg/1200px-Tunguska_event_fallen_trees.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Tunguska_event_epicentre.jpg/1200px-Tunguska_event_epicentre.jpg',
@@ -2579,11 +3247,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Nature Magazine: "Tunguska Revisited" (2008)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Bermuda-Dreieck - Atlantik',
-    description: 'Mysteriöses Gebiet - 75+ Flugzeuge/Schiffe verschwunden, Zeitanomalien?',
-    detailedInfo: '''Das Bermuda-Dreieck zwischen Florida, Puerto Rico und Bermuda ist berüchtigt für unerklärliche Verschwinden von Schiffen und Flugzeugen. Über 75 Flugzeuge und 100+ Schiffe spurlos verschwunden seit 1800.
+    description:
+        'Mysteriöses Gebiet - 75+ Flugzeuge/Schiffe verschwunden, Zeitanomalien?',
+    detailedInfo:
+        '''Das Bermuda-Dreieck zwischen Florida, Puerto Rico und Bermuda ist berüchtigt für unerklärliche Verschwinden von Schiffen und Flugzeugen. Über 75 Flugzeuge und 100+ Schiffe spurlos verschwunden seit 1800.
 
 📘 OFFIZIELLE VERSION: Statistische Normalität. Viel Schiffs/Luftverkehr = mehr Unfälle. Extreme Wetterbedingungen, Golfstrom, Methangas-Blasen, menschliches Versagen. Keine höhere Unfallrate als anderswo.
 
@@ -2592,7 +3262,14 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 🔬 BEWEISE: 75+ verschwundene Flugzeuge dokumentiert, 100+ verschwundene Schiffe (Lloyd's of London), Flight 19 Funksprüche ("Ozean sieht seltsam aus"), USS Cyclops (1918) - 306 Besatzung verschwunden, spurlos, keine Wrackteile gefunden, Bruce Gernon Zeitmessung-Anomalie.''',
     position: const LatLng(25.0, -71.0),
     category: LocationCategory.disasters,
-    keywords: ['Bermuda-Dreieck', 'Verschwinden', 'UFO', 'Zeitanomalien', 'Flight 19', 'Atlantis'],
+    keywords: [
+      'Bermuda-Dreieck',
+      'Verschwinden',
+      'UFO',
+      'Zeitanomalien',
+      'Flight 19',
+      'Atlantis'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Bermuda_Triangle.png/1200px-Bermuda_Triangle.png',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/US_Navy_TBM-3_Avenger_in_flight_1945.jpg/1200px-US_Navy_TBM-3_Avenger_in_flight_1945.jpg',
@@ -2605,11 +3282,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'National Geographic: "Bermuda Triangle Explained?" (2018)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Dyatlov-Pass-Vorfall - Ural',
-    description: '9 erfahrene Bergsteiger mysteriös gestorben 1959 - Radioaktivität, UFO, Lawine?',
-    detailedInfo: '''Am 2. Februar 1959 starben 9 erfahrene Ski-Wanderer am Dyatlov-Pass im Ural-Gebirge unter mysteriösen Umständen. Zelt von innen aufgeschlitzt, Wanderer barfuß im Schnee geflohen, schwere innere Verletzungen ohne äußere Spuren, Radioaktivität an Kleidung. Was geschah?
+    description:
+        '9 erfahrene Bergsteiger mysteriös gestorben 1959 - Radioaktivität, UFO, Lawine?',
+    detailedInfo:
+        '''Am 2. Februar 1959 starben 9 erfahrene Ski-Wanderer am Dyatlov-Pass im Ural-Gebirge unter mysteriösen Umständen. Zelt von innen aufgeschlitzt, Wanderer barfuß im Schnee geflohen, schwere innere Verletzungen ohne äußere Spuren, Radioaktivität an Kleidung. Was geschah?
 
 📘 OFFIZIELLE VERSION (2020): Lawinen-Theorie. Katabatische Winde verursachten Lawine, Wanderer flohen panisch, erfroren. Innere Verletzungen durch Schneemassen. 2020 russische Staatsanwaltschaft schloss Fall erneut mit Lawinen-Erklärung.
 
@@ -2618,7 +3297,15 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 🔬 BEWEISE: 9 Tote (Igor Dyatlov + Team), Zelt von innen aufgeschlitzt, Wanderer barfuß im -30°C Schnee, Ludmila Dubinina: Zunge + Augen fehlten, Radioaktive Spuren an Kleidung gemessen, Schwere innere Verletzungen (Rippen, Schädel) ohne äußere Wunden, Augenzeugen: Orange Kugeln am Himmel, Fotos: Ungeklärte Lichtquellen, Geigerzähler-Messungen positiv.''',
     position: const LatLng(61.7500, 59.4667),
     category: LocationCategory.disasters,
-    keywords: ['Dyatlov', 'Mystery', 'Ural', 'UFO', 'Radioaktivität', 'Lawine', 'KGB'],
+    keywords: [
+      'Dyatlov',
+      'Mystery',
+      'Ural',
+      'UFO',
+      'Radioaktivität',
+      'Lawine',
+      'KGB'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Dyatlov_Pass_incident_02.jpg/1200px-Dyatlov_Pass_incident_02.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Dyatlov_Pass_incident_04.jpg/1200px-Dyatlov_Pass_incident_04.jpg',
@@ -2631,11 +3318,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Yury Yudin (Sole Survivor) Interviews (1959-2013)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Philadelphia-Experiment - Naval Yard',
-    description: 'USS Eldridge Teleportations-Experiment 1943 - Schiff verschwand, Besatzung fusionierte mit Stahl?',
-    detailedInfo: '''Am 28. Oktober 1943 soll die US Navy im Philadelphia Naval Shipyard ein Experiment zur Tarnkappen-Technologie durchgeführt haben. Das Kriegsschiff USS Eldridge wurde angeblich unsichtbar und teleportierte 200 Meilen nach Norfolk, Virginia. Besatzungsmitglieder wurden in Schiffswände eingeschmolzen, fielen in Wahnsinn.
+    description:
+        'USS Eldridge Teleportations-Experiment 1943 - Schiff verschwand, Besatzung fusionierte mit Stahl?',
+    detailedInfo:
+        '''Am 28. Oktober 1943 soll die US Navy im Philadelphia Naval Shipyard ein Experiment zur Tarnkappen-Technologie durchgeführt haben. Das Kriegsschiff USS Eldridge wurde angeblich unsichtbar und teleportierte 200 Meilen nach Norfolk, Virginia. Besatzungsmitglieder wurden in Schiffswände eingeschmolzen, fielen in Wahnsinn.
 
 📘 OFFIZIELLE VERSION: Kompletter Mythos. USS Eldridge war 1943 NICHT in Philadelphia, sondern auf Atlantik-Mission. Navy dementiert Experiment. Verwechslung mit Degaussing (magnetische Tarnkappen gegen Minen). Keine Beweise.
 
@@ -2644,7 +3333,15 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 🔬 BEWEISE: Carlos Allende Briefe an Morris K. Jessup (1955), Office of Naval Research Untersuchung (1955), USS Eldridge Logbuch-Lücken, Al Bielek Zeugnis (1980er), Montauk Projekt Verbindungen, KEINE offiziellen Navy-Dokumente bestätigen Experiment, Crew-Mitglieder dementieren (aber alle tot bis 1990er).''',
     position: const LatLng(39.8940, -75.1622),
     category: LocationCategory.research,
-    keywords: ['Philadelphia Experiment', 'USS Eldridge', 'Teleportation', 'Tesla', 'Einstein', 'Navy', 'Dimensionsportal'],
+    keywords: [
+      'Philadelphia Experiment',
+      'USS Eldridge',
+      'Teleportation',
+      'Tesla',
+      'Einstein',
+      'Navy',
+      'Dimensionsportal'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/USS_Eldridge_DE-173.jpg/1200px-USS_Eldridge_DE-173.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Philadelphia_Naval_Shipyard.jpg/1200px-Philadelphia_Naval_Shipyard.jpg',
@@ -2657,11 +3354,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Al Bielek Testimonies (1980s-1990s)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'MH370 Verschwinden - Südchinesisches Meer',
-    description: 'Boeing 777 mit 239 Menschen spurlos verschwunden 2014 - Entführung, Cyberhacking, Alien?',
-    detailedInfo: '''Am 8. März 2014 verschwand Malaysia Airlines Flug MH370 mit 239 Menschen an Bord auf dem Weg von Kuala Lumpur nach Peking spurlos. Größte Such-Aktion der Luftfahrtgeschichte fand fast nichts. Was geschah?
+    description:
+        'Boeing 777 mit 239 Menschen spurlos verschwunden 2014 - Entführung, Cyberhacking, Alien?',
+    detailedInfo:
+        '''Am 8. März 2014 verschwand Malaysia Airlines Flug MH370 mit 239 Menschen an Bord auf dem Weg von Kuala Lumpur nach Peking spurlos. Größte Such-Aktion der Luftfahrtgeschichte fand fast nichts. Was geschah?
 
 📘 OFFIZIELLE VERSION: Pilot-Selbstmord oder Hypoxie. Kapitän Zaharie Ahmad Shah könnte Flugzeug absichtlich vom Kurs abgebracht, Passagiere/Crew durch Dekompression getötet und Flugzeug im Indischen Ozean versenkt haben. Alternative: Sauerstoffmangel führte zu Bewusstlosigkeit, Autopilot flog bis Treibstoff leer. Wenige Wrackteile (Flaperon) an Reunion-Insel gefunden.
 
@@ -2670,7 +3369,15 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 🔬 BEWEISE: 239 Menschen an Bord (227 Passagiere + 12 Crew), Transponder um 01:21 Uhr manuell ausgeschaltet, 7 Stunden Flugzeit nach Verschwinden (Satellite Pings), Nur 3 Wrackteile in 3 Jahren gefunden (von 777), Philip Wood iPhone-Metadaten zeigen Diego Garcia GPS, 4 Freescale Semiconductor Ingenieure an Bord, 2 Passagiere mit gestohlenen Pässen, 160 Mio. \$ Such-Operation fand fast nichts.''',
     position: const LatLng(6.9270, 103.6100),
     category: LocationCategory.disasters,
-    keywords: ['MH370', 'Verschwinden', 'Boeing 777', 'Malaysia Airlines', 'Entführung', 'Diego Garcia', 'Cyber-Hacking'],
+    keywords: [
+      'MH370',
+      'Verschwinden',
+      'Boeing 777',
+      'Malaysia Airlines',
+      'Entführung',
+      'Diego Garcia',
+      'Cyber-Hacking'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/9M-MRO_Malaysia_Airlines_Boeing_777-200ER.jpg/1200px-9M-MRO_Malaysia_Airlines_Boeing_777-200ER.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/MH370_search_area.png/1200px-MH370_search_area.png',
@@ -2683,13 +3390,15 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Ocean Infinity Search Mission Data (2018)',
     ],
   ),
-  
+
   // 🏛️ ANTIKE MYSTERIEN (15 neue Marker)
-  
+
   MaterieLocationDetail(
     name: 'Nazca-Linien - Peru',
-    description: 'Gigantische Geoglyphen in der Wüste - nur aus der Luft sichtbar, Alien-Landebahnen?',
-    detailedInfo: '''In der Nazca-Wüste in Peru befinden sich über 1.500 gigantische Linien, Figuren und geometrische Formen, die nur aus der Luft vollständig sichtbar sind. Erstellt zwischen 500 v. Chr. und 500 n. Chr. von der Nazca-Kultur. Wozu?
+    description:
+        'Gigantische Geoglyphen in der Wüste - nur aus der Luft sichtbar, Alien-Landebahnen?',
+    detailedInfo:
+        '''In der Nazca-Wüste in Peru befinden sich über 1.500 gigantische Linien, Figuren und geometrische Formen, die nur aus der Luft vollständig sichtbar sind. Erstellt zwischen 500 v. Chr. und 500 n. Chr. von der Nazca-Kultur. Wozu?
 
 📘 OFFIZIELLE VERSION: Religiöse/zeremonielle Pfade für Wasser-Rituale. Nazca-Kultur (500 v.Chr.-500 n.Chr.) schuf Linien durch Entfernen dunkler Steine. Astronomiealignment für Sonnenwenden. Maria Reiche (deutsche Mathematikerin) erforschte Linien 50 Jahre lang.
 
@@ -2698,7 +3407,14 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 🔬 BEWEISE: 1.500+ Geoglyphen über 450 km², Linien bis zu 30 km lang, Figuren bis 370m groß, Nur aus 200m+ Höhe vollständig sichtbar, Nazca hatte KEINE Luftfahrt-Technologie (offiziell), Perfekte geometrische Präzision über 20 km, UNESCO Weltkulturerbe (1994).''',
     position: const LatLng(-14.7390, -75.1300),
     category: LocationCategory.ancientCivilizations,
-    keywords: ['Nazca-Linien', 'Peru', 'Geoglyphen', 'Aliens', 'Erich von Däniken', 'Antike Flugmaschinen'],
+    keywords: [
+      'Nazca-Linien',
+      'Peru',
+      'Geoglyphen',
+      'Aliens',
+      'Erich von Däniken',
+      'Antike Flugmaschinen'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/Nazca_Lines_-_Hummingbird.jpg/1200px-Nazca_Lines_-_Hummingbird.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Nazca_Lines_-_Spider.jpg/1200px-Nazca_Lines_-_Spider.jpg',
@@ -2712,11 +3428,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Johny Isla (Peruvian Archaeologist) Research (2000-2024)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Puma Punku - Bolivien',
-    description: 'Präzisions-Steinbearbeitung 14.000 Jahre alt? - Unmöglich ohne moderne Maschinen',
-    detailedInfo: '''Puma Punku ist eine Ruinenstätte in Bolivien mit Steinblöcken, die mit unglaublicher Präzision bearbeitet wurden - perfekte rechte Winkel, glatte Oberflächen, ineinandergreifende Teile wie Lego. Offiziell 536-600 n.Chr., aber Alternative Datierung: 14.000 Jahre alt.
+    description:
+        'Präzisions-Steinbearbeitung 14.000 Jahre alt? - Unmöglich ohne moderne Maschinen',
+    detailedInfo:
+        '''Puma Punku ist eine Ruinenstätte in Bolivien mit Steinblöcken, die mit unglaublicher Präzision bearbeitet wurden - perfekte rechte Winkel, glatte Oberflächen, ineinandergreifende Teile wie Lego. Offiziell 536-600 n.Chr., aber Alternative Datierung: 14.000 Jahre alt.
 
 📘 OFFIZIELLE VERSION: Tiwanaku-Kultur (536-1000 n.Chr.) baute Puma Punku als Tempel. Steinbearbeitung mit Bronzewerkzeugen und Sand-Schleifen. H-Blöcke (130 Tonnen) wurden mit Seilen und Rollen transportiert. Erdbeben zerstörte Struktur.
 
@@ -2725,7 +3443,14 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 🔬 BEWEISE: 130-Tonnen-H-Blöcke (schwerste Steine), Andesite-Steine (Härtegrad 8-9), Perfekte 90°-Winkel auf Millimeter genau, Glatte Oberflächen wie poliert, Ineinandergreifende "Lego"-Strukturen, 3.800m Höhe (Transport extrem schwierig), Keine Schriftzeichen oder Bauanleitungen gefunden, Arthur Posnansky: Archäoastronomische Datierung 14.000 v.Chr.''',
     position: const LatLng(-16.5586, -68.6772),
     category: LocationCategory.ancientCivilizations,
-    keywords: ['Puma Punku', 'Bolivien', 'Tiwanaku', 'Antike Hochtechnologie', 'Präzisions-Steinbearbeitung', 'Aliens'],
+    keywords: [
+      'Puma Punku',
+      'Bolivien',
+      'Tiwanaku',
+      'Antike Hochtechnologie',
+      'Präzisions-Steinbearbeitung',
+      'Aliens'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Puma_Punku.jpg/1200px-Puma_Punku.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Puma_Punku_H-blocks.jpg/1200px-Puma_Punku_H-blocks.jpg',
@@ -2737,11 +3462,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Archaeological Survey of Tiwanaku (1903-2020)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Osterinsel Moai - Rapa Nui',
-    description: '887 gigantische Steinstatuen - Wer baute sie? Wie wurden 80-Tonnen-Statuen transportiert?',
-    detailedInfo: '''Auf der abgelegenen Osterinsel (Rapa Nui) im Pazifik stehen 887 monumentale Moai-Statuen (bis 21m hoch, 82 Tonnen schwer). Erstellt 1250-1500 n.Chr. von einer isolierten Bevölkerung ohne Metallwerkzeuge, Räder oder Zugtiere. Wie?
+    description:
+        '887 gigantische Steinstatuen - Wer baute sie? Wie wurden 80-Tonnen-Statuen transportiert?',
+    detailedInfo:
+        '''Auf der abgelegenen Osterinsel (Rapa Nui) im Pazifik stehen 887 monumentale Moai-Statuen (bis 21m hoch, 82 Tonnen schwer). Erstellt 1250-1500 n.Chr. von einer isolierten Bevölkerung ohne Metallwerkzeuge, Räder oder Zugtiere. Wie?
 
 📘 OFFIZIELLE VERSION: Rapa Nui-Kultur (Polynesier) schuf Moai als Ahnenstatuen. Gemeißelt aus Rano Raraku-Vulkan-Tuff. Transport mit Seilen und "Gehen"-Technik (Wiegen). Thor Heyerdahl Experimente zeigten Machbarkeit. Ökologischer Kollaps durch Überbevölkerung/Abholzung zerstörte Zivilisation.
 
@@ -2750,7 +3477,15 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 🔬 BEWEISE: 887 Moai-Statuen, Durchschnittlich 13 Tonnen, schwerste 82 Tonnen (El Gigante), Höhe bis 21m (El Gigante, nie fertiggestellt), 397 Statuen noch im Steinbruch Rano Raraku, Keine Metallwerkzeuge, keine Räder, keine Zugtiere, 10 km Transport zum Küste, "Pukao" (rote Stein-Hüte) bis 10 Tonnen separat aufgesetzt, Rapa Nui Legenden: "Statuen gingen mit Mana (magischer Kraft)".''',
     position: const LatLng(-27.1127, -109.3497),
     category: LocationCategory.ancientCivilizations,
-    keywords: ['Osterinsel', 'Moai', 'Rapa Nui', 'Statuen-Transport', 'Levitation', 'Aliens', 'Lemuria'],
+    keywords: [
+      'Osterinsel',
+      'Moai',
+      'Rapa Nui',
+      'Statuen-Transport',
+      'Levitation',
+      'Aliens',
+      'Lemuria'
+    ],
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Moai_Rano_raraku.jpg/1200px-Moai_Rano_raraku.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Ahu_Tongariki.jpg/1200px-Ahu_Tongariki.jpg',
@@ -2766,11 +3501,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
   // 🔥 ============================================
   // EPSTEIN-NETZWERK - GESONDERTE KATEGORIE
   // ============================================
-  
+
   MaterieLocationDetail(
     name: 'Little St. James - Epstein Island',
-    description: 'Jeffrey Epsteins private Insel (Virgin Islands) - "Pädophilen-Insel", Missbrauch, prominente Gäste',
-    detailedInfo: '''Little St. James, auch bekannt als "Pädophilen-Insel" oder "Orgy Island", war Jeffrey Epsteins privates Paradies in den US Virgin Islands. Epstein kaufte die Insel 1998 für 7,95 Millionen Dollar. Auf der 28 Hektar großen Insel befanden sich luxuriöse Anwesen, ein Tempel-ähnliches Gebäude mit goldener Kuppel, und zahlreiche versteckte Kameras.
+    description:
+        'Jeffrey Epsteins private Insel (Virgin Islands) - "Pädophilen-Insel", Missbrauch, prominente Gäste',
+    detailedInfo:
+        '''Little St. James, auch bekannt als "Pädophilen-Insel" oder "Orgy Island", war Jeffrey Epsteins privates Paradies in den US Virgin Islands. Epstein kaufte die Insel 1998 für 7,95 Millionen Dollar. Auf der 28 Hektar großen Insel befanden sich luxuriöse Anwesen, ein Tempel-ähnliches Gebäude mit goldener Kuppel, und zahlreiche versteckte Kameras.
 
 📘 OFFIZIELLE FAKTEN:
 - Gekauft 1998 für 7,95 Millionen Dollar
@@ -2793,9 +3530,16 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 - Aussagen von Virginia Giuffre und anderen Überlebenden
 - Fotos und Videos vom Tempel-Gebäude
 - Epsteins Testament: Insel wurde in Trust überführt''',
-    position: const LatLng(18.3000, -64.8256), // Little St. James, Virgin Islands
+    position:
+        const LatLng(18.3000, -64.8256), // Little St. James, Virgin Islands
     category: LocationCategory.epstein,
-    keywords: ['Little St. James', 'Epstein Island', 'Pädophilen-Insel', 'Missbrauch', 'Virgin Islands'],
+    keywords: [
+      'Little St. James',
+      'Epstein Island',
+      'Pädophilen-Insel',
+      'Missbrauch',
+      'Virgin Islands'
+    ],
     date: DateTime(1998, 1, 1), // Kauf der Insel
     imageUrls: [
       'https://upload.wikimedia.org/wikipedia/commons/d/d8/Little_Saint_James%2C_U.S._Virgin_Islands.jpg',
@@ -2807,11 +3551,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Flight Logs Lolita Express (1997-2005)',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Ghislaine Maxwell Verhaftung - New Hampshire',
-    description: 'Epsteins Komplizin verhaftet (2. Juli 2020) - Rekrutierung Minderjähriger, 20 Jahre Haft',
-    detailedInfo: '''Ghislaine Maxwell, Tochter des britischen Medienmoguls Robert Maxwell, war Jeffrey Epsteins engste Vertraute und Komplizin. Sie rekrutierte und "pflegte" junge Mädchen für Epsteins sexuelle Übergriffe. Nach Epsteins Tod 2019 tauchte sie unter, wurde aber 2020 vom FBI in New Hampshire verhaftet.
+    description:
+        'Epsteins Komplizin verhaftet (2. Juli 2020) - Rekrutierung Minderjähriger, 20 Jahre Haft',
+    detailedInfo:
+        '''Ghislaine Maxwell, Tochter des britischen Medienmoguls Robert Maxwell, war Jeffrey Epsteins engste Vertraute und Komplizin. Sie rekrutierte und "pflegte" junge Mädchen für Epsteins sexuelle Übergriffe. Nach Epsteins Tod 2019 tauchte sie unter, wurde aber 2020 vom FBI in New Hampshire verhaftet.
 
 📘 OFFIZIELLE VERSION:
 - Verhaftet 2. Juli 2020 in Bradford, New Hampshire
@@ -2833,7 +3579,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
 - Keine Namen weiterer Täter genannt''',
     position: const LatLng(43.2681, -71.9133), // Bradford, New Hampshire
     category: LocationCategory.epstein,
-    keywords: ['Ghislaine Maxwell', 'Epstein', 'Verhaftung', 'Sexhandel', 'New Hampshire'],
+    keywords: [
+      'Ghislaine Maxwell',
+      'Epstein',
+      'Verhaftung',
+      'Sexhandel',
+      'New Hampshire'
+    ],
     date: DateTime(2020, 7, 2),
     imageUrls: [],
     videoUrls: ['B3zj27WOrWE'], // Netflix: Jeffrey Epstein - Stinkreich
@@ -2843,11 +3595,13 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Sentencing Document (December 2021) - 20 Jahre Haft',
     ],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Zorro Ranch - Epsteins New Mexico Anwesen',
-    description: 'Epsteins 33.000 Hektar Ranch in New Mexico - Gerüchte über "Baby-Ranch", DNA-Experimente',
-    detailedInfo: '''Zorro Ranch war Jeffrey Epsteins riesiges Anwesen in New Mexico, etwa 10.000 Acres (33 km²) groß. Die Ranch wurde selten erwähnt, aber Überlebende berichten, dass auch dort Missbrauch stattfand. Es gibt Gerüchte, Epstein habe auf der Ranch seine "DNA verbreiten" wollen - eine Art "Baby-Ranch".
+    description:
+        'Epsteins 33.000 Hektar Ranch in New Mexico - Gerüchte über "Baby-Ranch", DNA-Experimente',
+    detailedInfo:
+        '''Zorro Ranch war Jeffrey Epsteins riesiges Anwesen in New Mexico, etwa 10.000 Acres (33 km²) groß. Die Ranch wurde selten erwähnt, aber Überlebende berichten, dass auch dort Missbrauch stattfand. Es gibt Gerüchte, Epstein habe auf der Ranch seine "DNA verbreiten" wollen - eine Art "Baby-Ranch".
 
 📘 OFFIZIELLE FAKTEN:
 - Gekauft 1993, Größe: 10.000 Acres
@@ -2876,5 +3630,4 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Vanity Fair: "The Jeffrey Epstein Scandal" (2003)',
     ],
   ),
-
 ];

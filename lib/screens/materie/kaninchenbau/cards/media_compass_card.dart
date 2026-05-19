@@ -29,8 +29,7 @@ class MediaCompassCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.explore,
-                  color: KbDesign.lensOfficial, size: 18),
+              Icon(Icons.explore, color: KbDesign.lensOfficial, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'MEDIEN-KOMPASS',
@@ -131,10 +130,22 @@ class _CompassPainter extends CustomPainter {
 
     // Quadranten-Tint
     final quadrants = [
-      (Rect.fromLTWH(pad, pad, cx - pad, cy - pad), const Color(0xFF42A5F5)), // links-establishment (blau)
-      (Rect.fromLTWH(cx, pad, cx - pad, cy - pad), const Color(0xFF66BB6A)), // rechts-establishment (grün)
-      (Rect.fromLTWH(pad, cy, cx - pad, cy - pad), const Color(0xFFFF6E40)), // links-alternativ (orange)
-      (Rect.fromLTWH(cx, cy, cx - pad, cy - pad), const Color(0xFFAB47BC)), // rechts-alternativ (purple)
+      (
+        Rect.fromLTWH(pad, pad, cx - pad, cy - pad),
+        const Color(0xFF42A5F5)
+      ), // links-establishment (blau)
+      (
+        Rect.fromLTWH(cx, pad, cx - pad, cy - pad),
+        const Color(0xFF66BB6A)
+      ), // rechts-establishment (grün)
+      (
+        Rect.fromLTWH(pad, cy, cx - pad, cy - pad),
+        const Color(0xFFFF6E40)
+      ), // links-alternativ (orange)
+      (
+        Rect.fromLTWH(cx, cy, cx - pad, cy - pad),
+        const Color(0xFFAB47BC)
+      ), // rechts-alternativ (purple)
     ];
     for (final (rect, color) in quadrants) {
       canvas.drawRect(
@@ -196,6 +207,5 @@ class _CompassPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _CompassPainter old) =>
-      old.points != points;
+  bool shouldRepaint(covariant _CompassPainter old) => old.points != points;
 }

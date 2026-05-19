@@ -44,10 +44,11 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
   Future<void> _loadUserData() async {
     try {
       final user = await _userService.getCurrentUser();
-      if (mounted) setState(() {
-        _username = user.username;
-        _userId = 'user_${user.username.toLowerCase()}';
-      });
+      if (mounted)
+        setState(() {
+          _username = user.username;
+          _userId = 'user_${user.username.toLowerCase()}';
+        });
     } catch (_) {}
   }
 
@@ -55,7 +56,11 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
     setState(() => _isLoading = true);
     try {
       final dreams = await _toolsService.getDreams(roomId: widget.roomId);
-      if (mounted) setState(() { _dreams = dreams; _isLoading = false; });
+      if (mounted)
+        setState(() {
+          _dreams = dreams;
+          _isLoading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -63,25 +68,79 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
 
   // Statische Traumsymbol-Datenbank (Jungianisch / europäische Volkstradition)
   static const Map<String, Map<String, String>> _symbolDict = {
-    'wasser': {'de': 'Unterbewusstsein, Emotionen, Transformation', 'arch': 'Die Große Mutter'},
-    'feuer': {'de': 'Leidenschaft, Reinigung, Transformation', 'arch': 'Der Held'},
-    'schlange': {'de': 'Weisheit, Erneuerung, verborgenes Wissen', 'arch': 'Der Schatten'},
-    'fliegen': {'de': 'Freiheit, spirituelle Erhebung, Perspektivwechsel', 'arch': 'Der Geist'},
-    'fallen': {'de': 'Kontrollverlust, Unsicherheit im Wachleben', 'arch': 'Der Schatten'},
-    'haus': {'de': 'Das Selbst, Persönlichkeitsstruktur, Psyche', 'arch': 'Das Selbst'},
-    'tod': {'de': 'Ende eines Lebensabschnitts, Transformation', 'arch': 'Der Trickster'},
-    'kind': {'de': 'Inneres Kind, Neubeginn, Unschuld', 'arch': 'Das Göttliche Kind'},
-    'licht': {'de': 'Bewusstsein, Erkenntnis, spirituelle Führung', 'arch': 'Der Weise'},
-    'dunkelheit': {'de': 'Unbewusstes, Angst, unbekannte Aspekte', 'arch': 'Der Schatten'},
-    'meer': {'de': 'Kollektives Unbewusstes, emotionale Tiefe', 'arch': 'Die Große Mutter'},
-    'wald': {'de': 'Das Unbewusste, Prüfung, Suche nach dem Selbst', 'arch': 'Der Held'},
-    'baum': {'de': 'Lebensachse, Verbindung Erde-Himmel, Wachstum', 'arch': 'Das Selbst'},
-    'mond': {'de': 'Weibliches Prinzip, Rhythmen, Intuition', 'arch': 'Die Anima'},
-    'sonne': {'de': 'Bewusstsein, Männliches Prinzip, Vitalität', 'arch': 'Der Vater'},
-    'tier': {'de': 'Instinkte, Schatten, naturhafte Kraft', 'arch': 'Der Trickster'},
-    'gold': {'de': 'Wertvolles Selbst, Individualisation', 'arch': 'Das Selbst'},
+    'wasser': {
+      'de': 'Unterbewusstsein, Emotionen, Transformation',
+      'arch': 'Die Große Mutter'
+    },
+    'feuer': {
+      'de': 'Leidenschaft, Reinigung, Transformation',
+      'arch': 'Der Held'
+    },
+    'schlange': {
+      'de': 'Weisheit, Erneuerung, verborgenes Wissen',
+      'arch': 'Der Schatten'
+    },
+    'fliegen': {
+      'de': 'Freiheit, spirituelle Erhebung, Perspektivwechsel',
+      'arch': 'Der Geist'
+    },
+    'fallen': {
+      'de': 'Kontrollverlust, Unsicherheit im Wachleben',
+      'arch': 'Der Schatten'
+    },
+    'haus': {
+      'de': 'Das Selbst, Persönlichkeitsstruktur, Psyche',
+      'arch': 'Das Selbst'
+    },
+    'tod': {
+      'de': 'Ende eines Lebensabschnitts, Transformation',
+      'arch': 'Der Trickster'
+    },
+    'kind': {
+      'de': 'Inneres Kind, Neubeginn, Unschuld',
+      'arch': 'Das Göttliche Kind'
+    },
+    'licht': {
+      'de': 'Bewusstsein, Erkenntnis, spirituelle Führung',
+      'arch': 'Der Weise'
+    },
+    'dunkelheit': {
+      'de': 'Unbewusstes, Angst, unbekannte Aspekte',
+      'arch': 'Der Schatten'
+    },
+    'meer': {
+      'de': 'Kollektives Unbewusstes, emotionale Tiefe',
+      'arch': 'Die Große Mutter'
+    },
+    'wald': {
+      'de': 'Das Unbewusste, Prüfung, Suche nach dem Selbst',
+      'arch': 'Der Held'
+    },
+    'baum': {
+      'de': 'Lebensachse, Verbindung Erde-Himmel, Wachstum',
+      'arch': 'Das Selbst'
+    },
+    'mond': {
+      'de': 'Weibliches Prinzip, Rhythmen, Intuition',
+      'arch': 'Die Anima'
+    },
+    'sonne': {
+      'de': 'Bewusstsein, Männliches Prinzip, Vitalität',
+      'arch': 'Der Vater'
+    },
+    'tier': {
+      'de': 'Instinkte, Schatten, naturhafte Kraft',
+      'arch': 'Der Trickster'
+    },
+    'gold': {
+      'de': 'Wertvolles Selbst, Individualisation',
+      'arch': 'Das Selbst'
+    },
     'brücke': {'de': 'Übergang, Verbindung zweier Welten', 'arch': 'Der Bote'},
-    'spiegel': {'de': 'Selbstreflexion, Doppelnatur, Persona', 'arch': 'Die Persona'},
+    'spiegel': {
+      'de': 'Selbstreflexion, Doppelnatur, Persona',
+      'arch': 'Die Persona'
+    },
     'uhr': {'de': 'Zeit, Vergänglichkeit, innerer Druck', 'arch': 'Der Weise'},
   };
 
@@ -149,7 +208,8 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
           ),
           if (_isLoading)
             const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: Color(0xFF7C4DFF))),
+              child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFF7C4DFF))),
             )
           else if (_dreams.isEmpty)
             SliverFillRemaining(
@@ -161,12 +221,17 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
                     const SizedBox(height: 16),
                     const Text(
                       'Noch keine Träume',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Tippe auf + um deinen ersten\nTraum zu dokumentieren',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5), height: 1.5),
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          height: 1.5),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -221,7 +286,8 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
             children: [
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white24,
                     borderRadius: BorderRadius.circular(2),
@@ -231,25 +297,36 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Icon(lucid ? Icons.wb_twilight_rounded : Icons.bedtime_rounded,
-                      color: accent, size: 24),
+                  Icon(
+                      lucid ? Icons.wb_twilight_rounded : Icons.bedtime_rounded,
+                      color: accent,
+                      size: 24),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       title,
                       style: const TextStyle(
-                        color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                   if (lucid)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFB300).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFFFB300).withValues(alpha: 0.4)),
+                        border: Border.all(
+                            color:
+                                const Color(0xFFFFB300).withValues(alpha: 0.4)),
                       ),
-                      child: const Text('Luzid', style: TextStyle(color: Color(0xFFFFB300), fontSize: 11, fontWeight: FontWeight.bold)),
+                      child: const Text('Luzid',
+                          style: TextStyle(
+                              color: Color(0xFFFFB300),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
                     ),
                 ],
               ),
@@ -257,7 +334,10 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
                 const SizedBox(height: 16),
                 Text(
                   desc,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14, height: 1.6),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 14,
+                      height: 1.6),
                 ),
               ],
               if (symbols.isNotEmpty) ...[
@@ -266,7 +346,11 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
                   children: [
                     Icon(Icons.auto_awesome_rounded, color: accent, size: 16),
                     const SizedBox(width: 6),
-                    const Text('Erkannte Symbole', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                    const Text('Erkannte Symbole',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -285,12 +369,21 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
                       children: [
                         Text(
                           sym[0].toUpperCase() + sym.substring(1),
-                          style: TextStyle(color: accent, fontSize: 13, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: accent,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
-                        Text(info['de']!, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                        Text(info['de']!,
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 12)),
                         const SizedBox(height: 2),
-                        Text('Archetyp: ${info['arch']}', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+                        Text('Archetyp: ${info['arch']}',
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                fontSize: 11)),
                       ],
                     ),
                   );
@@ -328,23 +421,32 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
                 const SizedBox(height: 16),
                 const Text('🌙 Traum erfassen',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 TextField(
                   controller: titleCtrl,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Titel des Traums…',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                    hintStyle:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.07),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -354,16 +456,23 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
                   maxLines: 4,
                   decoration: InputDecoration(
                     hintText: 'Was hast du geträumt?',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                    hintStyle:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.07),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 8),
                 CheckboxListTile(
-                  title: const Text('Luzider Traum', style: TextStyle(color: Colors.white70)),
-                  subtitle: Text('Ich war mir bewusst, dass ich träume', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+                  title: const Text('Luzider Traum',
+                      style: TextStyle(color: Colors.white70)),
+                  subtitle: Text('Ich war mir bewusst, dass ich träume',
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontSize: 11)),
                   value: isLucid,
                   activeColor: accent,
                   onChanged: (v) => setLocal(() => isLucid = v ?? false),
@@ -394,9 +503,12 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accent,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text('Traum speichern', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    child: const Text('Traum speichern',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -447,7 +559,9 @@ class _DreamCard extends StatelessWidget {
               children: [
                 Icon(
                   lucid ? Icons.wb_twilight_rounded : Icons.bedtime_rounded,
-                  color: lucid ? const Color(0xFFFFB300) : accent.withValues(alpha: 0.7),
+                  color: lucid
+                      ? const Color(0xFFFFB300)
+                      : accent.withValues(alpha: 0.7),
                   size: 18,
                 ),
                 const SizedBox(width: 8),
@@ -463,12 +577,17 @@ class _DreamCard extends StatelessWidget {
                 ),
                 if (lucid)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFB300).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text('Luzid', style: TextStyle(color: Color(0xFFFFB300), fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: const Text('Luzid',
+                        style: TextStyle(
+                            color: Color(0xFFFFB300),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold)),
                   ),
               ],
             ),
@@ -478,24 +597,33 @@ class _DreamCard extends StatelessWidget {
                 desc,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 12, height: 1.4),
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 12,
+                    height: 1.4),
               ),
             ],
             if (symbols.isNotEmpty) ...[
               const SizedBox(height: 8),
               Wrap(
                 spacing: 6,
-                children: symbols.take(4).map((sym) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    sym,
-                    style: TextStyle(color: accent.withValues(alpha: 0.9), fontSize: 10),
-                  ),
-                )).toList(),
+                children: symbols
+                    .take(4)
+                    .map((sym) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            sym,
+                            style: TextStyle(
+                                color: accent.withValues(alpha: 0.9),
+                                fontSize: 10),
+                          ),
+                        ))
+                    .toList(),
               ),
             ],
           ],
@@ -529,7 +657,11 @@ class _JournalSearchScreenState extends State<_JournalSearchScreen> {
   Future<void> _loadTags() async {
     final t = await JournalSearchService.instance.tagCloud();
     final today = await JournalSearchService.instance.onThisDay();
-    if (mounted) setState(() { _tags = t; _onThisDay = today; });
+    if (mounted)
+      setState(() {
+        _tags = t;
+        _onThisDay = today;
+      });
   }
 
   Future<void> _search(String q) async {
@@ -549,9 +681,12 @@ class _JournalSearchScreenState extends State<_JournalSearchScreen> {
 
   String _kindLabel(JournalKind k) {
     switch (k) {
-      case JournalKind.dream: return 'Traum';
-      case JournalKind.astral: return 'Astral';
-      case JournalKind.moon: return 'Mond';
+      case JournalKind.dream:
+        return 'Traum';
+      case JournalKind.astral:
+        return 'Astral';
+      case JournalKind.moon:
+        return 'Mond';
     }
   }
 
@@ -561,8 +696,8 @@ class _JournalSearchScreenState extends State<_JournalSearchScreen> {
       backgroundColor: const Color(0xFF06040F),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Journal-Suche',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Journal-Suche', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: _accent),
       ),
       body: Column(
@@ -577,7 +712,8 @@ class _JournalSearchScreenState extends State<_JournalSearchScreen> {
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search, color: _accent),
                 hintText: 'Suchbegriff (min. 2 Zeichen)…',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                hintStyle:
+                    TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(
@@ -599,7 +735,8 @@ class _JournalSearchScreenState extends State<_JournalSearchScreen> {
                         itemBuilder: (_, i) {
                           final e = _results[i];
                           return ListTile(
-                            leading: const Icon(Icons.book_outlined, color: _accent),
+                            leading:
+                                const Icon(Icons.book_outlined, color: _accent),
                             title: Text(e.title,
                                 style: const TextStyle(color: Colors.white)),
                             subtitle: Text(
@@ -634,14 +771,16 @@ class _JournalSearchScreenState extends State<_JournalSearchScreen> {
                               Card(
                                 color: const Color(0xFF12121E),
                                 child: ListTile(
-                                  leading: const Icon(Icons.history,
-                                      color: _accent),
+                                  leading:
+                                      const Icon(Icons.history, color: _accent),
                                   title: Text(e.title,
-                                      style: const TextStyle(color: Colors.white)),
+                                      style:
+                                          const TextStyle(color: Colors.white)),
                                   subtitle: Text(
                                     '${DateTime.now().year - e.date.year} Jahr(e) — ${_kindLabel(e.kind)}',
                                     style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.55),
+                                        color: Colors.white
+                                            .withValues(alpha: 0.55),
                                         fontSize: 11),
                                   ),
                                 ),

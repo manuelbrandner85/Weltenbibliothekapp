@@ -44,8 +44,8 @@ class WBFloatingNav extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(WBRadius.xl),
           child: BackdropFilter(
-            filter: ImageFilter.blur(
-                sigmaX: wb.blurMedium, sigmaY: wb.blurMedium),
+            filter:
+                ImageFilter.blur(sigmaX: wb.blurMedium, sigmaY: wb.blurMedium),
             child: Container(
               height: 64,
               decoration: BoxDecoration(

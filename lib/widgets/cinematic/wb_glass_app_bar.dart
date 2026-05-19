@@ -90,8 +90,7 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
                           else if (Navigator.of(context).canPop())
                             IconButton(
                               icon: Icon(Icons.arrow_back, color: onGlassColor),
-                              onPressed: () =>
-                                  Navigator.of(context).maybePop(),
+                              onPressed: () => Navigator.of(context).maybePop(),
                             )
                           else
                             const SizedBox(width: WBSpace.lg),

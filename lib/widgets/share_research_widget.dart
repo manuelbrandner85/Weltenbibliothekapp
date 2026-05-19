@@ -10,7 +10,7 @@ import 'qr_code_share_dialog.dart';
 import 'social_media_share_widget.dart';
 
 /// Share Research Widget v7.5
-/// 
+///
 /// Teilen-Funktion für Recherche-Ergebnisse
 class ShareResearchWidget extends StatelessWidget {
   final String query;
@@ -243,7 +243,8 @@ class ShareResearchWidget extends StatelessWidget {
                 SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 ),
                 SizedBox(width: 16),
                 Text('PDF wird erstellt...'),
@@ -256,7 +257,8 @@ class ShareResearchWidget extends StatelessWidget {
 
       final pdf = await _generatePdf();
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/weltenbibliothek_${DateTime.now().millisecondsSinceEpoch}.pdf');
+      final file = File(
+          '${dir.path}/weltenbibliothek_${DateTime.now().millisecondsSinceEpoch}.pdf');
       await file.writeAsBytes(await pdf.save());
 
       await Share.shareXFiles(
@@ -295,7 +297,7 @@ class ShareResearchWidget extends StatelessWidget {
   Future<void> _copyLink(BuildContext context) async {
     final link = 'weltenbibliothek://research?q=${Uri.encodeComponent(query)}';
     await Clipboard.setData(ClipboardData(text: link));
-    
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -328,7 +330,7 @@ class ShareResearchWidget extends StatelessWidget {
 
     final sourcesText = StringBuffer();
     sourcesText.writeln('📚 QUELLEN für: $query\n');
-    
+
     for (int i = 0; i < sources!.length; i++) {
       final source = sources![i];
       sourcesText.writeln('${i + 1}. ${source['title'] ?? 'Unbekannt'}');
@@ -337,7 +339,7 @@ class ShareResearchWidget extends StatelessWidget {
     }
 
     await Clipboard.setData(ClipboardData(text: sourcesText.toString()));
-    
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -357,7 +359,7 @@ class ShareResearchWidget extends StatelessWidget {
 
   String _buildShareText() {
     final buffer = StringBuffer();
-    
+
     buffer.writeln('🔍 WELTENBIBLIOTHEK RECHERCHE');
     buffer.writeln('═' * 40);
     buffer.writeln();
@@ -366,7 +368,7 @@ class ShareResearchWidget extends StatelessWidget {
     buffer.writeln('📝 ZUSAMMENFASSUNG:');
     buffer.writeln(summary);
     buffer.writeln();
-    
+
     if (sources != null && sources!.isNotEmpty) {
       buffer.writeln('📚 QUELLEN (${sources!.length}):');
       for (int i = 0; i < sources!.length; i++) {
@@ -376,12 +378,12 @@ class ShareResearchWidget extends StatelessWidget {
       }
       buffer.writeln();
     }
-    
+
     if (multimedia != null) {
       final docs = multimedia!['documents'] as List?;
       final images = multimedia!['images'] as List?;
       final videos = multimedia!['videos'] as List?;
-      
+
       if (docs != null && docs.isNotEmpty) {
         buffer.writeln('📄 Dokumente: ${docs.length}');
       }
@@ -393,17 +395,17 @@ class ShareResearchWidget extends StatelessWidget {
       }
       buffer.writeln();
     }
-    
+
     buffer.writeln('═' * 40);
     buffer.writeln('Erstellt mit Weltenbibliothek v7.5');
     buffer.writeln('Alternative Narrative & Verschwörungstheorien');
-    
+
     return buffer.toString();
   }
 
   Future<pw.Document> _generatePdf() async {
     final pdf = pw.Document();
-    
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -421,7 +423,7 @@ class ShareResearchWidget extends StatelessWidget {
             ),
           ),
           pw.SizedBox(height: 20),
-          
+
           // Query
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
@@ -435,13 +437,13 @@ class ShareResearchWidget extends StatelessWidget {
             ),
           ),
           pw.SizedBox(height: 20),
-          
+
           // Summary
           pw.Header(level: 1, text: 'ZUSAMMENFASSUNG'),
           pw.SizedBox(height: 10),
           pw.Text(summary, textAlign: pw.TextAlign.justify),
           pw.SizedBox(height: 20),
-          
+
           // Sources
           if (sources != null && sources!.isNotEmpty) ...[
             pw.Header(level: 1, text: 'QUELLEN (${sources!.length})'),
@@ -460,19 +462,21 @@ class ShareResearchWidget extends StatelessWidget {
                     pw.SizedBox(height: 4),
                     pw.Text(
                       '${source['url'] ?? 'Keine URL'}',
-                      style: const pw.TextStyle(fontSize: 10, color: PdfColors.blue),
+                      style: const pw.TextStyle(
+                          fontSize: 10, color: PdfColors.blue),
                     ),
                     if (source['type'] != null)
                       pw.Text(
                         'Typ: ${source['type']}',
-                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
+                        style: const pw.TextStyle(
+                            fontSize: 9, color: PdfColors.grey),
                       ),
                   ],
                 ),
               );
             }),
           ],
-          
+
           // Footer
           pw.SizedBox(height: 40),
           pw.Divider(),
@@ -484,14 +488,15 @@ class ShareResearchWidget extends StatelessWidget {
         ],
       ),
     );
-    
+
     return pdf;
   }
-  
+
   // 🆕 QR-Code anzeigen
   void _showQrCode(BuildContext context) {
-    final url = 'https://weltenbibliothek.app/recherche?q=${Uri.encodeComponent(query)}';
-    
+    final url =
+        'https://weltenbibliothek.app/recherche?q=${Uri.encodeComponent(query)}';
+
     showDialog(
       context: context,
       builder: (context) => QrCodeShareDialog(
@@ -500,11 +505,12 @@ class ShareResearchWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   // 🆕 Social Media Share
   void _showSocialMediaShare(BuildContext context) {
-    final url = 'https://weltenbibliothek.app/recherche?q=${Uri.encodeComponent(query)}';
-    
+    final url =
+        'https://weltenbibliothek.app/recherche?q=${Uri.encodeComponent(query)}';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],
@@ -526,7 +532,7 @@ class ShareResearchWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Social Media Widget
             SocialMediaShareWidget(
               query: query,
@@ -537,11 +543,12 @@ class ShareResearchWidget extends StatelessWidget {
       ),
     );
   }
-  
+
   // 🆕 Embed-Code anzeigen
   void _showEmbedCode(BuildContext context) {
-    final url = 'https://weltenbibliothek.app/recherche?q=${Uri.encodeComponent(query)}';
-    
+    final url =
+        'https://weltenbibliothek.app/recherche?q=${Uri.encodeComponent(query)}';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.grey[900],
@@ -564,13 +571,13 @@ class ShareResearchWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Embed Code Widget
             EmbedCodeWidget(
               url: url,
               title: 'Recherche: $query',
             ),
-            
+
             const SizedBox(height: 20),
           ],
         ),

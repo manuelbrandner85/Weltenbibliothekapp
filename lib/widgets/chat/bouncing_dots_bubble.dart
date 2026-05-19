@@ -54,7 +54,9 @@ class _BouncingDotsBubbleState extends State<BouncingDotsBubble>
             animation: _controller,
             builder: (_, __) {
               final phase = (_controller.value * 3 - i).clamp(0.0, 3.0) % 1.0;
-              final dy = phase < 0.5 ? -4.0 * phase * 2 : -4.0 * (1.0 - (phase - 0.5) * 2);
+              final dy = phase < 0.5
+                  ? -4.0 * phase * 2
+                  : -4.0 * (1.0 - (phase - 0.5) * 2);
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Transform.translate(

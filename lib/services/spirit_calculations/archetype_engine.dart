@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 /// 🎭 ARCHETYPEN-ENGINE
-/// 
+///
 /// Basiert auf C.G. Jung's Archetypen-Theorie
-/// 
+///
 /// 12 HAUPT-ARCHETYPEN:
 /// - Der Unschuldige, Der Weise, Der Entdecker, Der Rebell
 /// - Der Magier, Der Held, Der Liebende, Der Narr
 /// - Der Jedermann, Der Fürsorger, Der Herrscher, Der Schöpfer
-/// 
+///
 /// BERECHNUNG:
 /// - Primär-Archetyp: Basiert auf Lebenszahl
 /// - Sekundär-Archetyp: Basiert auf Ausdruckszahl
@@ -171,7 +171,8 @@ class ArchetypeEngine {
   }
 
   /// Berechne Sekundär-Archetyp basierend auf Ausdruckszahl
-  static Map<String, dynamic> calculateSecondaryArchetype(int expressionNumber) {
+  static Map<String, dynamic> calculateSecondaryArchetype(
+      int expressionNumber) {
     int archetypeNumber = ((expressionNumber - 1) % 12) + 1;
     return _archetypes[archetypeNumber] ?? _archetypes[1]!;
   }
@@ -208,8 +209,9 @@ class ArchetypeEngine {
     score += 20;
 
     // Varianz basierend auf Archetypen-Namen
-    int variation = (primary['name'].toString().length + 
-                     secondary['name'].toString().length) % 20;
+    int variation = (primary['name'].toString().length +
+            secondary['name'].toString().length) %
+        20;
     score += variation - 10;
 
     return score.clamp(0, 100);
@@ -235,10 +237,14 @@ class ArchetypeEngine {
     final shadowElement = shadow['element'] as String?;
     final activationElement = activation['element'] as String?;
 
-    if (primaryElement != null) elements[primaryElement] = (elements[primaryElement] ?? 0) + 2;
-    if (secondaryElement != null) elements[secondaryElement] = (elements[secondaryElement] ?? 0) + 2;
-    if (shadowElement != null) elements[shadowElement] = (elements[shadowElement] ?? 0) + 1;
-    if (activationElement != null) elements[activationElement] = (elements[activationElement] ?? 0) + 1;
+    if (primaryElement != null)
+      elements[primaryElement] = (elements[primaryElement] ?? 0) + 2;
+    if (secondaryElement != null)
+      elements[secondaryElement] = (elements[secondaryElement] ?? 0) + 2;
+    if (shadowElement != null)
+      elements[shadowElement] = (elements[shadowElement] ?? 0) + 1;
+    if (activationElement != null)
+      elements[activationElement] = (elements[activationElement] ?? 0) + 1;
 
     return elements;
   }
@@ -268,7 +274,7 @@ class ArchetypeEngine {
     final secondaryName = secondary['name'] as String;
     final shadowName = shadow['name'] as String;
     final activationName = activation['name'] as String;
-    
+
     return '''
 🎭 AUSFÜHRLICHE ARCHETYPEN-ANALYSE
 
@@ -377,20 +383,33 @@ Wiederhole diese Affirmationen täglich, um die positiven Qualitäten deines Arc
 
   static String _getArchetypeDeepMeaning(String archetype) {
     final meanings = {
-      'Der Unschuldige': 'Du trägst die Gabe der Hoffnung in dir. Deine Fähigkeit, das Gute in Menschen und Situationen zu sehen, ist eine seltene und wertvolle Qualität. In einer komplexen Welt bewahrst du die Einfachheit und Klarheit des Herzens.',
-      'Der Weise': 'Wissen und Wahrheit sind deine Leitsterne. Du bist ein ewiger Student des Lebens, getrieben von dem tiefen Bedürfnis, die Welt zu verstehen. Deine analytischen Fähigkeiten und dein Durst nach Erkenntnis machen dich zu einem natürlichen Lehrer und Mentor.',
-      'Der Entdecker': 'Freiheit ist deine Essenz. Du bist geboren, um Grenzen zu überschreiten, neue Horizonte zu erkunden und authentisch zu leben. Dein Pioniergeist inspiriert andere, ihre eigenen Käfige zu verlassen.',
-      'Der Rebell': 'Du bist ein Katalysator für Transformation. Wo andere Ungerechtigkeit akzeptieren, erhebst du deine Stimme. Dein Mut, das System zu hinterfragen, ist eine Kraft für notwendigen Wandel.',
-      'Der Magier': 'Du besitzt die seltene Gabe, Träume in Realität zu verwandeln. Durch Wissen, Vision und Willen formst du deine Wirklichkeit. Du verstehst, dass Transformation von innen nach außen geschieht.',
-      'Der Held': 'Mut ist nicht die Abwesenheit von Angst, sondern das Handeln trotz Angst. Als Held nimmst du Herausforderungen an, kämpfst für deine Werte und inspirierst andere durch deine Standhaftigkeit.',
-      'Der Liebende': 'Liebe ist deine Sprache und Leidenschaft deine Kraft. Du verstehst, dass wahre Intimität Mut erfordert - den Mut, verletzlich zu sein und authentisch zu lieben.',
-      'Der Narr': 'In deiner Leichtigkeit liegt tiefe Weisheit. Du erinnerst uns daran, dass das Leben gespielt und nicht nur gelebt werden will. Deine Spontaneität und Freude sind Medizin für eine zu ernste Welt.',
-      'Der Jedermann': 'Du trägst die Kraft der Zugehörigkeit in dir. In deiner Bodenständigkeit und Authentizität finden andere Halt und Verbindung. Du erinnerst uns an den Wert des Gewöhnlichen.',
-      'Der Fürsorger': 'Deine Gabe ist das bedingungslose Geben. Du erkennst die Bedürfnisse anderer und antwortest mit Mitgefühl. Deine Fürsorge schafft sichere Räume, in denen andere wachsen können.',
-      'Der Herrscher': 'Führung ist deine natürliche Rolle. Du schaffst Ordnung aus Chaos, triffst Entscheidungen und übernimmst Verantwortung. Deine Autorität basiert auf Kompetenz und Integrität.',
-      'Der Schöpfer': 'Du bist ein Kanal für kreative Energie. Deine Vision und deine Fähigkeit, Neues zu erschaffen, machen dich zu einem Innovator. Du verstehst, dass Schöpfung der Kern des menschlichen Seins ist.',
+      'Der Unschuldige':
+          'Du trägst die Gabe der Hoffnung in dir. Deine Fähigkeit, das Gute in Menschen und Situationen zu sehen, ist eine seltene und wertvolle Qualität. In einer komplexen Welt bewahrst du die Einfachheit und Klarheit des Herzens.',
+      'Der Weise':
+          'Wissen und Wahrheit sind deine Leitsterne. Du bist ein ewiger Student des Lebens, getrieben von dem tiefen Bedürfnis, die Welt zu verstehen. Deine analytischen Fähigkeiten und dein Durst nach Erkenntnis machen dich zu einem natürlichen Lehrer und Mentor.',
+      'Der Entdecker':
+          'Freiheit ist deine Essenz. Du bist geboren, um Grenzen zu überschreiten, neue Horizonte zu erkunden und authentisch zu leben. Dein Pioniergeist inspiriert andere, ihre eigenen Käfige zu verlassen.',
+      'Der Rebell':
+          'Du bist ein Katalysator für Transformation. Wo andere Ungerechtigkeit akzeptieren, erhebst du deine Stimme. Dein Mut, das System zu hinterfragen, ist eine Kraft für notwendigen Wandel.',
+      'Der Magier':
+          'Du besitzt die seltene Gabe, Träume in Realität zu verwandeln. Durch Wissen, Vision und Willen formst du deine Wirklichkeit. Du verstehst, dass Transformation von innen nach außen geschieht.',
+      'Der Held':
+          'Mut ist nicht die Abwesenheit von Angst, sondern das Handeln trotz Angst. Als Held nimmst du Herausforderungen an, kämpfst für deine Werte und inspirierst andere durch deine Standhaftigkeit.',
+      'Der Liebende':
+          'Liebe ist deine Sprache und Leidenschaft deine Kraft. Du verstehst, dass wahre Intimität Mut erfordert - den Mut, verletzlich zu sein und authentisch zu lieben.',
+      'Der Narr':
+          'In deiner Leichtigkeit liegt tiefe Weisheit. Du erinnerst uns daran, dass das Leben gespielt und nicht nur gelebt werden will. Deine Spontaneität und Freude sind Medizin für eine zu ernste Welt.',
+      'Der Jedermann':
+          'Du trägst die Kraft der Zugehörigkeit in dir. In deiner Bodenständigkeit und Authentizität finden andere Halt und Verbindung. Du erinnerst uns an den Wert des Gewöhnlichen.',
+      'Der Fürsorger':
+          'Deine Gabe ist das bedingungslose Geben. Du erkennst die Bedürfnisse anderer und antwortest mit Mitgefühl. Deine Fürsorge schafft sichere Räume, in denen andere wachsen können.',
+      'Der Herrscher':
+          'Führung ist deine natürliche Rolle. Du schaffst Ordnung aus Chaos, triffst Entscheidungen und übernimmst Verantwortung. Deine Autorität basiert auf Kompetenz und Integrität.',
+      'Der Schöpfer':
+          'Du bist ein Kanal für kreative Energie. Deine Vision und deine Fähigkeit, Neues zu erschaffen, machen dich zu einem Innovator. Du verstehst, dass Schöpfung der Kern des menschlichen Seins ist.',
     };
-    return meanings[archetype] ?? 'Eine einzigartige Energie, die dein Leben prägt.';
+    return meanings[archetype] ??
+        'Eine einzigartige Energie, die dein Leben prägt.';
   }
 
   static String _getAffirmations(String archetype) {
@@ -456,7 +475,8 @@ Wiederhole diese Affirmationen täglich, um die positiven Qualitäten deines Arc
 • "Jeder Tag ist eine leere Leinwand"
 • "Meine Vision manifestiert sich mühelos"''',
     };
-    return affirmations[archetype] ?? '''• "Ich bin auf dem Weg zur Ganzheit"
+    return affirmations[archetype] ??
+        '''• "Ich bin auf dem Weg zur Ganzheit"
 • "Ich ehre alle Facetten meiner Persönlichkeit"''';
   }
 

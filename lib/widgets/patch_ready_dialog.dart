@@ -143,8 +143,7 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
                       color: const Color(0xFF00E5FF).withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: const Color(0xFF00E5FF)
-                            .withValues(alpha: 0.22),
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.22),
                       ),
                     ),
                     child: Column(
@@ -171,12 +170,10 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
                         const SizedBox(height: 12),
                         // Kategorien
                         ConstrainedBox(
-                          constraints:
-                              const BoxConstraints(maxHeight: 240),
+                          constraints: const BoxConstraints(maxHeight: 240),
                           child: SingleChildScrollView(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: friendly.categories
                                   .where((c) => !c.isEmpty)
                                   .map((c) => _CategoryBlock(category: c))
@@ -194,8 +191,8 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
               const SizedBox(height: 16),
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -313,8 +310,7 @@ class _CategoryBlock extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: category.color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -377,30 +373,35 @@ class _ChangelogSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF00E5FF).withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.25)),
+        border:
+            Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.25)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: List.generate(3, (i) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              Container(width: 14, height: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(7))),
-              const SizedBox(width: 8),
-              Container(
-                height: 12,
-                width: 140.0 - i * 20,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-            ],
-          ),
-        )),
+        children: List.generate(
+            3,
+            (i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(7))),
+                      const SizedBox(width: 8),
+                      Container(
+                        height: 12,
+                        width: 140.0 - i * 20,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
       ),
     );
   }

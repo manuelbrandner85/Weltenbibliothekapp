@@ -83,13 +83,13 @@ class _AdminDashboardButtonState extends State<AdminDashboardButton> {
       if (resolvedRole == null && eRole != null && eRole.isNotEmpty) {
         resolvedRole = eRole;
       }
-      if (resolvedRole == null && (
-          AppRoles.isRootAdminByUsername(mUser) ||
+      if (resolvedRole == null &&
+          (AppRoles.isRootAdminByUsername(mUser) ||
               AppRoles.isRootAdminByUsername(eUser))) {
         resolvedRole = AppRoles.rootAdmin;
       }
-      if (resolvedRole == null && (
-          AppRoles.isContentEditorByUsername(mUser) ||
+      if (resolvedRole == null &&
+          (AppRoles.isContentEditorByUsername(mUser) ||
               AppRoles.isContentEditorByUsername(eUser))) {
         resolvedRole = AppRoles.contentEditor;
       }
@@ -102,15 +102,21 @@ class _AdminDashboardButtonState extends State<AdminDashboardButton> {
         _fallbackIsAdmin = usernameMatch || roleMatch || webMatch;
         _fallbackRole = resolvedRole;
       });
-    } catch (_) { /* still false */ }
+    } catch (_) {/* still false */}
   }
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = widget.adminState.isAdmin || _fallbackIsAdmin;
-    if (!isAdmin) return const SizedBox.shrink();
-
+    // v103 Zugriffsschutz: Button NUR fuer User mit echter Admin-Rolle.
+    // canAccessAdminDashboard prueft gegen AppRoles
+    // (root_admin/admin/moderator/content_editor). 'user' bekommt
+    // garantiert kein Button und kein Navigations-Pfad.
     final role = widget.adminState.role ?? _fallbackRole;
+    final hasAccess = AppRoles.canAccessAdminDashboard(role) ||
+        (widget.adminState.isAdmin &&
+            AppRoles.canAccessAdminDashboard(widget.adminState.role));
+    if (!hasAccess) return const SizedBox.shrink();
+
     final scheme = _resolveScheme(role);
 
     return Padding(
@@ -137,7 +143,8 @@ class _AdminDashboardButtonState extends State<AdminDashboardButton> {
                   scheme.deep.withValues(alpha: 0.85),
                 ],
               ),
-              border: Border.all(color: scheme.accent.withValues(alpha: 0.4), width: 1),
+              border: Border.all(
+                  color: scheme.accent.withValues(alpha: 0.4), width: 1),
               boxShadow: [
                 BoxShadow(
                   color: scheme.accent.withValues(alpha: 0.18),
@@ -193,7 +200,8 @@ class _AdminDashboardButtonState extends State<AdminDashboardButton> {
                   ),
                 ),
                 Icon(Icons.chevron_right_rounded,
-                    color: scheme.accentBright.withValues(alpha: 0.9), size: 24),
+                    color: scheme.accentBright.withValues(alpha: 0.9),
+                    size: 24),
               ],
             ),
           ),

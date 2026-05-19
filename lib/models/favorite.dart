@@ -55,13 +55,13 @@ class Favorite {
 
 /// Favorite Types
 enum FavoriteType {
-  research,      // Recherche-Ergebnisse
-  narrative,     // Narratives (Area 51, MK-Ultra, etc.)
-  pdf,           // PDF Dokumente
-  image,         // Bilder
-  video,         // Videos
-  telegram,      // Telegram Kanäle
-  source,        // Quellen/Links
+  research, // Recherche-Ergebnisse
+  narrative, // Narratives (Area 51, MK-Ultra, etc.)
+  pdf, // PDF Dokumente
+  image, // Bilder
+  video, // Videos
+  telegram, // Telegram Kanäle
+  source, // Quellen/Links
 }
 
 extension FavoriteTypeExtension on FavoriteType {

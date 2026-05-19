@@ -43,8 +43,8 @@ class TimelineEventV2 {
 
   factory TimelineEventV2.fromJson(Map<String, dynamic> j) {
     final colorHex = j['color_hex'] as String? ?? '#E53935';
-    final colorValue = int.tryParse(colorHex.replaceFirst('#', ''), radix: 16)
-        ?? 0xE53935;
+    final colorValue =
+        int.tryParse(colorHex.replaceFirst('#', ''), radix: 16) ?? 0xE53935;
     final rawSources = j['sources'];
     final sources = rawSources is List
         ? rawSources.map((e) => e.toString()).toList()
@@ -53,7 +53,8 @@ class TimelineEventV2 {
       id: j['id'] as String? ?? '',
       title: j['title'] as String? ?? '',
       dateDisplay: j['date_display'] as String? ?? '',
-      dateSort: DateTime.tryParse(j['date_sort'] as String? ?? '') ?? DateTime(1970),
+      dateSort:
+          DateTime.tryParse(j['date_sort'] as String? ?? '') ?? DateTime(1970),
       description: j['description'] as String? ?? '',
       category: j['category'] as String? ?? 'conspiracy',
       sources: sources,
@@ -73,7 +74,8 @@ class TimelineEventV2 {
         'description': description,
         'category': category,
         'sources': sources,
-        'color_hex': '#${color.value.toRadixString(16).padLeft(8, '0').substring(2)}',
+        'color_hex':
+            '#${color.value.toRadixString(16).padLeft(8, '0').substring(2)}',
         'icon_name': iconName,
         'image_url': imageUrl,
         'verified': verified,
@@ -109,12 +111,13 @@ class ResearchTimelineService {
           .order('date_sort', ascending: false)
           .range(offset, offset + limit - 1);
       final list = (res as List)
-          .map((e) => TimelineEventV2.fromJson(
-              Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              TimelineEventV2.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
       // Erfolgreich -> Cache aktualisieren (nur wenn keine Filter aktiv).
-      if (category == null && (searchQuery == null || searchQuery.isEmpty)
-          && offset == 0) {
+      if (category == null &&
+          (searchQuery == null || searchQuery.isEmpty) &&
+          offset == 0) {
         await _saveCache(list);
       }
       return list;

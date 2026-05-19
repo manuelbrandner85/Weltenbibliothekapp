@@ -67,13 +67,13 @@ class _VorhangWorldWrapperState extends State<VorhangWorldWrapper> {
       return Scaffold(
         backgroundColor: const Color(0xFF000000),
         appBar: WBGlassAppBar(
-        world: WBWorld.vorhang,
-        title: 'VORHANG',
-        leading: IconButton(
+          world: WBWorld.vorhang,
+          title: 'VORHANG',
+          leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Color(0xFFC9A84C)),
             onPressed: () => Navigator.of(context).pop(),
           ),
-      ),
+        ),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

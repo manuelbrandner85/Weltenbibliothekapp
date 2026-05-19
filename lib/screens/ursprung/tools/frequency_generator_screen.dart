@@ -261,14 +261,14 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen>
   }
 
   Widget _sectionLabel(String s) => Text(
-    s,
-    style: TextStyle(
-      color: _cyan.withValues(alpha: 0.7),
-      fontSize: 10,
-      letterSpacing: 3.0,
-      fontWeight: FontWeight.w700,
-    ),
-  );
+        s,
+        style: TextStyle(
+          color: _cyan.withValues(alpha: 0.7),
+          fontSize: 10,
+          letterSpacing: 3.0,
+          fontWeight: FontWeight.w700,
+        ),
+      );
 }
 
 class _Preset {

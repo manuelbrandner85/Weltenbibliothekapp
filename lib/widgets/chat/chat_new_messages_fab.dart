@@ -36,8 +36,7 @@ class ChatNewMessagesFab extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             onTap: onTap,
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

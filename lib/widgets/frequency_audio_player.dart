@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart' if (dart.library.html) '../stubs/audioplayers_stub.dart';
+import 'package:audioplayers/audioplayers.dart'
+    if (dart.library.html) '../stubs/audioplayers_stub.dart';
 import 'dart:async';
 
 /// 🎵 FREQUENCY AUDIO PLAYER WIDGET
@@ -8,7 +9,7 @@ class FrequencyAudioPlayer extends StatefulWidget {
   final String frequencyHz;
   final Color accentColor;
   final int durationMinutes;
-  
+
   const FrequencyAudioPlayer({
     super.key,
     required this.frequencyHz,
@@ -20,25 +21,26 @@ class FrequencyAudioPlayer extends StatefulWidget {
   State<FrequencyAudioPlayer> createState() => _FrequencyAudioPlayerState();
 }
 
-class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with SingleTickerProviderStateMixin {
+class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer>
+    with SingleTickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
-  
+
   bool _isPlaying = false;
   bool _isLoading = false;
   Duration _currentPosition = Duration.zero; // ignore: unused_field
   Duration _totalDuration = Duration.zero; // ignore: unused_field
   double _volume = 0.7;
-  
+
   Timer? _sessionTimer;
   int _remainingSeconds = 0;
-  
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Pulse animation for playing state
     _pulseController = AnimationController(
       vsync: this,
@@ -47,30 +49,30 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    
+
     // Audio player listeners
     _audioPlayer.onDurationChanged.listen((duration) {
       if (mounted) {
         setState(() => _totalDuration = duration);
       }
     });
-    
+
     _audioPlayer.onPositionChanged.listen((position) {
       if (mounted) {
         setState(() => _currentPosition = position);
       }
     });
-    
+
     _audioPlayer.onPlayerComplete.listen((_) {
       // Loop the audio
       _audioPlayer.seek(Duration.zero);
       _audioPlayer.resume();
     });
-    
+
     // Initialize session timer
     _remainingSeconds = widget.durationMinutes * 60;
   }
-  
+
   @override
   void dispose() {
     _audioPlayer.dispose();
@@ -78,7 +80,7 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
     _pulseController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _togglePlayPause() async {
     if (_isPlaying) {
       await _audioPlayer.pause();
@@ -89,10 +91,10 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
       await _playFrequency();
     }
   }
-  
+
   Future<void> _playFrequency() async {
     setState(() => _isLoading = true);
-    
+
     try {
       // Map frequency to audio file (all Solfeggio frequencies)
       String audioPath;
@@ -125,13 +127,14 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
           // Fallback to 432 Hz
           audioPath = 'assets/audio/frequency_432hz.mp3';
       }
-      
+
       await _audioPlayer.setVolume(_volume);
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer.play(AssetSource(audioPath.replaceFirst('assets/', '')));
-      
+      await _audioPlayer
+          .play(AssetSource(audioPath.replaceFirst('assets/', '')));
+
       _pulseController.repeat(reverse: true);
-      
+
       // Start session timer
       _sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (mounted) {
@@ -143,7 +146,7 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
           });
         }
       });
-      
+
       setState(() {
         _isPlaying = true;
         _isLoading = false;
@@ -160,34 +163,35 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
       }
     }
   }
-  
+
   Future<void> _stopSession() async {
     await _audioPlayer.stop();
     _sessionTimer?.cancel();
     _pulseController.stop();
-    
+
     if (mounted) {
       setState(() {
         _isPlaying = false;
         _remainingSeconds = widget.durationMinutes * 60;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Frequenz-Session beendet (${widget.frequencyHz} Hz)'),
+          content:
+              Text('✅ Frequenz-Session beendet (${widget.frequencyHz} Hz)'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),
       );
     }
   }
-  
+
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;
     final secs = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -195,7 +199,8 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
       decoration: BoxDecoration(
         color: widget.accentColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: widget.accentColor.withValues(alpha: 0.3), width: 2),
+        border: Border.all(
+            color: widget.accentColor.withValues(alpha: 0.3), width: 2),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -249,9 +254,9 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
               );
             },
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Session Timer
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -275,9 +280,9 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Play/Pause Button
           _isLoading
               ? CircularProgressIndicator(color: widget.accentColor)
@@ -299,15 +304,17 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
                       child: IconButton(
                         iconSize: 48,
                         icon: Icon(
-                          _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                          _isPlaying
+                              ? Icons.pause_circle_filled
+                              : Icons.play_circle_filled,
                           color: widget.accentColor,
                         ),
                         onPressed: _togglePlayPause,
                       ),
                     ),
-                    
+
                     const SizedBox(width: 24),
-                    
+
                     // Stop Button
                     if (_isPlaying)
                       IconButton(
@@ -320,18 +327,20 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
                       ),
                   ],
                 ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Volume Slider
           Row(
             children: [
-              Icon(Icons.volume_down, color: widget.accentColor.withValues(alpha: 0.7), size: 20),
+              Icon(Icons.volume_down,
+                  color: widget.accentColor.withValues(alpha: 0.7), size: 20),
               Expanded(
                 child: SliderTheme(
                   data: SliderThemeData(
                     activeTrackColor: widget.accentColor,
-                    inactiveTrackColor: widget.accentColor.withValues(alpha: 0.2),
+                    inactiveTrackColor:
+                        widget.accentColor.withValues(alpha: 0.2),
                     thumbColor: widget.accentColor,
                     overlayColor: widget.accentColor.withValues(alpha: 0.2),
                   ),

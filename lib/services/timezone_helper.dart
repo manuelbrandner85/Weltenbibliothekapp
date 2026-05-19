@@ -31,7 +31,8 @@ class TimezoneHelper {
   /// Beispiel: lat=48.21, lng=16.37 (Wien), date=15.7.2000 -> 2.0 (MESZ)
   ///           lat=48.21, lng=16.37 (Wien), date=15.1.2000 -> 1.0 (MEZ)
   ///           lat=19.08, lng=72.88 (Mumbai), date=15.1.2000 -> 5.5 (IST)
-  static double offsetForCoordinate(double lat, double lng, DateTime localDate) {
+  static double offsetForCoordinate(
+      double lat, double lng, DateTime localDate) {
     // 1. Sonderfaelle (Halb-/Viertelstunden + politisch verschobene Zonen)
     final special = _checkSpecialZones(lat, lng);
     if (special != null) return special;
@@ -85,7 +86,8 @@ class TimezoneHelper {
     // Marquesas Inseln: MART = -9.5h
     if (lat >= -11 && lat <= -7.5 && lng >= -141 && lng <= -138) return -9.5;
     // Chatham Islands NZ: CHAST = +12.75h (super selten)
-    if (lat >= -44.5 && lat <= -43.5 && lng >= -177 && lng <= -176) return 12.75;
+    if (lat >= -44.5 && lat <= -43.5 && lng >= -177 && lng <= -176)
+      return 12.75;
     return null;
   }
 
@@ -128,7 +130,7 @@ class TimezoneHelper {
       final startPrev = _firstSundayOfMonth(date.year - 1, 10);
       final endThis = _firstSundayOfMonth(date.year, 4);
       return (date.isAfter(start) && date.isBefore(end)) ||
-             (date.isAfter(startPrev) && date.isBefore(endThis));
+          (date.isAfter(startPrev) && date.isBefore(endThis));
     }
   }
 

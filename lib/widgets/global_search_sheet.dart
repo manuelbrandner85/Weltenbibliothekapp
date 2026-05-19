@@ -132,7 +132,8 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
         .limit(8)
         .then((rows) => (rows as List)
             .map((r) => _Hit(
-                  title: (r['title'] as String?) ?? (r['module_code'] as String? ?? '?'),
+                  title: (r['title'] as String?) ??
+                      (r['module_code'] as String? ?? '?'),
                   subtitle:
                       'Vorhang · ${r['branch'] ?? ''} · ${r['module_code'] ?? ''}',
                   category: _HitCategory.module,
@@ -209,8 +210,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
       padding: const EdgeInsets.fromLTRB(16, 14, 8, 10),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded,
-              color: Color(0xFFC9A84C), size: 22),
+          const Icon(Icons.search_rounded, color: Color(0xFFC9A84C), size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(

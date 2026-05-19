@@ -7,12 +7,12 @@ import 'premium_icons.dart';
 /// 🎨 DRAWING CANVAS WIDGET - Handzeichnungen/Skizzen
 class DrawingCanvasWidget extends StatefulWidget {
   final Function(Uint8List imageBytes) onDrawingComplete;
-  
+
   const DrawingCanvasWidget({
     super.key,
     required this.onDrawingComplete,
   });
-  
+
   @override
   State<DrawingCanvasWidget> createState() => _DrawingCanvasWidgetState();
 }
@@ -21,7 +21,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
   final List<DrawingPoint?> _points = [];
   Color _selectedColor = Colors.white;
   double _strokeWidth = 3.0;
-  
+
   final List<Color> _colors = [
     Colors.white,
     Colors.red,
@@ -34,16 +34,16 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
     Colors.black,
     Colors.grey,
   ];
-  
+
   final List<double> _strokeWidths = [2.0, 4.0, 6.0];
-  
+
   void _clear() {
     setState(() => _points.clear());
   }
-  
+
   void _undo() {
     if (_points.isEmpty) return;
-    
+
     setState(() {
       // Remove last continuous stroke
       int? lastNullIndex;
@@ -53,7 +53,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
           break;
         }
       }
-      
+
       if (lastNullIndex != null) {
         _points.removeRange(lastNullIndex, _points.length);
       } else {
@@ -61,19 +61,19 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
       }
     });
   }
-  
+
   Future<void> _save() async {
     // Convert canvas to image
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
     final size = const Size(400, 400);
-    
+
     // Draw background
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
       Paint()..color = Colors.black,
     );
-    
+
     // Draw all points
     for (int i = 0; i < _points.length - 1; i++) {
       if (_points[i] != null && _points[i + 1] != null) {
@@ -84,15 +84,15 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
         );
       }
     }
-    
+
     final picture = recorder.endRecording();
     final img = await picture.toImage(size.width.toInt(), size.height.toInt());
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
     final bytes = byteData!.buffer.asUint8List();
-    
+
     widget.onDrawingComplete(bytes);
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return GlassmorphismCard(
@@ -134,7 +134,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Canvas
           Container(
             height: 300,
@@ -188,7 +188,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Color Picker
           Row(
             children: [
@@ -210,7 +210,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
                     itemBuilder: (context, index) {
                       final color = _colors[index];
                       final isSelected = _selectedColor == color;
-                      
+
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: InkWell(
@@ -230,7 +230,8 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
                               boxShadow: isSelected
                                   ? [
                                       BoxShadow(
-                                        color: Colors.blue.withValues(alpha: 0.5),
+                                        color:
+                                            Colors.blue.withValues(alpha: 0.5),
                                         blurRadius: 8,
                                         spreadRadius: 2,
                                       ),
@@ -247,7 +248,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Stroke Width Picker
           Row(
             children: [
@@ -263,7 +264,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
               ...List.generate(_strokeWidths.length, (index) {
                 final width = _strokeWidths[index];
                 final isSelected = _strokeWidth == width;
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: InkWell(
@@ -309,7 +310,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Save Button
           SizedBox(
             width: double.infinity,
@@ -337,7 +338,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
 class DrawingPoint {
   final Offset offset;
   final Paint paint;
-  
+
   DrawingPoint({
     required this.offset,
     required this.paint,
@@ -347,9 +348,9 @@ class DrawingPoint {
 /// Drawing Painter - Custom Painter für Canvas
 class DrawingPainter extends CustomPainter {
   final List<DrawingPoint?> points;
-  
+
   DrawingPainter(this.points);
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < points.length - 1; i++) {
@@ -362,7 +363,7 @@ class DrawingPainter extends CustomPainter {
       }
     }
   }
-  
+
   @override
   bool shouldRepaint(DrawingPainter oldDelegate) => true;
 }

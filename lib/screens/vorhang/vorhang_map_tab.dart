@@ -87,7 +87,8 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: _gold.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
@@ -95,14 +96,17 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                     ),
                     child: Text(c.badge,
                         style: const TextStyle(
-                            color: _gold, fontSize: 12, fontWeight: FontWeight.w600)),
+                            color: _gold,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       c.influence,
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45), fontSize: 12),
+                          color: Colors.white.withValues(alpha: 0.45),
+                          fontSize: 12),
                     ),
                   ),
                 ],
@@ -110,7 +114,9 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
               const SizedBox(height: 12),
               Text(c.name,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(c.founded,
                   style: TextStyle(
@@ -125,13 +131,16 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                 const SizedBox(height: 16),
                 const Text('Bekannte Mitglieder',
                     style: TextStyle(
-                        color: _gold, fontSize: 13, fontWeight: FontWeight.w600)),
+                        color: _gold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 ...c.members.map((m) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
                         children: [
-                          const Icon(Icons.person_outline, color: _gold, size: 14),
+                          const Icon(Icons.person_outline,
+                              color: _gold, size: 14),
                           const SizedBox(width: 8),
                           Text(m,
                               style: TextStyle(
@@ -145,7 +154,9 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                 const SizedBox(height: 16),
                 const Text('Verbindungen',
                     style: TextStyle(
-                        color: _gold, fontSize: 13, fontWeight: FontWeight.w600)),
+                        color: _gold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
@@ -157,11 +168,12 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                             decoration: BoxDecoration(
                               color: _gold.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
-                              border:
-                                  Border.all(color: _gold.withValues(alpha: 0.35)),
+                              border: Border.all(
+                                  color: _gold.withValues(alpha: 0.35)),
                             ),
                             child: Text(x,
-                                style: const TextStyle(color: _gold, fontSize: 12)),
+                                style: const TextStyle(
+                                    color: _gold, fontSize: 12)),
                           ))
                       .toList(),
                 ),
@@ -225,7 +237,8 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                         ],
                       ),
                       child: sel
-                          ? const Icon(Icons.close, color: Colors.black, size: 14)
+                          ? const Icon(Icons.close,
+                              color: Colors.black, size: 14)
                           : null,
                     ),
                   ),
@@ -253,7 +266,8 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                 Text(
                   '${_centers.length} Standorte · Marker antippen für Details',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45), fontSize: 12),
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontSize: 12),
                 ),
               ],
             ),

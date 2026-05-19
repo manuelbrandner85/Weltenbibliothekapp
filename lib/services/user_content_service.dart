@@ -207,7 +207,7 @@ class UserContentService {
       _currentUserId = UserService.getCurrentUserId();
       _currentUserName = await UserAuthService.getUsername() ?? 'Anonym';
       await _loadNarratives();
-      
+
       if (kDebugMode) {
         debugPrint('✅ UserContentService initialized');
         debugPrint('   📝 Total narratives: ${_narratives.length}');
@@ -377,7 +377,8 @@ class UserContentService {
       final narrativesJson = _prefs?.getString(_narrativesKey);
       if (narrativesJson != null) {
         final List<dynamic> decoded = json.decode(narrativesJson);
-        _narratives = decoded.map((json) => UserNarrative.fromJson(json)).toList();
+        _narratives =
+            decoded.map((json) => UserNarrative.fromJson(json)).toList();
       }
     } catch (e) {
       if (kDebugMode) {
@@ -439,10 +440,15 @@ class UserContentService {
     return {
       'total': _narratives.length,
       'drafts': _getDraftCount(),
-      'submitted': _narratives.where((n) => n.status == ContentStatus.submitted).length,
-      'underReview': _narratives.where((n) => n.status == ContentStatus.underReview).length,
-      'approved': _narratives.where((n) => n.status == ContentStatus.approved).length,
-      'rejected': _narratives.where((n) => n.status == ContentStatus.rejected).length,
+      'submitted':
+          _narratives.where((n) => n.status == ContentStatus.submitted).length,
+      'underReview': _narratives
+          .where((n) => n.status == ContentStatus.underReview)
+          .length,
+      'approved':
+          _narratives.where((n) => n.status == ContentStatus.approved).length,
+      'rejected':
+          _narratives.where((n) => n.status == ContentStatus.rejected).length,
       'published': _getPublishedCount(),
       'totalViews': _narratives.fold<int>(0, (sum, n) => sum + n.views),
       'totalLikes': _narratives.fold<int>(0, (sum, n) => sum + n.likes),

@@ -363,16 +363,8 @@ class KnowledgeGraphLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       ('related', accentColor.withValues(alpha: 0.7), 'Verwandt'),
-      (
-        'supports',
-        Colors.green.withValues(alpha: 0.7),
-        'Stützt'
-      ),
-      (
-        'contradicts',
-        Colors.red.withValues(alpha: 0.7),
-        'Widerspricht'
-      ),
+      ('supports', Colors.green.withValues(alpha: 0.7), 'Stützt'),
+      ('contradicts', Colors.red.withValues(alpha: 0.7), 'Widerspricht'),
       ('causes', Colors.orange.withValues(alpha: 0.7), 'Verursacht'),
     ];
 
@@ -532,9 +524,7 @@ class NodeDetailSheet extends StatelessWidget {
                 // Bookmark-Button
                 IconButton(
                   icon: Icon(
-                    node.isBookmarked
-                        ? Icons.bookmark
-                        : Icons.bookmark_border,
+                    node.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     color: node.isBookmarked
                         ? Colors.amber
                         : Colors.white.withValues(alpha: 0.4),
@@ -554,8 +544,7 @@ class NodeDetailSheet extends StatelessWidget {
             ),
           ),
 
-          const Divider(
-              color: Color(0xFF1A1A2E), thickness: 1, height: 1),
+          const Divider(color: Color(0xFF1A1A2E), thickness: 1, height: 1),
 
           // Scrollbarer Inhalt
           Flexible(

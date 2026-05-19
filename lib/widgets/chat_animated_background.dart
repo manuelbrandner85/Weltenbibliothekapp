@@ -141,7 +141,8 @@ class _EnergieChatPainter extends CustomPainter {
       final angle = (seed + t * 0.2) * math.pi * 2;
       final radiusPercent = 0.2 + ((i * 7) % 60) / 100;
       final x = size.width * 0.5 + math.cos(angle) * size.width * radiusPercent;
-      final y = size.height * 0.5 + math.sin(angle * 1.3) * size.height * radiusPercent;
+      final y = size.height * 0.5 +
+          math.sin(angle * 1.3) * size.height * radiusPercent;
       final particleSize = 1.5 + math.sin(t * math.pi * 2 + i) * 0.8;
       particlePaint.color = accent.withValues(alpha: 0.4);
       canvas.drawCircle(Offset(x, y), particleSize, particlePaint);

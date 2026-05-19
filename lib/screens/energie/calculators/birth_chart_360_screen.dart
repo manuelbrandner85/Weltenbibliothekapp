@@ -39,6 +39,7 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFF1A237E);
   static const Color _accent = Color(0xFF7E57C2);
   static const Color _gold = Color(0xFFFFD54F);
@@ -58,8 +59,11 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
   @override
   void initState() {
     super.initState();
-    _wheelCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 11))..repeat();
+    _wheelCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2000));
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 11))
+          ..repeat();
     _prefillFromProfile();
   }
 
@@ -101,7 +105,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
       lastDate: DateTime.now(),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.dark(primary: _accent, onPrimary: Colors.white),
+          colorScheme:
+              const ColorScheme.dark(primary: _accent, onPrimary: Colors.white),
         ),
         child: child!,
       ),
@@ -113,7 +118,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
         initialTime: TimeOfDay.fromDateTime(_birthDate),
         builder: (ctx, child) => Theme(
           data: Theme.of(ctx).copyWith(
-            colorScheme: const ColorScheme.dark(primary: _accent, onPrimary: Colors.white),
+            colorScheme: const ColorScheme.dark(
+                primary: _accent, onPrimary: Colors.white),
           ),
           child: child!,
         ),
@@ -133,8 +139,12 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
     HapticFeedback.mediumImpact();
     final birth = _birthDate.toUtc();
     final chart = NatalAstrology.compute(birthDateUtc: birth);
-    final transit = NatalAstrology.compute(birthDateUtc: DateTime.now().toUtc());
-    setState(() { _chart = chart; _transit = transit; });
+    final transit =
+        NatalAstrology.compute(birthDateUtc: DateTime.now().toUtc());
+    setState(() {
+      _chart = chart;
+      _transit = transit;
+    });
     _wheelCtrl.forward(from: 0);
   }
 
@@ -146,7 +156,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
       userId: userId,
       username: username,
       tool: 'birth_chart',
-      summary: '♓ ${_fmt(_birthDate)} · Sonne in ${_signName(_chart!.planets["sun"]!.sign)}',
+      summary:
+          '♓ ${_fmt(_birthDate)} · Sonne in ${_signName(_chart!.planets["sun"]!.sign)}',
       result: {
         'birth_date': _birthDate.toIso8601String(),
         'planets': _chart!.planets.map((k, v) => MapEntry(k, v.toJson())),
@@ -154,34 +165,76 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(saved != null ? '✨ Geburtshoroskop gespeichert' : '⚠️ Speichern fehlgeschlagen'),
+      content: Text(saved != null
+          ? '✨ Geburtshoroskop gespeichert'
+          : '⚠️ Speichern fehlgeschlagen'),
       backgroundColor: _accent,
     ));
   }
 
   String _signName(int s) => const [
-        'Widder','Stier','Zwilling','Krebs','Löwe','Jungfrau',
-        'Waage','Skorpion','Schütze','Steinbock','Wassermann','Fische'
+        'Widder',
+        'Stier',
+        'Zwilling',
+        'Krebs',
+        'Löwe',
+        'Jungfrau',
+        'Waage',
+        'Skorpion',
+        'Schütze',
+        'Steinbock',
+        'Wassermann',
+        'Fische'
       ][s % 12];
 
-  String _signGlyph(int s) =>
-      const ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'][s % 12];
+  String _signGlyph(int s) => const [
+        '♈',
+        '♉',
+        '♊',
+        '♋',
+        '♌',
+        '♍',
+        '♎',
+        '♏',
+        '♐',
+        '♑',
+        '♒',
+        '♓'
+      ][s % 12];
 
-  String _planetGlyph(String p) => const {
-        'sun': '☉', 'moon': '☽', 'mercury': '☿', 'venus': '♀',
-        'mars': '♂', 'jupiter': '♃', 'saturn': '♄',
-        'uranus': '♅', 'neptune': '♆', 'pluto': '♇',
-      }[p] ?? '○';
+  String _planetGlyph(String p) =>
+      const {
+        'sun': '☉',
+        'moon': '☽',
+        'mercury': '☿',
+        'venus': '♀',
+        'mars': '♂',
+        'jupiter': '♃',
+        'saturn': '♄',
+        'uranus': '♅',
+        'neptune': '♆',
+        'pluto': '♇',
+      }[p] ??
+      '○';
 
-  String _planetLabel(String p) => const {
-        'sun': 'Sonne', 'moon': 'Mond', 'mercury': 'Merkur', 'venus': 'Venus',
-        'mars': 'Mars', 'jupiter': 'Jupiter', 'saturn': 'Saturn',
-        'uranus': 'Uranus', 'neptune': 'Neptun', 'pluto': 'Pluto',
-      }[p] ?? p;
+  String _planetLabel(String p) =>
+      const {
+        'sun': 'Sonne',
+        'moon': 'Mond',
+        'mercury': 'Merkur',
+        'venus': 'Venus',
+        'mars': 'Mars',
+        'jupiter': 'Jupiter',
+        'saturn': 'Saturn',
+        'uranus': 'Uranus',
+        'neptune': 'Neptun',
+        'pluto': 'Pluto',
+      }[p] ??
+      p;
 
   String _fmt(DateTime dt) {
     final d = dt.toLocal();
-    return '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')}.${d.year} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
+    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -196,16 +249,25 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
             colors: [_gold, _accent],
           ).createShader(r),
           child: const Text('GEBURTSHOROSKOP 360°',
-              style: TextStyle(color: Colors.white, fontSize: 13,
-                  fontWeight: FontWeight.w900, letterSpacing: 2.5)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.5)),
         ),
         actions: [
           if (_chart != null) ...[
             IconButton(
-              icon: Icon(_showTransits ? Icons.layers_clear_rounded : Icons.layers_rounded,
+              icon: Icon(
+                  _showTransits
+                      ? Icons.layers_clear_rounded
+                      : Icons.layers_rounded,
                   color: _showTransits ? _gold : Colors.white70),
               tooltip: _showTransits ? 'Transits aus' : 'Transits (heute)',
-              onPressed: () { HapticFeedback.selectionClick(); setState(() => _showTransits = !_showTransits); },
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                setState(() => _showTransits = !_showTransits);
+              },
             ),
             IconButton(
               icon: const Icon(Icons.bookmark_added_rounded, color: _gold),
@@ -236,7 +298,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
               ),
             ),
           ),
-          const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 50)),
+          const IgnorePointer(
+              child: WBAmbientParticles(world: WBWorld.energie, count: 50)),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
@@ -272,26 +335,36 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('GEBURTSZEITPUNKT',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 3, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             Row(children: [
               Expanded(
                 child: GestureDetector(
                   onTap: _pickDate,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: _accent.withValues(alpha: 0.4)),
                     ),
                     child: Row(children: [
-                      Icon(Icons.calendar_month_rounded, color: _gold, size: 16),
+                      Icon(Icons.calendar_month_rounded,
+                          color: _gold, size: 16),
                       const SizedBox(width: 8),
                       Text(_fmt(_birthDate),
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600)),
                     ]),
                   ),
                 ),
@@ -306,7 +379,9 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
                 value: _hasTime,
                 onChanged: (v) => setState(() {
                   _hasTime = v;
-                  if (!v) _birthDate = DateTime(_birthDate.year, _birthDate.month, _birthDate.day, 12, 0);
+                  if (!v)
+                    _birthDate = DateTime(_birthDate.year, _birthDate.month,
+                        _birthDate.day, 12, 0);
                 }),
                 activeThumbColor: _accent,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -319,7 +394,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
                 onPressed: _compute,
                 icon: const Icon(Icons.auto_awesome_rounded, size: 16),
                 label: const Text('HOROSKOP BERECHNEN',
-                    style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _accent,
                   foregroundColor: Colors.white,
@@ -337,14 +413,18 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 60),
       child: Column(children: [
-        Icon(Icons.brightness_2_rounded, color: _accent.withValues(alpha: 0.4), size: 80),
+        Icon(Icons.brightness_2_rounded,
+            color: _accent.withValues(alpha: 0.4), size: 80),
         const SizedBox(height: 16),
         const Text('Wähle dein Geburtsdatum und tippe Berechnen',
             style: TextStyle(color: Colors.white70, fontSize: 14),
             textAlign: TextAlign.center),
         const SizedBox(height: 4),
         const Text('Geburtszeit verbessert Genauigkeit (Aszendent + Häuser)',
-            style: TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic),
+            style: TextStyle(
+                color: Colors.white38,
+                fontSize: 11,
+                fontStyle: FontStyle.italic),
             textAlign: TextAlign.center),
       ]),
     );
@@ -365,7 +445,10 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
             ]),
             border: Border.all(color: _accent.withValues(alpha: 0.3)),
             boxShadow: [
-              BoxShadow(color: _accent.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 2),
+              BoxShadow(
+                  color: _accent.withValues(alpha: 0.2),
+                  blurRadius: 30,
+                  spreadRadius: 2),
             ],
           ),
           child: CustomPaint(
@@ -408,8 +491,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
             child: Text(
               'Häuser können nicht berechnet werden -- Geburtsort mit '
               'Koordinaten im Profil erforderlich.',
-              style: TextStyle(
-                  color: Colors.white, fontSize: 12.5, height: 1.45),
+              style:
+                  TextStyle(color: Colors.white, fontSize: 12.5, height: 1.45),
             ),
           ),
         ]),
@@ -459,8 +542,7 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
             runSpacing: 6,
             children: planetHouses.entries.map((e) {
               return Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(8),
@@ -468,7 +550,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
                 child: Text(
                   '${_planetDe(e.key)} → ${e.value}. Haus',
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 11.5,
+                      color: Colors.white,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w600),
                 ),
               );
@@ -486,7 +569,9 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
         children: [
           Text(label,
               style: const TextStyle(
-                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700)),
           const Spacer(),
           Text('$sign · $deg',
               style: const TextStyle(
@@ -512,7 +597,18 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
 
   Widget _planetTable() {
     final planets = _chart!.planets;
-    final order = ['sun','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto'];
+    final order = [
+      'sun',
+      'moon',
+      'mercury',
+      'venus',
+      'mars',
+      'jupiter',
+      'saturn',
+      'uranus',
+      'neptune',
+      'pluto'
+    ];
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
@@ -526,7 +622,11 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
           ),
           child: Column(children: [
             const Text('PLANETEN-POSITIONEN',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 3, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             ...order.where((p) => planets.containsKey(p)).map((p) {
               final pos = planets[p]!;
@@ -534,21 +634,31 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(children: [
                   Text(_planetGlyph(p),
-                      style: const TextStyle(color: _gold, fontSize: 18, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          color: _gold,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(width: 10),
                   SizedBox(
                     width: 75,
                     child: Text(_planetLabel(p),
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
                   ),
                   Text(_signGlyph(pos.sign),
                       style: const TextStyle(color: _accent, fontSize: 14)),
                   const SizedBox(width: 6),
                   Text(_signName(pos.sign),
-                      style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 11)),
                   const Spacer(),
                   Text('${pos.degree.toStringAsFixed(1)}°',
-                      style: TextStyle(color: _gold.withValues(alpha: 0.9), fontSize: 11, fontFamily: 'monospace')),
+                      style: TextStyle(
+                          color: _gold.withValues(alpha: 0.9),
+                          fontSize: 11,
+                          fontFamily: 'monospace')),
                 ]),
               );
             }),
@@ -557,7 +667,10 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
               _showTransits
                   ? 'Innen: Geburts-Chart · Außen: Transits (heute)'
                   : 'Tippe das Layers-Icon oben für Transit-Overlay',
-              style: const TextStyle(color: Colors.white54, fontSize: 10, fontStyle: FontStyle.italic),
+              style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic),
               textAlign: TextAlign.center,
             ),
           ]),
@@ -586,18 +699,47 @@ class _ZodiacWheelPainter extends CustomPainter {
   });
 
   static const _signColors = [
-    Color(0xFFE53935), Color(0xFF8D6E63), Color(0xFFFDD835), Color(0xFF42A5F5),
-    Color(0xFFFF7043), Color(0xFF66BB6A), Color(0xFFAB47BC), Color(0xFF7B1FA2),
-    Color(0xFFEF6C00), Color(0xFF4E342E), Color(0xFF26C6DA), Color(0xFF7C4DFF),
+    Color(0xFFE53935),
+    Color(0xFF8D6E63),
+    Color(0xFFFDD835),
+    Color(0xFF42A5F5),
+    Color(0xFFFF7043),
+    Color(0xFF66BB6A),
+    Color(0xFFAB47BC),
+    Color(0xFF7B1FA2),
+    Color(0xFFEF6C00),
+    Color(0xFF4E342E),
+    Color(0xFF26C6DA),
+    Color(0xFF7C4DFF),
   ];
 
   static const _planetGlyphs = {
-    'sun': '☉', 'moon': '☽', 'mercury': '☿', 'venus': '♀',
-    'mars': '♂', 'jupiter': '♃', 'saturn': '♄',
-    'uranus': '♅', 'neptune': '♆', 'pluto': '♇',
+    'sun': '☉',
+    'moon': '☽',
+    'mercury': '☿',
+    'venus': '♀',
+    'mars': '♂',
+    'jupiter': '♃',
+    'saturn': '♄',
+    'uranus': '♅',
+    'neptune': '♆',
+    'pluto': '♇',
   };
 
-  static const _zodiacGlyphs = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  static const _zodiacGlyphs = [
+    '♈',
+    '♉',
+    '♊',
+    '♋',
+    '♌',
+    '♍',
+    '♎',
+    '♏',
+    '♐',
+    '♑',
+    '♒',
+    '♓'
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -616,16 +758,24 @@ class _ZodiacWheelPainter extends CustomPainter {
       final paint = Paint()
         ..style = PaintingStyle.fill
         ..color = _signColors[i].withValues(alpha: 0.18 * reveal);
-      canvas.drawArc(Rect.fromCircle(center: center, radius: outerR), startAngle, sweep, true, paint);
+      canvas.drawArc(Rect.fromCircle(center: center, radius: outerR),
+          startAngle, sweep, true, paint);
       // Trennlinie
-      final lineEnd = center + Offset(math.cos(startAngle), math.sin(startAngle)) * outerR;
-      canvas.drawLine(center, lineEnd,
-        Paint()..color = Colors.white.withValues(alpha: 0.15)..strokeWidth = 0.5);
+      final lineEnd =
+          center + Offset(math.cos(startAngle), math.sin(startAngle)) * outerR;
+      canvas.drawLine(
+          center,
+          lineEnd,
+          Paint()
+            ..color = Colors.white.withValues(alpha: 0.15)
+            ..strokeWidth = 0.5);
       // Zeichen-Glyph
       final glyphAngle = startAngle + sweep / 2;
-      final glyphPos = center + Offset(math.cos(glyphAngle), math.sin(glyphAngle)) * signR;
+      final glyphPos =
+          center + Offset(math.cos(glyphAngle), math.sin(glyphAngle)) * signR;
       final tp = TextPainter(
-        text: TextSpan(text: _zodiacGlyphs[i],
+        text: TextSpan(
+            text: _zodiacGlyphs[i],
             style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.9 * reveal),
                 fontSize: maxR * 0.08,
@@ -637,10 +787,15 @@ class _ZodiacWheelPainter extends CustomPainter {
     }
 
     // 2. Inner-Kreis (Erde)
-    canvas.drawCircle(center, innerR,
-      Paint()..color = Colors.black.withValues(alpha: 0.6));
-    canvas.drawCircle(center, innerR,
-      Paint()..style = PaintingStyle.stroke..strokeWidth = 1.5..color = gold.withValues(alpha: 0.7 * reveal));
+    canvas.drawCircle(
+        center, innerR, Paint()..color = Colors.black.withValues(alpha: 0.6));
+    canvas.drawCircle(
+        center,
+        innerR,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..color = gold.withValues(alpha: 0.7 * reveal));
 
     // Grad-Markierungen (alle 5°)
     for (int d = 0; d < 360; d += 5) {
@@ -650,8 +805,13 @@ class _ZodiacWheelPainter extends CustomPainter {
       final r2 = innerR + (isMajor ? 10 : 7);
       final p1 = center + Offset(math.cos(angle), math.sin(angle)) * r1;
       final p2 = center + Offset(math.cos(angle), math.sin(angle)) * r2;
-      canvas.drawLine(p1, p2,
-        Paint()..color = Colors.white.withValues(alpha: isMajor ? 0.5 : 0.2 * reveal)..strokeWidth = isMajor ? 1 : 0.5);
+      canvas.drawLine(
+          p1,
+          p2,
+          Paint()
+            ..color =
+                Colors.white.withValues(alpha: isMajor ? 0.5 : 0.2 * reveal)
+            ..strokeWidth = isMajor ? 1 : 0.5);
     }
 
     // 3. Aspekt-Linien (Verbindungen zwischen Planeten in bestimmten Winkeln)
@@ -667,25 +827,32 @@ class _ZodiacWheelPainter extends CustomPainter {
         double aspectAlpha = 0.0;
         // Aspekte: Konjunktion (0°), Opposition (180°), Trigon (120°), Quadrat (90°), Sextil (60°)
         if (actualDiff < 8) {
-          aspectColor = gold; aspectAlpha = 0.6;
+          aspectColor = gold;
+          aspectAlpha = 0.6;
         } else if ((actualDiff - 180).abs() < 8) {
-          aspectColor = Colors.redAccent; aspectAlpha = 0.5;
+          aspectColor = Colors.redAccent;
+          aspectAlpha = 0.5;
         } else if ((actualDiff - 120).abs() < 6) {
-          aspectColor = Colors.greenAccent; aspectAlpha = 0.5;
+          aspectColor = Colors.greenAccent;
+          aspectAlpha = 0.5;
         } else if ((actualDiff - 90).abs() < 6) {
-          aspectColor = Colors.orangeAccent; aspectAlpha = 0.4;
+          aspectColor = Colors.orangeAccent;
+          aspectAlpha = 0.4;
         } else if ((actualDiff - 60).abs() < 4) {
-          aspectColor = Colors.cyanAccent; aspectAlpha = 0.35;
+          aspectColor = Colors.cyanAccent;
+          aspectAlpha = 0.35;
         }
         if (aspectColor != null) {
           final a1 = _degreeToAngle(lon1);
           final a2 = _degreeToAngle(lon2);
           final p1 = center + Offset(math.cos(a1), math.sin(a1)) * innerR;
           final p2 = center + Offset(math.cos(a2), math.sin(a2)) * innerR;
-          canvas.drawLine(p1, p2,
-            Paint()
-              ..color = aspectColor.withValues(alpha: aspectAlpha * reveal)
-              ..strokeWidth = 1);
+          canvas.drawLine(
+              p1,
+              p2,
+              Paint()
+                ..color = aspectColor.withValues(alpha: aspectAlpha * reveal)
+                ..strokeWidth = 1);
         }
       }
     }
@@ -695,13 +862,19 @@ class _ZodiacWheelPainter extends CustomPainter {
       final angle = _degreeToAngle(e.value.longitude);
       final pPos = center + Offset(math.cos(angle), math.sin(angle)) * planetR;
       // Hintergrund-Disk
-      canvas.drawCircle(pPos, 14,
-        Paint()..color = primary.withValues(alpha: 0.7 * reveal));
-      canvas.drawCircle(pPos, 14,
-        Paint()..style = PaintingStyle.stroke..strokeWidth = 1.2..color = gold.withValues(alpha: reveal));
+      canvas.drawCircle(
+          pPos, 14, Paint()..color = primary.withValues(alpha: 0.7 * reveal));
+      canvas.drawCircle(
+          pPos,
+          14,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2
+            ..color = gold.withValues(alpha: reveal));
       // Glyph
       final tp = TextPainter(
-        text: TextSpan(text: _planetGlyphs[e.key] ?? '○',
+        text: TextSpan(
+            text: _planetGlyphs[e.key] ?? '○',
             style: TextStyle(
                 color: gold.withValues(alpha: reveal),
                 fontSize: 14,
@@ -715,13 +888,20 @@ class _ZodiacWheelPainter extends CustomPainter {
     if (transit != null) {
       for (final e in transit!.planets.entries) {
         final angle = _degreeToAngle(e.value.longitude);
-        final tPos = center + Offset(math.cos(angle), math.sin(angle)) * transitR;
-        canvas.drawCircle(tPos, 10,
-          Paint()..color = accent.withValues(alpha: 0.7 * reveal));
-        canvas.drawCircle(tPos, 10,
-          Paint()..style = PaintingStyle.stroke..strokeWidth = 1..color = Colors.white.withValues(alpha: reveal));
+        final tPos =
+            center + Offset(math.cos(angle), math.sin(angle)) * transitR;
+        canvas.drawCircle(
+            tPos, 10, Paint()..color = accent.withValues(alpha: 0.7 * reveal));
+        canvas.drawCircle(
+            tPos,
+            10,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1
+              ..color = Colors.white.withValues(alpha: reveal));
         final tp = TextPainter(
-          text: TextSpan(text: _planetGlyphs[e.key] ?? '○',
+          text: TextSpan(
+              text: _planetGlyphs[e.key] ?? '○',
               style: TextStyle(
                   color: Colors.white.withValues(alpha: reveal),
                   fontSize: 10,
@@ -735,11 +915,13 @@ class _ZodiacWheelPainter extends CustomPainter {
     // 6. Zentrum: Sonnen-Glyph
     final sunPos = pos['sun'];
     if (sunPos != null) {
-      canvas.drawCircle(center, 14,
-        Paint()..color = gold.withValues(alpha: 0.4 * reveal));
+      canvas.drawCircle(
+          center, 14, Paint()..color = gold.withValues(alpha: 0.4 * reveal));
       final tp = TextPainter(
-        text: TextSpan(text: '☉',
-            style: TextStyle(color: gold, fontSize: 22, fontWeight: FontWeight.bold)),
+        text: TextSpan(
+            text: '☉',
+            style: TextStyle(
+                color: gold, fontSize: 22, fontWeight: FontWeight.bold)),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
@@ -776,12 +958,24 @@ class _ChartOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.15, size.height * (0.25 + math.sin(t * 2 * math.pi) * 0.05)),
-        120, const Color(0xFF1A237E));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.7 + math.cos(t * 2 * math.pi) * 0.04)),
-        100, const Color(0xFF7E57C2));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.95 + math.sin(t * math.pi) * 0.03)),
-        80, const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.15,
+            size.height * (0.25 + math.sin(t * 2 * math.pi) * 0.05)),
+        120,
+        const Color(0xFF1A237E));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.7 + math.cos(t * 2 * math.pi) * 0.04)),
+        100,
+        const Color(0xFF7E57C2));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.95 + math.sin(t * math.pi) * 0.03)),
+        80,
+        const Color(0xFFFFD54F));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

@@ -429,13 +429,11 @@ class _RealityArchitectScreenState extends State<RealityArchitectScreen> {
         fillColor: Colors.white.withValues(alpha: 0.04),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: _cyan.withValues(alpha: 0.15)),
+          borderSide: BorderSide(color: _cyan.withValues(alpha: 0.15)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: _cyan.withValues(alpha: 0.15)),
+          borderSide: BorderSide(color: _cyan.withValues(alpha: 0.15)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -474,9 +472,9 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
 
   Future<void> _load() async {
     final storage = StorageService();
-    final userId = storage.getMaterieProfile()?.userId
-        ?? storage.getEnergieProfile()?.userId
-        ?? 'anon';
+    final userId = storage.getMaterieProfile()?.userId ??
+        storage.getEnergieProfile()?.userId ??
+        'anon';
     final list = await ManifestationService.instance.listFor(userId);
     if (!mounted) return;
     setState(() {
@@ -500,7 +498,9 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) => Padding(
           padding: EdgeInsets.only(
-            left: 20, right: 20, top: 14,
+            left: 20,
+            right: 20,
+            top: 14,
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
           ),
           child: Column(
@@ -519,7 +519,10 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
               ),
               const SizedBox(height: 14),
               const Text('🌀 Neue Manifestation',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700)),
               const SizedBox(height: 14),
               TextField(
                 controller: titleCtrl,
@@ -527,7 +530,8 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Was möchtest du manifestieren?',
-                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                  labelStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.05),
                   border: OutlineInputBorder(
@@ -543,7 +547,8 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Detail (optional)',
-                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                  labelStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.05),
                   border: OutlineInputBorder(
@@ -579,13 +584,13 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
                 onPressed: () async {
                   if (titleCtrl.text.trim().isEmpty) return;
                   final storage = StorageService();
-                  final userId = storage.getMaterieProfile()?.userId
-                      ?? storage.getEnergieProfile()?.userId
-                      ?? 'anon';
+                  final userId = storage.getMaterieProfile()?.userId ??
+                      storage.getEnergieProfile()?.userId ??
+                      'anon';
                   await ManifestationService.instance.create(
                     userId: userId,
-                    username: storage.getMaterieProfile()?.username
-                        ?? storage.getEnergieProfile()?.username,
+                    username: storage.getMaterieProfile()?.username ??
+                        storage.getEnergieProfile()?.username,
                     title: titleCtrl.text.trim(),
                     description: descCtrl.text.trim().isEmpty
                         ? null
@@ -599,7 +604,8 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('Speichern', style: TextStyle(fontWeight: FontWeight.w700)),
+                child: const Text('Speichern',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -687,7 +693,8 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
           Row(
             children: [
               if (reviewed)
-                Text(manifestedYes ? '✨' : '🌫️', style: const TextStyle(fontSize: 18)),
+                Text(manifestedYes ? '✨' : '🌫️',
+                    style: const TextStyle(fontSize: 18)),
               if (reviewed) const SizedBox(width: 8),
               Expanded(
                 child: Text(g.title,
@@ -707,7 +714,8 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(Icons.event_outlined, color: _cyan.withValues(alpha: 0.7), size: 14),
+              Icon(Icons.event_outlined,
+                  color: _cyan.withValues(alpha: 0.7), size: 14),
               const SizedBox(width: 4),
               Text(
                 'vor $days Tagen',
@@ -730,7 +738,10 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
             const SizedBox(height: 12),
             const Text(
               'Ist es passiert?',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13),
             ),
             const SizedBox(height: 8),
             Row(
@@ -750,7 +761,8 @@ class _ManifestationsTrackerState extends State<_ManifestationsTracker> {
                   child: OutlinedButton(
                     onPressed: () => _review(g, false),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                      side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3)),
                       foregroundColor: Colors.white70,
                     ),
                     child: const Text('🌫️ Noch nicht'),

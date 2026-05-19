@@ -1,10 +1,10 @@
 /// Analyse-Service für STEP 2
 /// Tiefenanalyse der Recherche-Ergebnisse aus STEP 1
-/// 
+///
 /// WORKFLOW:
 /// STEP 1 (Deep-Recherche) → Fakten & Quellen sammeln
 /// STEP 2 (Analyse) → Machtstrukturen, Geldflüsse, Narrative, Alternative Sichtweisen
-/// 
+///
 /// FALLBACK: Wenn STEP 1 keine Daten liefert → Cloudflare AI generiert alternative Analyse
 library;
 
@@ -14,7 +14,7 @@ import '../models/recherche_models.dart';
 import '../models/analyse_models.dart';
 
 /// Analyse-Service
-/// 
+///
 /// Analysiert Recherche-Ergebnisse und generiert:
 /// - Machtstrukturen
 /// - Geldflüsse
@@ -35,16 +35,17 @@ class AnalyseService {
   Stream<AnalyseErgebnis> get analyseStream => _analyseController.stream;
 
   /// Hauptfunktion: Analysiere Recherche-Ergebnisse
-  /// 
+  ///
   /// Input: RechercheErgebnis aus STEP 1
   /// Output: AnalyseErgebnis mit Tiefenanalyse
-  /// 
+  ///
   /// Beispiel:
   /// ```dart
   /// final service = AnalyseService();
   /// final analyse = await service.analysieren(rechercheErgebnis);
   /// ```
-  Future<AnalyseErgebnis> analysieren(RechercheErgebnis rechercheErgebnis) async {
+  Future<AnalyseErgebnis> analysieren(
+      RechercheErgebnis rechercheErgebnis) async {
     if (kDebugMode) {
       debugPrint('🧠 [ANALYSE] Starte: "${rechercheErgebnis.suchbegriff}"');
     }
@@ -65,9 +66,10 @@ class AnalyseService {
   }
 
   /// Standard-Analyse (mit Daten aus STEP 1)
-  Future<AnalyseErgebnis> _standardAnalyse(RechercheErgebnis rechercheErgebnis) async {
+  Future<AnalyseErgebnis> _standardAnalyse(
+      RechercheErgebnis rechercheErgebnis) async {
     final suchbegriff = rechercheErgebnis.suchbegriff;
-    
+
     // Initialisiere Analyse-Ergebnis
     var analyse = AnalyseErgebnis(
       suchbegriff: suchbegriff,
@@ -126,7 +128,7 @@ class AnalyseService {
     // STEP 2.7: Meta-Kontext
     final metaKontext = _generiereMetaKontext(analyse);
     analyse = _updateAnalyse(analyse, metaKontext: metaKontext);
-    
+
     // Finale Analyse senden
     _analyseController.add(analyse);
 
@@ -135,7 +137,8 @@ class AnalyseService {
       debugPrint('   → ${analyse.alleAkteure.length} Akteure');
       debugPrint('   → ${analyse.geldFluesse.length} Geldflüsse');
       debugPrint('   → ${analyse.narrative.length} Narrative');
-      debugPrint('   → ${analyse.alternativeSichtweisen.length} Alternative Sichtweisen');
+      debugPrint(
+          '   → ${analyse.alternativeSichtweisen.length} Alternative Sichtweisen');
     }
 
     return analyse;
@@ -151,9 +154,10 @@ class AnalyseService {
       suchbegriff: suchbegriff,
       analyseZeit: DateTime.now(),
       istKiGeneriert: true,
-      disclaimer: '⚠️ Diese Analyse wurde von KI generiert, da STEP 1 keine Daten lieferte. '
+      disclaimer:
+          '⚠️ Diese Analyse wurde von KI generiert, da STEP 1 keine Daten lieferte. '
           'Informationen sollten kritisch geprüft werden.',
-      
+
       // KI-generierte Alternative Sichtweise
       alternativeSichtweisen: [
         AlternativeSichtweise(
@@ -179,7 +183,7 @@ class AnalyseService {
           disclaimer: 'KI-generierte Inhalte - kritische Prüfung erforderlich',
         ),
       ],
-      
+
       metaKontext: 'HINWEIS: Diese Analyse basiert auf KI-Generierung, '
           'da die initiale Recherche keine verwertbaren Daten lieferte. '
           'Empfehlung: Manuelle Recherche mit alternativen Suchbegriffen.',
@@ -190,36 +194,40 @@ class AnalyseService {
   }
 
   /// Identifiziere Akteure aus Quellen
-  /// 
+  ///
   /// ⚠️ FEATURE REQUIRES AI INTEGRATION
   /// Diese Funktion benötigt echte NLP/AI-Analyse (z.B. Cloudflare AI Workers)
   /// zur Extraktion von Personen, Organisationen und Institutionen aus Quellen-Texten.
-  /// 
+  ///
   /// Current behavior: Returns empty list until AI integration is implemented.
   /// TODO (Technical Debt): Implement real actor extraction with Cloudflare AI
-  Future<List<Akteur>> _identifiziereAkteure(RechercheErgebnis recherche) async {
+  Future<List<Akteur>> _identifiziereAkteure(
+      RechercheErgebnis recherche) async {
     if (kDebugMode) {
-      debugPrint('⚠️ [ANALYSE] Actor extraction requires AI integration - feature pending');
+      debugPrint(
+          '⚠️ [ANALYSE] Actor extraction requires AI integration - feature pending');
     }
-    
+
     // Return empty list until AI integration is complete
     // In production, this will use Cloudflare AI Workers for NLP analysis
     return [];
   }
 
   /// Analysiere Geldflüsse
-  /// 
+  ///
   /// ⚠️ FEATURE REQUIRES FINANCIAL DATA INTEGRATION
   /// Diese Funktion benötigt echte Finanz-Daten-APIs (z.B. OpenCorporates, SEC Edgar)
   /// zur Analyse von Geldflüssen, Spenden und finanziellen Verbindungen.
-  /// 
+  ///
   /// Current behavior: Returns empty list until financial data API is integrated.
   /// TODO (Technical Debt): Implement real money flow analysis with Finance APIs
-  Future<List<Geldfluss>> _analysiereGeldfluesse(RechercheErgebnis recherche) async {
+  Future<List<Geldfluss>> _analysiereGeldfluesse(
+      RechercheErgebnis recherche) async {
     if (kDebugMode) {
-      debugPrint('⚠️ [ANALYSE] Money flow analysis requires financial data APIs - feature pending');
+      debugPrint(
+          '⚠️ [ANALYSE] Money flow analysis requires financial data APIs - feature pending');
     }
-    
+
     // Return empty list until financial API integration is complete
     // In production, this will use OpenCorporates, SEC Edgar, or similar APIs
     return [];
@@ -239,7 +247,8 @@ class AnalyseService {
       Machtstruktur(
         id: 'macht_1',
         name: 'Politik-Wirtschaft-Komplex',
-        beschreibung: 'Verflechtung zwischen politischen und wirtschaftlichen Akteuren',
+        beschreibung:
+            'Verflechtung zwischen politischen und wirtschaftlichen Akteuren',
         topAkteure: akteure.take(3).toList(),
         hauptGeldfluesse: geldfluesse,
         bereich: MachtBereich.politik,
@@ -250,7 +259,8 @@ class AnalyseService {
 
   /// Analysiere Narrative
   /// ✅ PRODUCTION-READY: Keine Delays
-  Future<List<Narrativ>> _analysiereNarrative(RechercheErgebnis recherche) async {
+  Future<List<Narrativ>> _analysiereNarrative(
+      RechercheErgebnis recherche) async {
     // ✅ Echte Analyse (kein delay)
 
     return [
@@ -287,7 +297,8 @@ class AnalyseService {
 
   /// Erstelle Timeline
   /// ✅ PRODUCTION-READY: Keine Delays
-  Future<List<HistorischerKontext>> _erstelleTimeline(RechercheErgebnis recherche) async {
+  Future<List<HistorischerKontext>> _erstelleTimeline(
+      RechercheErgebnis recherche) async {
     // ✅ Echte Analyse (kein delay)
 
     return [
@@ -340,14 +351,15 @@ class AnalyseService {
   /// Generiere Meta-Kontext
   String _generiereMetaKontext(AnalyseErgebnis analyse) {
     final buffer = StringBuffer();
-    
+
     buffer.writeln('META-KONTEXT: ${analyse.suchbegriff}');
     buffer.writeln('');
     buffer.writeln('Diese Analyse kombiniert:');
     buffer.writeln('• ${analyse.alleAkteure.length} identifizierte Akteure');
     buffer.writeln('• ${analyse.geldFluesse.length} analysierte Geldflüsse');
     buffer.writeln('• ${analyse.narrative.length} erkannte Narrative');
-    buffer.writeln('• ${analyse.alternativeSichtweisen.length} alternative Sichtweisen');
+    buffer.writeln(
+        '• ${analyse.alternativeSichtweisen.length} alternative Sichtweisen');
     buffer.writeln('');
     buffer.writeln('Empfehlung: Kritische Prüfung aller Informationen.');
     buffer.writeln('Quellen sollten unabhängig verifiziert werden.');
@@ -374,7 +386,8 @@ class AnalyseService {
       geldFluesse: geldFluesse ?? analyse.geldFluesse,
       narrative: narrative ?? analyse.narrative,
       timeline: timeline ?? analyse.timeline,
-      alternativeSichtweisen: alternativeSichtweisen ?? analyse.alternativeSichtweisen,
+      alternativeSichtweisen:
+          alternativeSichtweisen ?? analyse.alternativeSichtweisen,
       metaKontext: metaKontext ?? analyse.metaKontext,
       istKiGeneriert: analyse.istKiGeneriert,
       disclaimer: analyse.disclaimer,

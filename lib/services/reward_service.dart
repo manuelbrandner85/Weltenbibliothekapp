@@ -163,7 +163,7 @@ class RewardService {
       _prefs = await SharedPreferences.getInstance();
       await _loadRewards();
       await _loadMilestones();
-      
+
       if (kDebugMode) {
         debugPrint('✅ RewardService initialized');
         debugPrint('   🎁 Unlocked rewards: ${_unlockedRewards.length}');
@@ -185,7 +185,8 @@ class RewardService {
       final rewardsJson = _prefs?.getString(_rewardsKey);
       if (rewardsJson != null) {
         final List<dynamic> decoded = json.decode(rewardsJson);
-        _unlockedRewards = decoded.map((json) => Reward.fromJson(json)).toList();
+        _unlockedRewards =
+            decoded.map((json) => Reward.fromJson(json)).toList();
       }
     } catch (e) {
       if (kDebugMode) {
@@ -413,13 +414,14 @@ class RewardService {
 
     for (int i = 0; i < _milestones.length; i++) {
       final milestone = _milestones[i];
-      
+
       if (!milestone.isUnlocked) {
         bool shouldUnlock = false;
 
         switch (milestone.category) {
           case 'achievements':
-            if (achievementCount != null && achievementCount >= milestone.targetValue) {
+            if (achievementCount != null &&
+                achievementCount >= milestone.targetValue) {
               shouldUnlock = true;
             }
             break;
@@ -478,13 +480,13 @@ class RewardService {
 
   List<Reward> get unlockedRewards => _unlockedRewards;
   List<Milestone> get milestones => _milestones;
-  
-  List<Milestone> get unlockedMilestones => 
+
+  List<Milestone> get unlockedMilestones =>
       _milestones.where((m) => m.isUnlocked).toList();
-  
-  List<Milestone> get lockedMilestones => 
+
+  List<Milestone> get lockedMilestones =>
       _milestones.where((m) => !m.isUnlocked).toList();
-  
+
   int get totalRewardValue => _unlockedRewards
       .where((r) => r.type == RewardType.xpBonus)
       .fold(0, (sum, r) => sum + r.value);

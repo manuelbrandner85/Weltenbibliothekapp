@@ -621,7 +621,8 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF7C4DFF).withValues(alpha: 0.35 + pulse * 0.15),
+                      const Color(0xFF7C4DFF)
+                          .withValues(alpha: 0.35 + pulse * 0.15),
                       Colors.transparent,
                     ],
                   ),
@@ -638,7 +639,8 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF26C6DA).withValues(alpha: 0.2 + pulse * 0.1),
+                      const Color(0xFF26C6DA)
+                          .withValues(alpha: 0.2 + pulse * 0.1),
                       Colors.transparent,
                     ],
                   ),
@@ -703,9 +705,7 @@ class _GuidedTab extends StatelessWidget {
 
   List<_MeditationData> get _filtered {
     if (activeCategory == 'Alle') return _kMeditations;
-    return _kMeditations
-        .where((m) => m.category == activeCategory)
-        .toList();
+    return _kMeditations.where((m) => m.category == activeCategory).toList();
   }
 
   @override
@@ -731,8 +731,8 @@ class _GuidedTab extends StatelessWidget {
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
                       color: active
                           ? const Color(0xFF7C4DFF)
@@ -749,9 +749,8 @@ class _GuidedTab extends StatelessWidget {
                       style: TextStyle(
                         color: active ? Colors.white : Colors.white70,
                         fontSize: 13,
-                        fontWeight: active
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontWeight:
+                            active ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -828,8 +827,8 @@ class _MeditationCard extends StatelessWidget {
                     child: Icon(med.icon, color: med.color, size: 22),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
@@ -874,8 +873,8 @@ class _MeditationCard extends StatelessWidget {
                   onStart(med);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 7, horizontal: 12),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -936,8 +935,7 @@ class _MeditationDetailSheet extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF0D0A1A),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(
-              color: med.color.withValues(alpha: 0.3), width: 1),
+          border: Border.all(color: med.color.withValues(alpha: 0.3), width: 1),
         ),
         child: ListView(
           controller: ctrl,
@@ -992,8 +990,8 @@ class _MeditationDetailSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               med.description,
-              style:
-                  const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 16),
             // Vorteile
@@ -1038,8 +1036,8 @@ class _MeditationDetailSheet extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: med.color.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
-                        border: Border.all(
-                            color: med.color.withValues(alpha: 0.5)),
+                        border:
+                            Border.all(color: med.color.withValues(alpha: 0.5)),
                       ),
                       child: Center(
                         child: Text(
@@ -1116,8 +1114,7 @@ class _PersonalTab extends StatelessWidget {
         personal.isEmpty
             ? _buildEmpty()
             : ListView.builder(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 12, 16, 100),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
                 itemCount: personal.length,
                 itemBuilder: (ctx, i) {
                   final m = personal[i];
@@ -1125,8 +1122,7 @@ class _PersonalTab extends StatelessWidget {
                     data: m,
                     onStart: () => onStart(m),
                     onDelete: () async {
-                      await _MeditationDb.deletePersonal(
-                          m['id'] as int);
+                      await _MeditationDb.deletePersonal(m['id'] as int);
                       onRefresh();
                     },
                   );
@@ -1168,15 +1164,13 @@ class _PersonalTab extends StatelessWidget {
           const Text(
             'Noch keine persönlichen\nMeditationen',
             textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Colors.white70, fontSize: 16, height: 1.5),
+            style: TextStyle(color: Colors.white70, fontSize: 16, height: 1.5),
           ),
           const SizedBox(height: 8),
           const Text(
             'Tippe auf "Neu erstellen" um\ndeine eigene Meditation zu gestalten.',
             textAlign: TextAlign.center,
-            style:
-                TextStyle(color: Colors.white38, fontSize: 13, height: 1.5),
+            style: TextStyle(color: Colors.white38, fontSize: 13, height: 1.5),
           ),
         ],
       ),
@@ -1241,7 +1235,8 @@ class _PersonalCard extends StatelessWidget {
                   color: color,
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)
+                    BoxShadow(
+                        color: color.withValues(alpha: 0.6), blurRadius: 8)
                   ],
                 ),
               ),
@@ -1319,8 +1314,8 @@ class _PersonalCard extends StatelessWidget {
               icon: const Icon(Icons.play_arrow_rounded,
                   color: Colors.white, size: 18),
               label: const Text('Starten',
-                  style:
-                      TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: color.withValues(alpha: 0.7),
                 padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1351,7 +1346,8 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+        style:
+            TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -1483,8 +1479,7 @@ class _CreatePersonalSheetState extends State<_CreatePersonalSheet> {
                   ),
                   child: Text(
                     '${_duration.round()} min',
-                    style: TextStyle(
-                        color: color, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -1510,12 +1505,11 @@ class _CreatePersonalSheetState extends State<_CreatePersonalSheet> {
               children: List.generate(_patterns.length, (i) {
                 final active = _patterns[i] == _breathPattern;
                 return GestureDetector(
-                  onTap: () =>
-                      setState(() => _breathPattern = _patterns[i]),
+                  onTap: () => setState(() => _breathPattern = _patterns[i]),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                     decoration: BoxDecoration(
                       color: active
                           ? color.withValues(alpha: 0.3)
@@ -1532,9 +1526,8 @@ class _CreatePersonalSheetState extends State<_CreatePersonalSheet> {
                       style: TextStyle(
                         color: active ? color : Colors.white54,
                         fontSize: 12,
-                        fontWeight: active
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontWeight:
+                            active ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -1561,23 +1554,19 @@ class _CreatePersonalSheetState extends State<_CreatePersonalSheet> {
                       color: _colors[i],
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: selected
-                            ? Colors.white
-                            : Colors.transparent,
+                        color: selected ? Colors.white : Colors.transparent,
                         width: 2.5,
                       ),
                       boxShadow: selected
                           ? [
                               BoxShadow(
-                                  color:
-                                      _colors[i].withValues(alpha: 0.6),
+                                  color: _colors[i].withValues(alpha: 0.6),
                                   blurRadius: 8)
                             ]
                           : [],
                     ),
                     child: selected
-                        ? const Icon(Icons.check,
-                            color: Colors.white, size: 16)
+                        ? const Icon(Icons.check, color: Colors.white, size: 16)
                         : null,
                   ),
                 );
@@ -1597,8 +1586,7 @@ class _CreatePersonalSheetState extends State<_CreatePersonalSheet> {
                 fillColor: Colors.white.withValues(alpha: 0.06),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: color.withValues(alpha: 0.4)),
+                  borderSide: BorderSide(color: color.withValues(alpha: 0.4)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1637,9 +1625,11 @@ class _CreatePersonalSheetState extends State<_CreatePersonalSheet> {
   }
 
   Future<void> _save() async {
-    final title =
-        _titleCtrl.text.trim().isEmpty ? 'Meine Meditation' : _titleCtrl.text.trim();
-    final colorHex = _colors[_colorIndex].toARGB32().toRadixString(16).padLeft(8, '0');
+    final title = _titleCtrl.text.trim().isEmpty
+        ? 'Meine Meditation'
+        : _titleCtrl.text.trim();
+    final colorHex =
+        _colors[_colorIndex].toARGB32().toRadixString(16).padLeft(8, '0');
     await _MeditationDb.insertPersonal({
       'title': title,
       'duration_min': _duration.round(),
@@ -1858,7 +1848,8 @@ class _SessionTile extends StatelessWidget {
         DateTime.tryParse(session['completed_at'] as String? ?? '') ??
             DateTime.now();
     final isPersonal = (session['is_personal'] as int? ?? 0) == 1;
-    final dateStr = DateFormat('d. MMMM yyyy · HH:mm', 'de').format(completedAt);
+    final dateStr =
+        DateFormat('d. MMMM yyyy · HH:mm', 'de').format(completedAt);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1866,8 +1857,7 @@ class _SessionTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -1906,8 +1896,7 @@ class _SessionTile extends StatelessWidget {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: const Color(0xFF7C4DFF).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
@@ -2015,8 +2004,7 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           setState(() {
-            _currentStep =
-                (_currentStep + 1) % widget.steps.length;
+            _currentStep = (_currentStep + 1) % widget.steps.length;
             _stepFading = false;
           });
         }
@@ -2083,8 +2071,7 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
   }
 
   double get _progress =>
-      1.0 -
-      _remainingSecs / (widget.durationMin * 60).toDouble();
+      1.0 - _remainingSecs / (widget.durationMin * 60).toDouble();
 
   @override
   Widget build(BuildContext context) {
@@ -2094,7 +2081,8 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
         animation: Listenable.merge([_breathCtrl, _orbPulse]),
         builder: (_, __) {
           final scale = _getOrbScale(_breathCtrl.value, widget.breathPattern);
-          final phase = _getBreathPhase(_breathCtrl.value, widget.breathPattern);
+          final phase =
+              _getBreathPhase(_breathCtrl.value, widget.breathPattern);
           final pulse = _orbPulse.value;
 
           return Stack(
@@ -2142,11 +2130,10 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
                                 ),
                                 actions: [
                                   TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context),
+                                    onPressed: () => Navigator.pop(context),
                                     child: const Text('Weiter meditieren',
-                                        style: TextStyle(
-                                            color: Colors.white54)),
+                                        style:
+                                            TextStyle(color: Colors.white54)),
                                   ),
                                   TextButton(
                                     onPressed: () {
@@ -2154,8 +2141,8 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
                                       Navigator.pop(context);
                                     },
                                     child: const Text('Beenden',
-                                        style: TextStyle(
-                                            color: Colors.redAccent)),
+                                        style:
+                                            TextStyle(color: Colors.redAccent)),
                                   ),
                                 ],
                               ),
@@ -2191,8 +2178,7 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
                               color: widget.color.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                  color:
-                                      widget.color.withValues(alpha: 0.4)),
+                                  color: widget.color.withValues(alpha: 0.4)),
                             ),
                             child: Text(
                               _timeStr,
@@ -2216,8 +2202,7 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: _progress,
-                          backgroundColor:
-                              Colors.white.withValues(alpha: 0.1),
+                          backgroundColor: Colors.white.withValues(alpha: 0.1),
                           valueColor:
                               AlwaysStoppedAnimation<Color>(widget.color),
                           minHeight: 4,
@@ -2242,8 +2227,8 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: widget.color.withValues(
-                                  alpha: 0.4 + scale * 0.2),
+                              color: widget.color
+                                  .withValues(alpha: 0.4 + scale * 0.2),
                               blurRadius: 40 + scale * 20,
                               spreadRadius: 10,
                             ),
@@ -2312,8 +2297,7 @@ class _MeditationSessionScreenState extends State<_MeditationSessionScreen>
                           shape: BoxShape.circle,
                           color: Colors.white.withValues(alpha: 0.08),
                           border: Border.all(
-                              color:
-                                  Colors.white.withValues(alpha: 0.2)),
+                              color: Colors.white.withValues(alpha: 0.2)),
                         ),
                         child: Icon(
                           _isPaused
@@ -2399,13 +2383,12 @@ class _CompletionDialog extends StatelessWidget {
             Text(
               '$title\n$durationMin Minuten Meditation',
               textAlign: TextAlign.center,
-              style:
-                  const TextStyle(color: Colors.white60, fontSize: 14, height: 1.4),
+              style: const TextStyle(
+                  color: Colors.white60, fontSize: 14, height: 1.4),
             ),
             const SizedBox(height: 8),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
@@ -2423,7 +2406,8 @@ class _CompletionDialog extends StatelessWidget {
             const Text(
               'Nimm dir einen Moment um sanft ins Alltagsbewusstsein zurückzukehren.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white38, fontSize: 12, height: 1.4),
+              style:
+                  TextStyle(color: Colors.white38, fontSize: 12, height: 1.4),
             ),
             const SizedBox(height: 24),
             SizedBox(

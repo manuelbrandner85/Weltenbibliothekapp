@@ -94,7 +94,8 @@ class PushNotificationManager {
       const k = 'wb_web_device_id_v1';
       final existing = web.window.localStorage.getItem(k);
       if (existing != null && existing.isNotEmpty) return existing;
-      final fresh = 'web_${DateTime.now().millisecondsSinceEpoch}_${(DateTime.now().microsecond)}';
+      final fresh =
+          'web_${DateTime.now().millisecondsSinceEpoch}_${(DateTime.now().microsecond)}';
       web.window.localStorage.setItem(k, fresh);
       return fresh;
     } catch (_) {
@@ -134,7 +135,8 @@ class PushNotificationManager {
               'fcm_token': deviceId,
               'platform': 'web',
               'profile_id': uid,
-              'device_model': 'Browser (${web.window.navigator.userAgent.substring(0, 40)})',
+              'device_model':
+                  'Browser (${web.window.navigator.userAgent.substring(0, 40)})',
             }),
           )
           .timeout(const Duration(seconds: 8));
@@ -149,7 +151,8 @@ class PushNotificationManager {
     try {
       final res = await http
           .get(
-            Uri.parse('${ApiConfig.workerUrl}/api/push/poll?user_id=$uid&limit=20'),
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/push/poll?user_id=$uid&limit=20'),
           )
           .timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return;

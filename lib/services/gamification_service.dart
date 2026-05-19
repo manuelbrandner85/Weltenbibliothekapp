@@ -109,14 +109,16 @@ class SkillNode {
 
   factory SkillNode.fromJson(Map<String, dynamic> json) {
     return SkillNode(
-      skillKey: json['skillKey'] as String? ?? json['skill_key'] as String? ?? '',
+      skillKey:
+          json['skillKey'] as String? ?? json['skill_key'] as String? ?? '',
       world: json['world'] as String? ?? 'materie',
       level: json['level'] as int? ?? 1,
       xp: json['xp'] as int? ?? 0,
       unlockedAt: json['unlockedAt'] != null
           ? DateTime.tryParse(json['unlockedAt'] as String) ?? DateTime.now()
           : json['unlocked_at'] != null
-              ? DateTime.tryParse(json['unlocked_at'] as String) ?? DateTime.now()
+              ? DateTime.tryParse(json['unlocked_at'] as String) ??
+                  DateTime.now()
               : DateTime.now(),
     );
   }
@@ -152,12 +154,16 @@ class Artifact {
       key: json['key'] as String? ?? '',
       world: json['world'] as String? ?? 'universal',
       nameDe: json['name_de'] as String? ?? json['nameDe'] as String? ?? '',
-      descriptionDe: json['description_de'] as String? ?? json['descriptionDe'] as String? ?? '',
+      descriptionDe: json['description_de'] as String? ??
+          json['descriptionDe'] as String? ??
+          '',
       rarity: _parseRarity(json['rarity'] as String?),
-      iconEmoji: json['icon_emoji'] as String? ?? json['iconEmoji'] as String? ?? '🔮',
+      iconEmoji:
+          json['icon_emoji'] as String? ?? json['iconEmoji'] as String? ?? '🔮',
       xpBonus: json['xp_bonus'] as int? ?? json['xpBonus'] as int? ?? 0,
       effectJson: (json['effect_json'] ?? json['effectJson']) is Map
-          ? Map<String, dynamic>.from((json['effect_json'] ?? json['effectJson']) as Map)
+          ? Map<String, dynamic>.from(
+              (json['effect_json'] ?? json['effectJson']) as Map)
           : <String, dynamic>{},
     );
   }
@@ -237,14 +243,17 @@ class UserTitle {
 
   factory UserTitle.fromJson(Map<String, dynamic> json) {
     return UserTitle(
-      titleKey: json['title_key'] as String? ?? json['titleKey'] as String? ?? '',
+      titleKey:
+          json['title_key'] as String? ?? json['titleKey'] as String? ?? '',
       titleDe: json['title_de'] as String? ?? json['titleDe'] as String? ?? '',
       unlockedAt: json['unlocked_at'] != null
           ? DateTime.tryParse(json['unlocked_at'] as String) ?? DateTime.now()
           : json['unlockedAt'] != null
-              ? DateTime.tryParse(json['unlockedAt'] as String) ?? DateTime.now()
+              ? DateTime.tryParse(json['unlockedAt'] as String) ??
+                  DateTime.now()
               : DateTime.now(),
-      isActive: json['is_active'] as bool? ?? json['isActive'] as bool? ?? false,
+      isActive:
+          json['is_active'] as bool? ?? json['isActive'] as bool? ?? false,
     );
   }
 }
@@ -275,7 +284,8 @@ class DestinyCard {
       type: _parseType(json['card_type'] as String? ?? json['type'] as String?),
       cardIndex: json['card_index'] as int? ?? json['cardIndex'] as int? ?? 0,
       titleDe: json['title_de'] as String? ?? json['titleDe'] as String? ?? '',
-      messageDe: json['message_de'] as String? ?? json['messageDe'] as String? ?? '',
+      messageDe:
+          json['message_de'] as String? ?? json['messageDe'] as String? ?? '',
       drawnAt: json['drawn_at'] != null
           ? DateTime.tryParse(json['drawn_at'] as String) ?? DateTime.now()
           : json['drawnAt'] != null
@@ -318,7 +328,8 @@ class SkillDefinition {
   final String descriptionDe;
   final String iconEmoji;
   final String world;
-  final List<String> prerequisites; // Skill-Keys die zuerst freigeschaltet sein müssen
+  final List<String>
+      prerequisites; // Skill-Keys die zuerst freigeschaltet sein müssen
   final int maxLevel;
 
   const SkillDefinition({
@@ -335,32 +346,148 @@ class SkillDefinition {
 /// Alle verfügbaren Skills pro Welt.
 const Map<String, List<SkillDefinition>> worldSkillDefinitions = {
   'materie': [
-    SkillDefinition(key: 'recherche_1', nameDe: 'Grundrecherche', descriptionDe: 'Basis-Fähigkeit zur Informationssuche', iconEmoji: '🔍', world: 'materie'),
-    SkillDefinition(key: 'faktencheck_1', nameDe: 'Faktencheck', descriptionDe: 'Behauptungen kritisch prüfen', iconEmoji: '✅', world: 'materie', prerequisites: ['recherche_1']),
-    SkillDefinition(key: 'quellenanalyse_1', nameDe: 'Quellenanalyse', descriptionDe: 'Quellen auf Glaubwürdigkeit bewerten', iconEmoji: '📊', world: 'materie', prerequisites: ['faktencheck_1']),
-    SkillDefinition(key: 'osint_1', nameDe: 'OSINT-Methodik', descriptionDe: 'Open Source Intelligence anwenden', iconEmoji: '🕵️', world: 'materie', prerequisites: ['quellenanalyse_1']),
-    SkillDefinition(key: 'deep_research_1', nameDe: 'Tiefenrecherche', descriptionDe: 'Verborgene Zusammenhänge aufdecken', iconEmoji: '🧬', world: 'materie', prerequisites: ['osint_1']),
+    SkillDefinition(
+        key: 'recherche_1',
+        nameDe: 'Grundrecherche',
+        descriptionDe: 'Basis-Fähigkeit zur Informationssuche',
+        iconEmoji: '🔍',
+        world: 'materie'),
+    SkillDefinition(
+        key: 'faktencheck_1',
+        nameDe: 'Faktencheck',
+        descriptionDe: 'Behauptungen kritisch prüfen',
+        iconEmoji: '✅',
+        world: 'materie',
+        prerequisites: ['recherche_1']),
+    SkillDefinition(
+        key: 'quellenanalyse_1',
+        nameDe: 'Quellenanalyse',
+        descriptionDe: 'Quellen auf Glaubwürdigkeit bewerten',
+        iconEmoji: '📊',
+        world: 'materie',
+        prerequisites: ['faktencheck_1']),
+    SkillDefinition(
+        key: 'osint_1',
+        nameDe: 'OSINT-Methodik',
+        descriptionDe: 'Open Source Intelligence anwenden',
+        iconEmoji: '🕵️',
+        world: 'materie',
+        prerequisites: ['quellenanalyse_1']),
+    SkillDefinition(
+        key: 'deep_research_1',
+        nameDe: 'Tiefenrecherche',
+        descriptionDe: 'Verborgene Zusammenhänge aufdecken',
+        iconEmoji: '🧬',
+        world: 'materie',
+        prerequisites: ['osint_1']),
   ],
   'energie': [
-    SkillDefinition(key: 'meditation_1', nameDe: 'Meditation', descriptionDe: 'Grundlagen der Achtsamkeit', iconEmoji: '🧘', world: 'energie'),
-    SkillDefinition(key: 'heilung_1', nameDe: 'Energieheilung', descriptionDe: 'Feinstoffliche Energien lenken', iconEmoji: '💜', world: 'energie', prerequisites: ['meditation_1']),
-    SkillDefinition(key: 'chakra_1', nameDe: 'Chakra-Arbeit', descriptionDe: 'Die sieben Hauptchakren aktivieren', iconEmoji: '🌀', world: 'energie', prerequisites: ['heilung_1']),
-    SkillDefinition(key: 'bewusstsein_1', nameDe: 'Bewusstseinserweiterung', descriptionDe: 'Grenzen des Geistes erweitern', iconEmoji: '🌟', world: 'energie', prerequisites: ['chakra_1']),
-    SkillDefinition(key: 'transzendenz_1', nameDe: 'Transzendenz', descriptionDe: 'Jenseits des Materiellen wirken', iconEmoji: '✨', world: 'energie', prerequisites: ['bewusstsein_1']),
+    SkillDefinition(
+        key: 'meditation_1',
+        nameDe: 'Meditation',
+        descriptionDe: 'Grundlagen der Achtsamkeit',
+        iconEmoji: '🧘',
+        world: 'energie'),
+    SkillDefinition(
+        key: 'heilung_1',
+        nameDe: 'Energieheilung',
+        descriptionDe: 'Feinstoffliche Energien lenken',
+        iconEmoji: '💜',
+        world: 'energie',
+        prerequisites: ['meditation_1']),
+    SkillDefinition(
+        key: 'chakra_1',
+        nameDe: 'Chakra-Arbeit',
+        descriptionDe: 'Die sieben Hauptchakren aktivieren',
+        iconEmoji: '🌀',
+        world: 'energie',
+        prerequisites: ['heilung_1']),
+    SkillDefinition(
+        key: 'bewusstsein_1',
+        nameDe: 'Bewusstseinserweiterung',
+        descriptionDe: 'Grenzen des Geistes erweitern',
+        iconEmoji: '🌟',
+        world: 'energie',
+        prerequisites: ['chakra_1']),
+    SkillDefinition(
+        key: 'transzendenz_1',
+        nameDe: 'Transzendenz',
+        descriptionDe: 'Jenseits des Materiellen wirken',
+        iconEmoji: '✨',
+        world: 'energie',
+        prerequisites: ['bewusstsein_1']),
   ],
   'noir': [
-    SkillDefinition(key: 'strategie_1', nameDe: 'Strategisches Denken', descriptionDe: 'Machtstrukturen analysieren', iconEmoji: '♟️', world: 'noir'),
-    SkillDefinition(key: 'geopolitik_1', nameDe: 'Geopolitik', descriptionDe: 'Globale Machtspiele verstehen', iconEmoji: '🌍', world: 'noir', prerequisites: ['strategie_1']),
-    SkillDefinition(key: 'manipulation_1', nameDe: 'Manipulation erkennen', descriptionDe: 'Propaganda und Täuschung entlarven', iconEmoji: '🎭', world: 'noir', prerequisites: ['geopolitik_1']),
-    SkillDefinition(key: 'netzwerk_1', nameDe: 'Netzwerkanalyse', descriptionDe: 'Verborgene Verbindungen kartieren', iconEmoji: '🕸️', world: 'noir', prerequisites: ['manipulation_1']),
-    SkillDefinition(key: 'machtspiel_1', nameDe: 'Machtspiel-Meister', descriptionDe: 'Die Regeln hinter den Regeln kennen', iconEmoji: '👑', world: 'noir', prerequisites: ['netzwerk_1']),
+    SkillDefinition(
+        key: 'strategie_1',
+        nameDe: 'Strategisches Denken',
+        descriptionDe: 'Machtstrukturen analysieren',
+        iconEmoji: '♟️',
+        world: 'noir'),
+    SkillDefinition(
+        key: 'geopolitik_1',
+        nameDe: 'Geopolitik',
+        descriptionDe: 'Globale Machtspiele verstehen',
+        iconEmoji: '🌍',
+        world: 'noir',
+        prerequisites: ['strategie_1']),
+    SkillDefinition(
+        key: 'manipulation_1',
+        nameDe: 'Manipulation erkennen',
+        descriptionDe: 'Propaganda und Täuschung entlarven',
+        iconEmoji: '🎭',
+        world: 'noir',
+        prerequisites: ['geopolitik_1']),
+    SkillDefinition(
+        key: 'netzwerk_1',
+        nameDe: 'Netzwerkanalyse',
+        descriptionDe: 'Verborgene Verbindungen kartieren',
+        iconEmoji: '🕸️',
+        world: 'noir',
+        prerequisites: ['manipulation_1']),
+    SkillDefinition(
+        key: 'machtspiel_1',
+        nameDe: 'Machtspiel-Meister',
+        descriptionDe: 'Die Regeln hinter den Regeln kennen',
+        iconEmoji: '👑',
+        world: 'noir',
+        prerequisites: ['netzwerk_1']),
   ],
   'genesis': [
-    SkillDefinition(key: 'alchemie_1', nameDe: 'Alchemie', descriptionDe: 'Transformation verstehen', iconEmoji: '⚗️', world: 'genesis'),
-    SkillDefinition(key: 'mythen_1', nameDe: 'Mythologie', descriptionDe: 'Ur-Geschichten der Menschheit', iconEmoji: '📜', world: 'genesis', prerequisites: ['alchemie_1']),
-    SkillDefinition(key: 'kosmologie_1', nameDe: 'Kosmologie', descriptionDe: 'Ursprung und Struktur des Universums', iconEmoji: '🌌', world: 'genesis', prerequisites: ['mythen_1']),
-    SkillDefinition(key: 'schoepfung_1', nameDe: 'Schöpfungslehre', descriptionDe: 'Die Mysterien der Entstehung', iconEmoji: '🌅', world: 'genesis', prerequisites: ['kosmologie_1']),
-    SkillDefinition(key: 'erleuchtung_1', nameDe: 'Erleuchtung', descriptionDe: 'Höchste Stufe des Verstehens', iconEmoji: '🔆', world: 'genesis', prerequisites: ['schoepfung_1']),
+    SkillDefinition(
+        key: 'alchemie_1',
+        nameDe: 'Alchemie',
+        descriptionDe: 'Transformation verstehen',
+        iconEmoji: '⚗️',
+        world: 'genesis'),
+    SkillDefinition(
+        key: 'mythen_1',
+        nameDe: 'Mythologie',
+        descriptionDe: 'Ur-Geschichten der Menschheit',
+        iconEmoji: '📜',
+        world: 'genesis',
+        prerequisites: ['alchemie_1']),
+    SkillDefinition(
+        key: 'kosmologie_1',
+        nameDe: 'Kosmologie',
+        descriptionDe: 'Ursprung und Struktur des Universums',
+        iconEmoji: '🌌',
+        world: 'genesis',
+        prerequisites: ['mythen_1']),
+    SkillDefinition(
+        key: 'schoepfung_1',
+        nameDe: 'Schöpfungslehre',
+        descriptionDe: 'Die Mysterien der Entstehung',
+        iconEmoji: '🌅',
+        world: 'genesis',
+        prerequisites: ['kosmologie_1']),
+    SkillDefinition(
+        key: 'erleuchtung_1',
+        nameDe: 'Erleuchtung',
+        descriptionDe: 'Höchste Stufe des Verstehens',
+        iconEmoji: '🔆',
+        world: 'genesis',
+        prerequisites: ['schoepfung_1']),
   ],
 };
 
@@ -370,72 +497,366 @@ const Map<String, List<SkillDefinition>> worldSkillDefinitions = {
 /// 20 wisdom, 15 challenge, 15 boost, 10 mystery.
 const List<Map<String, String>> _destinyCardPool = [
   // ── WISDOM (20) ──
-  {'type': 'wisdom', 'title': 'Spiegel der Erkenntnis', 'message': 'Was du im Außen suchst, findest du nur in dir selbst. Halte heute inne und reflektiere.'},
-  {'type': 'wisdom', 'title': 'Das Gesetz der Resonanz', 'message': 'Gleiches zieht Gleiches an. Achte heute bewusst auf deine Gedanken — sie formen deine Realität.'},
-  {'type': 'wisdom', 'title': 'Memento Mori', 'message': 'Bedenke, dass du sterblich bist. Was würdest du tun, wenn dies dein letzter Tag wäre?'},
-  {'type': 'wisdom', 'title': 'Das dritte Auge', 'message': 'Schau hinter die Oberfläche. Die wahre Geschichte liegt immer zwischen den Zeilen.'},
-  {'type': 'wisdom', 'title': 'Tabula Rasa', 'message': 'Vergiss alles, was du zu wissen glaubst. Nur ein leerer Geist kann Neues aufnehmen.'},
-  {'type': 'wisdom', 'title': 'Der Fluss des Dao', 'message': 'Nicht gegen den Strom schwimmen, sondern ihn verstehen. Flexibilität ist wahre Stärke.'},
-  {'type': 'wisdom', 'title': 'Hermes'' Botschaft', 'message': 'Wie oben, so unten. Wie innen, so außen. Die kleinen Muster spiegeln die großen.'},
-  {'type': 'wisdom', 'title': 'Sokrates'' Frage', 'message': 'Ich weiß, dass ich nichts weiß. Wahre Weisheit beginnt mit dem Eingeständnis der Unwissenheit.'},
-  {'type': 'wisdom', 'title': 'Das Paradox der Wahl', 'message': 'Weniger ist mehr. Heute: Reduziere deine Optionen und handle entschlossen.'},
-  {'type': 'wisdom', 'title': 'Schatten und Licht', 'message': 'Akzeptiere deine Schattenseiten. Nur wer seinen Schatten kennt, kann im Licht stehen.'},
-  {'type': 'wisdom', 'title': 'Zeitlose Weisheit', 'message': 'Was vor tausend Jahren wahr war, ist es noch heute. Suche die ewigen Prinzipien.'},
-  {'type': 'wisdom', 'title': 'Die Kraft der Stille', 'message': 'Im Lärm der Welt liegt die Wahrheit verborgen. Finde heute 10 Minuten absolute Stille.'},
-  {'type': 'wisdom', 'title': 'Ouroboros', 'message': 'Jedes Ende ist ein Anfang. Was in deinem Leben endet, macht Platz für Neues.'},
-  {'type': 'wisdom', 'title': 'Der Beobachter', 'message': 'Tritt einen Schritt zurück. Beobachte deine Gedanken, ohne dich mit ihnen zu identifizieren.'},
-  {'type': 'wisdom', 'title': 'Fibonacci-Spirale', 'message': 'Die Natur folgt mathematischen Mustern. Suche heute die verborgene Ordnung im Chaos.'},
-  {'type': 'wisdom', 'title': 'Das Leere Glas', 'message': 'Nur ein leeres Glas kann gefüllt werden. Lass heute eine alte Überzeugung los.'},
-  {'type': 'wisdom', 'title': 'Achtsamer Atem', 'message': 'Dein Atem ist die Brücke zwischen Körper und Geist. Atme heute 3x bewusst tief ein und aus.'},
-  {'type': 'wisdom', 'title': 'Die fünfte Dimension', 'message': 'Jenseits von Raum und Zeit existiert reines Bewusstsein. Was nimmst du jenseits deiner Sinne wahr?'},
-  {'type': 'wisdom', 'title': 'Der Wanderer', 'message': 'Der Weg ist das Ziel. Genieße die Reise, nicht nur das Ankommen.'},
-  {'type': 'wisdom', 'title': 'Quantum der Möglichkeiten', 'message': 'Bis du beobachtest, existieren alle Möglichkeiten gleichzeitig. Wähle weise.'},
+  {
+    'type': 'wisdom',
+    'title': 'Spiegel der Erkenntnis',
+    'message':
+        'Was du im Außen suchst, findest du nur in dir selbst. Halte heute inne und reflektiere.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Das Gesetz der Resonanz',
+    'message':
+        'Gleiches zieht Gleiches an. Achte heute bewusst auf deine Gedanken — sie formen deine Realität.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Memento Mori',
+    'message':
+        'Bedenke, dass du sterblich bist. Was würdest du tun, wenn dies dein letzter Tag wäre?'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Das dritte Auge',
+    'message':
+        'Schau hinter die Oberfläche. Die wahre Geschichte liegt immer zwischen den Zeilen.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Tabula Rasa',
+    'message':
+        'Vergiss alles, was du zu wissen glaubst. Nur ein leerer Geist kann Neues aufnehmen.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Der Fluss des Dao',
+    'message':
+        'Nicht gegen den Strom schwimmen, sondern ihn verstehen. Flexibilität ist wahre Stärke.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Hermes' ' Botschaft',
+    'message':
+        'Wie oben, so unten. Wie innen, so außen. Die kleinen Muster spiegeln die großen.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Sokrates' ' Frage',
+    'message':
+        'Ich weiß, dass ich nichts weiß. Wahre Weisheit beginnt mit dem Eingeständnis der Unwissenheit.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Das Paradox der Wahl',
+    'message':
+        'Weniger ist mehr. Heute: Reduziere deine Optionen und handle entschlossen.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Schatten und Licht',
+    'message':
+        'Akzeptiere deine Schattenseiten. Nur wer seinen Schatten kennt, kann im Licht stehen.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Zeitlose Weisheit',
+    'message':
+        'Was vor tausend Jahren wahr war, ist es noch heute. Suche die ewigen Prinzipien.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Die Kraft der Stille',
+    'message':
+        'Im Lärm der Welt liegt die Wahrheit verborgen. Finde heute 10 Minuten absolute Stille.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Ouroboros',
+    'message':
+        'Jedes Ende ist ein Anfang. Was in deinem Leben endet, macht Platz für Neues.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Der Beobachter',
+    'message':
+        'Tritt einen Schritt zurück. Beobachte deine Gedanken, ohne dich mit ihnen zu identifizieren.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Fibonacci-Spirale',
+    'message':
+        'Die Natur folgt mathematischen Mustern. Suche heute die verborgene Ordnung im Chaos.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Das Leere Glas',
+    'message':
+        'Nur ein leeres Glas kann gefüllt werden. Lass heute eine alte Überzeugung los.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Achtsamer Atem',
+    'message':
+        'Dein Atem ist die Brücke zwischen Körper und Geist. Atme heute 3x bewusst tief ein und aus.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Die fünfte Dimension',
+    'message':
+        'Jenseits von Raum und Zeit existiert reines Bewusstsein. Was nimmst du jenseits deiner Sinne wahr?'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Der Wanderer',
+    'message':
+        'Der Weg ist das Ziel. Genieße die Reise, nicht nur das Ankommen.'
+  },
+  {
+    'type': 'wisdom',
+    'title': 'Quantum der Möglichkeiten',
+    'message':
+        'Bis du beobachtest, existieren alle Möglichkeiten gleichzeitig. Wähle weise.'
+  },
 
   // ── CHALLENGE (15) ──
-  {'type': 'challenge', 'title': 'Recherche-Sprint', 'message': 'Finde heute 3 Quellen zu einem Thema, das dich seit langem beschäftigt. +25 XP bei Abschluss.'},
-  {'type': 'challenge', 'title': 'Faktencheck-Duell', 'message': 'Überprüfe eine populäre Behauptung mit dem Faktencheck-Tool. Teile das Ergebnis. +30 XP.'},
-  {'type': 'challenge', 'title': 'Meditations-Challenge', 'message': 'Meditiere heute 15 Minuten. Dokumentiere deine Erfahrung in der Energie-Welt. +20 XP.'},
-  {'type': 'challenge', 'title': 'Mentor-Gespräch', 'message': 'Führe ein tiefes Gespräch mit deinem KI-Mentor. Stelle mindestens 5 Fragen. +25 XP.'},
-  {'type': 'challenge', 'title': 'Verborgene Verbindung', 'message': 'Finde eine Verbindung zwischen zwei scheinbar unzusammenhängenden Themen. +35 XP.'},
-  {'type': 'challenge', 'title': 'Quellenprüfung', 'message': 'Bewerte heute 5 Nachrichtenquellen nach Glaubwürdigkeit. Nutze OSINT-Methoden. +30 XP.'},
-  {'type': 'challenge', 'title': 'Kaninchenbau', 'message': 'Folge einem Thema 3 Ebenen tief in den Kaninchenbau. Dokumentiere deine Reise. +40 XP.'},
-  {'type': 'challenge', 'title': 'Perspektivwechsel', 'message': 'Vertrete heute bewusst die Gegenposition zu einer deiner Überzeugungen. +20 XP.'},
-  {'type': 'challenge', 'title': 'Wissen teilen', 'message': 'Teile eine Erkenntnis aus der Weltenbibliothek mit jemandem in der realen Welt. +25 XP.'},
-  {'type': 'challenge', 'title': 'Digitale Detox', 'message': '2 Stunden ohne Smartphone. Nutze die Zeit für Reflexion oder Lesen. +30 XP.'},
-  {'type': 'challenge', 'title': 'Muster-Erkennung', 'message': 'Identifiziere ein wiederkehrendes Muster in aktuellen Nachrichten. +35 XP.'},
-  {'type': 'challenge', 'title': 'Alchemie des Alltags', 'message': 'Verwandle eine negative Erfahrung in eine positive Lektion. Dokumentiere es. +25 XP.'},
-  {'type': 'challenge', 'title': 'Der Fragende', 'message': 'Stelle heute 10 Fragen, die du noch nie gestellt hast. Schreibe sie auf. +20 XP.'},
-  {'type': 'challenge', 'title': 'Netzwerk-Kartierung', 'message': 'Erstelle eine Mindmap zu einem komplexen Thema. Verbinde mindestens 10 Konzepte. +35 XP.'},
-  {'type': 'challenge', 'title': 'Zeitkapsel', 'message': 'Schreibe eine Nachricht an dein zukünftiges Ich in 1 Jahr. Was willst du bis dahin wissen? +15 XP.'},
+  {
+    'type': 'challenge',
+    'title': 'Recherche-Sprint',
+    'message':
+        'Finde heute 3 Quellen zu einem Thema, das dich seit langem beschäftigt. +25 XP bei Abschluss.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Faktencheck-Duell',
+    'message':
+        'Überprüfe eine populäre Behauptung mit dem Faktencheck-Tool. Teile das Ergebnis. +30 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Meditations-Challenge',
+    'message':
+        'Meditiere heute 15 Minuten. Dokumentiere deine Erfahrung in der Energie-Welt. +20 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Mentor-Gespräch',
+    'message':
+        'Führe ein tiefes Gespräch mit deinem KI-Mentor. Stelle mindestens 5 Fragen. +25 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Verborgene Verbindung',
+    'message':
+        'Finde eine Verbindung zwischen zwei scheinbar unzusammenhängenden Themen. +35 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Quellenprüfung',
+    'message':
+        'Bewerte heute 5 Nachrichtenquellen nach Glaubwürdigkeit. Nutze OSINT-Methoden. +30 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Kaninchenbau',
+    'message':
+        'Folge einem Thema 3 Ebenen tief in den Kaninchenbau. Dokumentiere deine Reise. +40 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Perspektivwechsel',
+    'message':
+        'Vertrete heute bewusst die Gegenposition zu einer deiner Überzeugungen. +20 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Wissen teilen',
+    'message':
+        'Teile eine Erkenntnis aus der Weltenbibliothek mit jemandem in der realen Welt. +25 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Digitale Detox',
+    'message':
+        '2 Stunden ohne Smartphone. Nutze die Zeit für Reflexion oder Lesen. +30 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Muster-Erkennung',
+    'message':
+        'Identifiziere ein wiederkehrendes Muster in aktuellen Nachrichten. +35 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Alchemie des Alltags',
+    'message':
+        'Verwandle eine negative Erfahrung in eine positive Lektion. Dokumentiere es. +25 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Der Fragende',
+    'message':
+        'Stelle heute 10 Fragen, die du noch nie gestellt hast. Schreibe sie auf. +20 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Netzwerk-Kartierung',
+    'message':
+        'Erstelle eine Mindmap zu einem komplexen Thema. Verbinde mindestens 10 Konzepte. +35 XP.'
+  },
+  {
+    'type': 'challenge',
+    'title': 'Zeitkapsel',
+    'message':
+        'Schreibe eine Nachricht an dein zukünftiges Ich in 1 Jahr. Was willst du bis dahin wissen? +15 XP.'
+  },
 
   // ── BOOST (15) ──
-  {'type': 'boost', 'title': 'XP-Verstärker', 'message': 'Doppelte XP für die nächsten 2 Stunden! Nutze die Zeit weise.'},
-  {'type': 'boost', 'title': 'Streak-Schild', 'message': 'Dein Streak ist heute geschützt! Selbst wenn du nicht aktiv bist, bricht er nicht ab.'},
-  {'type': 'boost', 'title': 'Artefakt-Glück', 'message': 'Erhöhte Chance auf ein seltenes Artefakt bei deiner nächsten Entdeckung!'},
-  {'type': 'boost', 'title': 'Mentor-Bonus', 'message': 'Dein nächstes Mentor-Gespräch gibt +50% XP. Der Mentor antwortet heute besonders ausführlich.'},
-  {'type': 'boost', 'title': 'Wissens-Turbo', 'message': '+15 XP sofort! Dein Wissensdurst wird belohnt.'},
-  {'type': 'boost', 'title': 'Kosmische Ausrichtung', 'message': 'Die Sterne stehen günstig. +20 XP für jede Recherche heute.'},
-  {'type': 'boost', 'title': 'Bibliothekars-Segen', 'message': 'Der Bibliothekar der Weltenbibliothek gewährt dir Zugang zu tieferem Wissen. +25 XP.'},
-  {'type': 'boost', 'title': 'Energiefeld-Stärkung', 'message': 'Dein Energiefeld ist heute besonders stark. Alle Heilungs-Skills +10% Effizienz.'},
-  {'type': 'boost', 'title': 'Schattenblick', 'message': 'Du siehst heute klarer durch den Schleier der Desinformation. Noir-Skills +15%.'},
-  {'type': 'boost', 'title': 'Genesis-Funke', 'message': 'Ein Funke der Urschöpfung erhellt deinen Geist. +10 XP und frische Inspiration.'},
-  {'type': 'boost', 'title': 'Goldener Schlüssel', 'message': 'Schaltet einen zufälligen Bonus-Inhalt in der Bibliothek frei.'},
-  {'type': 'boost', 'title': 'Erfahrungs-Elixier', 'message': '+30 XP! Ein alchemistisches Elixier beschleunigt dein Wachstum.'},
-  {'type': 'boost', 'title': 'Zeit-Dehnung', 'message': 'Alle Cooldowns heute halbiert. Nutze die zusätzliche Zeit.'},
-  {'type': 'boost', 'title': 'Schutzamulett', 'message': 'Dein Streak wird für die nächsten 48 Stunden eingefroren, falls nötig.'},
-  {'type': 'boost', 'title': 'Weisheits-Perle', 'message': '+20 XP und ein klarer Geist. Deine nächste Entscheidung wird die richtige sein.'},
+  {
+    'type': 'boost',
+    'title': 'XP-Verstärker',
+    'message': 'Doppelte XP für die nächsten 2 Stunden! Nutze die Zeit weise.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Streak-Schild',
+    'message':
+        'Dein Streak ist heute geschützt! Selbst wenn du nicht aktiv bist, bricht er nicht ab.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Artefakt-Glück',
+    'message':
+        'Erhöhte Chance auf ein seltenes Artefakt bei deiner nächsten Entdeckung!'
+  },
+  {
+    'type': 'boost',
+    'title': 'Mentor-Bonus',
+    'message':
+        'Dein nächstes Mentor-Gespräch gibt +50% XP. Der Mentor antwortet heute besonders ausführlich.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Wissens-Turbo',
+    'message': '+15 XP sofort! Dein Wissensdurst wird belohnt.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Kosmische Ausrichtung',
+    'message': 'Die Sterne stehen günstig. +20 XP für jede Recherche heute.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Bibliothekars-Segen',
+    'message':
+        'Der Bibliothekar der Weltenbibliothek gewährt dir Zugang zu tieferem Wissen. +25 XP.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Energiefeld-Stärkung',
+    'message':
+        'Dein Energiefeld ist heute besonders stark. Alle Heilungs-Skills +10% Effizienz.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Schattenblick',
+    'message':
+        'Du siehst heute klarer durch den Schleier der Desinformation. Noir-Skills +15%.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Genesis-Funke',
+    'message':
+        'Ein Funke der Urschöpfung erhellt deinen Geist. +10 XP und frische Inspiration.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Goldener Schlüssel',
+    'message': 'Schaltet einen zufälligen Bonus-Inhalt in der Bibliothek frei.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Erfahrungs-Elixier',
+    'message': '+30 XP! Ein alchemistisches Elixier beschleunigt dein Wachstum.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Zeit-Dehnung',
+    'message': 'Alle Cooldowns heute halbiert. Nutze die zusätzliche Zeit.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Schutzamulett',
+    'message':
+        'Dein Streak wird für die nächsten 48 Stunden eingefroren, falls nötig.'
+  },
+  {
+    'type': 'boost',
+    'title': 'Weisheits-Perle',
+    'message':
+        '+20 XP und ein klarer Geist. Deine nächste Entscheidung wird die richtige sein.'
+  },
 
   // ── MYSTERY (10) ──
-  {'type': 'mystery', 'title': '???', 'message': 'Etwas Unerwartetes geschieht... Prüfe deine Artefakt-Sammlung auf Überraschungen!'},
-  {'type': 'mystery', 'title': 'Der Fremde', 'message': 'Ein unbekannter Wanderer hinterlässt eine Nachricht: „Suche dort, wo du zuletzt aufgehört hast."'},
-  {'type': 'mystery', 'title': 'Zeitriss', 'message': 'Ein Riss in der Zeit offenbart ein Fragment vergessenen Wissens. Was findest du?'},
-  {'type': 'mystery', 'title': 'Schrödingers Karte', 'message': 'Diese Karte ist gleichzeitig gut und schlecht. Erst dein Handeln bestimmt das Ergebnis.'},
-  {'type': 'mystery', 'title': 'Der 23. Buchstabe', 'message': 'W — der 23. Buchstabe. Zufälle gibt es nicht. Achte heute auf die Zahl 23.'},
-  {'type': 'mystery', 'title': 'Akasha-Echo', 'message': 'Ein Echo aus der Akasha-Chronik: Du hast diesen Moment schon einmal erlebt. Déjà-vu?'},
-  {'type': 'mystery', 'title': 'Schwarzer Schwan', 'message': 'Erwarte das Unerwartbare. Heute passiert etwas, das niemand vorhersagen konnte.'},
-  {'type': 'mystery', 'title': 'Spiegelwelt', 'message': 'Alles ist heute umgekehrt. Was du für wahr hältst, könnte falsch sein — und umgekehrt.'},
-  {'type': 'mystery', 'title': 'Das verlorene Wort', 'message': 'Ein Wort, das die Welt verändern könnte, liegt auf deiner Zungenspitze. Welches ist es?'},
-  {'type': 'mystery', 'title': 'Nullpunkt-Energie', 'message': 'Aus dem Nichts entsteht alles. +0 bis +50 XP — das Universum entscheidet.'},
+  {
+    'type': 'mystery',
+    'title': '???',
+    'message':
+        'Etwas Unerwartetes geschieht... Prüfe deine Artefakt-Sammlung auf Überraschungen!'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Der Fremde',
+    'message':
+        'Ein unbekannter Wanderer hinterlässt eine Nachricht: „Suche dort, wo du zuletzt aufgehört hast."'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Zeitriss',
+    'message':
+        'Ein Riss in der Zeit offenbart ein Fragment vergessenen Wissens. Was findest du?'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Schrödingers Karte',
+    'message':
+        'Diese Karte ist gleichzeitig gut und schlecht. Erst dein Handeln bestimmt das Ergebnis.'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Der 23. Buchstabe',
+    'message':
+        'W — der 23. Buchstabe. Zufälle gibt es nicht. Achte heute auf die Zahl 23.'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Akasha-Echo',
+    'message':
+        'Ein Echo aus der Akasha-Chronik: Du hast diesen Moment schon einmal erlebt. Déjà-vu?'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Schwarzer Schwan',
+    'message':
+        'Erwarte das Unerwartbare. Heute passiert etwas, das niemand vorhersagen konnte.'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Spiegelwelt',
+    'message':
+        'Alles ist heute umgekehrt. Was du für wahr hältst, könnte falsch sein — und umgekehrt.'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Das verlorene Wort',
+    'message':
+        'Ein Wort, das die Welt verändern könnte, liegt auf deiner Zungenspitze. Welches ist es?'
+  },
+  {
+    'type': 'mystery',
+    'title': 'Nullpunkt-Energie',
+    'message':
+        'Aus dem Nichts entsteht alles. +0 bis +50 XP — das Universum entscheidet.'
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -488,7 +909,8 @@ class GamificationService {
   }
 
   /// XP hinzufügen (lokal + optional Server-Sync).
-  Future<PlayerProgress> addXp(String world, int amount, {String? reason, bool syncServer = true}) async {
+  Future<PlayerProgress> addXp(String world, int amount,
+      {String? reason, bool syncServer = true}) async {
     final current = getProgress(world);
     final oldLevel = current.level;
 
@@ -501,7 +923,8 @@ class GamificationService {
     );
 
     // Lokal speichern
-    await SqliteStorageService.instance.put(_boxProgress, world, updated.toJson());
+    await SqliteStorageService.instance
+        .put(_boxProgress, world, updated.toJson());
 
     // Haptic-Feedback: jeder XP-Gain ein leichter Click; Level-Up extra
     // (medium impact). Wenn HapticService noch nicht initialisiert ist
@@ -782,13 +1205,16 @@ class GamificationService {
           SqliteStorageService.instance.getSync(_boxArtifacts, 'user_owned');
       if (raw == null) return [];
 
-      return (raw as List<dynamic>).map((e) {
-        final json = Map<String, dynamic>.from(e as Map);
-        final artifactId = json['artifact_id'] as String? ?? '';
-        final artifact = catalogMap[artifactId];
-        if (artifact == null) return null;
-        return UserArtifact.fromJson(json, artifact);
-      }).whereType<UserArtifact>().toList();
+      return (raw as List<dynamic>)
+          .map((e) {
+            final json = Map<String, dynamic>.from(e as Map);
+            final artifactId = json['artifact_id'] as String? ?? '';
+            final artifact = catalogMap[artifactId];
+            if (artifact == null) return null;
+            return UserArtifact.fromJson(json, artifact);
+          })
+          .whereType<UserArtifact>()
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ getUserArtifacts: $e');
       return [];
@@ -805,7 +1231,8 @@ class GamificationService {
       // Lokal speichern
       final raw =
           SqliteStorageService.instance.getSync(_boxArtifacts, 'user_owned');
-      final current = raw != null ? List<dynamic>.from(raw as List) : <dynamic>[];
+      final current =
+          raw != null ? List<dynamic>.from(raw as List) : <dynamic>[];
 
       // Duplikat-Check
       if (current.any((e) => (e as Map)['artifact_id'] == artifactId)) {
@@ -926,8 +1353,7 @@ class GamificationService {
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       final raw = SqliteStorageService.instance.getSync(_boxCards, key);
       if (raw != null) {
-        cards.add(
-            DestinyCard.fromJson(Map<String, dynamic>.from(raw as Map)));
+        cards.add(DestinyCard.fromJson(Map<String, dynamic>.from(raw as Map)));
       }
     }
 
@@ -1079,8 +1505,8 @@ class GamificationService {
                   world: r['world'] as String,
                   level: r['level'] as int,
                   xp: r['xp'] as int,
-                  unlockedAt:
-                      DateTime.tryParse(r['unlocked_at'] as String) ?? DateTime.now(),
+                  unlockedAt: DateTime.tryParse(r['unlocked_at'] as String) ??
+                      DateTime.now(),
                 ))
             .toList();
 
@@ -1102,9 +1528,7 @@ class GamificationService {
       await SqliteStorageService.instance.put(
         _boxArtifacts,
         'catalog',
-        catalogRows
-            .map((r) => Artifact.fromJson(r).toJson())
-            .toList(),
+        catalogRows.map((r) => Artifact.fromJson(r).toJson()).toList(),
       );
 
       // User-Artefakte
@@ -1132,9 +1556,7 @@ class GamificationService {
           .eq('user_id', _userId!)
           .order('unlocked_at');
 
-      final titles = rows
-          .map((r) => UserTitle.fromJson(r))
-          .toList();
+      final titles = rows.map((r) => UserTitle.fromJson(r)).toList();
 
       await SqliteStorageService.instance.put(
         _boxTitles,

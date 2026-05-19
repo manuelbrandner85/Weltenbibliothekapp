@@ -404,9 +404,8 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError
-            ? const Color(0xFFE53935)
-            : const Color(0xFF26A69A),
+        backgroundColor:
+            isError ? const Color(0xFFE53935) : const Color(0xFF26A69A),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -1151,9 +1150,7 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
             height: 6.0 + (i * 5.0),
             margin: const EdgeInsets.symmetric(horizontal: 1),
             decoration: BoxDecoration(
-              color: active
-                  ? color
-                  : Colors.white.withValues(alpha: 0.15),
+              color: active ? color : Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(1.5),
             ),
           );
@@ -1793,13 +1790,13 @@ class _SparklinePainter extends CustomPainter {
     // Avoid divide-by-zero for flat lines.
     final range = (maxV - minV).abs() < 1 ? 1 : (maxV - minV);
 
-    final dx = values.length > 1
-        ? size.width / (values.length - 1)
-        : size.width;
+    final dx =
+        values.length > 1 ? size.width / (values.length - 1) : size.width;
     final points = <Offset>[];
     for (int i = 0; i < values.length; i++) {
       final ratio = (values[i] - minV) / range;
-      final y = size.height - (ratio * size.height * 0.85) - (size.height * 0.075);
+      final y =
+          size.height - (ratio * size.height * 0.85) - (size.height * 0.075);
       points.add(Offset(i * dx, y));
     }
 

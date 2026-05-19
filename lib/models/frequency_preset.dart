@@ -277,7 +277,14 @@ class FrequencyPreset {
         category: 'binaural',
         benefit: 'Synchronisation mit dem Erdmagnetfeld, Erdung, Beruhigung',
         icon: '🌍',
-        keywords: ['schumann', 'erde', 'resonanz', '7.83', 'erdung', 'magnetfeld'],
+        keywords: [
+          'schumann',
+          'erde',
+          'resonanz',
+          '7.83',
+          'erdung',
+          'magnetfeld'
+        ],
       ),
       FrequencyPreset(
         id: 'binaural_delta',

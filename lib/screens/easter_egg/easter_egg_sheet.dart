@@ -57,6 +57,7 @@ class _EasterEggSheetState extends State<EasterEggSheet>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFF7C4DFF);
   static const Color _accent = Color(0xFF00BCD4);
   static const Color _gold = Color(0xFFFFD700);
@@ -68,10 +69,12 @@ class _EasterEggSheetState extends State<EasterEggSheet>
   void initState() {
     super.initState();
     _ambientCtrl = AnimationController(
-      vsync: this, duration: const Duration(seconds: 14),
+      vsync: this,
+      duration: const Duration(seconds: 14),
     )..repeat();
     _enterCtrl = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 700),
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
     )..forward();
   }
 
@@ -154,11 +157,11 @@ class _EasterEggSheetState extends State<EasterEggSheet>
                   children: [
                     Center(
                       child: Text('🌀',
-                          style: TextStyle(
-                              fontSize: 64,
-                              shadows: [
-                                Shadow(color: _gold.withValues(alpha: 0.6), blurRadius: 22),
-                              ])),
+                          style: TextStyle(fontSize: 64, shadows: [
+                            Shadow(
+                                color: _gold.withValues(alpha: 0.6),
+                                blurRadius: 22),
+                          ])),
                     ),
                     const SizedBox(height: 8),
                     Center(
@@ -177,7 +180,8 @@ class _EasterEggSheetState extends State<EasterEggSheet>
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         mainAxisSpacing: 10,
                         crossAxisSpacing: 10,
@@ -273,7 +277,10 @@ class _EasterEggSheetState extends State<EasterEggSheet>
           title: 'Achievements',
           subtitle: 'Deine Erfolge\nund Trophäen',
           color: const Color(0xFFFFC107),
-          onTap: () { Navigator.pop(context); widget.onAchievements(); },
+          onTap: () {
+            Navigator.pop(context);
+            widget.onAchievements();
+          },
         ),
 
         // ─── App & Meta ───
@@ -289,21 +296,30 @@ class _EasterEggSheetState extends State<EasterEggSheet>
           title: 'Portal-Farben',
           subtitle: 'Farbschema\nwechseln',
           color: const Color(0xFF26C6DA),
-          onTap: () { Navigator.pop(context); widget.onColorPicker(); },
+          onTap: () {
+            Navigator.pop(context);
+            widget.onColorPicker();
+          },
         ),
         _EgItem(
           emoji: '📤',
           title: 'Stats teilen',
           subtitle: 'Auf Social Media\nteilen',
           color: const Color(0xFF5C6BC0),
-          onTap: () { Navigator.pop(context); widget.onSharePortalStats(); },
+          onTap: () {
+            Navigator.pop(context);
+            widget.onSharePortalStats();
+          },
         ),
         _EgItem(
           emoji: '✨',
           title: 'Über',
           subtitle: 'Weltenbibliothek\nInfo & Credits',
           color: const Color(0xFF9C27B0),
-          onTap: () { Navigator.pop(context); widget.onAbout(); },
+          onTap: () {
+            Navigator.pop(context);
+            widget.onAbout();
+          },
         ),
       ];
 
@@ -371,8 +387,16 @@ class _EgTileState extends State<_EgTile> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: c.withValues(alpha: 0.45)),
                 boxShadow: _pressed
-                    ? [BoxShadow(color: c.withValues(alpha: 0.55), blurRadius: 18, spreadRadius: 1)]
-                    : [BoxShadow(color: c.withValues(alpha: 0.18), blurRadius: 10)],
+                    ? [
+                        BoxShadow(
+                            color: c.withValues(alpha: 0.55),
+                            blurRadius: 18,
+                            spreadRadius: 1)
+                      ]
+                    : [
+                        BoxShadow(
+                            color: c.withValues(alpha: 0.18), blurRadius: 10)
+                      ],
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -419,18 +443,24 @@ class _EgOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas,
+    _draw(
+        canvas,
         Offset(size.width * 0.18,
             size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        120, const Color(0xFF7C4DFF));
-    _draw(canvas,
+        120,
+        const Color(0xFF7C4DFF));
+    _draw(
+        canvas,
         Offset(size.width * 0.85,
             size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        110, const Color(0xFF00BCD4));
-    _draw(canvas,
+        110,
+        const Color(0xFF00BCD4));
+    _draw(
+        canvas,
         Offset(size.width * 0.5,
             size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        85, const Color(0xFFFFD700));
+        85,
+        const Color(0xFFFFD700));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

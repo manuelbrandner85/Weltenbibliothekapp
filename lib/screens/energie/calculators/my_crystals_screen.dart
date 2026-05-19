@@ -43,9 +43,7 @@ class _MyCrystalsScreenState extends State<MyCrystalsScreen> {
         return;
       }
       final names = (jsonDecode(raw) as List).cast<String>();
-      final list = crystalLibrary
-          .where((c) => names.contains(c.name))
-          .toList();
+      final list = crystalLibrary.where((c) => names.contains(c.name)).toList();
       if (!mounted) return;
       setState(() {
         _mine = list;
@@ -132,8 +130,8 @@ class _MyCrystalsScreenState extends State<MyCrystalsScreen> {
               'in einem Kristall-Ritual, um ihn zu deiner\n'
               'Sammlung hinzuzufuegen.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: Colors.white60, fontSize: 14, height: 1.55)),
+              style:
+                  TextStyle(color: Colors.white60, fontSize: 14, height: 1.55)),
         ],
       ),
     );
@@ -164,21 +162,23 @@ class _MyCrystalsScreenState extends State<MyCrystalsScreen> {
           if (byChakra.isNotEmpty) ...[
             const SizedBox(height: 10),
             Wrap(
-              spacing: 6, runSpacing: 4,
-              children: byChakra.entries.map((e) =>
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text('${e.key}: ${e.value}',
-                        style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600)),
-                  )).toList(),
+              spacing: 6,
+              runSpacing: 4,
+              children: byChakra.entries
+                  .map((e) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text('${e.key}: ${e.value}',
+                            style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
+                      ))
+                  .toList(),
             ),
           ],
         ],
@@ -190,8 +190,7 @@ class _MyCrystalsScreenState extends State<MyCrystalsScreen> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-            builder: (_) => CrystalRitualScreen(crystal: c)),
+        MaterialPageRoute(builder: (_) => CrystalRitualScreen(crystal: c)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
@@ -220,9 +219,7 @@ class _MyCrystalsScreenState extends State<MyCrystalsScreen> {
                             fontSize: 15,
                             fontWeight: FontWeight.w800)),
                     Text(
-                      [c.chakra, c.element]
-                          .where((e) => e != null)
-                          .join(' · '),
+                      [c.chakra, c.element].where((e) => e != null).join(' · '),
                       style: TextStyle(
                           color: c.displayColor,
                           fontSize: 11,
@@ -233,9 +230,7 @@ class _MyCrystalsScreenState extends State<MyCrystalsScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            height: 1.4)),
+                            color: Colors.white70, fontSize: 12, height: 1.4)),
                   ],
                 ),
               ),

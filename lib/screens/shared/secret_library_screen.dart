@@ -76,7 +76,8 @@ class _SecretLibraryScreenState extends State<SecretLibraryScreen>
                       center: const Alignment(0, -0.6),
                       radius: 1.2 + math.sin(t * math.pi * 2) * 0.05,
                       colors: [
-                        const Color(0xFFC9A84C).withValues(alpha: 0.10 + t * 0.04),
+                        const Color(0xFFC9A84C)
+                            .withValues(alpha: 0.10 + t * 0.04),
                         const Color(0xFF1A0F00).withValues(alpha: 0.95),
                         const Color(0xFF1A0F00),
                       ],
@@ -97,7 +98,8 @@ class _SecretLibraryScreenState extends State<SecretLibraryScreen>
 
   // ─── LOCKED VIEW ─────────────────────────────────────────────────
   Widget _buildLocked() {
-    final progress = (_level / SecretLibraryScreen.requiredLevel).clamp(0.0, 1.0);
+    final progress =
+        (_level / SecretLibraryScreen.requiredLevel).clamp(0.0, 1.0);
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -204,10 +206,12 @@ class _SecretLibraryScreenState extends State<SecretLibraryScreen>
             isScrollable: true,
             tabAlignment: TabAlignment.start,
             labelColor: const Color(0xFFC9A84C),
-            unselectedLabelColor: const Color(0xFFE0C872).withValues(alpha: 0.55),
+            unselectedLabelColor:
+                const Color(0xFFE0C872).withValues(alpha: 0.55),
             indicatorColor: const Color(0xFFC9A84C),
             indicatorWeight: 2.5,
-            labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 0.8),
+            labelStyle: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 0.8),
             tabs: _categories.map((c) => Tab(text: c.$1)).toList(),
           ),
         ),
@@ -236,7 +240,8 @@ class _BookGrid extends StatefulWidget {
   State<_BookGrid> createState() => _BookGridState();
 }
 
-class _BookGridState extends State<_BookGrid> with AutomaticKeepAliveClientMixin {
+class _BookGridState extends State<_BookGrid>
+    with AutomaticKeepAliveClientMixin {
   List<Map<String, dynamic>>? _books;
   bool _loading = true;
   String? _error;
@@ -259,7 +264,8 @@ class _BookGridState extends State<_BookGrid> with AutomaticKeepAliveClientMixin
     try {
       final res = await http
           .get(
-            Uri.parse('${ApiConfig.workerUrl}/api/bibliothek/books?category=${widget.category}'),
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/bibliothek/books?category=${widget.category}'),
             headers: ApiConfig.publicHeaders,
           )
           .timeout(const Duration(seconds: 15));
@@ -392,7 +398,8 @@ class _BookCard extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFC9A84C).withValues(alpha: 0.35)),
+            border: Border.all(
+                color: const Color(0xFFC9A84C).withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.5),
@@ -461,7 +468,8 @@ class _ShimmerGridState extends State<_ShimmerGrid>
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1100))
       ..repeat(reverse: true);
   }
 
@@ -488,7 +496,8 @@ class _ShimmerGridState extends State<_ShimmerGrid>
           builder: (_, __) {
             return Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF3A2410).withValues(alpha: 0.4 + _c.value * 0.25),
+                color: const Color(0xFF3A2410)
+                    .withValues(alpha: 0.4 + _c.value * 0.25),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: const Color(0xFFC9A84C).withValues(alpha: 0.15),

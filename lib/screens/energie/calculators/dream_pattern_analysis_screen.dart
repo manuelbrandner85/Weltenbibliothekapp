@@ -114,15 +114,21 @@ class _DreamPatternAnalysisScreenState
     final summary = StringBuffer()
       ..writeln('Anzahl Träume gesamt: ${_entries.length}')
       ..writeln('Davon Klarträume: $_lucidCount')
-      ..writeln('Häufigste Symbole: ${topSymbols.take(15).map((e) => '${e.key} (${e.value}x)').join(', ')}')
-      ..writeln('Kategorien: ${topCats.map((e) => '${e.key} (${e.value}x)').join(', ')}')
+      ..writeln(
+          'Häufigste Symbole: ${topSymbols.take(15).map((e) => '${e.key} (${e.value}x)').join(', ')}')
+      ..writeln(
+          'Kategorien: ${topCats.map((e) => '${e.key} (${e.value}x)').join(', ')}')
       ..writeln('')
-      ..writeln('=== Letzte Traum-Einträge (chronologisch, neueste zuerst) ===');
+      ..writeln(
+          '=== Letzte Traum-Einträge (chronologisch, neueste zuerst) ===');
 
     final maxEntries = _entries.length > 20 ? 20 : _entries.length;
     for (var i = 0; i < maxEntries; i++) {
       final e = _entries[i];
-      final date = (e['dream_date'] ?? e['created_at'] ?? '').toString().split('T').first;
+      final date = (e['dream_date'] ?? e['created_at'] ?? '')
+          .toString()
+          .split('T')
+          .first;
       final title = (e['title'] ?? '').toString().trim();
       var desc = (e['description'] ?? '').toString().trim();
       if (desc.length > 400) desc = '${desc.substring(0, 400)}...';
@@ -132,7 +138,8 @@ class _DreamPatternAnalysisScreenState
       final tags = (e['symbol_tags'] as List?)?.cast<String>() ?? const [];
       summary
         ..writeln('')
-        ..writeln('[$date]${title.isNotEmpty ? " $title" : ""} (Stimmung: $mood)$lucid$recur')
+        ..writeln(
+            '[$date]${title.isNotEmpty ? " $title" : ""} (Stimmung: $mood)$lucid$recur')
         ..writeln(desc)
         ..writeln(tags.isEmpty ? '' : 'Tags: ${tags.join(", ")}');
     }
@@ -164,16 +171,15 @@ class _DreamPatternAnalysisScreenState
               'conversationHistory': [],
               'world': 'energie',
               'userId': userId,
-              'systemPrompt':
-                  'Du bist ein erfahrener Traum-Deuter im Stil von C.G. Jung. '
-                      'Du bekommst KONKRETE Traum-Inhalte eines einzelnen Users mit '
-                      'Datum, Beschreibung, Stimmung und Symbol-Tags. Lies sie '
-                      'sorgfältig und deute persönlich - nicht allgemein. '
-                      'Zitiere kurz aus den Träumen wenn passend (in Anführungszeichen). '
-                      'Erkenne wiederkehrende Archetypen, Schatten-Aspekte, Wandlungs-Motive '
-                      'die SICH AUS DIESEN konkreten Träumen ergeben. Vermeide generische '
-                      'Floskeln wie "Wasser symbolisiert Emotionen" - werde spezifisch '
-                      'für diesen User. Du-Form, warm, ohne Disclaimer.',
+              'systemPrompt': 'Du bist ein erfahrener Traum-Deuter im Stil von C.G. Jung. '
+                  'Du bekommst KONKRETE Traum-Inhalte eines einzelnen Users mit '
+                  'Datum, Beschreibung, Stimmung und Symbol-Tags. Lies sie '
+                  'sorgfältig und deute persönlich - nicht allgemein. '
+                  'Zitiere kurz aus den Träumen wenn passend (in Anführungszeichen). '
+                  'Erkenne wiederkehrende Archetypen, Schatten-Aspekte, Wandlungs-Motive '
+                  'die SICH AUS DIESEN konkreten Träumen ergeben. Vermeide generische '
+                  'Floskeln wie "Wasser symbolisiert Emotionen" - werde spezifisch '
+                  'für diesen User. Du-Form, warm, ohne Disclaimer.',
               'mentorDisplayName': 'Traum-Deuter',
               'mentorAvatarEmoji': '💭',
             }),
@@ -212,7 +218,9 @@ class _DreamPatternAnalysisScreenState
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _accentLight))
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.white70)))
+              ? Center(
+                  child: Text(_error!,
+                      style: const TextStyle(color: Colors.white70)))
               : _entries.isEmpty
                   ? _buildEmpty()
                   : _buildContent(),
@@ -227,7 +235,10 @@ class _DreamPatternAnalysisScreenState
           Text('💭', style: TextStyle(fontSize: 64)),
           SizedBox(height: 16),
           Text('Noch keine Traum-Einträge',
-              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
           Text(
             'Trage erst einige Träume im Traumdeutung-Tool ein, dann kommt die KI-Musteranalyse.',
@@ -248,26 +259,39 @@ class _DreamPatternAnalysisScreenState
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [_accent, _accent.withValues(alpha: 0.4)]),
+            gradient: LinearGradient(
+                colors: [_accent, _accent.withValues(alpha: 0.4)]),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('📊 STATISTIK',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text('${_entries.length} Träume · $_lucidCount Klarträume',
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text('${_symbolFreq.length} verschiedene Symbole · ${_categoryFreq.length} Kategorien',
+              Text(
+                  '${_symbolFreq.length} verschiedene Symbole · ${_categoryFreq.length} Kategorien',
                   style: const TextStyle(color: Colors.white70, fontSize: 12)),
             ],
           ),
         ),
         const SizedBox(height: 18),
         const Text('TOP-SYMBOLE',
-            style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Wrap(spacing: 6, runSpacing: 6, children: [
           for (final s in topSymbols.take(20))
@@ -288,14 +312,21 @@ class _DreamPatternAnalysisScreenState
           child: ElevatedButton.icon(
             onPressed: _analyzing ? null : _runAIAnalysis,
             icon: _analyzing
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.auto_awesome),
-            label: Text(_analyzing ? 'KI denkt nach…' : 'KI-MUSTERANALYSE STARTEN',
-                style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+            label: Text(
+                _analyzing ? 'KI denkt nach…' : 'KI-MUSTERANALYSE STARTEN',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w800, letterSpacing: 1.5)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _accentLight,
               foregroundColor: _bg,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
           ),
         ),
@@ -315,11 +346,16 @@ class _DreamPatternAnalysisScreenState
                   const Icon(Icons.auto_awesome, color: _accentLight),
                   const SizedBox(width: 8),
                   const Text('JUNGIANISCHE ANALYSE',
-                      style: TextStyle(color: _accentLight, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          color: _accentLight,
+                          fontSize: 11,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold)),
                 ]),
                 const SizedBox(height: 10),
                 SelectableText(_analysis!,
-                    style: const TextStyle(color: Colors.white, fontSize: 13.5, height: 1.6)),
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 13.5, height: 1.6)),
               ],
             ),
           ),

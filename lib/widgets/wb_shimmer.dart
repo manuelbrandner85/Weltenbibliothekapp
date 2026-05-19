@@ -80,7 +80,8 @@ class _WbShimmerState extends State<WbShimmer>
   @override
   Widget build(BuildContext context) {
     final base = widget.baseColor ?? Colors.white.withValues(alpha: 0.06);
-    final highlight = widget.highlightColor ?? Colors.white.withValues(alpha: 0.14);
+    final highlight =
+        widget.highlightColor ?? Colors.white.withValues(alpha: 0.14);
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) {

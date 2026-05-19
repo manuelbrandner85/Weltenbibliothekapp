@@ -62,8 +62,7 @@ class _LessonSeriesScreenState extends State<LessonSeriesScreen> {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    _completed =
-        (prefs.getStringList(widget.storageKey) ?? const []).toSet();
+    _completed = (prefs.getStringList(widget.storageKey) ?? const []).toSet();
     if (mounted) setState(() => _loading = false);
   }
 
@@ -180,7 +179,10 @@ class _LessonSeriesScreenState extends State<LessonSeriesScreen> {
           const SizedBox(height: 6),
           Text(
             '${_completed.length} / ${widget.entries.length} abgeschlossen',
-            style: TextStyle(color: widget.accent, fontSize: 11, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                color: widget.accent,
+                fontSize: 11,
+                fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -311,13 +313,13 @@ class _EntryDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Center(
-              child:
-                  Text(entry.symbol, style: const TextStyle(fontSize: 72)),
+              child: Text(entry.symbol, style: const TextStyle(fontSize: 72)),
             ),
             const SizedBox(height: 8),
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),

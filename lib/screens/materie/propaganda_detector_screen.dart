@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../../services/ai_service.dart';
 
 class PropagandaDetectorScreen extends StatefulWidget {
   const PropagandaDetectorScreen({super.key});
 
   @override
-  State<PropagandaDetectorScreen> createState() => _PropagandaDetectorScreenState();
+  State<PropagandaDetectorScreen> createState() =>
+      _PropagandaDetectorScreenState();
 }
 
-class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> with SingleTickerProviderStateMixin {
+class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen>
+    with SingleTickerProviderStateMixin {
   final _textController = TextEditingController();
   Map<String, dynamic>? _analysis;
   bool _isAnalyzing = false;
@@ -24,7 +26,7 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     // 🔄 Cache-Clear: Lösche alte Analysen beim Screen-Start
     _analysis = null;
   }
@@ -43,18 +45,18 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
       );
       return;
     }
-    
+
     setState(() => _isAnalyzing = true);
-    
+
     try {
       // 🤖 ECHTE KI-ANALYSE mit Cloudflare AI Workers
       final result = await AIService.analyzePropaganda(_textController.text);
-      
+
       setState(() {
         _analysis = result;
         _isAnalyzing = false;
       });
-      
+
       if (mounted && result['isLocalFallback'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -113,13 +115,15 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
                           SizedBox(height: 4),
                           Text(
                             '🤖 KI-gestützte Alternative Perspektive',
-                            style: TextStyle(color: Colors.white60, fontSize: 11),
+                            style:
+                                TextStyle(color: Colors.white60, fontSize: 11),
                           ),
                         ],
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE91E63),
                         borderRadius: BorderRadius.circular(6),
@@ -142,7 +146,7 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
                   ],
                 ),
               ),
-              
+
               // Content
               Expanded(
                 child: SingleChildScrollView(
@@ -161,7 +165,8 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                            Icon(Icons.info_outline,
+                                color: Colors.blue, size: 20),
                             SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -175,9 +180,9 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Input Field
                       Container(
                         decoration: BoxDecoration(
@@ -192,16 +197,17 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
                           maxLines: 10,
                           style: const TextStyle(color: Colors.white),
                           decoration: const InputDecoration(
-                            hintText: 'Nachrichtenartikel, Social Media Post oder politische Rede hier einfügen...\n\nBeispiel:\n"Die Regierung hat heute verkündet, dass die neuen Maßnahmen alternativlos sind..."',
+                            hintText:
+                                'Nachrichtenartikel, Social Media Post oder politische Rede hier einfügen...\n\nBeispiel:\n"Die Regierung hat heute verkündet, dass die neuen Maßnahmen alternativlos sind..."',
                             hintStyle: TextStyle(color: Colors.white38),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.all(20),
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Analyze Button
                       SizedBox(
                         width: double.infinity,
@@ -252,10 +258,10 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
                                 ),
                         ),
                       ),
-                      
+
                       if (_analysis != null) ...[
                         const SizedBox(height: 32),
-                        
+
                         // Results werden angezeigt
                         _buildResults(),
                       ],
@@ -272,11 +278,11 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
 
   Widget _buildResults() {
     if (_analysis == null) return const SizedBox.shrink();
-    
+
     final biasScore = (_analysis!['biasScore'] as num?)?.toDouble() ?? 0.0;
     final verdict = _analysis!['verdict'] as String? ?? 'Unbekannt';
     final isLocalFallback = _analysis!['isLocalFallback'] == true;
-    
+
     Color verdictColor;
     if (biasScore < 25) {
       verdictColor = const Color(0xFF4CAF50);
@@ -287,7 +293,7 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
     } else {
       verdictColor = const Color(0xFFF44336);
     }
-    
+
     return Column(
       children: [
         // Main Score Card
@@ -299,7 +305,8 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    verdictColor.withValues(alpha: 0.3 + (_pulseController.value * 0.1)),
+                    verdictColor.withValues(
+                        alpha: 0.3 + (_pulseController.value * 0.1)),
                     verdictColor.withValues(alpha: 0.1),
                   ],
                 ),
@@ -318,7 +325,8 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
                   if (isLocalFallback)
                     Container(
                       margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.orange,
                         borderRadius: BorderRadius.circular(8),
@@ -350,7 +358,8 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       color: verdictColor,
                       borderRadius: BorderRadius.circular(20),
@@ -371,20 +380,22 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
             );
           },
         ),
-        
+
         // Weitere Details (wenn vorhanden)
         if (_analysis!['techniques'] != null) ...[
           const SizedBox(height: 24),
           _buildSection(
             '🎭 ERKANNTE TECHNIKEN',
-            (_analysis!['techniques'] as Map).entries
+            (_analysis!['techniques'] as Map)
+                .entries
                 .map((e) => '${e.key}: ${(e.value as num).toStringAsFixed(0)}%')
                 .toList(),
             Colors.blue,
           ),
         ],
-        
-        if (_analysis!['warnings'] != null && (_analysis!['warnings'] as List).isNotEmpty) ...[
+
+        if (_analysis!['warnings'] != null &&
+            (_analysis!['warnings'] as List).isNotEmpty) ...[
           const SizedBox(height: 16),
           _buildSection(
             '⚠️ WARNUNGEN',
@@ -411,38 +422,38 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
         ),
         const SizedBox(height: 12),
         ...items.map((item) => Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: color.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(2),
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.3),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  item,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      item,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        )),
+            )),
       ],
     );
   }

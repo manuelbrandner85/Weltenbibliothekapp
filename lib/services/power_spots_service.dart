@@ -71,15 +71,19 @@ class PowerSpotsService {
     String? energyType,
   }) async {
     try {
-      final res = await _s.from('user_power_spots').insert({
-        'user_id': userId,
-        'username': username,
-        'name': name,
-        'latitude': lat,
-        'longitude': lng,
-        'description': description,
-        'energy_type': energyType,
-      }).select().single();
+      final res = await _s
+          .from('user_power_spots')
+          .insert({
+            'user_id': userId,
+            'username': username,
+            'name': name,
+            'latitude': lat,
+            'longitude': lng,
+            'description': description,
+            'energy_type': energyType,
+          })
+          .select()
+          .single();
       return PowerSpot.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ PowerSpots add: $e');

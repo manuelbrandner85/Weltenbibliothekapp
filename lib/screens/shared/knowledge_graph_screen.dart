@@ -143,9 +143,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
       final nodeRes = await nodeQuery.timeout(const Duration(seconds: 10));
 
       // Kanten laden (nur zwischen geladenen Knoten)
-      final nodeIds = (nodeRes as List)
-          .map((r) => r['id'] as String)
-          .toList();
+      final nodeIds = (nodeRes as List).map((r) => r['id'] as String).toList();
 
       List edgeRes = [];
       if (nodeIds.isNotEmpty) {
@@ -187,9 +185,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
           .timeout(const Duration(seconds: 8));
       if (!mounted) return;
       setState(() {
-        _bookmarkedIds = {
-          for (final r in res as List) r['node_id'] as String
-        };
+        _bookmarkedIds = {for (final r in res as List) r['node_id'] as String};
       });
     } catch (_) {
       // Bookmarks sind optional — kein Fehler anzeigen
@@ -242,8 +238,8 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     return data.map((r) {
       Color color;
       try {
-        final hex = (r['color_hex'] as String? ?? '#4A90D9')
-            .replaceAll('#', '');
+        final hex =
+            (r['color_hex'] as String? ?? '#4A90D9').replaceAll('#', '');
         color = Color(int.parse('FF$hex', radix: 16));
       } catch (_) {
         color = _accent;
@@ -411,8 +407,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
         decoration: InputDecoration(
           hintText: 'Wissensgraph durchsuchen…',
           hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-          prefixIcon:
-              Icon(Icons.search, color: _accent.withValues(alpha: 0.7)),
+          prefixIcon: Icon(Icons.search, color: _accent.withValues(alpha: 0.7)),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, color: Colors.white54),
@@ -470,8 +465,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
                     ? _accent.withValues(alpha: 0.6)
                     : Colors.white.withValues(alpha: 0.12),
               ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               visualDensity: VisualDensity.compact,
             ),
           );
@@ -480,8 +474,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     );
   }
 
-  Widget _buildGraphView(
-      List<KnowledgeNode> nodes, List<KnowledgeEdge> edges) {
+  Widget _buildGraphView(List<KnowledgeNode> nodes, List<KnowledgeEdge> edges) {
     return KnowledgeGraphWidget(
       nodes: nodes,
       edges: edges,
@@ -653,8 +646,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
                   style: TextStyle(color: Colors.white54)),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(
-                  backgroundColor: _accent),
+              style: FilledButton.styleFrom(backgroundColor: _accent),
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text('Erstellen'),
             ),
@@ -672,9 +664,8 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
       await _supabase.from('knowledge_graph_nodes').insert({
         'world': widget.world,
         'label': labelCtrl.text.trim(),
-        'description': descCtrl.text.trim().isEmpty
-            ? null
-            : descCtrl.text.trim(),
+        'description':
+            descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
         'node_type': selectedType,
         'icon_emoji': _defaultEmoji(selectedType),
         'color_hex': _hexColor(_accent),
@@ -774,8 +765,7 @@ class _NodeListTile extends StatelessWidget {
       ),
       child: ListTile(
         onTap: onTap,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         leading: Container(
           width: 44,
           height: 44,
@@ -818,8 +808,7 @@ class _NodeListTile extends StatelessWidget {
           children: [
             // Typ-Badge
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
                 color: node.color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
@@ -836,9 +825,7 @@ class _NodeListTile extends StatelessWidget {
             const SizedBox(width: 4),
             IconButton(
               icon: Icon(
-                node.isBookmarked
-                    ? Icons.bookmark
-                    : Icons.bookmark_border,
+                node.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                 color: node.isBookmarked
                     ? Colors.amber
                     : Colors.white.withValues(alpha: 0.3),

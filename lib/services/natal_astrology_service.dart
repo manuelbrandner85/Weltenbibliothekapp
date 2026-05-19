@@ -28,8 +28,8 @@ class NatalChartResult {
 }
 
 class PlanetPosition {
-  final int sign;       // 0..11
-  final double degree;  // 0..30 innerhalb des Zeichens
+  final int sign; // 0..11
+  final double degree; // 0..30 innerhalb des Zeichens
   final double longitude; // 0..360 absolut
   const PlanetPosition(this.sign, this.degree, this.longitude);
 
@@ -117,10 +117,8 @@ class NatalAstrology {
     final t = (jd - 2451545.0) / 36525.0;
     final sunLon = _normalizeDeg(_sunLongitude(t));
     // Mond-Knoten Ω (mittlerer aufsteigender Knoten, Meeus 47)
-    final omegaNode = _normalizeDeg(125.04452 -
-        1934.136261 * t +
-        0.0020708 * t * t +
-        t * t * t / 450000.0);
+    final omegaNode = _normalizeDeg(
+        125.04452 - 1934.136261 * t + 0.0020708 * t * t + t * t * t / 450000.0);
     return {
       'sun': sunLon,
       'moon': _normalizeDeg(_moonLongitude(t)),
@@ -163,8 +161,8 @@ class NatalAstrology {
   static double _julianDay(DateTime utc) {
     int y = utc.year;
     int m = utc.month;
-    final d = utc.day +
-        (utc.hour + utc.minute / 60.0 + utc.second / 3600.0) / 24.0;
+    final d =
+        utc.day + (utc.hour + utc.minute / 60.0 + utc.second / 3600.0) / 24.0;
     if (m <= 2) {
       y -= 1;
       m += 12;
@@ -355,8 +353,7 @@ class NatalAstrology {
     }
     // wahre Anomalie
     final v = 2 *
-        math.atan2(
-            math.sqrt(1 + o.e) * math.sin(e / 2),
+        math.atan2(math.sqrt(1 + o.e) * math.sin(e / 2),
             math.sqrt(1 - o.e) * math.cos(e / 2));
     return _normalizeDeg(_deg(v) + o.pi);
   }
@@ -403,8 +400,8 @@ class NatalAstrology {
   static double _mcLongitude(double lst) {
     const eps = 23.4393;
     final lstRad = _rad(lst);
-    final mc =
-        _deg(math.atan2(math.sin(lstRad), math.cos(lstRad) * math.cos(_rad(eps))));
+    final mc = _deg(
+        math.atan2(math.sin(lstRad), math.cos(lstRad) * math.cos(_rad(eps))));
     return mc < 0 ? mc + 360 : mc;
   }
 
@@ -483,11 +480,11 @@ class NatalAstrology {
     required NatalChartResult chartB,
   }) {
     const aspects = <(String name, double angle, double orb, int weight)>[
-      ('Konjunktion', 0, 8, 0),    // neutral / kontextabhaengig
-      ('Sextil', 60, 6, 6),         // harmonisch
-      ('Quadrat', 90, 7, -8),       // Spannung
-      ('Trigon', 120, 8, 10),       // harmonisch
-      ('Opposition', 180, 8, -6),   // Spannung
+      ('Konjunktion', 0, 8, 0), // neutral / kontextabhaengig
+      ('Sextil', 60, 6, 6), // harmonisch
+      ('Quadrat', 90, 7, -8), // Spannung
+      ('Trigon', 120, 8, 10), // harmonisch
+      ('Opposition', 180, 8, -6), // Spannung
     ];
 
     final hits = <Map<String, dynamic>>[];
@@ -516,9 +513,8 @@ class NatalAstrology {
       });
     });
 
-    final normScore = count > 0
-        ? (50 + (totalScore / count) * 5).clamp(0, 100).toInt()
-        : 50;
+    final normScore =
+        count > 0 ? (50 + (totalScore / count) * 5).clamp(0, 100).toInt() : 50;
 
     return {
       'aspects': hits,
@@ -563,7 +559,18 @@ const List<String> kZodiacSigns = [
 ];
 
 const List<String> kZodiacGlyphs = [
-  '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓',
+  '♈',
+  '♉',
+  '♊',
+  '♋',
+  '♌',
+  '♍',
+  '♎',
+  '♏',
+  '♐',
+  '♑',
+  '♒',
+  '♓',
 ];
 
 const List<String> kPlanetNames = [

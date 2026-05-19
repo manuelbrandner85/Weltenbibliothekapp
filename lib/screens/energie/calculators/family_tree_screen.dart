@@ -28,13 +28,13 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
 
   // Slots (Position im Baum)
   static final _slots = [
-    ('self',       'Ich',           '🧍', 2),
-    ('mother',     'Mutter',        '👩', 1),
-    ('father',     'Vater',         '👨', 1),
-    ('mgrandma',   'Großmutter (M)', '👵', 0),
-    ('mgrandpa',   'Großvater (M)', '👴', 0),
-    ('fgrandma',   'Großmutter (V)', '👵', 0),
-    ('fgrandpa',   'Großvater (V)', '👴', 0),
+    ('self', 'Ich', '🧍', 2),
+    ('mother', 'Mutter', '👩', 1),
+    ('father', 'Vater', '👨', 1),
+    ('mgrandma', 'Großmutter (M)', '👵', 0),
+    ('mgrandpa', 'Großvater (M)', '👴', 0),
+    ('fgrandma', 'Großmutter (V)', '👵', 0),
+    ('fgrandpa', 'Großvater (V)', '👴', 0),
   ];
 
   @override
@@ -49,8 +49,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     if (raw != null) {
       try {
         final map = jsonDecode(raw) as Map<String, dynamic>;
-        _members = map.map((k, v) => MapEntry(
-          k, _Member.fromJson(v as Map<String, dynamic>)));
+        _members = map.map(
+            (k, v) => MapEntry(k, _Member.fromJson(v as Map<String, dynamic>)));
       } catch (_) {}
     }
     if (mounted) setState(() => _loading = false);
@@ -72,7 +72,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) => _MemberEditSheet(
-        label: label, emoji: emoji, existing: existing, accent: _accent),
+          label: label, emoji: emoji, existing: existing, accent: _accent),
     );
     if (result != null) {
       setState(() => _members[key] = result);
@@ -102,7 +102,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         title: const Row(children: [
           Text('🌳', style: TextStyle(fontSize: 22)),
           SizedBox(width: 10),
-          Text('Stammbaum', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text('Stammbaum',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         ]),
         actions: [
           IconButton(
@@ -120,19 +121,25 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [_accent.withValues(alpha: 0.4), _surface]),
+                    gradient: LinearGradient(
+                        colors: [_accent.withValues(alpha: 0.4), _surface]),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Text(
                     'Trage 3 Generationen ein: dich, beide Eltern, alle 4 Großeltern. '
                     'Pro Person: Name, Lebensthema, Muster — Ahnenarbeit beginnt mit Erinnerung.',
-                    style: TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
+                    style: TextStyle(
+                        color: Colors.white, fontSize: 13, height: 1.5),
                   ),
                 ),
                 const SizedBox(height: 20),
                 // Großeltern-Reihe
                 const Text('GENERATION 3 · GROSSELTERN',
-                    style: TextStyle(color: _accent, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: _accent,
+                        fontSize: 10,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(children: [
                   Expanded(child: _slot('mgrandma', 'GM Mutter', '👵')),
@@ -146,7 +153,11 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                 const SizedBox(height: 18),
                 // Eltern-Reihe
                 const Text('GENERATION 2 · ELTERN',
-                    style: TextStyle(color: _accent, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: _accent,
+                        fontSize: 10,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(children: [
                   Expanded(child: _slot('mother', 'Mutter', '👩')),
@@ -156,7 +167,11 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                 const SizedBox(height: 18),
                 // Selbst
                 const Text('GENERATION 1 · ICH',
-                    style: TextStyle(color: _accent, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: _accent,
+                        fontSize: 10,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 _slot('self', 'Ich', '🧍'),
                 const SizedBox(height: 24),
@@ -170,7 +185,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                     '🔒 Daten bleiben rein lokal auf diesem Gerät (SharedPreferences). '
                     'Nichts wird an Server übertragen. Mit JSON-Export kannst du den Baum '
                     'sichern oder weitergeben.',
-                    style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.5),
+                    style: TextStyle(
+                        color: Colors.white60, fontSize: 11, height: 1.5),
                   ),
                 ),
               ],
@@ -214,7 +230,10 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
               const SizedBox(height: 2),
               Text(m.theme,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: _accent.withValues(alpha: 0.8), fontSize: 9, fontStyle: FontStyle.italic),
+                  style: TextStyle(
+                      color: _accent.withValues(alpha: 0.8),
+                      fontSize: 9,
+                      fontStyle: FontStyle.italic),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis),
             ],
@@ -278,7 +297,8 @@ class _MemberEditSheetState extends State<_MemberEditSheet> {
   void initState() {
     super.initState();
     _name = TextEditingController(text: widget.existing?.name ?? '');
-    _profession = TextEditingController(text: widget.existing?.profession ?? '');
+    _profession =
+        TextEditingController(text: widget.existing?.profession ?? '');
     _theme = TextEditingController(text: widget.existing?.theme ?? '');
     _notes = TextEditingController(text: widget.existing?.notes ?? '');
   }
@@ -319,7 +339,10 @@ class _MemberEditSheetState extends State<_MemberEditSheet> {
               Text(widget.emoji, style: const TextStyle(fontSize: 32)),
               const SizedBox(width: 12),
               Text(widget.label,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
             ]),
             const SizedBox(height: 16),
             _field('Name', _name),
@@ -347,7 +370,8 @@ class _MemberEditSheetState extends State<_MemberEditSheet> {
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                child: const Text('SPEICHERN', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('SPEICHERN',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 12),
@@ -361,7 +385,12 @@ class _MemberEditSheetState extends State<_MemberEditSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: widget.accent, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: TextStyle(
+                color: widget.accent,
+                fontSize: 11,
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         TextField(
           controller: ctrl,
@@ -369,12 +398,14 @@ class _MemberEditSheetState extends State<_MemberEditSheet> {
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             filled: true,
             fillColor: Colors.black.withValues(alpha: 0.4),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: widget.accent.withValues(alpha: 0.3)),
+              borderSide:
+                  BorderSide(color: widget.accent.withValues(alpha: 0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),

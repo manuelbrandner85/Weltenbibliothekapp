@@ -42,7 +42,8 @@ class ChatWordFilterService extends ChangeNotifier {
 
   void addCustomWords(Iterable<String> words) {
     final before = _customWords.length;
-    _customWords.addAll(words.map((w) => w.trim().toLowerCase()).where((w) => w.isNotEmpty));
+    _customWords.addAll(
+        words.map((w) => w.trim().toLowerCase()).where((w) => w.isNotEmpty));
     if (_customWords.length != before) {
       _rebuildRegex();
       notifyListeners();
@@ -79,7 +80,7 @@ class ChatWordFilterService extends ChangeNotifier {
     }
     // Wortgrenze am Anfang/Ende — bei Mehrwortphrasen (z.B. "heil hitler")
     // reicht das nicht perfekt, aber für einzelne Begriffe funktioniert's.
-    _regex = RegExp(r'(^|\W)(' + all.join('|') + r')(\W|$)',
-        caseSensitive: false);
+    _regex =
+        RegExp(r'(^|\W)(' + all.join('|') + r')(\W|$)', caseSensitive: false);
   }
 }

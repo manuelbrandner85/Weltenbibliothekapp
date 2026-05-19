@@ -31,14 +31,70 @@ const List<String> kHdBodies = [
 /// Wheel-Reihenfolge: startet bei 02°00′ Wassermann = 302° und geht
 /// 5.625° (= 1 Tor) im Zodiak voran. 64 Tore.
 const List<int> kGateWheel = [
-  41, 19, 13, 49, 30, 55, 37, 63,
-  22, 36, 25, 17, 21, 51, 42, 3,
-  27, 24, 2, 23, 8, 20, 16, 35,
-  45, 12, 15, 52, 39, 53, 62, 56,
-  31, 33, 7, 4, 29, 59, 40, 64,
-  47, 6, 46, 18, 48, 57, 32, 50,
-  28, 44, 1, 43, 14, 34, 9, 5,
-  26, 11, 10, 58, 38, 54, 61, 60,
+  41,
+  19,
+  13,
+  49,
+  30,
+  55,
+  37,
+  63,
+  22,
+  36,
+  25,
+  17,
+  21,
+  51,
+  42,
+  3,
+  27,
+  24,
+  2,
+  23,
+  8,
+  20,
+  16,
+  35,
+  45,
+  12,
+  15,
+  52,
+  39,
+  53,
+  62,
+  56,
+  31,
+  33,
+  7,
+  4,
+  29,
+  59,
+  40,
+  64,
+  47,
+  6,
+  46,
+  18,
+  48,
+  57,
+  32,
+  50,
+  28,
+  44,
+  1,
+  43,
+  14,
+  34,
+  9,
+  5,
+  26,
+  11,
+  10,
+  58,
+  38,
+  54,
+  61,
+  60,
 ];
 const double kWheelStart = 302.0; // ° ekliptik
 const double kGateSize = 360.0 / 64.0; // 5.625
@@ -75,42 +131,42 @@ const Map<int, String> kGateToCenter = {
 
 /// 36 Channels in Human Design (jedes Paar aus zwei Gates).
 const List<List<int>> kChannels = [
-  [1, 8],     // Inspiration
-  [2, 14],    // Beat
-  [3, 60],    // Mutation
-  [4, 63],    // Logic
-  [5, 15],    // Rhythm
-  [6, 59],    // Mating
-  [7, 31],    // The Alpha
-  [9, 52],    // Concentration
-  [10, 20],   // Awakening
-  [10, 34],   // Exploration
-  [10, 57],   // Perfected Form
-  [11, 56],   // Curiosity
-  [12, 22],   // Openness
-  [13, 33],   // The Prodigal
-  [16, 48],   // The Wavelength
-  [17, 62],   // Acceptance
-  [18, 58],   // Judgment
-  [19, 49],   // Synthesis
-  [20, 34],   // Charisma
-  [20, 57],   // The Brainwave
-  [21, 45],   // Money Line
-  [23, 43],   // Structuring
-  [24, 61],   // Awareness
-  [25, 51],   // Initiation
-  [26, 44],   // Surrender
-  [27, 50],   // Preservation
-  [28, 38],   // Struggle
-  [29, 46],   // Discovery
-  [30, 41],   // Recognition
-  [32, 54],   // Transformation
-  [34, 57],   // Power
-  [35, 36],   // Transitoriness
-  [37, 40],   // Community
-  [39, 55],   // Emoting
-  [42, 53],   // Maturation
-  [47, 64],   // Abstraction
+  [1, 8], // Inspiration
+  [2, 14], // Beat
+  [3, 60], // Mutation
+  [4, 63], // Logic
+  [5, 15], // Rhythm
+  [6, 59], // Mating
+  [7, 31], // The Alpha
+  [9, 52], // Concentration
+  [10, 20], // Awakening
+  [10, 34], // Exploration
+  [10, 57], // Perfected Form
+  [11, 56], // Curiosity
+  [12, 22], // Openness
+  [13, 33], // The Prodigal
+  [16, 48], // The Wavelength
+  [17, 62], // Acceptance
+  [18, 58], // Judgment
+  [19, 49], // Synthesis
+  [20, 34], // Charisma
+  [20, 57], // The Brainwave
+  [21, 45], // Money Line
+  [23, 43], // Structuring
+  [24, 61], // Awareness
+  [25, 51], // Initiation
+  [26, 44], // Surrender
+  [27, 50], // Preservation
+  [28, 38], // Struggle
+  [29, 46], // Discovery
+  [30, 41], // Recognition
+  [32, 54], // Transformation
+  [34, 57], // Power
+  [35, 36], // Transitoriness
+  [37, 40], // Community
+  [39, 55], // Emoting
+  [42, 53], // Maturation
+  [47, 64], // Abstraction
 ];
 
 /// 9 Zentren.
@@ -265,8 +321,7 @@ class HumanDesign {
       final lon = lons[body]!;
       final gate = longitudeToGate(lon);
       final line = longitudeToLine(lon);
-      out.add(HdActivation(
-          body: body, longitude: lon, gate: gate, line: line));
+      out.add(HdActivation(body: body, longitude: lon, gate: gate, line: line));
     }
     return out;
   }

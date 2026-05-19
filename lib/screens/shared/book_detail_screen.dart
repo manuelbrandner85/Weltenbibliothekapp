@@ -43,11 +43,14 @@ class BookDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 14),
                   child: Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.35),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE0C872).withValues(alpha: 0.6)),
+                        border: Border.all(
+                            color:
+                                const Color(0xFFE0C872).withValues(alpha: 0.6)),
                       ),
                       child: Text(
                         difficulty,
@@ -108,7 +111,8 @@ class BookDetailScreen extends StatelessWidget {
                               child: Text(
                                 year,
                                 style: TextStyle(
-                                  color: const Color(0xFFE0C872).withValues(alpha: 0.7),
+                                  color: const Color(0xFFE0C872)
+                                      .withValues(alpha: 0.7),
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -177,11 +181,15 @@ class BookDetailScreen extends StatelessWidget {
                     runSpacing: 8,
                     children: related.whereType<String>().map((m) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFC9A84C).withValues(alpha: 0.15),
+                          color:
+                              const Color(0xFFC9A84C).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFC9A84C).withValues(alpha: 0.5)),
+                          border: Border.all(
+                              color: const Color(0xFFC9A84C)
+                                  .withValues(alpha: 0.5)),
                         ),
                         child: Text(
                           m,
@@ -206,7 +214,8 @@ class BookDetailScreen extends StatelessWidget {
                         final uri = Uri.tryParse(externalUrl);
                         if (uri == null) return;
                         try {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          await launchUrl(uri,
+                              mode: LaunchMode.externalApplication);
                         } catch (_) {}
                       },
                       style: ElevatedButton.styleFrom(

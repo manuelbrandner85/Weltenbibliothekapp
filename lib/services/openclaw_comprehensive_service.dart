@@ -1,6 +1,6 @@
 /// OpenClaw Comprehensive Service v2.0
 /// ERWEITERT: Tiefes Scraping über mehrere Quellen mit Relevanz-Filtering
-/// 
+///
 /// Funktionen:
 /// - 🔍 Tiefes Multi-Source Scraping (nicht nur 1 URL)
 /// - 🎯 Relevanz-basiertes Filtering (Suchbegriff-Match)
@@ -22,7 +22,8 @@ import 'openclaw_media_scraper_service.dart';
 import 'cloudflare_api_service.dart';
 
 class OpenClawComprehensiveService {
-  static final OpenClawComprehensiveService _instance = OpenClawComprehensiveService._internal();
+  static final OpenClawComprehensiveService _instance =
+      OpenClawComprehensiveService._internal();
   factory OpenClawComprehensiveService() => _instance;
   OpenClawComprehensiveService._internal() {
     _init();
@@ -31,31 +32,34 @@ class OpenClawComprehensiveService {
   // Services
   late final OpenClawMediaScraperService _mediaScraper;
   late final CloudflareApiService _cloudflare;
-  
+
   // Status
   bool _isInitialized = false;
   bool _openClawAvailable = false;
-  
+
   // Cache
   final Map<String, dynamic> _cache = {};
-  
+
   void _init() {
     _mediaScraper = OpenClawMediaScraperService();
     _cloudflare = CloudflareApiService();
     _checkOpenClawStatus();
   }
-  
+
   Future<void> _checkOpenClawStatus() async {
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.openClawGatewayUrl}/health'),
-      ).timeout(const Duration(seconds: 3));
-      
+      final response = await http
+          .get(
+            Uri.parse('${ApiConfig.openClawGatewayUrl}/health'),
+          )
+          .timeout(const Duration(seconds: 3));
+
       _openClawAvailable = response.statusCode == 200;
       _isInitialized = true;
-      
+
       if (kDebugMode) {
-        debugPrint('🔧 [OpenClaw Comprehensive v2.0] Status: ${_openClawAvailable ? "✅ Online" : "❌ Offline"}');
+        debugPrint(
+            '🔧 [OpenClaw Comprehensive v2.0] Status: ${_openClawAvailable ? "✅ Online" : "❌ Offline"}');
       }
     } catch (e) {
       _openClawAvailable = false;
@@ -65,7 +69,7 @@ class OpenClawComprehensiveService {
       }
     }
   }
-  
+
   /// 🔍 HAUPT-RECHERCHE-FUNKTION V2.0
   /// Scrapt TIEF über MEHRERE Quellen und filtert nach Relevanz
   /// Liefert maximal 10 Ergebnisse pro Medientyp
@@ -81,7 +85,7 @@ class OpenClawComprehensiveService {
     if (!_isInitialized) {
       await _checkOpenClawStatus();
     }
-    
+
     // Cache-Check
     final cacheKey = 'research_$query${url ?? ''}';
     if (_cache.containsKey(cacheKey)) {
@@ -93,11 +97,12 @@ class OpenClawComprehensiveService {
         return cached['data'];
       }
     }
-    
+
     try {
       // Worker-Route (direkt, kein OpenClaw Gateway mehr)
       if (kDebugMode) {
-        debugPrint('🚀 [OpenClaw Comprehensive v2.0] Starting research via Worker...');
+        debugPrint(
+            '🚀 [OpenClaw Comprehensive v2.0] Starting research via Worker...');
         debugPrint('   → Query: $query');
       }
 
@@ -114,17 +119,16 @@ class OpenClawComprehensiveService {
       };
 
       return result;
-      
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ [OpenClaw Comprehensive v2.0] Error: $e');
       }
-      
+
       // Fallback zu Cloudflare
       return await _comprehensiveResearchViaCloudflare(query: query);
     }
   }
-  
+
   /// 🚀 RECHERCHE via Cloudflare Worker /recherche Endpoint
   /// Ersetzt den nicht erreichbaren OpenClaw Gateway (http://72.62.154.95:50074)
   Future<Map<String, dynamic>> _deepResearchViaWorker({
@@ -136,7 +140,8 @@ class OpenClawComprehensiveService {
       '${ApiConfig.workerUrl}/recherche?q=${Uri.encodeComponent(query)}',
     );
 
-    final response = await http.get(workerUrl).timeout(const Duration(seconds: 30));
+    final response =
+        await http.get(workerUrl).timeout(const Duration(seconds: 30));
 
     if (response.statusCode != 200) {
       throw Exception('Worker /recherche returned ${response.statusCode}');
@@ -186,7 +191,7 @@ class OpenClawComprehensiveService {
       'sources_scraped': sourcesMap.length,
     };
   }
-  
+
   /// 🎯 RELEVANZ-FILTERING und RANKING
   /// Filtert Medien nach Relevanz zum Suchbegriff und dedupliziert
   // ignore: unused_element
@@ -198,38 +203,40 @@ class OpenClawComprehensiveService {
     // Deduplizierung nach URL
     final seen = <String>{};
     final unique = <Map<String, dynamic>>[];
-    
+
     for (var item in items) {
       final url = item['url'] ?? item['src'] ?? '';
       if (url.isNotEmpty && !seen.contains(url)) {
         seen.add(url);
-        
+
         // Berechne Relevanz-Score
         item['relevance_score'] = _calculateRelevanceScore(item, query);
         unique.add(item);
       }
     }
-    
+
     // Sortiere nach Relevanz-Score (höchster zuerst)
     unique.sort((a, b) {
       final scoreA = a['relevance_score'] as double? ?? 0.0;
       final scoreB = b['relevance_score'] as double? ?? 0.0;
       return scoreB.compareTo(scoreA);
     });
-    
+
     // Limitiere auf maxResults
     return unique.take(maxResults).toList();
   }
-  
+
   /// 📊 RELEVANZ-SCORE BERECHNUNG
   /// Score basiert auf: Titel-Match, Alt-Text-Match, URL-Match, Quelle
   double _calculateRelevanceScore(Map<String, dynamic> item, String query) {
     double score = 0.0;
     final queryLower = query.toLowerCase();
     final queryWords = queryLower.split(' ');
-    
+
     // 1. Titel/Name-Match (40 Punkte)
-    final title = (item['title'] ?? item['alt'] ?? item['name'] ?? '').toString().toLowerCase();
+    final title = (item['title'] ?? item['alt'] ?? item['name'] ?? '')
+        .toString()
+        .toLowerCase();
     if (title.contains(queryLower)) {
       score += 40.0;
     } else {
@@ -240,9 +247,10 @@ class OpenClawComprehensiveService {
         }
       }
     }
-    
+
     // 2. Alt-Text / Description Match (30 Punkte)
-    final alt = (item['alt'] ?? item['description'] ?? '').toString().toLowerCase();
+    final alt =
+        (item['alt'] ?? item['description'] ?? '').toString().toLowerCase();
     if (alt.contains(queryLower)) {
       score += 30.0;
     } else {
@@ -252,7 +260,7 @@ class OpenClawComprehensiveService {
         }
       }
     }
-    
+
     // 3. URL-Match (20 Punkte)
     final url = (item['url'] ?? item['src'] ?? '').toString().toLowerCase();
     if (url.contains(queryLower)) {
@@ -264,25 +272,28 @@ class OpenClawComprehensiveService {
         }
       }
     }
-    
+
     // 4. Source Quality Bonus (10 Punkte)
     final sourceUrl = (item['source_url'] ?? '').toString().toLowerCase();
-    if (sourceUrl.contains('wikipedia') || sourceUrl.contains('gov') || sourceUrl.contains('edu')) {
+    if (sourceUrl.contains('wikipedia') ||
+        sourceUrl.contains('gov') ||
+        sourceUrl.contains('edu')) {
       score += 10.0;
     } else if (sourceUrl.contains('news') || sourceUrl.contains('article')) {
       score += 5.0;
     }
-    
+
     return score;
   }
-  
+
   /// Cloudflare-Fallback
   Future<Map<String, dynamic>> _comprehensiveResearchViaCloudflare({
     required String query,
   }) async {
     try {
-      final articles = await _cloudflare.search(query: query, realm: 'materie', limit: 20);
-      
+      final articles =
+          await _cloudflare.search(query: query, realm: 'materie', limit: 20);
+
       return {
         'source': 'cloudflare',
         'query': query,
@@ -301,7 +312,7 @@ class OpenClawComprehensiveService {
       if (kDebugMode) {
         debugPrint('❌ [Cloudflare Fallback] Error: $e');
       }
-      
+
       return {
         'source': 'error',
         'query': query,
@@ -319,13 +330,13 @@ class OpenClawComprehensiveService {
       };
     }
   }
-  
+
   /// 🖼️ Bild-spezifisches Scraping
   Future<List<Map<String, dynamic>>> scrapeImages(String url) async {
     if (!_openClawAvailable) {
       return [];
     }
-    
+
     try {
       final result = await _mediaScraper.scrapeImage(url: url);
       return (result['images'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -336,13 +347,13 @@ class OpenClawComprehensiveService {
       return [];
     }
   }
-  
+
   /// 🎥 Video-spezifisches Scraping
   Future<List<Map<String, dynamic>>> scrapeVideos(String url) async {
     if (!_openClawAvailable) {
       return [];
     }
-    
+
     try {
       final result = await _mediaScraper.scrapeVideo(url: url);
       return (result['videos'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -353,13 +364,13 @@ class OpenClawComprehensiveService {
       return [];
     }
   }
-  
+
   /// 🎵 Audio-spezifisches Scraping
   Future<List<Map<String, dynamic>>> scrapeAudio(String url) async {
     if (!_openClawAvailable) {
       return [];
     }
-    
+
     try {
       final result = await _mediaScraper.scrapeAudio(url: url);
       return (result['audio'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -370,13 +381,13 @@ class OpenClawComprehensiveService {
       return [];
     }
   }
-  
+
   /// 📄 PDF-spezifisches Scraping
   Future<List<Map<String, dynamic>>> scrapePdfs(String url) async {
     if (!_openClawAvailable) {
       return [];
     }
-    
+
     try {
       final result = await _mediaScraper.scrapePDF(url: url);
       return (result['pdfs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -387,7 +398,7 @@ class OpenClawComprehensiveService {
       return [];
     }
   }
-  
+
   /// Cache löschen
   void clearCache() {
     _cache.clear();
@@ -395,7 +406,7 @@ class OpenClawComprehensiveService {
       debugPrint('🗑️ [OpenClaw Comprehensive v2.0] Cache cleared');
     }
   }
-  
+
   /// Status abrufen
   Map<String, dynamic> getStatus() {
     return {

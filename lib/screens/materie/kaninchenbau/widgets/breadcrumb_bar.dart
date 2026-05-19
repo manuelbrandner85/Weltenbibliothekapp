@@ -104,9 +104,7 @@ class BreadcrumbBar extends StatelessWidget {
           if (onSave != null)
             IconButton(
               icon: Icon(
-                saved
-                    ? Icons.bookmark
-                    : Icons.bookmark_outline,
+                saved ? Icons.bookmark : Icons.bookmark_outline,
                 color: saved ? KbDesign.goldAccent : Colors.white70,
                 size: 22,
               ),

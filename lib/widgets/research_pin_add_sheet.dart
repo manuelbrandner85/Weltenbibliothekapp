@@ -24,7 +24,8 @@ class ResearchPinAddSheet {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _PinForm(lat: lat, lng: lng, world: world, accent: accent),
+      builder: (_) =>
+          _PinForm(lat: lat, lng: lng, world: world, accent: accent),
     );
     return added ?? false;
   }
@@ -129,7 +130,8 @@ class _PinFormState extends State<_PinForm> {
           const SizedBox(height: 4),
           Text(
             '${widget.lat.toStringAsFixed(4)}, ${widget.lng.toStringAsFixed(4)}',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55), fontSize: 11),
           ),
           const SizedBox(height: 16),
           TextField(

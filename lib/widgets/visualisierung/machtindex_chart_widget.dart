@@ -1,6 +1,6 @@
 /// **WELTENBIBLIOTHEK - STEP 2 VISUALISIERUNG**
 /// Machtindex-Chart Widget für Machtstrukturen-Analyse
-/// 
+///
 /// Zeigt Machtindex-Analysen mit Charts und Statistiken
 library;
 
@@ -15,7 +15,7 @@ class MachtIndexEintrag {
   final double index; // 0.0 - 100.0
   final double trend; // -100.0 bis +100.0 (Veränderung)
   final Map<String, double> subIndizes; // Detaillierte Indizes
-  
+
   const MachtIndexEintrag({
     required this.id,
     required this.name,
@@ -29,7 +29,7 @@ class MachtIndexEintrag {
 class MachtindexChartWidget extends StatefulWidget {
   final List<MachtIndexEintrag> eintraege;
   final String chartTyp; // bar, radar, ranking
-  
+
   const MachtindexChartWidget({
     super.key,
     required this.eintraege,
@@ -44,9 +44,9 @@ class _MachtindexChartWidgetState extends State<MachtindexChartWidget> {
   String _selectedChartTyp;
   String _filterKategorie = 'alle';
   MachtIndexEintrag? _selectedEintrag;
-  
+
   _MachtindexChartWidgetState() : _selectedChartTyp = 'bar';
-  
+
   @override
   void initState() {
     super.initState();
@@ -55,11 +55,12 @@ class _MachtindexChartWidgetState extends State<MachtindexChartWidget> {
 
   List<MachtIndexEintrag> get _filteredEintraege {
     var filtered = widget.eintraege;
-    
+
     if (_filterKategorie != 'alle') {
-      filtered = filtered.where((e) => e.kategorie == _filterKategorie).toList();
+      filtered =
+          filtered.where((e) => e.kategorie == _filterKategorie).toList();
     }
-    
+
     filtered.sort((a, b) => b.index.compareTo(a.index));
     return filtered.take(10).toList(); // Top 10
   }
@@ -100,7 +101,7 @@ class _MachtindexChartWidgetState extends State<MachtindexChartWidget> {
   Widget _buildControls() {
     final kategorien = ['alle', 'politik', 'wirtschaft', 'medien', 'militär'];
     final chartTypen = ['bar', 'radar', 'ranking'];
-    
+
     return Card(
       color: Colors.black.withValues(alpha: 0.5),
       child: Padding(
@@ -309,7 +310,8 @@ class _MachtindexChartWidgetState extends State<MachtindexChartWidget> {
           dataSets: _filteredEintraege.take(5).map((eintrag) {
             final subIndizes = eintrag.subIndizes.values.toList();
             return RadarDataSet(
-              fillColor: _getKategorieColor(eintrag.kategorie).withValues(alpha: 0.2),
+              fillColor:
+                  _getKategorieColor(eintrag.kategorie).withValues(alpha: 0.2),
               borderColor: _getKategorieColor(eintrag.kategorie),
               entryRadius: 3,
               dataEntries: subIndizes.map((value) {
@@ -326,7 +328,8 @@ class _MachtindexChartWidgetState extends State<MachtindexChartWidget> {
             return RadarChartTitle(text: keys[index]);
           },
           tickCount: 5,
-          ticksTextStyle: const TextStyle(color: Colors.transparent, fontSize: 10),
+          ticksTextStyle:
+              const TextStyle(color: Colors.transparent, fontSize: 10),
           tickBorderData: const BorderSide(color: Colors.white24),
           gridBorderData: const BorderSide(color: Colors.white24, width: 1),
         ),
@@ -340,7 +343,7 @@ class _MachtindexChartWidgetState extends State<MachtindexChartWidget> {
       itemBuilder: (context, index) {
         final eintrag = _filteredEintraege[index];
         final isSelected = _selectedEintrag?.id == eintrag.id;
-        
+
         return GestureDetector(
           onTap: () {
             setState(() {
@@ -356,7 +359,8 @@ class _MachtindexChartWidgetState extends State<MachtindexChartWidget> {
               border: Border.all(
                 color: isSelected
                     ? Colors.yellow
-                    : _getKategorieColor(eintrag.kategorie).withValues(alpha: 0.5),
+                    : _getKategorieColor(eintrag.kategorie)
+                        .withValues(alpha: 0.5),
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -457,7 +461,7 @@ class _MachtindexChartWidgetState extends State<MachtindexChartWidget> {
 
   Widget _buildEintragDetails() {
     final eintrag = _selectedEintrag!;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

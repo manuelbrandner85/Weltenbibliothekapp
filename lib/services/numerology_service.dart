@@ -1,4 +1,3 @@
-
 /// NUMEROLOGIE SERVICE
 /// Berechnet Lebenszahl, Namensschwingung, Seelenzahl, Ausdruckszahl
 class NumerologyService {
@@ -8,10 +7,36 @@ class NumerologyService {
 
   /// Buchstaben zu Zahlen Mapping (Pythagoräische Numerologie)
   static const Map<String, int> _letterValues = {
-    'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9,
-    'J': 1, 'K': 2, 'L': 3, 'M': 4, 'N': 5, 'O': 6, 'P': 7, 'Q': 8, 'R': 9,
-    'S': 1, 'T': 2, 'U': 3, 'V': 4, 'W': 5, 'X': 6, 'Y': 7, 'Z': 8,
-    'Ä': 1, 'Ö': 6, 'Ü': 3, 'ß': 1,
+    'A': 1,
+    'B': 2,
+    'C': 3,
+    'D': 4,
+    'E': 5,
+    'F': 6,
+    'G': 7,
+    'H': 8,
+    'I': 9,
+    'J': 1,
+    'K': 2,
+    'L': 3,
+    'M': 4,
+    'N': 5,
+    'O': 6,
+    'P': 7,
+    'Q': 8,
+    'R': 9,
+    'S': 1,
+    'T': 2,
+    'U': 3,
+    'V': 4,
+    'W': 5,
+    'X': 6,
+    'Y': 7,
+    'Z': 8,
+    'Ä': 1,
+    'Ö': 6,
+    'Ü': 3,
+    'ß': 1,
   };
 
   /// Vokale für Seelenzahl
@@ -23,7 +48,7 @@ class NumerologyService {
     final day = birthDate.day;
     final month = birthDate.month;
     final year = birthDate.year;
-    
+
     final sum = _sumDigits(day) + _sumDigits(month) + _sumDigits(year);
     return _reduceToSingleDigit(sum);
   }
@@ -32,12 +57,12 @@ class NumerologyService {
   int calculateNameVibration(String firstName, String lastName) {
     final fullName = (firstName + lastName).toUpperCase().replaceAll(' ', '');
     int sum = 0;
-    
+
     for (int i = 0; i < fullName.length; i++) {
       final char = fullName[i];
       sum += _letterValues[char] ?? 0;
     }
-    
+
     return _reduceToSingleDigit(sum);
   }
 
@@ -45,14 +70,14 @@ class NumerologyService {
   int calculateSoulNumber(String firstName, String lastName) {
     final fullName = (firstName + lastName).toUpperCase().replaceAll(' ', '');
     int sum = 0;
-    
+
     for (int i = 0; i < fullName.length; i++) {
       final char = fullName[i];
       if (_vowels.contains(char)) {
         sum += _letterValues[char] ?? 0;
       }
     }
-    
+
     return _reduceToSingleDigit(sum);
   }
 
@@ -60,14 +85,14 @@ class NumerologyService {
   int calculateExpressionNumber(String firstName, String lastName) {
     final fullName = (firstName + lastName).toUpperCase().replaceAll(' ', '');
     int sum = 0;
-    
+
     for (int i = 0; i < fullName.length; i++) {
       final char = fullName[i];
       if (!_vowels.contains(char) && _letterValues.containsKey(char)) {
         sum += _letterValues[char] ?? 0;
       }
     }
-    
+
     return _reduceToSingleDigit(sum);
   }
 
@@ -82,13 +107,13 @@ class NumerologyService {
     final nameVibration = calculateNameVibration(firstName, lastName);
     final soul = calculateSoulNumber(firstName, lastName);
     final expression = calculateExpressionNumber(firstName, lastName);
-    
+
     // Gewichtete Summe
-    final frequency = (lifePath * 0.4) + 
-                     (nameVibration * 0.3) + 
-                     (soul * 0.2) + 
-                     (expression * 0.1);
-    
+    final frequency = (lifePath * 0.4) +
+        (nameVibration * 0.3) +
+        (soul * 0.2) +
+        (expression * 0.1);
+
     return frequency;
   }
 
@@ -146,11 +171,11 @@ class NumerologyService {
   int _reduceToSingleDigit(int number) {
     // Meisterzahlen behalten
     if (number == 11 || number == 22 || number == 33) return number;
-    
+
     while (number > 9) {
       number = _sumDigits(number);
     }
-    
+
     return number;
   }
 
@@ -164,7 +189,7 @@ class NumerologyService {
     final soul = calculateSoulNumber(firstName, lastName);
     final expression = calculateExpressionNumber(firstName, lastName);
     final frequency = calculateCoreFrequency(birthDate, firstName, lastName);
-    
+
     return '''
 Du schwingst in der Frequenz ${frequency.toStringAsFixed(1)} - Eine einzigartige Mischung aus:
 

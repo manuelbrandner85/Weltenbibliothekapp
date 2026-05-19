@@ -5,7 +5,8 @@ import '../widgets/lesson_series_screen.dart';
 
 const List<LessonSeriesEntry> hermeticLaws7 = [
   LessonSeriesEntry(
-    code: 'h01', symbol: '🧠',
+    code: 'h01',
+    symbol: '🧠',
     title: 'Tag 1 — Prinzip des Mentalismus',
     subtitle: '"Das All ist Geist; das Universum ist mental."',
     meaning:
@@ -15,7 +16,8 @@ const List<LessonSeriesEntry> hermeticLaws7 = [
         'Welche wiederkehrende Gedanken-Schleife erschafft heute deine Realität?',
   ),
   LessonSeriesEntry(
-    code: 'h02', symbol: '🔁',
+    code: 'h02',
+    symbol: '🔁',
     title: 'Tag 2 — Prinzip der Entsprechung',
     subtitle: '"Wie oben, so unten; wie innen, so außen."',
     meaning:
@@ -25,7 +27,8 @@ const List<LessonSeriesEntry> hermeticLaws7 = [
         'Welche äußere Situation wiederholt sich? Was ist die innere Entsprechung?',
   ),
   LessonSeriesEntry(
-    code: 'h03', symbol: '〰️',
+    code: 'h03',
+    symbol: '〰️',
     title: 'Tag 3 — Prinzip der Schwingung',
     subtitle: '"Nichts ruht; alles bewegt sich, alles schwingt."',
     meaning:
@@ -35,7 +38,8 @@ const List<LessonSeriesEntry> hermeticLaws7 = [
         'In welcher Frequenz schwingst du gerade — und welche möchtest du heute anstimmen?',
   ),
   LessonSeriesEntry(
-    code: 'h04', symbol: '⚖️',
+    code: 'h04',
+    symbol: '⚖️',
     title: 'Tag 4 — Prinzip der Polarität',
     subtitle: '"Alles ist dual; alles hat zwei Pole."',
     meaning:
@@ -45,7 +49,8 @@ const List<LessonSeriesEntry> hermeticLaws7 = [
         'Welche "negative" Emotion könntest du heute durch Verschiebung auf der Skala wandeln?',
   ),
   LessonSeriesEntry(
-    code: 'h05', symbol: '🌊',
+    code: 'h05',
+    symbol: '🌊',
     title: 'Tag 5 — Prinzip des Rhythmus',
     subtitle: '"Alles fließt aus und ein; alles hat seine Gezeiten."',
     meaning:
@@ -55,7 +60,8 @@ const List<LessonSeriesEntry> hermeticLaws7 = [
         'Bist du gerade in einer Aufschwung- oder Rückzugs-Phase? Was braucht sie?',
   ),
   LessonSeriesEntry(
-    code: 'h06', symbol: '🎯',
+    code: 'h06',
+    symbol: '🎯',
     title: 'Tag 6 — Prinzip von Ursache und Wirkung',
     subtitle: '"Jede Ursache hat ihre Wirkung; jede Wirkung ihre Ursache."',
     meaning:
@@ -65,9 +71,11 @@ const List<LessonSeriesEntry> hermeticLaws7 = [
         'Welche heutige "Wirkung" in deinem Leben kannst du auf eine konkrete Ursache zurückführen?',
   ),
   LessonSeriesEntry(
-    code: 'h07', symbol: '☯️',
+    code: 'h07',
+    symbol: '☯️',
     title: 'Tag 7 — Prinzip des Geschlechts',
-    subtitle: '"Geschlecht ist in allem; alles hat männliche und weibliche Prinzipien."',
+    subtitle:
+        '"Geschlecht ist in allem; alles hat männliche und weibliche Prinzipien."',
     meaning:
         'Nicht biologisch gemeint — sondern aktiv/empfangend, projektiv/empfangend. '
         'Schöpfung braucht beides: Impuls (Vater) und Aufnahme (Mutter).',

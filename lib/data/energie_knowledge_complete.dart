@@ -8,11 +8,11 @@ import '../models/knowledge_extended_models.dart';
 
 final List<KnowledgeEntry> energieKnowledgeComplete = [
   // EINTRÄGE 6-50 (45 weitere)
-  
+
   // ==========================================
   // MEDITATION (10 weitere) - ene_006 bis ene_015
   // ==========================================
-  
+
   KnowledgeEntry(
     id: 'ene_006',
     world: 'energie',
@@ -72,7 +72,8 @@ Langsames Gehen zwischen Zazen-Sitzungen
     id: 'ene_007',
     world: 'energie',
     title: 'Metta Bhavana - Liebende-Güte Meditation',
-    description: 'Kultiviere bedingungslose Liebe für dich selbst und alle Wesen',
+    description:
+        'Kultiviere bedingungslose Liebe für dich selbst und alle Wesen',
     fullContent: '''# Metta Bhavana - Die Meditation der Liebe
 
 ## Was ist Metta?
@@ -283,7 +284,8 @@ Man kann TM nur von zertifizierten Lehrern lernen (kontrovers - hohe Kosten).
     world: 'energie',
     title: 'Body Scan Meditation - Progressive Entspannung',
     description: 'Systematisches Durchgehen des Körpers von Kopf bis Fuß',
-    fullContent: 'Body Scan aus MBSR (Jon Kabat-Zinn). Beginne bei Kopf oder Füßen, wandere langsam durch jeden Körperteil. Beobachte Empfindungen ohne Bewertung. Perfekt für: Schlaf, Stressabbau, Körperbewusstsein. Dauer: 20-45 Minuten. Wissenschaft: Aktiviert Parasympathikus (Entspannung), reduziert chronische Schmerzen.',
+    fullContent:
+        'Body Scan aus MBSR (Jon Kabat-Zinn). Beginne bei Kopf oder Füßen, wandere langsam durch jeden Körperteil. Beobachte Empfindungen ohne Bewertung. Perfekt für: Schlaf, Stressabbau, Körperbewusstsein. Dauer: 20-45 Minuten. Wissenschaft: Aktiviert Parasympathikus (Entspannung), reduziert chronische Schmerzen.',
     category: 'meditation',
     type: 'practice',
     tags: ['Body Scan', 'MBSR', 'Entspannung'],
@@ -296,7 +298,8 @@ Man kann TM nur von zertifizierten Lehrern lernen (kontrovers - hohe Kosten).
     world: 'energie',
     title: 'Mantra Meditation - OM & Sanskrit Silben',
     description: 'Kraftvolle Klang-Vibrationen für Gehirn und Körper',
-    fullContent: 'OM (AUM): Ur-Klang des Universums. A (Erschaffung), U (Erhaltung), M (Zerstörung). Weitere Mantras: So Ham (Ich bin das), Gayatri Mantra (Schutz), Om Mani Padme Hum (Mitgefühl). Wissenschaft: Vagus-Nerv-Stimulation, Gehirnwellen-Kohärenz. 108 Wiederholungen traditionell (Mala-Kette). Wirkung: Beruhigung, Fokus, spirituelle Öffnung.',
+    fullContent:
+        'OM (AUM): Ur-Klang des Universums. A (Erschaffung), U (Erhaltung), M (Zerstörung). Weitere Mantras: So Ham (Ich bin das), Gayatri Mantra (Schutz), Om Mani Padme Hum (Mitgefühl). Wissenschaft: Vagus-Nerv-Stimulation, Gehirnwellen-Kohärenz. 108 Wiederholungen traditionell (Mala-Kette). Wirkung: Beruhigung, Fokus, spirituelle Öffnung.',
     category: 'meditation',
     type: 'practice',
     tags: ['Mantra', 'OM', 'Sanskrit', 'Vibration'],
@@ -309,7 +312,8 @@ Man kann TM nur von zertifizierten Lehrern lernen (kontrovers - hohe Kosten).
     world: 'energie',
     title: 'Walking Meditation - Achtsamkeit in Bewegung',
     description: 'Zen-Geh-Meditation und Mindful Walking',
-    fullContent: 'Langsames, bewusstes Gehen (1 Schritt pro Atemzug). Fühle jeden Fuß: Anheben, Bewegen, Platzieren. Zen: Kinhin (zwischen Zazen-Sitzungen). Thich Nhat Hanh: "Gehe als ob du den Boden küsst". Perfekt für Unruhige, die nicht stillsitzen können. Variante: Labyrinth-Gehen (Chartres-Labyrinth). Vorteile: Balance, Erdung, Integration von Meditation in Alltag.',
+    fullContent:
+        'Langsames, bewusstes Gehen (1 Schritt pro Atemzug). Fühle jeden Fuß: Anheben, Bewegen, Platzieren. Zen: Kinhin (zwischen Zazen-Sitzungen). Thich Nhat Hanh: "Gehe als ob du den Boden küsst". Perfekt für Unruhige, die nicht stillsitzen können. Variante: Labyrinth-Gehen (Chartres-Labyrinth). Vorteile: Balance, Erdung, Integration von Meditation in Alltag.',
     category: 'meditation',
     type: 'practice',
     tags: ['Walking Meditation', 'Kinhin', 'Thich Nhat Hanh'],
@@ -321,8 +325,10 @@ Man kann TM nur von zertifizierten Lehrern lernen (kontrovers - hohe Kosten).
     id: 'ene_014',
     world: 'energie',
     title: 'Wim Hof Methode - Atmung, Kälte, Fokus',
-    description: 'Kontrolliere Immunsystem durch Hyperventilation und Kälteexposition',
-    fullContent: 'Wim Hof ("The Iceman"): 3 Säulen - 1) Atmung (30-40 tiefe Atemzüge + Atem anhalten), 2) Kälte-Exposition (Eiswasser, kalte Duschen), 3) Fokus/Meditation. Wissenschaft: Kann Immunsystem willentlich steuern (Radboud University Study). Vorteile: Energie, Immunsystem, mentale Stärke. 26 Weltrekorde (längste Eiswasser-Zeit, höchster Berg barfuß). Achtung: Nicht beim Fahren/Schwimmen praktizieren!',
+    description:
+        'Kontrolliere Immunsystem durch Hyperventilation und Kälteexposition',
+    fullContent:
+        'Wim Hof ("The Iceman"): 3 Säulen - 1) Atmung (30-40 tiefe Atemzüge + Atem anhalten), 2) Kälte-Exposition (Eiswasser, kalte Duschen), 3) Fokus/Meditation. Wissenschaft: Kann Immunsystem willentlich steuern (Radboud University Study). Vorteile: Energie, Immunsystem, mentale Stärke. 26 Weltrekorde (längste Eiswasser-Zeit, höchster Berg barfuß). Achtung: Nicht beim Fahren/Schwimmen praktizieren!',
     category: 'meditation',
     type: 'practice',
     tags: ['Wim Hof', 'Atmung', 'Kälte', 'Immunsystem'],
@@ -335,7 +341,8 @@ Man kann TM nur von zertifizierten Lehrern lernen (kontrovers - hohe Kosten).
     world: 'energie',
     title: 'Yoga Nidra - Der yogische Schlaf',
     description: '1 Stunde Yoga Nidra = 4 Stunden Schlaf - Tiefenentspannung',
-    fullContent: 'Yoga Nidra (Swami Satyananda Saraswati): Liege in Shavasana, folge geführter Meditation. Phasen: Sankalpa (Absicht), Body Scan, Atem-Bewusstsein, Gefühle, Visualisierungen. Zustand zwischen Wach und Schlaf (hypnagogic state). Wissenschaft: Theta-Wellen-Dominanz, Subconscious Reprogramming. Anwendung: Trauma-Heilung, Stress, Schlafprobleme, Manifestation. Apps: Insight Timer, Yoga Nidra Network.',
+    fullContent:
+        'Yoga Nidra (Swami Satyananda Saraswati): Liege in Shavasana, folge geführter Meditation. Phasen: Sankalpa (Absicht), Body Scan, Atem-Bewusstsein, Gefühle, Visualisierungen. Zustand zwischen Wach und Schlaf (hypnagogic state). Wissenschaft: Theta-Wellen-Dominanz, Subconscious Reprogramming. Anwendung: Trauma-Heilung, Stress, Schlafprobleme, Manifestation. Apps: Insight Timer, Yoga Nidra Network.',
     category: 'meditation',
     type: 'practice',
     tags: ['Yoga Nidra', 'Schlaf', 'Entspannung', 'Sankalpa'],
@@ -546,8 +553,10 @@ Zweiter Neumond im Monat
     id: 'ene_019',
     world: 'energie',
     title: 'Merkur Retrograde - Warum alles schief geht',
-    description: '3-4x pro Jahr läuft Merkur rückwärts - Kommunikation, Technologie, Reisen leiden',
-    fullContent: 'Merkur Retrograde: Planet scheint rückwärts zu laufen (optische Illusion). Effekte: Kommunikations-Fehler, Tech-Ausfälle, Reise-Verspätungen, Ex-Partner tauchen auf. Dauer: 3 Wochen, 3-4x pro Jahr. Regeln: NICHT unterschreiben, kaufen, reisen. DOCH: reflektieren, reparieren, re-connecten. Pre-Shadow + Post-Shadow: je 2 Wochen vor/nach. Tipp: Backup deine Daten!',
+    description:
+        '3-4x pro Jahr läuft Merkur rückwärts - Kommunikation, Technologie, Reisen leiden',
+    fullContent:
+        'Merkur Retrograde: Planet scheint rückwärts zu laufen (optische Illusion). Effekte: Kommunikations-Fehler, Tech-Ausfälle, Reise-Verspätungen, Ex-Partner tauchen auf. Dauer: 3 Wochen, 3-4x pro Jahr. Regeln: NICHT unterschreiben, kaufen, reisen. DOCH: reflektieren, reparieren, re-connecten. Pre-Shadow + Post-Shadow: je 2 Wochen vor/nach. Tipp: Backup deine Daten!',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Merkur Retrograde', 'Planeten', 'Chaos'],
@@ -560,7 +569,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Saturn Return - Die 29-Jahr-Krise',
     description: 'Lebens-Test mit 29 und 58 Jahren - Zeit für Wahrheit',
-    fullContent: 'Saturn Return: Saturn kehrt zu Geburts-Position zurück (alle 29 Jahre). Alter: 29-30 & 58-59. Effekte: Lebens-Überprüfung, Beziehungs-Ende, Karriere-Wechsel, Krisen. Ziel: Reifen, Verantwortung, Authentizität. Beispiele: Kurt Cobain starb mit 27 (vor Saturn Return), viele Stars haben mit 29 Breakthrough. Rat: Akzeptiere Veränderung, baue solides Fundament. Dauer: 2-3 Jahre.',
+    fullContent:
+        'Saturn Return: Saturn kehrt zu Geburts-Position zurück (alle 29 Jahre). Alter: 29-30 & 58-59. Effekte: Lebens-Überprüfung, Beziehungs-Ende, Karriere-Wechsel, Krisen. Ziel: Reifen, Verantwortung, Authentizität. Beispiele: Kurt Cobain starb mit 27 (vor Saturn Return), viele Stars haben mit 29 Breakthrough. Rat: Akzeptiere Veränderung, baue solides Fundament. Dauer: 2-3 Jahre.',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Saturn Return', '29 Jahre', 'Krise', 'Transformation'],
@@ -572,8 +582,10 @@ Zweiter Neumond im Monat
     id: 'ene_021',
     world: 'energie',
     title: 'Synastrie - Beziehungs-Astrologie',
-    description: 'Vergleiche 2 Horoskope - Kompatibilität, Karma, Seelenverträge',
-    fullContent: 'Synastrie: Overlay von 2 Geburtshoroskopen. Wichtige Aspekte: Venus-Mars (Anziehung), Mond-Mond (Emotion), Sonne-Mond (Balance), Saturn-persönliche Planeten (Karma). Composite Chart: Mittelpunkt beider Charts (Beziehungs-Identität). Nodes: Nordknoten-Verbindungen = Schicksal. 7. Haus: Partnerschaften. Herausfordernd: Quadrate, Oppositionen. Harmonisch: Trinen, Sextile. Soulmates haben oft schwierige Aspekte (Wachstum!).',
+    description:
+        'Vergleiche 2 Horoskope - Kompatibilität, Karma, Seelenverträge',
+    fullContent:
+        'Synastrie: Overlay von 2 Geburtshoroskopen. Wichtige Aspekte: Venus-Mars (Anziehung), Mond-Mond (Emotion), Sonne-Mond (Balance), Saturn-persönliche Planeten (Karma). Composite Chart: Mittelpunkt beider Charts (Beziehungs-Identität). Nodes: Nordknoten-Verbindungen = Schicksal. 7. Haus: Partnerschaften. Herausfordernd: Quadrate, Oppositionen. Harmonisch: Trinen, Sextile. Soulmates haben oft schwierige Aspekte (Wachstum!).',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Synastrie', 'Beziehungen', 'Kompatibilität', 'Soulmate'],
@@ -585,8 +597,10 @@ Zweiter Neumond im Monat
     id: 'ene_022',
     world: 'energie',
     title: 'Vedische Astrologie (Jyotish) - Das indische System',
-    description: 'Sidereal vs. Tropical - 23° Unterschied, karmische Astrologie',
-    fullContent: 'Vedische (Jyotish) Astrologie: Nutzt Sidereal Zodiac (echte Stern-Positionen), nicht Tropical (westlich, Jahreszeiten). Unterschied: 23° (Ayanamsa) - dein westliches Zeichen kann vedisch anders sein! 27 Nakshatras (Mond-Häuser). Dasha-System: Planeten-Perioden (z.B. Venus-Periode 20 Jahre). Karma-fokussiert: Past Lives, Dharma. Präziser für Timing (Ereignis-Vorhersage). Auch: Muhurta (Wahl-Astrologie für beste Tage).',
+    description:
+        'Sidereal vs. Tropical - 23° Unterschied, karmische Astrologie',
+    fullContent:
+        'Vedische (Jyotish) Astrologie: Nutzt Sidereal Zodiac (echte Stern-Positionen), nicht Tropical (westlich, Jahreszeiten). Unterschied: 23° (Ayanamsa) - dein westliches Zeichen kann vedisch anders sein! 27 Nakshatras (Mond-Häuser). Dasha-System: Planeten-Perioden (z.B. Venus-Periode 20 Jahre). Karma-fokussiert: Past Lives, Dharma. Präziser für Timing (Ereignis-Vorhersage). Auch: Muhurta (Wahl-Astrologie für beste Tage).',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Vedic Astrology', 'Jyotish', 'Sidereal', 'Karma'],
@@ -598,8 +612,10 @@ Zweiter Neumond im Monat
     id: 'ene_023',
     world: 'energie',
     title: 'Chiron - Der verwundete Heiler',
-    description: 'Astrologischer Komet zeigt deine tiefste Wunde und Heilungs-Gabe',
-    fullContent: 'Chiron: Komet zwischen Saturn & Uranus. Entdeckt 1977. Bedeutung: Deine tiefste Wunde (oft aus Kindheit), die zur Heilungs-Kraft wird. Chiron in Zeichen: wo du verletzt wurdest. Chiron in Häusern: wo du heilen musst. Chiron Return: 50-51 Jahre (Heilungs-Krise und Weisheit). Aspekte: Chiron-Sonne (Ego-Verletzung), Chiron-Venus (Liebes-Wunden). Ziel: Heile dich selbst, dann andere.',
+    description:
+        'Astrologischer Komet zeigt deine tiefste Wunde und Heilungs-Gabe',
+    fullContent:
+        'Chiron: Komet zwischen Saturn & Uranus. Entdeckt 1977. Bedeutung: Deine tiefste Wunde (oft aus Kindheit), die zur Heilungs-Kraft wird. Chiron in Zeichen: wo du verletzt wurdest. Chiron in Häusern: wo du heilen musst. Chiron Return: 50-51 Jahre (Heilungs-Krise und Weisheit). Aspekte: Chiron-Sonne (Ego-Verletzung), Chiron-Venus (Liebes-Wunden). Ziel: Heile dich selbst, dann andere.',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Chiron', 'Heilung', 'Wunden', 'Astrologie'],
@@ -612,7 +628,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Lilith (Black Moon) - Die dunkle Göttin',
     description: 'Unterdrückte weibliche Kraft, Sexualität, Rebellion',
-    fullContent: 'Black Moon Lilith: Nicht ein Planet, sondern Mond-Apogäum (weitester Punkt Mond-Orbit). Mythologie: Adams erste Frau (vor Eva), verließ Eden weil sie gleich sein wollte. Bedeutung: Unterdrückte Sexualität, Macht, Wut, Taboo. Lilith in Zeichen: wie du rebellierst. Lilith in Häusern: wo du Scham fühlst. Aspekte: Lilith-Venus (erotische Spannung), Lilith-Mars (rohe Sexualität). Schatten-Arbeit erforderlich.',
+    fullContent:
+        'Black Moon Lilith: Nicht ein Planet, sondern Mond-Apogäum (weitester Punkt Mond-Orbit). Mythologie: Adams erste Frau (vor Eva), verließ Eden weil sie gleich sein wollte. Bedeutung: Unterdrückte Sexualität, Macht, Wut, Taboo. Lilith in Zeichen: wie du rebellierst. Lilith in Häusern: wo du Scham fühlst. Aspekte: Lilith-Venus (erotische Spannung), Lilith-Mars (rohe Sexualität). Schatten-Arbeit erforderlich.',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Lilith', 'Black Moon', 'Schatten', 'Sexualität'],
@@ -626,7 +643,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Aszendent - Deine soziale Maske',
     description: 'Rising Sign - wie andere dich sehen, erste Impression',
-    fullContent: 'Aszendent (Rising Sign): Zeichen das im Osten aufging bei Geburt. Bestimmt 1. Haus und äußere Persönlichkeit. Sonne = Wer du bist, Mond = Was du fühlst, Aszendent = Wie du wirkst. Ändert sich alle 2 Stunden - braucht exakte Geburtszeit. Körper & Stil: Aszendent beeinflusst Aussehen. Lebensreise: Aszendent zu Descendant (7. Haus) ist Wachstums-Achse.',
+    fullContent:
+        'Aszendent (Rising Sign): Zeichen das im Osten aufging bei Geburt. Bestimmt 1. Haus und äußere Persönlichkeit. Sonne = Wer du bist, Mond = Was du fühlst, Aszendent = Wie du wirkst. Ändert sich alle 2 Stunden - braucht exakte Geburtszeit. Körper & Stil: Aszendent beeinflusst Aussehen. Lebensreise: Aszendent zu Descendant (7. Haus) ist Wachstums-Achse.',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Aszendent', 'Rising Sign', 'Persönlichkeit'],
@@ -639,7 +657,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Nordknoten & Südknoten - Schicksal & Karma',
     description: 'Lunar Nodes zeigen Past Life & Soul Purpose',
-    fullContent: 'Lunar Nodes: Punkte wo Mond-Orbit Ekliptik kreuzt. Südknoten = Past Life Skills (Komfortzone). Nordknoten = Soul Mission (Wachstums-Richtung). Immer gegenüber (180°). Nordknoten in Zeichen: Qualität zu entwickeln. Nordknoten in Haus: Lebens-Bereich für Wachstum. Nodal Return: alle 18 Jahre (Schicksals-Wendepunkt). Ziel: Vom Südknoten (sicher) zum Nordknoten (beängstigend aber erfüllend).',
+    fullContent:
+        'Lunar Nodes: Punkte wo Mond-Orbit Ekliptik kreuzt. Südknoten = Past Life Skills (Komfortzone). Nordknoten = Soul Mission (Wachstums-Richtung). Immer gegenüber (180°). Nordknoten in Zeichen: Qualität zu entwickeln. Nordknoten in Haus: Lebens-Bereich für Wachstum. Nodal Return: alle 18 Jahre (Schicksals-Wendepunkt). Ziel: Vom Südknoten (sicher) zum Nordknoten (beängstigend aber erfüllend).',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Nodes', 'Nordknoten', 'Karma', 'Past Life'],
@@ -652,7 +671,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Eklipsen - Schicksals-Portale',
     description: 'Solar & Lunar Eclipses bringen plötzliche Veränderungen',
-    fullContent: 'Eklipsen passieren wenn Sonne/Mond mit Lunar Nodes aligned. Solar Eclipse (Neumond): Neuanfänge, Doors öffnen. Lunar Eclipse (Vollmond): Enden, Wahrheit revealed. Effekt: 6 Monate vor/nach Eklipse. Eclipse Saison: 2x pro Jahr. Totale Eklipse = mächtigster. Nicht manifestieren während Eclipse! Lasse Schicksal wirken. Geburts-Eklipse: Wenn geboren während Eclipse, intensives Leben mit Schicksals-Ereignissen.',
+    fullContent:
+        'Eklipsen passieren wenn Sonne/Mond mit Lunar Nodes aligned. Solar Eclipse (Neumond): Neuanfänge, Doors öffnen. Lunar Eclipse (Vollmond): Enden, Wahrheit revealed. Effekt: 6 Monate vor/nach Eklipse. Eclipse Saison: 2x pro Jahr. Totale Eklipse = mächtigster. Nicht manifestieren während Eclipse! Lasse Schicksal wirken. Geburts-Eklipse: Wenn geboren während Eclipse, intensives Leben mit Schicksals-Ereignissen.',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Eclipse', 'Eklipse', 'Schicksal', 'Nodes'],
@@ -664,8 +684,10 @@ Zweiter Neumond im Monat
     id: 'ene_028',
     world: 'energie',
     title: 'Progressed Chart - Deine innere Evolution',
-    description: 'Secondary Progressions zeigen innere Entwicklung (1 Tag = 1 Jahr)',
-    fullContent: 'Progressed Chart: Tag-für-Tag Bewegung nach Geburt = Jahr-für-Jahr inneres Wachstum. Formel: 1 Tag nach Geburt = 1 Jahr Leben. Progressed Moon: ändert Zeichen alle 2.5 Jahre (emotionale Phasen). Progressed Sun: neues Zeichen alle 30 Jahre (Life Chapter). Aspekte: Wenn progressed Planet Geburts-Planet berührt = bedeutsame innere Veränderung. Komplex aber akkurat für Timing.',
+    description:
+        'Secondary Progressions zeigen innere Entwicklung (1 Tag = 1 Jahr)',
+    fullContent:
+        'Progressed Chart: Tag-für-Tag Bewegung nach Geburt = Jahr-für-Jahr inneres Wachstum. Formel: 1 Tag nach Geburt = 1 Jahr Leben. Progressed Moon: ändert Zeichen alle 2.5 Jahre (emotionale Phasen). Progressed Sun: neues Zeichen alle 30 Jahre (Life Chapter). Aspekte: Wenn progressed Planet Geburts-Planet berührt = bedeutsame innere Veränderung. Komplex aber akkurat für Timing.',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Progressions', 'Timing', 'Evolution'],
@@ -678,7 +700,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Transite - Aktuelle planetare Einflüsse',
     description: 'Wie Planeten heute deine Geburts-Planeten berühren',
-    fullContent: 'Transite: Aktuelle Planeten-Positionen in Relation zu Geburts-Chart. Wichtigste: Saturn (Tests, 2-3 Jahre), Pluto (Transformation, Jahre), Jupiter (Glück, 1 Jahr), Uranus (Schock, Jahre). Transit-Typen: Konjunktion (intensiv), Opposition (Spannung), Quadrat (Herausforderung), Trine (Flow). Orbs: 1-10° Genauigkeit. Apps: TimePassages, Astro-Seek. Vorbereitung: Kenne deine Transite im Voraus!',
+    fullContent:
+        'Transite: Aktuelle Planeten-Positionen in Relation zu Geburts-Chart. Wichtigste: Saturn (Tests, 2-3 Jahre), Pluto (Transformation, Jahre), Jupiter (Glück, 1 Jahr), Uranus (Schock, Jahre). Transit-Typen: Konjunktion (intensiv), Opposition (Spannung), Quadrat (Herausforderung), Trine (Flow). Orbs: 1-10° Genauigkeit. Apps: TimePassages, Astro-Seek. Vorbereitung: Kenne deine Transite im Voraus!',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Transite', 'Timing', 'Vorhersage'],
@@ -690,8 +713,10 @@ Zweiter Neumond im Monat
     id: 'ene_030',
     world: 'energie',
     title: 'Asteroids in Astrologie - Juno, Vesta, Pallas, Ceres',
-    description: 'Asteroiden zeigen spezifische Themen - Ehe, Sex, Weisheit, Mutter',
-    fullContent: 'Haupt-Asteroiden: Juno (Ehe, Commitment), Vesta (Sexualität, Hingabe, Sacred Fire), Pallas (Weisheit, Strategie, Kreativität), Ceres (Mütterlichkeit, Nahrung, Verlust). Weitere: Eros (erotische Liebe), Psyche (Seele, Mind), Amor (bedingungslose Liebe). Nutzen: Verfeinern Geburts-Chart. Beispiel: Juno in 7. Haus = Ehe zentral. Vesta in 8. Haus = tantrische Sexualität. Apps: Astro.com zeigt Asteroiden.',
+    description:
+        'Asteroiden zeigen spezifische Themen - Ehe, Sex, Weisheit, Mutter',
+    fullContent:
+        'Haupt-Asteroiden: Juno (Ehe, Commitment), Vesta (Sexualität, Hingabe, Sacred Fire), Pallas (Weisheit, Strategie, Kreativität), Ceres (Mütterlichkeit, Nahrung, Verlust). Weitere: Eros (erotische Liebe), Psyche (Seele, Mind), Amor (bedingungslose Liebe). Nutzen: Verfeinern Geburts-Chart. Beispiel: Juno in 7. Haus = Ehe zentral. Vesta in 8. Haus = tantrische Sexualität. Apps: Astro.com zeigt Asteroiden.',
     category: 'astrology',
     type: 'knowledge',
     tags: ['Asteroids', 'Juno', 'Vesta', 'Details'],
@@ -765,7 +790,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Qi Gong - Chinesische Energie-Kultivierung',
     description: 'Langsame Bewegungen + Atem + Visualisierung = Heilung',
-    fullContent: 'Qi Gong (Chi Kung): 5000 Jahre alt, Teil der TCM. Qi = Lebensenergie. Praxis: Langsame, fließende Bewegungen + Atmung + mentale Intention. Typen: Health Qigong (Heilung), Martial Qigong (Kampfkunst), Spiritual Qigong (Erleuchtung). Wissenschaft: Reduziert Blutdruck, stärkt Immunsystem, verlängert Leben. 8 Brokate: Beliebteste Routine. Praktiziere täglich 20-30 Min. Ziel: Öffne Meridiane, kultiviere Qi.',
+    fullContent:
+        'Qi Gong (Chi Kung): 5000 Jahre alt, Teil der TCM. Qi = Lebensenergie. Praxis: Langsame, fließende Bewegungen + Atmung + mentale Intention. Typen: Health Qigong (Heilung), Martial Qigong (Kampfkunst), Spiritual Qigong (Erleuchtung). Wissenschaft: Reduziert Blutdruck, stärkt Immunsystem, verlängert Leben. 8 Brokate: Beliebteste Routine. Praktiziere täglich 20-30 Min. Ziel: Öffne Meridiane, kultiviere Qi.',
     category: 'energy_work',
     type: 'practice',
     tags: ['Qi Gong', 'Chi', 'TCM', 'Energie'],
@@ -778,7 +804,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Tai Chi - Meditation in Bewegung',
     description: 'Martial Art als Gesundheits-Praxis - Yin & Yang Balance',
-    fullContent: 'Tai Chi Chuan: Innere Kampfkunst, heute mehr Gesundheits-Praxis. Prinzipien: Weich besiegt Hart, langsam ist schnell, Entspannung = Kraft. Formen: Yang (populärste), Chen (älteste), Wu, Sun. Vorteile: Balance (fällt Risiko reduziert), Flexibilität, Stress-Reduktion, Arthritis-Hilfe. Push Hands: Partner-Übung (Sensitivity Training). Taoismus: Tai Chi = Yin-Yang-Symbol in Bewegung. Empfohlen für Ältere.',
+    fullContent:
+        'Tai Chi Chuan: Innere Kampfkunst, heute mehr Gesundheits-Praxis. Prinzipien: Weich besiegt Hart, langsam ist schnell, Entspannung = Kraft. Formen: Yang (populärste), Chen (älteste), Wu, Sun. Vorteile: Balance (fällt Risiko reduziert), Flexibilität, Stress-Reduktion, Arthritis-Hilfe. Push Hands: Partner-Übung (Sensitivity Training). Taoismus: Tai Chi = Yin-Yang-Symbol in Bewegung. Empfohlen für Ältere.',
     category: 'energy_work',
     type: 'practice',
     tags: ['Tai Chi', 'Martial Arts', 'Balance', 'Taoismus'],
@@ -790,8 +817,10 @@ Zweiter Neumond im Monat
     id: 'ene_034',
     world: 'energie',
     title: 'EFT Tapping - Emotional Freedom Technique',
-    description: 'Klopfe Meridian-Punkte während du negative Glaubenssätze sprichst',
-    fullContent: 'EFT (Gary Craig, 1990s): Klopfe auf Akupressur-Punkte während du Problem aussprichst. 9 Punkte: Augenbraue, Augenseite, unter Auge, unter Nase, Kinn, Schlüsselbein, unter Arm, Kopf. Formel: "Obwohl ich [Problem] habe, akzeptiere ich mich tief und vollständig". Wissenschaft: Reduziert Cortisol, PTSD-Behandlung (Veteranen). Selbst anwendbar. Apps: The Tapping Solution. Kritik: "Zu simpel" - aber funktioniert!',
+    description:
+        'Klopfe Meridian-Punkte während du negative Glaubenssätze sprichst',
+    fullContent:
+        'EFT (Gary Craig, 1990s): Klopfe auf Akupressur-Punkte während du Problem aussprichst. 9 Punkte: Augenbraue, Augenseite, unter Auge, unter Nase, Kinn, Schlüsselbein, unter Arm, Kopf. Formel: "Obwohl ich [Problem] habe, akzeptiere ich mich tief und vollständig". Wissenschaft: Reduziert Cortisol, PTSD-Behandlung (Veteranen). Selbst anwendbar. Apps: The Tapping Solution. Kritik: "Zu simpel" - aber funktioniert!',
     category: 'energy_work',
     type: 'practice',
     tags: ['EFT', 'Tapping', 'Trauma', 'Meridiane'],
@@ -804,7 +833,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Grounding / Erdung - Verbindung zur Erde',
     description: 'Barfuß auf Erde - Elektronen-Transfer für Heilung',
-    fullContent: 'Grounding (Earthing): Direkter Haut-Kontakt mit Erde (barfuß, Gras, Wasser). Wissenschaft: Erde ist negativ geladen, Körper absorbiert Elektronen. Effekte: Reduziert Entzündung, verbessert Schlaf, reduziert Schmerz, normalisiert Cortisol. Studie: Clint Ober Dokumentation. Moderne: Grounding Matten (mit Erdungs-Stecker). Zeit: 20-30 Min täglich. Besonders wichtig in Städten (EMF-Exposition).',
+    fullContent:
+        'Grounding (Earthing): Direkter Haut-Kontakt mit Erde (barfuß, Gras, Wasser). Wissenschaft: Erde ist negativ geladen, Körper absorbiert Elektronen. Effekte: Reduziert Entzündung, verbessert Schlaf, reduziert Schmerz, normalisiert Cortisol. Studie: Clint Ober Dokumentation. Moderne: Grounding Matten (mit Erdungs-Stecker). Zeit: 20-30 Min täglich. Besonders wichtig in Städten (EMF-Exposition).',
     category: 'energy_work',
     type: 'practice',
     tags: ['Grounding', 'Earthing', 'Heilung', 'Natur'],
@@ -817,7 +847,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Kriya Yoga - Paramahansa Yogananda',
     description: 'Geheime Technik für schnelle spirituelle Evolution',
-    fullContent: 'Kriya Yoga: Alte Technik, wiederentdeckt von Lahiri Mahasaya (1861). Populär durch Paramahansa Yogananda (Autobiography of a Yogi). Technik: Prana durch Wirbelsäule zirkulieren (Chakra-Aktivierung). 1 Kriya = 1 Jahr spirituelle Evolution (traditionelle Behauptung). Geheim: Nur von Guru gelernt (Self-Realization Fellowship). Wissenschaft: Tiefe Meditation-Zustände. Steve Jobs las Autobiography jedes Jahr.',
+    fullContent:
+        'Kriya Yoga: Alte Technik, wiederentdeckt von Lahiri Mahasaya (1861). Populär durch Paramahansa Yogananda (Autobiography of a Yogi). Technik: Prana durch Wirbelsäule zirkulieren (Chakra-Aktivierung). 1 Kriya = 1 Jahr spirituelle Evolution (traditionelle Behauptung). Geheim: Nur von Guru gelernt (Self-Realization Fellowship). Wissenschaft: Tiefe Meditation-Zustände. Steve Jobs las Autobiography jedes Jahr.',
     category: 'energy_work',
     type: 'practice',
     tags: ['Kriya Yoga', 'Yogananda', 'Spiritualität', 'Chakras'],
@@ -830,7 +861,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Sound Healing - Frequenzen für Heilung',
     description: '432 Hz, 528 Hz, Solfeggio Frequenzen, Kristall-Schalen',
-    fullContent: 'Sound Healing: Frequenzen für Zell-Heilung. 432 Hz (Universe Frequency), 528 Hz (Love/DNA-Reparatur), 396 Hz (Befreiung von Angst), 639 Hz (Beziehungs-Harmonisierung), 741 Hz (Detox), 852 Hz (Drittes Auge). Instrumente: Tibetische Klangschalen, Kristall-Schalen, Gongs, Tuning Forks. Wissenschaft: Cymatics (Vibration formt Materie), Wasser-Kristalle (Masaru Emoto). Apps: Insight Timer, YouTube 432 Hz Musik.',
+    fullContent:
+        'Sound Healing: Frequenzen für Zell-Heilung. 432 Hz (Universe Frequency), 528 Hz (Love/DNA-Reparatur), 396 Hz (Befreiung von Angst), 639 Hz (Beziehungs-Harmonisierung), 741 Hz (Detox), 852 Hz (Drittes Auge). Instrumente: Tibetische Klangschalen, Kristall-Schalen, Gongs, Tuning Forks. Wissenschaft: Cymatics (Vibration formt Materie), Wasser-Kristalle (Masaru Emoto). Apps: Insight Timer, YouTube 432 Hz Musik.',
     category: 'energy_work',
     type: 'practice',
     tags: ['Sound Healing', 'Frequenzen', '432 Hz', '528 Hz'],
@@ -842,8 +874,10 @@ Zweiter Neumond im Monat
     id: 'ene_038',
     world: 'energie',
     title: 'Breathwork - Holotropic & Rebirthing',
-    description: 'Intensive Atem-Sessions für Trauma-Release und Bewusstseins-Erweiterung',
-    fullContent: 'Holotropic Breathwork (Stanislav Grof): Schnelles, tiefes Atmen 1-3 Stunden. Erreiche non-ordinary states (wie Psychedelika). Rebirthing (Leonard Orr): Circular Breathing (keine Pausen). Effekte: Trauma-Release, emotionale Katharsis, spirituelle Erfahrungen. Körper-Reaktionen: Tetany (Hand-Krämpfe), Tingling, intensive Emotionen. Sicherheit: Nur mit erfahrenen Facilitators. Ähnlich: Wim Hof (aber kürzer).',
+    description:
+        'Intensive Atem-Sessions für Trauma-Release und Bewusstseins-Erweiterung',
+    fullContent:
+        'Holotropic Breathwork (Stanislav Grof): Schnelles, tiefes Atmen 1-3 Stunden. Erreiche non-ordinary states (wie Psychedelika). Rebirthing (Leonard Orr): Circular Breathing (keine Pausen). Effekte: Trauma-Release, emotionale Katharsis, spirituelle Erfahrungen. Körper-Reaktionen: Tetany (Hand-Krämpfe), Tingling, intensive Emotionen. Sicherheit: Nur mit erfahrenen Facilitators. Ähnlich: Wim Hof (aber kürzer).',
     category: 'energy_work',
     type: 'practice',
     tags: ['Breathwork', 'Holotropic', 'Trauma', 'Bewusstsein'],
@@ -856,7 +890,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Acupuncture & Meridiane - TCM Energie-Bahnen',
     description: '12 Hauptmeridiane für Qi-Fluss, Akupunktur-Punkte',
-    fullContent: '12 Hauptmeridiane: Lunge, Dickdarm, Magen, Milz, Herz, Dünndarm, Blase, Niere, Perikard, Triple Warmer, Gallenblase, Leber. Qi fließt durch Meridiane (wie Flüsse). Blockaden = Krankheit. Akupunktur: Nadeln an spezifischen Punkten (über 300). Wissenschaft: Faszien-Netzwerk, Endorphin-Release. Akupressur: Selbst anwendbar (Drücken statt Nadeln). Wichtige Punkte: LI4 (Kopfschmerz), LV3 (Stress), ST36 (Immunsystem).',
+    fullContent:
+        '12 Hauptmeridiane: Lunge, Dickdarm, Magen, Milz, Herz, Dünndarm, Blase, Niere, Perikard, Triple Warmer, Gallenblase, Leber. Qi fließt durch Meridiane (wie Flüsse). Blockaden = Krankheit. Akupunktur: Nadeln an spezifischen Punkten (über 300). Wissenschaft: Faszien-Netzwerk, Endorphin-Release. Akupressur: Selbst anwendbar (Drücken statt Nadeln). Wichtige Punkte: LI4 (Kopfschmerz), LV3 (Stress), ST36 (Immunsystem).',
     category: 'energy_work',
     type: 'knowledge',
     tags: ['Akupunktur', 'Meridiane', 'TCM', 'Qi'],
@@ -869,7 +904,8 @@ Zweiter Neumond im Monat
     world: 'energie',
     title: 'Aura Reading - Dein Energie-Feld sehen',
     description: 'Lerne Auras wahrzunehmen - 7 Schichten, Farben, Bedeutungen',
-    fullContent: '7 Aura-Schichten: 1) Ätherisch (physisch), 2) Emotional, 3) Mental, 4) Astral (Herzbrücke), 5) Ätherische Vorlage, 6) Celestial, 7) Kausale Schablone (höchste). Farben: Rot (Leidenschaft), Orange (Kreativität), Gelb (Intellekt), Grün (Heilung), Blau (Kommunikation), Indigo (Intuition), Violett (Spiritualität). Training: Soft-Fokus auf Person vor weißem Hintergrund, sieh Licht-Umriss. Kirlian-Fotografie: Macht Aura sichtbar.',
+    fullContent:
+        '7 Aura-Schichten: 1) Ätherisch (physisch), 2) Emotional, 3) Mental, 4) Astral (Herzbrücke), 5) Ätherische Vorlage, 6) Celestial, 7) Kausale Schablone (höchste). Farben: Rot (Leidenschaft), Orange (Kreativität), Gelb (Intellekt), Grün (Heilung), Blau (Kommunikation), Indigo (Intuition), Violett (Spiritualität). Training: Soft-Fokus auf Person vor weißem Hintergrund, sieh Licht-Umriss. Kirlian-Fotografie: Macht Aura sichtbar.',
     category: 'energy_work',
     type: 'knowledge',
     tags: ['Aura', 'Energie-Feld', 'Hellsehen', 'Farben'],
@@ -940,7 +976,8 @@ Hawkins nutzte Muskel-Testing um Wahrheit zu kalibrieren.
     world: 'energie',
     title: 'Monroe Institut - Gateway Experience & Hemisync',
     description: 'Außerkörperliche Erfahrungen durch binaurale Beats',
-    fullContent: 'Robert Monroe: Entwickelte Hemisync (binaurale Beats für Gehirn-Synchronisierung). Gateway Experience: 6 CDs, führen zu Focus-Levels (10, 12, 15, 21, 27). CIA studierte Monroe (declassified: Gateway Process). Out-of-Body Erfahrungen (OBE). Focus 15: No-Time State. Focus 21: Jenseits Raum-Zeit. App/CDs: Monroe Institute Shop. Wissenschaft: Theta/Delta-Wellen induzieren. Kontrovers aber wirkungsvoll.',
+    fullContent:
+        'Robert Monroe: Entwickelte Hemisync (binaurale Beats für Gehirn-Synchronisierung). Gateway Experience: 6 CDs, führen zu Focus-Levels (10, 12, 15, 21, 27). CIA studierte Monroe (declassified: Gateway Process). Out-of-Body Erfahrungen (OBE). Focus 15: No-Time State. Focus 21: Jenseits Raum-Zeit. App/CDs: Monroe Institute Shop. Wissenschaft: Theta/Delta-Wellen induzieren. Kontrovers aber wirkungsvoll.',
     category: 'consciousness',
     type: 'practice',
     tags: ['Monroe', 'OBE', 'Hemisync', 'CIA Gateway'],
@@ -953,7 +990,8 @@ Hawkins nutzte Muskel-Testing um Wahrheit zu kalibrieren.
     world: 'energie',
     title: 'Remote Viewing - CIA Psychic Spying',
     description: 'Trainierbare Fähigkeit um entfernte Orte/Personen zu "sehen"',
-    fullContent: 'Remote Viewing: US Army/CIA Programm (1970s-1995). Stargate Project. Viewer "sieht" entfernten Ort nur mit Koordinaten. Protokolle: CRV (Controlled Remote Viewing), ERV (Extended RV). Berühmte Viewer: Ingo Swann, Joe McMoneagle, Russell Targ. Erfolge: Fand gestohlenes Flugzeug, Sowjet U-Boot. 1995: Öffentlich "beendet" (aber...?). Training verfügbar (IRVA, Farsight Institute). Jeder kann lernen.',
+    fullContent:
+        'Remote Viewing: US Army/CIA Programm (1970s-1995). Stargate Project. Viewer "sieht" entfernten Ort nur mit Koordinaten. Protokolle: CRV (Controlled Remote Viewing), ERV (Extended RV). Berühmte Viewer: Ingo Swann, Joe McMoneagle, Russell Targ. Erfolge: Fand gestohlenes Flugzeug, Sowjet U-Boot. 1995: Öffentlich "beendet" (aber...?). Training verfügbar (IRVA, Farsight Institute). Jeder kann lernen.',
     category: 'consciousness',
     type: 'practice',
     tags: ['Remote Viewing', 'CIA', 'Stargate', 'Psychic'],
@@ -965,8 +1003,10 @@ Hawkins nutzte Muskel-Testing um Wahrheit zu kalibrieren.
     id: 'ene_044',
     world: 'energie',
     title: 'Near Death Experience (NDE) - Nahtod-Erfahrungen',
-    description: 'Gemeinsamkeiten aller NDEs - Tunnel, Licht, Life Review, Einheit',
-    fullContent: 'NDE-Merkmale (IANDS): 1) Out-of-Body, 2) Tunnel & Licht, 3) verstorbene Verwandte, 4) Life Review (ganzes Leben in Sekunden), 5) Gefühl von Einheit/Liebe, 6) "Return" ungern. Wissenschaft: DMT-Release? Sauerstoffmangel? ABER: Berichte sind konsistent über Kulturen. Transformation: Keine Angst vor Tod, spiritueller. Berichte: "Proof of Heaven" (Eben Alexander), "To Heaven and Back" (Mary Neal).',
+    description:
+        'Gemeinsamkeiten aller NDEs - Tunnel, Licht, Life Review, Einheit',
+    fullContent:
+        'NDE-Merkmale (IANDS): 1) Out-of-Body, 2) Tunnel & Licht, 3) verstorbene Verwandte, 4) Life Review (ganzes Leben in Sekunden), 5) Gefühl von Einheit/Liebe, 6) "Return" ungern. Wissenschaft: DMT-Release? Sauerstoffmangel? ABER: Berichte sind konsistent über Kulturen. Transformation: Keine Angst vor Tod, spiritueller. Berichte: "Proof of Heaven" (Eben Alexander), "To Heaven and Back" (Mary Neal).',
     category: 'consciousness',
     type: 'knowledge',
     tags: ['NDE', 'Nahtod', 'Jenseits', 'Bewusstsein'],
@@ -979,7 +1019,8 @@ Hawkins nutzte Muskel-Testing um Wahrheit zu kalibrieren.
     world: 'energie',
     title: 'Akashic Records - Die kosmische Bibliothek',
     description: 'Zugriff auf universelles Wissen & Past-Life Informationen',
-    fullContent: 'Akasha (Sanskrit): Äther-Element. Akashic Records: Energetische Datenbank aller Gedanken, Ereignisse, Emotionen (Vergangenheit, Gegenwart, Zukunft). Zugriff: Meditation, Trance, Hellseher. Reading zeigt: Past Lives, Karma, Soul Contracts, Life Purpose. Berühmte Reader: Edgar Cayce (Sleeping Prophet). Selbst-Zugriff: Akashic Prayer (Linda Howe Methode). Kontrovers: Verifizierbar? Aber transformativ für viele.',
+    fullContent:
+        'Akasha (Sanskrit): Äther-Element. Akashic Records: Energetische Datenbank aller Gedanken, Ereignisse, Emotionen (Vergangenheit, Gegenwart, Zukunft). Zugriff: Meditation, Trance, Hellseher. Reading zeigt: Past Lives, Karma, Soul Contracts, Life Purpose. Berühmte Reader: Edgar Cayce (Sleeping Prophet). Selbst-Zugriff: Akashic Prayer (Linda Howe Methode). Kontrovers: Verifizierbar? Aber transformativ für viele.',
     category: 'consciousness',
     type: 'knowledge',
     tags: ['Akashic Records', 'Past Life', 'Edgar Cayce'],
@@ -992,7 +1033,8 @@ Hawkins nutzte Muskel-Testing um Wahrheit zu kalibrieren.
     world: 'energie',
     title: 'Shadow Work - Carl Jung Integration',
     description: 'Integriere deine unterdrückten Teile für Ganzheit',
-    fullContent: 'Shadow (Jung): Unterdrückte Teile von dir (Wut, Eifersucht, Sexualität, Macht). Projektion: Was du an anderen hasst = dein Schatten. Prozess: 1) Erkenne Trigger, 2) Frage: "Was zeigt mir das über mich?", 3) Akzeptiere und integriere. Tools: Journaling (Schatten-Fragen), Inner Child Work, Parts Work (IFS), Psychedelika (Therapie-Kontext). Ziel: Nicht Licht vs. Dunkel, sondern GANZ werden. "Gold im Schatten."',
+    fullContent:
+        'Shadow (Jung): Unterdrückte Teile von dir (Wut, Eifersucht, Sexualität, Macht). Projektion: Was du an anderen hasst = dein Schatten. Prozess: 1) Erkenne Trigger, 2) Frage: "Was zeigt mir das über mich?", 3) Akzeptiere und integriere. Tools: Journaling (Schatten-Fragen), Inner Child Work, Parts Work (IFS), Psychedelika (Therapie-Kontext). Ziel: Nicht Licht vs. Dunkel, sondern GANZ werden. "Gold im Schatten."',
     category: 'consciousness',
     type: 'practice',
     tags: ['Shadow Work', 'Jung', 'Integration', 'Psychologie'],
@@ -1005,7 +1047,8 @@ Hawkins nutzte Muskel-Testing um Wahrheit zu kalibrieren.
     world: 'energie',
     title: 'Sacred Geometry - Universum-Blaupause',
     description: 'Blume des Lebens, Metatrons Würfel, Fibonacci, Phi',
-    fullContent: 'Heilige Geometrie: Muster die überall in Natur existieren. Blume des Lebens (19 Kreise): Enthält alle platonischen Körper. Metatrons Würfel: 13 Kreise, alle 5 platonischen Körper. Fibonacci (1,1,2,3,5,8...): Spiralen (Muscheln, Galaxien). Phi (1.618): Goldener Schnitt (Pyramiden, Kunst, Körper). Vesica Piscis: Zwei Kreise = Jesus-Fisch-Symbol. Nutzung: Meditation auf Symbole, Tragen als Schmuck, Architektur (Chartres-Kathedrale).',
+    fullContent:
+        'Heilige Geometrie: Muster die überall in Natur existieren. Blume des Lebens (19 Kreise): Enthält alle platonischen Körper. Metatrons Würfel: 13 Kreise, alle 5 platonischen Körper. Fibonacci (1,1,2,3,5,8...): Spiralen (Muscheln, Galaxien). Phi (1.618): Goldener Schnitt (Pyramiden, Kunst, Körper). Vesica Piscis: Zwei Kreise = Jesus-Fisch-Symbol. Nutzung: Meditation auf Symbole, Tragen als Schmuck, Architektur (Chartres-Kathedrale).',
     category: 'consciousness',
     type: 'knowledge',
     tags: ['Sacred Geometry', 'Blume des Lebens', 'Fibonacci', 'Phi'],
@@ -1017,8 +1060,10 @@ Hawkins nutzte Muskel-Testing um Wahrheit zu kalibrieren.
     id: 'ene_048',
     world: 'energie',
     title: 'Shamanism - Uralte spirituelle Praxis',
-    description: 'Journey zur Unterwelt, Mittelwelt, Oberwelt - Krafttiere & Heilung',
-    fullContent: 'Schamanismus: Älteste spirituelle Praxis (40.000+ Jahre). Schamane = Mittler zwischen Welten. 3 Welten: Unterwelt (Krafttiere, Ahnen), Mittelwelt (physische Realität), Oberwelt (Spirit Guides, Lehrer). Journey: Durch Trommel-Rhythmus (4-7 Hz Theta). Krafttier: Dein spiritueller Beschützer/Guide. Soul Retrieval: Zurückholen verlorener Seelen-Teile (Trauma). Moderne: Neo-Schamanismus (Michael Harner - Core Shamanism).',
+    description:
+        'Journey zur Unterwelt, Mittelwelt, Oberwelt - Krafttiere & Heilung',
+    fullContent:
+        'Schamanismus: Älteste spirituelle Praxis (40.000+ Jahre). Schamane = Mittler zwischen Welten. 3 Welten: Unterwelt (Krafttiere, Ahnen), Mittelwelt (physische Realität), Oberwelt (Spirit Guides, Lehrer). Journey: Durch Trommel-Rhythmus (4-7 Hz Theta). Krafttier: Dein spiritueller Beschützer/Guide. Soul Retrieval: Zurückholen verlorener Seelen-Teile (Trauma). Moderne: Neo-Schamanismus (Michael Harner - Core Shamanism).',
     category: 'consciousness',
     type: 'practice',
     tags: ['Shamanism', 'Journey', 'Krafttier', 'Heilung'],
@@ -1031,7 +1076,8 @@ Hawkins nutzte Muskel-Testing um Wahrheit zu kalibrieren.
     world: 'energie',
     title: 'Plant Medicine - Ayahuasca, Kambo, San Pedro',
     description: 'Schamanische Heilpflanzen für Bewusstseins-Erweiterung',
-    fullContent: 'Ayahuasca: DMT + MAOI (Banisteriopsis caapi + Psychotria viridis). Zeremonie in Peru/Ecuador. Effekte: Purging (Erbrechen = Reinigung), Visionen, Ego-Tod, Heilung. Kambo: Frosch-Gift (Phyllomedusa bicolor) - extreme Entgiftung. San Pedro: Meskalin-Kaktus (Trichocereus pachanoi) - Herz-Öffnung. Psilocybin: Magische Pilze - Johns Hopkins Studien. Legality: Varies. Vorbereitung: Dieta (keine Salz, Zucker, Sex). Integration wichtig!',
+    fullContent:
+        'Ayahuasca: DMT + MAOI (Banisteriopsis caapi + Psychotria viridis). Zeremonie in Peru/Ecuador. Effekte: Purging (Erbrechen = Reinigung), Visionen, Ego-Tod, Heilung. Kambo: Frosch-Gift (Phyllomedusa bicolor) - extreme Entgiftung. San Pedro: Meskalin-Kaktus (Trichocereus pachanoi) - Herz-Öffnung. Psilocybin: Magische Pilze - Johns Hopkins Studien. Legality: Varies. Vorbereitung: Dieta (keine Salz, Zucker, Sex). Integration wichtig!',
     category: 'consciousness',
     type: 'knowledge',
     tags: ['Ayahuasca', 'Plant Medicine', 'DMT', 'Psychedelics'],

@@ -35,11 +35,16 @@ class EuVote {
   });
 
   bool get isAdopted => result.toUpperCase() == 'ADOPTED';
-  String get resultLabel => isAdopted ? '✅ ANGENOMMEN' : (result.toUpperCase() == 'REJECTED' ? '❌ ABGELEHNT' : '⚖️ $result');
-  String get resultColor => isAdopted ? 'green' : (result.toUpperCase() == 'REJECTED' ? 'red' : 'amber');
+  String get resultLabel => isAdopted
+      ? '✅ ANGENOMMEN'
+      : (result.toUpperCase() == 'REJECTED' ? '❌ ABGELEHNT' : '⚖️ $result');
+  String get resultColor => isAdopted
+      ? 'green'
+      : (result.toUpperCase() == 'REJECTED' ? 'red' : 'amber');
 
   int? get total {
-    if (forVotes == null && againstVotes == null && abstainVotes == null) return null;
+    if (forVotes == null && againstVotes == null && abstainVotes == null)
+      return null;
     return (forVotes ?? 0) + (againstVotes ?? 0) + (abstainVotes ?? 0);
   }
 
@@ -91,7 +96,8 @@ class EuParliamentService {
         return const [];
       }
       final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final results = (data['results'] as List?) ?? (data['data'] as List?) ?? const [];
+      final results =
+          (data['results'] as List?) ?? (data['data'] as List?) ?? const [];
       return results.map(_parseVote).whereType<EuVote>().toList();
     } catch (e) {
       if (kDebugMode) debugPrint('HowTheyVote votes error: $e');
@@ -107,7 +113,8 @@ class EuParliamentService {
           headers: const {'Accept': 'application/json'}).timeout(_timeout);
       if (res.statusCode != 200) return const [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final results = (data['results'] as List?) ?? (data['data'] as List?) ?? const [];
+      final results =
+          (data['results'] as List?) ?? (data['data'] as List?) ?? const [];
       return results.map(_parseVote).whereType<EuVote>().toList();
     } catch (e) {
       if (kDebugMode) debugPrint('HowTheyVote search error: $e');
@@ -137,7 +144,8 @@ class EuParliamentService {
           headers: const {'Accept': 'application/json'}).timeout(_timeout);
       if (res.statusCode != 200) return const [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final results = (data['results'] as List?) ?? (data['data'] as List?) ?? const [];
+      final results =
+          (data['results'] as List?) ?? (data['data'] as List?) ?? const [];
       return results.map((r) {
         final m = r as Map<String, dynamic>;
         final country = (m['country'] as Map?)?.cast<String, dynamic>();
@@ -174,7 +182,8 @@ class EuParliamentService {
     return EuVote(
       id: (raw['id'] as num?)?.toInt() ?? 0,
       title: (raw['display_title'] as String?) ??
-          (raw['title'] as String?) ?? 'Abstimmung',
+          (raw['title'] as String?) ??
+          'Abstimmung',
       description: raw['description'] as String?,
       date: date,
       result: (raw['result'] as String?) ?? 'unknown',

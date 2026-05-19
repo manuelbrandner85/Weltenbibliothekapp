@@ -43,7 +43,8 @@ class PropagandaBiasHistoryService {
     }
   }
 
-  Future<List<BiasHistoryPoint>> getHistory(String domain, {int limit = 100}) async {
+  Future<List<BiasHistoryPoint>> getHistory(String domain,
+      {int limit = 100}) async {
     try {
       final res = await _s
           .from('propaganda_bias_history')

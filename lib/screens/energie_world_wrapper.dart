@@ -53,13 +53,13 @@ class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
       return Scaffold(
         backgroundColor: const Color(0xFF06040F),
         appBar: WBGlassAppBar(
-        world: WBWorld.energie,
-        title: 'ENERGIE',
-        leading: IconButton(
+          world: WBWorld.energie,
+          title: 'ENERGIE',
+          leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.purple),
             onPressed: () => Navigator.of(context).pop(),
           ),
-      ),
+        ),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

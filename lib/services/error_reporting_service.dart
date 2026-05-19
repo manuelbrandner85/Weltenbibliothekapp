@@ -2,6 +2,7 @@
 /// Centralized error tracking and reporting
 /// Features: Error logging, crash reports, user feedback, analytics
 library;
+
 import '../config/api_config.dart';
 
 import 'dart:async';
@@ -11,30 +12,31 @@ import 'package:http/http.dart' as http;
 
 /// Service for tracking and reporting app errors
 class ErrorReportingService {
-  static final ErrorReportingService _instance = ErrorReportingService._internal();
+  static final ErrorReportingService _instance =
+      ErrorReportingService._internal();
   factory ErrorReportingService() => _instance;
   ErrorReportingService._internal();
 
   // Error storage
   final List<ErrorReport> _errorHistory = [];
   static const int maxErrorHistory = 100;
-  
+
   // Error reporting endpoint (Cloudflare Worker)
   String get _errorEndpoint => '${ApiConfig.workerUrl}/errors/report';
-  
+
   bool _isInitialized = false;
 
   /// Initialize error reporting
   Future<void> initialize() async {
     if (_isInitialized) return;
-    
+
     // Setup Flutter error handlers
     FlutterError.onError = (FlutterErrorDetails details) {
       // Log to console in debug mode
       if (kDebugMode) {
         FlutterError.presentError(details);
       }
-      
+
       // Report to backend
       reportError(
         error: details.exception,
@@ -43,7 +45,7 @@ class ErrorReportingService {
         fatal: true,
       );
     };
-    
+
     // Setup Dart error handlers
     PlatformDispatcher.instance.onError = (error, stack) {
       reportError(
@@ -54,9 +56,9 @@ class ErrorReportingService {
       );
       return true;
     };
-    
+
     _isInitialized = true;
-    
+
     if (kDebugMode) {
       debugPrint('✅ ErrorReporting: Initialized');
     }
@@ -79,13 +81,13 @@ class ErrorReportingService {
         fatal: fatal,
         timestamp: DateTime.now(),
       );
-      
+
       // Add to history
       _errorHistory.add(errorReport);
       if (_errorHistory.length > maxErrorHistory) {
         _errorHistory.removeAt(0);
       }
-      
+
       // Log to console in debug mode
       if (kDebugMode) {
         debugPrint('🚨 ErrorReport: ${errorReport.error}');
@@ -93,10 +95,9 @@ class ErrorReportingService {
           debugPrint('Stack: ${errorReport.stackTrace}');
         }
       }
-      
+
       // Send to backend (non-blocking)
       _sendErrorToBackend(errorReport);
-      
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ ErrorReporting: Failed to report error - $e');
@@ -107,12 +108,14 @@ class ErrorReportingService {
   /// Send error to backend
   Future<void> _sendErrorToBackend(ErrorReport report) async {
     try {
-      final response = await http.post(
-        Uri.parse(_errorEndpoint),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(report.toJson()),
-      ).timeout(const Duration(seconds: 5));
-      
+      final response = await http
+          .post(
+            Uri.parse(_errorEndpoint),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(report.toJson()),
+          )
+          .timeout(const Duration(seconds: 5));
+
       if (response.statusCode == 200) {
         if (kDebugMode) {
           debugPrint('✅ ErrorReporting: Error sent to backend');
@@ -148,7 +151,7 @@ class ErrorReportingService {
     if (kDebugMode) {
       debugPrint('⚠️ Warning: $warning');
     }
-    
+
     reportError(
       error: 'WARNING: $warning',
       context: context,
@@ -178,17 +181,16 @@ class ErrorReportingService {
   /// Get error history
   List<ErrorReport> getErrorHistory({int? limit}) {
     if (limit == null) return List.from(_errorHistory);
-    
-    final startIndex = _errorHistory.length > limit 
-        ? _errorHistory.length - limit 
-        : 0;
+
+    final startIndex =
+        _errorHistory.length > limit ? _errorHistory.length - limit : 0;
     return _errorHistory.sublist(startIndex);
   }
 
   /// Clear error history
   void clearHistory() {
     _errorHistory.clear();
-    
+
     if (kDebugMode) {
       debugPrint('🗑️ ErrorReporting: History cleared');
     }
@@ -199,11 +201,10 @@ class ErrorReportingService {
     final totalErrors = _errorHistory.length;
     final fatalErrors = _errorHistory.where((e) => e.fatal).length;
     final recentErrors = _errorHistory
-        .where((e) => e.timestamp.isAfter(
-          DateTime.now().subtract(const Duration(hours: 24))
-        ))
+        .where((e) => e.timestamp
+            .isAfter(DateTime.now().subtract(const Duration(hours: 24))))
         .length;
-    
+
     return {
       'total_errors': totalErrors,
       'fatal_errors': fatalErrors,

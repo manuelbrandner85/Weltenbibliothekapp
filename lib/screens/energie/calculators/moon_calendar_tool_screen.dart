@@ -16,7 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../services/moon_calculator.dart';
 import '../../../services/moon_recommendations.dart';
 
-const _kPrimary   = Color(0xFF90CAF9); // Mondblau
+const _kPrimary = Color(0xFF90CAF9); // Mondblau
 const _kSecondary = Color(0xFF7C4DFF); // Lila
 
 class MoonCalendarToolScreen extends StatefulWidget {
@@ -175,24 +175,74 @@ class _GardeningTab extends StatelessWidget {
   // Sternzeichen-Trigone (Maria Thun)
   // 'static final' statt 'static const' — dart2js (Flutter Web) hat
   // einen Bug mit const Maps die Records als Werte halten.
-  static final Map<String, ({String trigon, String typ, String practice})> _signTrigon = {
-    'Widder':     (trigon: 'Feuer-Trigon',  typ: 'Frucht-Tag',  practice: 'Tomaten, Paprika, Zucchini, Mais — alles was Frucht trägt.'),
-    'Stier':      (trigon: 'Erde-Trigon',   typ: 'Wurzel-Tag', practice: 'Möhren, Kartoffeln, Sellerie, Rote Bete säen/ernten.'),
-    'Zwillinge':  (trigon: 'Luft-Trigon',   typ: 'Blüten-Tag', practice: 'Blumen säen, schneiden. Lavendel, Rosen, Kamille.'),
-    'Krebs':      (trigon: 'Wasser-Trigon', typ: 'Blatt-Tag',  practice: 'Salate, Spinat, Kohl, Kräuter. Gießen ideal.'),
-    'Löwe':       (trigon: 'Feuer-Trigon',  typ: 'Frucht-Tag', practice: 'Frucht-Pflanzen. Beeren, Tomaten, Trauben.'),
-    'Jungfrau':   (trigon: 'Erde-Trigon',   typ: 'Wurzel-Tag', practice: 'Wurzelernte. Lagerung. Boden bearbeiten.'),
-    'Waage':      (trigon: 'Luft-Trigon',   typ: 'Blüten-Tag', practice: 'Blühpflanzen säen. Brokkoli, Blumenkohl.'),
-    'Skorpion':   (trigon: 'Wasser-Trigon', typ: 'Blatt-Tag',  practice: 'Blattgewächse, Heilkräuter. Wassergaben gut aufgenommen.'),
-    'Schütze':    (trigon: 'Feuer-Trigon',  typ: 'Frucht-Tag', practice: 'Frucht-Pflanzen, Getreide. Ernte für Vorrat.'),
-    'Steinbock':  (trigon: 'Erde-Trigon',   typ: 'Wurzel-Tag', practice: 'Wurzelarbeit, Umsetzen. Boden tief lockern.'),
-    'Wassermann': (trigon: 'Luft-Trigon',   typ: 'Blüten-Tag', practice: 'Blumen, Zierpflanzen. Wenig gießen.'),
-    'Fische':     (trigon: 'Wasser-Trigon', typ: 'Blatt-Tag',  practice: 'Salate, Kohl, Spinat. Optimal für Blattfrüchte.'),
+  static final Map<String, ({String trigon, String typ, String practice})>
+      _signTrigon = {
+    'Widder': (
+      trigon: 'Feuer-Trigon',
+      typ: 'Frucht-Tag',
+      practice: 'Tomaten, Paprika, Zucchini, Mais — alles was Frucht trägt.'
+    ),
+    'Stier': (
+      trigon: 'Erde-Trigon',
+      typ: 'Wurzel-Tag',
+      practice: 'Möhren, Kartoffeln, Sellerie, Rote Bete säen/ernten.'
+    ),
+    'Zwillinge': (
+      trigon: 'Luft-Trigon',
+      typ: 'Blüten-Tag',
+      practice: 'Blumen säen, schneiden. Lavendel, Rosen, Kamille.'
+    ),
+    'Krebs': (
+      trigon: 'Wasser-Trigon',
+      typ: 'Blatt-Tag',
+      practice: 'Salate, Spinat, Kohl, Kräuter. Gießen ideal.'
+    ),
+    'Löwe': (
+      trigon: 'Feuer-Trigon',
+      typ: 'Frucht-Tag',
+      practice: 'Frucht-Pflanzen. Beeren, Tomaten, Trauben.'
+    ),
+    'Jungfrau': (
+      trigon: 'Erde-Trigon',
+      typ: 'Wurzel-Tag',
+      practice: 'Wurzelernte. Lagerung. Boden bearbeiten.'
+    ),
+    'Waage': (
+      trigon: 'Luft-Trigon',
+      typ: 'Blüten-Tag',
+      practice: 'Blühpflanzen säen. Brokkoli, Blumenkohl.'
+    ),
+    'Skorpion': (
+      trigon: 'Wasser-Trigon',
+      typ: 'Blatt-Tag',
+      practice: 'Blattgewächse, Heilkräuter. Wassergaben gut aufgenommen.'
+    ),
+    'Schütze': (
+      trigon: 'Feuer-Trigon',
+      typ: 'Frucht-Tag',
+      practice: 'Frucht-Pflanzen, Getreide. Ernte für Vorrat.'
+    ),
+    'Steinbock': (
+      trigon: 'Erde-Trigon',
+      typ: 'Wurzel-Tag',
+      practice: 'Wurzelarbeit, Umsetzen. Boden tief lockern.'
+    ),
+    'Wassermann': (
+      trigon: 'Luft-Trigon',
+      typ: 'Blüten-Tag',
+      practice: 'Blumen, Zierpflanzen. Wenig gießen.'
+    ),
+    'Fische': (
+      trigon: 'Wasser-Trigon',
+      typ: 'Blatt-Tag',
+      practice: 'Salate, Kohl, Spinat. Optimal für Blattfrüchte.'
+    ),
   };
 
   @override
   Widget build(BuildContext context) {
-    final phaseRec = _phaseRecommend[snapshot.phaseKey] ?? 'Beobachte das Mondlicht.';
+    final phaseRec =
+        _phaseRecommend[snapshot.phaseKey] ?? 'Beobachte das Mondlicht.';
     final sign = snapshot.moonSignName;
     final trigon = _signTrigon[sign];
     return SingleChildScrollView(
@@ -203,22 +253,33 @@ class _GardeningTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)]),
+              gradient: const LinearGradient(
+                  colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)]),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('🌱 BIODYNAMISCHER GARTENBAU',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
                 const Text('Maria-Thun-Aussaattage',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Text(
                   'Empfehlungen basierend auf aktueller Mondphase und Tierkreiszeichen-Trigon. '
                   'Folgt der biodynamischen Tradition nach Maria Thun (1922–2012).',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12, height: 1.5),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 12,
+                      height: 1.5),
                 ),
               ],
             ),
@@ -242,13 +303,22 @@ class _GardeningTab extends StatelessWidget {
             ),
           const SizedBox(height: 24),
           const Text('📅 4 Tagestypen im Überblick',
-              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _typeRow('🍅 Frucht-Tag', 'Feuer-Trigon', 'Widder · Löwe · Schütze',
               'Tomaten, Bohnen, Mais, Beeren — alles was Frucht trägt'),
-          _typeRow('🥕 Wurzel-Tag', 'Erde-Trigon', 'Stier · Jungfrau · Steinbock',
+          _typeRow(
+              '🥕 Wurzel-Tag',
+              'Erde-Trigon',
+              'Stier · Jungfrau · Steinbock',
               'Möhren, Kartoffeln, Sellerie, Rote Bete'),
-          _typeRow('🌸 Blüten-Tag', 'Luft-Trigon', 'Zwillinge · Waage · Wassermann',
+          _typeRow(
+              '🌸 Blüten-Tag',
+              'Luft-Trigon',
+              'Zwillinge · Waage · Wassermann',
               'Brokkoli, Blumenkohl, Rosen, Blumen'),
           _typeRow('🥬 Blatt-Tag', 'Wasser-Trigon', 'Krebs · Skorpion · Fische',
               'Salate, Kohl, Spinat, Kräuter'),
@@ -264,7 +334,8 @@ class _GardeningTab extends StatelessWidget {
               '⚠️ Hinweis: Biodynamik ist eine anthroposophische Tradition, kein wissenschaftlich '
               'bewiesenes System. Viele Bauern und Gärtner berichten jedoch von empirisch besseren '
               'Ergebnissen. Empfehlung: ausprobieren und eigene Erfahrung machen.',
-              style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.5),
+              style:
+                  TextStyle(color: Colors.white70, fontSize: 11, height: 1.5),
             ),
           ),
         ],
@@ -289,13 +360,21 @@ class _GardeningTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: TextStyle(color: accent, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: accent,
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(body,
-              style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 13, height: 1.5)),
         ],
       ),
     );
@@ -316,20 +395,23 @@ class _GardeningTab extends StatelessWidget {
             Text(emoji, style: const TextStyle(fontSize: 16)),
             const SizedBox(width: 8),
             Text(trigon,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold)),
             const Spacer(),
             Text(signs,
                 style: const TextStyle(color: Colors.white54, fontSize: 11)),
           ]),
           const SizedBox(height: 4),
           Text(practice,
-              style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 12, height: 1.4)),
         ],
       ),
     );
   }
 }
-
 
 // ═══════════════════════════════════════════════════════════
 // Tab 1: Heute
@@ -460,9 +542,7 @@ class _FactsRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _Fact(
-            icon: snapshot.isWaxing
-                ? Icons.trending_up
-                : Icons.trending_down,
+            icon: snapshot.isWaxing ? Icons.trending_up : Icons.trending_down,
             label: 'Tendenz',
             value: snapshot.isWaxing ? 'zunehmend' : 'abnehmend',
           ),
@@ -650,8 +730,18 @@ class _MonthHeader extends StatelessWidget {
   final VoidCallback onNext;
 
   static const _names = [
-    'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+    'Januar',
+    'Februar',
+    'März',
+    'April',
+    'Mai',
+    'Juni',
+    'Juli',
+    'August',
+    'September',
+    'Oktober',
+    'November',
+    'Dezember',
   ];
 
   @override
@@ -868,8 +958,18 @@ class _SelectedDayCard extends StatelessWidget {
   }
 
   static const _monthNames = [
-    'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+    'Januar',
+    'Februar',
+    'März',
+    'April',
+    'Mai',
+    'Juni',
+    'Juli',
+    'August',
+    'September',
+    'Oktober',
+    'November',
+    'Dezember',
   ];
 
   static String _formatDate(DateTime d) =>
@@ -1069,8 +1169,7 @@ class _RitualCard extends StatelessWidget {
         ),
         child: ExpansionTile(
           initiallyExpanded: initiallyExpanded,
-          tilePadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           iconColor: Colors.white70,
           collapsedIconColor: Colors.white54,
@@ -1095,8 +1194,8 @@ class _RitualCard extends StatelessWidget {
               if (isCurrent) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.amberAccent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(6),
@@ -1460,8 +1559,18 @@ class _JournalEntryCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   static const _monthNames = [
-    'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez',
+    'Jan',
+    'Feb',
+    'Mär',
+    'Apr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Dez',
   ];
 
   String _formatDate(DateTime d) =>
@@ -1506,7 +1615,8 @@ class _JournalEntryCard extends StatelessWidget {
                         child: Text(
                           [
                             if (phaseLabel.isNotEmpty) phaseLabel,
-                            if (entry.moonSign != null) 'Mond in ${entry.moonSign}',
+                            if (entry.moonSign != null)
+                              'Mond in ${entry.moonSign}',
                           ].join('  •  '),
                           style: const TextStyle(
                             color: Colors.white54,
@@ -1646,8 +1756,8 @@ class _NewEntrySheetState extends State<_NewEntrySheet> {
                     ),
                     Text(
                       '${widget.snapshot.phaseLabel}  •  Mond in ${widget.snapshot.moonSignName}',
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 12),
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 12),
                     ),
                   ],
                 ),
@@ -1663,7 +1773,8 @@ class _NewEntrySheetState extends State<_NewEntrySheet> {
             maxLength: 4000,
             style: const TextStyle(color: Colors.white, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Was bewegt dich heute? Träume, Gedanken, Ritual-Erlebnisse…',
+              hintText:
+                  'Was bewegt dich heute? Träume, Gedanken, Ritual-Erlebnisse…',
               hintStyle: const TextStyle(color: Colors.white38),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.06),
@@ -1690,7 +1801,8 @@ class _NewEntrySheetState extends State<_NewEntrySheet> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _saving ? null : () => Navigator.pop(context, false),
+                  onPressed:
+                      _saving ? null : () => Navigator.pop(context, false),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white70,
                     side: const BorderSide(color: Colors.white30),

@@ -17,7 +17,8 @@ class NotificationCenterScreen extends StatefulWidget {
   const NotificationCenterScreen({super.key, required this.world});
 
   @override
-  State<NotificationCenterScreen> createState() => _NotificationCenterScreenState();
+  State<NotificationCenterScreen> createState() =>
+      _NotificationCenterScreenState();
 }
 
 class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
@@ -28,10 +29,14 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   RealtimeChannel? _channel;
 
   bool get _isEnergie => widget.world == 'energie';
-  Color get _accent => _isEnergie ? const Color(0xFFAB47BC) : const Color(0xFFE53935);
-  Color get _accentLight => _isEnergie ? const Color(0xFFCE93D8) : const Color(0xFFEF9A9A);
-  Color get _bg => _isEnergie ? const Color(0xFF06040F) : const Color(0xFF04080F);
-  Color get _card => _isEnergie ? const Color(0xFF100B1E) : const Color(0xFF0A1020);
+  Color get _accent =>
+      _isEnergie ? const Color(0xFFAB47BC) : const Color(0xFFE53935);
+  Color get _accentLight =>
+      _isEnergie ? const Color(0xFFCE93D8) : const Color(0xFFEF9A9A);
+  Color get _bg =>
+      _isEnergie ? const Color(0xFF06040F) : const Color(0xFF04080F);
+  Color get _card =>
+      _isEnergie ? const Color(0xFF100B1E) : const Color(0xFF0A1020);
 
   @override
   void initState() {
@@ -49,11 +54,19 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   // ── Data ─────────────────────────────────────────────────────────────────
 
   Future<void> _loadNotifications() async {
-    if (mounted) setState(() { _loading = true; _error = null; });
+    if (mounted)
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
     try {
       final uid = _supabase.auth.currentUser?.id;
       if (uid == null) {
-        if (mounted) setState(() { _loading = false; _notifs = []; });
+        if (mounted)
+          setState(() {
+            _loading = false;
+            _notifs = [];
+          });
         return;
       }
       final result = await _supabase
@@ -83,8 +96,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     final uid = _supabase.auth.currentUser?.id;
     if (uid == null) return;
 
-    _channel = _supabase
-        .channel('notif_center_${widget.world}')
+    _channel = _supabase.channel('notif_center_${widget.world}')
       ..onPostgresChanges(
         event: PostgresChangeEvent.insert,
         schema: 'public',
@@ -128,8 +140,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
     try {
       await _supabase
           .from('notifications')
-          .update({'read_at': DateTime.now().toIso8601String()})
-          .eq('id', id);
+          .update({'read_at': DateTime.now().toIso8601String()}).eq('id', id);
       // Realtime UPDATE event aktualisiert die Liste automatisch
     } catch (_) {}
   }
@@ -171,34 +182,52 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   IconData _typeIcon(String? type) {
     switch (type) {
-      case 'message': return Icons.chat_bubble_outline;
-      case 'like':    return Icons.favorite_outline;
-      case 'follow':  return Icons.person_add_outlined;
-      case 'achievement': return Icons.emoji_events_outlined;
-      case 'system':  return Icons.info_outline;
-      default:        return Icons.notifications_outlined;
+      case 'message':
+        return Icons.chat_bubble_outline;
+      case 'like':
+        return Icons.favorite_outline;
+      case 'follow':
+        return Icons.person_add_outlined;
+      case 'achievement':
+        return Icons.emoji_events_outlined;
+      case 'system':
+        return Icons.info_outline;
+      default:
+        return Icons.notifications_outlined;
     }
   }
 
   Color _typeColor(String? type) {
     switch (type) {
-      case 'message': return const Color(0xFF42A5F5);
-      case 'like':    return const Color(0xFFEF5350);
-      case 'follow':  return const Color(0xFF66BB6A);
-      case 'achievement': return const Color(0xFFFFD54F);
-      case 'system':  return const Color(0xFF78909C);
-      default:        return const Color(0xFF9E9E9E);
+      case 'message':
+        return const Color(0xFF42A5F5);
+      case 'like':
+        return const Color(0xFFEF5350);
+      case 'follow':
+        return const Color(0xFF66BB6A);
+      case 'achievement':
+        return const Color(0xFFFFD54F);
+      case 'system':
+        return const Color(0xFF78909C);
+      default:
+        return const Color(0xFF9E9E9E);
     }
   }
 
   String _typeLabelDe(String? type) {
     switch (type) {
-      case 'message': return 'Nachricht';
-      case 'like':    return 'Gefällt mir';
-      case 'follow':  return 'Neuer Follower';
-      case 'achievement': return 'Erfolg';
-      case 'system':  return 'System';
-      default:        return 'Info';
+      case 'message':
+        return 'Nachricht';
+      case 'like':
+        return 'Gefällt mir';
+      case 'follow':
+        return 'Neuer Follower';
+      case 'achievement':
+        return 'Erfolg';
+      case 'system':
+        return 'System';
+      default:
+        return 'Info';
     }
   }
 
@@ -209,9 +238,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       final diff = DateTime.now().difference(dt);
       if (diff.inSeconds < 60) return 'Gerade eben';
       if (diff.inMinutes < 60) return 'vor ${diff.inMinutes} Min.';
-      if (diff.inHours < 24)   return 'vor ${diff.inHours} Std.';
-      if (diff.inDays == 1)    return 'Gestern';
-      if (diff.inDays < 7)     return 'vor ${diff.inDays} Tagen';
+      if (diff.inHours < 24) return 'vor ${diff.inHours} Std.';
+      if (diff.inDays == 1) return 'Gestern';
+      if (diff.inDays < 7) return 'vor ${diff.inDays} Tagen';
       return DateFormat('dd.MM.yyyy').format(dt);
     } catch (_) {
       return '';
@@ -281,7 +310,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),
@@ -303,7 +336,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       color: _accent,
       backgroundColor: _card,
       child: ListView.builder(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics()),
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: _notifs.length,
         itemBuilder: (ctx, i) => _buildNotifTile(_notifs[i]),
@@ -330,7 +364,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         color: Colors.red.shade800,
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
-      confirmDismiss: (_) async => false, // Read-only dismiss animation, no actual delete
+      confirmDismiss: (_) async =>
+          false, // Read-only dismiss animation, no actual delete
       child: GestureDetector(
         onTap: () {
           if (!read && id != null) _markAsRead(id);
@@ -339,9 +374,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: read
-                ? _card
-                : _card.withValues(alpha: 1.0),
+            color: read ? _card : _card.withValues(alpha: 1.0),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: read
@@ -351,7 +384,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
             ),
             boxShadow: read
                 ? []
-                : [BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 10)],
+                : [
+                    BoxShadow(
+                        color: color.withValues(alpha: 0.12), blurRadius: 10)
+                  ],
           ),
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -360,7 +396,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
               children: [
                 // Type icon circle
                 Container(
-                  width: 44, height: 44,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: read ? 0.08 : 0.15),
                     shape: BoxShape.circle,
@@ -383,7 +420,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                               style: TextStyle(
                                 color: read ? Colors.white60 : Colors.white,
                                 fontSize: 14,
-                                fontWeight: read ? FontWeight.w500 : FontWeight.bold,
+                                fontWeight:
+                                    read ? FontWeight.w500 : FontWeight.bold,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -404,7 +442,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                         Text(
                           body,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: read ? 0.4 : 0.65),
+                            color: Colors.white
+                                .withValues(alpha: read ? 0.4 : 0.65),
                             fontSize: 13,
                           ),
                           maxLines: 2,
@@ -415,21 +454,27 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               _typeLabelDe(type),
-                              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                  color: color,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600),
                             ),
                           ),
                           const Spacer(),
                           if (!read)
                             Container(
-                              width: 8, height: 8,
-                              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                  color: color, shape: BoxShape.circle),
                             ),
                         ],
                       ),
@@ -459,7 +504,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           child: Row(children: [
             const SizedBox(width: 14),
             Container(
-              width: 44, height: 44,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.06),
                 shape: BoxShape.circle,
@@ -471,13 +517,17 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(height: 12, width: 160,
+                  Container(
+                      height: 12,
+                      width: 160,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.06),
                         borderRadius: BorderRadius.circular(6),
                       )),
                   const SizedBox(height: 8),
-                  Container(height: 10, width: 220,
+                  Container(
+                      height: 10,
+                      width: 220,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(6),
@@ -526,11 +576,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.cloud_off, color: Colors.white.withValues(alpha: 0.25), size: 60),
+          Icon(Icons.cloud_off,
+              color: Colors.white.withValues(alpha: 0.25), size: 60),
           const SizedBox(height: 16),
           Text(
             _error ?? 'Fehler beim Laden',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 15),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5), fontSize: 15),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),

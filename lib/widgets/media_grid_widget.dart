@@ -1,6 +1,6 @@
 /// Multi-Media Grid Widget
 /// Zeigt extrahierte Videos, PDFs, Bilder, Audios
-/// 
+///
 /// VERWENDUNG:
 /// MediaGridWidget(media: response['media'])
 library;
@@ -23,7 +23,8 @@ class MediaGridWidget extends StatelessWidget {
     final images = (media['images'] as List?)?.cast<String>() ?? [];
     final audios = (media['audios'] as List?)?.cast<String>() ?? [];
 
-    final totalMedia = videos.length + pdfs.length + images.length + audios.length;
+    final totalMedia =
+        videos.length + pdfs.length + images.length + audios.length;
 
     if (totalMedia == 0) {
       return const SizedBox.shrink();
@@ -215,27 +216,27 @@ class MediaGridWidget extends StatelessWidget {
   String _extractDisplayName(String url) {
     try {
       final uri = Uri.parse(url);
-      
+
       // YouTube
       if (uri.host.contains('youtube.com') || uri.host.contains('youtu.be')) {
         return '▶️ YouTube Video';
       }
-      
+
       // Vimeo
       if (uri.host.contains('vimeo.com')) {
         return '▶️ Vimeo Video';
       }
-      
+
       // Spotify
       if (uri.host.contains('spotify.com')) {
         return '🎵 Spotify Track';
       }
-      
+
       // SoundCloud
       if (uri.host.contains('soundcloud.com')) {
         return '🎵 SoundCloud Track';
       }
-      
+
       // Dateiname aus Path
       final segments = uri.pathSegments;
       if (segments.isNotEmpty) {
@@ -245,7 +246,7 @@ class MediaGridWidget extends StatelessWidget {
         }
         return '${fileName.substring(0, 27)}...';
       }
-      
+
       // Domain als Fallback
       return uri.host;
     } catch (e) {

@@ -7,7 +7,7 @@ class MentionAutoComplete extends StatelessWidget {
   final List<String> suggestions;
   final Function(String) onSelectUser;
   final Color accentColor;
-  
+
   const MentionAutoComplete({
     super.key,
     required this.suggestions,
@@ -19,9 +19,9 @@ class MentionAutoComplete extends StatelessWidget {
   Widget build(BuildContext context) {
     final utils = ResponsiveUtils.of(context);
     final textStyles = ResponsiveTextStyles.of(context);
-    
+
     if (suggestions.isEmpty) return const SizedBox.shrink();
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: utils.spacingXs),
       constraints: BoxConstraints(maxHeight: utils.spacingXl * 5),
@@ -65,7 +65,8 @@ class MentionAutoComplete extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Icon(Icons.person, color: Colors.white, size: utils.iconSizeMd),
+                child: Icon(Icons.person,
+                    color: Colors.white, size: utils.iconSizeMd),
               ),
             ),
             title: Text(

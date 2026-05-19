@@ -69,7 +69,11 @@ class _BirthstoneMatcherScreenState extends State<BirthstoneMatcherScreen> {
     final month = bd.month;
     final zodiac = _zodiacFor(bd);
     final lifePath = NumerologyEngine.calculateLifePath(bd);
-    final reduced = lifePath > 9 ? (lifePath == 11 || lifePath == 22 || lifePath == 33 ? lifePath : lifePath % 10) : lifePath;
+    final reduced = lifePath > 9
+        ? (lifePath == 11 || lifePath == 22 || lifePath == 33
+            ? lifePath
+            : lifePath % 10)
+        : lifePath;
 
     final scored = <(CrystalEntry, int)>[];
     for (final c in crystalLibrary) {
@@ -143,24 +147,23 @@ class _BirthstoneMatcherScreenState extends State<BirthstoneMatcherScreen> {
             border: Border.all(color: _accent.withValues(alpha: 0.4)),
           ),
           child: Row(children: [
-            const Icon(Icons.auto_awesome_rounded,
-                color: _accent, size: 22),
+            const Icon(Icons.auto_awesome_rounded, color: _accent, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_profile!.firstName.isEmpty
-                      ? 'Deine Kristalle'
-                      : '${_profile!.firstName}s Kristalle',
+                  Text(
+                      _profile!.firstName.isEmpty
+                          ? 'Deine Kristalle'
+                          : '${_profile!.firstName}s Kristalle',
                       style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w800)),
                   Text(
                     '${bd.day}.${bd.month}.${bd.year} · $zodiac · Lebenszahl $lp',
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
@@ -192,124 +195,129 @@ class _BirthstoneMatcherScreenState extends State<BirthstoneMatcherScreen> {
         MaterialPageRoute(builder: (_) => CrystalRitualScreen(crystal: c)),
       ),
       child: ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                c.displayColor.withValues(alpha: 0.22),
-                Colors.white.withValues(alpha: 0.04),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: c.displayColor.withValues(alpha: 0.5)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Container(
-                  width: 32, height: 32,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _accent.withValues(alpha: 0.6),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.6), width: 1.2),
-                  ),
-                  child: Text('$rank',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900)),
-                ),
-                const SizedBox(width: 10),
-                Text(c.emoji, style: const TextStyle(fontSize: 26)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(c.name,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800)),
-                      Text(
-                        [c.chakra, c.element].where((e) => e != null).join(' · '),
-                        style: TextStyle(
-                            color: c.displayColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _accent.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text('$score Treffer',
-                      style: const TextStyle(
-                          color: _accent,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800)),
-                ),
-              ]),
-              const SizedBox(height: 10),
-              Text(c.spiritualEffect,
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 13, height: 1.5)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: [
-                  if (c.birthMonths.contains(_profile!.birthDate.month))
-                    _matchPill('Geburtsmonat'),
-                  if (c.zodiac.contains(_zodiacFor(_profile!.birthDate)))
-                    _matchPill('Sternzeichen'),
-                  if (c.lifePathNumber != null &&
-                      c.lifePathNumber ==
-                          NumerologyEngine.calculateLifePath(
-                              _profile!.birthDate))
-                    _matchPill('Lebenszahl'),
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  c.displayColor.withValues(alpha: 0.22),
+                  Colors.white.withValues(alpha: 0.04),
                 ],
               ),
-              if (c.howToUse.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: c.displayColor.withValues(alpha: 0.5)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _accent.withValues(alpha: 0.6),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          width: 1.2),
+                    ),
+                    child: Text('$rank',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900)),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.lightbulb_outline_rounded,
-                          color: _accent, size: 14),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(c.howToUse,
+                  const SizedBox(width: 10),
+                  Text(c.emoji, style: const TextStyle(fontSize: 26)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(c.name,
                             style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                height: 1.4)),
-                      ),
-                    ],
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800)),
+                        Text(
+                          [c.chakra, c.element]
+                              .where((e) => e != null)
+                              .join(' · '),
+                          style: TextStyle(
+                              color: c.displayColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _accent.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text('$score Treffer',
+                        style: const TextStyle(
+                            color: _accent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800)),
+                  ),
+                ]),
+                const SizedBox(height: 10),
+                Text(c.spiritualEffect,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 13, height: 1.5)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    if (c.birthMonths.contains(_profile!.birthDate.month))
+                      _matchPill('Geburtsmonat'),
+                    if (c.zodiac.contains(_zodiacFor(_profile!.birthDate)))
+                      _matchPill('Sternzeichen'),
+                    if (c.lifePathNumber != null &&
+                        c.lifePathNumber ==
+                            NumerologyEngine.calculateLifePath(
+                                _profile!.birthDate))
+                      _matchPill('Lebenszahl'),
+                  ],
                 ),
+                if (c.howToUse.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.lightbulb_outline_rounded,
+                            color: _accent, size: 14),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(c.howToUse,
+                              style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  height: 1.4)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -319,8 +327,8 @@ class _BirthstoneMatcherScreenState extends State<BirthstoneMatcherScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF66BB6A).withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-              color: const Color(0xFF66BB6A).withValues(alpha: 0.5)),
+          border:
+              Border.all(color: const Color(0xFF66BB6A).withValues(alpha: 0.5)),
         ),
         child: Text('✓ $label',
             style: const TextStyle(

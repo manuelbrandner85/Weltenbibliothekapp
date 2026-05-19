@@ -93,7 +93,8 @@ class ModerationQueueService {
           .order('created_at', ascending: false)
           .limit(limit);
       return (res as List)
-          .map((r) => MessageReport.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              MessageReport.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Queue: $e');

@@ -112,7 +112,8 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
 
   Future<void> load() async {
     if (_isLoading) {
-      if (kDebugMode) debugPrint('🔐 AdminState: load() skipped (already running)');
+      if (kDebugMode)
+        debugPrint('🔐 AdminState: load() skipped (already running)');
       return;
     }
     _isLoading = true;
@@ -167,7 +168,8 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
         }
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ AdminState: Supabase-Load fehlgeschlagen: $e');
+      if (kDebugMode)
+        debugPrint('⚠️ AdminState: Supabase-Load fehlgeschlagen: $e');
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -178,8 +180,10 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
 
     if (username == null || username.isEmpty) {
       try {
-        final boxName = world == 'materie' ? 'materie_profiles' : 'energie_profiles';
-        final raw = SqliteStorageService.instance.getSync(boxName, 'current_profile');
+        final boxName =
+            world == 'materie' ? 'materie_profiles' : 'energie_profiles';
+        final raw =
+            SqliteStorageService.instance.getSync(boxName, 'current_profile');
         if (raw != null) {
           final data = Map<String, dynamic>.from(raw as Map);
           username = data['username'] as String?;
@@ -204,9 +208,11 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       final resolverRole = await AdminResolver.resolveCurrentRole();
       if (AppRoles.isAdmin(resolverRole)) {
         // Username: behalte was wir aus Hive/SQLite haben — sonst leer.
-        state = AdminState.fromCache(world, username ?? '(admin)', resolverRole);
+        state =
+            AdminState.fromCache(world, username ?? '(admin)', resolverRole);
         if (kDebugMode) {
-          debugPrint('🛡️ AdminState: AdminResolver-Pfad – role=$resolverRole, $state');
+          debugPrint(
+              '🛡️ AdminState: AdminResolver-Pfad – role=$resolverRole, $state');
         }
         return;
       }
@@ -215,7 +221,8 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
     }
 
     if (username == null || username.isEmpty) {
-      if (kDebugMode) debugPrint('⚠️ AdminState: Kein Profil gefunden ($world)');
+      if (kDebugMode)
+        debugPrint('⚠️ AdminState: Kein Profil gefunden ($world)');
       state = AdminState.empty(world);
       return;
     }

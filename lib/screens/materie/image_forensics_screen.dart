@@ -20,7 +20,6 @@ class ImageForensicsScreen extends StatefulWidget {
 
 class _ImageForensicsScreenState extends State<ImageForensicsScreen>
     with SingleTickerProviderStateMixin {
-
   // State
   File? _selectedImage;
   Uint8List? _imageBytes;
@@ -35,11 +34,11 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
   late AnimationController _pulseCtrl;
 
   // Colors
-  static const _bg    = Color(0xFF060A14);
-  static const _card  = Color(0xFF0D1525);
-  static const _blue  = Color(0xFF2979FF);
+  static const _bg = Color(0xFF060A14);
+  static const _card = Color(0xFF0D1525);
+  static const _blue = Color(0xFF2979FF);
   static const _green = Color(0xFF00E676);
-  static const _red   = Color(0xFFFF1744);
+  static const _red = Color(0xFFFF1744);
   static const _amber = Color(0xFFFFAB00);
 
   @override
@@ -163,7 +162,6 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
       } else {
         _showWarning('⚠️ KI-API nicht verfügbar – lokale Analyse durchgeführt');
       }
-
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -250,7 +248,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
       padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
       decoration: BoxDecoration(
         color: _card,
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
+        border: Border(
+            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
       ),
       child: Row(
         children: [
@@ -265,10 +264,13 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
             children: [
               const Text('Image Forensics',
                   style: TextStyle(
-                      color: Colors.white, fontSize: 18,
-                      fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3)),
               Text('Echtheit & KI-Erkennung',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.45),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.45),
                       fontSize: 11)),
             ],
           ),
@@ -286,7 +288,9 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                 Icon(Icons.auto_awesome, color: Color(0xFF00E676), size: 12),
                 SizedBox(width: 5),
                 Text('AI-powered',
-                    style: TextStyle(color: Color(0xFF00E676), fontSize: 10,
+                    style: TextStyle(
+                        color: Color(0xFF00E676),
+                        fontSize: 10,
                         fontWeight: FontWeight.w600)),
               ],
             ),
@@ -312,7 +316,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
             child: Text(
               'Kostenlose KI-Bildanalyse via Hugging Face + lokale EXIF-Forensik. '
               'Erkennt: KI-generierte Bilder, Manipulation, Deep Fakes.',
-              style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.45),
+              style:
+                  TextStyle(color: Colors.white60, fontSize: 11, height: 1.45),
             ),
           ),
         ],
@@ -360,7 +365,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
             borderRadius: BorderRadius.circular(10),
             child: Image.file(
               _selectedImage! as dynamic,
-              width: 64, height: 64,
+              width: 64,
+              height: 64,
               fit: BoxFit.cover,
             ),
           ),
@@ -370,16 +376,21 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Bild ausgewählt',
-                    style: TextStyle(color: Colors.white,
-                        fontWeight: FontWeight.w600, fontSize: 13)),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13)),
                 const SizedBox(height: 3),
                 Text('${sizeKB.toStringAsFixed(1)} KB',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 11)),
                 if (_imageHash != null) ...[
                   const SizedBox(height: 3),
                   Text('Hash: ${_imageHash!.substring(0, 12)}…',
-                      style: TextStyle(color: _blue.withValues(alpha: 0.7),
-                          fontSize: 10, fontFamily: 'monospace')),
+                      style: TextStyle(
+                          color: _blue.withValues(alpha: 0.7),
+                          fontSize: 10,
+                          fontFamily: 'monospace')),
                 ],
               ],
             ),
@@ -422,16 +433,14 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                       const Color(0xFFC2185B),
                     ],
                   ),
-            color: _isAnalyzing
-                ? Colors.white.withValues(alpha: 0.05)
-                : null,
+            color: _isAnalyzing ? Colors.white.withValues(alpha: 0.05) : null,
             borderRadius: BorderRadius.circular(18),
             boxShadow: _isAnalyzing
                 ? null
                 : [
                     BoxShadow(
-                      color: const Color(0xFFE91E63).withValues(
-                          alpha: 0.2 + _pulseCtrl.value * 0.15),
+                      color: const Color(0xFFE91E63)
+                          .withValues(alpha: 0.2 + _pulseCtrl.value * 0.15),
                       blurRadius: 20,
                       offset: const Offset(0, 6),
                     ),
@@ -443,7 +452,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(
-                        width: 18, height: 18,
+                        width: 18,
+                        height: 18,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white70),
                       ),
@@ -453,7 +463,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                             ? '🤖 Analysiere…'
                             : _analysisStatus,
                         style: const TextStyle(
-                            color: Colors.white70, fontSize: 13,
+                            color: Colors.white70,
+                            fontSize: 13,
                             fontWeight: FontWeight.w500),
                       ),
                     ],
@@ -536,8 +547,10 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                   const SizedBox(width: 10),
                   Text(verdict,
                       style: TextStyle(
-                          color: verdictColor, fontSize: 18,
-                          fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                          color: verdictColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -547,7 +560,11 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                   _MetricChip(
                     label: 'Manipulations-Score',
                     value: '$score%',
-                    color: score > 50 ? _red : score > 25 ? _amber : _green,
+                    color: score > 50
+                        ? _red
+                        : score > 25
+                            ? _amber
+                            : _green,
                   ),
                   _MetricChip(
                     label: 'Konfidenz',
@@ -558,7 +575,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
               ),
               const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: isAI
                       ? _green.withValues(alpha: 0.1)
@@ -583,7 +601,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                       isAI ? 'KI-Analyse: $aiSource' : 'Lokale Analyse',
                       style: TextStyle(
                           color: isAI ? _green : Colors.white38,
-                          fontSize: 10, fontWeight: FontWeight.w600),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -610,8 +629,10 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
               child: Text(
                 '"${a['aiCaption']}"',
                 style: const TextStyle(
-                    color: Colors.white70, fontSize: 13,
-                    fontStyle: FontStyle.italic, height: 1.5),
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                    height: 1.5),
               ),
             ),
           ),
@@ -655,7 +676,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                               : '✅ Authentisches Foto',
                           style: TextStyle(
                               color: a['isAIGenerated'] == true ? _red : _green,
-                              fontWeight: FontWeight.w700, fontSize: 13),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13),
                         ),
                         const SizedBox(height: 3),
                         Text(
@@ -694,8 +716,8 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                   Expanded(
                     child: Text(
                       '${a['imageCategory']}',
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 13),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                   ),
                 ],
@@ -757,10 +779,12 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
                     color: Colors.white38, size: 16),
                 const SizedBox(width: 8),
                 Text('Format: ${a['format']}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 12)),
                 const SizedBox(width: 16),
                 Text('Größe: ${a['imageSizeKB']} KB',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ),
@@ -783,8 +807,10 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
           const SizedBox(width: 7),
           Text(title,
               style: TextStyle(
-                  color: color, fontSize: 12,
-                  fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3)),
         ]),
         const SizedBox(height: 8),
         child,
@@ -827,8 +853,7 @@ class _PickerButton extends StatelessWidget {
             const SizedBox(width: 8),
             Text(label,
                 style: TextStyle(
-                    color: color, fontSize: 14,
-                    fontWeight: FontWeight.w600)),
+                    color: color, fontSize: 14, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -851,12 +876,10 @@ class _MetricChip extends StatelessWidget {
       children: [
         Text(value,
             style: TextStyle(
-                color: color, fontSize: 22,
-                fontWeight: FontWeight.w800)),
+                color: color, fontSize: 22, fontWeight: FontWeight.w800)),
         const SizedBox(height: 2),
         Text(label,
-            style: const TextStyle(
-                color: Colors.white38, fontSize: 10)),
+            style: const TextStyle(color: Colors.white38, fontSize: 10)),
       ],
     );
   }
@@ -910,12 +933,15 @@ class _TestResultCard extends StatelessWidget {
                 result['suspicious'] == true
                     ? Icons.warning_amber_rounded
                     : Icons.check_circle_outline,
-                color: color, size: 16,
+                color: color,
+                size: 16,
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(reason,
-                    style: TextStyle(color: color, fontSize: 12,
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600)),
               ),
             ],
@@ -926,12 +952,9 @@ class _TestResultCard extends StatelessWidget {
                 style: const TextStyle(color: Colors.white54, fontSize: 11)),
           ],
           Row(children: [
-            if (result['isJpeg'] == true)
-              _Tag('JPEG', Colors.blue),
-            if (result['isPng'] == true)
-              _Tag('PNG', Colors.purple),
-            if (result['hasExifData'] == true)
-              _Tag('EXIF', Colors.teal),
+            if (result['isJpeg'] == true) _Tag('JPEG', Colors.blue),
+            if (result['isPng'] == true) _Tag('PNG', Colors.purple),
+            if (result['hasExifData'] == true) _Tag('EXIF', Colors.teal),
           ]),
         ],
       ),
@@ -954,8 +977,8 @@ class _Tag extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(text,
-          style: TextStyle(color: color, fontSize: 9,
-              fontWeight: FontWeight.w700)),
+          style: TextStyle(
+              color: color, fontSize: 9, fontWeight: FontWeight.w700)),
     );
   }
 }

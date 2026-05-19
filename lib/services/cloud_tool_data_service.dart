@@ -47,7 +47,8 @@ class CloudToolDataService {
       }, onConflict: 'user_id,tool_key,item_id');
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('⚠️ CloudToolDataService.upsert($toolKey/$itemId) fehlgeschlagen: $e');
+        debugPrint(
+            '⚠️ CloudToolDataService.upsert($toolKey/$itemId) fehlgeschlagen: $e');
         debugPrint('$st');
       }
     }
@@ -67,7 +68,8 @@ class CloudToolDataService {
           .eq('item_id', itemId);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ CloudToolDataService.delete($toolKey/$itemId) fehlgeschlagen: $e');
+        debugPrint(
+            '⚠️ CloudToolDataService.delete($toolKey/$itemId) fehlgeschlagen: $e');
       }
     }
   }
@@ -95,7 +97,8 @@ class CloudToolDataService {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ CloudToolDataService.listAll($toolKey) fehlgeschlagen: $e');
+        debugPrint(
+            '⚠️ CloudToolDataService.listAll($toolKey) fehlgeschlagen: $e');
       }
       return const [];
     }
@@ -122,7 +125,8 @@ class CloudToolDataService {
       return Map<String, dynamic>.from(row['data'] as Map);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ CloudToolDataService.get($toolKey/$itemId) fehlgeschlagen: $e');
+        debugPrint(
+            '⚠️ CloudToolDataService.get($toolKey/$itemId) fehlgeschlagen: $e');
       }
       return null;
     }

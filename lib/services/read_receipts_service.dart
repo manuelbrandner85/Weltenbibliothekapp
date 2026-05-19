@@ -42,7 +42,8 @@ class ReadReceiptsService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (kDebugMode) {
-          debugPrint('✅ [ReadReceipts] Marked as read: ${data['receipts']?.length ?? 0} readers');
+          debugPrint(
+              '✅ [ReadReceipts] Marked as read: ${data['receipts']?.length ?? 0} readers');
         }
 
         // Cache aktualisieren

@@ -29,8 +29,7 @@ class AcademicCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.school,
-                  color: Color(0xFF26A69A), size: 18),
+              const Icon(Icons.school, color: Color(0xFF26A69A), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'AKADEMIE',
@@ -130,8 +129,7 @@ class AcademicCard extends StatelessWidget {
                 if (p.url != null) ...[
                   const SizedBox(width: 6),
                   Icon(Icons.open_in_new,
-                      size: 13,
-                      color: Colors.white.withValues(alpha: 0.5)),
+                      size: 13, color: Colors.white.withValues(alpha: 0.5)),
                 ],
               ],
             ),
@@ -152,8 +150,8 @@ class AcademicCard extends StatelessWidget {
               children: [
                 if (p.year != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       color: Colors.white.withValues(alpha: 0.08),
@@ -169,8 +167,8 @@ class AcademicCard extends StatelessWidget {
                   ),
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
                     color: const Color(0xFF26A69A).withValues(alpha: 0.18),

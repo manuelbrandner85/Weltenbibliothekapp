@@ -175,7 +175,8 @@ class _BirthPlaceAutocompleteState extends State<BirthPlaceAutocomplete>
       try {
         results = await _fallbackNominatimSearch(query);
       } catch (_) {
-        errorMsg = 'Suche aktuell nicht verfuegbar - du kannst auch frei tippen';
+        errorMsg =
+            'Suche aktuell nicht verfuegbar - du kannst auch frei tippen';
       }
     }
 
@@ -186,8 +187,7 @@ class _BirthPlaceAutocompleteState extends State<BirthPlaceAutocomplete>
       _suggestions = results.take(_maxResults).toList(growable: false);
     });
 
-    if (_focusNode.hasFocus &&
-        (_suggestions.isNotEmpty || _error != null)) {
+    if (_focusNode.hasFocus && (_suggestions.isNotEmpty || _error != null)) {
       _showSuggestionsList();
     } else {
       _hideSuggestions();
@@ -228,8 +228,8 @@ class _BirthPlaceAutocompleteState extends State<BirthPlaceAutocomplete>
       String? region;
       if (addr is Map) {
         country = addr['country']?.toString();
-        region = (addr['state'] ?? addr['region'] ?? addr['county'])
-            ?.toString();
+        region =
+            (addr['state'] ?? addr['region'] ?? addr['county'])?.toString();
       }
       out.add(GeocodedPlace(
         displayName: name,
@@ -531,8 +531,7 @@ class _BirthPlaceAutocompleteState extends State<BirthPlaceAutocomplete>
         splashColor: accent.withValues(alpha: 0.15),
         highlightColor: accent.withValues(alpha: 0.08),
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -110,8 +110,7 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
       emoji: '🧘',
       title: 'Meditation',
       shortDesc: 'NF-κB ↓, Telomerase ↑.',
-      evidence:
-          'MBSR senkt NF-κB-Entzündungsgene (Black 2013), Davidson 2008: '
+      evidence: 'MBSR senkt NF-κB-Entzündungsgene (Black 2013), Davidson 2008: '
           'Telomerase-Aktivität +30% nach 3 Monaten Retreat.',
       target: '15-30 Min täglich',
       wikiQuery: 'Achtsamkeit',
@@ -143,8 +142,7 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
       emoji: '☀️',
       title: 'Sonnenlicht 20 Min',
       shortDesc: 'Vitamin-D-Rezeptor (VDR) reguliert >2000 Gene.',
-      evidence:
-          'VDR-Aktivierung beeinflusst Immun-, Krebs-, Knochengene. '
+      evidence: 'VDR-Aktivierung beeinflusst Immun-, Krebs-, Knochengene. '
           '20 Min Morgensonne synchronisiert auch zirkadiane SCN-Gene (Per1/2/3, Bmal1).',
       target: '15-30 Min direktes Sonnenlicht',
       wikiQuery: 'Vitamin_D',
@@ -193,7 +191,8 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
     final last7 = <int>[];
     for (var i = 0; i < 7; i++) {
       final d = now.subtract(Duration(days: i));
-      final key = '${_kvKey}_${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      final key =
+          '${_kvKey}_${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
       last7.add((prefs.getStringList(key) ?? const []).length);
     }
     _last7Days = last7;
@@ -255,7 +254,8 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = _practices.isEmpty ? 0.0 : _doneToday.length / _practices.length;
+    final progress =
+        _practices.isEmpty ? 0.0 : _doneToday.length / _practices.length;
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -300,12 +300,16 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('12 evidenzbasierte Praktiken',
-              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           const Text(
             'Lebensstil-Faktoren, die Genexpression modulieren. Tippe auf eine Karte '
             'für die Studienlage.',
-            style: TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.5),
+            style:
+                TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.5),
           ),
           const SizedBox(height: 14),
           // Heute-Progress
@@ -320,7 +324,10 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
           ),
           const SizedBox(height: 6),
           Text('${_doneToday.length} / ${_practices.length} heute',
-              style: const TextStyle(color: _accentLight, fontSize: 12, fontWeight: FontWeight.bold)),
+              style: const TextStyle(
+                  color: _accentLight,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 14),
           // Streak + Bio-Age Stats
           Row(
@@ -356,19 +363,29 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Text('vor 6T', style: TextStyle(color: Colors.white38, fontSize: 9)),
+              Text('vor 6T',
+                  style: TextStyle(color: Colors.white38, fontSize: 9)),
               Text('5', style: TextStyle(color: Colors.white38, fontSize: 9)),
               Text('4', style: TextStyle(color: Colors.white38, fontSize: 9)),
               Text('3', style: TextStyle(color: Colors.white38, fontSize: 9)),
               Text('2', style: TextStyle(color: Colors.white38, fontSize: 9)),
-              Text('gestern', style: TextStyle(color: Colors.white38, fontSize: 9)),
-              Text('heute', style: TextStyle(color: _accentLight, fontSize: 9, fontWeight: FontWeight.bold)),
+              Text('gestern',
+                  style: TextStyle(color: Colors.white38, fontSize: 9)),
+              Text('heute',
+                  style: TextStyle(
+                      color: _accentLight,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             _bioAgeNote(bioOffset),
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11, fontStyle: FontStyle.italic, height: 1.4),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                height: 1.4),
           ),
         ],
       ),
@@ -392,9 +409,13 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(value,
-                    style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
                 Text(label,
-                    style: const TextStyle(color: Colors.white70, fontSize: 9, height: 1.3)),
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 9, height: 1.3)),
               ],
             ),
           ),
@@ -420,7 +441,9 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
             heightFactor: fullness > 0 ? fullness : 0.05,
             child: Container(
               decoration: BoxDecoration(
-                color: fullness > 0 ? (isToday ? _accentLight : _accent) : Colors.white12,
+                color: fullness > 0
+                    ? (isToday ? _accentLight : _accent)
+                    : Colors.white12,
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
@@ -640,7 +663,8 @@ class _PracticeDetailSheetState extends State<_PracticeDetailSheet> {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.08)),
                 ),
                 child: Text(
                   _wiki!.extract,
@@ -660,7 +684,8 @@ class _PracticeDetailSheetState extends State<_PracticeDetailSheet> {
                       'https://de.wikipedia.org/wiki/${Uri.encodeComponent(p.wikiQuery)}',
                     );
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
                     }
                   },
                   icon: Icon(Icons.open_in_new, color: widget.accent),

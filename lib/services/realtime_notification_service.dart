@@ -134,7 +134,8 @@ class RealtimeNotificationService {
       final client = supabase;
       final keyValue = userId;
       _channel = client
-          .channel('rt-notif-$keyValue-${DateTime.now().millisecondsSinceEpoch}')
+          .channel(
+              'rt-notif-$keyValue-${DateTime.now().millisecondsSinceEpoch}')
           .onPostgresChanges(
             event: PostgresChangeEvent.insert,
             schema: 'public',
@@ -158,8 +159,7 @@ class RealtimeNotificationService {
           )
           .subscribe();
       if (kDebugMode) {
-        debugPrint(
-            '🔔 Realtime-Queue subscribed via $filterColumn=$keyValue');
+        debugPrint('🔔 Realtime-Queue subscribed via $filterColumn=$keyValue');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Realtime-Queue subscribe failed: $e');

@@ -65,8 +65,8 @@ class UserBlockService extends ChangeNotifier {
       Iterable<Map<String, dynamic>> messages) {
     if (_blocked.isEmpty) return messages;
     return messages.where((m) {
-      final u  = (m['username'] as String?)?.toLowerCase() ?? '';
-      final id = (m['user_id']  as String?)?.toLowerCase() ?? '';
+      final u = (m['username'] as String?)?.toLowerCase() ?? '';
+      final id = (m['user_id'] as String?)?.toLowerCase() ?? '';
       return !_blocked.contains(u) && !_blocked.contains(id);
     });
   }

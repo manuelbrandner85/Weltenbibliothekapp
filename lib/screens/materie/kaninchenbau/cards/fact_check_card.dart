@@ -29,8 +29,7 @@ class FactCheckCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check,
-                  color: Color(0xFF66BB6A), size: 18),
+              const Icon(Icons.fact_check, color: Color(0xFF66BB6A), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'FAKTEN-CHECK',
@@ -106,8 +105,8 @@ class FactCheckCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
                     color: color.withValues(alpha: 0.18),
@@ -133,8 +132,7 @@ class FactCheckCard extends StatelessWidget {
                 if (c.url != null) ...[
                   const SizedBox(width: 6),
                   Icon(Icons.open_in_new,
-                      size: 13,
-                      color: Colors.white.withValues(alpha: 0.5)),
+                      size: 13, color: Colors.white.withValues(alpha: 0.5)),
                 ],
               ],
             ),

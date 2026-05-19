@@ -32,6 +32,7 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _surface = Color(0xFF1A0000);
   static const Color _surfaceLight = Color(0xFF2A0808);
   static const Color _textPrimary = Colors.white;
@@ -101,7 +102,8 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final rawResults = (data['results'] as List?) ?? [];
-        final total = ((data['meta'] as Map?)?['results'] as Map?)?['total'] as int? ?? 0;
+        final total =
+            ((data['meta'] as Map?)?['results'] as Map?)?['total'] as int? ?? 0;
         final reactions = rawResults.map((e) {
           final m = e as Map<String, dynamic>;
           return _FdaReaction(
@@ -130,7 +132,8 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
       if (kDebugMode) debugPrint('FDA error: $e');
       if (mounted) {
         setState(() {
-          _fdaError = 'Fehler beim Laden der FDA-Daten. Bitte Verbindung prüfen.';
+          _fdaError =
+              'Fehler beim Laden der FDA-Daten. Bitte Verbindung prüfen.';
           _fdaLoading = false;
         });
       }
@@ -155,7 +158,9 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
       );
       final res = await http.get(
         url,
-        headers: {'User-Agent': 'WeltenbibliothekApp/1.0 (app@weltenbibliothek.de)'},
+        headers: {
+          'User-Agent': 'WeltenbibliothekApp/1.0 (app@weltenbibliothek.de)'
+        },
       ).timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -169,11 +174,14 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
           final authorList = (m['author'] as List?) ?? [];
           final authors = authorList
               .take(3)
-              .map((a) => (a as Map<String, dynamic>)['family'] as String? ?? '')
+              .map(
+                  (a) => (a as Map<String, dynamic>)['family'] as String? ?? '')
               .where((s) => s.isNotEmpty)
               .join(', ');
-          final dateParts = (m['published-print'] as Map?)?['date-parts'] as List?;
-          final year = (dateParts?.isNotEmpty == true && (dateParts!.first as List).isNotEmpty)
+          final dateParts =
+              (m['published-print'] as Map?)?['date-parts'] as List?;
+          final year = (dateParts?.isNotEmpty == true &&
+                  (dateParts!.first as List).isNotEmpty)
               ? (dateParts.first as List).first?.toString() ?? ''
               : '';
           final doi = (m['DOI'] as String?) ?? '';
@@ -199,7 +207,8 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
       if (kDebugMode) debugPrint('CrossRef retraction error: $e');
       if (mounted) {
         setState(() {
-          _retractError = 'Fehler beim Laden der Retraction-Daten. Bitte Verbindung prüfen.';
+          _retractError =
+              'Fehler beim Laden der Retraction-Daten. Bitte Verbindung prüfen.';
           _retractLoading = false;
         });
       }
@@ -240,9 +249,10 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
             firstName: (m['Physician_First_Name'] as String?) ?? '',
             lastName: (m['Physician_Last_Name'] as String?) ?? '',
             amount: amount,
-            company: (m['Applicable_Manufacturer_or_Applicable_GPO_Making_Payment_Name']
-                    as String?) ??
-                '',
+            company:
+                (m['Applicable_Manufacturer_or_Applicable_GPO_Making_Payment_Name']
+                        as String?) ??
+                    '',
             paymentType:
                 (m['Nature_of_Payment_or_Transfer_of_Value'] as String?) ?? '',
             date: (m['Date_of_Payment'] as String?) ?? '',
@@ -306,7 +316,8 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: _accent.withAlpha(80)),
               ),
-              child: const Icon(Icons.health_and_safety, color: _accent, size: 18),
+              child:
+                  const Icon(Icons.health_and_safety, color: _accent, size: 18),
             ),
             const SizedBox(width: 10),
             const Flexible(
@@ -328,11 +339,14 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
           indicatorWeight: 2.5,
           labelColor: _accent,
           unselectedLabelColor: _textMuted,
-          labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+          labelStyle:
+              const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           tabs: const [
             Tab(text: 'OpenFDA', icon: Icon(Icons.warning_amber, size: 16)),
-            Tab(text: 'Retractions', icon: Icon(Icons.remove_circle_outline, size: 16)),
+            Tab(
+                text: 'Retractions',
+                icon: Icon(Icons.remove_circle_outline, size: 16)),
             Tab(text: 'Pharma-\$', icon: Icon(Icons.attach_money, size: 16)),
           ],
         ),
@@ -510,7 +524,8 @@ class _FdaTab extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'Medikament suchen...',
                       hintStyle: TextStyle(color: textMuted, fontSize: 14),
-                      prefixIcon: Icon(Icons.search, color: textMuted, size: 20),
+                      prefixIcon:
+                          Icon(Icons.search, color: textMuted, size: 20),
                       filled: true,
                       fillColor: surfaceLight,
                       border: OutlineInputBorder(
@@ -533,7 +548,8 @@ class _FdaTab extends StatelessWidget {
                       color: accent,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.search, color: Colors.white, size: 20),
+                    child:
+                        const Icon(Icons.search, color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -580,7 +596,8 @@ class _FdaTab extends StatelessWidget {
                         color: accent, strokeWidth: 2.5),
                   )
                 : error != null
-                    ? _ErrorCard(message: error!, accent: accent, surface: surface)
+                    ? _ErrorCard(
+                        message: error!, accent: accent, surface: surface)
                     : results.isEmpty
                         ? _EmptyState(
                             message:
@@ -692,8 +709,7 @@ class _FdaReactionCard extends StatelessWidget {
               const SizedBox(width: 8),
               // Severity chip
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: severityColor.withAlpha(30),
                   borderRadius: BorderRadius.circular(5),
@@ -828,7 +844,8 @@ class _RetractTab extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'Medikament oder Thema...',
                       hintStyle: TextStyle(color: textMuted, fontSize: 14),
-                      prefixIcon: Icon(Icons.search, color: textMuted, size: 20),
+                      prefixIcon:
+                          Icon(Icons.search, color: textMuted, size: 20),
                       filled: true,
                       fillColor: surfaceLight,
                       border: OutlineInputBorder(
@@ -851,7 +868,8 @@ class _RetractTab extends StatelessWidget {
                       color: accent,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.search, color: Colors.white, size: 20),
+                    child:
+                        const Icon(Icons.search, color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -869,7 +887,8 @@ class _RetractTab extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Zurückgezogene Studien via CrossRef. Tippe auf eine Karte für Details.',
-                    style: TextStyle(color: accent.withAlpha(200), fontSize: 11),
+                    style:
+                        TextStyle(color: accent.withAlpha(200), fontSize: 11),
                   ),
                 ),
               ],
@@ -892,7 +911,8 @@ class _RetractTab extends StatelessWidget {
                         color: accent, strokeWidth: 2.5),
                   )
                 : error != null
-                    ? _ErrorCard(message: error!, accent: accent, surface: surface)
+                    ? _ErrorCard(
+                        message: error!, accent: accent, surface: surface)
                     : results.isEmpty
                         ? _EmptyState(
                             message:
@@ -1140,7 +1160,8 @@ class _CmsTab extends StatelessWidget {
                     decoration: InputDecoration(
                       hintText: 'Arzt-Nachname oder Firma...',
                       hintStyle: TextStyle(color: textMuted, fontSize: 14),
-                      prefixIcon: Icon(Icons.search, color: textMuted, size: 20),
+                      prefixIcon:
+                          Icon(Icons.search, color: textMuted, size: 20),
                       filled: true,
                       fillColor: surfaceLight,
                       border: OutlineInputBorder(
@@ -1163,7 +1184,8 @@ class _CmsTab extends StatelessWidget {
                       color: accent,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.search, color: Colors.white, size: 20),
+                    child:
+                        const Icon(Icons.search, color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -1174,8 +1196,7 @@ class _CmsTab extends StatelessWidget {
             Container(
               width: double.infinity,
               color: accent.withAlpha(25),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   Icon(Icons.monetization_on, color: accent, size: 16),
@@ -1210,7 +1231,8 @@ class _CmsTab extends StatelessWidget {
                         color: accent, strokeWidth: 2.5),
                   )
                 : error != null
-                    ? _ErrorCard(message: error!, accent: accent, surface: surface)
+                    ? _ErrorCard(
+                        message: error!, accent: accent, surface: surface)
                     : results.isEmpty
                         ? _EmptyState(
                             message:
@@ -1269,7 +1291,8 @@ class _CmsPaymentCard extends StatelessWidget {
   // Farb-Mapping für Zahlungstypen
   Color _typeColor(String type) {
     final t = type.toLowerCase();
-    if (t.contains('food') || t.contains('meal')) return const Color(0xFF4CAF50);
+    if (t.contains('food') || t.contains('meal'))
+      return const Color(0xFF4CAF50);
     if (t.contains('speaking')) return const Color(0xFF2196F3);
     if (t.contains('consulting')) return const Color(0xFFFF9800);
     if (t.contains('research')) return const Color(0xFF9C27B0);
@@ -1347,7 +1370,8 @@ class _CmsPaymentCard extends StatelessWidget {
               ),
               // Amount badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: accent.withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
@@ -1390,12 +1414,13 @@ class _CmsPaymentCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
                     color: typeColor.withAlpha(30),
                     borderRadius: BorderRadius.circular(5),
-                    border: Border.all(
-                        color: typeColor.withAlpha(100), width: 1),
+                    border:
+                        Border.all(color: typeColor.withAlpha(100), width: 1),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

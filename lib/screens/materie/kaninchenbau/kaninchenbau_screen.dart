@@ -144,7 +144,8 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
         s.loadedApiCount++;
       });
       Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted && !s.disposed) setState(() => s.showLoadingOverlay = false);
+        if (mounted && !s.disposed)
+          setState(() => s.showLoadingOverlay = false);
       });
     });
 
@@ -187,7 +188,9 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
 
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted || s.disposed) return;
-      _service.fetchMoneyFlows(s.topic, networkContext: s.networkNodes).then((flows) {
+      _service
+          .fetchMoneyFlows(s.topic, networkContext: s.networkNodes)
+          .then((flows) {
         if (!mounted || s.disposed) return;
         setState(() {
           s.moneyFlows = flows;
@@ -400,82 +403,153 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
         s.euVotes = votes;
         s.euVotesLoading = false;
         s.loadedApiCount++;
-
       });
     });
 
     // ── MINDBLOW-TIER (18 Tiefenquellen) ───────────────────────────────────
     _service.fetchUsaSpending(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.usaSpending = items; s.usaSpendingLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.usaSpending = items;
+        s.usaSpendingLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchWorldBank(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.worldBank = items; s.worldBankLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.worldBank = items;
+        s.worldBankLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchOpenOwnership(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.openOwnership = items; s.openOwnershipLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.openOwnership = items;
+        s.openOwnershipLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchOpenSpending(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.openSpending = items; s.openSpendingLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.openSpending = items;
+        s.openSpendingLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchCourtListener(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.courtListener = items; s.courtListenerLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.courtListener = items;
+        s.courtListenerLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchMuckRock(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.muckRock = items; s.muckRockLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.muckRock = items;
+        s.muckRockLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchHudoc(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.hudoc = items; s.hudocLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.hudoc = items;
+        s.hudocLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchEuCuria(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.euCuria = items; s.euCuriaLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.euCuria = items;
+        s.euCuriaLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchOpenSecrets(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.openSecrets = items; s.openSecretsLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.openSecrets = items;
+        s.openSecretsLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchFec(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.fec = items; s.fecLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.fec = items;
+        s.fecLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchLittleSis(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.littleSis = items; s.littleSisLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.littleSis = items;
+        s.littleSisLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchEveryPolitician(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.everyPolitician = items; s.everyPoliticianLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.everyPolitician = items;
+        s.everyPoliticianLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchDocumentCloud(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.documentCloud = items; s.documentCloudLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.documentCloud = items;
+        s.documentCloudLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchWikiLeaks(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.wikiLeaks = items; s.wikiLeaksLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.wikiLeaks = items;
+        s.wikiLeaksLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchCiaCrest(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.ciaCrest = items; s.ciaCrestLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.ciaCrest = items;
+        s.ciaCrestLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchSnowden(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.snowden = items; s.snowdenLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.snowden = items;
+        s.snowdenLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchOcNetwork(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.ocNetwork = items; s.ocNetworkLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.ocNetwork = items;
+        s.ocNetworkLoading = false;
+        s.loadedApiCount++;
+      });
     });
     _service.fetchCorpWatch(s.topic).then((items) {
       if (!mounted || s.disposed) return;
-      setState(() { s.corpWatch = items; s.corpWatchLoading = false; s.loadedApiCount++; });
+      setState(() {
+        s.corpWatch = items;
+        s.corpWatchLoading = false;
+        s.loadedApiCount++;
+      });
     });
 
     // Geldflüsse (warten bis Network-Daten da sind, dann mit Kontext)
@@ -632,7 +706,8 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       if (names.isNotEmpty) buf.writeln('🕸️ Netzwerk: $names');
     }
     if (s.keyPersons.isNotEmpty) {
-      buf.writeln('👤 Schlüsselpersonen: ${s.keyPersons.take(4).map((p) => p.name).join(', ')}');
+      buf.writeln(
+          '👤 Schlüsselpersonen: ${s.keyPersons.take(4).map((p) => p.name).join(', ')}');
     }
     if (s.rssItems.isNotEmpty) {
       buf.writeln('');
@@ -647,7 +722,8 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
     }
     if (s.aiInsight != null && s.aiInsight!.isNotEmpty) {
       buf.writeln('');
-      buf.writeln('🤖 Virgil: ${s.aiInsight!.substring(0, math.min(200, s.aiInsight!.length))}…');
+      buf.writeln(
+          '🤖 Virgil: ${s.aiInsight!.substring(0, math.min(200, s.aiInsight!.length))}…');
     }
     buf.writeln('');
     buf.writeln('— via Weltenbibliothek App');
@@ -844,7 +920,9 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
         return Stack(
           children: [
             Positioned(
-              left: 6, top: 0, bottom: 0,
+              left: 6,
+              top: 0,
+              bottom: 0,
               child: RoteFadenLine(scroll: _scroll, maxHeight: c.maxHeight),
             ),
             Padding(
@@ -859,18 +937,22 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     icon: Icons.search,
                     color: Color(0xFFE53935),
                   ),
-                  _stag(0, IdentityCard(
-                    topic: s.topic,
-                    data: s.identityData,
-                    loading: s.identityLoading,
-                  )),
+                  _stag(
+                      0,
+                      IdentityCard(
+                        topic: s.topic,
+                        data: s.identityData,
+                        loading: s.identityLoading,
+                      )),
                   _gap(),
                   _stag(80, DeepResearchCard(topic: s.topic)),
                   _gap(),
-                  _stag(150, AiInsightCard(
-                    insight: s.aiInsight,
-                    loading: s.aiLoading,
-                  )),
+                  _stag(
+                      150,
+                      AiInsightCard(
+                        insight: s.aiInsight,
+                        loading: s.aiLoading,
+                      )),
                   _gap(),
                   _stag(200, YoutubeCard(topic: s.topic)),
 
@@ -880,43 +962,57 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     icon: Icons.hub,
                     color: Color(0xFFFFB300),
                   ),
-                  _stag(250, NetworkCard(
-                    nodes: s.networkNodes,
-                    edges: s.networkEdges,
-                    loading: s.networkLoading,
-                    onTapNode: _openThread,
-                  )),
+                  _stag(
+                      250,
+                      NetworkCard(
+                        nodes: s.networkNodes,
+                        edges: s.networkEdges,
+                        loading: s.networkLoading,
+                        onTapNode: _openThread,
+                      )),
                   _gap(),
-                  _stag(290, KeyPersonsCard(
-                    persons: s.keyPersons,
-                    loading: s.keyPersonsLoading,
-                    onTapPerson: _openThread,
-                  )),
+                  _stag(
+                      290,
+                      KeyPersonsCard(
+                        persons: s.keyPersons,
+                        loading: s.keyPersonsLoading,
+                        onTapPerson: _openThread,
+                      )),
                   _gap(),
-                  _stag(310, PowerRelationsCard(
-                    relations: s.powerRelations,
-                    loading: s.powerRelationsLoading,
-                  )),
+                  _stag(
+                      310,
+                      PowerRelationsCard(
+                        relations: s.powerRelations,
+                        loading: s.powerRelationsLoading,
+                      )),
                   _gap(),
-                  _stag(330, LobbyingCard(
-                    entries: s.lobbyEntries,
-                    loading: s.lobbyLoading,
-                  )),
+                  _stag(
+                      330,
+                      LobbyingCard(
+                        entries: s.lobbyEntries,
+                        loading: s.lobbyLoading,
+                      )),
                   _gap(),
-                  _stag(350, AbgeordneteCard(
-                    politicians: s.abgeordnete,
-                    loading: s.abgeordneteLoading,
-                  )),
+                  _stag(
+                      350,
+                      AbgeordneteCard(
+                        politicians: s.abgeordnete,
+                        loading: s.abgeordneteLoading,
+                      )),
                   _gap(),
-                  _stag(370, MoneyFlowCard(
-                    flows: s.moneyFlows,
-                    loading: s.moneyLoading,
-                  )),
+                  _stag(
+                      370,
+                      MoneyFlowCard(
+                        flows: s.moneyFlows,
+                        loading: s.moneyLoading,
+                      )),
                   _gap(),
-                  _stag(390, SanctionsCard(
-                    entries: s.sanctions,
-                    loading: s.sanctionsLoading,
-                  )),
+                  _stag(
+                      390,
+                      SanctionsCard(
+                        entries: s.sanctions,
+                        loading: s.sanctionsLoading,
+                      )),
 
                   // ── C: ABSCHNITT 3 — KRITIK & GEGENDARSTELLUNG ──────────
                   const _SectionHeader(
@@ -1047,25 +1143,33 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                       onTap: _openThread,
                     ),
                   ),
-                  _stag(690, PubMedCard(
-                    papers: s.pubmedPapers,
-                    loading: s.pubmedLoading,
-                  )),
+                  _stag(
+                      690,
+                      PubMedCard(
+                        papers: s.pubmedPapers,
+                        loading: s.pubmedLoading,
+                      )),
                   _gap(),
-                  _stag(700, SemanticPapersCard(
-                    papers: s.semanticPapers,
-                    loading: s.semanticLoading,
-                  )),
+                  _stag(
+                      700,
+                      SemanticPapersCard(
+                        papers: s.semanticPapers,
+                        loading: s.semanticLoading,
+                      )),
                   _gap(),
-                  _stag(710, ArchiveCard(
-                    docs: s.archiveDocs,
-                    loading: s.archiveLoading,
-                  )),
+                  _stag(
+                      710,
+                      ArchiveCard(
+                        docs: s.archiveDocs,
+                        loading: s.archiveLoading,
+                      )),
                   _gap(),
-                  _stag(720, EuVotesCard(
-                    votes: s.euVotes,
-                    loading: s.euVotesLoading,
-                  )),
+                  _stag(
+                      720,
+                      EuVotesCard(
+                        votes: s.euVotes,
+                        loading: s.euVotesLoading,
+                      )),
                   _gap(),
 
                   // ── MINDBLOW: GELDFLÜSSE & WIRTSCHAFTSMACHT ─────────────
@@ -1074,13 +1178,27 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     icon: Icons.account_balance,
                     color: Color(0xFFFFB300),
                   ),
-                  _stag(760, UsaSpendingCard(items: s.usaSpending, loading: s.usaSpendingLoading)),
+                  _stag(
+                      760,
+                      UsaSpendingCard(
+                          items: s.usaSpending, loading: s.usaSpendingLoading)),
                   _gap(),
-                  _stag(770, WorldBankCard(items: s.worldBank, loading: s.worldBankLoading)),
+                  _stag(
+                      770,
+                      WorldBankCard(
+                          items: s.worldBank, loading: s.worldBankLoading)),
                   _gap(),
-                  _stag(780, OpenOwnershipCard(items: s.openOwnership, loading: s.openOwnershipLoading)),
+                  _stag(
+                      780,
+                      OpenOwnershipCard(
+                          items: s.openOwnership,
+                          loading: s.openOwnershipLoading)),
                   _gap(),
-                  _stag(790, OpenSpendingCard(items: s.openSpending, loading: s.openSpendingLoading)),
+                  _stag(
+                      790,
+                      OpenSpendingCard(
+                          items: s.openSpending,
+                          loading: s.openSpendingLoading)),
                   _gap(),
 
                   // ── MINDBLOW: GERICHTSAKTEN & RECHTSDOKUMENTE ───────────
@@ -1089,13 +1207,22 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     icon: Icons.gavel,
                     color: Color(0xFF7986CB),
                   ),
-                  _stag(800, CourtListenerCard(items: s.courtListener, loading: s.courtListenerLoading)),
+                  _stag(
+                      800,
+                      CourtListenerCard(
+                          items: s.courtListener,
+                          loading: s.courtListenerLoading)),
                   _gap(),
-                  _stag(810, MuckRockCard(items: s.muckRock, loading: s.muckRockLoading)),
+                  _stag(
+                      810,
+                      MuckRockCard(
+                          items: s.muckRock, loading: s.muckRockLoading)),
                   _gap(),
-                  _stag(820, HudocCard(items: s.hudoc, loading: s.hudocLoading)),
+                  _stag(
+                      820, HudocCard(items: s.hudoc, loading: s.hudocLoading)),
                   _gap(),
-                  _stag(830, EuCuriaCard(items: s.euCuria, loading: s.euCuriaLoading)),
+                  _stag(830,
+                      EuCuriaCard(items: s.euCuria, loading: s.euCuriaLoading)),
                   _gap(),
 
                   // ── MINDBLOW: POLITISCHE FINANZIERUNG & NETZWERKE ───────
@@ -1104,13 +1231,23 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     icon: Icons.how_to_vote,
                     color: Color(0xFFEC407A),
                   ),
-                  _stag(840, OpenSecretsCard(items: s.openSecrets, loading: s.openSecretsLoading)),
+                  _stag(
+                      840,
+                      OpenSecretsCard(
+                          items: s.openSecrets, loading: s.openSecretsLoading)),
                   _gap(),
                   _stag(850, FecCard(items: s.fec, loading: s.fecLoading)),
                   _gap(),
-                  _stag(860, LittleSisCard(items: s.littleSis, loading: s.littleSisLoading)),
+                  _stag(
+                      860,
+                      LittleSisCard(
+                          items: s.littleSis, loading: s.littleSisLoading)),
                   _gap(),
-                  _stag(870, EveryPoliticianCard(items: s.everyPolitician, loading: s.everyPoliticianLoading)),
+                  _stag(
+                      870,
+                      EveryPoliticianCard(
+                          items: s.everyPolitician,
+                          loading: s.everyPoliticianLoading)),
                   _gap(),
 
                   // ── MINDBLOW: INVESTIGATIVE DOKUMENTE & WHISTLEBLOWER ───
@@ -1119,13 +1256,24 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     icon: Icons.warning_amber,
                     color: Color(0xFFFF7043),
                   ),
-                  _stag(880, DocumentCloudCard(items: s.documentCloud, loading: s.documentCloudLoading)),
+                  _stag(
+                      880,
+                      DocumentCloudCard(
+                          items: s.documentCloud,
+                          loading: s.documentCloudLoading)),
                   _gap(),
-                  _stag(890, WikiLeaksCard(items: s.wikiLeaks, loading: s.wikiLeaksLoading)),
+                  _stag(
+                      890,
+                      WikiLeaksCard(
+                          items: s.wikiLeaks, loading: s.wikiLeaksLoading)),
                   _gap(),
-                  _stag(900, CiaCrestCard(items: s.ciaCrest, loading: s.ciaCrestLoading)),
+                  _stag(
+                      900,
+                      CiaCrestCard(
+                          items: s.ciaCrest, loading: s.ciaCrestLoading)),
                   _gap(),
-                  _stag(910, SnowdenCard(items: s.snowden, loading: s.snowdenLoading)),
+                  _stag(910,
+                      SnowdenCard(items: s.snowden, loading: s.snowdenLoading)),
                   _gap(),
 
                   // ── MINDBLOW: UNTERNEHMENS-VERFLECHTUNGEN ───────────────
@@ -1134,20 +1282,28 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     icon: Icons.business_center,
                     color: Color(0xFF26A69A),
                   ),
-                  _stag(920, OcNetworkCard(items: s.ocNetwork, loading: s.ocNetworkLoading)),
+                  _stag(
+                      920,
+                      OcNetworkCard(
+                          items: s.ocNetwork, loading: s.ocNetworkLoading)),
                   _gap(),
-                  _stag(930, CorpWatchCard(items: s.corpWatch, loading: s.corpWatchLoading)),
+                  _stag(
+                      930,
+                      CorpWatchCard(
+                          items: s.corpWatch, loading: s.corpWatchLoading)),
                   _gap(),
 
                   _stag(940, AnnotationsCard(topic: s.topic)),
                   _gap(),
                   _stag(950, SherlockCard(topic: s.topic)),
                   _gap(),
-                  _stag(960, RelatedPathsCard(
-                    topics: s.relatedTopics,
-                    loading: s.relatedLoading,
-                    onTap: _openThread,
-                  )),
+                  _stag(
+                      960,
+                      RelatedPathsCard(
+                        topics: s.relatedTopics,
+                        loading: s.relatedLoading,
+                        onTap: _openThread,
+                      )),
                 ],
               ),
             ),
@@ -1182,7 +1338,8 @@ class _ResearchLoadingOverlay extends StatefulWidget {
   });
 
   @override
-  State<_ResearchLoadingOverlay> createState() => _ResearchLoadingOverlayState();
+  State<_ResearchLoadingOverlay> createState() =>
+      _ResearchLoadingOverlayState();
 }
 
 class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
@@ -1205,7 +1362,6 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
     'PubMed Studien geladen …',
     'Internet Archive durchsucht …',
     'EU-Abstimmungen abgerufen …',
-
     'Akademische Paper durchsucht …',
     'Propaganda-Linsen kalibriert …',
     'Vergangene Snapshots geladen …',
@@ -1228,10 +1384,12 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(vsync: this, duration: const Duration(seconds: 2))
-      ..repeat(reverse: true);
-    _ring = AnimationController(vsync: this, duration: const Duration(seconds: 5))
-      ..repeat();
+    _pulse =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat(reverse: true);
+    _ring =
+        AnimationController(vsync: this, duration: const Duration(seconds: 5))
+          ..repeat();
     _advanceMsg();
   }
 
@@ -1545,7 +1703,10 @@ class _ShareFabState extends State<_ShareFab>
     return GestureDetector(
       onTap: () {
         setState(() => _expanded = !_expanded);
-        if (_expanded) _c.forward(); else _c.reverse();
+        if (_expanded)
+          _c.forward();
+        else
+          _c.reverse();
         HapticFeedback.lightImpact();
         widget.onTap();
       },

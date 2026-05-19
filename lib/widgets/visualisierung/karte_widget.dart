@@ -1,6 +1,6 @@
 /// **WELTENBIBLIOTHEK - STEP 3 VISUALISIERUNG**
 /// Karte Widget für Standorte und Organisationen
-/// 
+///
 /// Zeigt geografische Standorte von Akteuren und Organisationen
 library;
 
@@ -17,7 +17,7 @@ class KartenStandort {
   final String beschreibung;
   final List<String> verbindungen; // IDs anderer Standorte
   final double wichtigkeit; // 0.0 - 1.0
-  
+
   const KartenStandort({
     required this.id,
     required this.name,
@@ -33,7 +33,7 @@ class KarteWidget extends StatefulWidget {
   final List<KartenStandort> standorte;
   final LatLng? initialCenter;
   final double initialZoom;
-  
+
   const KarteWidget({
     super.key,
     required this.standorte,
@@ -50,7 +50,7 @@ class _KarteWidgetState extends State<KarteWidget> {
   KartenStandort? _selectedStandort;
   String _filterTyp = 'alle';
   bool _showConnections = true;
-  
+
   @override
   void dispose() {
     _mapController.dispose();
@@ -71,7 +71,7 @@ class _KarteWidgetState extends State<KarteWidget> {
     if (widget.standorte.isEmpty) {
       return const LatLng(51.1657, 10.4515); // Deutschland Zentrum
     }
-    
+
     double avgLat = 0;
     double avgLng = 0;
     for (final standort in widget.standorte) {
@@ -153,13 +153,30 @@ class _KarteWidgetState extends State<KarteWidget> {
     );
   }
 
-  Widget _darkModeTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
+  Widget _darkModeTileBuilder(
+      BuildContext context, Widget tileWidget, TileImage tile) {
     return ColorFiltered(
       colorFilter: const ColorFilter.matrix([
-        -1, 0, 0, 0, 255,
-        0, -1, 0, 0, 255,
-        0, 0, -1, 0, 255,
-        0, 0, 0, 1, 0,
+        -1,
+        0,
+        0,
+        0,
+        255,
+        0,
+        -1,
+        0,
+        0,
+        255,
+        0,
+        0,
+        -1,
+        0,
+        255,
+        0,
+        0,
+        0,
+        1,
+        0,
       ]),
       child: tileWidget,
     );
@@ -167,14 +184,14 @@ class _KarteWidgetState extends State<KarteWidget> {
 
   Widget _buildConnectionsLayer() {
     final polylines = <Polyline>[];
-    
+
     for (final standort in _filteredStandorte) {
       for (final verbindungId in standort.verbindungen) {
         final ziel = widget.standorte.firstWhere(
           (s) => s.id == verbindungId,
           orElse: () => standort,
         );
-        
+
         if (ziel.id != standort.id) {
           polylines.add(
             Polyline(
@@ -188,7 +205,7 @@ class _KarteWidgetState extends State<KarteWidget> {
         }
       }
     }
-    
+
     return PolylineLayer(polylines: polylines);
   }
 
@@ -197,7 +214,7 @@ class _KarteWidgetState extends State<KarteWidget> {
       markers: _filteredStandorte.map((standort) {
         final size = 40.0 + (standort.wichtigkeit * 30.0); // 40-70px
         final isSelected = _selectedStandort?.id == standort.id;
-        
+
         return Marker(
           point: standort.position,
           width: size,
@@ -208,7 +225,8 @@ class _KarteWidgetState extends State<KarteWidget> {
                 _selectedStandort = isSelected ? null : standort;
               });
               if (!isSelected) {
-                _mapController.move(standort.position, _mapController.camera.zoom);
+                _mapController.move(
+                    standort.position, _mapController.camera.zoom);
               }
             },
             child: Container(
@@ -216,7 +234,9 @@ class _KarteWidgetState extends State<KarteWidget> {
                 shape: BoxShape.circle,
                 color: _getTypColor(standort.typ),
                 border: Border.all(
-                  color: isSelected ? Colors.yellow : Colors.white.withValues(alpha: 0.7),
+                  color: isSelected
+                      ? Colors.yellow
+                      : Colors.white.withValues(alpha: 0.7),
                   width: isSelected ? 3 : 2,
                 ),
                 boxShadow: [
@@ -243,7 +263,7 @@ class _KarteWidgetState extends State<KarteWidget> {
 
   Widget _buildControls() {
     final typen = ['alle', 'organisation', 'ereignis', 'person', 'regierung'];
-    
+
     return Positioned(
       top: 16,
       left: 16,
@@ -275,9 +295,8 @@ class _KarteWidgetState extends State<KarteWidget> {
                       });
                     },
                     backgroundColor: Colors.white.withValues(alpha: 0.1),
-                    selectedColor: typ == 'alle'
-                        ? Colors.white
-                        : _getTypColor(typ),
+                    selectedColor:
+                        typ == 'alle' ? Colors.white : _getTypColor(typ),
                   );
                 }).toList(),
               ),
@@ -310,15 +329,19 @@ class _KarteWidgetState extends State<KarteWidget> {
                   IconButton(
                     icon: const Icon(Icons.zoom_in, color: Colors.white),
                     onPressed: () {
-                      final newZoom = (_mapController.camera.zoom + 1).clamp(2.0, 18.0);
-                      _mapController.move(_mapController.camera.center, newZoom);
+                      final newZoom =
+                          (_mapController.camera.zoom + 1).clamp(2.0, 18.0);
+                      _mapController.move(
+                          _mapController.camera.center, newZoom);
                     },
                   ),
                   IconButton(
                     icon: const Icon(Icons.zoom_out, color: Colors.white),
                     onPressed: () {
-                      final newZoom = (_mapController.camera.zoom - 1).clamp(2.0, 18.0);
-                      _mapController.move(_mapController.camera.center, newZoom);
+                      final newZoom =
+                          (_mapController.camera.zoom - 1).clamp(2.0, 18.0);
+                      _mapController.move(
+                          _mapController.camera.center, newZoom);
                     },
                   ),
                   IconButton(
@@ -341,7 +364,7 @@ class _KarteWidgetState extends State<KarteWidget> {
     final verbundeneStandorte = widget.standorte
         .where((s) => standort.verbindungen.contains(s.id))
         .toList();
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

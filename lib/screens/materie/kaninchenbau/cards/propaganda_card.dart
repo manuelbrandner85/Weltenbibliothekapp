@@ -45,8 +45,7 @@ class PropagandaCard extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: _accent.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
@@ -90,15 +89,14 @@ class PropagandaCard extends StatelessWidget {
               const SizedBox(
                 width: 28,
                 height: 28,
-                child: CircularProgressIndicator(
-                    color: _accent, strokeWidth: 2),
+                child:
+                    CircularProgressIndicator(color: _accent, strokeWidth: 2),
               ),
               const SizedBox(height: 10),
               Text(
                 'KI vergleicht Berichterstattung …',
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontSize: 11),
+                    color: Colors.white.withValues(alpha: 0.45), fontSize: 11),
               ),
             ],
           ),

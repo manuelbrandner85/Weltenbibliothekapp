@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../core/network/http_helper.dart';
 
 /// Moderation Service für Admin Content Moderation
-/// 
+///
 /// Features:
 /// - Content flaggen (inappropriate)
 /// - User muten (24h / permanent)
@@ -12,13 +12,13 @@ import '../core/network/http_helper.dart';
 /// - Flagged Content verwalten
 class ModerationService {
   static const String _baseUrl = ApiConfig.workerUrl;
-  
+
   // ═══════════════════════════════════════════════════════════════
   // FLAG CONTENT
   // ═══════════════════════════════════════════════════════════════
-  
+
   /// Flag Content als inappropriate
-  /// 
+  ///
   /// [world] - 'materie' oder 'energie'
   /// [contentType] - 'post' oder 'comment'
   /// [contentId] - ID des Contents
@@ -34,7 +34,7 @@ class ModerationService {
   }) async {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/flag-content');
-      
+
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: url,
         headers: {
@@ -69,13 +69,13 @@ class ModerationService {
       return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════════
   // GET FLAGGED CONTENT
   // ═══════════════════════════════════════════════════════════════
-  
+
   /// Hole gemeldete Inhalte
-  /// 
+  ///
   /// [world] - 'materie' oder 'energie'
   /// [status] - 'pending', 'resolved', oder 'dismissed'
   Future<Map<String, dynamic>> getFlaggedContent({
@@ -84,8 +84,9 @@ class ModerationService {
     required String adminToken,
   }) async {
     try {
-      final url = Uri.parse('$_baseUrl/api/moderation/flagged-content/$world?status=$status');
-      
+      final url = Uri.parse(
+          '$_baseUrl/api/moderation/flagged-content/$world?status=$status');
+
       return await HttpHelper.get<Map<String, dynamic>>(
         uri: url,
         headers: {
@@ -114,11 +115,11 @@ class ModerationService {
       return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════════
   // RESOLVE / DISMISS FLAG
   // ═══════════════════════════════════════════════════════════════
-  
+
   /// Resolve Flag (Root Admin only)
   Future<Map<String, dynamic>> resolveFlag({
     required int flagId,
@@ -129,7 +130,7 @@ class ModerationService {
   }) async {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/resolve-flag');
-      
+
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: url,
         headers: {
@@ -161,7 +162,7 @@ class ModerationService {
       return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   /// Dismiss Flag (Root Admin only)
   Future<Map<String, dynamic>> dismissFlag({
     required int flagId,
@@ -171,7 +172,7 @@ class ModerationService {
   }) async {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/dismiss-flag');
-      
+
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: url,
         headers: {
@@ -202,13 +203,13 @@ class ModerationService {
       return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════════
   // USER MUTING
   // ═══════════════════════════════════════════════════════════════
-  
+
   /// Mute User
-  /// 
+  ///
   /// [muteType] - '24h' oder 'permanent'
   /// Normal-Admin: nur '24h'
   /// Root-Admin: beides
@@ -222,7 +223,7 @@ class ModerationService {
   }) async {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/mute-user');
-      
+
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: url,
         headers: {
@@ -263,7 +264,7 @@ class ModerationService {
       return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   /// Unmute User
   Future<Map<String, dynamic>> unmuteUser({
     required String world,
@@ -272,7 +273,7 @@ class ModerationService {
   }) async {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/unmute-user');
-      
+
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: url,
         headers: {
@@ -302,15 +303,16 @@ class ModerationService {
       return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   /// Check if User is Muted (Public - kein Auth nötig)
   Future<Map<String, dynamic>> isUserMuted({
     required String world,
     required String userId,
   }) async {
     try {
-      final url = Uri.parse('$_baseUrl/api/moderation/check-mute/$world/$userId');
-      
+      final url =
+          Uri.parse('$_baseUrl/api/moderation/check-mute/$world/$userId');
+
       return await HttpHelper.get<Map<String, dynamic>>(
         uri: url,
         headers: {},
@@ -334,13 +336,13 @@ class ModerationService {
       return {'success': false, 'error': 'Network error: $e'};
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════════
   // MODERATION LOG
   // ═══════════════════════════════════════════════════════════════
-  
+
   /// Get Moderation Log
-  /// 
+  ///
   /// Root-Admin: Alle Logs
   /// Normal-Admin: Nur eigene Logs
   Future<Map<String, dynamic>> getModerationLog({
@@ -350,7 +352,7 @@ class ModerationService {
   }) async {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/log/$world?limit=$limit');
-      
+
       return await HttpHelper.get<Map<String, dynamic>>(
         uri: url,
         headers: {

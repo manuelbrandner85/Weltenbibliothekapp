@@ -31,7 +31,7 @@ class Narrative {
       zusammenfassung: json['zusammenfassung'] as String?,
       kategorie: json['kategorie'] as String,
       tags: (json['tags'] as List?)?.map((e) => e.toString()).toList(),
-      erstelltAm: json['erstellt_am'] != null 
+      erstelltAm: json['erstellt_am'] != null
           ? DateTime.tryParse(json['erstellt_am'] as String)
           : null,
       coverImageUrl: json['cover_image_url'] as String?,

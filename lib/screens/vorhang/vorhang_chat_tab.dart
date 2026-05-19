@@ -153,13 +153,10 @@ class _VorhangChatTabState extends State<VorhangChatTab> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color:
-                        selected ? _gold : _gold.withValues(alpha: 0.1),
+                    color: selected ? _gold : _gold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: selected
-                          ? _gold
-                          : _gold.withValues(alpha: 0.3),
+                      color: selected ? _gold : _gold.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(
@@ -181,8 +178,7 @@ class _VorhangChatTabState extends State<VorhangChatTab> {
 
   Widget _buildMessages() {
     if (_loading) {
-      return Center(
-          child: CircularProgressIndicator(color: _gold));
+      return Center(child: CircularProgressIndicator(color: _gold));
     }
     if (_messages.isEmpty) {
       return Center(
@@ -243,8 +239,7 @@ class _VorhangChatTabState extends State<VorhangChatTab> {
             child: Container(
               constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.7),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isOwn ? _gold : _surfaceCard,
                 borderRadius: BorderRadius.only(
@@ -319,8 +314,8 @@ class _VorhangChatTabState extends State<VorhangChatTab> {
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
             ),
           ),

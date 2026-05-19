@@ -65,7 +65,8 @@ class _ReadReceiptsIndicatorState extends State<ReadReceiptsIndicator> {
     }
 
     final readerCount = _receipts.length;
-    final displayNames = _receipts.take(3).map((r) => r['username'] as String).toList();
+    final displayNames =
+        _receipts.take(3).map((r) => r['username'] as String).toList();
 
     return GestureDetector(
       onTap: () => _showReadersDialog(context),
@@ -113,9 +114,7 @@ class _ReadReceiptsIndicatorState extends State<ReadReceiptsIndicator> {
             const SizedBox(width: 4),
             // "Gelesen von X"
             Text(
-              readerCount == 1
-                  ? 'Gelesen'
-                  : 'Gelesen von $readerCount',
+              readerCount == 1 ? 'Gelesen' : 'Gelesen von $readerCount',
               style: TextStyle(
                 fontSize: 11,
                 color: Colors.white.withValues(alpha: 0.5),

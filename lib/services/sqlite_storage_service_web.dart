@@ -94,7 +94,8 @@ class SqliteStorageService {
     _cache.removeWhere((k, _) => k.startsWith(prefix));
     final prefs = _prefs!;
     final spPrefix = 'wb__${box}__';
-    for (final k in prefs.getKeys().where((k) => k.startsWith(spPrefix)).toList()) {
+    for (final k
+        in prefs.getKeys().where((k) => k.startsWith(spPrefix)).toList()) {
       await prefs.remove(k);
     }
   }
@@ -109,7 +110,8 @@ class SqliteStorageService {
     final prefix = '$box\x00';
     final spPrefix = 'wb__${box}__';
     _cache.removeWhere((k, _) => k.startsWith(prefix));
-    for (final spKey in _prefs!.getKeys().where((k) => k.startsWith(spPrefix))) {
+    for (final spKey
+        in _prefs!.getKeys().where((k) => k.startsWith(spPrefix))) {
       final withoutPrefix = spKey.substring(4);
       final sepIdx = withoutPrefix.indexOf('__');
       if (sepIdx < 0) continue;

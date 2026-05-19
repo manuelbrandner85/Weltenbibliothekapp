@@ -17,14 +17,15 @@ class ImageCacheService {
   // Cache configuration
   static const int maxCacheSize = 100 * 1024 * 1024; // 100 MB
   static const Duration stalePeriod = Duration(days: 7);
-  
+
   // Custom cache manager
   static final CacheManager cacheManager = CacheManager(
     Config(
       'weltenbibliothek_image_cache',
       stalePeriod: stalePeriod,
       maxNrOfCacheObjects: 200,
-      repo: JsonCacheInfoRepository(databaseName: 'weltenbibliothek_image_cache'),
+      repo:
+          JsonCacheInfoRepository(databaseName: 'weltenbibliothek_image_cache'),
       fileService: HttpFileService(),
     ),
   );
@@ -33,11 +34,11 @@ class ImageCacheService {
   Future<void> clearCache() async {
     try {
       await cacheManager.emptyCache();
-      
+
       // Also clear PaintingBinding cache
       PaintingBinding.instance.imageCache.clear();
       PaintingBinding.instance.imageCache.clearLiveImages();
-      
+
       if (kDebugMode) {
         debugPrint('🗑️ ImageCache: Cache cleared successfully');
       }
@@ -54,7 +55,7 @@ class ImageCacheService {
       // This is automatically handled by CacheManager
       // But we can force cleanup
       await cacheManager.emptyCache();
-      
+
       if (kDebugMode) {
         debugPrint('🗑️ ImageCache: Old cache cleared');
       }
@@ -70,7 +71,7 @@ class ImageCacheService {
     try {
       // Memory cache stats
       final memoryCache = PaintingBinding.instance.imageCache;
-      
+
       return {
         'memory_current_count': memoryCache.currentSize,
         'memory_max_count': memoryCache.maximumSize,
@@ -90,15 +91,15 @@ class ImageCacheService {
   /// Set memory cache limits
   void setMemoryCacheSize({int? maxCount, int? maxBytes}) {
     final imageCache = PaintingBinding.instance.imageCache;
-    
+
     if (maxCount != null) {
       imageCache.maximumSize = maxCount;
     }
-    
+
     if (maxBytes != null) {
       imageCache.maximumSizeBytes = maxBytes;
     }
-    
+
     if (kDebugMode) {
       debugPrint('🎯 ImageCache: Memory limits updated - '
           'maxCount: ${imageCache.maximumSize}, '
@@ -112,10 +113,10 @@ class ImageCacheService {
     BuildContext? context,
   ) async {
     if (context == null) return;
-    
+
     try {
       final List<Future> preloadFutures = [];
-      
+
       for (final url in imageUrls) {
         if (url.startsWith('assets/')) {
           // Preload asset images
@@ -132,9 +133,9 @@ class ImageCacheService {
           );
         }
       }
-      
+
       await Future.wait(preloadFutures);
-      
+
       if (kDebugMode) {
         debugPrint('✅ ImageCache: Preloaded ${imageUrls.length} images');
       }
@@ -149,12 +150,12 @@ class ImageCacheService {
   Future<void> removeFromCache(String imageUrl) async {
     try {
       await cacheManager.removeFile(imageUrl);
-      
+
       // Also evict from memory
       if (!imageUrl.startsWith('assets/')) {
         await CachedNetworkImageProvider(imageUrl).evict();
       }
-      
+
       if (kDebugMode) {
         debugPrint('🗑️ ImageCache: Removed $imageUrl from cache');
       }
@@ -172,7 +173,7 @@ class ImageCacheService {
       maxCount: 100,
       maxBytes: 50 * 1024 * 1024, // 50 MB memory cache
     );
-    
+
     if (kDebugMode) {
       debugPrint('✅ ImageCache: Initialized with optimal settings');
     }
@@ -183,7 +184,7 @@ class ImageCacheService {
     try {
       // Clear old files automatically
       await clearOldCache();
-      
+
       if (kDebugMode) {
         debugPrint('✅ ImageCache: Startup cleanup complete');
       }

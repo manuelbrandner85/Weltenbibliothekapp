@@ -82,8 +82,7 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
       _LiveKitGroupCallScreenState();
 }
 
-class _LiveKitGroupCallScreenState
-    extends ConsumerState<LiveKitGroupCallScreen>
+class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   bool _hasJoined = false;
   String? _lastShownError;
@@ -132,7 +131,8 @@ class _LiveKitGroupCallScreenState
       vsync: this,
       duration: const Duration(seconds: 6),
     )..repeat(reverse: true);
-    _bgAnimation = CurvedAnimation(parent: _bgController, curve: Curves.easeInOut);
+    _bgAnimation =
+        CurvedAnimation(parent: _bgController, curve: Curves.easeInOut);
 
     // Mini-Bar wird ausgeblendet solange dieser Screen sichtbar ist
     LiveKitScreenVisibility.instance.setVisible(true);
@@ -326,131 +326,132 @@ class _LiveKitGroupCallScreenState
                   accent: accent,
                   theme: theme,
                 ),
-              child!,
-              // 💖 Bundle 4: Floating-Reactions-Overlay liegt ÜBER allem
-              // (Body + ControlBar) damit Emojis durchgängig nach oben
-              // floaten können. IgnorePointer schützt Touch-Events.
-              LiveKitReactionsOverlay(reactions: svc.reactionsStream),
-              // 🎙️ B8: Caption-Overlay (liegt über allem, unter Reactions)
-              if (_captionsEnabled)
-                LiveCaptionOverlay(service: LiveCaptionService.instance),
-              // 📺 B10.4: Co-Watch-Panel (schwebend, 55% Höhe)
-              if (_coWatchVisible && _coWatchVideoId != null)
-                Positioned(
-                  left: 12,
-                  right: 12,
-                  bottom: 100,
-                  height: MediaQuery.of(context).size.height * 0.55,
-                  child: CoWatchPanel(
-                    videoId: _coWatchVideoId!,
-                    world: widget.world,
-                    isHost: true,
-                    service: CoWatchService.instance,
-                    onClose: () => setState(() {
-                      _coWatchVisible = false;
-                    }),
+                child!,
+                // 💖 Bundle 4: Floating-Reactions-Overlay liegt ÜBER allem
+                // (Body + ControlBar) damit Emojis durchgängig nach oben
+                // floaten können. IgnorePointer schützt Touch-Events.
+                LiveKitReactionsOverlay(reactions: svc.reactionsStream),
+                // 🎙️ B8: Caption-Overlay (liegt über allem, unter Reactions)
+                if (_captionsEnabled)
+                  LiveCaptionOverlay(service: LiveCaptionService.instance),
+                // 📺 B10.4: Co-Watch-Panel (schwebend, 55% Höhe)
+                if (_coWatchVisible && _coWatchVideoId != null)
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 100,
+                    height: MediaQuery.of(context).size.height * 0.55,
+                    child: CoWatchPanel(
+                      videoId: _coWatchVideoId!,
+                      world: widget.world,
+                      isHost: true,
+                      service: CoWatchService.instance,
+                      onClose: () => setState(() {
+                        _coWatchVisible = false;
+                      }),
+                    ),
                   ),
-                ),
-              // 💬 In-Call-Chat-Panel (schwebend über ControlBar)
-              if (_chatVisible)
-                Positioned(
-                  left: 12,
-                  right: 12,
-                  bottom: 100,
-                  height: MediaQuery.of(context).size.height * 0.52,
-                  child: InCallChatPanel(
-                    world: widget.world,
-                    service: InCallChatService.instance,
-                    onClose: () => setState(() => _chatVisible = false),
+                // 💬 In-Call-Chat-Panel (schwebend über ControlBar)
+                if (_chatVisible)
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 100,
+                    height: MediaQuery.of(context).size.height * 0.52,
+                    child: InCallChatPanel(
+                      world: widget.world,
+                      service: InCallChatService.instance,
+                      onClose: () => setState(() => _chatVisible = false),
+                    ),
                   ),
-                ),
               ],
             ),
             child: SafeArea(
-            child: Column(
-              children: [
-                _TopBar(
-                  roomName: widget.roomName,
-                  world: widget.world,
-                  state: state,
-                  // Bundle 4.5: Notifier statt Wert übergeben — TopBar
-                  // rebuildet nur die Sekunden-Zelle, nicht den ganzen
-                  // Screen pro Sekunde.
-                  durationNotifier: svc.durationNotifier,
-                  participantCount: svc.totalParticipantCount,
-                  audioOnly: svc.audioOnlyMode,
-                  onToggleAudioOnly: () => svc.toggleAudioOnlyMode(),
-                  viewMode: svc.viewMode,
-                  onToggleViewMode: () => svc.toggleViewMode(),
-                  captionsEnabled: _captionsEnabled,
-                  onToggleCaptions: () async {
-                    final nowOn = await LiveCaptionService.instance.toggle();
-                    if (mounted) setState(() => _captionsEnabled = nowOn);
-                  },
-                  // 🎵 B10.1: Soundscape-Atmosphäre
-                  soundscapeEnabled: _soundscapeEnabled,
-                  onToggleSoundscape: () async {
-                    final nowOn = await SoundscapeService.instance
-                        .toggleSoundscape(widget.world);
-                    if (mounted) setState(() => _soundscapeEnabled = nowOn);
-                  },
-                  // 🎵 B10.2: Heilfrequenz (nur Energie)
-                  heilEnabled: _heilEnabled,
-                  heilHz: _heilHz,
-                  onToggleHeil: () async {
-                    final nowOn = await SoundscapeService.instance
-                        .toggleHeilfrequenz();
-                    if (mounted) setState(() => _heilEnabled = nowOn);
-                  },
-                  onSelectHeilHz: (hz) async {
-                    setState(() => _heilHz = hz);
-                    await SoundscapeService.instance.toggleHeilfrequenz(hz: hz);
-                    if (mounted) setState(() => _heilEnabled = true);
-                  },
-                  service: svc,
-                  onCoWatch: () async {
-                    final url = await showCoWatchInputDialog(
-                        context, widget.world);
-                    if (url == null || !mounted) return;
-                    await CoWatchService.instance.loadVideo(url);
-                    setState(() {
-                      _coWatchVideoId =
-                          CoWatchService.instance.currentVideoId;
-                      _coWatchVisible =
-                          CoWatchService.instance.currentVideoId != null;
-                    });
-                  },
-                ),
-                Expanded(child: _buildBody(state, svc, accent)),
-                _ControlBar(
-                  world: widget.world,
-                  roomName: widget.roomName,
-                  service: svc,
-                  onCoWatch: () async {
-                    final url = await showCoWatchInputDialog(
-                        context, widget.world);
-                    if (url == null || !mounted) return;
-                    await CoWatchService.instance.loadVideo(url);
-                    setState(() {
-                      _coWatchVideoId =
-                          CoWatchService.instance.currentVideoId;
-                      _coWatchVisible =
-                          CoWatchService.instance.currentVideoId != null;
-                    });
-                  },
-                  onToggleChat: () {
-                    setState(() {
-                      _chatVisible = !_chatVisible;
-                      if (_chatVisible) {
-                        InCallChatService.instance.markAllRead();
-                      }
-                    });
-                  },
-                  chatVisible: _chatVisible,
-                  onLeave: () async {
-                    if (await _confirmLeave()) await _leaveAndPop();
-                  },
-                ),
+              child: Column(
+                children: [
+                  _TopBar(
+                    roomName: widget.roomName,
+                    world: widget.world,
+                    state: state,
+                    // Bundle 4.5: Notifier statt Wert übergeben — TopBar
+                    // rebuildet nur die Sekunden-Zelle, nicht den ganzen
+                    // Screen pro Sekunde.
+                    durationNotifier: svc.durationNotifier,
+                    participantCount: svc.totalParticipantCount,
+                    audioOnly: svc.audioOnlyMode,
+                    onToggleAudioOnly: () => svc.toggleAudioOnlyMode(),
+                    viewMode: svc.viewMode,
+                    onToggleViewMode: () => svc.toggleViewMode(),
+                    captionsEnabled: _captionsEnabled,
+                    onToggleCaptions: () async {
+                      final nowOn = await LiveCaptionService.instance.toggle();
+                      if (mounted) setState(() => _captionsEnabled = nowOn);
+                    },
+                    // 🎵 B10.1: Soundscape-Atmosphäre
+                    soundscapeEnabled: _soundscapeEnabled,
+                    onToggleSoundscape: () async {
+                      final nowOn = await SoundscapeService.instance
+                          .toggleSoundscape(widget.world);
+                      if (mounted) setState(() => _soundscapeEnabled = nowOn);
+                    },
+                    // 🎵 B10.2: Heilfrequenz (nur Energie)
+                    heilEnabled: _heilEnabled,
+                    heilHz: _heilHz,
+                    onToggleHeil: () async {
+                      final nowOn =
+                          await SoundscapeService.instance.toggleHeilfrequenz();
+                      if (mounted) setState(() => _heilEnabled = nowOn);
+                    },
+                    onSelectHeilHz: (hz) async {
+                      setState(() => _heilHz = hz);
+                      await SoundscapeService.instance
+                          .toggleHeilfrequenz(hz: hz);
+                      if (mounted) setState(() => _heilEnabled = true);
+                    },
+                    service: svc,
+                    onCoWatch: () async {
+                      final url =
+                          await showCoWatchInputDialog(context, widget.world);
+                      if (url == null || !mounted) return;
+                      await CoWatchService.instance.loadVideo(url);
+                      setState(() {
+                        _coWatchVideoId =
+                            CoWatchService.instance.currentVideoId;
+                        _coWatchVisible =
+                            CoWatchService.instance.currentVideoId != null;
+                      });
+                    },
+                  ),
+                  Expanded(child: _buildBody(state, svc, accent)),
+                  _ControlBar(
+                    world: widget.world,
+                    roomName: widget.roomName,
+                    service: svc,
+                    onCoWatch: () async {
+                      final url =
+                          await showCoWatchInputDialog(context, widget.world);
+                      if (url == null || !mounted) return;
+                      await CoWatchService.instance.loadVideo(url);
+                      setState(() {
+                        _coWatchVideoId =
+                            CoWatchService.instance.currentVideoId;
+                        _coWatchVisible =
+                            CoWatchService.instance.currentVideoId != null;
+                      });
+                    },
+                    onToggleChat: () {
+                      setState(() {
+                        _chatVisible = !_chatVisible;
+                        if (_chatVisible) {
+                          InCallChatService.instance.markAllRead();
+                        }
+                      });
+                    },
+                    chatVisible: _chatVisible,
+                    onLeave: () async {
+                      if (await _confirmLeave()) await _leaveAndPop();
+                    },
+                  ),
                 ],
               ),
             ),
@@ -512,7 +513,8 @@ class _LiveKitGroupCallScreenState
         return _StatusView(
           icon: Icons.call_end_rounded,
           title: 'Verbindung getrennt',
-          subtitle: 'Der Anruf wurde beendet oder die Verbindung\nwurde unterbrochen.',
+          subtitle:
+              'Der Anruf wurde beendet oder die Verbindung\nwurde unterbrochen.',
           accent: WbDesign.textTertiary,
           showRetry: true,
           onRetry: () async {
@@ -583,7 +585,9 @@ class _LiveKitGroupCallScreenState
     final parts = r.split('-');
     if (parts.length >= 3) {
       final last = parts.skip(2).join(' ');
-      return last.isNotEmpty ? '${last[0].toUpperCase()}${last.substring(1)}' : r;
+      return last.isNotEmpty
+          ? '${last[0].toUpperCase()}${last.substring(1)}'
+          : r;
     }
     return r;
   }
@@ -743,8 +747,7 @@ class _EnergiePainter extends CustomPainter {
       final seed = i * 0.137;
       final angle = (seed + t * 0.2) * math.pi * 2;
       final radiusPercent = 0.2 + ((i * 7) % 60) / 100;
-      final x = size.width * 0.5 +
-          math.cos(angle) * size.width * radiusPercent;
+      final x = size.width * 0.5 + math.cos(angle) * size.width * radiusPercent;
       final y = size.height * 0.5 +
           math.sin(angle * 1.3) * size.height * radiusPercent;
       final particleSize = 1.5 + math.sin(t * math.pi * 2 + i) * 0.8;
@@ -769,11 +772,20 @@ class _NetzwerkPainter extends CustomPainter {
   _NetzwerkPainter(this.t, this.accent);
 
   static const _nodes = <Offset>[
-    Offset(0.15, 0.12), Offset(0.45, 0.08), Offset(0.80, 0.18),
-    Offset(0.10, 0.38), Offset(0.35, 0.35), Offset(0.65, 0.30),
-    Offset(0.88, 0.42), Offset(0.20, 0.60), Offset(0.50, 0.58),
-    Offset(0.75, 0.62), Offset(0.12, 0.80), Offset(0.40, 0.82),
-    Offset(0.70, 0.88), Offset(0.90, 0.75),
+    Offset(0.15, 0.12),
+    Offset(0.45, 0.08),
+    Offset(0.80, 0.18),
+    Offset(0.10, 0.38),
+    Offset(0.35, 0.35),
+    Offset(0.65, 0.30),
+    Offset(0.88, 0.42),
+    Offset(0.20, 0.60),
+    Offset(0.50, 0.58),
+    Offset(0.75, 0.62),
+    Offset(0.12, 0.80),
+    Offset(0.40, 0.82),
+    Offset(0.70, 0.88),
+    Offset(0.90, 0.75),
   ];
 
   @override
@@ -790,7 +802,8 @@ class _NetzwerkPainter extends CustomPainter {
         final b = Offset(_nodes[j].dx * size.width, _nodes[j].dy * size.height);
         final dist = (a - b).distance;
         if (dist < size.width * 0.38) {
-          linePaint.color = accent.withValues(alpha: 0.09 * (1 - dist / (size.width * 0.38)));
+          linePaint.color =
+              accent.withValues(alpha: 0.09 * (1 - dist / (size.width * 0.38)));
           canvas.drawLine(a, b, linePaint);
         }
       }
@@ -881,11 +894,11 @@ class _KosmosPainter extends CustomPainter {
       ..shader = RadialGradient(colors: [
         accent.withValues(alpha: 0.28),
         accent.withValues(alpha: 0),
-      ]).createShader(
-          Rect.fromCircle(center: Offset(size.width * 0.5, size.height * 0.45),
-              radius: size.width * 0.18));
-    canvas.drawCircle(
-        Offset(size.width * 0.5, size.height * 0.45), size.width * 0.18, corePaint);
+      ]).createShader(Rect.fromCircle(
+          center: Offset(size.width * 0.5, size.height * 0.45),
+          radius: size.width * 0.18));
+    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.45),
+        size.width * 0.18, corePaint);
   }
 
   @override
@@ -911,7 +924,8 @@ class _MandalaPainter extends CustomPainter {
     // 3 rotierende Ringe mit je 12 Speichen
     for (int ring = 0; ring < 3; ring++) {
       final r = maxR * (0.35 + ring * 0.22);
-      final rotation = t * math.pi * (ring.isEven ? 0.4 : -0.3) + ring * math.pi / 6;
+      final rotation =
+          t * math.pi * (ring.isEven ? 0.4 : -0.3) + ring * math.pi / 6;
       final alpha = 0.08 + ring * 0.03;
       paint.color = accent.withValues(alpha: alpha);
 
@@ -947,8 +961,11 @@ class _MandalaPainter extends CustomPainter {
         accent.withValues(alpha: 0),
         accent.withValues(alpha: 0.05),
         accent.withValues(alpha: 0),
-      ], stops: const [0.6, 0.8, 1.0]).createShader(
-          Rect.fromCircle(center: Offset(cx, cy), radius: maxR));
+      ], stops: const [
+        0.6,
+        0.8,
+        1.0
+      ]).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: maxR));
     canvas.drawCircle(Offset(cx, cy), maxR, glowPaint);
   }
 
@@ -964,10 +981,17 @@ class _KristallPainter extends CustomPainter {
 
   // 10 Kristall-Scherben mit festen Seed-Positionen.
   // dart2js stolpert über const List<Record> → final genutzt.
-  static final List<(double, double, double)> _seeds = <(double, double, double)>[
-    (0.15, 0.20, 0.0), (0.45, 0.12, 0.2), (0.78, 0.25, 0.4),
-    (0.08, 0.55, 0.6), (0.35, 0.65, 0.8), (0.62, 0.50, 0.1),
-    (0.88, 0.60, 0.3), (0.25, 0.82, 0.5), (0.58, 0.85, 0.7),
+  static final List<(double, double, double)> _seeds =
+      <(double, double, double)>[
+    (0.15, 0.20, 0.0),
+    (0.45, 0.12, 0.2),
+    (0.78, 0.25, 0.4),
+    (0.08, 0.55, 0.6),
+    (0.35, 0.65, 0.8),
+    (0.62, 0.50, 0.1),
+    (0.88, 0.60, 0.3),
+    (0.25, 0.82, 0.5),
+    (0.58, 0.85, 0.7),
     (0.82, 0.88, 0.9),
   ];
 
@@ -993,7 +1017,10 @@ class _KristallPainter extends CustomPainter {
         final angle = rotation + v * math.pi / 3;
         final px = cx + math.cos(angle) * scale;
         final py = cy + math.sin(angle) * scale;
-        if (v == 0) path.moveTo(px, py); else path.lineTo(px, py);
+        if (v == 0)
+          path.moveTo(px, py);
+        else
+          path.lineTo(px, py);
       }
       path.close();
 
@@ -1173,7 +1200,9 @@ class _TopBar extends StatelessWidget {
     final parts = r.split('-');
     if (parts.length >= 3) {
       final last = parts.skip(2).join(' ');
-      return last.isNotEmpty ? '${last[0].toUpperCase()}${last.substring(1)}' : r;
+      return last.isNotEmpty
+          ? '${last[0].toUpperCase()}${last.substring(1)}'
+          : r;
     }
     return r;
   }
@@ -1197,8 +1226,8 @@ class _TopBar extends StatelessWidget {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(20)),
               border: Border(
-                top: BorderSide(
-                    color: accent.withValues(alpha: 0.25), width: 1),
+                top:
+                    BorderSide(color: accent.withValues(alpha: 0.25), width: 1),
               ),
             ),
             child: Column(
@@ -1238,229 +1267,239 @@ class _TopBar extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                // Reaktion senden
-                _MoreOptionTile(
-                  icon: Icons.emoji_emotions_outlined,
-                  title: 'Reaktion',
-                  subtitle: 'Emoji-Reaktion an alle senden',
-                  active: false,
-                  accent: accent,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showReactionsPicker(context, world, service);
-                  },
-                ),
-                // Hand heben
-                _MoreOptionTile(
-                  icon: service.handRaised
-                      ? Icons.front_hand_rounded
-                      : Icons.front_hand_outlined,
-                  title: service.handRaised ? 'Hand senken' : 'Hand heben',
-                  subtitle: service.handRaised
-                      ? 'Meldung zurückziehen'
-                      : 'Allen zeigen dass du etwas sagen möchtest',
-                  active: service.handRaised,
-                  accent: const Color(0xFFFFB300),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    service.toggleHandRaised();
-                  },
-                ),
-                // Bildschirm teilen
-                _MoreOptionTile(
-                  icon: service.screenShareEnabled
-                      ? Icons.stop_screen_share_rounded
-                      : Icons.present_to_all_rounded,
-                  title: service.screenShareEnabled
-                      ? 'Teilen stoppen'
-                      : 'Bildschirm teilen',
-                  subtitle: service.screenShareEnabled
-                      ? 'Bildschirmübertragung beenden'
-                      : 'Deinen Bildschirm für alle sichtbar machen',
-                  active: service.screenShareEnabled,
-                  accent: accent,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    service.toggleScreenShare();
-                  },
-                ),
-                // Kamera drehen (nur wenn Kamera an)
-                if (service.cameraEnabled)
-                  _MoreOptionTile(
-                    icon: Icons.cameraswitch_rounded,
-                    title: 'Kamera drehen',
-                    subtitle: 'Zwischen Vorder- und Rückkamera wechseln',
-                    active: false,
-                    accent: accent,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      service.switchCamera();
-                    },
-                  ),
-                // Co-Watch
-                _MoreOptionTile(
-                  icon: Icons.tv_rounded,
-                  title: 'Co-Watch',
-                  subtitle: CoWatchService.instance.active
-                      ? 'YouTube-Video läuft — Tippen zum Verwalten'
-                      : 'YouTube-Video gemeinsam anschauen',
-                  active: CoWatchService.instance.active,
-                  accent: accent,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onCoWatch();
-                  },
-                ),
-                // Aufnahme
-                ValueListenableBuilder<RecordingState>(
-                  valueListenable: RecordingService.instance.stateNotifier,
-                  builder: (_, recState, __) {
-                    final isRec = recState == RecordingState.recording;
-                    final isBusy = recState == RecordingState.starting ||
-                        recState == RecordingState.stopping;
-                    return _MoreOptionTile(
-                      icon: isRec
-                          ? Icons.stop_circle_rounded
-                          : Icons.fiber_manual_record_rounded,
-                      title: isRec ? 'Aufnahme stoppen' : 'Aufnahme starten',
-                      subtitle: isRec
-                          ? 'Laufende Aufnahme beenden'
-                          : isBusy
-                              ? 'Bitte warten…'
-                              : 'Gesprächsaufnahme starten (MP4)',
-                      active: isRec,
-                      accent: const Color(0xFFFF1744),
-                      onTap: () {
-                        if (isBusy) return;
-                        Navigator.pop(ctx);
-                        if (isRec) {
-                          RecordingService.instance.stopRecording();
-                        } else {
-                          RecordingService.instance.startRecording(roomName);
-                        }
-                      },
-                    );
-                  },
-                ),
-                // ── Anzeige & Audio ────────────────────────────────────────────
-                // Ansicht wechseln (Gallery ↔ Speaker)
-                _MoreOptionTile(
-                  icon: viewMode == LiveKitViewMode.speaker
-                      ? Icons.grid_view_rounded
-                      : Icons.account_box_rounded,
-                  title: viewMode == LiveKitViewMode.speaker
-                      ? 'Rasteransicht'
-                      : 'Sprecheransicht',
-                  subtitle: viewMode == LiveKitViewMode.speaker
-                      ? 'Alle Teilnehmer als gleichgroße Kacheln'
-                      : 'Aktiven Sprecher groß hervorheben',
-                  active: viewMode == LiveKitViewMode.speaker,
-                  accent: accent,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onToggleViewMode();
-                  },
-                ),
-                // Untertitel
-                _MoreOptionTile(
-                  icon: captionsEnabled
-                      ? Icons.closed_caption_rounded
-                      : Icons.closed_caption_disabled_rounded,
-                  title: 'Untertitel',
-                  subtitle: captionsEnabled
-                      ? 'Gesprochenes wird als Text eingeblendet'
-                      : 'Live-Untertitel für diesen Anruf aktivieren',
-                  active: captionsEnabled,
-                  accent: accent,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onToggleCaptions();
-                  },
-                ),
-                // Atmosphäre (Hintergrund-Sound)
-                _MoreOptionTile(
-                  icon: soundscapeEnabled
-                      ? Icons.graphic_eq_rounded
-                      : Icons.music_note_rounded,
-                  title: 'Atmosphäre',
-                  subtitle: soundscapeEnabled
-                      ? 'Hintergrund-Sound läuft — Tippen zum Stoppen'
-                      : 'Beruhigender Hintergrund-Sound für den Call',
-                  active: soundscapeEnabled,
-                  accent: accent,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onToggleSoundscape();
-                  },
-                ),
-                // Heilfrequenz (nur Energie-Welt)
-                if (world == 'energie')
-                  _MoreOptionTile(
-                    icon: Icons.self_improvement_rounded,
-                    title: heilEnabled
-                        ? 'Heilfrequenz: $heilHz Hz'
-                        : 'Heilfrequenz',
-                    subtitle: heilEnabled
-                        ? 'Frequenz läuft — Tippen zum Wechseln oder Stoppen'
-                        : 'Solfeggio-Frequenzen (174–963 Hz) zur Stimmung',
-                    active: heilEnabled,
-                    accent: accent,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _showHeilfrequenzPicker(context);
-                    },
-                  ),
-                // Audio-Only-Modus
-                _MoreOptionTile(
-                  icon:
-                      audioOnly ? Icons.headset_rounded : Icons.headset_outlined,
-                  title: 'Nur Audio',
-                  subtitle: audioOnly
-                      ? 'Kamera deaktiviert — spart Akku und Daten'
-                      : 'Kamera ausschalten für mehr Akku-Laufzeit',
-                  active: audioOnly,
-                  accent: accent,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onToggleAudioOnly();
-                  },
-                ),
-                // 🎨 B10.6: Raumstimmung
-                Builder(builder: (ctx2) {
-                  final theme = AudioFeedbackService.instance.currentTheme;
-                  return _MoreOptionTile(
-                    icon: theme.icon,
-                    title: 'Raumstimmung: ${theme.label}',
-                    subtitle: 'Hintergrund-Atmosphäre des Anrufs anpassen',
-                    active: theme != RoomTheme.standard,
-                    accent: accent,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _showRaumstimmungPicker(context);
-                    },
-                  );
-                }),
-                // 🔊 B10.8: Spatial Audio (Sprecher-Ducking)
-                ValueListenableBuilder<bool>(
-                  valueListenable: _SpatialNotifier.instance,
-                  builder: (_, spatialOn, __) => _MoreOptionTile(
-                    icon: spatialOn
-                        ? Icons.surround_sound_rounded
-                        : Icons.surround_sound_outlined,
-                    title: 'Spatial Audio',
-                    subtitle: spatialOn
-                        ? 'Aktiv — Sprecher im Fokus, andere leiser'
-                        : 'Aktiver Sprecher wird hervorgehoben',
-                    active: spatialOn,
-                    accent: accent,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      AudioFeedbackService.instance.toggleSpatial();
-                      _SpatialNotifier.instance.value =
-                          AudioFeedbackService.instance.spatialEnabled;
-                    },
-                  ),
-                ),
+                        // Reaktion senden
+                        _MoreOptionTile(
+                          icon: Icons.emoji_emotions_outlined,
+                          title: 'Reaktion',
+                          subtitle: 'Emoji-Reaktion an alle senden',
+                          active: false,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _showReactionsPicker(context, world, service);
+                          },
+                        ),
+                        // Hand heben
+                        _MoreOptionTile(
+                          icon: service.handRaised
+                              ? Icons.front_hand_rounded
+                              : Icons.front_hand_outlined,
+                          title:
+                              service.handRaised ? 'Hand senken' : 'Hand heben',
+                          subtitle: service.handRaised
+                              ? 'Meldung zurückziehen'
+                              : 'Allen zeigen dass du etwas sagen möchtest',
+                          active: service.handRaised,
+                          accent: const Color(0xFFFFB300),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            service.toggleHandRaised();
+                          },
+                        ),
+                        // Bildschirm teilen
+                        _MoreOptionTile(
+                          icon: service.screenShareEnabled
+                              ? Icons.stop_screen_share_rounded
+                              : Icons.present_to_all_rounded,
+                          title: service.screenShareEnabled
+                              ? 'Teilen stoppen'
+                              : 'Bildschirm teilen',
+                          subtitle: service.screenShareEnabled
+                              ? 'Bildschirmübertragung beenden'
+                              : 'Deinen Bildschirm für alle sichtbar machen',
+                          active: service.screenShareEnabled,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            service.toggleScreenShare();
+                          },
+                        ),
+                        // Kamera drehen (nur wenn Kamera an)
+                        if (service.cameraEnabled)
+                          _MoreOptionTile(
+                            icon: Icons.cameraswitch_rounded,
+                            title: 'Kamera drehen',
+                            subtitle:
+                                'Zwischen Vorder- und Rückkamera wechseln',
+                            active: false,
+                            accent: accent,
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              service.switchCamera();
+                            },
+                          ),
+                        // Co-Watch
+                        _MoreOptionTile(
+                          icon: Icons.tv_rounded,
+                          title: 'Co-Watch',
+                          subtitle: CoWatchService.instance.active
+                              ? 'YouTube-Video läuft — Tippen zum Verwalten'
+                              : 'YouTube-Video gemeinsam anschauen',
+                          active: CoWatchService.instance.active,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            onCoWatch();
+                          },
+                        ),
+                        // Aufnahme
+                        ValueListenableBuilder<RecordingState>(
+                          valueListenable:
+                              RecordingService.instance.stateNotifier,
+                          builder: (_, recState, __) {
+                            final isRec = recState == RecordingState.recording;
+                            final isBusy =
+                                recState == RecordingState.starting ||
+                                    recState == RecordingState.stopping;
+                            return _MoreOptionTile(
+                              icon: isRec
+                                  ? Icons.stop_circle_rounded
+                                  : Icons.fiber_manual_record_rounded,
+                              title: isRec
+                                  ? 'Aufnahme stoppen'
+                                  : 'Aufnahme starten',
+                              subtitle: isRec
+                                  ? 'Laufende Aufnahme beenden'
+                                  : isBusy
+                                      ? 'Bitte warten…'
+                                      : 'Gesprächsaufnahme starten (MP4)',
+                              active: isRec,
+                              accent: const Color(0xFFFF1744),
+                              onTap: () {
+                                if (isBusy) return;
+                                Navigator.pop(ctx);
+                                if (isRec) {
+                                  RecordingService.instance.stopRecording();
+                                } else {
+                                  RecordingService.instance
+                                      .startRecording(roomName);
+                                }
+                              },
+                            );
+                          },
+                        ),
+                        // ── Anzeige & Audio ────────────────────────────────────────────
+                        // Ansicht wechseln (Gallery ↔ Speaker)
+                        _MoreOptionTile(
+                          icon: viewMode == LiveKitViewMode.speaker
+                              ? Icons.grid_view_rounded
+                              : Icons.account_box_rounded,
+                          title: viewMode == LiveKitViewMode.speaker
+                              ? 'Rasteransicht'
+                              : 'Sprecheransicht',
+                          subtitle: viewMode == LiveKitViewMode.speaker
+                              ? 'Alle Teilnehmer als gleichgroße Kacheln'
+                              : 'Aktiven Sprecher groß hervorheben',
+                          active: viewMode == LiveKitViewMode.speaker,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            onToggleViewMode();
+                          },
+                        ),
+                        // Untertitel
+                        _MoreOptionTile(
+                          icon: captionsEnabled
+                              ? Icons.closed_caption_rounded
+                              : Icons.closed_caption_disabled_rounded,
+                          title: 'Untertitel',
+                          subtitle: captionsEnabled
+                              ? 'Gesprochenes wird als Text eingeblendet'
+                              : 'Live-Untertitel für diesen Anruf aktivieren',
+                          active: captionsEnabled,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            onToggleCaptions();
+                          },
+                        ),
+                        // Atmosphäre (Hintergrund-Sound)
+                        _MoreOptionTile(
+                          icon: soundscapeEnabled
+                              ? Icons.graphic_eq_rounded
+                              : Icons.music_note_rounded,
+                          title: 'Atmosphäre',
+                          subtitle: soundscapeEnabled
+                              ? 'Hintergrund-Sound läuft — Tippen zum Stoppen'
+                              : 'Beruhigender Hintergrund-Sound für den Call',
+                          active: soundscapeEnabled,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            onToggleSoundscape();
+                          },
+                        ),
+                        // Heilfrequenz (nur Energie-Welt)
+                        if (world == 'energie')
+                          _MoreOptionTile(
+                            icon: Icons.self_improvement_rounded,
+                            title: heilEnabled
+                                ? 'Heilfrequenz: $heilHz Hz'
+                                : 'Heilfrequenz',
+                            subtitle: heilEnabled
+                                ? 'Frequenz läuft — Tippen zum Wechseln oder Stoppen'
+                                : 'Solfeggio-Frequenzen (174–963 Hz) zur Stimmung',
+                            active: heilEnabled,
+                            accent: accent,
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              _showHeilfrequenzPicker(context);
+                            },
+                          ),
+                        // Audio-Only-Modus
+                        _MoreOptionTile(
+                          icon: audioOnly
+                              ? Icons.headset_rounded
+                              : Icons.headset_outlined,
+                          title: 'Nur Audio',
+                          subtitle: audioOnly
+                              ? 'Kamera deaktiviert — spart Akku und Daten'
+                              : 'Kamera ausschalten für mehr Akku-Laufzeit',
+                          active: audioOnly,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            onToggleAudioOnly();
+                          },
+                        ),
+                        // 🎨 B10.6: Raumstimmung
+                        Builder(builder: (ctx2) {
+                          final theme =
+                              AudioFeedbackService.instance.currentTheme;
+                          return _MoreOptionTile(
+                            icon: theme.icon,
+                            title: 'Raumstimmung: ${theme.label}',
+                            subtitle:
+                                'Hintergrund-Atmosphäre des Anrufs anpassen',
+                            active: theme != RoomTheme.standard,
+                            accent: accent,
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              _showRaumstimmungPicker(context);
+                            },
+                          );
+                        }),
+                        // 🔊 B10.8: Spatial Audio (Sprecher-Ducking)
+                        ValueListenableBuilder<bool>(
+                          valueListenable: _SpatialNotifier.instance,
+                          builder: (_, spatialOn, __) => _MoreOptionTile(
+                            icon: spatialOn
+                                ? Icons.surround_sound_rounded
+                                : Icons.surround_sound_outlined,
+                            title: 'Spatial Audio',
+                            subtitle: spatialOn
+                                ? 'Aktiv — Sprecher im Fokus, andere leiser'
+                                : 'Aktiver Sprecher wird hervorgehoben',
+                            active: spatialOn,
+                            accent: accent,
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              AudioFeedbackService.instance.toggleSpatial();
+                              _SpatialNotifier.instance.value =
+                                  AudioFeedbackService.instance.spatialEnabled;
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1476,9 +1515,8 @@ class _TopBar extends StatelessWidget {
 
   void _showRaumstimmungPicker(BuildContext context) {
     final accent = WbDesign.accent(world);
-    final themes = RoomTheme.values
-        .where((th) => th.availableFor(world))
-        .toList();
+    final themes =
+        RoomTheme.values.where((th) => th.availableFor(world)).toList();
 
     showModalBottomSheet<void>(
       context: context,
@@ -1567,7 +1605,9 @@ class _TopBar extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(theme.icon,
-                                  color: isCurrent ? accent : WbDesign.textTertiary,
+                                  color: isCurrent
+                                      ? accent
+                                      : WbDesign.textTertiary,
                                   size: 20),
                             ),
                             const SizedBox(width: 14),
@@ -1624,9 +1664,11 @@ class _TopBar extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: WbDesign.surface(world).withValues(alpha: 0.95),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
               border: Border(
-                top: BorderSide(color: accent.withValues(alpha: 0.25), width: 1),
+                top:
+                    BorderSide(color: accent.withValues(alpha: 0.25), width: 1),
               ),
             ),
             child: Column(
@@ -1679,8 +1721,7 @@ class _TopBar extends StatelessWidget {
                     itemCount: kHeilfrequenzen.length,
                     itemBuilder: (_, i) {
                       final entry = kHeilfrequenzen[i];
-                      final isSelected =
-                          heilEnabled && entry.hz == heilHz;
+                      final isSelected = heilEnabled && entry.hz == heilHz;
                       return InkWell(
                         onTap: () {
                           Navigator.pop(ctx);
@@ -1713,9 +1754,7 @@ class _TopBar extends StatelessWidget {
                                 child: Text(
                                   entry.label,
                                   style: TextStyle(
-                                    color: isSelected
-                                        ? accent
-                                        : Colors.white,
+                                    color: isSelected ? accent : Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -1741,8 +1780,7 @@ class _TopBar extends StatelessWidget {
                     },
                   ),
                 ),
-                SizedBox(
-                    height: MediaQuery.of(ctx).padding.bottom + 12),
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 12),
               ],
             ),
           ),
@@ -1835,10 +1873,8 @@ class _TopBar extends StatelessWidget {
                         // Status-Dot direkt am Raumnamen
                         _PulsingDot(
                           color: _dotColor(),
-                          pulse: state ==
-                                  LiveKitConnectionState.connecting ||
-                              state ==
-                                  LiveKitConnectionState.reconnecting,
+                          pulse: state == LiveKitConnectionState.connecting ||
+                              state == LiveKitConnectionState.reconnecting,
                         ),
                       ],
                     ),
@@ -1862,8 +1898,7 @@ class _TopBar extends StatelessWidget {
                           width: 3,
                           height: 3,
                           decoration: BoxDecoration(
-                            color: WbDesign.textTertiary
-                                .withValues(alpha: 0.5),
+                            color: WbDesign.textTertiary.withValues(alpha: 0.5),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -1871,14 +1906,11 @@ class _TopBar extends StatelessWidget {
                         Builder(builder: (_) {
                           final staticLabel = _staticStateLabel();
                           final labelStyle = TextStyle(
-                            color: state ==
-                                    LiveKitConnectionState.connected
+                            color: state == LiveKitConnectionState.connected
                                 ? const Color(0xFF4CAF50)
                                 : WbDesign.textTertiary,
                             fontSize: 10,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures()
-                            ],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                             fontWeight: FontWeight.w600,
                           );
                           if (staticLabel != null) {
@@ -1901,14 +1933,18 @@ class _TopBar extends StatelessWidget {
               ValueListenableBuilder<RecordingState>(
                 valueListenable: RecordingService.instance.stateNotifier,
                 builder: (_, recState, __) {
-                  if (recState != RecordingState.recording) return const SizedBox.shrink();
+                  if (recState != RecordingState.recording)
+                    return const SizedBox.shrink();
                   return Container(
                     margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF1744).withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(WbDesign.radiusPill),
-                      border: Border.all(color: const Color(0xFFFF1744).withValues(alpha: 0.5)),
+                      border: Border.all(
+                          color:
+                              const Color(0xFFFF1744).withValues(alpha: 0.5)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1945,8 +1981,7 @@ class _TopBar extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.people_rounded,
-                          size: 13, color: accent),
+                      Icon(Icons.people_rounded, size: 13, color: accent),
                       const SizedBox(width: 4),
                       Text(
                         '$participantCount',
@@ -1961,17 +1996,18 @@ class _TopBar extends StatelessWidget {
                 ),
               // ⋮ Alle sekundären Optionen (Ansicht, Hand, Bildschirm, Aufnahme,
               // Reaktion, Co-Watch, Untertitel, Atmosphäre, Heilfrequenz, etc.)
-              Builder(builder: (ctx) => _TopBarBtn(
-                icon: Icons.more_vert_rounded,
-                label: 'Mehr',
-                active: soundscapeEnabled ||
-                    heilEnabled ||
-                    captionsEnabled ||
-                    service.handRaised ||
-                    service.screenShareEnabled,
-                accent: accent,
-                onTap: () => _showMoreOptions(ctx),
-              )),
+              Builder(
+                  builder: (ctx) => _TopBarBtn(
+                        icon: Icons.more_vert_rounded,
+                        label: 'Mehr',
+                        active: soundscapeEnabled ||
+                            heilEnabled ||
+                            captionsEnabled ||
+                            service.handRaised ||
+                            service.screenShareEnabled,
+                        accent: accent,
+                        onTap: () => _showMoreOptions(ctx),
+                      )),
             ],
           ),
         ),
@@ -2018,8 +2054,7 @@ class _TopBarBtn extends StatelessWidget {
               style: TextStyle(
                 fontSize: 9,
                 color: active ? accent : WbDesign.textTertiary,
-                fontWeight:
-                    active ? FontWeight.w700 : FontWeight.w400,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w400,
               ),
             ),
           ],
@@ -2052,8 +2087,7 @@ class _MoreOptionTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Container(
@@ -2176,7 +2210,8 @@ class _ParticipantGrid extends StatelessWidget {
     final identities = remoteVideoTracks.keys.toList();
     final i = index - 1;
     if (i >= identities.length) {
-      return const _TrackInfo(video: null, mic: false, hand: false, avatar: null);
+      return const _TrackInfo(
+          video: null, mic: false, hand: false, avatar: null);
     }
     final id = identities[i];
     return _TrackInfo(
@@ -2208,9 +2243,8 @@ class _ParticipantGrid extends StatelessWidget {
           handRaised: info.hand,
           avatarUrl: info.avatar,
           isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
-          quality: id.isEmpty
-              ? LiveKitParticipantQuality.unknown
-              : qualityFor(id),
+          quality:
+              id.isEmpty ? LiveKitParticipantQuality.unknown : qualityFor(id),
         ),
       );
     }
@@ -2226,7 +2260,8 @@ class _ParticipantGrid extends StatelessWidget {
           : (i - 1 < identitiesSorted.length ? identitiesSorted[i - 1] : '');
       final name = allNames[i];
       // 🔦 B11: Long-Press nur für Remote-Teilnehmer (lokaler pinnt sich nicht selbst)
-      final spotlight = (!isLocal && id.isNotEmpty &&
+      final spotlight = (!isLocal &&
+              id.isNotEmpty &&
               (onSpotlight != null || (isModerator && roomName != null)))
           ? () => _showParticipantSheet(
                 context,
@@ -2261,9 +2296,8 @@ class _ParticipantGrid extends StatelessWidget {
           handRaised: info.hand,
           avatarUrl: info.avatar,
           isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
-          quality: id.isEmpty
-              ? LiveKitParticipantQuality.unknown
-              : qualityFor(id),
+          quality:
+              id.isEmpty ? LiveKitParticipantQuality.unknown : qualityFor(id),
           onLongPress: spotlight,
         ),
       );
@@ -2342,7 +2376,8 @@ class _ParticipantTileState extends State<_ParticipantTile>
     _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
-    if (widget.micEnabled || widget.isActiveSpeaker) _pulseCtrl.repeat(reverse: true);
+    if (widget.micEnabled || widget.isActiveSpeaker)
+      _pulseCtrl.repeat(reverse: true);
   }
 
   @override
@@ -2382,7 +2417,8 @@ class _ParticipantTileState extends State<_ParticipantTile>
     final isMaterie = widget.world == 'materie';
     final hasVideo = widget.videoTrack != null;
 
-    final tileBody = _buildTileBody(context, initials, avatarSize, fontSize, isMaterie, hasVideo);
+    final tileBody = _buildTileBody(
+        context, initials, avatarSize, fontSize, isMaterie, hasVideo);
 
     // 📶 B2: Quality-Punkt overlay oben rechts auf das Tile
     final tileWithQuality = Stack(
@@ -2456,8 +2492,8 @@ class _ParticipantTileState extends State<_ParticipantTile>
     return result;
   }
 
-  Widget _buildTileBody(BuildContext context, String initials, double avatarSize,
-      double fontSize, bool isMaterie, bool hasVideo) {
+  Widget _buildTileBody(BuildContext context, String initials,
+      double avatarSize, double fontSize, bool isMaterie, bool hasVideo) {
     // B1 Glassmorphism: ClipRRect + BackdropFilter für echten Glaseffekt
     // (nur ohne Video — Video füllt sowieso die ganze Tile).
     final inner = Container(
@@ -2492,194 +2528,197 @@ class _ParticipantTileState extends State<_ParticipantTile>
       child: hasVideo
           ? _buildVideoView()
           : Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Avatar mit Sprech-Glow — welt-spezifisch (B2: kein Scale-Puls mehr,
-          // stattdessen Waveform-Balken unter dem Avatar)
-          Stack(
-              alignment: Alignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Welt-spezifischer Glow-Ring (Hexagon für Materie, mehrlagiger Halo für Energie)
-                if (widget.micEnabled)
-                  isMaterie
-                      ? CustomPaint(
-                          size: Size(avatarSize + 24, avatarSize + 24),
-                          painter: _MaterieAvatarGlow(widget.accent),
-                        )
-                      : SizedBox(
-                          width: avatarSize + 28,
-                          height: avatarSize + 28,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Doppelter Halo für Energie-Aura-Effekt
-                              Container(
-                                width: avatarSize + 24,
-                                height: avatarSize + 24,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: widget.accent
-                                          .withValues(alpha: 0.45),
-                                      blurRadius: 24,
-                                      spreadRadius: 4,
+                // Avatar mit Sprech-Glow — welt-spezifisch (B2: kein Scale-Puls mehr,
+                // stattdessen Waveform-Balken unter dem Avatar)
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Welt-spezifischer Glow-Ring (Hexagon für Materie, mehrlagiger Halo für Energie)
+                    if (widget.micEnabled)
+                      isMaterie
+                          ? CustomPaint(
+                              size: Size(avatarSize + 24, avatarSize + 24),
+                              painter: _MaterieAvatarGlow(widget.accent),
+                            )
+                          : SizedBox(
+                              width: avatarSize + 28,
+                              height: avatarSize + 28,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Doppelter Halo für Energie-Aura-Effekt
+                                  Container(
+                                    width: avatarSize + 24,
+                                    height: avatarSize + 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: widget.accent
+                                              .withValues(alpha: 0.45),
+                                          blurRadius: 24,
+                                          spreadRadius: 4,
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
+                                  Container(
+                                    width: avatarSize + 12,
+                                    height: avatarSize + 12,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: widget.accent
+                                              .withValues(alpha: 0.30),
+                                          blurRadius: 12,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                    // Avatar — Profilbild bevorzugt, Initialen als Fallback
+                    Container(
+                      width: avatarSize,
+                      height: avatarSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: WbDesign.hero(widget.world),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: (widget.avatarUrl != null &&
+                              widget.avatarUrl!.isNotEmpty)
+                          ? Image.network(
+                              widget.avatarUrl!,
+                              fit: BoxFit.cover,
+                              width: avatarSize,
+                              height: avatarSize,
+                              errorBuilder: (_, __, ___) => Center(
+                                child: Text(
+                                  initials,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: fontSize,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
-                              Container(
-                                width: avatarSize + 12,
-                                height: avatarSize + 12,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: widget.accent
-                                          .withValues(alpha: 0.30),
-                                      blurRadius: 12,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
+                            )
+                          : Center(
+                              child: Text(
+                                initials,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: fontSize,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
                                 ),
+                              ),
+                            ),
+                    ),
+                    // Hand-Raised-Badge oben rechts
+                    if (widget.handRaised)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFB300),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x66FFB300),
+                                blurRadius: 8,
+                                spreadRadius: 1,
                               ),
                             ],
                           ),
-                        ),
-                // Avatar — Profilbild bevorzugt, Initialen als Fallback
-                Container(
-                  width: avatarSize,
-                  height: avatarSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: WbDesign.hero(widget.world),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: (widget.avatarUrl != null &&
-                          widget.avatarUrl!.isNotEmpty)
-                      ? Image.network(
-                          widget.avatarUrl!,
-                          fit: BoxFit.cover,
-                          width: avatarSize,
-                          height: avatarSize,
-                          errorBuilder: (_, __, ___) => Center(
-                            child: Text(
-                              initials,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: fontSize,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        )
-                      : Center(
-                          child: Text(
-                            initials,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: fontSize,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
+                          child: const Center(
+                            child: Text('✋', style: TextStyle(fontSize: 14)),
                           ),
                         ),
+                      ),
+                  ],
                 ),
-                // Hand-Raised-Badge oben rechts
-                if (widget.handRaised)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFB300),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x66FFB300),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text('✋', style: TextStyle(fontSize: 14)),
-                      ),
+                // B2: Audio-Waveform unter dem Avatar (3 Balken, animiert wenn Sprecher aktiv)
+                if (widget.isActiveSpeaker)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: _AudioWaveform(
+                      color: widget.accent,
+                      animation: _pulseAnim,
+                      height: widget.isSolo ? 18 : 12,
                     ),
                   ),
-              ],
-            ),
-          // B2: Audio-Waveform unter dem Avatar (3 Balken, animiert wenn Sprecher aktiv)
-          if (widget.isActiveSpeaker)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: _AudioWaveform(
-                color: widget.accent,
-                animation: _pulseAnim,
-                height: widget.isSolo ? 18 : 12,
-              ),
-            ),
-          const SizedBox(height: 10),
-          // Name
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              () {
-                final n = widget.name.trim();
-                if (widget.isLocal) {
-                  return n.isEmpty ? 'Du' : '$n (Du)';
-                }
-                return n.isEmpty ? 'Mitglied' : n;
-              }(),
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: widget.isSolo ? 16 : 12,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 6),
-          // Mic-Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: widget.micEnabled
-                  ? widget.accent.withValues(alpha: 0.15)
-                  : Colors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(WbDesign.radiusPill),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  widget.micEnabled ? Icons.mic_rounded : Icons.mic_off_rounded,
-                  size: 11,
-                  color: widget.micEnabled
-                      ? widget.accent
-                      : WbDesign.textTertiary,
+                const SizedBox(height: 10),
+                // Name
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    () {
+                      final n = widget.name.trim();
+                      if (widget.isLocal) {
+                        return n.isEmpty ? 'Du' : '$n (Du)';
+                      }
+                      return n.isEmpty ? 'Mitglied' : n;
+                    }(),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: widget.isSolo ? 16 : 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                const SizedBox(width: 3),
-                Text(
-                  widget.micEnabled ? 'Mikrofon an' : 'Stummgeschaltet',
-                  style: TextStyle(
+                const SizedBox(height: 6),
+                // Mic-Status Badge
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
                     color: widget.micEnabled
-                        ? widget.accent
-                        : WbDesign.textTertiary,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
+                        ? widget.accent.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(WbDesign.radiusPill),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        widget.micEnabled
+                            ? Icons.mic_rounded
+                            : Icons.mic_off_rounded,
+                        size: 11,
+                        color: widget.micEnabled
+                            ? widget.accent
+                            : WbDesign.textTertiary,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        widget.micEnabled ? 'Mikrofon an' : 'Stummgeschaltet',
+                        style: TextStyle(
+                          color: widget.micEnabled
+                              ? widget.accent
+                              : WbDesign.textTertiary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
     );
 
     if (hasVideo) return inner;
@@ -2714,8 +2753,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
             right: 0,
             bottom: 0,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
@@ -2733,9 +2771,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
                         ? Icons.mic_rounded
                         : Icons.mic_off_rounded,
                     size: 14,
-                    color: widget.micEnabled
-                        ? widget.accent
-                        : Colors.white60,
+                    color: widget.micEnabled ? widget.accent : Colors.white60,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
@@ -2856,7 +2892,8 @@ class _ControlBar extends StatelessWidget {
                     const SizedBox(height: 8),
                     // Chat
                     ValueListenableBuilder<int>(
-                      valueListenable: InCallChatService.instance.unreadNotifier,
+                      valueListenable:
+                          InCallChatService.instance.unreadNotifier,
                       builder: (_, unread, __) => _MoreActionTile(
                         icon: chatVisible
                             ? Icons.chat_bubble_rounded
@@ -2966,7 +3003,8 @@ class _ControlBar extends StatelessWidget {
                           icon: isRec
                               ? Icons.stop_circle_rounded
                               : Icons.fiber_manual_record_rounded,
-                          title: isRec ? 'Aufnahme stoppen' : 'Aufnahme starten',
+                          title:
+                              isRec ? 'Aufnahme stoppen' : 'Aufnahme starten',
                           subtitle: isRec
                               ? 'Laufende Aufnahme beenden'
                               : isBusy
@@ -2980,14 +3018,14 @@ class _ControlBar extends StatelessWidget {
                             if (isRec) {
                               RecordingService.instance.stopRecording();
                             } else {
-                              RecordingService.instance.startRecording(roomName);
+                              RecordingService.instance
+                                  .startRecording(roomName);
                             }
                           },
                         );
                       },
                     ),
-                    SizedBox(
-                        height: MediaQuery.of(ctx).padding.bottom + 20),
+                    SizedBox(height: MediaQuery.of(ctx).padding.bottom + 20),
                   ],
                 ),
               ),
@@ -3083,11 +3121,12 @@ class _ControlBar extends StatelessWidget {
                         : Icons.mic_off_rounded,
                     label: service.pttActive
                         ? 'Sprechtaste'
-                        : (service.micEnabled ? 'Mikrofon an' : 'Stummschalten'),
+                        : (service.micEnabled
+                            ? 'Mikrofon an'
+                            : 'Stummschalten'),
                     active: service.micEnabled || service.pttActive,
-                    activeColor: service.pttActive
-                        ? const Color(0xFF00E676)
-                        : accent,
+                    activeColor:
+                        service.pttActive ? const Color(0xFF00E676) : accent,
                     enabled: isConnected,
                     onTap: () => service.toggleMicrophone(),
                     onLongPressStart: () => service.pttPress(),
@@ -3199,8 +3238,7 @@ class _MoreActionTile extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF1744),
                         borderRadius: BorderRadius.circular(8),
-                        border:
-                            Border.all(color: Colors.black, width: 1.5),
+                        border: Border.all(color: Colors.black, width: 1.5),
                       ),
                       child: Text(
                         badgeCount > 9 ? '9+' : '$badgeCount',
@@ -3268,8 +3306,8 @@ class _MoreActionTile extends StatelessWidget {
 
 /// 💖 Bundle 4: Reactions-Picker als Bottom-Sheet — pro Welt eigener
 /// Emoji-Set (Energie eher esoterisch, Materie eher kraftvoll).
-void _showReactionsPicker(BuildContext context, String world,
-    LiveKitCallService service) {
+void _showReactionsPicker(
+    BuildContext context, String world, LiveKitCallService service) {
   final emojis = world == 'energie' ? kEnergieReactions : kMaterieReactions;
   final accent = WbDesign.accent(world);
   showModalBottomSheet(
@@ -3372,7 +3410,6 @@ class _ReactionEmojiBtn extends StatelessWidget {
 
 // ── Smart-Mehr-Button: zeigt aktive Sekundär-Feature-Badges ─────────────────
 
-
 class _CtrlBtn extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -3380,6 +3417,7 @@ class _CtrlBtn extends StatelessWidget {
   final Color? activeColor;
   final bool enabled;
   final bool isDanger;
+
   /// Wenn true → größeres Auflegen-Format (64×64 px, größeres Icon).
   final bool isLarge;
   final VoidCallback? onTap;
@@ -3453,7 +3491,8 @@ class _CtrlBtn extends StatelessWidget {
                 boxShadow: isDanger
                     ? [
                         BoxShadow(
-                          color: const Color(0xFFFF1744).withValues(alpha: 0.50),
+                          color:
+                              const Color(0xFFFF1744).withValues(alpha: 0.50),
                           blurRadius: isLarge ? 24 : 16,
                           spreadRadius: isLarge ? 4 : 2,
                         ),
@@ -3474,13 +3513,10 @@ class _CtrlBtn extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isDanger
-                    ? const Color(0xFFFF6B6B)
-                    : labelColor,
+                color: isDanger ? const Color(0xFFFF6B6B) : labelColor,
                 fontSize: 9.5,
-                fontWeight: (active || isDanger)
-                    ? FontWeight.w700
-                    : FontWeight.w400,
+                fontWeight:
+                    (active || isDanger) ? FontWeight.w700 : FontWeight.w400,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -3583,8 +3619,7 @@ class _StatusView extends StatelessWidget {
                   foregroundColor: Colors.white,
                   minimumSize: const Size(180, 48),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(WbDesign.radiusMedium),
+                    borderRadius: BorderRadius.circular(WbDesign.radiusMedium),
                   ),
                 ),
               ),
@@ -3705,8 +3740,10 @@ class _AudioWaveform extends StatelessWidget {
           final t = animation.value; // 0.95..1.05 → normalisiere
           final n = ((t - 0.95) / 0.10).clamp(0.0, 1.0); // 0..1
           final h0 = 0.35 + 0.65 * (math.sin(n * math.pi * 2) * 0.5 + 0.5);
-          final h1 = 0.35 + 0.65 * (math.sin(n * math.pi * 2 + 2.1) * 0.5 + 0.5);
-          final h2 = 0.35 + 0.65 * (math.sin(n * math.pi * 2 + 4.2) * 0.5 + 0.5);
+          final h1 =
+              0.35 + 0.65 * (math.sin(n * math.pi * 2 + 2.1) * 0.5 + 0.5);
+          final h2 =
+              0.35 + 0.65 * (math.sin(n * math.pi * 2 + 4.2) * 0.5 + 0.5);
           return Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -3788,8 +3825,7 @@ class _MaterieAvatarGlow extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _MaterieAvatarGlow old) =>
-      old.accent != accent;
+  bool shouldRepaint(covariant _MaterieAvatarGlow old) => old.accent != accent;
 }
 
 /// 📶 Bundle 2: kleiner farbiger Punkt am Tile (oben rechts) der die
@@ -3838,7 +3874,8 @@ class _QualityDot extends StatelessWidget {
         decoration: BoxDecoration(
           color: _color,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.black.withValues(alpha: 0.6), width: 1),
+          border:
+              Border.all(color: Colors.black.withValues(alpha: 0.6), width: 1),
           boxShadow: [
             BoxShadow(
               color: _color.withValues(alpha: 0.6),
@@ -3868,7 +3905,8 @@ void _showParticipantSheet(
   bool isModerator = false,
   String moderatorUsername = '',
 }) {
-  Future<void> runModeration(LiveKitModerationAction action, String label) async {
+  Future<void> runModeration(
+      LiveKitModerationAction action, String label) async {
     final messenger = ScaffoldMessenger.of(context);
     Navigator.pop(context);
     messenger.showSnackBar(SnackBar(
@@ -3883,7 +3921,8 @@ void _showParticipantSheet(
       adminUsername: moderatorUsername,
     );
     messenger.showSnackBar(SnackBar(
-      content: Text(res.ok ? '✅ $label erfolgreich' : '❌ ${res.error ?? 'Fehler'}'),
+      content:
+          Text(res.ok ? '✅ $label erfolgreich' : '❌ ${res.error ?? 'Fehler'}'),
       backgroundColor: res.ok ? Colors.green.shade800 : Colors.red.shade800,
     ));
   }
@@ -3926,7 +3965,8 @@ void _showParticipantSheet(
               ),
               title: const Text(
                 'Für alle pinnen',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'Wird für alle Teilnehmer hervorgehoben',
@@ -3946,13 +3986,15 @@ void _showParticipantSheet(
               ),
               title: const Text(
                 'Mikrofon stummschalten',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'Audio-Track wird serverseitig gemutet',
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
               ),
-              onTap: () => runModeration(LiveKitModerationAction.mute, 'Stummgeschaltet'),
+              onTap: () => runModeration(
+                  LiveKitModerationAction.mute, 'Stummgeschaltet'),
             ),
             ListTile(
               leading: const CircleAvatar(
@@ -3961,28 +4003,33 @@ void _showParticipantSheet(
               ),
               title: const Text(
                 'Stummschaltung aufheben',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'User muss ggf. selbst wieder publishen',
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
               ),
-              onTap: () => runModeration(LiveKitModerationAction.unmute, 'Aufgehoben'),
+              onTap: () =>
+                  runModeration(LiveKitModerationAction.unmute, 'Aufgehoben'),
             ),
             ListTile(
               leading: const CircleAvatar(
                 backgroundColor: Color(0x33E53935),
-                child: Icon(Icons.person_remove_rounded, color: Color(0xFFE53935)),
+                child:
+                    Icon(Icons.person_remove_rounded, color: Color(0xFFE53935)),
               ),
               title: const Text(
                 'Aus Raum entfernen',
-                style: TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Color(0xFFE53935), fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'Teilnehmer wird disconnected',
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
               ),
-              onTap: () => runModeration(LiveKitModerationAction.kick, 'Entfernt'),
+              onTap: () =>
+                  runModeration(LiveKitModerationAction.kick, 'Entfernt'),
             ),
           ],
         ],
@@ -4074,7 +4121,8 @@ class _SpeakerView extends StatelessWidget {
       mainVideo = localVideoTrack;
     } else {
       final idx = remoteIds.indexOf(mainId);
-      mainName = (idx >= 0 && idx < remoteNames.length) ? remoteNames[idx] : mainId;
+      mainName =
+          (idx >= 0 && idx < remoteNames.length) ? remoteNames[idx] : mainId;
       mainMic = remoteMicActive(mainId);
       mainHand = remoteHandRaised(mainId);
       mainAvatar = remoteAvatarUrl(mainId);
@@ -4137,8 +4185,10 @@ class _SpeakerView extends StatelessWidget {
                     avatar = remoteAvatarUrl(id);
                     video = remoteVideoTracks[id];
                   }
-                  final spotlight = (!isLocal && id.isNotEmpty &&
-                          (onSpotlight != null || (isModerator && roomName != null)))
+                  final spotlight = (!isLocal &&
+                          id.isNotEmpty &&
+                          (onSpotlight != null ||
+                              (isModerator && roomName != null)))
                       ? () => _showParticipantSheet(
                             context,
                             name: name,

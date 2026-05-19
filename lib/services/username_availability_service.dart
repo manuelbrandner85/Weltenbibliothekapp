@@ -83,7 +83,8 @@ class UsernameAvailabilityService {
   ///   `rawUsername`, wird `available` zurückgegeben ohne Server-Check.
   ///   So kann ein angemeldeter User seine eigenen Profil-Daten ändern,
   ///   ohne dass der Server seinen eigenen Namen als "taken" meldet.
-  Future<UsernameCheckResult> check(String rawUsername, {String? currentUsername}) async {
+  Future<UsernameCheckResult> check(String rawUsername,
+      {String? currentUsername}) async {
     final username = rawUsername.trim();
 
     // 1. Lokal: Format-Check

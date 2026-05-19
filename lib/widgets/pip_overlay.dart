@@ -64,7 +64,8 @@ class PipOverlay extends StatelessWidget {
                       child: Image.network(
                         localAvatarUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _initials(activeSpeakerName),
+                        errorBuilder: (_, __, ___) =>
+                            _initials(activeSpeakerName),
                       ),
                     )
                   : _initials(activeSpeakerName),
@@ -86,7 +87,9 @@ class PipOverlay extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  service.micEnabled ? Icons.mic_rounded : Icons.mic_off_rounded,
+                  service.micEnabled
+                      ? Icons.mic_rounded
+                      : Icons.mic_off_rounded,
                   color: service.micEnabled ? accent : Colors.grey,
                   size: 14,
                 ),
@@ -110,7 +113,9 @@ class PipOverlay extends StatelessWidget {
   Widget _initials(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
     final initials = parts.length == 1
-        ? parts.first.isNotEmpty ? parts.first[0].toUpperCase() : '?'
+        ? parts.first.isNotEmpty
+            ? parts.first[0].toUpperCase()
+            : '?'
         : '${parts.first[0]}${parts.last[0]}'.toUpperCase();
     return Center(
       child: Text(

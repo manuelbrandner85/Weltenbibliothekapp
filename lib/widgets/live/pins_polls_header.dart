@@ -170,7 +170,8 @@ class _PinsPollsHeaderState extends State<PinsPollsHeader>
     final pinCount = widget.pins.length;
     final pollCount = widget.polls.length;
     final parts = <String>[];
-    if (pinCount > 0) parts.add('📌 $pinCount ${pinCount == 1 ? "Pin" : "Pins"}');
+    if (pinCount > 0)
+      parts.add('📌 $pinCount ${pinCount == 1 ? "Pin" : "Pins"}');
     if (pollCount > 0) {
       parts.add('📊 $pollCount ${pollCount == 1 ? "Umfrage" : "Umfragen"}');
     }
@@ -265,8 +266,7 @@ class _PinCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.push_pin_rounded,
-                            size: 12, color: primary),
+                        Icon(Icons.push_pin_rounded, size: 12, color: primary),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -419,8 +419,7 @@ class _PollCard extends StatelessWidget {
                         ),
                         Positioned.fill(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: Row(
                               children: [
                                 if (isUserChoice)

@@ -323,8 +323,10 @@ class _BookSpineState extends State<_BookSpine>
     // Variable height based on title length (longer title -> taller book,
     // capped). Adds character to the row.
     final titleLen = widget.book.title.length.clamp(4, 60);
-    final heightT = 0.3 + (titleLen / 60) * 0.7 + (rng.nextDouble() - 0.5) * 0.2;
-    _height = lerpDouble(_bookMinHeight, _bookMaxHeight, heightT.clamp(0.0, 1.0))!;
+    final heightT =
+        0.3 + (titleLen / 60) * 0.7 + (rng.nextDouble() - 0.5) * 0.2;
+    _height =
+        lerpDouble(_bookMinHeight, _bookMaxHeight, heightT.clamp(0.0, 1.0))!;
 
     final widthT = rng.nextDouble();
     _width = lerpDouble(_bookMinWidth, _bookMaxWidth, widthT)!;
@@ -360,13 +362,14 @@ class _BookSpineState extends State<_BookSpine>
 
   bool get _isLegendary {
     final tags = widget.book.tags;
-    final hasBossTag =
-        tags.any((t) => t.toLowerCase() == 'boss' || t.toLowerCase() == 'legendary');
+    final hasBossTag = tags.any(
+        (t) => t.toLowerCase() == 'boss' || t.toLowerCase() == 'legendary');
     final highRating = widget.book.rating > 4.7;
     return hasBossTag || highRating;
   }
 
-  bool get _hasImage => widget.book.imageUrl != null && widget.book.imageUrl!.isNotEmpty;
+  bool get _hasImage =>
+      widget.book.imageUrl != null && widget.book.imageUrl!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -478,7 +481,8 @@ class _BookSpineState extends State<_BookSpine>
                 ),
                 // Vertical title text.
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 1),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 1),
                   child: Center(
                     child: RotatedBox(
                       quarterTurns: 3,
@@ -573,7 +577,8 @@ class _DecorativeFillerSpine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rng = math.Random(seed);
-    final h = lerpDouble(_bookMinHeight, _bookMaxHeight - 20, rng.nextDouble())!;
+    final h =
+        lerpDouble(_bookMinHeight, _bookMaxHeight - 20, rng.nextDouble())!;
     final w = lerpDouble(_bookMinWidth, _bookMaxWidth, rng.nextDouble())!;
     final color = _shiftColor(theme.woodLight, (rng.nextDouble() - 0.5) * 0.1);
 
@@ -633,7 +638,8 @@ class _EmptyShelfState extends StatelessWidget {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: CustomPaint(painter: _BackWallPainter(theme: theme)),
+                      child:
+                          CustomPaint(painter: _BackWallPainter(theme: theme)),
                     ),
                     Positioned(
                       left: 0,

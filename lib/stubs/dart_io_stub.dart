@@ -109,7 +109,8 @@ class File {
   String readAsStringSync({Encoding encoding = utf8}) =>
       throw UnsupportedError('File.readAsStringSync nicht auf Web verfügbar');
 
-  Future<List<String>> readAsLines({Encoding encoding = utf8}) async => const [];
+  Future<List<String>> readAsLines({Encoding encoding = utf8}) async =>
+      const [];
 
   Future<File> writeAsBytes(List<int> bytes,
           {FileMode mode = FileMode.write, bool flush = false}) async =>
@@ -127,7 +128,8 @@ class File {
   Future<File> delete({bool recursive = false}) async => this;
   void deleteSync({bool recursive = false}) {}
 
-  Future<File> create({bool recursive = false, bool exclusive = false}) async => this;
+  Future<File> create({bool recursive = false, bool exclusive = false}) async =>
+      this;
   void createSync({bool recursive = false, bool exclusive = false}) {}
 
   Future<int> length() async => 0;
@@ -136,7 +138,8 @@ class File {
   Future<FileStat> stat() async => FileStat._empty;
   FileStat statSync() => FileStat._empty;
 
-  IOSink openWrite({FileMode mode = FileMode.write, Encoding encoding = utf8}) =>
+  IOSink openWrite(
+          {FileMode mode = FileMode.write, Encoding encoding = utf8}) =>
       IOSink();
 
   Stream<List<int>> openRead([int? start, int? end]) =>
@@ -162,9 +165,11 @@ class Directory {
   Future<Directory> create({bool recursive = false}) async => this;
   void createSync({bool recursive = false}) {}
   Future<Directory> delete({bool recursive = false}) async => this;
-  Stream<FileSystemEntity> list({bool recursive = false, bool followLinks = true}) =>
+  Stream<FileSystemEntity> list(
+          {bool recursive = false, bool followLinks = true}) =>
       const Stream<FileSystemEntity>.empty();
-  List<FileSystemEntity> listSync({bool recursive = false, bool followLinks = true}) =>
+  List<FileSystemEntity> listSync(
+          {bool recursive = false, bool followLinks = true}) =>
       const <FileSystemEntity>[];
   Directory get absolute => this;
   static Directory get current => Directory('/');

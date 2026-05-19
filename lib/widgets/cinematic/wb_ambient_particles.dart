@@ -117,7 +117,8 @@ class _ParticlePainter extends CustomPainter {
       final t = time * speed;
       final px = ((p.x + p.dx * t) % 1.0) * size.width;
       final py = ((p.y + p.dy * t) % 1.0) * size.height;
-      final alpha = (0.15 + 0.25 * sin(time * 2 * pi + p.phase)).clamp(0.0, 1.0);
+      final alpha =
+          (0.15 + 0.25 * sin(time * 2 * pi + p.phase)).clamp(0.0, 1.0);
       final r = p.radius * (0.6 + 0.4 * sin(time * 2 * pi * 0.5 + p.phase));
 
       paint.color = color.withValues(alpha: alpha);

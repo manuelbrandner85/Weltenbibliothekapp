@@ -44,7 +44,8 @@ class BookmarkCollectionService {
           .eq('user_id', userId)
           .order('order_idx', ascending: true);
       return (res as List)
-          .map((r) => BookmarkCollection.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              BookmarkCollection.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Coll list: $e');
@@ -60,13 +61,17 @@ class BookmarkCollectionService {
   }) async {
     try {
       final existing = await listFor(userId);
-      final res = await _s.from('bookmark_collections').insert({
-        'user_id': userId,
-        'name': name,
-        'icon': icon,
-        'color': color,
-        'order_idx': existing.length,
-      }).select().single();
+      final res = await _s
+          .from('bookmark_collections')
+          .insert({
+            'user_id': userId,
+            'name': name,
+            'icon': icon,
+            'color': color,
+            'order_idx': existing.length,
+          })
+          .select()
+          .single();
       return BookmarkCollection.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Coll create: $e');

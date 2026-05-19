@@ -233,7 +233,14 @@ Schuetzen tut dich das Wissen davor, "Gefaelligkeiten" naiv anzunehmen. Es gibt 
 ''',
     category: 'Machtpsychologie',
     type: 'book',
-    tags: ['puzo', 'mafia', 'roman', 'familienstrukturen', 'macht', 'klassiker'],
+    tags: [
+      'puzo',
+      'mafia',
+      'roman',
+      'familienstrukturen',
+      'macht',
+      'klassiker'
+    ],
     createdAt: DateTime.now(),
     imageUrl: 'https://covers.openlibrary.org/b/isbn/9783442378487-L.jpg',
     author: 'Mario Puzo',
@@ -1097,7 +1104,8 @@ Schuetzen tut dich die Lektuere vor zwei Reflexen. Erstens vor naivem Medien-Ver
     title: 'Schattenmaechte (La marche irresistible du nouvel ordre mondial)',
     description:
         'Hillards franzoesisch-katholische Analyse europaeischer Eliten-Strukturen - mit ideologischem Filter lesen.',
-    fullContent: '''# Schattenmaechte (La marche irresistible du nouvel ordre mondial)
+    fullContent:
+        '''# Schattenmaechte (La marche irresistible du nouvel ordre mondial)
 
 > _Hillards franzoesisch-katholische Analyse europaeischer Eliten-Strukturen - mit ideologischem Filter lesen._
 
@@ -1183,7 +1191,8 @@ Schuetzen tut dich die Lektuere vor zwei Naivitaeten. Erstens vor dem Glauben, d
     title: 'Die Schatten der Globalisierung',
     description:
         'Nobelpreistraeger und Ex-Weltbank-Chefoekonom Stiglitz dokumentiert von innen, wie IWF-Politik systematisch versagt hat.',
-    fullContent: '''# Die Schatten der Globalisierung (Globalization and Its Discontents)
+    fullContent:
+        '''# Die Schatten der Globalisierung (Globalization and Its Discontents)
 
 > _Nobelpreistraeger und Ex-Weltbank-Chefoekonom Stiglitz dokumentiert von innen, wie IWF-Politik systematisch versagt hat._
 

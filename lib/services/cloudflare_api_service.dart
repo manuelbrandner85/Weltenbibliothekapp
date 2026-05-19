@@ -9,51 +9,53 @@ import 'supabase_service.dart'; // 🔥 Supabase Client für Direct Fallback
 
 /// Cloudflare API Service für Weltenbibliothek
 /// Ersetzt Firebase Firestore mit Cloudflare D1 + Workers
-/// 
+///
 /// ✅ PRODUCTION MODE: Offline-First Chat mit lokaler Speicherung
 class CloudflareApiService {
   // ✅ PRODUCTION MODE: Mock-Service deaktiviert
-  
+
   // 📦 Local Chat Storage for offline-first functionality
   final LocalChatStorageService _localChat = LocalChatStorageService();
-  
+
   // 🌐 API URLs - Centralized via ApiConfig
   // Migration Status: ✅ V2 Complete
-  
+
   // Community API (Articles, Users, Analytics)
   // Note: Separate Worker, will migrate when community-v2 available
   static String get baseUrl => ApiConfig.workerUrl;
-  
+
   // Main API (Chat + Knowledge + WebSocket) - Using Deployed WebSocket Worker
   // FIXED: Use actual deployed worker name
   static String get mainApiUrl => ApiConfig.workerUrl;
-  
+
   // Media Upload API (R2 Storage)
   // Note: Separate Worker, will migrate when media-v2 available
   static String get mediaApiUrl => ApiConfig.workerUrl;
-  
+
   // Chat Features API (Reactions, Read Receipts, Polls)
   // Note: Separate Worker, will migrate when chat-features-v2 available
   static String get chatFeaturesApiUrl => ApiConfig.workerUrl;
-  
+
   // Chat Reactions API (Redirect to Chat Features)
   static String get reactionsApiUrl => chatFeaturesApiUrl;
-  
+
   // ⚠️ SECURITY: API Token from ApiConfig
   // Set CLOUDFLARE_API_TOKEN environment variable before building
   // For development: Use --dart-define=CLOUDFLARE_API_TOKEN=your_token_here
   static String get apiToken {
     // Try environment variable first
-    const envToken = String.fromEnvironment('CLOUDFLARE_API_TOKEN', defaultValue: '');
+    const envToken =
+        String.fromEnvironment('CLOUDFLARE_API_TOKEN', defaultValue: '');
     if (envToken.isNotEmpty) {
       return envToken;
     }
     // Fallback to ApiConfig token
     return ApiConfig.cloudflareApiToken;
   }
-  
+
   // Singleton Pattern
-  static final CloudflareApiService _instance = CloudflareApiService._internal();
+  static final CloudflareApiService _instance =
+      CloudflareApiService._internal();
   factory CloudflareApiService() => _instance;
   CloudflareApiService._internal();
 
@@ -62,20 +64,29 @@ class CloudflareApiService {
   /// Zentraler HTTP-Wrapper mit Timeout + nutzerfreundlichem Fehler.
   Future<http.Response> _get(Uri uri, {Map<String, String>? headers}) =>
       http.get(uri, headers: headers ?? _headers).timeout(_kTimeout,
-          onTimeout: () => throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
+          onTimeout: () =>
+              throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
 
-  Future<http.Response> _post(Uri uri, {Map<String, String>? headers, Object? body}) =>
-      http.post(uri, headers: headers ?? _headers, body: body).timeout(_kTimeout,
-          onTimeout: () => throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
+  Future<http.Response> _post(Uri uri,
+          {Map<String, String>? headers, Object? body}) =>
+      http.post(uri, headers: headers ?? _headers, body: body).timeout(
+          _kTimeout,
+          onTimeout: () =>
+              throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
 
-  Future<http.Response> _put(Uri uri, {Map<String, String>? headers, Object? body}) =>
+  Future<http.Response> _put(Uri uri,
+          {Map<String, String>? headers, Object? body}) =>
       http.put(uri, headers: headers ?? _headers, body: body).timeout(_kTimeout,
-          onTimeout: () => throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
+          onTimeout: () =>
+              throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
 
-  Future<http.Response> _delete(Uri uri, {Map<String, String>? headers, Object? body}) =>
-      http.delete(uri, headers: headers ?? _headers, body: body).timeout(_kTimeout,
-          onTimeout: () => throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
-  
+  Future<http.Response> _delete(Uri uri,
+          {Map<String, String>? headers, Object? body}) =>
+      http.delete(uri, headers: headers ?? _headers, body: body).timeout(
+          _kTimeout,
+          onTimeout: () =>
+              throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
+
   // Gemeinsame Headers (MIT Authorization für authentifizierte Requests)
   Map<String, String> get _headers {
     final headers = <String, String>{
@@ -121,11 +132,12 @@ class CloudflareApiService {
       'limit': limit.toString(),
       'offset': offset.toString(),
     };
-    
+
     if (realm != null) params['realm'] = realm;
     if (category != null) params['category'] = category;
 
-    final uri = Uri.parse('$baseUrl/api/articles').replace(queryParameters: params);
+    final uri =
+        Uri.parse('$baseUrl/api/articles').replace(queryParameters: params);
     final response = await _get(uri, headers: _headers);
 
     if (response.statusCode == 200) {
@@ -151,7 +163,8 @@ class CloudflareApiService {
   }
 
   /// Create new article
-  Future<Map<String, dynamic>> createArticle(Map<String, dynamic> articleData) async {
+  Future<Map<String, dynamic>> createArticle(
+      Map<String, dynamic> articleData) async {
     final response = await _post(
       Uri.parse('$baseUrl/api/articles'),
       headers: _headers,
@@ -196,8 +209,8 @@ class CloudflareApiService {
           .map((e) => Map<String, dynamic>.from(e as Map))
           .map((m) => {
                 ...m,
-                'id': m['id'],             // ✅ immer vorhanden für Edit/Delete
-                'message_id': m['id'],     // ✅ Alias für Edit/Delete-Aufrufe
+                'id': m['id'], // ✅ immer vorhanden für Edit/Delete
+                'message_id': m['id'], // ✅ Alias für Edit/Delete-Aufrufe
                 'userId': m['user_id'],
                 'user_id': m['user_id'],
                 'timestamp': m['created_at'],
@@ -210,12 +223,14 @@ class CloudflareApiService {
           .toList();
 
       if (kDebugMode) {
-        debugPrint('✅ Supabase direct: ${supaMessages.length} messages for $roomId');
+        debugPrint(
+            '✅ Supabase direct: ${supaMessages.length} messages for $roomId');
       }
       return supaMessages;
     } catch (supaErr) {
       if (kDebugMode) {
-        debugPrint('⚠️ Supabase direct failed: $supaErr – trying Worker fallback...');
+        debugPrint(
+            '⚠️ Supabase direct failed: $supaErr – trying Worker fallback...');
       }
     }
 
@@ -247,20 +262,19 @@ class CloudflareApiService {
             .map((e) => e as Map<String, dynamic>)
             .where((msg) => msg['deleted'] != true)
             .map((msg) {
-              final userId = msg['userId'] ?? msg['user_id'];
-              final timestamp = msg['timestamp'] ?? msg['created_at'];
-              return {
-                ...msg,
-                'userId': userId,
-                'user_id': userId,
-                'timestamp': timestamp,
-                'created_at': timestamp,
-                'avatarEmoji': msg['avatarEmoji'] ?? msg['avatar_emoji'] ?? '👤',
-                'message': msg['message'] ?? msg['content'] ?? '',
-                'content': msg['content'] ?? msg['message'] ?? '',
-              };
-            })
-            .toList();
+          final userId = msg['userId'] ?? msg['user_id'];
+          final timestamp = msg['timestamp'] ?? msg['created_at'];
+          return {
+            ...msg,
+            'userId': userId,
+            'user_id': userId,
+            'timestamp': timestamp,
+            'created_at': timestamp,
+            'avatarEmoji': msg['avatarEmoji'] ?? msg['avatar_emoji'] ?? '👤',
+            'message': msg['message'] ?? msg['content'] ?? '',
+            'content': msg['content'] ?? msg['message'] ?? '',
+          };
+        }).toList();
       }
     } catch (workerErr) {
       if (kDebugMode) {
@@ -278,7 +292,8 @@ class CloudflareApiService {
         limit: limit,
       );
       if (kDebugMode) {
-        debugPrint('✅ Local storage: ${messages.length} messages (last resort)');
+        debugPrint(
+            '✅ Local storage: ${messages.length} messages (last resort)');
       }
       return messages;
     } catch (_) {
@@ -330,11 +345,13 @@ class CloudflareApiService {
       };
 
       final uri = Uri.parse('$mainApiUrl/api/chat/messages');
-      final response = await http.post(
-        uri,
-        headers: {..._headers, 'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .post(
+            uri,
+            headers: {..._headers, 'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -344,12 +361,14 @@ class CloudflareApiService {
       }
 
       // Worker-Fehler: Fallback auf direkten Supabase-Insert
-      if (kDebugMode) debugPrint('⚠️ [Chat] Worker failed (${response.statusCode}), Supabase fallback');
+      if (kDebugMode)
+        debugPrint(
+            '⚠️ [Chat] Worker failed (${response.statusCode}), Supabase fallback');
       final messageType = switch (mediaType) {
         'audio' => 'voice',
         'image' => 'image',
-        'file'  => 'file',
-        _       => null,
+        'file' => 'file',
+        _ => null,
       };
       return await SupabaseChatService.instance.sendMessage(
         roomId: roomId,
@@ -393,10 +412,10 @@ class CloudflareApiService {
         'weisheit': '🕉️',
         'heilung': '💚',
       };
-      
+
       final emoji = toolEmojis[toolName] ?? '🛠️';
       final message = '$emoji $username nutzt $toolName: $activity';
-      
+
       await sendChatMessage(
         roomId: roomId,
         realm: realm,
@@ -405,7 +424,8 @@ class CloudflareApiService {
         message: message,
       );
     } catch (e) {
-      debugPrint('⚠️ Tool-Aktivitäts-Nachricht konnte nicht gesendet werden: $e');
+      debugPrint(
+          '⚠️ Tool-Aktivitäts-Nachricht konnte nicht gesendet werden: $e');
       // Fehler wird ignoriert, damit Tool-Nutzung nicht blockiert wird
     }
   }
@@ -438,7 +458,8 @@ class CloudflareApiService {
     );
     if (response.statusCode != 200) {
       if (kDebugMode) {
-        debugPrint('❌ [Chat] Edit failed: ${response.statusCode} ${response.body}');
+        debugPrint(
+            '❌ [Chat] Edit failed: ${response.statusCode} ${response.body}');
       }
       throw Exception('Edit fehlgeschlagen (${response.statusCode})');
     }
@@ -470,14 +491,13 @@ class CloudflareApiService {
     );
     if (response.statusCode != 200) {
       if (kDebugMode) {
-        debugPrint('❌ [Chat] Delete failed: ${response.statusCode} ${response.body}');
+        debugPrint(
+            '❌ [Chat] Delete failed: ${response.statusCode} ${response.body}');
       }
       throw Exception('Delete fehlgeschlagen (${response.statusCode})');
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
-
-
 
   // ═══════════════════════════════════════════════════════════
   // USER METHODS
@@ -589,10 +609,11 @@ class CloudflareApiService {
       'q': query,
       'limit': limit.toString(),
     };
-    
+
     if (realm != null) params['realm'] = realm;
 
-    final uri = Uri.parse('$baseUrl/api/search').replace(queryParameters: params);
+    final uri =
+        Uri.parse('$baseUrl/api/search').replace(queryParameters: params);
     final response = await _get(uri);
 
     if (response.statusCode == 200) {
@@ -616,11 +637,12 @@ class CloudflareApiService {
     final params = <String, String>{
       'limit': limit.toString(),
     };
-    
+
     if (realm != null) params['realm'] = realm;
     if (type != null) params['type'] = type;
 
-    final uri = Uri.parse('$baseUrl/api/content').replace(queryParameters: params);
+    final uri =
+        Uri.parse('$baseUrl/api/content').replace(queryParameters: params);
     final response = await _get(uri);
 
     if (response.statusCode == 200) {
@@ -632,7 +654,8 @@ class CloudflareApiService {
   }
 
   /// Create user content
-  Future<Map<String, dynamic>> createUserContent(Map<String, dynamic> contentData) async {
+  Future<Map<String, dynamic>> createUserContent(
+      Map<String, dynamic> contentData) async {
     final response = await _post(
       Uri.parse('$baseUrl/api/content'),
       headers: {'Content-Type': 'application/json'},
@@ -653,9 +676,8 @@ class CloudflareApiService {
   /// Get notifications for user
   Future<List<Map<String, dynamic>>> getNotifications(String userId) async {
     try {
-      final response = await _get(
-        Uri.parse('$baseUrl/api/notifications/$userId')
-      ).timeout(
+      final response =
+          await _get(Uri.parse('$baseUrl/api/notifications/$userId')).timeout(
         const Duration(seconds: 15),
         onTimeout: () => throw TimeoutException('Notification fetch timeout'),
       );
@@ -691,7 +713,8 @@ class CloudflareApiService {
       );
 
       if (response.statusCode != 201) {
-        throw Exception('Failed to create notification: ${response.statusCode}');
+        throw Exception(
+            'Failed to create notification: ${response.statusCode}');
       }
     } on SocketException {
       throw Exception('Keine Internetverbindung');
@@ -802,7 +825,8 @@ class CloudflareApiService {
   }
 
   /// Get article comments
-  Future<List<Map<String, dynamic>>> getArticleComments(String articleId) async {
+  Future<List<Map<String, dynamic>>> getArticleComments(
+      String articleId) async {
     try {
       final response = await _get(
         Uri.parse('$baseUrl/api/articles/$articleId/comments'),
@@ -1018,10 +1042,11 @@ class CloudflareApiService {
     final params = <String, String>{
       'realm': realm,
     };
-    
+
     if (date != null) params['date'] = date;
 
-    final uri = Uri.parse('$baseUrl/api/analytics').replace(queryParameters: params);
+    final uri =
+        Uri.parse('$baseUrl/api/analytics').replace(queryParameters: params);
     final response = await _get(uri);
 
     if (response.statusCode == 200) {
@@ -1043,19 +1068,19 @@ class CloudflareApiService {
     required List<int> fileBytes,
     required String fileName,
     required String mediaType, // 'image' or 'video'
-    required String worldType,  // 'materie' or 'energie'
+    required String worldType, // 'materie' or 'energie'
     required String username,
   }) async {
     try {
       if (kDebugMode) {
         debugPrint('🔼 Uploading media: $fileName ($mediaType) to $worldType');
       }
-      
+
       final request = http.MultipartRequest(
-        'POST', 
+        'POST',
         Uri.parse('$mediaApiUrl/api/media/upload'),
       );
-      
+
       // Add file
       request.files.add(
         http.MultipartFile.fromBytes(
@@ -1064,17 +1089,17 @@ class CloudflareApiService {
           filename: fileName,
         ),
       );
-      
+
       // Add metadata
       request.fields['media_type'] = mediaType;
       request.fields['world_type'] = worldType;
       request.fields['username'] = username;
-      
+
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
+            const Duration(seconds: 30),
+          );
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       if (response.statusCode == 201) {
         final result = json.decode(response.body);
         if (kDebugMode) {
@@ -1083,7 +1108,8 @@ class CloudflareApiService {
         return result;
       } else {
         if (kDebugMode) {
-          debugPrint('❌ Upload failed: ${response.statusCode} - ${response.body}');
+          debugPrint(
+              '❌ Upload failed: ${response.statusCode} - ${response.body}');
         }
         throw Exception('Failed to upload media: ${response.statusCode}');
       }
@@ -1094,14 +1120,14 @@ class CloudflareApiService {
       rethrow;
     }
   }
-  
+
   /// Get media file URL
   Future<String> getMediaUrl(String fileName) async {
     final response = await _get(
       Uri.parse('$mediaApiUrl/api/media/$fileName'),
       headers: _headers,
     );
-    
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['media_url'];
@@ -1109,7 +1135,7 @@ class CloudflareApiService {
       throw Exception('Failed to get media URL: ${response.statusCode}');
     }
   }
-  
+
   /// Delete media file
   Future<void> deleteMedia(String fileName, String username) async {
     final response = await _delete(
@@ -1119,7 +1145,7 @@ class CloudflareApiService {
         'X-Username': username,
       },
     );
-    
+
     if (response.statusCode != 200) {
       throw Exception('Failed to delete media: ${response.statusCode}');
     }
@@ -1139,9 +1165,10 @@ class CloudflareApiService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('👍 Adding reaction: $emoji to message $messageId by $username');
+        debugPrint(
+            '👍 Adding reaction: $emoji to message $messageId by $username');
       }
-      
+
       final response = await _post(
         Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions'),
         headers: _authedHeaders, // 🔐 X-Supabase-Auth → Worker verifiziert
@@ -1149,7 +1176,7 @@ class CloudflareApiService {
           'emoji': emoji,
         }),
       ).timeout(const Duration(seconds: 5));
-      
+
       if (response.statusCode == 201) {
         final result = json.decode(response.body);
         if (kDebugMode) {
@@ -1158,7 +1185,8 @@ class CloudflareApiService {
         return result;
       } else {
         if (kDebugMode) {
-          debugPrint('❌ Add reaction failed: ${response.statusCode} - ${response.body}');
+          debugPrint(
+              '❌ Add reaction failed: ${response.statusCode} - ${response.body}');
         }
         throw Exception('Failed to add reaction: ${response.statusCode}');
       }
@@ -1169,7 +1197,7 @@ class CloudflareApiService {
       rethrow;
     }
   }
-  
+
   /// Remove reaction from chat message
   Future<void> removeReaction({
     required String messageId,
@@ -1179,21 +1207,24 @@ class CloudflareApiService {
   }) async {
     try {
       if (kDebugMode) {
-        debugPrint('👎 Removing reaction: $emoji from message $messageId by $username');
+        debugPrint(
+            '👎 Removing reaction: $emoji from message $messageId by $username');
       }
-      
+
       final response = await _delete(
-        Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/${Uri.encodeComponent(emoji)}'),
+        Uri.parse(
+            '$reactionsApiUrl/chat/messages/$messageId/reactions/${Uri.encodeComponent(emoji)}'),
         headers: _authedHeaders, // 🔐 X-Supabase-Auth → Worker prüft Owner
       ).timeout(const Duration(seconds: 5));
-      
+
       if (response.statusCode == 200) {
         if (kDebugMode) {
           debugPrint('✅ Reaction removed successfully');
         }
       } else {
         if (kDebugMode) {
-          debugPrint('❌ Remove reaction failed: ${response.statusCode} - ${response.body}');
+          debugPrint(
+              '❌ Remove reaction failed: ${response.statusCode} - ${response.body}');
         }
         throw Exception('Failed to remove reaction: ${response.statusCode}');
       }
@@ -1204,28 +1235,30 @@ class CloudflareApiService {
       rethrow;
     }
   }
-  
+
   /// Get all reactions for a message
   Future<Map<String, dynamic>> getMessageReactions(String messageId) async {
     final response = await _get(
       Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions'),
       headers: _authedHeaders,
     );
-    
+
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
       throw Exception('Failed to get reactions: ${response.statusCode}');
     }
   }
-  
+
   /// Get user's reactions for a message
-  Future<List<String>> getUserReactions(String messageId, String username) async {
+  Future<List<String>> getUserReactions(
+      String messageId, String username) async {
     final response = await _get(
-      Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/user/${Uri.encodeComponent(username)}'),
+      Uri.parse(
+          '$reactionsApiUrl/chat/messages/$messageId/reactions/user/${Uri.encodeComponent(username)}'),
       headers: _authedHeaders,
     );
-    
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List<dynamic> emojis = data['emojis'] ?? [];
@@ -1234,9 +1267,9 @@ class CloudflareApiService {
       throw Exception('Failed to get user reactions: ${response.statusCode}');
     }
   }
-  
+
   // ==================== FEATURE 6: PINNED MESSAGES ====================
-  
+
   /// Pin message in room
   Future<void> pinMessage({
     required String room,
@@ -1253,7 +1286,7 @@ class CloudflareApiService {
           'user_id': userId,
         }),
       );
-      
+
       if (response.statusCode != 201) {
         throw Exception('Failed to pin message: ${response.statusCode}');
       }
@@ -1262,7 +1295,7 @@ class CloudflareApiService {
       rethrow;
     }
   }
-  
+
   /// Get pinned message for room
   Future<Map<String, dynamic>?> getPinnedMessage(String room) async {
     try {
@@ -1270,7 +1303,7 @@ class CloudflareApiService {
         Uri.parse('$reactionsApiUrl/chat/pin/$room'),
         headers: _headers,
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data;
@@ -1281,7 +1314,7 @@ class CloudflareApiService {
       return null;
     }
   }
-  
+
   /// Unpin message in room
   Future<void> unpinMessage(String room) async {
     try {
@@ -1293,9 +1326,9 @@ class CloudflareApiService {
       if (kDebugMode) debugPrint('❌ Unpin message error: $e');
     }
   }
-  
+
   // ==================== FEATURE 8: READ RECEIPTS ====================
-  
+
   /// Mark message as read
   Future<void> markAsRead({
     required String messageId,
@@ -1316,7 +1349,7 @@ class CloudflareApiService {
       if (kDebugMode) debugPrint('❌ Mark as read error: $e');
     }
   }
-  
+
   /// Get read receipts for message
   Future<List<Map<String, dynamic>>> getReadReceipts(String messageId) async {
     try {
@@ -1324,7 +1357,7 @@ class CloudflareApiService {
         Uri.parse('$reactionsApiUrl/chat/read/$messageId'),
         headers: _headers,
       );
-      
+
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.cast<Map<String, dynamic>>();
@@ -1335,9 +1368,9 @@ class CloudflareApiService {
       return [];
     }
   }
-  
+
   // ==================== FEATURE 10: POLLS ====================
-  
+
   /// Create poll
   Future<String?> createPoll({
     required String room,
@@ -1360,7 +1393,7 @@ class CloudflareApiService {
           'expires_at': expiresAt,
         }),
       );
-      
+
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         return data['poll_id'];
@@ -1371,7 +1404,7 @@ class CloudflareApiService {
       return null;
     }
   }
-  
+
   /// Get polls for room
   Future<List<Map<String, dynamic>>> getPolls(String room) async {
     try {
@@ -1379,7 +1412,7 @@ class CloudflareApiService {
         Uri.parse('$reactionsApiUrl/chat/polls/$room'),
         headers: _headers,
       );
-      
+
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.cast<Map<String, dynamic>>();
@@ -1390,7 +1423,7 @@ class CloudflareApiService {
       return [];
     }
   }
-  
+
   /// Vote on poll
   Future<void> voteOnPoll({
     required String pollId,
@@ -1413,9 +1446,9 @@ class CloudflareApiService {
       rethrow;
     }
   }
-  
+
   // ==================== MEDIA UPLOAD ====================
-  
+
   /// Upload file to Cloudflare R2 Storage
   /// Upload media file (image/audio) to R2
   Future<Map<String, dynamic>> uploadFile({
@@ -1430,31 +1463,32 @@ class CloudflareApiService {
         'POST',
         Uri.parse('$reactionsApiUrl/media/upload'), // Updated endpoint
       );
-      
+
       request.files.add(http.MultipartFile.fromBytes(
         'file',
         fileBytes,
         filename: fileName,
       ));
-      
+
       // Add form fields
       request.fields['type'] = type;
       request.fields['user_id'] = userId;
-      
+
       request.headers.addAll({
         'Content-Type': 'multipart/form-data',
       });
-      
+
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
-      
+            const Duration(seconds: 30),
+          );
+
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Upload failed: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Upload failed: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Upload error: $e');
@@ -1482,7 +1516,8 @@ class CloudflareApiService {
       // Read file bytes
       final file = File(filePath);
       final fileBytes = await file.readAsBytes();
-      final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}_${userId}_$roomId.m4a';
+      final fileName =
+          'voice_${DateTime.now().millisecondsSinceEpoch}_${userId}_$roomId.m4a';
 
       // Create multipart request
       final request = http.MultipartRequest(
@@ -1509,8 +1544,10 @@ class CloudflareApiService {
       });
 
       // Add API token to headers (if available)
-      if (const String.fromEnvironment('CLOUDFLARE_API_TOKEN', defaultValue: '').isNotEmpty) {
-        request.headers['Authorization'] = 'Bearer ${const String.fromEnvironment('CLOUDFLARE_API_TOKEN')}';
+      if (const String.fromEnvironment('CLOUDFLARE_API_TOKEN', defaultValue: '')
+          .isNotEmpty) {
+        request.headers['Authorization'] =
+            'Bearer ${const String.fromEnvironment('CLOUDFLARE_API_TOKEN')}';
       }
 
       if (kDebugMode) {
@@ -1520,8 +1557,8 @@ class CloudflareApiService {
 
       // Send request with timeout
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 60), // Longer timeout for voice files
-      );
+            const Duration(seconds: 60), // Longer timeout for voice files
+          );
 
       final response = await http.Response.fromStream(streamedResponse);
 
@@ -1530,7 +1567,8 @@ class CloudflareApiService {
         final voiceUrl = data['url'] ?? data['file_url'] ?? data['media_url'];
 
         if (voiceUrl == null) {
-          throw Exception('Upload succeeded but no URL in response: ${response.body}');
+          throw Exception(
+              'Upload succeeded but no URL in response: ${response.body}');
         }
 
         if (kDebugMode) {
@@ -1539,7 +1577,8 @@ class CloudflareApiService {
 
         return voiceUrl;
       } else {
-        throw Exception('Upload failed: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Upload failed: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -1548,11 +1587,11 @@ class CloudflareApiService {
       rethrow;
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // USER STATS METHODS
   // ═══════════════════════════════════════════════════════════
-  
+
   /// Save user stats to Cloudflare D1
   Future<void> saveUserStats({
     required String userId,
@@ -1560,7 +1599,7 @@ class CloudflareApiService {
   }) async {
     try {
       final url = Uri.parse('${ApiConfig.profileApiUrl}/stats');
-      
+
       final response = await _post(
         url,
         headers: _headers,
@@ -1572,11 +1611,11 @@ class CloudflareApiService {
       ).timeout(
         const Duration(seconds: 10),
       );
-      
+
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Failed to save stats: ${response.statusCode}');
       }
-      
+
       if (kDebugMode) {
         debugPrint('✅ Stats saved for user: $userId');
       }
@@ -1587,23 +1626,23 @@ class CloudflareApiService {
       // Don't throw - stats sync is non-critical
     }
   }
-  
+
   /// Get user stats from Cloudflare D1
   Future<Map<String, dynamic>?> getUserStats(String userId) async {
     try {
       final url = Uri.parse('${ApiConfig.profileApiUrl}/stats/$userId');
-      
+
       final response = await _get(
         url,
         headers: _headers,
       ).timeout(
         const Duration(seconds: 10),
       );
-      
+
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
       }
-      
+
       return null;
     } catch (e) {
       if (kDebugMode) {
@@ -1630,7 +1669,8 @@ class CloudflareApiService {
       };
       if (realm != null) params['realm'] = realm;
 
-      final uri = Uri.parse('$baseUrl/api/recommendations').replace(queryParameters: params);
+      final uri = Uri.parse('$baseUrl/api/recommendations')
+          .replace(queryParameters: params);
       final response = await _get(uri, headers: _headers).timeout(
         const Duration(seconds: 15),
       );
@@ -1639,7 +1679,7 @@ class CloudflareApiService {
         final List<dynamic> data = json.decode(response.body);
         return data.cast<Map<String, dynamic>>();
       }
-      
+
       return [];
     } catch (e) {
       if (kDebugMode) {
@@ -1660,7 +1700,8 @@ class CloudflareApiService {
         'limit': limit.toString(),
       };
 
-      final uri = Uri.parse('$baseUrl/api/users/$userId/activity').replace(queryParameters: params);
+      final uri = Uri.parse('$baseUrl/api/users/$userId/activity')
+          .replace(queryParameters: params);
       final response = await _get(uri, headers: _headers).timeout(
         const Duration(seconds: 10),
       );
@@ -1669,7 +1710,7 @@ class CloudflareApiService {
         final List<dynamic> data = json.decode(response.body);
         return data.cast<Map<String, dynamic>>();
       }
-      
+
       return [];
     } catch (e) {
       if (kDebugMode) {
@@ -1693,7 +1734,7 @@ class CloudflareApiService {
         final List<dynamic> data = json.decode(response.body);
         return data.cast<Map<String, dynamic>>();
       }
-      
+
       return [];
     } catch (e) {
       if (kDebugMode) {
@@ -1709,7 +1750,8 @@ class CloudflareApiService {
     required String targetUserId,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/users/$currentUserId/following/$targetUserId');
+      final uri = Uri.parse(
+          '$baseUrl/api/users/$currentUserId/following/$targetUserId');
       final response = await _get(uri, headers: _headers).timeout(
         const Duration(seconds: 5),
       );
@@ -1718,7 +1760,7 @@ class CloudflareApiService {
         final data = json.decode(response.body);
         return data['is_following'] ?? false;
       }
-      
+
       return false;
     } catch (e) {
       if (kDebugMode) {
@@ -1749,7 +1791,7 @@ class CloudflareApiService {
         }
         return true;
       }
-      
+
       return false;
     } catch (e) {
       if (kDebugMode) {
@@ -1780,7 +1822,7 @@ class CloudflareApiService {
         }
         return true;
       }
-      
+
       return false;
     } catch (e) {
       if (kDebugMode) {
@@ -1790,4 +1832,3 @@ class CloudflareApiService {
     }
   }
 }
-

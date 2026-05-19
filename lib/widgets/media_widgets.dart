@@ -11,14 +11,14 @@ class VideoPreviewWidget extends StatelessWidget {
   final XFile video;
   final VoidCallback onRemove;
   final Map<String, dynamic>? metadata;
-  
+
   const VideoPreviewWidget({
     super.key,
     required this.video,
     required this.onRemove,
     this.metadata,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return GlassmorphismCard(
@@ -47,7 +47,7 @@ class VideoPreviewWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Video Info
           Expanded(
             child: Column(
@@ -76,7 +76,7 @@ class VideoPreviewWidget extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Remove Button
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white, size: 20),
@@ -91,12 +91,12 @@ class VideoPreviewWidget extends StatelessWidget {
 /// 🎥 GIF PICKER WIDGET - GIF-Auswahl-Dialog
 class GifPickerWidget extends StatefulWidget {
   final Function(String gifUrl) onGifSelected;
-  
+
   const GifPickerWidget({
     super.key,
     required this.onGifSelected,
   });
-  
+
   @override
   State<GifPickerWidget> createState() => _GifPickerWidgetState();
 }
@@ -106,7 +106,7 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
   List<Map<String, dynamic>> _gifs = [];
   bool _isLoading = false;
   String _selectedCategory = 'Trending';
-  
+
   final List<String> _categories = [
     'Trending',
     'Funny',
@@ -117,13 +117,13 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
     'Dance',
     'Celebration',
   ];
-  
+
   @override
   void initState() {
     super.initState();
     _loadTrendingGifs();
   }
-  
+
   Future<void> _loadTrendingGifs() async {
     setState(() => _isLoading = true);
     try {
@@ -140,13 +140,13 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
       }
     }
   }
-  
+
   Future<void> _searchGifs(String query) async {
     if (query.isEmpty) {
       _loadTrendingGifs();
       return;
     }
-    
+
     setState(() => _isLoading = true);
     try {
       final results = await GifService.searchGifs(query, limit: 20);
@@ -162,7 +162,7 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -195,7 +195,7 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Search Bar
           TextField(
             controller: _searchController,
@@ -214,7 +214,7 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
             onSubmitted: _searchGifs,
           ),
           const SizedBox(height: 16),
-          
+
           // Categories
           SizedBox(
             height: 40,
@@ -224,7 +224,7 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
               itemBuilder: (context, index) {
                 final category = _categories[index];
                 final isSelected = _selectedCategory == category;
-                
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: InkWell(
@@ -233,14 +233,17 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
                       _searchGifs(category);
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         gradient: isSelected
                             ? const LinearGradient(
                                 colors: [Color(0xFF00BCD4), Color(0xFF3F51B5)],
                               )
                             : null,
-                        color: isSelected ? null : Colors.white.withValues(alpha: 0.1),
+                        color: isSelected
+                            ? null
+                            : Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Center(
@@ -259,13 +262,14 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // GIF Grid
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
@@ -281,38 +285,46 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: gif['url'] != null && (gif['url'] as String).startsWith('http')
-                            ? Image.network(
-                                gif['preview'] ?? gif['url'],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
+                          child: gif['url'] != null &&
+                                  (gif['url'] as String).startsWith('http')
+                              ? Image.network(
+                                  gif['preview'] ?? gif['url'],
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                    child: Center(
+                                      child: Text(
+                                        gif['title'] ?? 'GIF',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                      ),
+                                    ),
+                                  ),
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.1),
+                                      child: const Center(
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2)),
+                                    );
+                                  },
+                                )
+                              : Container(
                                   color: Colors.white.withValues(alpha: 0.1),
                                   child: Center(
                                     child: Text(
                                       gif['title'] ?? 'GIF',
                                       textAlign: TextAlign.center,
-                                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 10),
                                     ),
                                   ),
                                 ),
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                  );
-                                },
-                              )
-                            : Container(
-                                color: Colors.white.withValues(alpha: 0.1),
-                                child: Center(
-                                  child: Text(
-                                    gif['title'] ?? 'GIF',
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.white, fontSize: 10),
-                                  ),
-                                ),
-                              ),
                         ),
                       );
                     },
@@ -330,7 +342,7 @@ class MultiImageGalleryWidget extends StatelessWidget {
   final Function(int index) onRemove;
   final VoidCallback onAddMore;
   final int maxImages;
-  
+
   const MultiImageGalleryWidget({
     super.key,
     required this.images,
@@ -338,7 +350,7 @@ class MultiImageGalleryWidget extends StatelessWidget {
     required this.onAddMore,
     this.maxImages = 5,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return GlassmorphismCard(
@@ -369,7 +381,8 @@ class MultiImageGalleryWidget extends StatelessWidget {
               if (images.length < maxImages)
                 TextButton.icon(
                   onPressed: onAddMore,
-                  icon: const Icon(Icons.add_photo_alternate, color: Colors.white, size: 18),
+                  icon: const Icon(Icons.add_photo_alternate,
+                      color: Colors.white, size: 18),
                   label: const Text(
                     'Mehr',
                     style: TextStyle(color: Colors.white),
@@ -378,7 +391,7 @@ class MultiImageGalleryWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Image Grid
           SizedBox(
             height: 120,
@@ -429,7 +442,8 @@ class MultiImageGalleryWidget extends StatelessWidget {
                         bottom: 4,
                         left: 4,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(8),

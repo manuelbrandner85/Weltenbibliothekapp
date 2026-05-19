@@ -42,7 +42,8 @@ class ApiConfig {
   // Kein Hardcode – falsches Projekt wird so strukturell unmöglich.
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 
-  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String supabaseAnonKey =
+      String.fromEnvironment('SUPABASE_ANON_KEY');
 
   // Service Role Key: NIEMALS im Client – nur als Wrangler Secret auf dem Server!
   // static const String supabaseServiceRoleKey = '...'; // ← VERBOTEN
@@ -83,7 +84,7 @@ class ApiConfig {
   static const String voiceRooms = '/voice/rooms';
   static const String voiceParticipants = '/voice/participants';
   static String get webrtcSignalingUrl =>
-  // ignore: prefer_interpolation_to_compose_strings
+      // ignore: prefer_interpolation_to_compose_strings
       workerUrl.replaceAll('https://', 'wss://') + '/voice/signaling';
 
   // Admin (moderative Aktionen, bleibt auf Cloudflare)
@@ -131,8 +132,7 @@ class ApiConfig {
   static String get livekitTokenUrl => '$workerUrl/api/livekit/token';
   static bool get isLivekitEnabled => livekitUrl.isNotEmpty;
   static String get cloudSyncApiUrl => '$workerUrl/api/sync';
-  static String get websocketUrl =>
-      workerUrl.replaceAll('https://', 'wss://');
+  static String get websocketUrl => workerUrl.replaceAll('https://', 'wss://');
 
   // ──────────────────────────────────────────────────────────────
   // 🛠️ UTILITY METHODS

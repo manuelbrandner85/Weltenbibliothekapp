@@ -37,6 +37,7 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFFFF7043);
   static const Color _accent = Color(0xFFFFD54F);
   static const Color _removed = Color(0xFFE53935);
@@ -60,7 +61,9 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
   @override
   void initState() {
     super.initState();
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 12))..repeat();
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12))
+          ..repeat();
     _loadWatchlist();
   }
 
@@ -166,9 +169,11 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
     try {
       // Sortiere: alt → neu
       final older = _selectedA!.timestamp.compareTo(_selectedB!.timestamp) < 0
-          ? _selectedA! : _selectedB!;
+          ? _selectedA!
+          : _selectedB!;
       final newer = _selectedA!.timestamp.compareTo(_selectedB!.timestamp) < 0
-          ? _selectedB! : _selectedA!;
+          ? _selectedB!
+          : _selectedA!;
       final results = await Future.wait([
         _service.getSnapshotText(older),
         _service.getSnapshotText(newer),
@@ -202,7 +207,8 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
   }
 
   Future<void> _openExternal(String url) async {
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    final ok =
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Konnte $url nicht öffnen'),
@@ -213,7 +219,8 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isWatched = _currentUrl.isNotEmpty && _watchlist.containsKey(_currentUrl);
+    final isWatched =
+        _currentUrl.isNotEmpty && _watchlist.containsKey(_currentUrl);
     return Scaffold(
       backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
@@ -224,13 +231,19 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
             colors: [_accent, _primary],
           ).createShader(r),
           child: const Text('VERSIONS-WÄCHTER',
-              style: TextStyle(color: Colors.white, fontSize: 14,
-                  fontWeight: FontWeight.w900, letterSpacing: 3)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
         actions: [
           if (_currentUrl.isNotEmpty)
             IconButton(
-              icon: Icon(isWatched ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+              icon: Icon(
+                  isWatched
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_none_rounded,
                   color: isWatched ? _accent : Colors.white70),
               tooltip: isWatched ? 'Beobachtung aus' : 'URL beobachten',
               onPressed: _toggleWatch,
@@ -243,12 +256,18 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
                 onPressed: _showWatchlist,
               ),
               Positioned(
-                right: 6, top: 6,
+                right: 6,
+                top: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(8)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                      color: _primary, borderRadius: BorderRadius.circular(8)),
                   child: Text('${_watchlist.length}',
-                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold)),
                 ),
               ),
             ]),
@@ -273,7 +292,8 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.materie, count: 30)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.materie, count: 30)),
         SafeArea(
           child: Column(children: [
             _urlBar(),
@@ -308,11 +328,15 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
                 onSubmitted: (_) => _search(),
                 decoration: InputDecoration(
                   hintText: 'URL eingeben (z.B. cdc.gov/covid)',
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                  hintStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.05),
-                  prefixIcon: const Icon(Icons.public_rounded, color: Colors.white60),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  prefixIcon:
+                      const Icon(Icons.public_rounded, color: Colors.white60),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none),
                 ),
               ),
               const SizedBox(height: 8),
@@ -321,12 +345,18 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
                 child: ElevatedButton.icon(
                   onPressed: _loadingSnaps ? null : _search,
                   icon: _loadingSnaps
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.history_rounded, size: 18),
-                  label: Text(_loadingSnaps
-                      ? 'Lade Wayback-Snapshots…'
-                      : 'WAYBACK-VERLAUF LADEN',
-                      style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                  label: Text(
+                      _loadingSnaps
+                          ? 'Lade Wayback-Snapshots…'
+                          : 'WAYBACK-VERLAUF LADEN',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primary,
                     foregroundColor: Colors.white,
@@ -353,7 +383,8 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
         ),
         child: Row(children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(_selectedA != null ? 'A: ${_selectedA!.fmtDate}' : 'A: —',
                   style: const TextStyle(color: Colors.white, fontSize: 11)),
               Text(_selectedB != null ? 'B: ${_selectedB!.fmtDate}' : 'B: —',
@@ -364,14 +395,20 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
             ElevatedButton.icon(
               onPressed: _loadingDiff ? null : _runDiff,
               icon: _loadingDiff
-                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.compare_rounded, size: 16),
               label: Text(_loadingDiff ? 'Diff…' : 'DIFF',
-                  style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, letterSpacing: 1.2)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _accent,
                 foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
         ]),
@@ -381,7 +418,8 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
 
   Widget _body() {
     if (_error != null) {
-      return Center(child: Padding(
+      return Center(
+          child: Padding(
         padding: const EdgeInsets.all(24),
         child: Text(_error!,
             style: const TextStyle(color: Colors.redAccent, fontSize: 13),
@@ -398,26 +436,48 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.history_rounded, color: _primary.withValues(alpha: 0.4), size: 80),
+          Icon(Icons.history_rounded,
+              color: _primary.withValues(alpha: 0.4), size: 80),
           const SizedBox(height: 16),
           const Text('URL eingeben um Wayback-Verlauf zu sehen',
-              style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600),
               textAlign: TextAlign.center),
           const SizedBox(height: 4),
-          const Text('Vergleicht beliebige zwei Snapshots zeigt was geändert/gelöscht wurde',
-              style: TextStyle(color: Colors.white38, fontSize: 12, fontStyle: FontStyle.italic),
+          const Text(
+              'Vergleicht beliebige zwei Snapshots zeigt was geändert/gelöscht wurde',
+              style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic),
               textAlign: TextAlign.center),
           const SizedBox(height: 22),
-          Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center,
-              children: ['cdc.gov/coronavirus', 'wikipedia.org/wiki/Klimawandel', 'rki.de'].map((s) => OutlinedButton(
-                onPressed: () { _urlCtrl.text = s; _search(); },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
-                  side: BorderSide(color: _primary.withValues(alpha: 0.3)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                ),
-                child: Text(s, style: const TextStyle(fontSize: 11)),
-              )).toList()),
+          Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              alignment: WrapAlignment.center,
+              children: [
+                'cdc.gov/coronavirus',
+                'wikipedia.org/wiki/Klimawandel',
+                'rki.de'
+              ]
+                  .map((s) => OutlinedButton(
+                        onPressed: () {
+                          _urlCtrl.text = s;
+                          _search();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: BorderSide(
+                              color: _primary.withValues(alpha: 0.3)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                        ),
+                        child: Text(s, style: const TextStyle(fontSize: 11)),
+                      ))
+                  .toList()),
         ]),
       ),
     );
@@ -445,11 +505,16 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
           child: Row(children: [
             Icon(Icons.archive_rounded, color: _accent, size: 16),
             const SizedBox(width: 8),
-            Expanded(child: Text('${_snaps.length} unique Snapshots',
-                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+            Expanded(
+                child: Text('${_snaps.length} unique Snapshots',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600))),
             if (_currentUrl.isNotEmpty)
               IconButton(
-                icon: const Icon(Icons.open_in_new_rounded, color: Colors.white54, size: 16),
+                icon: const Icon(Icons.open_in_new_rounded,
+                    color: Colors.white54, size: 16),
                 tooltip: 'Live öffnen',
                 onPressed: () => _openExternal(_currentUrl),
               ),
@@ -459,7 +524,11 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
             child: Text(_monthLabel(k),
-                style: const TextStyle(color: _accent, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                style: const TextStyle(
+                    color: _accent,
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700)),
           ),
           ...byMonth[k]!.map(_snapTile),
         ],
@@ -470,9 +539,24 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
   String _monthLabel(String key) {
     final parts = key.split('-');
     if (parts.length != 2) return key;
-    const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mär',
+      'Apr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Dez'
+    ];
     final mi = int.tryParse(parts[1]);
-    return mi != null && mi >= 1 && mi <= 12 ? '${months[mi-1]} ${parts[0]}' : key;
+    return mi != null && mi >= 1 && mi <= 12
+        ? '${months[mi - 1]} ${parts[0]}'
+        : key;
   }
 
   Widget _snapTile(WaybackSnapshot s) {
@@ -490,28 +574,43 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: selected ? _primary.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.04),
+              color: selected
+                  ? _primary.withValues(alpha: 0.2)
+                  : Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: selected ? _primary : Colors.white12),
             ),
             child: Row(children: [
               if (selected)
                 Container(
-                  width: 22, height: 22,
+                  width: 22,
+                  height: 22,
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    color: _primary, borderRadius: BorderRadius.circular(11),
+                    color: _primary,
+                    borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Center(child: Text(isA ? 'A' : 'B',
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+                  child: Center(
+                      child: Text(isA ? 'A' : 'B',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
                 ),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(s.fmtDate,
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                  Text('${s.mimeType} · ${(s.length / 1024).toStringAsFixed(1)}KB · HTTP ${s.statusCode}',
-                      style: const TextStyle(color: Colors.white54, fontSize: 10)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.fmtDate,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
+                      Text(
+                          '${s.mimeType} · ${(s.length / 1024).toStringAsFixed(1)}KB · HTTP ${s.statusCode}',
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 10)),
+                    ]),
               ),
               Icon(Icons.open_in_new_rounded, color: Colors.white24, size: 14),
             ]),
@@ -537,11 +636,16 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
           child: Row(children: [
             Icon(Icons.compare_rounded, color: _accent, size: 16),
             const SizedBox(width: 8),
-            Expanded(child: Text(
-                '${removed.length} entfernt · ${added.length} hinzugefügt',
-                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+            Expanded(
+                child: Text(
+                    '${removed.length} entfernt · ${added.length} hinzugefügt',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600))),
             IconButton(
-              icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+              icon: const Icon(Icons.close_rounded,
+                  color: Colors.white54, size: 16),
               onPressed: () => setState(() => _diff = null),
             ),
           ]),
@@ -549,22 +653,36 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
         const SizedBox(height: 10),
         if (removed.isNotEmpty) ...[
           const Text('🔴 ENTFERNT',
-              style: TextStyle(color: _removed, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+              style: TextStyle(
+                  color: _removed,
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           ...removed.take(50).map((d) => _diffLine(d, _removed)),
           if (removed.length > 50)
             Text('... +${removed.length - 50} weitere entfernte Zeilen',
-                style: TextStyle(color: _removed.withValues(alpha: 0.6), fontSize: 11, fontStyle: FontStyle.italic)),
+                style: TextStyle(
+                    color: _removed.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic)),
           const SizedBox(height: 14),
         ],
         if (added.isNotEmpty) ...[
           const Text('🟢 HINZUGEFÜGT',
-              style: TextStyle(color: _added, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+              style: TextStyle(
+                  color: _added,
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           ...added.take(50).map((d) => _diffLine(d, _added)),
           if (added.length > 50)
             Text('... +${added.length - 50} weitere hinzugefügte Zeilen',
-                style: TextStyle(color: _added.withValues(alpha: 0.6), fontSize: 11, fontStyle: FontStyle.italic)),
+                style: TextStyle(
+                    color: _added.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic)),
         ],
       ],
     );
@@ -582,11 +700,14 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
           border: Border(left: BorderSide(color: color, width: 3)),
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(prefix, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+          Text(prefix,
+              style: TextStyle(
+                  color: color, fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(width: 6),
           Expanded(
             child: SelectableText(d.text,
-                style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4)),
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 12, height: 1.4)),
           ),
         ]),
       ),
@@ -602,19 +723,29 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6, minChildSize: 0.3, maxChildSize: 0.9,
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
         expand: false,
         builder: (_, scroll) => ListView(
           controller: scroll,
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           children: [
-            Center(child: Container(
-              width: 42, height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            Center(
+                child: Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2)),
             )),
             const SizedBox(height: 16),
             Text('WATCHLIST · ${_watchlist.length}',
-                style: const TextStyle(color: _accent, fontSize: 12, letterSpacing: 3, fontWeight: FontWeight.w700),
+                style: const TextStyle(
+                    color: _accent,
+                    fontSize: 12,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center),
             const SizedBox(height: 14),
             ..._watchlist.entries.map((e) => Container(
@@ -625,33 +756,42 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.white12),
                   ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Expanded(child: Text(e.key,
-                          style: const TextStyle(color: Colors.white, fontSize: 11),
-                          maxLines: 2, overflow: TextOverflow.ellipsis)),
-                      IconButton(
-                        icon: const Icon(Icons.refresh_rounded, color: _primary, size: 16),
-                        tooltip: 'Prüfen',
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _urlCtrl.text = e.key;
-                          _search();
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 16),
-                        onPressed: () async {
-                          setState(() => _watchlist.remove(e.key));
-                          await _persistWatchlist();
-                          Navigator.pop(ctx);
-                          _showWatchlist();
-                        },
-                      ),
-                    ]),
-                    Text('Last digest: ${e.value.substring(0, math.min(12, e.value.length))}',
-                        style: const TextStyle(color: Colors.white38, fontSize: 9)),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Expanded(
+                              child: Text(e.key,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 11),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis)),
+                          IconButton(
+                            icon: const Icon(Icons.refresh_rounded,
+                                color: _primary, size: 16),
+                            tooltip: 'Prüfen',
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _urlCtrl.text = e.key;
+                              _search();
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline_rounded,
+                                color: Colors.redAccent, size: 16),
+                            onPressed: () async {
+                              setState(() => _watchlist.remove(e.key));
+                              await _persistWatchlist();
+                              Navigator.pop(ctx);
+                              _showWatchlist();
+                            },
+                          ),
+                        ]),
+                        Text(
+                            'Last digest: ${e.value.substring(0, math.min(12, e.value.length))}',
+                            style: const TextStyle(
+                                color: Colors.white38, fontSize: 9)),
+                      ]),
                 )),
           ],
         ),
@@ -666,12 +806,24 @@ class _VwOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.18, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        110, const Color(0xFFFF7043));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        100, const Color(0xFFFFD54F));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        75, const Color(0xFFE53935));
+    _draw(
+        canvas,
+        Offset(size.width * 0.18,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        110,
+        const Color(0xFFFF7043));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        100,
+        const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        75,
+        const Color(0xFFE53935));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

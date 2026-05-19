@@ -11,13 +11,13 @@ import 'supabase_service.dart'; // 🔥 Supabase Direct Access
 
 /// World-Based Admin Service
 /// Verbindet mit weltenbibliothek-api-v2 für weltspezifische Admin-Funktionen
-/// 
+///
 /// 🔐 ALLE ENDPOINTS ERFORDERN AUTH-HEADERS:
 /// - Authorization: Bearer {token}
 /// - X-World: materie/energie
 /// - X-Role: admin/root_admin
 /// - X-User-ID: {userId}
-/// 
+///
 /// ✅ ENDPOINTS:
 /// - GET /api/admin/check/:world/:username - Admin-Status prüfen
 /// - GET /api/admin/users/:world - User-Liste pro Welt
@@ -25,7 +25,7 @@ import 'supabase_service.dart'; // 🔥 Supabase Direct Access
 /// - POST /api/admin/demote/:world/:userId - Admin zu User (nur Root-Admin)
 /// - DELETE /api/admin/delete/:world/:userId - User löschen (nur Root-Admin)
 /// - GET /api/admin/audit/:world - Audit-Log
-/// 
+///
 /// 🛡️ WORLD-ISOLATION:
 /// - Jede Welt hat separate Admin-Rollen
 /// - Root-Admin in Materie ≠ Root-Admin in Energie
@@ -38,12 +38,10 @@ class WorldAdminService {
 
   /// Supabase JWT des aktuell eingeloggten Admins.
   /// Wird für alle Admin-API-Aufrufe als Bearer-Token genutzt.
-  static String get _jwt =>
-      supabase.auth.currentSession?.accessToken ?? '';
+  static String get _jwt => supabase.auth.currentSession?.accessToken ?? '';
 
   /// Supabase UUID des aktuell eingeloggten Admins.
-  static String get _adminId =>
-      supabase.auth.currentUser?.id ?? '';
+  static String get _adminId => supabase.auth.currentUser?.id ?? '';
 
   /// Standard-Auth-Header für Admin-Requests (JWT + UUID).
   static Map<String, String> _adminHeaders({String? role}) => {
@@ -59,7 +57,7 @@ class WorldAdminService {
 
   /// Check if user is admin in a specific world
   /// ✅ MIT AUTH-HEADER (world + role)
-  /// 
+  ///
   /// Returns:
   /// {
   ///   "success": true,
@@ -67,28 +65,33 @@ class WorldAdminService {
   ///   "isRootAdmin": false,
   ///   "user": { "userId": "...", "username": "...", "role": "admin", "world": "materie" }
   /// }
-  static Future<Map<String, dynamic>> checkAdminStatus(String world, String username, {String? role}) async {
+  static Future<Map<String, dynamic>> checkAdminStatus(
+      String world, String username,
+      {String? role}) async {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/check/$world/$username');
-      
+
       if (kDebugMode) {
         debugPrint('🔍 Checking admin status: $world/$username (role: $role)');
       }
-      
-      final response = await http.get(
-        url,
-        headers: _auth.authHeaders(world: world, role: role), // ✅ Auth-Header
-      ).timeout(_timeout);
-      
+
+      final response = await http
+          .get(
+            url,
+            headers:
+                _auth.authHeaders(world: world, role: role), // ✅ Auth-Header
+          )
+          .timeout(_timeout);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
+
         if (kDebugMode) {
           debugPrint('✅ Admin check successful');
           debugPrint('   isAdmin: ${data['isAdmin']}');
           debugPrint('   isRootAdmin: ${data['isRootAdmin']}');
         }
-        
+
         return data;
       } else {
         if (kDebugMode) {
@@ -145,7 +148,8 @@ class WorldAdminService {
   /// v103: deprecated -- ein User hat EIN globales Profil. Verwende
   /// getAllUsers() statt einer Welt-Liste.
   @Deprecated('v103: Profile sind global. Use getAllUsers() instead.')
-  static Future<List<WorldUser>> getUsersByWorld(String world, {String? role}) async {
+  static Future<List<WorldUser>> getUsersByWorld(String world,
+      {String? role}) async {
     if (kDebugMode) {
       debugPrint('📋 Fetching users for world: $world');
     }
@@ -158,7 +162,8 @@ class WorldAdminService {
       // Erst versuchen mit World-Filter
       var result = await supabase
           .from('profiles')
-          .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+          .select(
+              'id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
           .or('world.eq.$world,world_preference.eq.$world')
           .order('created_at', ascending: false)
           .limit(200);
@@ -173,7 +178,8 @@ class WorldAdminService {
         }
         result = await supabase
             .from('profiles')
-            .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+            .select(
+                'id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
             .order('created_at', ascending: false)
             .limit(200);
         rawList = result as List<dynamic>;
@@ -222,7 +228,9 @@ class WorldAdminService {
         if (kDebugMode) {
           debugPrint('✅ Worker users: ${users.length}');
         }
-        return users.map((u) => WorldUser.fromJson(u as Map<String, dynamic>)).toList();
+        return users
+            .map((u) => WorldUser.fromJson(u as Map<String, dynamic>))
+            .toList();
       }
     } on SocketException {
       if (kDebugMode) debugPrint('❌ Network: Keine Internetverbindung');
@@ -262,11 +270,14 @@ class WorldAdminService {
         raw = {'rows': users};
         if (kDebugMode) debugPrint('✅ Loaded ${users.length} users via Worker');
       } else {
-        if (kDebugMode) debugPrint('⚠️ Worker /api/admin/users ${res.statusCode} — Fallback Supabase');
+        if (kDebugMode)
+          debugPrint(
+              '⚠️ Worker /api/admin/users ${res.statusCode} — Fallback Supabase');
         raw = null;
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Worker /api/admin/users failed: $e — Fallback Supabase');
+      if (kDebugMode)
+        debugPrint('⚠️ Worker /api/admin/users failed: $e — Fallback Supabase');
       raw = null;
     }
 
@@ -276,21 +287,31 @@ class WorldAdminService {
     // InvisibleAuth-User identisch dargestellt werden.
     if (raw == null) {
       try {
-        raw = {'rows': await supabase
-            .from('profiles')
-            .select('id,username,display_name,full_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,world_preference,last_seen_at,legacy_user_id')
-            .order('created_at', ascending: false)
-            .limit(5000)};
+        raw = {
+          'rows': await supabase
+              .from('profiles')
+              .select(
+                  'id,username,display_name,full_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,world_preference,last_seen_at,legacy_user_id')
+              .order('created_at', ascending: false)
+              .limit(5000)
+        };
       } on PostgrestException catch (e) {
-        if (e.code == '42703' || e.message.contains('last_seen_at') || e.message.contains('legacy_user_id') || e.message.contains('avatar_emoji')) {
-          if (kDebugMode) debugPrint('⚠️ Optional-Spalte fehlt — minimaler Fallback');
+        if (e.code == '42703' ||
+            e.message.contains('last_seen_at') ||
+            e.message.contains('legacy_user_id') ||
+            e.message.contains('avatar_emoji')) {
+          if (kDebugMode)
+            debugPrint('⚠️ Optional-Spalte fehlt — minimaler Fallback');
           hasLastSeen = false;
           try {
-            raw = {'rows': await supabase
-                .from('profiles')
-                .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
-                .order('created_at', ascending: false)
-                .limit(5000)};
+            raw = {
+              'rows': await supabase
+                  .from('profiles')
+                  .select(
+                      'id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+                  .order('created_at', ascending: false)
+                  .limit(5000)
+            };
           } catch (e2) {
             if (kDebugMode) debugPrint('❌ getAllUsers Fallback-Fehler: $e2');
             return const [];
@@ -314,30 +335,37 @@ class WorldAdminService {
           // ausschloss (matched Worker-Verhalten seit v5.44.7).
           .where((u) => !(u['id'] as String? ?? '').startsWith('00000000-'))
           .map((u) {
-            final id = (u['id'] as String?) ?? '';
-            final legacy = u['legacy_user_id'] as String?;
-            final username = (u['username'] as String?)?.trim().isNotEmpty == true
-                ? u['username'] as String
-                : '(ohne Username)';
-            return WorldUser(
-              profileId: id,
-              // Aktionen brauchen einen nicht-leeren userId. Bevorzuge UUID,
-              // sonst legacy_user_id (InvisibleAuth). Sonst Profile-ID.
-              userId: id.isNotEmpty ? id : (legacy ?? ''),
-              username: username,
-              displayName: (u['display_name'] as String?) ?? (u['full_name'] as String?),
-              role: u['role'] as String? ?? 'user',
-              avatarUrl: u['avatar_url'] as String?,
-              avatarEmoji: u['avatar_emoji'] as String?,
-              createdAt: u['created_at'] as String? ?? '',
-              lastSeenAt: hasLastSeen ? u['last_seen_at'] as String? : null,
-              legacyUserId: legacy,
-              isSuspended: u['is_banned'] as bool? ?? false,
-            )..world = (u['world'] as String?) ?? (u['world_preference'] as String?);
-          })
-          .toList();
+        final id = (u['id'] as String?) ?? '';
+        final legacy = u['legacy_user_id'] as String?;
+        final username = (u['username'] as String?)?.trim().isNotEmpty == true
+            ? u['username'] as String
+            : '(ohne Username)';
+        return WorldUser(
+          profileId: id,
+          // Aktionen brauchen einen nicht-leeren userId. Bevorzuge UUID,
+          // sonst legacy_user_id (InvisibleAuth). Sonst Profile-ID.
+          userId: id.isNotEmpty ? id : (legacy ?? ''),
+          username: username,
+          displayName:
+              (u['display_name'] as String?) ?? (u['full_name'] as String?),
+          role: u['role'] as String? ?? 'user',
+          avatarUrl: u['avatar_url'] as String?,
+          avatarEmoji: u['avatar_emoji'] as String?,
+          createdAt: u['created_at'] as String? ?? '',
+          lastSeenAt: hasLastSeen ? u['last_seen_at'] as String? : null,
+          legacyUserId: legacy,
+          isSuspended: u['is_banned'] as bool? ?? false,
+        )..world =
+            (u['world'] as String?) ?? (u['world_preference'] as String?);
+      }).toList();
 
-      const order = {'root_admin': 0, 'admin': 1, 'moderator': 2, 'content_editor': 3, 'user': 4};
+      const order = {
+        'root_admin': 0,
+        'admin': 1,
+        'moderator': 2,
+        'content_editor': 3,
+        'user': 4
+      };
       users.sort((a, b) {
         final aOrder = order[a.role] ?? 5;
         final bOrder = order[b.role] ?? 5;
@@ -357,20 +385,25 @@ class WorldAdminService {
   // ROLE MANAGEMENT
   // ════════════════════════════════════════════════════════════
 
-  static Future<bool> promoteUser(String world, String userId, {String? role}) async {
+  static Future<bool> promoteUser(String world, String userId,
+      {String? role}) async {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/promote/$world/$userId');
       if (kDebugMode) debugPrint('⬆️ Promoting user: $world/$userId');
-      final response = await http.post(
-        url,
-        headers: _adminHeaders(role: role ?? 'root_admin'),
-      ).timeout(_timeout);
+      final response = await http
+          .post(
+            url,
+            headers: _adminHeaders(role: role ?? 'root_admin'),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         if (kDebugMode) debugPrint('✅ User promoted successfully');
         return true;
       } else {
-        if (kDebugMode) debugPrint('⚠️ Promotion failed: ${response.statusCode} – ${response.body}');
+        if (kDebugMode)
+          debugPrint(
+              '⚠️ Promotion failed: ${response.statusCode} – ${response.body}');
         return false;
       }
     } on SocketException {
@@ -392,19 +425,24 @@ class WorldAdminService {
   }
 
   /// Demote admin to user
-  static Future<bool> demoteUser(String world, String userId, {String? role}) async {
+  static Future<bool> demoteUser(String world, String userId,
+      {String? role}) async {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/demote/$world/$userId');
       if (kDebugMode) debugPrint('⬇️ Demoting user: $world/$userId');
-      final response = await http.post(
-        url,
-        headers: _adminHeaders(role: role ?? 'root_admin'),
-      ).timeout(_timeout);
+      final response = await http
+          .post(
+            url,
+            headers: _adminHeaders(role: role ?? 'root_admin'),
+          )
+          .timeout(_timeout);
       if (response.statusCode == 200) {
         if (kDebugMode) debugPrint('✅ User demoted');
         return true;
       }
-      if (kDebugMode) debugPrint('⚠️ Demotion failed: ${response.statusCode} – ${response.body}');
+      if (kDebugMode)
+        debugPrint(
+            '⚠️ Demotion failed: ${response.statusCode} – ${response.body}');
       return false;
     } on SocketException {
       return false;
@@ -422,19 +460,24 @@ class WorldAdminService {
 
   /// Delete user (root admin only)
   /// ✅ FIXED AUTH: Uses simple Bearer token (username)
-  static Future<bool> deleteUser(String world, String userId, {String? role}) async {
+  static Future<bool> deleteUser(String world, String userId,
+      {String? role}) async {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/delete/$world/$userId');
       if (kDebugMode) debugPrint('🗑️ Deleting user: $world/$userId');
-      final response = await http.delete(
-        url,
-        headers: _adminHeaders(role: 'root_admin'),
-      ).timeout(_timeout);
+      final response = await http
+          .delete(
+            url,
+            headers: _adminHeaders(role: 'root_admin'),
+          )
+          .timeout(_timeout);
       if (response.statusCode == 200) {
         if (kDebugMode) debugPrint('✅ User deleted');
         return true;
       }
-      if (kDebugMode) debugPrint('⚠️ Deletion failed: ${response.statusCode} – ${response.body}');
+      if (kDebugMode)
+        debugPrint(
+            '⚠️ Deletion failed: ${response.statusCode} – ${response.body}');
       return false;
     } on SocketException {
       return false;
@@ -452,27 +495,34 @@ class WorldAdminService {
 
   /// Get audit log for a world
   /// ✅ MIT AUTH-HEADER
-  /// 
+  ///
   /// Returns: List[AuditLogEntry]
-  static Future<List<AuditLogEntry>> getAuditLog(String world, {int limit = 50, String? role}) async {
+  static Future<List<AuditLogEntry>> getAuditLog(String world,
+      {int limit = 50, String? role}) async {
     // ─────────────────────────────────────────────────────────────────────
     // 1️⃣ PRIMARY: Worker API
     // ─────────────────────────────────────────────────────────────────────
     try {
       final url = Uri.parse('$_baseUrl/api/admin/audit/$world?limit=$limit');
-      if (kDebugMode) debugPrint('📜 Fetching audit log for: $world (role: $role)');
+      if (kDebugMode)
+        debugPrint('📜 Fetching audit log for: $world (role: $role)');
 
-      final response = await http.get(
-        url,
-        headers: _adminHeaders(role: role),
-      ).timeout(_timeout);
+      final response = await http
+          .get(
+            url,
+            headers: _adminHeaders(role: role),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final logs = (data['logs'] as List<dynamic>?) ?? [];
         if (logs.isNotEmpty) {
-          if (kDebugMode) debugPrint('✅ Fetched ${logs.length} audit log entries');
-          return logs.map((l) => AuditLogEntry.fromJson(l as Map<String, dynamic>)).toList();
+          if (kDebugMode)
+            debugPrint('✅ Fetched ${logs.length} audit log entries');
+          return logs
+              .map((l) => AuditLogEntry.fromJson(l as Map<String, dynamic>))
+              .toList();
         }
       }
     } on SocketException {
@@ -488,12 +538,14 @@ class WorldAdminService {
     //    Zeigt letzte Nachrichten als "Aktivitäten" wenn kein echtes Audit-Log
     // ─────────────────────────────────────────────────────────────────────
     try {
-      if (kDebugMode) debugPrint('📜 Fallback: Lade Chat-Aktivitäten als Audit-Log');
+      if (kDebugMode)
+        debugPrint('📜 Fallback: Lade Chat-Aktivitäten als Audit-Log');
 
       // Lade editierte/gelöschte Nachrichten als Audit-Einträge
       final editedResult = await supabase
           .from('chat_messages')
-          .select('id,room_id,user_id,username,message,edited_at,deleted_at,is_deleted,created_at')
+          .select(
+              'id,room_id,user_id,username,message,edited_at,deleted_at,is_deleted,created_at')
           .like('room_id', '$world-%')
           .not('edited_at', 'is', null)
           .order('edited_at', ascending: false)
@@ -501,7 +553,8 @@ class WorldAdminService {
 
       final deletedResult = await supabase
           .from('chat_messages')
-          .select('id,room_id,user_id,username,message,edited_at,deleted_at,is_deleted,created_at')
+          .select(
+              'id,room_id,user_id,username,message,edited_at,deleted_at,is_deleted,created_at')
           .like('room_id', '$world-%')
           .eq('is_deleted', true)
           .order('deleted_at', ascending: false)
@@ -518,7 +571,8 @@ class WorldAdminService {
           targetUsername: msg['username'] as String? ?? '',
           oldRole: null,
           newRole: null,
-          timestamp: msg['edited_at'] as String? ?? msg['created_at'] as String? ?? '',
+          timestamp:
+              msg['edited_at'] as String? ?? msg['created_at'] as String? ?? '',
         ));
       }
 
@@ -531,13 +585,16 @@ class WorldAdminService {
           targetUsername: msg['username'] as String? ?? '',
           oldRole: null,
           newRole: null,
-          timestamp: msg['deleted_at'] as String? ?? msg['created_at'] as String? ?? '',
+          timestamp: msg['deleted_at'] as String? ??
+              msg['created_at'] as String? ??
+              '',
         ));
       }
 
       // Nach Zeit sortieren (neueste zuerst)
       entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      if (kDebugMode) debugPrint('✅ Fallback Audit: ${entries.length} Aktivitäten');
+      if (kDebugMode)
+        debugPrint('✅ Fallback Audit: ${entries.length} Aktivitäten');
       return entries.take(limit).toList();
     } catch (supaErr) {
       if (kDebugMode) debugPrint('⚠️ Supabase audit fallback error: $supaErr');
@@ -545,7 +602,6 @@ class WorldAdminService {
 
     return [];
   }
-  
 }
 
 // ════════════════════════════════════════════════════════════
@@ -588,8 +644,10 @@ class WorldUser {
   });
 
   factory WorldUser.fromJson(Map<String, dynamic> json) {
-    final id = json['profile_id'] as String? ?? json['profileId'] as String? ?? '';
-    final legacy = json['legacy_user_id'] as String? ?? json['legacyUserId'] as String?;
+    final id =
+        json['profile_id'] as String? ?? json['profileId'] as String? ?? '';
+    final legacy =
+        json['legacy_user_id'] as String? ?? json['legacyUserId'] as String?;
     return WorldUser(
       profileId: id,
       // userId fuer Aktionen: wenn UUID vorhanden, nimm die. Sonst InvisibleAuth-ID.
@@ -598,14 +656,20 @@ class WorldUser {
           : (id.isNotEmpty ? id : (legacy ?? '')),
       username: json['username'] as String? ?? '',
       role: json['role'] as String? ?? 'user',
-      displayName: json['display_name'] as String? ?? json['displayName'] as String?,
+      displayName:
+          json['display_name'] as String? ?? json['displayName'] as String?,
       avatarUrl: json['avatar_url'] as String? ?? json['avatarUrl'] as String?,
-      avatarEmoji: json['avatar_emoji'] as String? ?? json['avatarEmoji'] as String?,
-      createdAt: json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
+      avatarEmoji:
+          json['avatar_emoji'] as String? ?? json['avatarEmoji'] as String?,
+      createdAt:
+          json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
       world: json['world'] as String?,
-      isSuspended: json['is_suspended'] as bool? ?? json['is_banned'] as bool? ?? false,
-      suspensionReason: json['suspension_reason'] as String? ?? json['ban_reason'] as String?,
-      lastSeenAt: json['last_seen_at'] as String? ?? json['lastSeenAt'] as String?,
+      isSuspended:
+          json['is_suspended'] as bool? ?? json['is_banned'] as bool? ?? false,
+      suspensionReason:
+          json['suspension_reason'] as String? ?? json['ban_reason'] as String?,
+      lastSeenAt:
+          json['last_seen_at'] as String? ?? json['lastSeenAt'] as String?,
       legacyUserId: legacy,
     );
   }
@@ -618,7 +682,8 @@ class WorldUser {
   String get source {
     final hasUuid = profileId.length >= 32 && profileId.contains('-');
     if (hasUuid) return 'web';
-    if ((legacyUserId ?? '').isNotEmpty || profileId.startsWith('user_')) return 'app';
+    if ((legacyUserId ?? '').isNotEmpty || profileId.startsWith('user_'))
+      return 'app';
     return 'unknown';
   }
 
@@ -662,9 +727,13 @@ class AuditLogEntry {
   factory AuditLogEntry.fromJson(Map<String, dynamic> json) {
     return AuditLogEntry(
       logId: json['log_id'] as String? ?? json['logId'] as String? ?? '',
-      adminUsername: json['admin_username'] as String? ?? json['adminUsername'] as String? ?? '',
+      adminUsername: json['admin_username'] as String? ??
+          json['adminUsername'] as String? ??
+          '',
       action: json['action'] as String? ?? '',
-      targetUsername: json['target_username'] as String? ?? json['targetUsername'] as String? ?? '',
+      targetUsername: json['target_username'] as String? ??
+          json['targetUsername'] as String? ??
+          '',
       oldRole: json['old_role'] as String? ?? json['oldRole'] as String?,
       newRole: json['new_role'] as String? ?? json['newRole'] as String?,
       timestamp: json['timestamp'] as String? ?? '',
@@ -678,12 +747,12 @@ class AuditLogEntry {
 
 /// Extension mit neuen Backend V16.2 Admin APIs
 /// Fügt User Ban/Mute/Status, Dashboard und Analytics hinzu
-/// 
+///
 /// ⚠️ WICHTIG: ROLLEN-PRÜFUNG
 /// Alle Ban/Mute/Management-Funktionen erfordern:
 /// - Root Admin Rolle (AppRoles.canManageUsers)
 /// - Verifizierung über AdminState (adminStateProvider)
-/// 
+///
 /// Bitte VOR dem Aufruf prüfen:
 /// ```dart
 /// final admin = ref.read(adminStateProvider(world));
@@ -693,7 +762,8 @@ class AuditLogEntry {
 /// }
 /// ```
 extension WorldAdminServiceV162 on WorldAdminService {
-  static Map<String, String> get _h => WorldAdminService._adminHeaders(role: 'root_admin');
+  static Map<String, String> get _h =>
+      WorldAdminService._adminHeaders(role: 'root_admin');
 
   static Future<bool> banUser({
     required String userId,
@@ -702,12 +772,16 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUserId,
   }) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/ban');
-      final response = await http.post(
-        url,
-        headers: _h,
-        body: jsonEncode({'reason': reason, 'durationHours': durationHours}),
-      ).timeout(WorldAdminService._timeout);
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/$userId/ban');
+      final response = await http
+          .post(
+            url,
+            headers: _h,
+            body:
+                jsonEncode({'reason': reason, 'durationHours': durationHours}),
+          )
+          .timeout(WorldAdminService._timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
         return data['success'] as bool? ?? true;
@@ -719,10 +793,13 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
-  static Future<bool> unbanUser({required String userId, String? adminUserId}) async {
+  static Future<bool> unbanUser(
+      {required String userId, String? adminUserId}) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unban');
-      final response = await http.post(url, headers: _h).timeout(WorldAdminService._timeout);
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/$userId/unban');
+      final response =
+          await http.post(url, headers: _h).timeout(WorldAdminService._timeout);
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -743,21 +820,25 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUsername,
   }) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/role');
-      final response = await http.put(
-        url,
-        headers: {..._h, 'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'role': newRole,
-          if (adminUsername != null) 'admin': adminUsername,
-        }),
-      ).timeout(WorldAdminService._timeout);
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/$userId/role');
+      final response = await http
+          .put(
+            url,
+            headers: {..._h, 'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'role': newRole,
+              if (adminUsername != null) 'admin': adminUsername,
+            }),
+          )
+          .timeout(WorldAdminService._timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
         return data['success'] as bool? ?? true;
       }
       if (kDebugMode) {
-        debugPrint('❌ changeUserRole failed: HTTP ${response.statusCode} ${response.body}');
+        debugPrint(
+            '❌ changeUserRole failed: HTTP ${response.statusCode} ${response.body}');
       }
       return false;
     } catch (e) {
@@ -773,12 +854,16 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUserId,
   }) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/mute');
-      final response = await http.post(
-        url,
-        headers: _h,
-        body: jsonEncode({'reason': reason, 'durationMinutes': durationMinutes}),
-      ).timeout(WorldAdminService._timeout);
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/$userId/mute');
+      final response = await http
+          .post(
+            url,
+            headers: _h,
+            body: jsonEncode(
+                {'reason': reason, 'durationMinutes': durationMinutes}),
+          )
+          .timeout(WorldAdminService._timeout);
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -792,13 +877,13 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUsername,
   }) async {
     try {
-      final url = Uri.parse(
-          '${WorldAdminService._baseUrl}/api/admin/users/$userId');
-      final response =
-          await http.delete(url, headers: _h).timeout(WorldAdminService._timeout);
+      final url =
+          Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId');
+      final response = await http
+          .delete(url, headers: _h)
+          .timeout(WorldAdminService._timeout);
       if (response.statusCode == 200) {
-        final data =
-            jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+        final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
         return data['success'] as bool? ?? true;
       }
       if (kDebugMode) {
@@ -817,8 +902,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
     List<Map<String, dynamic>>? extraUsers,
   }) async {
     try {
-      final url = Uri.parse(
-          '${WorldAdminService._baseUrl}/api/admin/users/sync');
+      final url =
+          Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/sync');
       final response = await http
           .post(
             url,
@@ -846,20 +931,24 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUsername,
   }) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/xp');
-      final response = await http.post(
-        url,
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'amount': amount,
-          'reason': reason,
-          'admin': adminUsername ?? 'admin',
-        }),
-      ).timeout(WorldAdminService._timeout);
+      final url =
+          Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/xp');
+      final response = await http
+          .post(
+            url,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'amount': amount,
+              'reason': reason,
+              'admin': adminUsername ?? 'admin',
+            }),
+          )
+          .timeout(WorldAdminService._timeout);
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
-      if (kDebugMode) debugPrint('❌ grantXp HTTP ${response.statusCode}: ${response.body}');
+      if (kDebugMode)
+        debugPrint('❌ grantXp HTTP ${response.statusCode}: ${response.body}');
       return null;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ grantXp: $e');
@@ -867,10 +956,13 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
-  static Future<bool> unmuteUser({required String userId, String? adminUserId}) async {
+  static Future<bool> unmuteUser(
+      {required String userId, String? adminUserId}) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unmute');
-      final response = await http.post(url, headers: _h).timeout(WorldAdminService._timeout);
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/$userId/unmute');
+      final response =
+          await http.post(url, headers: _h).timeout(WorldAdminService._timeout);
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -883,36 +975,46 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUserId,
   }) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/status');
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/$userId/status');
       final storage = UnifiedStorageService();
-      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
-      
+      final adminUser =
+          adminUserId ?? storage.getUsername('materie') ?? 'admin';
+
       final response = await http.get(
         url,
         headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
       ).timeout(WorldAdminService._timeout);
-      
+
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
       return {'userId': userId, 'banned': false, 'muted': false};
     } catch (e) {
-      return {'userId': userId, 'banned': false, 'muted': false, 'error': e.toString()};
+      return {
+        'userId': userId,
+        'banned': false,
+        'muted': false,
+        'error': e.toString()
+      };
     }
   }
 
   /// 🆕 Get Admin Dashboard (V16.2)
-  static Future<Map<String, dynamic>> getAdminDashboard({String? adminUserId}) async {
+  static Future<Map<String, dynamic>> getAdminDashboard(
+      {String? adminUserId}) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/dashboard');
+      final url =
+          Uri.parse('${WorldAdminService._baseUrl}/api/admin/dashboard');
       final storage = UnifiedStorageService();
-      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
-      
+      final adminUser =
+          adminUserId ?? storage.getUsername('materie') ?? 'admin';
+
       final response = await http.get(
         url,
         headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
       ).timeout(WorldAdminService._timeout);
-      
+
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
@@ -929,15 +1031,17 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUserId,
   }) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/analytics/$realm?days=$days');
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/analytics/$realm?days=$days');
       final storage = UnifiedStorageService();
-      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
-      
+      final adminUser =
+          adminUserId ?? storage.getUsername('materie') ?? 'admin';
+
       final response = await http.get(
         url,
         headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
       ).timeout(WorldAdminService._timeout);
-      
+
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
@@ -952,9 +1056,9 @@ extension WorldAdminServiceV162 on WorldAdminService {
   // ════════════════════════════════════════════════════════════
 
   /// Get active voice calls in a world
-  /// 
+  ///
   /// Returns list of active calls with participants, duration, etc.
-  /// 
+  ///
   /// Example response:
   /// ```json
   /// {
@@ -972,32 +1076,34 @@ extension WorldAdminServiceV162 on WorldAdminService {
   ///   ]
   /// }
   /// ```
-  static Future<List<Map<String, dynamic>>> getActiveVoiceCalls(String world) async {
+  static Future<List<Map<String, dynamic>>> getActiveVoiceCalls(
+      String world) async {
     try {
       // Use API token from ApiConfig
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/voice-calls/$world');
-      
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/voice-calls/$world');
+
       if (kDebugMode) {
         debugPrint('📊 Fetching active voice calls for: $world');
       }
-      
+
       final response = await http.get(
         url,
         headers: {
           ...WorldAdminService._adminHeaders(),
         },
       ).timeout(WorldAdminService._timeout);
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
+
         if (data['success'] == true) {
           final calls = data['calls'] as List<dynamic>;
-          
+
           if (kDebugMode) {
             debugPrint('✅ Found ${calls.length} active calls');
           }
-          
+
           return calls.cast<Map<String, dynamic>>();
         }
       } else if (response.statusCode == 401) {
@@ -1006,11 +1112,11 @@ extension WorldAdminServiceV162 on WorldAdminService {
         }
         throw Exception('Unauthorized: Invalid API token');
       }
-      
+
       if (kDebugMode) {
         debugPrint('⚠️  Failed to fetch active calls: ${response.statusCode}');
       }
-      
+
       return [];
     } catch (e) {
       if (kDebugMode) {
@@ -1021,9 +1127,9 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }
 
   /// Get call history for a world
-  /// 
+  ///
   /// Returns list of past voice calls with statistics
-  /// 
+  ///
   /// Example response:
   /// ```json
   /// {
@@ -1045,29 +1151,30 @@ extension WorldAdminServiceV162 on WorldAdminService {
     int limit = 50,
   }) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/call-history/$world?limit=$limit');
-      
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/call-history/$world?limit=$limit');
+
       if (kDebugMode) {
         debugPrint('📚 Fetching call history for: $world (limit: $limit)');
       }
-      
+
       final response = await http.get(
         url,
         headers: {
           ...WorldAdminService._adminHeaders(),
         },
       ).timeout(WorldAdminService._timeout);
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
+
         if (data['success'] == true) {
           final calls = data['calls'] as List<dynamic>;
-          
+
           if (kDebugMode) {
             debugPrint('✅ Found ${calls.length} past calls');
           }
-          
+
           return calls.cast<Map<String, dynamic>>();
         }
       } else if (response.statusCode == 401) {
@@ -1076,11 +1183,11 @@ extension WorldAdminServiceV162 on WorldAdminService {
         }
         throw Exception('Unauthorized: Invalid API token');
       }
-      
+
       if (kDebugMode) {
         debugPrint('⚠️  Failed to fetch call history: ${response.statusCode}');
       }
-      
+
       return [];
     } catch (e) {
       if (kDebugMode) {
@@ -1091,12 +1198,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }
 
   /// Get user profile with activity stats
-  /// 
+  ///
   /// Returns detailed user information including:
   /// - Basic profile (username, role, avatar)
   /// - Voice call statistics (total calls, minutes)
   /// - Moderation history (warnings, kicks, bans)
-  /// 
+  ///
   /// Example response:
   /// ```json
   /// {
@@ -1115,29 +1222,30 @@ extension WorldAdminServiceV162 on WorldAdminService {
   /// ```
   static Future<Map<String, dynamic>> getUserProfile(String userId) async {
     try {
-      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/user-profile/$userId');
-      
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/user-profile/$userId');
+
       if (kDebugMode) {
         debugPrint('👤 Fetching user profile for: $userId');
       }
-      
+
       final response = await http.get(
         url,
         headers: {
           ...WorldAdminService._adminHeaders(),
         },
       ).timeout(WorldAdminService._timeout);
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
+
         if (data['success'] == true) {
           final user = data['user'] as Map<String, dynamic>;
-          
+
           if (kDebugMode) {
             debugPrint('✅ User profile loaded: ${user['username']}');
           }
-          
+
           return user;
         }
       } else if (response.statusCode == 404) {
@@ -1151,11 +1259,11 @@ extension WorldAdminServiceV162 on WorldAdminService {
         }
         throw Exception('Unauthorized: Invalid API token');
       }
-      
+
       if (kDebugMode) {
         debugPrint('⚠️  Failed to fetch user profile: ${response.statusCode}');
       }
-      
+
       throw Exception('Failed to fetch user profile');
     } catch (e) {
       if (kDebugMode) {

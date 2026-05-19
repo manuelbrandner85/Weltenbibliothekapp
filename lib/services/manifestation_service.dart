@@ -31,7 +31,8 @@ class ManifestationGoal {
     required this.createdAt,
   });
 
-  factory ManifestationGoal.fromJson(Map<String, dynamic> j) => ManifestationGoal(
+  factory ManifestationGoal.fromJson(Map<String, dynamic> j) =>
+      ManifestationGoal(
         id: j['id'] as String,
         userId: j['user_id'] as String? ?? '',
         username: j['username'] as String?,
@@ -65,13 +66,17 @@ class ManifestationService {
     DateTime? targetDate,
   }) async {
     try {
-      final res = await _s.from('manifestation_goals').insert({
-        'user_id': userId,
-        'username': username,
-        'title': title,
-        'description': description,
-        'target_date': targetDate?.toIso8601String().substring(0, 10),
-      }).select().single();
+      final res = await _s
+          .from('manifestation_goals')
+          .insert({
+            'user_id': userId,
+            'username': username,
+            'title': title,
+            'description': description,
+            'target_date': targetDate?.toIso8601String().substring(0, 10),
+          })
+          .select()
+          .single();
       return ManifestationGoal.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Manifest create: $e');
@@ -87,7 +92,8 @@ class ManifestationService {
           .eq('user_id', userId)
           .order('created_at', ascending: false);
       return (res as List)
-          .map((r) => ManifestationGoal.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              ManifestationGoal.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Manifest list: $e');

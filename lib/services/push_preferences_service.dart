@@ -16,15 +16,15 @@ class PushPreferencesService {
   static final PushPreferencesService instance = PushPreferencesService._();
 
   // SharedPreferences-Keys
-  static const _kEnabledMaster   = 'push_pref_master';
-  static const _kEnabledChat     = 'push_pref_chat';
-  static const _kEnabledMention  = 'push_pref_mention';
-  static const _kEnabledReply    = 'push_pref_reply';
-  static const _kEnabledLike     = 'push_pref_like';
-  static const _kEnabledComment  = 'push_pref_comment';
-  static const _kEnabledFollow   = 'push_pref_follow';
-  static const _kEnabledArticle  = 'push_pref_article';
-  static const _kEnabledSystem   = 'push_pref_system';
+  static const _kEnabledMaster = 'push_pref_master';
+  static const _kEnabledChat = 'push_pref_chat';
+  static const _kEnabledMention = 'push_pref_mention';
+  static const _kEnabledReply = 'push_pref_reply';
+  static const _kEnabledLike = 'push_pref_like';
+  static const _kEnabledComment = 'push_pref_comment';
+  static const _kEnabledFollow = 'push_pref_follow';
+  static const _kEnabledArticle = 'push_pref_article';
+  static const _kEnabledSystem = 'push_pref_system';
 
   // In-Memory-Cache für synchrone Reads aus PushNotificationManager
   bool _master = true;
@@ -48,16 +48,17 @@ class PushPreferencesService {
     _initialized = true;
     try {
       final prefs = await SharedPreferences.getInstance();
-      _master  = prefs.getBool(_kEnabledMaster)  ?? true;
-      _chat    = prefs.getBool(_kEnabledChat)    ?? true;
+      _master = prefs.getBool(_kEnabledMaster) ?? true;
+      _chat = prefs.getBool(_kEnabledChat) ?? true;
       _mention = prefs.getBool(_kEnabledMention) ?? true;
-      _reply   = prefs.getBool(_kEnabledReply)   ?? true;
-      _like    = prefs.getBool(_kEnabledLike)    ?? true;
+      _reply = prefs.getBool(_kEnabledReply) ?? true;
+      _like = prefs.getBool(_kEnabledLike) ?? true;
       _comment = prefs.getBool(_kEnabledComment) ?? true;
-      _follow  = prefs.getBool(_kEnabledFollow)  ?? true;
+      _follow = prefs.getBool(_kEnabledFollow) ?? true;
       _article = prefs.getBool(_kEnabledArticle) ?? true;
-      _system  = prefs.getBool(_kEnabledSystem)  ?? true;
-      if (kDebugMode) debugPrint('🔔 PushPreferences hydriert (master=$_master)');
+      _system = prefs.getBool(_kEnabledSystem) ?? true;
+      if (kDebugMode)
+        debugPrint('🔔 PushPreferences hydriert (master=$_master)');
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ PushPreferences init failed: $e');
     }
@@ -113,34 +114,42 @@ class PushPreferencesService {
     _master = v;
     await _persist(_kEnabledMaster, v);
   }
+
   Future<void> setChat(bool v) async {
     _chat = v;
     await _persist(_kEnabledChat, v);
   }
+
   Future<void> setMention(bool v) async {
     _mention = v;
     await _persist(_kEnabledMention, v);
   }
+
   Future<void> setReply(bool v) async {
     _reply = v;
     await _persist(_kEnabledReply, v);
   }
+
   Future<void> setLike(bool v) async {
     _like = v;
     await _persist(_kEnabledLike, v);
   }
+
   Future<void> setComment(bool v) async {
     _comment = v;
     await _persist(_kEnabledComment, v);
   }
+
   Future<void> setFollow(bool v) async {
     _follow = v;
     await _persist(_kEnabledFollow, v);
   }
+
   Future<void> setArticle(bool v) async {
     _article = v;
     await _persist(_kEnabledArticle, v);
   }
+
   Future<void> setSystem(bool v) async {
     _system = v;
     await _persist(_kEnabledSystem, v);

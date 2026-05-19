@@ -11,7 +11,7 @@ class HapticService {
       debugPrint('📳 Light haptic feedback');
     }
   }
-  
+
   /// Heavy haptic impact for unlock/achievement (1.2)
   static void heavyImpact() {
     HapticFeedback.heavyImpact();
@@ -19,7 +19,7 @@ class HapticService {
       debugPrint('📳 Heavy haptic feedback');
     }
   }
-  
+
   /// Medium haptic for button interactions
   static void mediumImpact() {
     HapticFeedback.mediumImpact();
@@ -27,7 +27,7 @@ class HapticService {
       debugPrint('📳 Medium haptic feedback');
     }
   }
-  
+
   /// Selection click for menu navigation
   static void selectionClick() {
     HapticFeedback.selectionClick();

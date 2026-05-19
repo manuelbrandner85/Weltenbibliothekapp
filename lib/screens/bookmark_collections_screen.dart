@@ -25,9 +25,9 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
 
   String _userId() {
     final s = StorageService();
-    return s.getMaterieProfile()?.userId
-        ?? s.getEnergieProfile()?.userId
-        ?? 'anon';
+    return s.getMaterieProfile()?.userId ??
+        s.getEnergieProfile()?.userId ??
+        'anon';
   }
 
   @override
@@ -61,7 +61,9 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) => Padding(
           padding: EdgeInsets.only(
-            left: 20, right: 20, top: 14,
+            left: 20,
+            right: 20,
+            top: 14,
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
           ),
           child: Column(
@@ -70,7 +72,8 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
             children: [
               Center(
                 child: Container(
-                  width: 38, height: 4,
+                  width: 38,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(2),
@@ -79,7 +82,10 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
               ),
               const SizedBox(height: 14),
               const Text('📁 Neue Sammlung',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700)),
               const SizedBox(height: 14),
               TextField(
                 controller: nameCtrl,
@@ -87,7 +93,8 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Name (z.B. Recherche, Lieblings-Module …)',
-                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                  labelStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.05),
                   border: OutlineInputBorder(
@@ -97,24 +104,39 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text('Icon', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              const Text('Icon',
+                  style: TextStyle(color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final e in const ['📁','⭐','💡','🔍','📚','🎯','🌙','🔮','⚖️','👑'])
+                  for (final e in const [
+                    '📁',
+                    '⭐',
+                    '💡',
+                    '🔍',
+                    '📚',
+                    '🎯',
+                    '🌙',
+                    '🔮',
+                    '⚖️',
+                    '👑'
+                  ])
                     GestureDetector(
                       onTap: () => setSheet(() => selectedIcon = e),
                       child: Container(
-                        width: 38, height: 38,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
                           color: selectedIcon == e
                               ? _accent.withValues(alpha: 0.25)
                               : Colors.white.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: selectedIcon == e ? _accent : Colors.transparent,
+                            color: selectedIcon == e
+                                ? _accent
+                                : Colors.transparent,
                             width: 1.5,
                           ),
                         ),
@@ -125,21 +147,32 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              const Text('Farbe', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              const Text('Farbe',
+                  style: TextStyle(color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 6),
               Row(
                 children: [
-                  for (final cKey in const ['gold','blue','purple','green','red','cyan'])
+                  for (final cKey in const [
+                    'gold',
+                    'blue',
+                    'purple',
+                    'green',
+                    'red',
+                    'cyan'
+                  ])
                     GestureDetector(
                       onTap: () => setSheet(() => selectedColor = cKey),
                       child: Container(
                         margin: const EdgeInsets.only(right: 8),
-                        width: 30, height: 30,
+                        width: 30,
+                        height: 30,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: _colorFor(cKey),
                           border: Border.all(
-                            color: selectedColor == cKey ? Colors.white : Colors.transparent,
+                            color: selectedColor == cKey
+                                ? Colors.white
+                                : Colors.transparent,
                             width: 2,
                           ),
                         ),
@@ -250,7 +283,7 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => _CollectionDetailScreen(
-                            collection: c, color: color),
+                              collection: c, color: color),
                         ),
                       ),
                     );
@@ -336,11 +369,9 @@ class _CollectionDetailScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         title: Row(
           children: [
-            Text(collection.icon ?? '📁',
-                style: const TextStyle(fontSize: 20)),
+            Text(collection.icon ?? '📁', style: const TextStyle(fontSize: 20)),
             const SizedBox(width: 8),
-            Text(collection.name,
-                style: const TextStyle(color: Colors.white)),
+            Text(collection.name, style: const TextStyle(color: Colors.white)),
           ],
         ),
         iconTheme: IconThemeData(color: color),
@@ -360,8 +391,7 @@ class _CollectionDetailScreen extends StatelessWidget {
                   'Diese Sammlung ist noch leer.\nFüge Bookmarks über das ⋮-Menü in der Bookmark-Liste hinzu.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      height: 1.5),
+                      color: Colors.white.withValues(alpha: 0.55), height: 1.5),
                 ),
               ),
             );

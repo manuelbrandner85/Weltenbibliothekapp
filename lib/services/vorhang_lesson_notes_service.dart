@@ -25,7 +25,8 @@ class LessonNote {
         moduleCode: j['module_code'] as String? ?? '',
         body: j['body'] as String? ?? '',
         tags: (j['tags'] as List?)?.cast<String>() ?? const [],
-        updatedAt: DateTime.tryParse(j['updated_at'] as String? ?? '') ?? DateTime.now(),
+        updatedAt: DateTime.tryParse(j['updated_at'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -58,13 +59,17 @@ class VorhangLessonNotesService {
     List<String> tags = const [],
   }) async {
     try {
-      final res = await _s.from('vorhang_lesson_notes').upsert({
-        'user_id': userId,
-        'module_code': moduleCode,
-        'body': body,
-        'tags': tags,
-        'updated_at': DateTime.now().toIso8601String(),
-      }, onConflict: 'user_id,module_code').select().single();
+      final res = await _s
+          .from('vorhang_lesson_notes')
+          .upsert({
+            'user_id': userId,
+            'module_code': moduleCode,
+            'body': body,
+            'tags': tags,
+            'updated_at': DateTime.now().toIso8601String(),
+          }, onConflict: 'user_id,module_code')
+          .select()
+          .single();
       return LessonNote.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ LessonNote save: $e');

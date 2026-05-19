@@ -36,9 +36,8 @@ class ReleaseUpdateDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = info.isForced
-        ? 'Update erforderlich'
-        : 'Neue Version verfügbar';
+    final title =
+        info.isForced ? 'Update erforderlich' : 'Neue Version verfügbar';
     final subtitle = info.latestVersion != null
         ? 'Version ${info.latestVersion} ist bereit zum Download.'
         : 'Eine neue Version ist verfügbar.';
@@ -63,8 +62,7 @@ class ReleaseUpdateDialog extends StatelessWidget {
                     color: const Color(0xFF2979FF).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color:
-                            const Color(0xFF2979FF).withValues(alpha: 0.4)),
+                        color: const Color(0xFF2979FF).withValues(alpha: 0.4)),
                   ),
                   child: const Icon(Icons.system_update,
                       color: Color(0xFF00E5FF), size: 28),
@@ -127,8 +125,7 @@ class ReleaseUpdateDialog extends StatelessWidget {
                   color: const Color(0xFFE53935).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color:
-                          const Color(0xFFE53935).withValues(alpha: 0.35)),
+                      color: const Color(0xFFE53935).withValues(alpha: 0.35)),
                 ),
                 child: const Row(
                   children: [
@@ -229,8 +226,7 @@ class _VersionRow extends StatelessWidget {
           children: [
             Text(label,
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 11)),
+                    color: Colors.white.withValues(alpha: 0.55), fontSize: 11)),
             const SizedBox(height: 2),
             Text(value,
                 style: const TextStyle(

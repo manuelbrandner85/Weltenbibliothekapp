@@ -10,9 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Ersetzt Firebase Cloud Messaging
 class CloudflarePushService {
   static String get baseUrl => ApiConfig.pushApiUrl;
-  
+
   // Singleton
-  static final CloudflarePushService _instance = CloudflarePushService._internal();
+  static final CloudflarePushService _instance =
+      CloudflarePushService._internal();
   factory CloudflarePushService() => _instance;
   CloudflarePushService._internal();
 
@@ -23,7 +24,7 @@ class CloudflarePushService {
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _userId = prefs.getString('user_id');
-    
+
     if (_userId == null) {
       // Generate user ID
       _userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
@@ -44,7 +45,8 @@ class CloudflarePushService {
     if (_userId == null) await initialize();
 
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$baseUrl/api/push/subscribe'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -53,7 +55,8 @@ class CloudflarePushService {
           'keys': {},
           'topics': _subscribedTopics,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Push-Subscribe Timeout (15s)');
@@ -79,9 +82,11 @@ class CloudflarePushService {
     if (_userId == null) return;
 
     try {
-      await http.delete(
+      await http
+          .delete(
         Uri.parse('$baseUrl/api/push/unsubscribe/$_userId'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           throw TimeoutException('Push-Unsubscribe Timeout (10s)');
@@ -105,14 +110,16 @@ class CloudflarePushService {
     _subscribedTopics = _subscribedTopics.toSet().toList(); // Remove duplicates
 
     try {
-      await http.post(
+      await http
+          .post(
         Uri.parse('$baseUrl/api/push/topics/subscribe'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'user_id': _userId,
           'topics': topics,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Topic-Subscribe Timeout (15s)');
@@ -138,7 +145,8 @@ class CloudflarePushService {
     if (_userId == null) await initialize();
 
     try {
-      await http.post(
+      await http
+          .post(
         Uri.parse('$baseUrl/api/push/send'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -151,7 +159,8 @@ class CloudflarePushService {
             'timestamp': DateTime.now().toIso8601String(),
           },
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           throw TimeoutException('Test-Notification Timeout (10s)');
@@ -178,7 +187,8 @@ class CloudflarePushService {
     if (_userId == null) await initialize();
 
     try {
-      await http.post(
+      await http
+          .post(
         Uri.parse('$baseUrl/api/push/schedule'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -189,7 +199,8 @@ class CloudflarePushService {
           'type': type,
           'data': data ?? {},
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Schedule-Notification Timeout (15s)');
@@ -210,9 +221,11 @@ class CloudflarePushService {
     if (_userId == null) await initialize();
 
     try {
-      final response = await http.get(
+      final response = await http
+          .get(
         Uri.parse('$baseUrl/api/notifications/$_userId'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Get-Notifications Timeout (15s)');

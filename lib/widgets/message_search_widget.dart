@@ -6,14 +6,14 @@ class MessageSearchWidget extends StatefulWidget {
   final List<Map<String, dynamic>> messages;
   final Function(Map<String, dynamic> message) onSelectMessage;
   final VoidCallback onClose;
-  
+
   const MessageSearchWidget({
     super.key,
     required this.messages,
     required this.onSelectMessage,
     required this.onClose,
   });
-  
+
   @override
   State<MessageSearchWidget> createState() => _MessageSearchWidgetState();
 }
@@ -21,58 +21,58 @@ class MessageSearchWidget extends StatefulWidget {
 class _MessageSearchWidgetState extends State<MessageSearchWidget> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _searchResults = [];
-  
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-  
+
   void _search(String query) {
     if (query.isEmpty) {
       setState(() => _searchResults = []);
       return;
     }
-    
+
     final results = widget.messages.where((msg) {
       final content = msg['message']?.toString().toLowerCase() ?? '';
       final username = msg['username']?.toString().toLowerCase() ?? '';
       final searchQuery = query.toLowerCase();
-      
+
       return content.contains(searchQuery) || username.contains(searchQuery);
     }).toList();
-    
+
     setState(() => _searchResults = results.reversed.toList()); // Newest first
   }
-  
+
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return '';
-    
+
     try {
-      final date = timestamp is String 
+      final date = timestamp is String
           ? DateTime.parse(timestamp)
           : DateTime.fromMillisecondsSinceEpoch(timestamp as int);
-      
+
       final now = DateTime.now();
       final diff = now.difference(date);
-      
+
       if (diff.inMinutes < 1) return 'Gerade eben';
       if (diff.inMinutes < 60) return 'vor ${diff.inMinutes}m';
       if (diff.inHours < 24) return 'vor ${diff.inHours}h';
       if (diff.inDays < 7) return 'vor ${diff.inDays}d';
-      
+
       return '${date.day}.${date.month}.${date.year}';
     } catch (e) {
       return '';
     }
   }
-  
+
   // ignore: unused_element
   String _highlightMatch(String text, String query) {
     // Return text as-is, highlighting done via TextSpan in build
     return text;
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -122,7 +122,7 @@ class _MessageSearchWidgetState extends State<MessageSearchWidget> {
               ],
             ),
           ),
-          
+
           // Results
           Expanded(
             child: _searchResults.isEmpty && _searchController.text.isNotEmpty
@@ -171,10 +171,11 @@ class _MessageSearchWidgetState extends State<MessageSearchWidget> {
                         itemCount: _searchResults.length,
                         itemBuilder: (context, index) {
                           final msg = _searchResults[index];
-                          final username = msg['username']?.toString() ?? 'Unbekannt';
+                          final username =
+                              msg['username']?.toString() ?? 'Unbekannt';
                           final content = msg['message']?.toString() ?? '';
                           final timestamp = _formatTimestamp(msg['timestamp']);
-                          
+
                           return ListTile(
                             onTap: () {
                               widget.onSelectMessage(msg);
@@ -209,7 +210,8 @@ class _MessageSearchWidgetState extends State<MessageSearchWidget> {
                                   Text(
                                     timestamp,
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.4),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.4),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -225,7 +227,7 @@ class _MessageSearchWidgetState extends State<MessageSearchWidget> {
                         },
                       ),
           ),
-          
+
           // Result Count
           if (_searchResults.isNotEmpty)
             Container(

@@ -20,8 +20,8 @@ import '../../services/biometric_service.dart';
 /// Used by Gateway-Kammer, Atemmeister and any future biometric tool.
 class BiometricResultSheet extends StatelessWidget {
   final BiometricComparison comparison;
-  final String sessionType;       // e.g. 'gateway', 'breathmaster'
-  final String? sessionWorld;     // e.g. 'ursprung'
+  final String sessionType; // e.g. 'gateway', 'breathmaster'
+  final String? sessionWorld; // e.g. 'ursprung'
   final int? durationMinutes;
   final VoidCallback? onSave;
   final VoidCallback? onNext;
@@ -177,13 +177,10 @@ class BiometricResultSheet extends StatelessWidget {
   }) {
     final hasData = before != null && after != null && before > 0;
     final delta = hasData ? ((after - before) / before) * 100 : null;
-    final arrow = delta == null
-        ? '—'
-        : (delta >= 0 ? '↑' : '↓');
+    final arrow = delta == null ? '—' : (delta >= 0 ? '↑' : '↓');
     final pct = delta == null ? '—' : '${delta.abs().toStringAsFixed(0)}%';
-    final isGood = delta == null
-        ? null
-        : (goodWhenDecreasing ? delta < 0 : delta > 0);
+    final isGood =
+        delta == null ? null : (goodWhenDecreasing ? delta < 0 : delta > 0);
     final deltaColor = isGood == null
         ? Colors.white54
         : (isGood ? _cyan : Colors.redAccent.shade100);
@@ -312,8 +309,8 @@ class BiometricResultSheet extends StatelessWidget {
                 ),
               );
             },
-            icon: const Icon(Icons.bookmark_add_outlined,
-                color: _cyan, size: 18),
+            icon:
+                const Icon(Icons.bookmark_add_outlined, color: _cyan, size: 18),
             label: const Text('Speichern',
                 style: TextStyle(color: _cyan, fontSize: 12)),
             style: OutlinedButton.styleFrom(
@@ -367,11 +364,10 @@ class BiometricResultSheet extends StatelessWidget {
         ? 'HR ${comparison.heartRateBefore!.toStringAsFixed(0)} → '
             '${comparison.heartRateAfter!.toStringAsFixed(0)} bpm'
         : null;
-    final hrv =
-        (comparison.hrvBefore != null && comparison.hrvAfter != null)
-            ? 'HRV ${comparison.hrvBefore!.toStringAsFixed(0)} → '
-                '${comparison.hrvAfter!.toStringAsFixed(0)} ms'
-            : null;
+    final hrv = (comparison.hrvBefore != null && comparison.hrvAfter != null)
+        ? 'HRV ${comparison.hrvBefore!.toStringAsFixed(0)} → '
+            '${comparison.hrvAfter!.toStringAsFixed(0)} ms'
+        : null;
     final lines = <String>[
       'Meine $sessionType-Session in der Weltenbibliothek:',
       if (hr != null) hr,

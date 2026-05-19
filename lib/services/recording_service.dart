@@ -41,15 +41,17 @@ class RecordingService {
       final session = Supabase.instance.client.auth.currentSession;
       final token = session?.accessToken ?? ApiConfig.supabaseAnonKey;
 
-      final res = await http.post(
-        Uri.parse('${ApiConfig.workerUrl}/api/livekit/recording/start'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-          'apikey': ApiConfig.supabaseAnonKey,
-        },
-        body: jsonEncode({'roomName': roomName}),
-      ).timeout(const Duration(seconds: 15));
+      final res = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/livekit/recording/start'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+              'apikey': ApiConfig.supabaseAnonKey,
+            },
+            body: jsonEncode({'roomName': roomName}),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -75,15 +77,17 @@ class RecordingService {
       final session = Supabase.instance.client.auth.currentSession;
       final token = session?.accessToken ?? ApiConfig.supabaseAnonKey;
 
-      final res = await http.post(
-        Uri.parse('${ApiConfig.workerUrl}/api/livekit/recording/stop'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-          'apikey': ApiConfig.supabaseAnonKey,
-        },
-        body: jsonEncode({'egressId': _egressId}),
-      ).timeout(const Duration(seconds: 15));
+      final res = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/livekit/recording/stop'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+              'apikey': ApiConfig.supabaseAnonKey,
+            },
+            body: jsonEncode({'egressId': _egressId}),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (res.statusCode == 200 || res.statusCode == 204) {
         _egressId = null;

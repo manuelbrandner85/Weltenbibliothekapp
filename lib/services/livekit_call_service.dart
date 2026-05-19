@@ -155,6 +155,7 @@ class LiveKitCallService extends ChangeNotifier {
     _viewMode = mode;
     notifyListeners();
   }
+
   void toggleViewMode() {
     setViewMode(_viewMode == LiveKitViewMode.gallery
         ? LiveKitViewMode.speaker
@@ -323,7 +324,6 @@ class LiveKitCallService extends ChangeNotifier {
     return false;
   }
 
-
   // ── Connection-Lifecycle ───────────────────────────────────────────────────
 
   /// Tritt einem LiveKit-Raum bei. Wirft eine Exception mit deutscher
@@ -341,7 +341,8 @@ class LiveKitCallService extends ChangeNotifier {
     _localDisplayName = displayName;
     _audioOnlyMode = audioOnly;
     if (!ApiConfig.isLivekitEnabled) {
-      throw Exception('Sprach-Anruf ist nicht konfiguriert (LIVEKIT_URL fehlt).');
+      throw Exception(
+          'Sprach-Anruf ist nicht konfiguriert (LIVEKIT_URL fehlt).');
     }
     if (_connectionState == LiveKitConnectionState.connecting ||
         _connectionState == LiveKitConnectionState.connected) {
@@ -416,10 +417,10 @@ class LiveKitCallService extends ChangeNotifier {
       // Damit funktioniert LiveKit auch ohne Supabase-Account und es wird
       // KEIN automatischer Anonymous-Signup erzwungen.
       final session = supabase.auth.currentSession;
-      final bearerToken =
-          session?.accessToken ?? ApiConfig.supabaseAnonKey;
+      final bearerToken = session?.accessToken ?? ApiConfig.supabaseAnonKey;
       if (kDebugMode) {
-        debugPrint('🔑 LiveKit token: ${session != null ? "user-session" : "guest (anon-key)"}');
+        debugPrint(
+            '🔑 LiveKit token: ${session != null ? "user-session" : "guest (anon-key)"}');
       }
 
       // Stabile Guest-ID (UUID-ähnlich, persistent in SharedPreferences)
@@ -457,7 +458,8 @@ class LiveKitCallService extends ChangeNotifier {
               )
               .timeout(const Duration(seconds: 8));
           // 5xx + 429 (Rate-Limit/Infra) → retry; andere 4xx → sofort abbrechen
-          if ((tokenRes.statusCode >= 500 || tokenRes.statusCode == 429) && attempt < tokenRetryDelays.length) {
+          if ((tokenRes.statusCode >= 500 || tokenRes.statusCode == 429) &&
+              attempt < tokenRetryDelays.length) {
             lastTokenErr = 'HTTP ${tokenRes.statusCode}';
             tokenRes = null;
             await Future<void>.delayed(tokenRetryDelays[attempt]);
@@ -468,7 +470,8 @@ class LiveKitCallService extends ChangeNotifier {
           lastTokenErr = e;
           if (attempt < tokenRetryDelays.length) {
             if (kDebugMode) {
-              debugPrint('🔁 Token-Fetch Versuch ${attempt + 1} fehlgeschlagen ($e), retry in ${tokenRetryDelays[attempt].inSeconds}s');
+              debugPrint(
+                  '🔁 Token-Fetch Versuch ${attempt + 1} fehlgeschlagen ($e), retry in ${tokenRetryDelays[attempt].inSeconds}s');
             }
             await Future<void>.delayed(tokenRetryDelays[attempt]);
             continue;
@@ -494,7 +497,8 @@ class LiveKitCallService extends ChangeNotifier {
             msg = body['error'] as String;
           }
         } catch (e) {
-          if (kDebugMode) debugPrint('⚠️ [LiveKit] Token-Error-Parse fehlgeschlagen: $e');
+          if (kDebugMode)
+            debugPrint('⚠️ [LiveKit] Token-Error-Parse fehlgeschlagen: $e');
         }
         throw Exception(msg);
       }
@@ -534,7 +538,8 @@ class LiveKitCallService extends ChangeNotifier {
             typingNoiseDetection: true,
           ),
           defaultAudioPublishOptions: AudioPublishOptions(
-            dtx: true, // Discontinuous Transmission — spart Bandbreite bei Stille
+            dtx:
+                true, // Discontinuous Transmission — spart Bandbreite bei Stille
           ),
           defaultVideoPublishOptions: VideoPublishOptions(
             simulcast: true,
@@ -564,67 +569,67 @@ class LiveKitCallService extends ChangeNotifier {
 
       await room
           .connect(
-            livekitUrl,
-            token,
-            connectOptions: ConnectOptions(
-              autoSubscribe: true,
-              // L2: STUN + TURN Server — universelle Konnektivität.
-              //
-              // STUN: Public-IP-Erkennung für direkten P2P (günstiger Pfad).
-              // TURN: Relay für User hinter symmetrischem NAT, CGNAT, Hotel-WiFi,
-              //   Firmen-VPN, ausländische SIM-Karten — ohne TURN kommen diese
-              //   NIE durch und die App crasht/hängt bei ICE-Gathering.
-              //
-              // coturn läuft auf dem Hostinger VPS (72.62.154.95:3478).
-              // Creds sind public — abuse-mitigated via coturn rate-limits
-              // + denied-peer-ip für private Subnetze.
-              //
-              // Meek-TURN auf Port 443 (TLS): Durchdringt auch Firewalls
-              // die nur HTTPS (443) erlauben — Hotel-Captive-Portals, Firmen-Netze.
-              rtcConfiguration: RTCConfiguration(
-                iceServers: [
-                  // STUN — öffentliche IP-Erkennung (kostenlos, schnell)
-                  const RTCIceServer(urls: ['stun:stun.l.google.com:19302']),
-                  const RTCIceServer(urls: ['stun:stun1.l.google.com:19302']),
-                  const RTCIceServer(urls: ['stun:stun.cloudflare.com:3478']),
-                  // TURN/UDP — schnellster Relay-Pfad für CGNAT/NAT
-                  RTCIceServer(
-                    urls: ['turn:72.62.154.95:3478?transport=udp'],
-                    username: 'wbuser',
-                    credential: 'wbturn2025!',
-                  ),
-                  // TURN/TCP — Fallback wenn UDP blockiert (manche Firmen-Netze)
-                  RTCIceServer(
-                    urls: ['turn:72.62.154.95:3478?transport=tcp'],
-                    username: 'wbuser',
-                    credential: 'wbturn2025!',
-                  ),
-                  // TURNS/TLS auf 443 — ultimativer Fallback: durchdringt
-                  // selbst Firewalls die nur HTTPS erlauben (Hotel, Flughafen)
-                  RTCIceServer(
-                    urls: ['turns:72.62.154.95:443?transport=tcp'],
-                    username: 'wbuser',
-                    credential: 'wbturn2025!',
-                  ),
-                ],
+        livekitUrl,
+        token,
+        connectOptions: ConnectOptions(
+          autoSubscribe: true,
+          // L2: STUN + TURN Server — universelle Konnektivität.
+          //
+          // STUN: Public-IP-Erkennung für direkten P2P (günstiger Pfad).
+          // TURN: Relay für User hinter symmetrischem NAT, CGNAT, Hotel-WiFi,
+          //   Firmen-VPN, ausländische SIM-Karten — ohne TURN kommen diese
+          //   NIE durch und die App crasht/hängt bei ICE-Gathering.
+          //
+          // coturn läuft auf dem Hostinger VPS (72.62.154.95:3478).
+          // Creds sind public — abuse-mitigated via coturn rate-limits
+          // + denied-peer-ip für private Subnetze.
+          //
+          // Meek-TURN auf Port 443 (TLS): Durchdringt auch Firewalls
+          // die nur HTTPS (443) erlauben — Hotel-Captive-Portals, Firmen-Netze.
+          rtcConfiguration: RTCConfiguration(
+            iceServers: [
+              // STUN — öffentliche IP-Erkennung (kostenlos, schnell)
+              const RTCIceServer(urls: ['stun:stun.l.google.com:19302']),
+              const RTCIceServer(urls: ['stun:stun1.l.google.com:19302']),
+              const RTCIceServer(urls: ['stun:stun.cloudflare.com:3478']),
+              // TURN/UDP — schnellster Relay-Pfad für CGNAT/NAT
+              RTCIceServer(
+                urls: ['turn:72.62.154.95:3478?transport=udp'],
+                username: 'wbuser',
+                credential: 'wbturn2025!',
               ),
-            ),
-          )
+              // TURN/TCP — Fallback wenn UDP blockiert (manche Firmen-Netze)
+              RTCIceServer(
+                urls: ['turn:72.62.154.95:3478?transport=tcp'],
+                username: 'wbuser',
+                credential: 'wbturn2025!',
+              ),
+              // TURNS/TLS auf 443 — ultimativer Fallback: durchdringt
+              // selbst Firewalls die nur HTTPS erlauben (Hotel, Flughafen)
+              RTCIceServer(
+                urls: ['turns:72.62.154.95:443?transport=tcp'],
+                username: 'wbuser',
+                credential: 'wbturn2025!',
+              ),
+            ],
+          ),
+        ),
+      )
           .timeout(
-            // L4: 120s statt 90s — bei 2G/3G + multi-stage TURN-Fallback
-            // braucht ICE-Gathering bis zu 100s (DNS + STUN-Probes + TURN-Allocate
-            // pro Kandidat mal 4 Protokolle = sehr langsam).
-            const Duration(seconds: 120),
-            onTimeout: () {
-              // L6: Klarerer Fehlertext der Diagnose erlaubt
-              throw Exception(
-                'ICE-Verbindung fehlgeschlagen nach 120s. '
-                'Wahrscheinlich blockiert dein Netzwerk WebRTC '
-                '(UDP gesperrt oder symmetrisches NAT). '
-                'Bitte ein anderes Netzwerk versuchen (Mobilfunk ↔ WLAN).',
-              );
-            },
+        // L4: 120s statt 90s — bei 2G/3G + multi-stage TURN-Fallback
+        // braucht ICE-Gathering bis zu 100s (DNS + STUN-Probes + TURN-Allocate
+        // pro Kandidat mal 4 Protokolle = sehr langsam).
+        const Duration(seconds: 120),
+        onTimeout: () {
+          // L6: Klarerer Fehlertext der Diagnose erlaubt
+          throw Exception(
+            'ICE-Verbindung fehlgeschlagen nach 120s. '
+            'Wahrscheinlich blockiert dein Netzwerk WebRTC '
+            '(UDP gesperrt oder symmetrisches NAT). '
+            'Bitte ein anderes Netzwerk versuchen (Mobilfunk ↔ WLAN).',
           );
+        },
+      );
 
       // L10: Loggen wie lange ICE-Gathering wirklich dauerte
       final iceDuration = DateTime.now().difference(iceStart);
@@ -674,7 +679,8 @@ class LiveKitCallService extends ChangeNotifier {
       // Trade-off: Call dropt wenn User App minimiert. Akzeptabel bis
       // wir das Manifest nativ entschärfen (mediaProjection raus, eigener
       // Screen-Share-Flow). Web/iOS unbetroffen.
-      final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      final isAndroid =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
       if (!isAndroid) {
         try {
           await FlutterBackground.initialize(
@@ -698,7 +704,8 @@ class LiveKitCallService extends ChangeNotifier {
           }
         }
       } else if (kDebugMode) {
-        debugPrint('⏭️ Android: FlutterBackground übersprungen (Android 14+ mediaProjection-Crash-Workaround)');
+        debugPrint(
+            '⏭️ Android: FlutterBackground übersprungen (Android 14+ mediaProjection-Crash-Workaround)');
       }
 
       // Mikrofon beim Beitritt je nach User-Wunsch aktivieren.
@@ -708,7 +715,9 @@ class LiveKitCallService extends ChangeNotifier {
         await room.localParticipant?.setMicrophoneEnabled(initialMicEnabled);
         _micEnabled = initialMicEnabled;
         if (kDebugMode) {
-          debugPrint(initialMicEnabled ? '🎤 Mikrofon aktiviert' : '🔇 Stumm beigetreten (Zuhörer)');
+          debugPrint(initialMicEnabled
+              ? '🎤 Mikrofon aktiviert'
+              : '🔇 Stumm beigetreten (Zuhörer)');
         }
       } catch (e) {
         if (kDebugMode) {
@@ -722,7 +731,6 @@ class LiveKitCallService extends ChangeNotifier {
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ setPreferSpeakerOutput failed: $e');
       }
-
 
       _setState(LiveKitConnectionState.connected);
       _startDurationTimer();
@@ -755,13 +763,15 @@ class LiveKitCallService extends ChangeNotifier {
 
       // 🎤 Voice-Session registrieren (Live-Banner + Push-Notification)
       final lp3 = room.localParticipant;
-      VoiceSessionService.instance.joinSession(
-        roomName: roomName,
-        world: world,
-        userId: lp3?.identity,
-        username: lp3?.identity ?? displayName,
-        displayName: displayName ?? lp3?.identity,
-      ).ignore();
+      VoiceSessionService.instance
+          .joinSession(
+            roomName: roomName,
+            world: world,
+            userId: lp3?.identity,
+            username: lp3?.identity ?? displayName,
+            displayName: displayName ?? lp3?.identity,
+          )
+          .ignore();
     } catch (e) {
       _errorMessage = _friendlyError(e);
       _setState(LiveKitConnectionState.error);
@@ -831,7 +841,8 @@ class LiveKitCallService extends ChangeNotifier {
     });
     listener.on<ParticipantDisconnectedEvent>((event) {
       if (kDebugMode) {
-        debugPrint('👤 LiveKit: participant left — ${event.participant.identity}');
+        debugPrint(
+            '👤 LiveKit: participant left — ${event.participant.identity}');
       }
       notifyListeners();
     });
@@ -925,7 +936,8 @@ class LiveKitCallService extends ChangeNotifier {
 
         // 🎙️ B8: Caption-Event → LiveCaptionService weiterleiten
         if (type == 'caption') {
-          LiveCaptionService.instance.handleIncomingData(data, event.participant);
+          LiveCaptionService.instance
+              .handleIncomingData(data, event.participant);
           return;
         }
 
@@ -936,7 +948,8 @@ class LiveKitCallService extends ChangeNotifier {
         }
         // 💬 In-Call-Chat-Event
         if (type == 'incall_chat') {
-          InCallChatService.instance.handleIncomingData(data, event.participant);
+          InCallChatService.instance
+              .handleIncomingData(data, event.participant);
           return;
         }
 
@@ -996,7 +1009,8 @@ class LiveKitCallService extends ChangeNotifier {
 
   /// Verlässt den Raum und räumt alle Ressourcen auf.
   Future<void> leaveRoom() async {
-    _userInitiatedLeave = true; // L3: User-initiierter Leave → kein Auto-Reconnect
+    _userInitiatedLeave =
+        true; // L3: User-initiierter Leave → kein Auto-Reconnect
     _cancelAutoReconnect();
     _stopDurationTimer();
     _cancelTokenRefresh();
@@ -1010,10 +1024,12 @@ class LiveKitCallService extends ChangeNotifier {
         for (final pub in lp.videoTrackPublications.toList()) {
           if (pub.source != TrackSource.screenShareVideo) continue;
           try {
-            await lp.removePublishedTrack(pub.sid).timeout(
-                const Duration(seconds: 3));
+            await lp
+                .removePublishedTrack(pub.sid)
+                .timeout(const Duration(seconds: 3));
           } catch (e) {
-            if (kDebugMode) debugPrint('⚠️ [LiveKit] removePublishedTrack (leaveRoom): $e');
+            if (kDebugMode)
+              debugPrint('⚠️ [LiveKit] removePublishedTrack (leaveRoom): $e');
           }
         }
       }
@@ -1046,10 +1062,12 @@ class LiveKitCallService extends ChangeNotifier {
     AudioFeedbackService.instance.detachRoom();
     // 🎤 Voice-Session beenden (Live-Banner + Push)
     final lp4 = _room?.localParticipant;
-    VoiceSessionService.instance.leaveSession(
-      roomName: _roomName,
-      userId: lp4?.identity,
-    ).ignore();
+    VoiceSessionService.instance
+        .leaveSession(
+          roomName: _roomName,
+          userId: lp4?.identity,
+        )
+        .ignore();
 
     try {
       await _room?.disconnect();
@@ -1072,8 +1090,8 @@ class LiveKitCallService extends ChangeNotifier {
     _cameraEnabled = false;
     _screenShareEnabled = false;
     _handRaised = false;
-    _audioOnlyMode = false;     // Reset für nächsten Join
-    _cameraIndex = 0;          // 🔄 Bundle 3.4: Index für nächsten Join resetten
+    _audioOnlyMode = false; // Reset für nächsten Join
+    _cameraIndex = 0; // 🔄 Bundle 3.4: Index für nächsten Join resetten
     _activeSpeakers = {};
     speakersNotifier.value = const <String>{};
     durationNotifier.value = 0;
@@ -1181,7 +1199,8 @@ class LiveKitCallService extends ChangeNotifier {
     // (Akku/Bandbreite zu schützen). Ausschalten bleibt erlaubt.
     final wantTarget = !_cameraEnabled;
     if (wantTarget && _audioOnlyMode) {
-      _errorMessage = 'Audio-Only-Modus ist aktiv. Bitte zuerst deaktivieren um die Kamera zu nutzen.';
+      _errorMessage =
+          'Audio-Only-Modus ist aktiv. Bitte zuerst deaktivieren um die Kamera zu nutzen.';
       notifyListeners();
       return;
     }
@@ -1314,13 +1333,15 @@ class LiveKitCallService extends ChangeNotifier {
       );
       if (timedOut) {
         _cameraIndex = prevIndex; // Revert damit nächster Tap wieder versucht
-        _errorMessage = 'Kamera-Wechsel fehlgeschlagen. Bitte erneut versuchen.';
+        _errorMessage =
+            'Kamera-Wechsel fehlgeschlagen. Bitte erneut versuchen.';
         notifyListeners();
         return;
       }
       _errorMessage = null;
       if (kDebugMode) {
-        debugPrint('📷 Camera gewechselt → ${(next as dynamic).label ?? _cameraIndex}');
+        debugPrint(
+            '📷 Camera gewechselt → ${(next as dynamic).label ?? _cameraIndex}');
       }
       notifyListeners();
     } catch (e) {
@@ -1392,16 +1413,20 @@ class LiveKitCallService extends ChangeNotifier {
         for (final pub in lp.videoTrackPublications.toList()) {
           if (pub.source != TrackSource.screenShareVideo) continue;
           try {
-            await lp.removePublishedTrack(pub.sid).timeout(
-                const Duration(seconds: 3));
+            await lp
+                .removePublishedTrack(pub.sid)
+                .timeout(const Duration(seconds: 3));
           } catch (e) {
-            if (kDebugMode) debugPrint('⚠️ [LiveKit] ScreenShare Track remove: $e');
+            if (kDebugMode)
+              debugPrint('⚠️ [LiveKit] ScreenShare Track remove: $e');
           }
         }
         try {
           await FlutterBackground.disableBackgroundExecution();
         } catch (e) {
-          if (kDebugMode) debugPrint('⚠️ [LiveKit] Background deaktivieren (ScreenShare): $e');
+          if (kDebugMode)
+            debugPrint(
+                '⚠️ [LiveKit] Background deaktivieren (ScreenShare): $e');
         }
       }
       _errorMessage = null; // Erfolg → alte Fehler löschen
@@ -1478,16 +1503,14 @@ class LiveKitCallService extends ChangeNotifier {
   Set<String> _activeSpeakers = {};
   Set<String> get activeSpeakers => _activeSpeakers;
 
-  bool isActiveSpeaker(String identity) =>
-      _activeSpeakers.contains(identity);
+  bool isActiveSpeaker(String identity) => _activeSpeakers.contains(identity);
 
   /// Lokal: pro Remote-Identity ein Multiplier 0.0..1.5 für Wiedergabe-Lautstärke.
   /// Wert 0.0 = stumm, 1.0 = normal (default), 1.5 = lauter.
   /// Wird NICHT gebroadcastet — rein lokal beim Hörer.
   final Map<String, double> _remoteVolumes = {};
 
-  double remoteVolumeOf(String identity) =>
-      _remoteVolumes[identity] ?? 1.0;
+  double remoteVolumeOf(String identity) => _remoteVolumes[identity] ?? 1.0;
 
   /// Setzt lokal die Wiedergabe-Lautstärke für einen Remote-User.
   /// volume: 0.0 (stumm) bis 1.5 (laut), 1.0 = original.
@@ -1655,7 +1678,8 @@ class LiveKitCallService extends ChangeNotifier {
         // 2G/3G/Edge oft an dem Punkt wo Audio noch durchkommt.
         final useAudioOnly = _audioOnlyMode || _reconnectAttempt >= 3;
         if (useAudioOnly && !_audioOnlyMode && kDebugMode) {
-          debugPrint('🎙️ Auto-Reconnect: Audio-Only-Modus aktiviert (Versuch $_reconnectAttempt)');
+          debugPrint(
+              '🎙️ Auto-Reconnect: Audio-Only-Modus aktiviert (Versuch $_reconnectAttempt)');
         }
 
         await joinRoom(
@@ -1697,7 +1721,8 @@ class LiveKitCallService extends ChangeNotifier {
       // Fallback: Wenn exp nicht dekodierbar ist (malformed JWT), trotzdem
       // refreshen — nach 3h30min — damit User nach 4h nicht silent disconnected.
       if (kDebugMode) {
-        debugPrint('⚠️ Token-exp nicht dekodierbar → Fallback-Refresh in 3h30min');
+        debugPrint(
+            '⚠️ Token-exp nicht dekodierbar → Fallback-Refresh in 3h30min');
       }
       _tokenRefreshTimer =
           Timer(const Duration(hours: 3, minutes: 30), _refreshToken);
@@ -1713,7 +1738,8 @@ class LiveKitCallService extends ChangeNotifier {
       return;
     }
     if (kDebugMode) {
-      debugPrint('🔁 Token-Refresh in ${leadSeconds}s geplant (exp in ${secondsLeft}s)');
+      debugPrint(
+          '🔁 Token-Refresh in ${leadSeconds}s geplant (exp in ${secondsLeft}s)');
     }
     _tokenRefreshTimer = Timer(Duration(seconds: leadSeconds), _refreshToken);
   }
@@ -1752,19 +1778,21 @@ class LiveKitCallService extends ChangeNotifier {
       final bearerToken = session?.accessToken ?? ApiConfig.supabaseAnonKey;
       final guestId = await _getOrCreateClientGuestId();
 
-      final res = await http.post(
-        Uri.parse(ApiConfig.livekitTokenUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $bearerToken',
-          'apikey': ApiConfig.supabaseAnonKey,
-        },
-        body: jsonEncode({
-          'roomName': roomName,
-          if (_activeDisplayName != null) 'displayName': _activeDisplayName,
-          'clientGuestId': guestId,
-        }),
-      ).timeout(const Duration(seconds: 15));
+      final res = await http
+          .post(
+            Uri.parse(ApiConfig.livekitTokenUrl),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $bearerToken',
+              'apikey': ApiConfig.supabaseAnonKey,
+            },
+            body: jsonEncode({
+              'roomName': roomName,
+              if (_activeDisplayName != null) 'displayName': _activeDisplayName,
+              'clientGuestId': guestId,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (res.statusCode != 200) {
         if (kDebugMode) {
@@ -1772,9 +1800,10 @@ class LiveKitCallService extends ChangeNotifier {
         }
         // L11: Exponential backoff (60s → 120s → 300s → 600s)
         _tokenRefreshFailureCount++;
-        final backoffSec = [60, 120, 300, 600][
-            _tokenRefreshFailureCount.clamp(1, 4) - 1];
-        _tokenRefreshTimer = Timer(Duration(seconds: backoffSec), _refreshToken);
+        final backoffSec =
+            [60, 120, 300, 600][_tokenRefreshFailureCount.clamp(1, 4) - 1];
+        _tokenRefreshTimer =
+            Timer(Duration(seconds: backoffSec), _refreshToken);
         return;
       }
       _tokenRefreshFailureCount = 0; // Reset bei Erfolg
@@ -1799,8 +1828,8 @@ class LiveKitCallService extends ChangeNotifier {
       if (kDebugMode) debugPrint('⚠️ Token-Refresh fehlgeschlagen: $e');
       // L11: Exponential backoff (60s → 120s → 300s → 600s)
       _tokenRefreshFailureCount++;
-      final backoffSec = [60, 120, 300, 600][
-          _tokenRefreshFailureCount.clamp(1, 4) - 1];
+      final backoffSec =
+          [60, 120, 300, 600][_tokenRefreshFailureCount.clamp(1, 4) - 1];
       _tokenRefreshTimer = Timer(Duration(seconds: backoffSec), _refreshToken);
     }
   }

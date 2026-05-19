@@ -32,7 +32,8 @@ class SynchronicityEntry {
         'significance': significance,
       };
 
-  factory SynchronicityEntry.fromJson(Map<String, dynamic> json) => SynchronicityEntry(
+  factory SynchronicityEntry.fromJson(Map<String, dynamic> json) =>
+      SynchronicityEntry(
         timestamp: DateTime.parse(json['timestamp'] as String),
         description: json['description'] as String,
         pattern: json['pattern'] as String?,

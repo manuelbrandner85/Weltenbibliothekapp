@@ -31,21 +31,25 @@ class MultimediaSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // VIDEOS
-            if (multimedia!['videos'] != null && (multimedia!['videos'] as List).isNotEmpty)
+            if (multimedia!['videos'] != null &&
+                (multimedia!['videos'] as List).isNotEmpty)
               _buildVideosSection(context, multimedia!['videos'] as List),
-            
+
             // BILDER
-            if (multimedia!['images'] != null && (multimedia!['images'] as List).isNotEmpty)
+            if (multimedia!['images'] != null &&
+                (multimedia!['images'] as List).isNotEmpty)
               _buildImagesSection(context, multimedia!['images'] as List),
-            
+
             // DOKUMENTE
-            if (multimedia!['documents'] != null && (multimedia!['documents'] as List).isNotEmpty)
+            if (multimedia!['documents'] != null &&
+                (multimedia!['documents'] as List).isNotEmpty)
               _buildDocumentsSection(context, multimedia!['documents'] as List),
-            
+
             // AUDIO
-            if (multimedia!['audio'] != null && (multimedia!['audio'] as List).isNotEmpty)
+            if (multimedia!['audio'] != null &&
+                (multimedia!['audio'] as List).isNotEmpty)
               _buildAudioSection(context, multimedia!['audio'] as List),
           ],
         ),
@@ -72,13 +76,13 @@ class MultimediaSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ...videos.map((video) => _buildMediaCard(
-          context,
-          title: video['title'] ?? 'Video',
-          subtitle: video['platform'] ?? '',
-          url: video['url'],
-          icon: Icons.play_circle_filled,
-          iconColor: Colors.red,
-        )),
+              context,
+              title: video['title'] ?? 'Video',
+              subtitle: video['platform'] ?? '',
+              url: video['url'],
+              icon: Icons.play_circle_filled,
+              iconColor: Colors.red,
+            )),
         const SizedBox(height: 16),
       ],
     );
@@ -103,13 +107,13 @@ class MultimediaSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ...images.map((image) => _buildMediaCard(
-          context,
-          title: image['title'] ?? 'Bild',
-          subtitle: image['source'] ?? '',
-          url: image['url'],
-          icon: Icons.image,
-          iconColor: Colors.blue,
-        )),
+              context,
+              title: image['title'] ?? 'Bild',
+              subtitle: image['source'] ?? '',
+              url: image['url'],
+              icon: Icons.image,
+              iconColor: Colors.blue,
+            )),
         const SizedBox(height: 16),
       ],
     );
@@ -134,13 +138,13 @@ class MultimediaSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ...documents.map((doc) => _buildMediaCard(
-          context,
-          title: doc['title'] ?? 'Dokument',
-          subtitle: '${doc['source'] ?? ''} • ${doc['type'] ?? 'PDF'}',
-          url: doc['url'],
-          icon: Icons.picture_as_pdf,
-          iconColor: Colors.orange,
-        )),
+              context,
+              title: doc['title'] ?? 'Dokument',
+              subtitle: '${doc['source'] ?? ''} • ${doc['type'] ?? 'PDF'}',
+              url: doc['url'],
+              icon: Icons.picture_as_pdf,
+              iconColor: Colors.orange,
+            )),
         const SizedBox(height: 16),
       ],
     );
@@ -165,13 +169,13 @@ class MultimediaSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ...audio.map((a) => _buildMediaCard(
-          context,
-          title: a['title'] ?? 'Audio',
-          subtitle: a['source'] ?? '',
-          url: a['url'],
-          icon: Icons.headphones,
-          iconColor: Colors.purple,
-        )),
+              context,
+              title: a['title'] ?? 'Audio',
+              subtitle: a['source'] ?? '',
+              url: a['url'],
+              icon: Icons.headphones,
+              iconColor: Colors.purple,
+            )),
       ],
     );
   }
@@ -206,16 +210,15 @@ class MultimediaSection extends StatelessWidget {
   Future<void> _launchUrl(BuildContext context, String url) async {
     try {
       final Uri uri = Uri.parse(url);
-      
+
       if (!await canLaunchUrl(uri)) {
         throw 'Kann URL nicht öffnen: $url';
       }
-      
+
       await launchUrl(
         uri,
         mode: LaunchMode.externalApplication, // Öffnet im Browser
       );
-      
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

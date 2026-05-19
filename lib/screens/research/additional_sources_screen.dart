@@ -206,8 +206,8 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
   List<_Source> get _filtered {
     final q = _search.trim().toLowerCase();
     return _sources.where((s) {
-      if (_filterCategory == 'bookmarks' &&
-          !_bookmarks.contains(s.url)) return false;
+      if (_filterCategory == 'bookmarks' && !_bookmarks.contains(s.url))
+        return false;
       if (_filterCategory != 'all' &&
           _filterCategory != 'bookmarks' &&
           s.category != _filterCategory) return false;

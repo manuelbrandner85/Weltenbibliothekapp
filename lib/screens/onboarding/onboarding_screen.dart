@@ -3,14 +3,14 @@
 library;
 
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import 'package:provider/provider.dart';
 import '../../services/onboarding_service.dart';
 import '../../services/haptic_feedback_service.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
-  
+
   const OnboardingScreen({
     super.key,
     required this.onComplete,
@@ -20,7 +20,7 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> 
+class _OnboardingScreenState extends State<OnboardingScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -29,12 +29,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -42,7 +42,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       parent: _controller,
       curve: Curves.easeOut,
     ));
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.3, 0),
       end: Offset.zero,
@@ -50,7 +50,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       parent: _controller,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _controller.forward();
   }
 
@@ -72,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       child: Consumer<OnboardingService>(
         builder: (context, onboarding, child) {
           final step = onboarding.currentStepData;
-          
+
           return Material(
             child: Container(
               decoration: BoxDecoration(
@@ -82,7 +82,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   colors: [
                     const Color(0xFF0A0A0A),
                     const Color(0xFF1A1A2E),
-                    onboarding.currentStep.isEven 
+                    onboarding.currentStep.isEven
                         ? const Color(0xFF2196F3).withValues(alpha: 0.2)
                         : const Color(0xFF9C27B0).withValues(alpha: 0.2),
                   ],
@@ -94,8 +94,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     // Background particles
                     ...List.generate(20, (index) {
                       return Positioned(
-                        left: (index * 50.0) % MediaQuery.of(context).size.width,
-                        top: (index * 70.0) % MediaQuery.of(context).size.height,
+                        left:
+                            (index * 50.0) % MediaQuery.of(context).size.width,
+                        top:
+                            (index * 70.0) % MediaQuery.of(context).size.height,
                         child: FadeTransition(
                           opacity: _fadeAnimation,
                           child: Container(
@@ -109,7 +111,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         ),
                       );
                     }),
-                    
+
                     // Main content
                     Column(
                       children: [
@@ -136,7 +138,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                   ),
                                 ),
                               ),
-                              
+
                               // Skip button
                               TextButton(
                                 onPressed: () async {
@@ -155,7 +157,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             ],
                           ),
                         ),
-                        
+
                         // Content
                         Expanded(
                           child: FadeTransition(
@@ -163,7 +165,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             child: SlideTransition(
                               position: _slideAnimation,
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 32),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 32),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -172,9 +175,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                       step.iconData ?? '🌟',
                                       style: const TextStyle(fontSize: 80),
                                     ),
-                                    
+
                                     const SizedBox(height: 40),
-                                    
+
                                     // Title
                                     Text(
                                       step.title,
@@ -185,28 +188,30 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
-                                    
+
                                     const SizedBox(height: 20),
-                                    
+
                                     // Description
                                     Text(
                                       step.description,
                                       style: TextStyle(
                                         fontSize: 16,
-                                        color: Colors.white.withValues(alpha: 0.8),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.8),
                                         height: 1.6,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
-                                    
+
                                     const SizedBox(height: 60),
-                                    
+
                                     // Step counter
                                     Text(
                                       '${onboarding.currentStep + 1} von ${onboarding.steps.length}',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.white.withValues(alpha: 0.5),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.5),
                                       ),
                                     ),
                                   ],
@@ -215,7 +220,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             ),
                           ),
                         ),
-                        
+
                         // Navigation buttons
                         Padding(
                           padding: const EdgeInsets.all(32),
@@ -231,8 +236,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                       _animateTransition();
                                     },
                                     style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      side: const BorderSide(color: Colors.white38),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      side: const BorderSide(
+                                          color: Colors.white38),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -246,18 +253,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                     ),
                                   ),
                                 ),
-                              
+
                               if (onboarding.currentStep > 0)
                                 const SizedBox(width: 16),
-                              
+
                               // Next/Finish button
                               Expanded(
                                 flex: onboarding.currentStep == 0 ? 1 : 1,
                                 child: ElevatedButton(
                                   onPressed: () async {
                                     await HapticFeedbackService().success();
-                                    
-                                    if (onboarding.currentStep == onboarding.steps.length - 1) {
+
+                                    if (onboarding.currentStep ==
+                                        onboarding.steps.length - 1) {
                                       await onboarding.complete();
                                       widget.onComplete();
                                     } else {
@@ -266,16 +274,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: onboarding.currentStep.isEven
-                                        ? const Color(0xFF2196F3)
-                                        : const Color(0xFF9C27B0),
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    backgroundColor:
+                                        onboarding.currentStep.isEven
+                                            ? const Color(0xFF2196F3)
+                                            : const Color(0xFF9C27B0),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 16),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
                                   child: Text(
-                                    onboarding.currentStep == onboarding.steps.length - 1
+                                    onboarding.currentStep ==
+                                            onboarding.steps.length - 1
                                         ? 'Los geht\'s!'
                                         : 'Weiter',
                                     style: const TextStyle(

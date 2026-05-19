@@ -43,7 +43,6 @@ class MaterieHomeTabV5 extends StatefulWidget {
 
 class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     with TickerProviderStateMixin {
-
   // ── Animations ─────────────────────────────────────────────────────────
   late AnimationController _pulseCtrl;
   late AnimationController _entryCtrl;
@@ -74,28 +73,31 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   RealtimeChannel? _statsChannel;
 
   // ── Design Colors (via WbDesign-Tokens wo möglich) ────────────────────
-  static const _bg      = WbDesign.bgMaterie;
-  static const _card    = WbDesign.surfaceMaterie;
-  static const _cardB   = WbDesign.surfaceMaterieAlt;
-  static const _blue    = Color(0xFF2979FF);
-  static const _blueL   = Color(0xFF82B1FF);
-  static const _blueD   = Color(0xFF1A237E);
-  static const _cyan    = WbDesign.materieCyan;
-  static const _green   = Color(0xFF00E676);
-  static const _amber   = Color(0xFFFFAB00);
-  static const _red     = WbDesign.materieRed;
-  static const _purple  = Color(0xFF7C4DFF);
+  static const _bg = WbDesign.bgMaterie;
+  static const _card = WbDesign.surfaceMaterie;
+  static const _cardB = WbDesign.surfaceMaterieAlt;
+  static const _blue = Color(0xFF2979FF);
+  static const _blueL = Color(0xFF82B1FF);
+  static const _blueD = Color(0xFF1A237E);
+  static const _cyan = WbDesign.materieCyan;
+  static const _green = Color(0xFF00E676);
+  static const _amber = Color(0xFFFFAB00);
+  static const _red = WbDesign.materieRed;
+  static const _purple = Color(0xFF7C4DFF);
 
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(vsync: this,
-        duration: const Duration(seconds: 2))..repeat(reverse: true);
-    _entryCtrl = AnimationController(vsync: this,
-        duration: const Duration(milliseconds: 1000));
-    _particleCtrl = AnimationController(vsync: this,
-        duration: const Duration(seconds: 8))..repeat();
-    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _pulseCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat(reverse: true);
+    _entryCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1000));
+    _particleCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat();
+    _entryAnim =
+        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
     _entryCtrl.forward();
     _scrollCtrl.addListener(() {
       // Nur aktualisieren wenn sich der Offset signifikant ändert (verhindert 60fps rebuilds)
@@ -124,11 +126,17 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   // ── Data ───────────────────────────────────────────────────────────────
   Future<void> _loadAll() async {
-    if (mounted) setState(() { _loading = true; _errorMessage = null; });
+    if (mounted)
+      setState(() {
+        _loading = true;
+        _errorMessage = null;
+      });
     try {
       await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
     } catch (e) {
-      if (mounted) setState(() => _errorMessage = 'Daten konnten nicht geladen werden. Bitte Verbindung prüfen.');
+      if (mounted)
+        setState(() => _errorMessage =
+            'Daten konnten nicht geladen werden. Bitte Verbindung prüfen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -164,20 +172,21 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             .limit(500),
       ]);
 
-      final posts   = (results[0] as List?) ?? [];
-      final msgs    = (results[1] as List?) ?? [];
-      final likes   = posts.fold<int>(0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
-      final streak  = _calcStreak(msgs
+      final posts = (results[0] as List?) ?? [];
+      final msgs = (results[1] as List?) ?? [];
+      final likes = posts.fold<int>(
+          0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
+      final streak = _calcStreak(msgs
           .map((m) => DateTime.tryParse(m['created_at'] as String? ?? ''))
           .whereType<DateTime>()
           .toList());
 
       if (mounted) {
         setState(() {
-          _articles  = posts.length;
-          _sessions  = msgs.length;
+          _articles = posts.length;
+          _sessions = msgs.length;
           _bookmarks = likes;
-          _shares    = streak;
+          _shares = streak;
         });
       }
     } catch (_) {}
@@ -189,7 +198,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     int streak = 0;
     var cursor = DateTime.now();
     cursor = DateTime(cursor.year, cursor.month, cursor.day);
-    if (!daySet.contains(cursor)) cursor = cursor.subtract(const Duration(days: 1));
+    if (!daySet.contains(cursor))
+      cursor = cursor.subtract(const Duration(days: 1));
     while (daySet.contains(cursor)) {
       streak++;
       cursor = cursor.subtract(const Duration(days: 1));
@@ -199,10 +209,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   Future<void> _loadContent() async {
     try {
-      _latestArticles = await _dash.getRecentArticles(realm: 'materie', limit: 6);
-      _trending       = await _dash.getTrendingTopics(realm: 'materie', limit: 8);
-      final uid  = Supabase.instance.client.auth.currentUser?.id ??
-                   await StorageService().getUserId('materie');
+      _latestArticles =
+          await _dash.getRecentArticles(realm: 'materie', limit: 6);
+      _trending = await _dash.getTrendingTopics(realm: 'materie', limit: 8);
+      final uid = Supabase.instance.client.auth.currentUser?.id ??
+          await StorageService().getUserId('materie');
       // Unread-Count direkt aus DB (kein Umweg über getNotifications-Normalisierung)
       final unreadResult = await Supabase.instance.client
           .from('notifications')
@@ -221,35 +232,44 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     final client = Supabase.instance.client;
 
     // Realtime: community_posts → Content + Stats neu laden
-    _channel = client
-        .channel('materie_home_content')
+    _channel = client.channel('materie_home_content')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'community_posts',
-        callback: (_) { if (mounted) { _loadContent(); _loadStats(); } },
+        schema: 'public',
+        table: 'community_posts',
+        callback: (_) {
+          if (mounted) {
+            _loadContent();
+            _loadStats();
+          }
+        },
       )
       ..subscribe();
 
     // Realtime: chat_messages + community_posts → Stats neu laden
-    _statsChannel = client
-        .channel('materie_home_stats')
+    _statsChannel = client.channel('materie_home_stats')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'chat_messages',
-        callback: (_) { if (mounted) _loadStats(); },
+        schema: 'public',
+        table: 'chat_messages',
+        callback: (_) {
+          if (mounted) _loadStats();
+        },
       )
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'community_posts',
-        callback: (_) { if (mounted) _loadStats(); },
+        schema: 'public',
+        table: 'community_posts',
+        callback: (_) {
+          if (mounted) _loadStats();
+        },
       )
       ..subscribe();
 
     // Realtime: notifications → Glocken-Badge sofort aktualisieren
     final uid = client.auth.currentUser?.id;
     if (uid != null) {
-      _notifChannel = client
-          .channel('materie_home_notifs')
+      _notifChannel = client.channel('materie_home_notifs')
         ..onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
@@ -259,7 +279,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             column: 'user_id',
             value: uid,
           ),
-          callback: (_) { if (mounted) setState(() => _notifs++); },
+          callback: (_) {
+            if (mounted) setState(() => _notifs++);
+          },
         )
         ..onPostgresChanges(
           event: PostgresChangeEvent.update,
@@ -271,14 +293,17 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             value: uid,
           ),
           // Wenn mark-as-read → Badge neu berechnen (lade Unread-Count frisch)
-          callback: (_) { if (mounted) _refreshNotifCount(); },
+          callback: (_) {
+            if (mounted) _refreshNotifCount();
+          },
         )
         ..subscribe();
     }
 
     // Fallback-Timer: alle 5 Min vollen Reload (deckt Supabase-Realtime-Ausfälle ab)
-    _liveTimer = Timer.periodic(const Duration(minutes: 5),
-        (_) { if (mounted) _loadAll(); });
+    _liveTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      if (mounted) _loadAll();
+    });
   }
 
   Future<void> _refreshNotifCount() async {
@@ -314,8 +339,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────
-  Future<void> _go(Widget screen) => Navigator.push<void>(
-      context, MaterialPageRoute(builder: (_) => screen));
+  Future<void> _go(Widget screen) =>
+      Navigator.push<void>(context, MaterialPageRoute(builder: (_) => screen));
 
   /// Zum Recherche-Tab (Kaninchenbau) wechseln: bevorzugt via Parent-Tab-Switch
   /// (identisches Look & State wie Bottom-Nav-Klick); fällt auf
@@ -340,7 +365,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   String get _greeting {
     final h = DateTime.now().hour;
-    if (h < 5)  return 'Gute Nacht';
+    if (h < 5) return 'Gute Nacht';
     if (h < 12) return 'Guten Morgen';
     if (h < 17) return 'Guten Tag';
     if (h < 21) return 'Guten Abend';
@@ -370,14 +395,19 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                 child: Container(
                   width: double.infinity,
                   color: const Color(0xFFB71C1C),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
                       const Icon(Icons.wifi_off, color: Colors.white, size: 16),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.white, fontSize: 13))),
+                      Expanded(
+                          child: Text(_errorMessage!,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 13))),
                       IconButton(
-                        icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+                        icon: const Icon(Icons.refresh,
+                            color: Colors.white, size: 18),
                         onPressed: _loadAll,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -404,7 +434,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                     const SliverToBoxAdapter(child: DailyPathWidget()),
                     _buildActionGrid(),
                     _buildRecentRooms(),
-                    _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
+                    _buildSectionTitle('🔥 Trending',
+                        subtitle: 'Heiß diskutiert'),
                     SliverToBoxAdapter(
                       child: TrendingRoomsSection(
                         realm: 'materie',
@@ -412,7 +443,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                       ),
                     ),
                     _buildTrendingChips(),
-                    _buildSectionTitle('📰 Neueste Artikel', subtitle: 'Frisch aus der Welt'),
+                    _buildSectionTitle('📰 Neueste Artikel',
+                        subtitle: 'Frisch aus der Welt'),
                     _buildArticleCards(),
                     _buildExploreSection(),
                     const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
@@ -497,7 +529,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       builder: (_, __) => GestureDetector(
         onTap: () => _go(const StatsDashboardScreen(world: 'materie')),
         child: Container(
-          width: 54, height: 54,
+          width: 54,
+          height: 54,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
@@ -534,7 +567,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       children: [
         Text(_greeting,
             style: const TextStyle(
-                color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500)),
+                color: Colors.white54,
+                fontSize: 12,
+                fontWeight: FontWeight.w500)),
         const SizedBox(height: 2),
         Row(children: [
           Flexible(
@@ -547,8 +582,10 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                       ? _profile!.name!
                       : (_profile?.username ?? 'Explorer')),
               style: const TextStyle(
-                  color: Colors.white, fontSize: 20,
-                  fontWeight: FontWeight.bold, letterSpacing: -0.3),
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -563,11 +600,14 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           AnimatedBuilder(
             animation: _pulseCtrl,
             builder: (_, __) => Container(
-              width: 6, height: 6,
+              width: 6,
+              height: 6,
               decoration: BoxDecoration(
                 color: _green.withValues(alpha: 0.6 + _pulseCtrl.value * 0.4),
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.5), blurRadius: 4)],
+                boxShadow: [
+                  BoxShadow(color: _green.withValues(alpha: 0.5), blurRadius: 4)
+                ],
               ),
             ),
           ),
@@ -587,7 +627,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       child: GestureDetector(
         onTap: _toggleWorldSubscription,
         child: Container(
-          width: 44, height: 44,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: _worldSubscribed
                 ? _blue.withValues(alpha: 0.2)
@@ -600,9 +641,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             ),
           ),
           child: Icon(
-            _worldSubscribed
-                ? Icons.newspaper
-                : Icons.newspaper_outlined,
+            _worldSubscribed ? Icons.newspaper : Icons.newspaper_outlined,
             color: _worldSubscribed ? _blue : Colors.white,
             size: 20,
           ),
@@ -622,7 +661,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.17),
               borderRadius: BorderRadius.circular(14),
@@ -636,14 +676,19 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           ),
           if (_notifs > 0)
             Positioned(
-              right: -4, top: -4,
+              right: -4,
+              top: -4,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: _red, shape: BoxShape.circle),
+                decoration:
+                    const BoxDecoration(color: _red, shape: BoxShape.circle),
                 constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                 child: Text(
                   _notifs > 9 ? '9+' : '$_notifs',
-                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -668,7 +713,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           ],
         ),
         child: Row(children: [
-          Icon(Icons.search_rounded, color: _blueL.withValues(alpha: 0.9), size: 20),
+          Icon(Icons.search_rounded,
+              color: _blueL.withValues(alpha: 0.9), size: 20),
           const SizedBox(width: 10),
           const Expanded(
             child: Text('Artikel, Themen, Fakten suchen…',
@@ -682,7 +728,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
               border: Border.all(color: _blue.withValues(alpha: 0.35)),
             ),
             child: const Text('KI-Suche',
-                style: TextStyle(color: _blueL, fontSize: 10, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _blueL, fontSize: 10, fontWeight: FontWeight.w700)),
           ),
         ]),
       ),
@@ -692,10 +739,26 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   // ── LIVE STAT BANNER ───────────────────────────────────────────────────
   Widget _buildLiveStatBanner() {
     final stats = [
-      _StatDef(icon: Icons.edit_note,             label: 'Beiträge',    value: _articles,  color: _blue),
-      _StatDef(icon: Icons.chat_bubble_outline,   label: 'Nachrichten', value: _sessions,  color: _cyan),
-      _StatDef(icon: Icons.favorite_border,       label: 'Likes',       value: _bookmarks, color: _red),
-      _StatDef(icon: Icons.local_fire_department, label: 'Streak',      value: _shares,    color: _amber),
+      _StatDef(
+          icon: Icons.edit_note,
+          label: 'Beiträge',
+          value: _articles,
+          color: _blue),
+      _StatDef(
+          icon: Icons.chat_bubble_outline,
+          label: 'Nachrichten',
+          value: _sessions,
+          color: _cyan),
+      _StatDef(
+          icon: Icons.favorite_border,
+          label: 'Likes',
+          value: _bookmarks,
+          color: _red),
+      _StatDef(
+          icon: Icons.local_fire_department,
+          label: 'Streak',
+          value: _shares,
+          color: _amber),
     ];
 
     return SliverToBoxAdapter(
@@ -718,13 +781,16 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                 final s = e.value;
                 return Expanded(
                   child: GestureDetector(
-                    onTap: () => _go(const StatsDashboardScreen(world: 'materie')),
+                    onTap: () =>
+                        _go(const StatsDashboardScreen(world: 'materie')),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       decoration: i < stats.length - 1
                           ? BoxDecoration(
                               border: Border(
-                                right: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+                                right: BorderSide(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.06)),
                               ),
                             )
                           : null,
@@ -737,14 +803,17 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                               ? _Shimmer(w: 26, h: 16, r: 4)
                               : Text('${s.value}',
                                   style: TextStyle(
-                                      color: s.color, fontSize: 16,
+                                      color: s.color,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold)),
                           const SizedBox(height: 1),
                           Text(s.label,
                               style: const TextStyle(
-                                  color: Colors.white38, fontSize: 9,
+                                  color: Colors.white38,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w500),
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),
@@ -790,7 +859,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         icon: Icons.auto_stories_rounded,
         label: 'Recherche',
         sub: 'Artikel & Fakten',
-        gradient: [const Color(0xFF0D47A1), const Color(0xFF1565C0), const Color(0xFF2979FF)],
+        gradient: [
+          const Color(0xFF0D47A1),
+          const Color(0xFF1565C0),
+          const Color(0xFF2979FF)
+        ],
         badge: 0,
         onTap: _openRechercheTab,
       ),
@@ -798,7 +871,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         icon: Icons.forum_rounded,
         label: 'Live Chat',
         sub: 'Jetzt diskutieren',
-        gradient: [const Color(0xFF006064), const Color(0xFF00838F), const Color(0xFF00E5FF)],
+        gradient: [
+          const Color(0xFF006064),
+          const Color(0xFF00838F),
+          const Color(0xFF00E5FF)
+        ],
         badge: _notifs,
         onTap: () => _go(const MaterieLiveChatScreen()),
       ),
@@ -806,7 +883,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         icon: Icons.timeline_rounded,
         label: 'Zeitlinie',
         sub: 'Geschichte & Ereignisse',
-        gradient: [const Color(0xFF1B5E20), const Color(0xFF2E7D32), const Color(0xFF43A047)],
+        gradient: [
+          const Color(0xFF1B5E20),
+          const Color(0xFF2E7D32),
+          const Color(0xFF43A047)
+        ],
         badge: 0,
         onTap: _openRechercheTab,
       ),
@@ -814,7 +895,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         icon: Icons.collections_bookmark_rounded,
         label: 'Gespeichert',
         sub: 'Deine Sammlung',
-        gradient: [const Color(0xFFE65100), const Color(0xFFF57C00), const Color(0xFFFFAB00)],
+        gradient: [
+          const Color(0xFFE65100),
+          const Color(0xFFF57C00),
+          const Color(0xFFFFAB00)
+        ],
         badge: _bookmarks > 0 ? _bookmarks : 0,
         onTap: () => _go(const BookmarksScreen()),
       ),
@@ -822,7 +907,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         icon: Icons.manage_search_rounded,
         label: 'OSINT Tools',
         sub: 'Bild · Leak · Krypto',
-        gradient: [const Color(0xFF4A0000), const Color(0xFF7B0000), const Color(0xFFE53935)],
+        gradient: [
+          const Color(0xFF4A0000),
+          const Color(0xFF7B0000),
+          const Color(0xFFE53935)
+        ],
         badge: 0,
         onTap: () => _go(const OsintToolsHub()),
       ),
@@ -877,7 +966,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             boxShadow: [
               BoxShadow(
                   color: t.gradient.last.withValues(alpha: 0.3),
-                  blurRadius: 20, offset: const Offset(0, 8)),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8)),
             ],
           ),
           child: ClipRRect(
@@ -886,9 +976,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
               children: [
                 // Decorative background circles
                 Positioned(
-                  right: -16, bottom: -16,
+                  right: -16,
+                  bottom: -16,
                   child: Container(
-                    width: 72, height: 72,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.07),
@@ -896,9 +988,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                   ),
                 ),
                 Positioned(
-                  right: -4, top: -20,
+                  right: -4,
+                  top: -20,
                   child: Container(
-                    width: 40, height: 40,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.04),
@@ -922,7 +1016,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                       const Spacer(),
                       Text(t.label,
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 13,
+                              color: Colors.white,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 1),
                       Text(t.sub,
@@ -935,9 +1030,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                 // Badge
                 if (t.badge > 0)
                   Positioned(
-                    right: 10, top: 10,
+                    right: 10,
+                    top: 10,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
@@ -945,7 +1042,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                       child: Text(
                         t.badge > 9 ? '9+' : '${t.badge}',
                         style: TextStyle(
-                            fontSize: 9, fontWeight: FontWeight.bold,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
                             color: t.gradient.last),
                       ),
                     ),
@@ -965,14 +1063,17 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
         child: Row(children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 17,
+                      color: Colors.white,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold)),
               if (subtitle.isNotEmpty)
                 Text(subtitle,
-                    style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                    style:
+                        const TextStyle(color: Colors.white38, fontSize: 12)),
             ]),
           ),
           GestureDetector(
@@ -985,7 +1086,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                 border: Border.all(color: _blue.withValues(alpha: 0.3)),
               ),
               child: const Text('Alle →',
-                  style: TextStyle(color: _blueL, fontSize: 11,
+                  style: TextStyle(
+                      color: _blueL,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600)),
             ),
           ),
@@ -1066,7 +1169,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(meta.$1, style: const TextStyle(fontSize: 14)),
+                              Text(meta.$1,
+                                  style: const TextStyle(fontSize: 14)),
                               const SizedBox(width: 6),
                               Text(
                                 meta.$2,
@@ -1094,8 +1198,19 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   // ── TRENDING CHIPS ─────────────────────────────────────────────────────
   Widget _buildTrendingChips() {
     final topics = _trending.isNotEmpty
-        ? _trending.map((t) => t['topic'] ?? t['title'] ?? '').whereType<String>().toList()
-        : ['UFO', 'Geopolitik', 'Technologie', 'Medien', 'Wissenschaft', 'Geschichte', 'Deep State'];
+        ? _trending
+            .map((t) => t['topic'] ?? t['title'] ?? '')
+            .whereType<String>()
+            .toList()
+        : [
+            'UFO',
+            'Geopolitik',
+            'Technologie',
+            'Medien',
+            'Wissenschaft',
+            'Geschichte',
+            'Deep State'
+          ];
 
     final chipColors = [_blue, _cyan, _red, _amber, _green, _purple, _blueL];
 
@@ -1120,15 +1235,16 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
               onTap: _openRechercheTab,
               child: Container(
                 margin: const EdgeInsets.only(right: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: c.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(color: c.withValues(alpha: 0.3)),
                 ),
                 child: Text(topic,
-                    style: TextStyle(color: c, fontSize: 13,
-                        fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        color: c, fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             );
           },
@@ -1144,10 +1260,12 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
-            children: List.generate(3, (_) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _Shimmer(w: double.infinity, h: 88, r: 16),
-            )),
+            children: List.generate(
+                3,
+                (_) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _Shimmer(w: double.infinity, h: 88, r: 16),
+                    )),
           ),
         ),
       );
@@ -1166,13 +1284,20 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
               border: Border.all(color: _blue.withValues(alpha: 0.15)),
             ),
             child: Column(children: [
-              Icon(Icons.article_outlined, color: _blueL.withValues(alpha: 0.4), size: 44),
+              Icon(Icons.article_outlined,
+                  color: _blueL.withValues(alpha: 0.4), size: 44),
               const SizedBox(height: 14),
               const Text('Artikel entdecken',
-                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 15)),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15)),
               const SizedBox(height: 6),
               const Text('Zur Recherche →',
-                  style: TextStyle(color: _blueL, fontSize: 13, fontWeight: FontWeight.w500)),
+                  style: TextStyle(
+                      color: _blueL,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500)),
             ]),
           ),
         ),
@@ -1196,9 +1321,10 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             );
           }
           return Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16,
-                i == _latestArticles.length - 1 ? 0 : 10),
-            child: _ArticleCard(article: a, onTap: () => _goArticle(a), accent: _blue),
+            padding: EdgeInsets.fromLTRB(
+                16, 0, 16, i == _latestArticles.length - 1 ? 0 : 10),
+            child: _ArticleCard(
+                article: a, onTap: () => _goArticle(a), accent: _blue),
           );
         },
         childCount: _latestArticles.length,
@@ -1227,32 +1353,45 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
               borderRadius: BorderRadius.circular(22),
               border: Border.all(color: _blue.withValues(alpha: 0.3)),
               boxShadow: [
-                BoxShadow(color: _blue.withValues(alpha: 0.15), blurRadius: 24, offset: const Offset(0, 8)),
+                BoxShadow(
+                    color: _blue.withValues(alpha: 0.15),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8)),
               ],
             ),
             child: Row(children: [
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Statistiken & Analyse',
-                      style: TextStyle(color: Colors.white, fontSize: 15,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text('Deine persönlichen Insights',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 12)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Statistiken & Analyse',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('Deine persönlichen Insights',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.65),
+                              fontSize: 12)),
+                    ]),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: const Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.analytics_outlined, color: Colors.white, size: 16),
                   SizedBox(width: 6),
                   Text('Öffnen',
-                      style: TextStyle(color: Colors.white, fontSize: 12,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold)),
                 ]),
               ),
@@ -1300,7 +1439,8 @@ class _CosmosBackgroundPainter extends CustomPainter {
 
     // Animated nebula glow
     final nebulaPaint = Paint()
-      ..color = color.withValues(alpha: 0.06 + math.sin(progress * math.pi * 2) * 0.03)
+      ..color = color.withValues(
+          alpha: 0.06 + math.sin(progress * math.pi * 2) * 0.03)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 60);
     canvas.drawCircle(
       Offset(size.width * 0.3, size.height * 0.4),
@@ -1323,7 +1463,8 @@ class _CosmosBackgroundPainter extends CustomPainter {
       starPaint.color = Colors.white.withValues(alpha: alpha);
       canvas.drawCircle(
         Offset(s.dx * size.width, s.dy * size.height - scrollOffset * 0.15),
-        radius, starPaint,
+        radius,
+        starPaint,
       );
     }
   }
@@ -1342,18 +1483,20 @@ class _AdminBadge extends StatelessWidget {
   const _AdminBadge({required this.isRoot});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(colors: isRoot
-          ? [Colors.amber.shade700, Colors.orange.shade500]
-          : [const Color(0xFFE53935), const Color(0xFFC62828)]),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(
-      isRoot ? '👑 ROOT' : '🛡️ ADM',
-      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: isRoot
+                  ? [Colors.amber.shade700, Colors.orange.shade500]
+                  : [const Color(0xFFE53935), const Color(0xFFC62828)]),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          isRoot ? '👑 ROOT' : '🛡️ ADM',
+          style: const TextStyle(
+              color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+        ),
+      );
 }
 
 class _StatDef {
@@ -1361,7 +1504,11 @@ class _StatDef {
   final String label;
   final int value;
   final Color color;
-  const _StatDef({required this.icon, required this.label, required this.value, required this.color});
+  const _StatDef(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.color});
 }
 
 class _TileDef {
@@ -1370,8 +1517,13 @@ class _TileDef {
   final List<Color> gradient;
   final int badge;
   final VoidCallback onTap;
-  const _TileDef({required this.icon, required this.label, required this.sub,
-    required this.gradient, required this.badge, required this.onTap});
+  const _TileDef(
+      {required this.icon,
+      required this.label,
+      required this.sub,
+      required this.gradient,
+      required this.badge,
+      required this.onTap});
 }
 
 class _Shimmer extends StatelessWidget {
@@ -1379,12 +1531,13 @@ class _Shimmer extends StatelessWidget {
   const _Shimmer({required this.w, required this.h, required this.r});
   @override
   Widget build(BuildContext context) => Container(
-    width: w, height: h,
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(r),
-    ),
-  );
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(r),
+        ),
+      );
 }
 
 // Featured article (large hero card)
@@ -1392,14 +1545,17 @@ class _FeaturedArticleCard extends StatelessWidget {
   final Map<String, dynamic> article;
   final VoidCallback onTap;
   final Color accent;
-  const _FeaturedArticleCard({required this.article, required this.onTap, required this.accent});
+  const _FeaturedArticleCard(
+      {required this.article, required this.onTap, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    final title  = (article['title']  ?? 'Artikel').toString();
-    final source = (article['source'] ?? article['realm'] ?? 'Materie').toString();
-    final date   = (article['created_at'] ?? article['publishedAt'] ?? '').toString();
-    final tags   = (article['tags'] as List?)?.take(2).toList() ?? [];
+    final title = (article['title'] ?? 'Artikel').toString();
+    final source =
+        (article['source'] ?? article['realm'] ?? 'Materie').toString();
+    final date =
+        (article['created_at'] ?? article['publishedAt'] ?? '').toString();
+    final tags = (article['tags'] as List?)?.take(2).toList() ?? [];
 
     return GestureDetector(
       onTap: onTap,
@@ -1417,7 +1573,10 @@ class _FeaturedArticleCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: accent.withValues(alpha: 0.25)),
           boxShadow: [
-            BoxShadow(color: accent.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 6)),
+            BoxShadow(
+                color: accent.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 6)),
           ],
         ),
         child: Column(
@@ -1434,46 +1593,59 @@ class _FeaturedArticleCard extends StatelessWidget {
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Container(
-                    width: 6, height: 6,
-                    decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                    width: 6,
+                    height: 6,
+                    decoration:
+                        BoxDecoration(color: accent, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 5),
                   Text('TOP ARTIKEL',
-                      style: TextStyle(color: accent, fontSize: 9,
-                          fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                      style: TextStyle(
+                          color: accent,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5)),
                 ]),
               ),
               const Spacer(),
               if (date.isNotEmpty)
                 Text(_formatDate(date),
-                    style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                    style:
+                        const TextStyle(color: Colors.white38, fontSize: 11)),
             ]),
             const SizedBox(height: 12),
             // Title
             Text(title,
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 16,
-                    fontWeight: FontWeight.bold, height: 1.35),
-                maxLines: 3, overflow: TextOverflow.ellipsis),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    height: 1.35),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis),
             const SizedBox(height: 10),
             // Footer
             Row(children: [
-              Icon(Icons.source_outlined, color: accent.withValues(alpha: 0.7), size: 13),
+              Icon(Icons.source_outlined,
+                  color: accent.withValues(alpha: 0.7), size: 13),
               const SizedBox(width: 4),
               Text(source,
-                  style: TextStyle(color: accent.withValues(alpha: 0.8), fontSize: 12)),
+                  style: TextStyle(
+                      color: accent.withValues(alpha: 0.8), fontSize: 12)),
               const Spacer(),
               // Tags
               ...tags.take(2).map((t) => Container(
-                margin: const EdgeInsets.only(left: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(t.toString(),
-                    style: const TextStyle(color: Colors.white38, fontSize: 10)),
-              )),
+                    margin: const EdgeInsets.only(left: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(t.toString(),
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 10)),
+                  )),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.all(6),
@@ -1481,7 +1653,8 @@ class _FeaturedArticleCard extends StatelessWidget {
                   color: accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.arrow_forward_rounded, color: accent, size: 14),
+                child:
+                    Icon(Icons.arrow_forward_rounded, color: accent, size: 14),
               ),
             ]),
           ],
@@ -1494,11 +1667,13 @@ class _FeaturedArticleCard extends StatelessWidget {
     try {
       final d = DateTime.parse(raw);
       final diff = DateTime.now().difference(d);
-      if (diff.inDays > 7)  return '${d.day}.${d.month}.${d.year}';
-      if (diff.inDays > 0)  return 'vor ${diff.inDays}T';
+      if (diff.inDays > 7) return '${d.day}.${d.month}.${d.year}';
+      if (diff.inDays > 0) return 'vor ${diff.inDays}T';
       if (diff.inHours > 0) return 'vor ${diff.inHours}h';
       return 'jetzt';
-    } catch (_) { return ''; }
+    } catch (_) {
+      return '';
+    }
   }
 }
 
@@ -1507,17 +1682,22 @@ class _ArticleCard extends StatelessWidget {
   final Map<String, dynamic> article;
   final VoidCallback onTap;
   final Color accent;
-  const _ArticleCard({required this.article, required this.onTap, required this.accent});
+  const _ArticleCard(
+      {required this.article, required this.onTap, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    final title  = (article['title']  ?? 'Artikel').toString();
-    final source = (article['source'] ?? article['realm'] ?? 'Materie').toString();
-    final date   = (article['created_at'] ?? article['publishedAt'] ?? '').toString();
-    final type   = (article['type'] ?? 'article').toString();
-    final icon   = type == 'video' ? Icons.play_circle_outline
-                 : type == 'podcast' ? Icons.mic_outlined
-                 : Icons.article_outlined;
+    final title = (article['title'] ?? 'Artikel').toString();
+    final source =
+        (article['source'] ?? article['realm'] ?? 'Materie').toString();
+    final date =
+        (article['created_at'] ?? article['publishedAt'] ?? '').toString();
+    final type = (article['type'] ?? 'article').toString();
+    final icon = type == 'video'
+        ? Icons.play_circle_outline
+        : type == 'podcast'
+            ? Icons.mic_outlined
+            : Icons.article_outlined;
 
     return GestureDetector(
       onTap: onTap,
@@ -1530,7 +1710,8 @@ class _ArticleCard extends StatelessWidget {
         ),
         child: Row(children: [
           Container(
-            width: 46, height: 46,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
@@ -1540,26 +1721,34 @@ class _ArticleCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 13,
-                      fontWeight: FontWeight.w600, height: 1.3),
-                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
               const SizedBox(height: 4),
               Row(children: [
                 Text(source,
-                    style: TextStyle(color: accent.withValues(alpha: 0.7), fontSize: 11)),
+                    style: TextStyle(
+                        color: accent.withValues(alpha: 0.7), fontSize: 11)),
                 if (date.isNotEmpty) ...[
-                  const Text(' · ', style: TextStyle(color: Colors.white24, fontSize: 11)),
+                  const Text(' · ',
+                      style: TextStyle(color: Colors.white24, fontSize: 11)),
                   Text(_formatDate(date),
-                      style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 11)),
                 ],
               ]),
             ]),
           ),
           const SizedBox(width: 8),
-          Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 13),
+          Icon(Icons.arrow_forward_ios_rounded,
+              color: Colors.white24, size: 13),
         ]),
       ),
     );
@@ -1569,10 +1758,12 @@ class _ArticleCard extends StatelessWidget {
     try {
       final d = DateTime.parse(raw);
       final diff = DateTime.now().difference(d);
-      if (diff.inDays > 7)  return '${d.day}.${d.month}.${d.year}';
-      if (diff.inDays > 0)  return 'vor ${diff.inDays}T';
+      if (diff.inDays > 7) return '${d.day}.${d.month}.${d.year}';
+      if (diff.inDays > 0) return 'vor ${diff.inDays}T';
       if (diff.inHours > 0) return 'vor ${diff.inHours}h';
       return 'jetzt';
-    } catch (_) { return ''; }
+    } catch (_) {
+      return '';
+    }
   }
 }

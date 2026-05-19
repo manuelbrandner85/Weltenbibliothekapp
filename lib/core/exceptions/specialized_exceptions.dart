@@ -5,7 +5,7 @@ import 'app_exception.dart';
 // ============================================
 
 /// Netzwerk-bezogene Fehler
-/// 
+///
 /// Verwendung für:
 /// - HTTP-Request-Fehler
 /// - Timeout-Errors
@@ -14,10 +14,10 @@ import 'app_exception.dart';
 class NetworkException extends AppException {
   /// HTTP-Status-Code (falls vorhanden)
   final int? statusCode;
-  
+
   /// URL die aufgerufen wurde
   final String? url;
-  
+
   /// HTTP-Methode (GET, POST, etc.)
   final String? method;
 
@@ -29,31 +29,31 @@ class NetworkException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'NETWORK_ERROR',
-    severity: ExceptionSeverity.error,
-    context: {
-      if (statusCode != null) 'statusCode': statusCode,
-      if (url != null) 'url': url,
-      if (method != null) 'method': method,
-    },
-  );
+          code: 'NETWORK_ERROR',
+          severity: ExceptionSeverity.error,
+          context: {
+            if (statusCode != null) 'statusCode': statusCode,
+            if (url != null) 'url': url,
+            if (method != null) 'method': method,
+          },
+        );
 
   /// Ist dies ein Timeout-Fehler?
-  bool get isTimeout => 
-    cause.toString().contains('timeout') || 
-    message.toLowerCase().contains('timeout');
-  
+  bool get isTimeout =>
+      cause.toString().contains('timeout') ||
+      message.toLowerCase().contains('timeout');
+
   /// Ist dies ein Server-Fehler (5xx)?
-  bool get isServerError => 
-    statusCode != null && statusCode! >= 500 && statusCode! < 600;
-  
+  bool get isServerError =>
+      statusCode != null && statusCode! >= 500 && statusCode! < 600;
+
   /// Ist dies ein Client-Fehler (4xx)?
-  bool get isClientError => 
-    statusCode != null && statusCode! >= 400 && statusCode! < 500;
+  bool get isClientError =>
+      statusCode != null && statusCode! >= 400 && statusCode! < 500;
 }
 
 /// Backend-API-spezifische Fehler
-/// 
+///
 /// Verwendung für:
 /// - REST-API-Fehler
 /// - GraphQL-Errors
@@ -61,10 +61,10 @@ class NetworkException extends AppException {
 class BackendException extends AppException {
   /// HTTP-Status-Code
   final int statusCode;
-  
+
   /// API-Endpoint der aufgerufen wurde
   final String? endpoint;
-  
+
   /// Response-Body (falls vorhanden)
   final String? responseBody;
 
@@ -76,14 +76,14 @@ class BackendException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'BACKEND_ERROR',
-    severity: ExceptionSeverity.error,
-    context: {
-      'statusCode': statusCode,
-      if (endpoint != null) 'endpoint': endpoint,
-      if (responseBody != null) 'responseBody': responseBody,
-    },
-  );
+          code: 'BACKEND_ERROR',
+          severity: ExceptionSeverity.error,
+          context: {
+            'statusCode': statusCode,
+            if (endpoint != null) 'endpoint': endpoint,
+            if (responseBody != null) 'responseBody': responseBody,
+          },
+        );
 
   /// Factory für häufige Backend-Fehler
   factory BackendException.unauthorized(String? endpoint) {
@@ -116,7 +116,7 @@ class BackendException extends AppException {
 // ============================================
 
 /// Validierungs-Fehler für Eingaben
-/// 
+///
 /// Verwendung für:
 /// - Form-Validierung
 /// - Input-Checks
@@ -131,17 +131,17 @@ class ValidationException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'VALIDATION_ERROR',
-    severity: ExceptionSeverity.warning,
-    context: {'fieldErrors': errors},
-  );
+          code: 'VALIDATION_ERROR',
+          severity: ExceptionSeverity.warning,
+          context: {'fieldErrors': errors},
+        );
 
   /// Hat dieses Feld einen Fehler?
   bool hasFieldError(String fieldName) => errors.containsKey(fieldName);
-  
+
   /// Hole Fehlermeldung für Feld
   String? getFieldError(String fieldName) => errors[fieldName];
-  
+
   /// Anzahl der Fehler
   int get errorCount => errors.length;
 
@@ -159,7 +159,7 @@ class ValidationException extends AppException {
 // ============================================
 
 /// Authentication/Authorization Fehler
-/// 
+///
 /// Verwendung für:
 /// - Login-Fehler
 /// - Token-Probleme
@@ -174,10 +174,10 @@ class AuthException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'AUTH_ERROR',
-    severity: ExceptionSeverity.error,
-    context: {'errorType': errorType.name},
-  );
+          code: 'AUTH_ERROR',
+          severity: ExceptionSeverity.error,
+          context: {'errorType': errorType.name},
+        );
 
   /// Factory-Methoden für häufige Auth-Fehler
   factory AuthException.invalidCredentials() {
@@ -225,7 +225,7 @@ enum AuthErrorType {
 // ============================================
 
 /// Storage/Database Fehler
-/// 
+///
 /// Verwendung für:
 /// - Lokale Hive-Datenbank
 /// - Shared Preferences
@@ -233,7 +233,7 @@ enum AuthErrorType {
 class StorageException extends AppException {
   /// Art der Storage-Operation
   final String? operation;
-  
+
   /// Betroffener Key/Identifier
   final String? key;
 
@@ -244,13 +244,13 @@ class StorageException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'STORAGE_ERROR',
-    severity: ExceptionSeverity.error,
-    context: {
-      if (operation != null) 'operation': operation,
-      if (key != null) 'key': key,
-    },
-  );
+          code: 'STORAGE_ERROR',
+          severity: ExceptionSeverity.error,
+          context: {
+            if (operation != null) 'operation': operation,
+            if (key != null) 'key': key,
+          },
+        );
 
   /// Factory für häufige Storage-Fehler
   factory StorageException.readFailed(String key) {
@@ -282,7 +282,7 @@ class StorageException extends AppException {
 // ============================================
 
 /// WebRTC/Voice-spezifische Fehler
-/// 
+///
 /// Verwendung für:
 /// - Voice-Room-Fehler
 /// - WebRTC-Connection-Problems
@@ -290,7 +290,7 @@ class StorageException extends AppException {
 class VoiceException extends AppException {
   /// Room-ID (falls relevant)
   final String? roomId;
-  
+
   /// User-ID (falls relevant)
   final String? userId;
 
@@ -301,13 +301,13 @@ class VoiceException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'VOICE_ERROR',
-    severity: ExceptionSeverity.error,
-    context: {
-      if (roomId != null) 'roomId': roomId,
-      if (userId != null) 'userId': userId,
-    },
-  );
+          code: 'VOICE_ERROR',
+          severity: ExceptionSeverity.error,
+          context: {
+            if (roomId != null) 'roomId': roomId,
+            if (userId != null) 'userId': userId,
+          },
+        );
 
   /// Factory für häufige Voice-Fehler
   factory VoiceException.roomFull(String roomId) {
@@ -332,12 +332,12 @@ class VoiceException extends AppException {
 }
 
 /// Raum-Kapazitäts-Fehler
-/// 
+///
 /// Spezialisierung für "Room Full" Fehler
 class RoomFullException extends VoiceException {
   /// Aktuelle Teilnehmerzahl
   final int currentCount;
-  
+
   /// Maximale Teilnehmerzahl
   final int maxCount;
 
@@ -346,9 +346,9 @@ class RoomFullException extends VoiceException {
     required this.currentCount,
     required this.maxCount,
   }) : super(
-    'Voice room "$roomId" is full ($currentCount/$maxCount participants)',
-    roomId: roomId,
-  );
+          'Voice room "$roomId" is full ($currentCount/$maxCount participants)',
+          roomId: roomId,
+        );
 }
 
 // ============================================
@@ -356,7 +356,7 @@ class RoomFullException extends VoiceException {
 // ============================================
 
 /// Konfigurations-Fehler
-/// 
+///
 /// Verwendung für:
 /// - Missing API-Keys
 /// - Invalid Configuration
@@ -371,10 +371,10 @@ class ConfigurationException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'CONFIG_ERROR',
-    severity: ExceptionSeverity.critical,
-    context: {'configKey': configKey},
-  );
+          code: 'CONFIG_ERROR',
+          severity: ExceptionSeverity.critical,
+          context: {'configKey': configKey},
+        );
 
   factory ConfigurationException.missingApiKey(String keyName) {
     return ConfigurationException(
@@ -396,7 +396,7 @@ class ConfigurationException extends AppException {
 // ============================================
 
 /// Business-Logic-Fehler
-/// 
+///
 /// Verwendung für:
 /// - Geschäftsregel-Verletzungen
 /// - Domain-spezifische Fehler
@@ -411,10 +411,10 @@ class BusinessLogicException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'BUSINESS_LOGIC_ERROR',
-    severity: ExceptionSeverity.warning,
-    context: {'rule': rule},
-  );
+          code: 'BUSINESS_LOGIC_ERROR',
+          severity: ExceptionSeverity.warning,
+          context: {'rule': rule},
+        );
 }
 
 // ============================================
@@ -422,7 +422,7 @@ class BusinessLogicException extends AppException {
 // ============================================
 
 /// Timeout-Fehler
-/// 
+///
 /// Verwendung für:
 /// - Operation-Timeouts
 /// - Response-Timeouts
@@ -430,7 +430,7 @@ class BusinessLogicException extends AppException {
 class TimeoutException extends AppException {
   /// Timeout-Dauer
   final Duration timeout;
-  
+
   /// Art der Operation die timeout hatte
   final String? operation;
 
@@ -441,15 +441,16 @@ class TimeoutException extends AppException {
     super.cause,
     super.stackTrace,
   }) : super(
-    code: 'TIMEOUT_ERROR',
-    severity: ExceptionSeverity.error,
-    context: {
-      'timeoutSeconds': timeout.inSeconds,
-      if (operation != null) 'operation': operation,
-    },
-  );
+          code: 'TIMEOUT_ERROR',
+          severity: ExceptionSeverity.error,
+          context: {
+            'timeoutSeconds': timeout.inSeconds,
+            if (operation != null) 'operation': operation,
+          },
+        );
 
-  factory TimeoutException.operationTimeout(String operation, Duration timeout) {
+  factory TimeoutException.operationTimeout(
+      String operation, Duration timeout) {
     return TimeoutException(
       'Operation "$operation" timed out after ${timeout.inSeconds}s',
       timeout: timeout,

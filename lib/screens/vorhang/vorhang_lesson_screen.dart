@@ -94,9 +94,9 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
       final uri = Uri.parse(
         '${ApiConfig.workerUrl}/api/vorhang/youtube/${Uri.encodeComponent(widget.moduleCode)}',
       );
-      final res = await http
-          .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 15));
+      final res = await http.get(uri, headers: {
+        'Accept': 'application/json'
+      }).timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final list = (data['videos'] as List?) ?? const [];
@@ -144,7 +144,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
     await _submitProgress(scorePercent: scorePercent, passed: passed);
   }
 
-  Future<void> _submitProgress({required int scorePercent, required bool passed}) async {
+  Future<void> _submitProgress(
+      {required int scorePercent, required bool passed}) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
     setState(() => _submittingProgress = true);
@@ -201,13 +202,19 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   List<Map<String, dynamic>> _testQuestions() {
     final raw = _module?['test_questions'];
     if (raw is List) {
-      return raw.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+      return raw
+          .whereType<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList();
     }
     if (raw is String && raw.isNotEmpty) {
       try {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
-          return decoded.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+          return decoded
+              .whereType<Map>()
+              .map((e) => e.cast<String, dynamic>())
+              .toList();
         }
       } catch (_) {}
     }
@@ -247,11 +254,17 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                 ),
                 tabs: [
                   Tab(icon: Icon(Icons.menu_book, size: 18), text: 'Theorie'),
-                  Tab(icon: Icon(Icons.cases_outlined, size: 18), text: 'Fallstudie'),
+                  Tab(
+                      icon: Icon(Icons.cases_outlined, size: 18),
+                      text: 'Fallstudie'),
                   Tab(icon: Icon(Icons.edit_note, size: 18), text: 'Übung'),
                   Tab(icon: Icon(Icons.quiz_outlined, size: 18), text: 'Test'),
-                  Tab(icon: Icon(Icons.play_circle_outline, size: 18), text: 'Videos'),
-                  Tab(icon: Icon(Icons.note_add_outlined, size: 18), text: 'Notizen'),
+                  Tab(
+                      icon: Icon(Icons.play_circle_outline, size: 18),
+                      text: 'Videos'),
+                  Tab(
+                      icon: Icon(Icons.note_add_outlined, size: 18),
+                      text: 'Notizen'),
                 ],
               ),
             ),
@@ -260,7 +273,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         body: SafeArea(
           child: _loading
               ? const Center(
-                  child: CircularProgressIndicator(color: _gold, strokeWidth: 2),
+                  child:
+                      CircularProgressIndicator(color: _gold, strokeWidth: 2),
                 )
               : _error != null
                   ? _buildError()
@@ -288,23 +302,27 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, color: _gold.withValues(alpha: 0.7), size: 48),
+            Icon(Icons.error_outline,
+                color: _gold.withValues(alpha: 0.7), size: 48),
             const SizedBox(height: 16),
             const Text(
               'Modul konnte nicht geladen werden',
-              style: TextStyle(color: _gold, fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: _gold, fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               _error ?? '',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: _fetchModule,
               icon: const Icon(Icons.refresh, color: _gold),
-              label: const Text('Erneut versuchen', style: TextStyle(color: _gold)),
+              label: const Text('Erneut versuchen',
+                  style: TextStyle(color: _gold)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: _gold.withValues(alpha: 0.4)),
               ),
@@ -318,7 +336,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   // ── Tab 1: Theory ─────────────────────────────────────────────
   Widget _buildTheoryTab() {
     final text = (_module?['theory_content'] as String?) ?? '';
-    return _buildRichTextScroll(text, padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
+    return _buildRichTextScroll(text,
+        padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
   }
 
   // ── Tab 2: Case Study ─────────────────────────────────────────
@@ -333,7 +352,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         ),
       );
     }
-    return _buildRichTextScroll(text, padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
+    return _buildRichTextScroll(text,
+        padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
   }
 
   // ── Tab 3: Exercise ───────────────────────────────────────────
@@ -390,7 +410,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.lightbulb_outline, color: _gold.withValues(alpha: 0.8), size: 18),
+                    Icon(Icons.lightbulb_outline,
+                        color: _gold.withValues(alpha: 0.8), size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -485,14 +506,16 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                         : const Color(0xFF8B0000).withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: _quizPassed ? Colors.greenAccent : Colors.redAccent,
+                      color:
+                          _quizPassed ? Colors.greenAccent : Colors.redAccent,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         _quizPassed ? Icons.check_circle : Icons.cancel,
-                        color: _quizPassed ? Colors.greenAccent : Colors.redAccent,
+                        color:
+                            _quizPassed ? Colors.greenAccent : Colors.redAccent,
                         size: 24,
                       ),
                       const SizedBox(width: 10),
@@ -531,7 +554,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.black),
                   )
                 : const Icon(Icons.check, color: Colors.black),
             label: const Text(
@@ -559,7 +583,10 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             icon: const Icon(Icons.refresh, color: _gold),
             label: const Text(
               'Erneut versuchen',
-              style: TextStyle(color: _gold, fontWeight: FontWeight.w700, letterSpacing: 1.5),
+              style: TextStyle(
+                  color: _gold,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5),
             ),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: _gold.withValues(alpha: 0.6)),
@@ -622,7 +649,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
           ),
           const SizedBox(height: 10),
           for (var i = 0; i < options.length; i++)
-            _buildOption(index, i, options[i].toString(), selected, correctIndex),
+            _buildOption(
+                index, i, options[i].toString(), selected, correctIndex),
           if (_quizSubmitted && explanation.isNotEmpty) ...[
             const SizedBox(height: 8),
             Container(
@@ -635,7 +663,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, color: _gold.withValues(alpha: 0.8), size: 16),
+                  Icon(Icons.info_outline,
+                      color: _gold.withValues(alpha: 0.8), size: 16),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -692,7 +721,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
       child: InkWell(
         onTap: _quizSubmitted
             ? null
-            : () => setState(() => _selectedAnswers[questionIndex] = optionIndex),
+            : () =>
+                setState(() => _selectedAnswers[questionIndex] = optionIndex),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           margin: const EdgeInsets.only(bottom: 6),
@@ -710,7 +740,9 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: borderColor),
-                  color: isSelected ? _gold.withValues(alpha: 0.3) : Colors.transparent,
+                  color: isSelected
+                      ? _gold.withValues(alpha: 0.3)
+                      : Colors.transparent,
                 ),
                 child: isSelected
                     ? const Icon(Icons.circle, color: _gold, size: 10)
@@ -831,7 +863,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: Stack(
@@ -859,7 +892,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                         ),
                       ),
                       const Center(
-                        child: Icon(Icons.play_circle_fill, color: _gold, size: 56),
+                        child: Icon(Icons.play_circle_fill,
+                            color: _gold, size: 56),
                       ),
                     ],
                   ),
@@ -957,8 +991,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             color: _gold.withValues(alpha: 0.05),
           ),
           child: _inlineRichText(line.substring(2),
-              baseColor: Colors.white.withValues(alpha: 0.85),
-              italic: true),
+              baseColor: Colors.white.withValues(alpha: 0.85), italic: true),
         ));
       } else if (line.startsWith('- ') || line.startsWith('* ')) {
         spans.add(Padding(
@@ -1057,7 +1090,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   }
 
   /// Inline rich-text mit **bold** / *italic* support.
-  Widget _inlineRichText(String text, {required Color baseColor, bool italic = false}) {
+  Widget _inlineRichText(String text,
+      {required Color baseColor, bool italic = false}) {
     final parts = <TextSpan>[];
     final regex = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*');
     int last = 0;
@@ -1113,9 +1147,9 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
 
   String _userId() {
     final s = StorageService();
-    return s.getMaterieProfile()?.userId
-        ?? s.getEnergieProfile()?.userId
-        ?? 'anon';
+    return s.getMaterieProfile()?.userId ??
+        s.getEnergieProfile()?.userId ??
+        'anon';
   }
 
   @override
@@ -1155,8 +1189,8 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
   }
 
   Future<void> _exportAll() async {
-    final md = await VorhangLessonNotesService.instance
-        .exportMarkdown(_userId());
+    final md =
+        await VorhangLessonNotesService.instance.exportMarkdown(_userId());
     if (!mounted) return;
     showDialog(
       context: context,
@@ -1203,7 +1237,7 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
               const Spacer(),
               if (_lastSavedAt != null)
                 Text(
-                  'Zuletzt: ${_lastSavedAt!.hour.toString().padLeft(2,'0')}:${_lastSavedAt!.minute.toString().padLeft(2,'0')}',
+                  'Zuletzt: ${_lastSavedAt!.hour.toString().padLeft(2, '0')}:${_lastSavedAt!.minute.toString().padLeft(2, '0')}',
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
                 ),
@@ -1216,18 +1250,20 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
-              style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 14, height: 1.5),
               decoration: InputDecoration(
                 hintText: 'Was nimmst du aus dieser Lektion mit? '
                     'Schreibe deine Gedanken, Fragen, Erkenntnisse …',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+                hintStyle:
+                    TextStyle(color: Colors.white.withValues(alpha: 0.35)),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.04),
                 contentPadding: const EdgeInsets.all(14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                      color: _gold.withValues(alpha: 0.2), width: 1),
+                  borderSide:
+                      BorderSide(color: _gold.withValues(alpha: 0.2), width: 1),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1244,7 +1280,8 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
                   onPressed: _saving ? null : _save,
                   icon: _saving
                       ? const SizedBox(
-                          width: 14, height: 14,
+                          width: 14,
+                          height: 14,
                           child: CircularProgressIndicator(
                               strokeWidth: 1.8,
                               valueColor: AlwaysStoppedAnimation(Colors.black)),
@@ -1262,10 +1299,10 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
               OutlinedButton.icon(
                 onPressed: _exportAll,
                 icon: const Icon(Icons.share_outlined, color: _gold, size: 16),
-                label: const Text('Export',
-                    style: TextStyle(color: _gold)),
+                label: const Text('Export', style: TextStyle(color: _gold)),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   side: BorderSide(color: _gold.withValues(alpha: 0.4)),
                 ),
               ),

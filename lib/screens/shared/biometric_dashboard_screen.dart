@@ -371,12 +371,13 @@ class _BiometricDashboardScreenState extends State<BiometricDashboardScreen> {
 
   Widget _buildSessionRow(_Reading r) {
     final s = r.effectivenessScore;
-    final scoreText = s == null
-        ? '—'
-        : '${s >= 0 ? '+' : ''}${s.toStringAsFixed(0)}%';
+    final scoreText =
+        s == null ? '—' : '${s >= 0 ? '+' : ''}${s.toStringAsFixed(0)}%';
     final scoreColor = s == null
         ? Colors.white54
-        : (s >= 10 ? _cyan : (s >= 0 ? const Color(0xFFFFD700) : Colors.redAccent.shade100));
+        : (s >= 10
+            ? _cyan
+            : (s >= 0 ? const Color(0xFFFFD700) : Colors.redAccent.shade100));
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
@@ -397,8 +398,7 @@ class _BiometricDashboardScreenState extends State<BiometricDashboardScreen> {
                 color: _cyan.withValues(alpha: 0.10),
                 border: Border.all(color: _cyan.withValues(alpha: 0.30)),
               ),
-              child: Icon(_iconFor(r.sessionType),
-                  color: _cyan, size: 18),
+              child: Icon(_iconFor(r.sessionType), color: _cyan, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -479,13 +479,10 @@ class _BiometricDashboardScreenState extends State<BiometricDashboardScreen> {
       final dayReadings = _readings.where((r) =>
           r.createdAt.isAfter(day.subtract(const Duration(seconds: 1))) &&
           r.createdAt.isBefore(next));
-      final hrvs = dayReadings
-          .map((r) => r.hrvAfter)
-          .whereType<double>()
-          .toList();
-      final avg = hrvs.isEmpty
-          ? null
-          : hrvs.reduce((a, b) => a + b) / hrvs.length;
+      final hrvs =
+          dayReadings.map((r) => r.hrvAfter).whereType<double>().toList();
+      final avg =
+          hrvs.isEmpty ? null : hrvs.reduce((a, b) => a + b) / hrvs.length;
       return _DayPoint(label: _dayLabel(day), avgHrv: avg);
     }).toList();
   }

@@ -36,7 +36,8 @@ class SpiritReading {
         summary: j['summary'] as String?,
         result: Map<String, dynamic>.from(j['result'] as Map? ?? {}),
         audioUrl: j['audio_url'] as String?,
-        createdAt: DateTime.tryParse(j['created_at'] as String? ?? '') ?? DateTime.now(),
+        createdAt: DateTime.tryParse(j['created_at'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -61,13 +62,17 @@ class SpiritReadingService {
     required Map<String, dynamic> result,
   }) async {
     try {
-      final res = await _s.from('spirit_readings').insert({
-        'user_id': userId,
-        'username': username,
-        'tool': tool,
-        'summary': summary,
-        'result': result,
-      }).select().single();
+      final res = await _s
+          .from('spirit_readings')
+          .insert({
+            'user_id': userId,
+            'username': username,
+            'tool': tool,
+            'summary': summary,
+            'result': result,
+          })
+          .select()
+          .single();
       // Fire-and-forget XP-Award (10 XP pro Reading). Schoent das Konto
       // gegenueber Spam (1 Reading/Tool/Tag waere ideal, aber Idempotenz
       // braucht Datenbank-Logik. Hier nur einfacher Award.)
@@ -93,7 +98,9 @@ class SpiritReadingService {
         'p_reason': 'spirit:$tool',
       });
     } catch (e) {
-      if (kDebugMode) debugPrint('XP-Award via RPC fehlgeschlagen ($e), versuche Direct-Update');
+      if (kDebugMode)
+        debugPrint(
+            'XP-Award via RPC fehlgeschlagen ($e), versuche Direct-Update');
       try {
         // Fallback: SELECT current XP, dann UPDATE +10
         final profile = await _s
@@ -105,7 +112,8 @@ class SpiritReadingService {
         final current = (profile['xp'] as num?)?.toInt() ?? 0;
         await _s.from('profiles').update({'xp': current + 10}).eq('id', userId);
       } catch (e2) {
-        if (kDebugMode) debugPrint('XP-Award Fallback auch fehlgeschlagen: $e2');
+        if (kDebugMode)
+          debugPrint('XP-Award Fallback auch fehlgeschlagen: $e2');
       }
     }
   }
@@ -136,7 +144,8 @@ class SpiritReadingService {
       await svc.incrementProgress('spirit_100');
 
       // Unterschiedliche Tools tracking
-      final usedToolsRaw = prefs.getStringList(_kSpiritUsedToolsKey) ?? const [];
+      final usedToolsRaw =
+          prefs.getStringList(_kSpiritUsedToolsKey) ?? const [];
       final usedTools = usedToolsRaw.toSet();
       if (!usedTools.contains(tool)) {
         usedTools.add(tool);
@@ -153,7 +162,8 @@ class SpiritReadingService {
         // Neuer Tag - pruefe ob gestern war (= Streak weiter)
         int streak = prefs.getInt(_kSpiritStreakKey) ?? 0;
         final yesterday = today.subtract(const Duration(days: 1));
-        final yesterdayKey = '${yesterday.year}-${yesterday.month}-${yesterday.day}';
+        final yesterdayKey =
+            '${yesterday.year}-${yesterday.month}-${yesterday.day}';
         if (lastDay == yesterdayKey) {
           streak += 1;
         } else {
@@ -185,7 +195,8 @@ class SpiritReadingService {
           .order('created_at', ascending: false)
           .limit(limit);
       return (res as List)
-          .map((r) => SpiritReading.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              SpiritReading.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Reading history: $e');
@@ -241,7 +252,8 @@ class SpiritReadingService {
           .order('created_at', ascending: false)
           .limit(limit);
       return (res as List)
-          .map((r) => SpiritReading.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              SpiritReading.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Reading recentAll: $e');

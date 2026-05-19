@@ -11,7 +11,7 @@ class GlassmorphismCard extends StatelessWidget {
   final EdgeInsets? padding;
   final BorderRadius? borderRadius;
   final List<Color>? gradientColors;
-  
+
   const GlassmorphismCard({
     super.key,
     required this.child,
@@ -23,7 +23,7 @@ class GlassmorphismCard extends StatelessWidget {
     this.borderRadius,
     this.gradientColors,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -69,7 +69,7 @@ class AnimatedGlassmorphismCard extends StatefulWidget {
   final Color? borderColor;
   final EdgeInsets? padding;
   final BorderRadius? borderRadius;
-  
+
   const AnimatedGlassmorphismCard({
     super.key,
     required this.child,
@@ -80,15 +80,17 @@ class AnimatedGlassmorphismCard extends StatefulWidget {
     this.padding,
     this.borderRadius,
   });
-  
+
   @override
-  State<AnimatedGlassmorphismCard> createState() => _AnimatedGlassmorphismCardState();
+  State<AnimatedGlassmorphismCard> createState() =>
+      _AnimatedGlassmorphismCardState();
 }
 
-class _AnimatedGlassmorphismCardState extends State<AnimatedGlassmorphismCard> with SingleTickerProviderStateMixin {
+class _AnimatedGlassmorphismCardState extends State<AnimatedGlassmorphismCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -100,25 +102,25 @@ class _AnimatedGlassmorphismCardState extends State<AnimatedGlassmorphismCard> w
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   void _onTapDown(TapDownDetails details) {
     _controller.forward();
   }
-  
+
   void _onTapUp(TapUpDetails details) {
     _controller.reverse();
   }
-  
+
   void _onTapCancel() {
     _controller.reverse();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -146,22 +148,23 @@ class ShimmerLoadingCard extends StatefulWidget {
   final double height;
   final double width;
   final BorderRadius? borderRadius;
-  
+
   const ShimmerLoadingCard({
     super.key,
     required this.height,
     required this.width,
     this.borderRadius,
   });
-  
+
   @override
   State<ShimmerLoadingCard> createState() => _ShimmerLoadingCardState();
 }
 
-class _ShimmerLoadingCardState extends State<ShimmerLoadingCard> with SingleTickerProviderStateMixin {
+class _ShimmerLoadingCardState extends State<ShimmerLoadingCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -169,18 +172,18 @@ class _ShimmerLoadingCardState extends State<ShimmerLoadingCard> with SingleTick
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat();
-    
+
     _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(

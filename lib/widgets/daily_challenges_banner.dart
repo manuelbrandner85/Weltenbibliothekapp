@@ -69,15 +69,15 @@ class _DailyChallengesBannerState extends State<DailyChallengesBanner> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '${_items.length}',
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 10),
+                    style: const TextStyle(color: Colors.white70, fontSize: 10),
                   ),
                 ),
               ],
@@ -91,7 +91,8 @@ class _DailyChallengesBannerState extends State<DailyChallengesBanner> {
               padding: const EdgeInsets.only(right: 16),
               itemBuilder: (_, i) {
                 final c = _items[i];
-                final world = (c['world'] as String? ?? 'materie').toLowerCase();
+                final world =
+                    (c['world'] as String? ?? 'materie').toLowerCase();
                 final color = _worldColors[world] ?? Colors.white;
                 return _ChallengeCard(
                   title: c['title'] as String? ?? '',
@@ -158,8 +159,8 @@ class _ChallengeCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(6),

@@ -118,9 +118,7 @@ class _WorldDot extends StatelessWidget {
                 ? color.withValues(alpha: 0.85)
                 : color.withValues(alpha: 0.18),
             border: Border.all(
-              color: isCurrent
-                  ? color
-                  : color.withValues(alpha: 0.4),
+              color: isCurrent ? color : color.withValues(alpha: 0.4),
               width: isCurrent ? 1.5 : 1,
             ),
             boxShadow: isCurrent

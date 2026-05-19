@@ -42,7 +42,7 @@ import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
 import '../../services/moderation_service.dart'; // 🔧 ADMIN MODERATION
 import '../../core/constants/roles.dart'; // 🔐 ADMIN SYSTEM (v103)
 import '../../widgets/error_display_widget.dart'; // 🎨 ERROR DISPLAY (NEW)
-// 💬 Enhanced Message Bubble  
+// 💬 Enhanced Message Bubble
 import '../../widgets/message_reactions_widget.dart'; // 😀 Message Reactions
 import '../../widgets/message_edit_widget.dart'; // ✏️ Message Edit
 // 🗑️ Message Delete
@@ -62,7 +62,8 @@ import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 import '../../widgets/android_voice_recorder.dart'; // 🎤 Android Voice Recorder (flutter_sound)
 // import '../../widgets/telegram_voice_recorder.dart'; // 🎙️ Telegram Voice Recorder (Disabled for Android)
 // 🎵 Telegram Voice Player
-import '../../widgets/voice_message_player.dart' show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
+import '../../widgets/voice_message_player.dart'
+    show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
 import 'ufo_sightings_screen.dart'; // 🛸 UFO-Sichtungen
 import 'geopolitik_map_screen.dart'; // 🎭 Geopolitik-Kartierung
 import 'conspiracy_network_screen.dart'; // 👁️ Verbindungsnetz
@@ -100,22 +101,24 @@ import '../../widgets/cinematic/wb_vignette.dart';
 /// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
 class MaterieLiveChatScreen extends StatefulWidget {
   final String? initialRoom;
-  
+
   const MaterieLiveChatScreen({super.key, this.initialRoom});
 
   @override
   State<MaterieLiveChatScreen> createState() => _MaterieLiveChatScreenState();
 }
 
-class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with TickerProviderStateMixin {
+class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
   final ScrollController _scrollController = ScrollController();
-  final ChatNotificationService _notificationService = ChatNotificationService(); // 🔔 NEW
+  final ChatNotificationService _notificationService =
+      ChatNotificationService(); // 🔔 NEW
   RealtimeChannel? _realtimeChannel; // 🔴 Supabase Realtime
-  
+
   late String _selectedRoom;
-  
+
   /// Maps internal room key → DB room ID (materie world)
   static const Map<String, String> _roomIdMap = {
     'politik': 'materie-politik',
@@ -131,15 +134,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     'medien': 'materie-medien',
     'finanzen': 'materie-finanzen',
   };
-  
+
   /// Returns the full DB room ID for the currently selected room.
-  String get _fullRoomId => _roomIdMap[_selectedRoom] ?? 'materie-$_selectedRoom';
-  String _username = ''; // ✅ Leer bis Profil geladen – isOwn-Check + Profil-Dialog funktionieren korrekt
-  late String _userId; // 🔥 Real User ID from UserService (initialized in initState)
+  String get _fullRoomId =>
+      _roomIdMap[_selectedRoom] ?? 'materie-$_selectedRoom';
+  String _username =
+      ''; // ✅ Leer bis Profil geladen – isOwn-Check + Profil-Dialog funktionieren korrekt
+  late String
+      _userId; // 🔥 Real User ID from UserService (initialized in initState)
   String _avatar = '👤'; // 🆕 Avatar Emoji (default)
   String? _avatarEmoji; // 🆕 Avatar Emoji aus Profil
   String? _avatarUrl; // 🆕 Avatar URL aus Profil
-  
+
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _polls = []; // 🗳️ POLLS
 
@@ -156,7 +162,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
     }
     if (lastForeign == null) return null;
-    final text = (lastForeign['content'] ?? lastForeign['text'] ?? '').toString();
+    final text =
+        (lastForeign['content'] ?? lastForeign['text'] ?? '').toString();
     if (text.trim().isEmpty) return null;
     return SmartReplyComputer.computeQuick(
       lastMessageText: text,
@@ -175,7 +182,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         id: (p['id'] ?? '').toString(),
         question: (p['question'] ?? '').toString(),
         options: opts.map((o) {
-          final m = (o is Map) ? Map<String, dynamic>.from(o) : <String, dynamic>{};
+          final m =
+              (o is Map) ? Map<String, dynamic>.from(o) : <String, dynamic>{};
           return PollOption(
             label: (m['label'] ?? m['text'] ?? '').toString(),
             votes: (m['votes'] as num?)?.toInt() ?? 0,
@@ -186,32 +194,33 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       );
     }).toList(growable: false);
   }
+
   bool _isLoading = false;
   String? _errorMessage; // 🎨 NEW: Error state
   bool _profileDialogShown = false; // 🚨 Flag: Verhindert mehrfaches Popup
   Timer? _refreshTimer;
   StreamSubscription<int>? _pendingSub;
-  
+
   // 🆕 ENHANCED FEATURES
   List<String> _mentionSuggestions = []; // @ Auto-Complete
   bool _showMentionPicker = false;
-  
+
   // 🎙️ VOICE RECORDING
   // UNUSED FIELD: bool _isRecordingVoice = false;
   // UNUSED FIELD: Duration _recordingDuration = Duration.zero;
   // UNUSED FIELD: Timer? _recordingTimer;
   final FocusNode _inputFocusNode = FocusNode(); // Input Focus
   bool _isInputFocused = false; // 🔧 FIX 10: Explicit focus state
-  
+
   // 🎤➤ DYNAMIC BUTTON STATE
   bool _hasText = false; // true = Send Button, false = Voice Button
-  
+
   // 🆕 FEATURE 1: WEBRTC VOICE ROOM
   // ⏳ Voice-Room-Migration WebRTC → LiveKit. UI kommt im Folge-PR.
   // Voice-Button zeigt vorerst Coming-Soon-SnackBar.
-  
+
   // 🆕 ADMIN ACTION SERVICE
-  
+
   // 🆕 FEATURE 2: TYPING INDICATORS (live via Supabase Broadcast)
   final Set<String> _typingUsers = {};
   Timer? _typingStopTimer;
@@ -223,17 +232,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   // Feature #16: Message scheduler
   final List<(DateTime, String)> _scheduledMessages = [];
   final List<Timer> _scheduledTimers = [];
-  
+
   // 🆕 FEATURE 3: SWIPE TO REPLY
   Map<String, dynamic>? _replyingTo;
-  
+
   // 🆕 PHASE 2: MESSAGE EDIT/DELETE/SEARCH
   String? _editingMessageId;
   bool _showSearch = false;
-  
+
   // 🆕 FEATURE 4: EMOJI REACTIONS
   // ignore: unused_field
-  final Map<String, Map<String, List<String>>> _messageReactions = {}; // messageId -> emoji -> userIds
+  final Map<String, Map<String, List<String>>> _messageReactions =
+      {}; // messageId -> emoji -> userIds
 
   // ✨ Batch-1: Smart autoscroll + pagination + reconnect-state
   bool _isAtBottom = true;
@@ -257,7 +267,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       'color': Colors.red,
       'icon': '🎭',
       'tool': 'Weltpolitik-Kartierung',
-      'toolDescription': 'Gemeinsam politische Ereignisse & Verbindungen visualisieren',
+      'toolDescription':
+          'Gemeinsam politische Ereignisse & Verbindungen visualisieren',
     },
     'geschichte': {
       'name': '🏛️ Alternative Geschichte',
@@ -281,7 +292,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       'color': Colors.purple,
       'icon': '👁️',
       'tool': 'Verbindungsnetz',
-      'toolDescription': 'Zusammenhänge zwischen Ereignissen & Personen visualisieren',
+      'toolDescription':
+          'Zusammenhänge zwischen Ereignissen & Personen visualisieren',
     },
     'wissenschaft': {
       'name': '🔬 Unterdrückte Technologie',
@@ -298,8 +310,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     super.initState();
 
     // ✨ Chat UX Redesign: Header-Animationen starten
-    _headerAuraCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
-    _headerOrbitCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 15))..repeat();
+    _headerAuraCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat(reverse: true);
+    _headerOrbitCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 15))
+          ..repeat();
 
     // 🔥 Initialize User ID — bevorzugt Supabase-User-ID (matched die ID in
     // chat_messages.user_id), Fallback InvisibleAuth.
@@ -474,13 +490,15 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       } catch (_) {}
       _notificationService.setCurrentUsername(_username);
       if (kDebugMode) {
-        debugPrint('✅ Username aus Materie-Profil geladen: $_username (role: ${profile.role})');
+        debugPrint(
+            '✅ Username aus Materie-Profil geladen: $_username (role: ${profile.role})');
       }
       // ✅ Flag NICHT zurücksetzen – verhindert erneutes Popup nach
       // Rückkehr aus ProfileEditorScreen wenn Profil schon existiert
     } else {
       // Kein Profil → Dialog einmalig zeigen
-      if (kDebugMode) debugPrint('⚠️ Kein Materie-Profil gefunden – zeige Profil-Dialog');
+      if (kDebugMode)
+        debugPrint('⚠️ Kein Materie-Profil gefunden – zeige Profil-Dialog');
       if (!_profileDialogShown) {
         _profileDialogShown = true;
         Future.delayed(const Duration(milliseconds: 800), () {
@@ -511,7 +529,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     _typingStopTimer = null;
     PresenceService.instance.leave();
     ReadReceiptService.instance.leave();
-    for (final t in _scheduledTimers) { t.cancel(); }
+    for (final t in _scheduledTimers) {
+      t.cancel();
+    }
     _scheduledTimers.clear();
     super.dispose();
   }
@@ -521,8 +541,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     final text = _messageController.text;
     final sel = _messageController.selection;
     final insertAt = sel.isValid ? sel.start : text.length;
-    final newText = text.replaceRange(
-        insertAt, sel.isValid ? sel.end : text.length, emoji);
+    final newText =
+        text.replaceRange(insertAt, sel.isValid ? sel.end : text.length, emoji);
     _messageController.value = TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(offset: insertAt + emoji.length),
@@ -583,8 +603,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       setState(() => _messages = merged);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_scrollController.hasClients) return;
-        final delta =
-            _scrollController.position.maxScrollExtent - priorExtent;
+        final delta = _scrollController.position.maxScrollExtent - priorExtent;
         _scrollController.jumpTo(priorOffset + delta);
       });
     } catch (e) {
@@ -614,7 +633,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         // Primärer Check via ID; sekundärer Check via username+content+Zeit
         // fängt den Race-Condition-Fall ab wo Realtime vor Server-Antwort ankommt.
         final newId = newMsg['id']?.toString();
-        final newContent = (newMsg['message'] ?? newMsg['content'] ?? '').toString();
+        final newContent =
+            (newMsg['message'] ?? newMsg['content'] ?? '').toString();
         final newUser = newMsg['username']?.toString() ?? '';
         final newCreated = newMsg['created_at']?.toString() ?? '';
         final exists = _messages.any((m) {
@@ -644,19 +664,20 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           });
           if (!isOwn) {
             HapticFeedbackService().messageReceived();
-            final text = (newMsg['message'] ?? newMsg['content'] ?? '').toString();
+            final text =
+                (newMsg['message'] ?? newMsg['content'] ?? '').toString();
             if (_username.isNotEmpty &&
                 MentionNotificationService.containsMention(text, _username)) {
               MentionNotificationService.instance.notifyMention(
-                fromUsername:
-                    (newMsg['username'] ?? 'Unbekannt').toString(),
+                fromUsername: (newMsg['username'] ?? 'Unbekannt').toString(),
                 roomLabel:
                     _materieRooms[_selectedRoom]?['name']?.toString() ?? 'Chat',
                 snippet: text.length > 80 ? '${text.substring(0, 77)}…' : text,
               );
             }
             // Feature #17: generate smart reply suggestions
-            if (mounted) setState(() => _smartReplies = _generateSmartReplies(text));
+            if (mounted)
+              setState(() => _smartReplies = _generateSmartReplies(text));
           }
           _scrollToBottomIfAtEnd();
         }
@@ -667,7 +688,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         if (id == null) return;
         // Soft-Delete: is_deleted=true → aus lokaler Liste entfernen
         if (updatedMsg['is_deleted'] == true) {
-          setState(() => _messages.removeWhere((m) => m['id']?.toString() == id));
+          setState(
+              () => _messages.removeWhere((m) => m['id']?.toString() == id));
           return;
         }
         final idx = _messages.indexWhere((m) => m['id']?.toString() == id);
@@ -714,7 +736,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         }
       },
     );
-    if (kDebugMode) debugPrint('🔴 [Materie Realtime] Subscribed to room: $roomId');
+    if (kDebugMode)
+      debugPrint('🔴 [Materie Realtime] Subscribed to room: $roomId');
   }
 
   // C4: Realtime Auto-Reconnect mit Exponential Backoff
@@ -735,7 +758,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       _subscribeToRoom(roomId);
     });
   }
-  
+
   // 🛠️ TOOL NAVIGATION → Kaninchenbau-Faden mit passendem Initialthema
   // ignore: unused_element
   void _navigateToTool() {
@@ -773,39 +796,44 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   Future<void> _loadMessages({bool silent = false}) async {
     if (!silent) {
       setState(() {
-      _isLoading = true;
-      _errorMessage = null; // Clear previous error
-    });
+        _isLoading = true;
+        _errorMessage = null; // Clear previous error
+      });
     }
-    
+
     try {
       // 🔧 Lade echte Chat-Nachrichten von Cloudflare API
-      final messages = await _api.getChatMessages(
-        _fullRoomId, // 'materie-politik' etc.
-        realm: 'materie',
-        limit: 50,
-      ).timeout(const Duration(seconds: 15));
-      
+      final messages = await _api
+          .getChatMessages(
+            _fullRoomId, // 'materie-politik' etc.
+            realm: 'materie',
+            limit: 50,
+          )
+          .timeout(const Duration(seconds: 15));
+
       // 🔧 DEBUG: Log message count
       if (kDebugMode) {
-        debugPrint('✅ MATERIE Chat geladen: ${messages.length} Nachrichten von Cloudflare');
+        debugPrint(
+            '✅ MATERIE Chat geladen: ${messages.length} Nachrichten von Cloudflare');
         if (messages.isNotEmpty) {
-          debugPrint('🔍 Erste Nachricht keys: ${messages.first.keys.toList()}');
+          debugPrint(
+              '🔍 Erste Nachricht keys: ${messages.first.keys.toList()}');
           debugPrint('🔍 Erste Nachricht id: ${messages.first['id']}');
-          debugPrint('🔍 Erste Nachricht message: ${messages.first['message']}');
+          debugPrint(
+              '🔍 Erste Nachricht message: ${messages.first['message']}');
         } else {
           debugPrint('⚠️ Keine Nachrichten geladen für Raum: $_selectedRoom');
         }
       }
-      
+
       if (mounted) {
         setState(() {
-        // Worker returns messages in ascending order (created_at.asc)
-        // → already chronological, no reversal needed
-        _messages = messages;
-        _isLoading = false;
-        _errorMessage = null;
-      });
+          // Worker returns messages in ascending order (created_at.asc)
+          // → already chronological, no reversal needed
+          _messages = messages;
+          _isLoading = false;
+          _errorMessage = null;
+        });
       }
 
       // Reactions aus DB nachladen und in _messages einpflegen
@@ -820,7 +848,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         debugPrint('❌ MATERIE Chat Load Error: $e');
         debugPrint('❌ Error type: ${e.runtimeType}');
       }
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -829,8 +857,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
     }
   }
-  
-  Future<void> _loadReactionsForMessages(List<Map<String, dynamic>> messages) async {
+
+  Future<void> _loadReactionsForMessages(
+      List<Map<String, dynamic>> messages) async {
     if (messages.isEmpty || !mounted) return;
     final ids = messages
         .map((m) => m['id']?.toString())
@@ -838,14 +867,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         .cast<String>()
         .toList();
     if (ids.isEmpty) return;
-    final reactionMap = await SupabaseChatService.instance.loadReactionsForMessages(ids);
+    final reactionMap =
+        await SupabaseChatService.instance.loadReactionsForMessages(ids);
     if (!mounted || reactionMap.isEmpty) return;
     setState(() {
       for (final msg in _messages) {
         final id = msg['id']?.toString();
         if (id != null && reactionMap.containsKey(id)) {
           msg['reactions'] = reactionMap[id]!.map(
-            (emoji, users) => MapEntry<String, dynamic>(emoji, List<dynamic>.from(users)),
+            (emoji, users) =>
+                MapEntry<String, dynamic>(emoji, List<dynamic>.from(users)),
           );
         }
       }
@@ -858,7 +889,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       final polls = await _api.getPolls(_fullRoomId);
       if (mounted) {
         _polls = polls; // ← Update direkt
-        
+
         // ✅ setState NUR wenn NICHT silent
         if (!silent) {
           if (mounted) setState(() {});
@@ -984,8 +1015,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         avatarEmoji: _avatarEmoji,
         avatarUrl: _avatarUrl,
         replyToId: replyData?['id']?.toString(),
-        replyToContent: replyData?['message']?.toString()
-            ?? replyData?['content']?.toString(),
+        replyToContent: replyData?['message']?.toString() ??
+            replyData?['content']?.toString(),
         replyToSenderName: replyData?['username']?.toString(),
       );
 
@@ -1009,15 +1040,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         final err = e.toString();
         if (err.contains('Nicht eingeloggt')) {
           msg = 'Bitte Profil anlegen oder erneut versuchen.';
-        } else if (err.contains('permission denied') || err.contains('42501')
-            || err.contains('violates row-level security')) {
+        } else if (err.contains('permission denied') ||
+            err.contains('42501') ||
+            err.contains('violates row-level security')) {
           msg = 'DB-Fehler: $err';
         } else if (err.contains('null value') || err.contains('not-null')) {
           msg = 'Profil unvollständig. Bitte Profil-Einstellungen prüfen.';
         } else if (err.contains('foreign key') || err.contains('23503')) {
           msg = 'Raum nicht verfügbar. Bitte App neu starten.';
-        } else if (err.contains('SocketException') || err.contains('Failed host')
-            || err.contains('TimeoutException')) {
+        } else if (err.contains('SocketException') ||
+            err.contains('Failed host') ||
+            err.contains('TimeoutException')) {
           msg = 'Keine Verbindung. Bitte Netzwerk prüfen.';
         } else {
           // Echten Fehler (gekürzt) zeigen damit Probleme diagnostiziert werden können
@@ -1061,9 +1094,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         });
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
-      
+
       if (kDebugMode) {
-        debugPrint('✅ Sprachnachricht gesendet: $audioUrl, Duration: ${duration.inSeconds}s');
+        debugPrint(
+            '✅ Sprachnachricht gesendet: $audioUrl, Duration: ${duration.inSeconds}s');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -1079,13 +1113,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
     }
   }
-  
+
   /// 🎤 OPEN ANDROID VOICE RECORDER
   Future<void> _openVoiceRecorder() async {
     if (kDebugMode) {
       debugPrint('🎤 Opening Android Voice Recorder...');
     }
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1139,10 +1173,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
             }
-            
+
             // Send voice message
             await _sendVoiceMessage(audioUrl, duration);
-            
+
             if (mounted) {
               // ignore: use_build_context_synchronously
               Navigator.pop(context);
@@ -1170,7 +1204,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   /// 📷 IMAGE UPLOAD
   Future<void> _pickAndUploadImage() async {
     try {
@@ -1181,12 +1215,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         maxHeight: 1280,
         imageQuality: 75,
       );
-      
+
       if (image == null) return;
-      
+
       // Read file bytes for preview
       final bytes = await image.readAsBytes();
-      
+
       // 🖼️ SHOW IMAGE PREVIEW DIALOG
       if (mounted) {
         final shouldUpload = await showDialog<bool>(
@@ -1233,10 +1267,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ],
           ),
         );
-        
+
         if (shouldUpload != true) return;
       }
-      
+
       // Show uploading indicator
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1246,7 +1280,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                 SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 ),
                 SizedBox(width: 12),
                 Text('📤 Bild wird hochgeladen...'),
@@ -1256,7 +1291,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           ),
         );
       }
-      
+
       // Upload to Cloudflare R2
       final result = await _api.uploadFile(
         fileBytes: bytes,
@@ -1265,7 +1300,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         type: 'image',
         userId: _userId,
       );
-      
+
       if (result['success'] == true && result['url'] != null) {
         // Send message with image URL — avatarUrl mitschicken, damit
         // hochgeladene Profilbilder auch bei Bild-Posts erscheinen.
@@ -1280,10 +1315,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           mediaType: 'image',
           mediaUrl: result['url'],
         );
-        
+
         // Reload messages
         await _loadMessages(silent: true);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1326,8 +1361,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     // 🎤➤ UPDATE BUTTON STATE: Voice/Send
     if (mounted) {
       setState(() {
-      _hasText = text.trim().isNotEmpty;
-    });
+        _hasText = text.trim().isNotEmpty;
+      });
     }
 
     // Typing-Broadcast: senden wenn User tippt, stoppen nach 3s Pause
@@ -1335,7 +1370,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       if (!_isCurrentlyTyping) {
         _isCurrentlyTyping = true;
         SupabaseChatService.instance.sendTypingIndicator(
-          roomId: _fullRoomId, userId: _userId, username: _username, isTyping: true,
+          roomId: _fullRoomId,
+          userId: _userId,
+          username: _username,
+          isTyping: true,
         );
       }
       _typingStopTimer?.cancel();
@@ -1343,7 +1381,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         if (mounted && _isCurrentlyTyping) {
           _isCurrentlyTyping = false;
           SupabaseChatService.instance.sendTypingIndicator(
-            roomId: _fullRoomId, userId: _userId, username: _username, isTyping: false,
+            roomId: _fullRoomId,
+            userId: _userId,
+            username: _username,
+            isTyping: false,
           );
         }
       });
@@ -1351,16 +1392,19 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       _isCurrentlyTyping = false;
       _typingStopTimer?.cancel();
       SupabaseChatService.instance.sendTypingIndicator(
-        roomId: _fullRoomId, userId: _userId, username: _username, isTyping: false,
+        roomId: _fullRoomId,
+        userId: _userId,
+        username: _username,
+        isTyping: false,
       );
     }
-    
+
     // Check if user is typing @mention
     if (cursorPos > 0 && text.length >= cursorPos) {
       final beforeCursor = text.substring(0, cursorPos);
       final words = beforeCursor.split(' ');
       final lastWord = words.isNotEmpty ? words.last : '';
-      
+
       if (lastWord.startsWith('@') && lastWord.length > 1) {
         // Show mention suggestions
         final query = lastWord.substring(1).toLowerCase();
@@ -1369,35 +1413,35 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             .where((u) => u != null && u != _username)
             .toSet()
             .toList();
-        
+
         if (mounted) {
           setState(() {
-          _mentionSuggestions = allUsers
-              .where((u) => u!.toLowerCase().contains(query))
-              .take(5)
-              .cast<String>()
-              .toList();
-          _showMentionPicker = _mentionSuggestions.isNotEmpty;
-        });
+            _mentionSuggestions = allUsers
+                .where((u) => u!.toLowerCase().contains(query))
+                .take(5)
+                .cast<String>()
+                .toList();
+            _showMentionPicker = _mentionSuggestions.isNotEmpty;
+          });
         }
       } else {
         if (mounted) {
           setState(() {
-          _showMentionPicker = false;
-          _mentionSuggestions = [];
-        });
+            _showMentionPicker = false;
+            _mentionSuggestions = [];
+          });
         }
       }
     }
   }
-  
+
   // 🆕 SELECT MENTION
   void _selectMention(String username) {
     final text = _messageController.text;
     final cursorPos = _messageController.selection.baseOffset;
     final beforeCursor = text.substring(0, cursorPos);
     final afterCursor = text.substring(cursorPos);
-    
+
     final words = beforeCursor.split(' ');
     if (words.isNotEmpty) {
       words[words.length - 1] = '@$username ';
@@ -1407,17 +1451,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         TextPosition(offset: words.join(' ').length),
       );
     }
-    
+
     if (mounted) {
       setState(() {
-      _showMentionPicker = false;
-      _mentionSuggestions = [];
-    });
+        _showMentionPicker = false;
+        _mentionSuggestions = [];
+      });
     }
   }
-  
+
   // ✅ SYNC REACTION via Cloudflare API (called after local state update)
-  Future<void> _syncReactionToApi(String messageId, String emoji, bool isAdding) async {
+  Future<void> _syncReactionToApi(
+      String messageId, String emoji, bool isAdding) async {
     try {
       if (isAdding) {
         await _api.addReaction(
@@ -1484,10 +1529,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      (_materieRooms[_selectedRoom]?['name'] as String? ?? 'MATERIE LIVE-CHAT')
+                      (_materieRooms[_selectedRoom]?['name'] as String? ??
+                              'MATERIE LIVE-CHAT')
                           .replaceAll(RegExp(r'^\S+\s'), ''),
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -1500,7 +1547,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     count > 0 ? '$count online · Materie-Welt' : 'Materie-Welt',
                     style: TextStyle(
                       fontSize: 11,
-                      color: count > 0 ? const Color(0xFF2979FF) : Colors.grey[500],
+                      color: count > 0
+                          ? const Color(0xFF2979FF)
+                          : Colors.grey[500],
                       fontWeight: FontWeight.w500,
                     ),
                   );
@@ -1517,7 +1566,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               if (!ApiConfig.isLivekitEnabled) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Sprach-Anruf ist serverseitig noch nicht aktiviert.'),
+                    content: Text(
+                        'Sprach-Anruf ist serverseitig noch nicht aktiviert.'),
                     duration: Duration(seconds: 3),
                   ),
                 );
@@ -1569,219 +1619,232 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             // Main content
             Builder(
               builder: (context) {
-            // 🔧 FIX 10: Hide headers using explicit focus state
-            final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-            final hideHeaders = keyboardVisible || _isInputFocused;
+                // 🔧 FIX 10: Hide headers using explicit focus state
+                final keyboardVisible =
+                    MediaQuery.of(context).viewInsets.bottom > 0;
+                final hideHeaders = keyboardVisible || _isInputFocused;
 
-            return GestureDetector(
-              onTap: () {
-                if (_isInputFocused) {
-                  FocusScope.of(context).unfocus();
-                  if (mounted) {
-                    setState(() {
-                    _isInputFocused = false;
-                  });
-                  }
-                }
-              },
-              child: Column(
-                children: [
-                  // ✨ Batch-1: Status-Banner (Offline / Reconnecting / Pending-Queue)
-                  ChatStatusBanner(
-                    reconnecting: _reconnecting,
-                    worldColor: Colors.red,
-                  ),
-                  // ✨ v5.43.1: Cinematic Live-Hero (oberhalb der Legacy-Banner)
-                  if (!hideHeaders)
-                    LiveChatHero(
-                      world: 'materie',
-                      totalRoomMembers: _messages.length > 50 ? 50 : _messages.length,
-                      activeCall: null,
-                      onJoinCall: () {
-                        Navigator.push(
+                return GestureDetector(
+                  onTap: () {
+                    if (_isInputFocused) {
+                      FocusScope.of(context).unfocus();
+                      if (mounted) {
+                        setState(() {
+                          _isInputFocused = false;
+                        });
+                      }
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      // ✨ Batch-1: Status-Banner (Offline / Reconnecting / Pending-Queue)
+                      ChatStatusBanner(
+                        reconnecting: _reconnecting,
+                        worldColor: Colors.red,
+                      ),
+                      // ✨ v5.43.1: Cinematic Live-Hero (oberhalb der Legacy-Banner)
+                      if (!hideHeaders)
+                        LiveChatHero(
+                          world: 'materie',
+                          totalRoomMembers:
+                              _messages.length > 50 ? 50 : _messages.length,
+                          activeCall: null,
+                          onJoinCall: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LiveKitGroupCallScreen(
+                                  roomName: 'wb-materie-$_selectedRoom',
+                                  world: 'materie',
+                                  displayName: _username.isNotEmpty
+                                      ? _username
+                                      : 'Mitglied',
+                                  avatarUrl: _avatarUrl,
+                                  audioOnly: false,
+                                  initialMicEnabled: true,
+                                ),
+                              ),
+                            );
+                          },
+                          onSeeReplays: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LiveReplayLibraryScreen(
+                                    world: 'materie'),
+                              ),
+                            );
+                          },
+                          onSchedule: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Live-Schedule kommt bald.')),
+                            );
+                          },
+                          // Starte einen neuen Live-Call: First-in-room ist Host.
+                          onStartLive: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LiveKitGroupCallScreen(
+                                  roomName: 'wb-materie-$_selectedRoom',
+                                  world: 'materie',
+                                  displayName: _username.isNotEmpty
+                                      ? _username
+                                      : 'Mitglied',
+                                  avatarUrl: _avatarUrl,
+                                  audioOnly: true,
+                                  initialMicEnabled: true,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
+                      LiveRoomBanner(
+                        world: 'materie',
+                        currentRoomName: _fullRoomId,
+                        onJoin: (roomName) => Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => LiveKitGroupCallScreen(
-                              roomName: 'wb-materie-$_selectedRoom',
+                              roomName: 'wb-$roomName',
                               world: 'materie',
-                              displayName: _username.isNotEmpty ? _username : 'Mitglied',
+                              displayName:
+                                  _username.isNotEmpty ? _username : 'Mitglied',
                               avatarUrl: _avatarUrl,
                               audioOnly: false,
                               initialMicEnabled: true,
                             ),
                           ),
-                        );
-                      },
-                      onSeeReplays: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LiveReplayLibraryScreen(world: 'materie'),
-                          ),
-                        );
-                      },
-                      onSchedule: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Live-Schedule kommt bald.')),
-                        );
-                      },
-                      // Starte einen neuen Live-Call: First-in-room ist Host.
-                      onStartLive: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LiveKitGroupCallScreen(
-                              roomName: 'wb-materie-$_selectedRoom',
-                              world: 'materie',
-                              displayName:
-                                  _username.isNotEmpty ? _username : 'Mitglied',
-                              avatarUrl: _avatarUrl,
-                              audioOnly: true,
-                              initialMicEnabled: true,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
-                  LiveRoomBanner(
-                    world: 'materie',
-                    currentRoomName: _fullRoomId,
-                    onJoin: (roomName) => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LiveKitGroupCallScreen(
-                          roomName: 'wb-$roomName',
-                          world: 'materie',
-                          displayName:
-                              _username.isNotEmpty ? _username : 'Mitglied',
-                          avatarUrl: _avatarUrl,
-                          audioOnly: false,
-                          initialMicEnabled: true,
                         ),
                       ),
-                    ),
-                  ),
-                  // 🚩 v5.44.2 Phase 2 (Beta): neuer PinsPollsHeader hinter Flag.
-                  if (FeatureFlags.instance.getSync(FeatureFlag.newPinsHeader))
-                    PinsPollsHeader(
-                      world: 'materie',
-                      pins: _pinsForNewHeaderMaterie,
-                      polls: _pollsForNewHeaderMaterie,
-                    )
-                  else
-                    // 📌 Legacy Sticky-Banner für angepinnte Nachrichten (E2)
-                    PinnedBannerV2(
-                      roomId: _fullRoomId,
-                      accent: const Color(0xFF2979FF),
-                    ),
-                  // 🔍 SEARCH MODE
-                  if (_showSearch)
-                    Expanded(
-                      child: MessageSearchWidget(
-                        messages: _messages,
-                        onSelectMessage: _jumpToMessage,
-                        onClose: _toggleSearch,
-                      ),
-                    )
-                  else ...[
-                  // 🔧 HIDE WHEN INPUT FOCUSED OR KEYBOARD OPEN
-                  if (!hideHeaders) ...[
-                    // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
-                    _buildStoriesBar(),
-                    // 📌 PINNED MESSAGE BANNER (shrinkt selbst auf 0 wenn leer)
-                    PinnedMessageBanner(
-                      room: _selectedRoom,
-                      onRefresh: () {
-                        _loadMessages();
-                      },
-                      onTap: () {
-                        // ✅ Scroll to bottom (pinned message visible)
-                        _scrollToBottom();
-                      },
-                      worldColor: Colors.red, // MATERIE Red
-                    ),
-                    // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
-                  // 🎥 Voice-Header-Bar entfernt — kommt im LiveKit-Folge-PR.
-                  // ⌨️ TYPING INDICATORS
-                  if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
-                  _buildRoomSelector(),
-                  // ✨ ROOM VIBE BANNER
-                  _buildRoomVibeBanner(),
-                  // ✨ v5.44 Phase 2: AI-Catchup wenn User > 24h weg war
-                  if (_unreadSeparatorTime != null)
-                    CatchupCard(
-                      world: 'materie',
-                      lastVisit: _unreadSeparatorTime!,
-                      recentMessages: _messages.take(50).toList(),
-                      onDismiss: () => setState(() => _unreadSeparatorTime = null),
-                    ),
-                  // ✨ v5.44 Phase 2: Topic-Cloud aus letzten Nachrichten
-                  if (_messages.length >= 10)
-                    TopicCloud(
-                      world: 'materie',
-                      recentMessages: _messages.take(100).toList(),
-                    ),
-                ], // End keyboard-hidden headers
-          // Feature #21: swipe left/right between rooms
-          Expanded(
-            child: GestureDetector(
-              onHorizontalDragEnd: (details) {
-                final v = details.primaryVelocity ?? 0;
-                if (v.abs() < 350) return;
-                final keys = _materieRooms.keys.toList();
-                final idx = keys.indexOf(_selectedRoom);
-                if (v < 0 && idx < keys.length - 1) _switchToRoom(keys[idx + 1]);
-                if (v > 0 && idx > 0) _switchToRoom(keys[idx - 1]);
-              },
-              behavior: HitTestBehavior.translucent,
-              child: _buildMessageList(),
-            ),
-          ),
-          // 🗳️ ACTIVE POLLS
-          if (_polls.isNotEmpty)
-            Container(
-              height: 180,
-              color: const Color(0xFF1A1A2E).withValues(alpha: 0.5),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.all(12),
-                itemCount: _polls.length,
-                itemBuilder: (context, index) {
-                  final poll = _polls[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.8, // 📱 Mobile: 80% screen width
-                      child: PollWidget(
-                        poll: poll,
-                        currentUserId: _userId,
-                        currentUsername: _username,
-                        worldColor: Colors.red, // MATERIE Red
-                        onVote: (pollId, optionIndex) async {
-                          await _api.voteOnPoll(
-                            pollId: pollId,
-                            userId: _userId,
-                            username: _username,
-                            optionIndex: optionIndex,
-                          );
-                          _loadPolls();
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ], // END else (search mode)
-          if (!_showSearch) // Hide input when searching
-          _buildMessageInput(),
-        ], // End Column children
-      ), // End Column
-      ); // End GestureDetector
-    }, // End Builder builder
+                      // 🚩 v5.44.2 Phase 2 (Beta): neuer PinsPollsHeader hinter Flag.
+                      if (FeatureFlags.instance
+                          .getSync(FeatureFlag.newPinsHeader))
+                        PinsPollsHeader(
+                          world: 'materie',
+                          pins: _pinsForNewHeaderMaterie,
+                          polls: _pollsForNewHeaderMaterie,
+                        )
+                      else
+                        // 📌 Legacy Sticky-Banner für angepinnte Nachrichten (E2)
+                        PinnedBannerV2(
+                          roomId: _fullRoomId,
+                          accent: const Color(0xFF2979FF),
+                        ),
+                      // 🔍 SEARCH MODE
+                      if (_showSearch)
+                        Expanded(
+                          child: MessageSearchWidget(
+                            messages: _messages,
+                            onSelectMessage: _jumpToMessage,
+                            onClose: _toggleSearch,
+                          ),
+                        )
+                      else ...[
+                        // 🔧 HIDE WHEN INPUT FOCUSED OR KEYBOARD OPEN
+                        if (!hideHeaders) ...[
+                          // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
+                          _buildStoriesBar(),
+                          // 📌 PINNED MESSAGE BANNER (shrinkt selbst auf 0 wenn leer)
+                          PinnedMessageBanner(
+                            room: _selectedRoom,
+                            onRefresh: () {
+                              _loadMessages();
+                            },
+                            onTap: () {
+                              // ✅ Scroll to bottom (pinned message visible)
+                              _scrollToBottom();
+                            },
+                            worldColor: Colors.red, // MATERIE Red
+                          ),
+                          // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
+                          // 🎥 Voice-Header-Bar entfernt — kommt im LiveKit-Folge-PR.
+                          // ⌨️ TYPING INDICATORS
+                          if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
+                          _buildRoomSelector(),
+                          // ✨ ROOM VIBE BANNER
+                          _buildRoomVibeBanner(),
+                          // ✨ v5.44 Phase 2: AI-Catchup wenn User > 24h weg war
+                          if (_unreadSeparatorTime != null)
+                            CatchupCard(
+                              world: 'materie',
+                              lastVisit: _unreadSeparatorTime!,
+                              recentMessages: _messages.take(50).toList(),
+                              onDismiss: () =>
+                                  setState(() => _unreadSeparatorTime = null),
+                            ),
+                          // ✨ v5.44 Phase 2: Topic-Cloud aus letzten Nachrichten
+                          if (_messages.length >= 10)
+                            TopicCloud(
+                              world: 'materie',
+                              recentMessages: _messages.take(100).toList(),
+                            ),
+                        ], // End keyboard-hidden headers
+                        // Feature #21: swipe left/right between rooms
+                        Expanded(
+                          child: GestureDetector(
+                            onHorizontalDragEnd: (details) {
+                              final v = details.primaryVelocity ?? 0;
+                              if (v.abs() < 350) return;
+                              final keys = _materieRooms.keys.toList();
+                              final idx = keys.indexOf(_selectedRoom);
+                              if (v < 0 && idx < keys.length - 1)
+                                _switchToRoom(keys[idx + 1]);
+                              if (v > 0 && idx > 0)
+                                _switchToRoom(keys[idx - 1]);
+                            },
+                            behavior: HitTestBehavior.translucent,
+                            child: _buildMessageList(),
+                          ),
+                        ),
+                        // 🗳️ ACTIVE POLLS
+                        if (_polls.isNotEmpty)
+                          Container(
+                            height: 180,
+                            color:
+                                const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.all(12),
+                              itemCount: _polls.length,
+                              itemBuilder: (context, index) {
+                                final poll = _polls[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: SizedBox(
+                                    width: MediaQuery.of(context).size.width *
+                                        0.8, // 📱 Mobile: 80% screen width
+                                    child: PollWidget(
+                                      poll: poll,
+                                      currentUserId: _userId,
+                                      currentUsername: _username,
+                                      worldColor: Colors.red, // MATERIE Red
+                                      onVote: (pollId, optionIndex) async {
+                                        await _api.voteOnPoll(
+                                          pollId: pollId,
+                                          userId: _userId,
+                                          username: _username,
+                                          optionIndex: optionIndex,
+                                        );
+                                        _loadPolls();
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                      ], // END else (search mode)
+                      if (!_showSearch) // Hide input when searching
+                        _buildMessageInput(),
+                    ], // End Column children
+                  ), // End Column
+                ); // End GestureDetector
+              }, // End Builder builder
             ), // End Builder
-            
+
             // 📡 OFFLINE INDICATOR (NEW Phase 3)
             const Positioned(
               top: 0,
@@ -1808,71 +1871,71 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   }
 
   // 🛠️ TOOL-WIDGET FÜR DEN AKTUELLEN RAUM
-    // switch (_selectedRoom) {
-      // case 'politik':
-        // return DebattenKarte(roomId: 'politik');
-      // case 'geschichte':
-        // return ZeitleisteTool(roomId: 'geschichte');
-      // case 'ufos':
-        // return SichtungsKarteTool(roomId: 'ufos');
-      // case 'verschwoerungen':
-        // return RechercheTool(roomId: 'verschwoerungen');
-      // case 'wissenschaft':
-        // return ExperimentTool(roomId: 'wissenschaft');
-      // default:
-        // return null;
-    // }
+  // switch (_selectedRoom) {
+  // case 'politik':
+  // return DebattenKarte(roomId: 'politik');
+  // case 'geschichte':
+  // return ZeitleisteTool(roomId: 'geschichte');
+  // case 'ufos':
+  // return SichtungsKarteTool(roomId: 'ufos');
+  // case 'verschwoerungen':
+  // return RechercheTool(roomId: 'verschwoerungen');
+  // case 'wissenschaft':
+  // return ExperimentTool(roomId: 'wissenschaft');
+  // default:
+  // return null;
+  // }
   // }
 
   // 🏷️ TOOL-NAME
-    // switch (_selectedRoom) {
-      // case 'politik':
-        // return '🎯 DEBATTENKARTE';
-      // case 'geschichte':
-        // return '📅 ZEITLEISTE';
-      // case 'ufos':
-        // return '🗺️ SICHTUNGS-KARTE';
-      // case 'verschwoerungen':
-        // return '🔍 RECHERCHE-BOARD';
-      // case 'wissenschaft':
-        // return '🧪 EXPERIMENT-LOG';
-      // default:
-        // return 'WERKZEUG';
-    // }
+  // switch (_selectedRoom) {
+  // case 'politik':
+  // return '🎯 DEBATTENKARTE';
+  // case 'geschichte':
+  // return '📅 ZEITLEISTE';
+  // case 'ufos':
+  // return '🗺️ SICHTUNGS-KARTE';
+  // case 'verschwoerungen':
+  // return '🔍 RECHERCHE-BOARD';
+  // case 'wissenschaft':
+  // return '🧪 EXPERIMENT-LOG';
+  // default:
+  // return 'WERKZEUG';
+  // }
   // }
 
   // 🎨 TOOL-ICON
-    // switch (_selectedRoom) {
-      // case 'politik':
-        // return Icons.forum;
-      // case 'geschichte':
-        // return Icons.timeline;
-      // case 'ufos':
-        // return Icons.map;
-      // case 'verschwoerungen':
-        // return Icons.account_tree;
-      // case 'wissenschaft':
-        // return Icons.science;
-      // default:
-        // return Icons.build;
-    // }
+  // switch (_selectedRoom) {
+  // case 'politik':
+  // return Icons.forum;
+  // case 'geschichte':
+  // return Icons.timeline;
+  // case 'ufos':
+  // return Icons.map;
+  // case 'verschwoerungen':
+  // return Icons.account_tree;
+  // case 'wissenschaft':
+  // return Icons.science;
+  // default:
+  // return Icons.build;
+  // }
   // }
 
   // 🌈 TOOL-COLOR
-    // switch (_selectedRoom) {
-      // case 'politik':
-        // return Colors.blue;
-      // case 'geschichte':
-        // return Colors.amber;
-      // case 'ufos':
-        // return Colors.green;
-      // case 'verschwoerungen':
-        // return Colors.purple;
-      // case 'wissenschaft':
-        // return Colors.cyan;
-      // default:
-        // return Colors.grey;
-    // }
+  // switch (_selectedRoom) {
+  // case 'politik':
+  // return Colors.blue;
+  // case 'geschichte':
+  // return Colors.amber;
+  // case 'ufos':
+  // return Colors.green;
+  // case 'verschwoerungen':
+  // return Colors.purple;
+  // case 'wissenschaft':
+  // return Colors.cyan;
+  // default:
+  // return Colors.grey;
+  // }
   // }
 
   // ✨ UPGRADED ROOM SELECTOR — Glassmorphism Chips mit Glow (Materie-Blau)
@@ -1896,13 +1959,15 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             final isSelected = _selectedRoom == entry.key;
             final roomData = entry.value;
             final chipFullRoomId = 'materie-${entry.key}';
-            final roomColor = (roomData['color'] as Color?) ?? const Color(0xFF2979FF);
+            final roomColor =
+                (roomData['color'] as Color?) ?? const Color(0xFF2979FF);
 
             return GestureDetector(
               onLongPress: () => _showRoomPreview(entry.key, entry.value),
               onTap: () async {
                 if (entry.key != _selectedRoom) {
-                  ChatDraftService.instance.set(_fullRoomId, _messageController.text);
+                  ChatDraftService.instance
+                      .set(_fullRoomId, _messageController.text);
                   if (mounted) {
                     RecentRoomsService.instance.touch('materie', entry.key);
                     setState(() {
@@ -1914,7 +1979,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       _isAtBottom = true;
                     });
                   }
-                  _messageController.text = ChatDraftService.instance.get(_fullRoomId);
+                  _messageController.text =
+                      ChatDraftService.instance.get(_fullRoomId);
                   UnreadTrackerService.instance.markSeen(_fullRoomId);
                   // Voice-switchRoom entfällt — LiveKit hat eigenen Lifecycle.
                   await _refreshPresence();
@@ -1927,24 +1993,33 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 decoration: BoxDecoration(
-                  gradient: isSelected ? LinearGradient(colors: [
-                    roomColor.withValues(alpha: 0.3),
-                    roomColor.withValues(alpha: 0.15),
-                  ]) : null,
+                  gradient: isSelected
+                      ? LinearGradient(colors: [
+                          roomColor.withValues(alpha: 0.3),
+                          roomColor.withValues(alpha: 0.15),
+                        ])
+                      : null,
                   color: isSelected ? null : const Color(0xFF0A1020),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
-                        ? roomColor.withValues(alpha: 0.7 + _headerAuraCtrl.value * 0.3)
+                        ? roomColor.withValues(
+                            alpha: 0.7 + _headerAuraCtrl.value * 0.3)
                         : const Color(0xFF1A2A3A).withValues(alpha: 0.5),
                     width: isSelected ? 1.5 : 1,
                   ),
-                  boxShadow: isSelected ? [BoxShadow(
-                    color: roomColor.withValues(alpha: 0.2 + _headerAuraCtrl.value * 0.15),
-                    blurRadius: 10,
-                  )] : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: roomColor.withValues(
+                                alpha: 0.2 + _headerAuraCtrl.value * 0.15),
+                            blurRadius: 10,
+                          )
+                        ]
+                      : null,
                 ),
                 child: Stack(
                   clipBehavior: Clip.none,
@@ -1952,20 +2027,27 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(roomData['icon'] ?? '💬', style: TextStyle(fontSize: isSelected ? 16 : 14)),
+                        Text(roomData['icon'] ?? '💬',
+                            style: TextStyle(fontSize: isSelected ? 16 : 14)),
                         const SizedBox(width: 5),
                         Text(
-                          (roomData['name'] as String).replaceAll(RegExp(r'^\S+\s'), '').split('&').first.trim(),
+                          (roomData['name'] as String)
+                              .replaceAll(RegExp(r'^\S+\s'), '')
+                              .split('&')
+                              .first
+                              .trim(),
                           style: TextStyle(
                             color: isSelected ? Colors.white : Colors.grey[400],
                             fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w400,
                           ),
                         ),
                       ],
                     ),
                     Positioned(
-                      top: -6, right: -6,
+                      top: -6,
+                      right: -6,
                       child: ChatUnreadBadge(roomId: chipFullRoomId),
                     ),
                   ],
@@ -1986,7 +2068,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         onRetry: _loadMessages,
       );
     }
-    
+
     // 🎨 LOADING STATE (NEW)
     if (_isLoading && _messages.isEmpty) {
       return const LoadingStateWidget(
@@ -1998,7 +2080,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     if (_messages.isEmpty) {
       return EmptyChatOrb(
         world: 'materie',
-        roomName: _materieRooms[_selectedRoom]?['name'] as String? ?? 'diesem Raum',
+        roomName:
+            _materieRooms[_selectedRoom]?['name'] as String? ?? 'diesem Raum',
       );
     }
 
@@ -2010,17 +2093,20 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             .toList(growable: false);
         // Feature #10/#11: pre-compute flat items with grouping + separators
         final chatItems = <Map<String, dynamic>>[];
-        final lastSeen = UnreadTrackerService.instance.countForSync(_fullRoomId) > 0
-            ? _unreadSeparatorTime
-            : null;
+        final lastSeen =
+            UnreadTrackerService.instance.countForSync(_fullRoomId) > 0
+                ? _unreadSeparatorTime
+                : null;
         bool unreadSeparatorInserted = false;
         {
           DateTime? prevDate;
           String? prevSender;
           DateTime? prevTs;
           for (final msg in visible) {
-            final ts = _parseMessageTimestamp(msg['timestamp'] ?? msg['created_at']);
-            final msgDay = ts != null ? DateTime(ts.year, ts.month, ts.day) : null;
+            final ts =
+                _parseMessageTimestamp(msg['timestamp'] ?? msg['created_at']);
+            final msgDay =
+                ts != null ? DateTime(ts.year, ts.month, ts.day) : null;
             if (msgDay != null && msgDay != prevDate) {
               chatItems.add({'type': 'separator', 'date': ts});
               prevDate = msgDay;
@@ -2028,7 +2114,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               prevTs = null;
             }
             // Ungelesen-Trennlinie einfügen vor der ersten ungelesenen Nachricht
-            if (!unreadSeparatorInserted && lastSeen != null && ts != null && ts.isAfter(lastSeen)) {
+            if (!unreadSeparatorInserted &&
+                lastSeen != null &&
+                ts != null &&
+                ts.isAfter(lastSeen)) {
               final isOwnMsg = (msg['username']?.toString() == _username) ||
                   (msg['user_id']?.toString() == _userId);
               if (!isOwnMsg) {
@@ -2038,9 +2127,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             }
             final isGrouped = prevSender != null &&
                 prevSender == msg['username']?.toString() &&
-                ts != null && prevTs != null &&
+                ts != null &&
+                prevTs != null &&
                 ts.difference(prevTs).inSeconds.abs() <= 120;
-            chatItems.add({'type': 'message', 'msg': Map<String, dynamic>.from(msg)..['_isGrouped'] = isGrouped});
+            chatItems.add({
+              'type': 'message',
+              'msg': Map<String, dynamic>.from(msg)..['_isGrouped'] = isGrouped
+            });
             prevSender = msg['username']?.toString();
             prevTs = ts;
           }
@@ -2071,26 +2164,34 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             }
             final item = chatItems[index - (_loadingOlder ? 1 : 0)];
             if (item['type'] == 'separator') {
-              return _buildDateSeparator(item['date'] as DateTime, const Color(0xFFE53935));
+              return _buildDateSeparator(
+                  item['date'] as DateTime, const Color(0xFFE53935));
             }
             if (item['type'] == 'unread_separator') {
               return Container(
                 margin: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(children: [
-                  const Expanded(child: Divider(color: Color(0xFFE53935), thickness: 0.5)),
+                  const Expanded(
+                      child: Divider(color: Color(0xFFE53935), thickness: 0.5)),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE53935).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE53935), width: 0.5),
+                      border: Border.all(
+                          color: const Color(0xFFE53935), width: 0.5),
                     ),
                     child: const Text('Neue Nachrichten',
-                        style: TextStyle(color: Color(0xFFE53935), fontSize: 11, fontWeight: FontWeight.w600)),
+                        style: TextStyle(
+                            color: Color(0xFFE53935),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(child: Divider(color: Color(0xFFE53935), thickness: 0.5)),
+                  const Expanded(
+                      child: Divider(color: Color(0xFFE53935), thickness: 0.5)),
                 ]),
               );
             }
@@ -2134,7 +2235,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               onSelectUser: _selectMention,
               accentColor: const Color(0xFF2196F3),
             ),
-          
+
           // 🚩 v5.44.4 Phase 2: MessageBarV2 hinter FeatureFlag (default OFF)
           if (FeatureFlags.instance.getSync(FeatureFlag.newMessageBar))
             MessageBarV2(
@@ -2155,95 +2256,98 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               },
             )
           else
-          // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // ➕ ATTACH-BUTTON (öffnet BottomSheet mit Bild/Mood/Avatar)
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline, color: Color(0xFF2979FF), size: 28),
-                onPressed: _showAttachmentSheet,
-                tooltip: 'Anhänge & Profil',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-              ),
+            // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // ➕ ATTACH-BUTTON (öffnet BottomSheet mit Bild/Mood/Avatar)
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline,
+                      color: Color(0xFF2979FF), size: 28),
+                  onPressed: _showAttachmentSheet,
+                  tooltip: 'Anhänge & Profil',
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 40, minHeight: 40),
+                ),
 
-              // ✨ EMOJI-PICKER (inline)
-              ChatEmojiPickerButton(
-                onSelected: _insertEmoji,
-                color: Colors.red,
-              ),
+                // ✨ EMOJI-PICKER (inline)
+                ChatEmojiPickerButton(
+                  onSelected: _insertEmoji,
+                  color: Colors.red,
+                ),
 
-              // ✍️ TEXT-INPUT (kompakt: startet einzeilig, wächst max. 5 Zeilen)
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  focusNode: _inputFocusNode,
-                  onTap: () {
-                    if (!_isInputFocused && mounted) {
-                      setState(() => _isInputFocused = true);
-                    }
-                  },
-                  style: const TextStyle(color: Colors.white),
-                  minLines: 1,
-                  maxLines: 5,
-                  maxLength: 2000,
-                  textInputAction: TextInputAction.newline,
-                  decoration: InputDecoration(
-                    hintText: 'Nachricht',
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    filled: true,
-                    fillColor: const Color(0xFF2A2A2A),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
+                // ✍️ TEXT-INPUT (kompakt: startet einzeilig, wächst max. 5 Zeilen)
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    focusNode: _inputFocusNode,
+                    onTap: () {
+                      if (!_isInputFocused && mounted) {
+                        setState(() => _isInputFocused = true);
+                      }
+                    },
+                    style: const TextStyle(color: Colors.white),
+                    minLines: 1,
+                    maxLines: 5,
+                    maxLength: 2000,
+                    textInputAction: TextInputAction.newline,
+                    decoration: InputDecoration(
+                      hintText: 'Nachricht',
+                      hintStyle: TextStyle(color: Colors.grey[600]),
+                      filled: true,
+                      fillColor: const Color(0xFF2A2A2A),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      isDense: true,
+                      // Zeichenzähler nur wenn User näher ans Limit kommt
+                      counterText: _messageController.text.length > 1800
+                          ? '${_messageController.text.length}/2000'
+                          : '',
+                      counterStyle:
+                          const TextStyle(color: Colors.orange, fontSize: 10),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    isDense: true,
-                    // Zeichenzähler nur wenn User näher ans Limit kommt
-                    counterText: _messageController.text.length > 1800
-                        ? '${_messageController.text.length}/2000'
-                        : '',
-                    counterStyle: const TextStyle(color: Colors.orange, fontSize: 10),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
 
-              // ➤ SEND / MIC BUTTON (swap bei Text-Eingabe)
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: _hasText
-                        ? [Colors.red, const Color(0xFFE53935)]
-                        : [const Color(0xFF1A5BC4), const Color(0xFF1246A0)],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _hasText ? _sendMessage : _openVoiceRecorder,
-                    onLongPress: _hasText ? _showScheduleMessageDialog : null,
+                // ➤ SEND / MIC BUTTON (swap bei Text-Eingabe)
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _hasText
+                          ? [Colors.red, const Color(0xFFE53935)]
+                          : [const Color(0xFF1A5BC4), const Color(0xFF1246A0)],
+                    ),
                     borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      child: Icon(
-                        _hasText ? Icons.send : Icons.mic_none,
-                        color: Colors.white,
-                        size: 20,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _hasText ? _sendMessage : _openVoiceRecorder,
+                      onLongPress: _hasText ? _showScheduleMessageDialog : null,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          _hasText ? Icons.send : Icons.mic_none,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -2431,8 +2535,24 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
   // 🎨 AVATAR PICKER - Wie in ENERGIE
   Future<void> _showAvatarPicker() async {
-    final avatars = ['👤', '🤓', '🧙', '🔮', '📚', '🎭', '🎨', '⚡', '🔥', '💀', '👁️', '🌙', '⭐', '💎', '🗿'];
-    
+    final avatars = [
+      '👤',
+      '🤓',
+      '🧙',
+      '🔮',
+      '📚',
+      '🎭',
+      '🎨',
+      '⚡',
+      '🔥',
+      '💀',
+      '👁️',
+      '🌙',
+      '⭐',
+      '💎',
+      '🗿'
+    ];
+
     final selected = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: const Color(0xFF1A1A1A),
@@ -2473,8 +2593,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: _avatar == avatar 
-                              ? Colors.white 
+                          color: _avatar == avatar
+                              ? Colors.white
                               : Colors.white.withValues(alpha: 0.3),
                           width: 2,
                         ),
@@ -2492,14 +2612,15 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white70)),
               ),
             ],
           ),
         );
       },
     );
-    
+
     if (selected != null) {
       if (mounted) {
         setState(() {
@@ -2507,7 +2628,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           _avatarEmoji = selected; // Update auch avatarEmoji
         });
       }
-      
+
       // 💾 Speichere in Profil
       final storage = StorageService();
       final profile = storage.getMaterieProfile();
@@ -2521,11 +2642,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           userId: profile.userId, // 🔥 FIX: Behalte userId
           role: profile.role, // 🔥 FIX: Behalte role
         );
-        
+
         // 🔥 FIX: Backend-Sync durchführen um role zu bewahren
         final syncService = ProfileSyncService();
-        final syncedProfile = await syncService.saveMaterieProfileAndGetUpdated(updated);
-        
+        final syncedProfile =
+            await syncService.saveMaterieProfileAndGetUpdated(updated);
+
         if (syncedProfile != null) {
           await storage.saveMaterieProfile(syncedProfile);
           if (kDebugMode) {
@@ -2539,8 +2661,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
     }
   }
-
-
 
   void _showUsernameDialog() {
     // ✅ NEU: Profil-Popup statt Username-Dialog
@@ -2571,7 +2691,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const ProfileEditorScreen(world: 'materie'),
+                  builder: (context) =>
+                      const ProfileEditorScreen(world: 'materie'),
                 ),
               );
               // Profil neu laden nachdem User zurückkehrt
@@ -2588,20 +2709,20 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     );
   }
 
-    // if (timestamp == null) return '';
-     //     // final dt = DateTime.fromMillisecondsSinceEpoch(timestamp as int);
-    // final now = DateTime.now();
-    // final diff = now.difference(dt);
-     //     // if (diff.inMinutes < 1) return 'Gerade eben';
-    // if (diff.inHours < 1) return '${diff.inMinutes}m';
-    // if (diff.inDays < 1) return '${diff.inHours}h';
-    // return '${dt.day}.${dt.month}. ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+  // if (timestamp == null) return '';
+  //     // final dt = DateTime.fromMillisecondsSinceEpoch(timestamp as int);
+  // final now = DateTime.now();
+  // final diff = now.difference(dt);
+  //     // if (diff.inMinutes < 1) return 'Gerade eben';
+  // if (diff.inHours < 1) return '${diff.inMinutes}m';
+  // if (diff.inDays < 1) return '${diff.inHours}h';
+  // return '${dt.day}.${dt.month}. ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
   // }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 NEUE FEATURES - WEBRTC, TYPING, REACTIONS, SWIPE
   // ═══════════════════════════════════════════════════════════
-  
+
   // ⌨️ TYPING INDICATORS
   // Feature #12: improved typing indicator with avatars + bouncing dots
   Widget _buildTypingIndicators() {
@@ -2650,7 +2771,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     : users.length == 2
                         ? '${users[0]} & ${users[1]} tippen...'
                         : '${_typingUsers.length} Personen tippen...',
-                style: TextStyle(color: Colors.grey[500], fontSize: 11, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic),
               ),
             ],
           ),
@@ -2658,7 +2782,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   // 😀 EMOJI REACTIONS
   void _showReactionPicker(Map<String, dynamic> msg) {
     showModalBottomSheet(
@@ -2669,90 +2793,91 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   void _addReaction(Map<String, dynamic> msg, String emoji) {
     if (mounted) {
       setState(() {
-      // Initialize reactions map if not exists
-      if (msg['reactions'] == null) {
-        msg['reactions'] = <String, dynamic>{};
-      }
-      
-      final reactions = msg['reactions'] as Map<String, dynamic>;
-      
-      // Initialize emoji list if not exists
-      if (reactions[emoji] == null) {
-        reactions[emoji] = <String>[];
-      }
-      
-      final userList = reactions[emoji] as List<dynamic>;
-      
-      // Toggle reaction
-      if (userList.contains(_username)) {
-        userList.remove(_username);
-        if (userList.isEmpty) {
-          reactions.remove(emoji);
+        // Initialize reactions map if not exists
+        if (msg['reactions'] == null) {
+          msg['reactions'] = <String, dynamic>{};
         }
-        // ✅ Sync to API (remove)
-        final msgId = msg['id']?.toString() ?? '';
-        if (msgId.isNotEmpty) _syncReactionToApi(msgId, emoji, false);
-      } else {
-        userList.add(_username);
-        // ✅ Sync to API (add)
-        final msgId = msg['id']?.toString() ?? '';
-        if (msgId.isNotEmpty) _syncReactionToApi(msgId, emoji, true);
-      }
-    });
+
+        final reactions = msg['reactions'] as Map<String, dynamic>;
+
+        // Initialize emoji list if not exists
+        if (reactions[emoji] == null) {
+          reactions[emoji] = <String>[];
+        }
+
+        final userList = reactions[emoji] as List<dynamic>;
+
+        // Toggle reaction
+        if (userList.contains(_username)) {
+          userList.remove(_username);
+          if (userList.isEmpty) {
+            reactions.remove(emoji);
+          }
+          // ✅ Sync to API (remove)
+          final msgId = msg['id']?.toString() ?? '';
+          if (msgId.isNotEmpty) _syncReactionToApi(msgId, emoji, false);
+        } else {
+          userList.add(_username);
+          // ✅ Sync to API (add)
+          final msgId = msg['id']?.toString() ?? '';
+          if (msgId.isNotEmpty) _syncReactionToApi(msgId, emoji, true);
+        }
+      });
     }
   }
-  
+
   // ✏️ MESSAGE EDIT
   void _startEditingMessage(Map<String, dynamic> msg) {
-    final messageId = msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
+    final messageId =
+        msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
     if (mounted) {
       setState(() {
-      _editingMessageId = messageId;
-    });
+        _editingMessageId = messageId;
+      });
     }
   }
-  
+
   void _saveEditedMessage(Map<String, dynamic> msg, String newContent) {
     if (mounted) {
       setState(() {
-      msg['message'] = newContent;
-      msg['edited'] = true;
-      msg['editedAt'] = DateTime.now().toIso8601String();
-      _editingMessageId = null;
-    });
+        msg['message'] = newContent;
+        msg['edited'] = true;
+        msg['editedAt'] = DateTime.now().toIso8601String();
+        _editingMessageId = null;
+      });
     }
-    
+
     if (kDebugMode) {
       debugPrint('✏️ Materie: Message edited');
     }
   }
-  
+
   void _cancelEditingMessage() {
     if (mounted) {
       setState(() {
-      _editingMessageId = null;
-    });
+        _editingMessageId = null;
+      });
     }
   }
-  
+
   // 🗑️ MESSAGE DELETE
   // 🔍 MESSAGE SEARCH
   void _toggleSearch() {
     if (mounted) {
       setState(() {
-      _showSearch = !_showSearch;
-    });
+        _showSearch = !_showSearch;
+      });
     }
   }
-  
+
   void _jumpToMessage(Map<String, dynamic> msg) {
     final index = _messages.indexOf(msg);
     if (index == -1) return;
-    
+
     final scrollPosition = index * 80.0;
     _scrollController.animateTo(
       scrollPosition,
@@ -2760,23 +2885,24 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       curve: Curves.easeInOut,
     );
   }
-  
+
   // 🛠️ MESSAGE OPTIONS
-  void _showMessageOptions(BuildContext context, Map<String, dynamic> msg) async {
+  void _showMessageOptions(
+      BuildContext context, Map<String, dynamic> msg) async {
     final isOwnMessage = msg['username'] == _username;
-    
+
     // ✅ SECURE: Check admin status from Backend Role (EXACT Dashboard Match!)
     final storage = StorageService();
     final profile = storage.getMaterieProfile();
-    final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
-    
+    final backendRole = profile?.role; // 'root_admin', 'admin', or 'user'
+
     // v103: Migration weg von AdminPermissions zu AppRoles (Single
     // Source of Truth in lib/core/constants/roles.dart).
     final isAdmin = AppRoles.canViewModTools(backendRole);
     final adminBadge = AppRoles.getBadgeEmoji(backendRole);
     final canDeleteAny = AppRoles.canDeleteMessages(backendRole);
     final canBan = AppRoles.canBanUsers(backendRole);
-    
+
     await showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF050310),
@@ -2800,7 +2926,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             if (isOwnMessage) ...[
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.red),
-                title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+                title: const Text('Bearbeiten',
+                    style: TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(context);
                   _startEditingMessage(msg);
@@ -2808,7 +2935,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+                title: const Text('Löschen',
+                    style: TextStyle(color: Colors.white)),
                 onTap: () {
                   Navigator.pop(context);
                   _deleteMessage(msg);
@@ -2817,7 +2945,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ],
             ListTile(
               leading: const Icon(Icons.reply, color: Colors.red),
-              title: const Text('Antworten', style: TextStyle(color: Colors.white)),
+              title: const Text('Antworten',
+                  style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
                 _replyToMessage(msg);
@@ -2825,7 +2954,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ),
             ListTile(
               leading: const Icon(Icons.add_reaction, color: Colors.red),
-              title: const Text('Reaktion', style: TextStyle(color: Colors.white)),
+              title:
+                  const Text('Reaktion', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
                 _showReactionPicker(msg);
@@ -2833,13 +2963,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ),
             ListTile(
               leading: const Icon(Icons.copy, color: Colors.white70),
-              title: const Text('Kopieren', style: TextStyle(color: Colors.white)),
+              title:
+                  const Text('Kopieren', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
-                final text = (msg['message'] ?? msg['content'] ?? '').toString();
+                final text =
+                    (msg['message'] ?? msg['content'] ?? '').toString();
                 Clipboard.setData(ClipboardData(text: text));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nachricht kopiert'), duration: Duration(seconds: 2)),
+                  const SnackBar(
+                      content: Text('Nachricht kopiert'),
+                      duration: Duration(seconds: 2)),
                 );
               },
             ),
@@ -2847,34 +2981,37 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             // 🔧 ADMIN MODERATION OPTIONS (Secure check via AdminPermissions)
             if (isAdmin) ...[
               const Divider(color: Colors.orange),
-              
+
               // ADMIN: Delete any message (if has permission)
               if (canDeleteAny && !isOwnMessage)
                 ListTile(
                   leading: const Icon(Icons.delete_forever, color: Colors.red),
-                  title: Text('Nachricht löschen $adminBadge', style: const TextStyle(color: Colors.red)),
+                  title: Text('Nachricht löschen $adminBadge',
+                      style: const TextStyle(color: Colors.red)),
                   onTap: () {
                     Navigator.pop(context);
                     _deleteMessage(msg, isAdmin: true);
                   },
                 ),
-              
+
               // ADMIN: Flag Content
               if (!isOwnMessage)
                 ListTile(
                   leading: const Icon(Icons.flag, color: Colors.orange),
-                  title: const Text('Inhalt melden', style: TextStyle(color: Colors.orange)),
+                  title: const Text('Inhalt melden',
+                      style: TextStyle(color: Colors.orange)),
                   onTap: () {
                     Navigator.pop(context);
                     _showFlagDialog(msg);
                   },
                 ),
-              
+
               // ADMIN: Ban/Mute User
               if (canBan && !isOwnMessage)
                 ListTile(
                   leading: const Icon(Icons.volume_off, color: Colors.orange),
-                  title: Text('User sperren $adminBadge', style: const TextStyle(color: Colors.orange)),
+                  title: Text('User sperren $adminBadge',
+                      style: const TextStyle(color: Colors.orange)),
                   onTap: () {
                     Navigator.pop(context);
                     _showMuteDialog(msg, canBan);
@@ -2883,7 +3020,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
               // ADMIN: Pin/Unpin Message (E2)
               ListTile(
-                leading: const Icon(Icons.push_pin_rounded, color: Color(0xFF2979FF)),
+                leading: const Icon(Icons.push_pin_rounded,
+                    color: Color(0xFF2979FF)),
                 title: Text('Nachricht anpinnen $adminBadge',
                     style: const TextStyle(color: Color(0xFF2979FF))),
                 onTap: () async {
@@ -2895,12 +3033,14 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     messageId: messageId,
                     pinnedBy: _username.isNotEmpty ? _username : 'admin',
                     pinnedByRole: backendRole,
-                    preview: (msg['message'] ?? msg['content'] ?? '').toString(),
+                    preview:
+                        (msg['message'] ?? msg['content'] ?? '').toString(),
                   );
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(ok ? '📌 Angepinnt' : '❌ Pin fehlgeschlagen'),
-                    backgroundColor: ok ? Colors.blue.shade700 : Colors.red.shade700,
+                    backgroundColor:
+                        ok ? Colors.blue.shade700 : Colors.red.shade700,
                     duration: const Duration(seconds: 2),
                   ));
                 },
@@ -2911,11 +3051,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   Widget _buildMessageWithReactions(Map<String, dynamic> msg) {
-    final messageId = msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
+    final messageId =
+        msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
     final isEditing = _editingMessageId == messageId;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2934,7 +3075,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             onDoubleTap: () => _addReaction(msg, '❤️'),
             child: _buildEnhancedMessageBubble(msg),
           ),
-        
+
         if (!isEditing)
           Padding(
             padding: const EdgeInsets.only(left: 60, top: 4),
@@ -2992,12 +3133,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   void _replyToMessage(Map<String, dynamic> msg) {
     if (mounted) {
       setState(() {
-      _replyingTo = msg;
-    });
+        _replyingTo = msg;
+      });
     }
     _inputFocusNode.requestFocus();
   }
-  
+
   /// 🆕 SHOW MESSAGE ACTIONS (Long-Press on own messages)
   void _showMessageActions(Map<String, dynamic> msg) {
     showModalBottomSheet(
@@ -3022,7 +3163,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.edit, color: Colors.blue),
-              title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+              title: const Text('Bearbeiten',
+                  style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
                 _editMessage(msg);
@@ -3030,7 +3172,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+              title:
+                  const Text('Löschen', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
                 _deleteMessage(msg);
@@ -3042,15 +3185,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   /// 🆕 EDIT MESSAGE
   Future<void> _editMessage(Map<String, dynamic> msg) async {
-    final controller = TextEditingController(text: msg['message']?.toString() ?? '');
+    final controller =
+        TextEditingController(text: msg['message']?.toString() ?? '');
     final newText = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Nachricht bearbeiten', style: TextStyle(color: Colors.white)),
+        title: const Text('Nachricht bearbeiten',
+            style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: controller,
           style: const TextStyle(color: Colors.white),
@@ -3068,7 +3213,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+            child:
+                const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -3078,15 +3224,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         ],
       ),
     );
-    
-    if (newText != null && newText.trim().isNotEmpty && newText != msg['message']) {
+
+    if (newText != null &&
+        newText.trim().isNotEmpty &&
+        newText != msg['message']) {
       final trimmed = newText.trim();
       final msgId = msg['message_id'] ?? msg['id'] ?? '';
 
       // ✅ OPTIMISTIC UPDATE: Sofort lokal aktualisieren
       if (mounted) {
         setState(() {
-          final idx = _messages.indexWhere((m) => (m['message_id'] ?? m['id']) == msgId);
+          final idx = _messages
+              .indexWhere((m) => (m['message_id'] ?? m['id']) == msgId);
           if (idx != -1) {
             _messages[idx] = {
               ..._messages[idx],
@@ -3130,12 +3279,14 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   }
 
   /// 🆕 DELETE MESSAGE
-  Future<void> _deleteMessage(Map<String, dynamic> msg, {bool isAdmin = false}) async {
+  Future<void> _deleteMessage(Map<String, dynamic> msg,
+      {bool isAdmin = false}) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Nachricht löschen?', style: TextStyle(color: Colors.white)),
+        title: const Text('Nachricht löschen?',
+            style: TextStyle(color: Colors.white)),
         content: const Text(
           'Diese Aktion kann nicht rückgängig gemacht werden.',
           style: TextStyle(color: Colors.grey),
@@ -3143,7 +3294,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+            child:
+                const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -3160,7 +3312,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
       // Backup für Rollback
       final backupMsg = Map<String, dynamic>.from(msg);
-      final backupIndex = _messages.indexWhere((m) => (m['message_id'] ?? m['id']) == msgId);
+      final backupIndex =
+          _messages.indexWhere((m) => (m['message_id'] ?? m['id']) == msgId);
 
       // Optimistic: sofort lokal entfernen
       if (mounted) {
@@ -3217,7 +3370,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Löschen fehlgeschlagen. Bitte erneut versuchen.'),
+              content:
+                  Text('❌ Löschen fehlgeschlagen. Bitte erneut versuchen.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -3243,7 +3397,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF0A1020),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -3251,43 +3406,58 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Nachricht planen', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('Nachricht planen',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text('"${text.length > 50 ? '${text.substring(0, 47)}…' : text}"', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              Text('"${text.length > 50 ? '${text.substring(0, 47)}…' : text}"',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12)),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: List.generate(delays.length, (i) => GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      _scheduledMessages.add((DateTime.now().add(delays[i]), text));
-                      _messageController.clear();
-                    });
-                    final t = Timer(delays[i], () {
-                      if (mounted) {
-                        _messageController.text = text;
-                        _sendMessage();
-                      }
-                    });
-                    _scheduledTimers.add(t);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('✅ Geplant für ${labels[i]}'),
-                      backgroundColor: Colors.red,
-                      duration: const Duration(seconds: 2),
-                    ));
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE53935).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.4)),
-                    ),
-                    child: Text(labels[i], style: const TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.w600)),
-                  ),
-                )),
+                children: List.generate(
+                    delays.length,
+                    (i) => GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              _scheduledMessages
+                                  .add((DateTime.now().add(delays[i]), text));
+                              _messageController.clear();
+                            });
+                            final t = Timer(delays[i], () {
+                              if (mounted) {
+                                _messageController.text = text;
+                                _sendMessage();
+                              }
+                            });
+                            _scheduledTimers.add(t);
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('✅ Geplant für ${labels[i]}'),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 2),
+                            ));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE53935)
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: const Color(0xFFE53935)
+                                      .withValues(alpha: 0.4)),
+                            ),
+                            child: Text(labels[i],
+                                style: const TextStyle(
+                                    color: Color(0xFFE53935),
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        )),
               ),
             ],
           ),
@@ -3306,7 +3476,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       context: context,
       backgroundColor: const Color(0xFF0A1020),
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.55,
         maxChildSize: 0.9,
@@ -3315,15 +3486,25 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         builder: (_, ctrl) => Column(
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  const Icon(Icons.alternate_email, color: Color(0xFFE53935), size: 20),
+                  const Icon(Icons.alternate_email,
+                      color: Color(0xFFE53935), size: 20),
                   const SizedBox(width: 8),
-                  Text('Erwähnungen (${mentions.length})', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Erwähnungen (${mentions.length})',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -3331,39 +3512,56 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             const Divider(color: Colors.white12),
             Expanded(
               child: mentions.isEmpty
-                ? const Center(child: Text('Keine Erwähnungen in dieser Sitzung', style: TextStyle(color: Colors.grey)))
-                : ListView.builder(
-                    controller: ctrl,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: mentions.length,
-                    itemBuilder: (_, i) {
-                      final m = mentions[mentions.length - 1 - i];
-                      final text = (m['message'] ?? m['content'] ?? '').toString();
-                      final sender = m['username']?.toString() ?? '?';
-                      final ts = _formatTime(m['timestamp'] ?? m['created_at']);
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE53935).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE53935).withValues(alpha: 0.3)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              Text(sender, style: const TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.bold, fontSize: 13)),
-                              const Spacer(),
-                              Text(ts, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                            ]),
-                            const SizedBox(height: 4),
-                            Text(text, style: const TextStyle(color: Colors.white, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                  ? const Center(
+                      child: Text('Keine Erwähnungen in dieser Sitzung',
+                          style: TextStyle(color: Colors.grey)))
+                  : ListView.builder(
+                      controller: ctrl,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: mentions.length,
+                      itemBuilder: (_, i) {
+                        final m = mentions[mentions.length - 1 - i];
+                        final text =
+                            (m['message'] ?? m['content'] ?? '').toString();
+                        final sender = m['username']?.toString() ?? '?';
+                        final ts =
+                            _formatTime(m['timestamp'] ?? m['created_at']);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFFE53935).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: const Color(0xFFE53935)
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                Text(sender,
+                                    style: const TextStyle(
+                                        color: Color(0xFFE53935),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13)),
+                                const Spacer(),
+                                Text(ts,
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontSize: 11)),
+                              ]),
+                              const SizedBox(height: 4),
+                              Text(text,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 13),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -3405,18 +3603,23 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF0A1020),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(roomData['icon'] ?? '💬', style: const TextStyle(fontSize: 48)),
+              Text(roomData['icon'] ?? '💬',
+                  style: const TextStyle(fontSize: 48)),
               const SizedBox(height: 10),
               Text(
                 roomData['name'] ?? roomId,
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               if (roomData['description'] != null) ...[
@@ -3435,7 +3638,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE53935),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
@@ -3446,7 +3650,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   ),
                 )
               else
-                Text('Du bist bereits in diesem Raum', style: TextStyle(color: Colors.grey[500])),
+                Text('Du bist bereits in diesem Raum',
+                    style: TextStyle(color: Colors.grey[500])),
             ],
           ),
         ),
@@ -3457,41 +3662,59 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   // Feature #17: smart reply suggestions based on last received message
   static List<String> _generateSmartReplies(String msg) {
     final lower = msg.toLowerCase();
-    if (msg.trim().endsWith('?')) return ['Ja', 'Nein', 'Vielleicht', 'Weiß nicht'];
-    if (lower.contains('danke') || lower.contains('thanks')) return ['Gerne!', 'Kein Problem', '👍', '😊'];
-    if (lower.contains('hallo') || lower.contains('hey') || lower.contains('hi')) return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
-    if (lower.contains('interessant') || lower.contains('spannend') || lower.contains('krass')) return ['Wirklich? 😮', 'Mehr davon!', 'Quelle?', '🔥'];
-    if (lower.contains('ok') || lower.contains('alles klar') || lower.contains('verstanden')) return ['👍', 'Super', '✅', 'Danke'];
+    if (msg.trim().endsWith('?'))
+      return ['Ja', 'Nein', 'Vielleicht', 'Weiß nicht'];
+    if (lower.contains('danke') || lower.contains('thanks'))
+      return ['Gerne!', 'Kein Problem', '👍', '😊'];
+    if (lower.contains('hallo') ||
+        lower.contains('hey') ||
+        lower.contains('hi')) return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
+    if (lower.contains('interessant') ||
+        lower.contains('spannend') ||
+        lower.contains('krass'))
+      return ['Wirklich? 😮', 'Mehr davon!', 'Quelle?', '🔥'];
+    if (lower.contains('ok') ||
+        lower.contains('alles klar') ||
+        lower.contains('verstanden')) return ['👍', 'Super', '✅', 'Danke'];
     return ['Ok', 'Verstanden', '👍', '❤️'];
   }
 
   Widget _buildSmartRepliesRow(Color accentColor) {
-    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty) return const SizedBox.shrink();
+    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty)
+      return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: _smartReplies.map((reply) => Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                _messageController.text = reply;
-                setState(() => _smartReplies = []);
-                _sendMessage();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: accentColor.withValues(alpha: 0.4)),
-                ),
-                child: Text(reply, style: TextStyle(color: accentColor, fontSize: 13, fontWeight: FontWeight.w500)),
-              ),
-            ),
-          )).toList(),
+          children: _smartReplies
+              .map((reply) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _messageController.text = reply;
+                        setState(() => _smartReplies = []);
+                        _sendMessage();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: accentColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: accentColor.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(reply,
+                            style: TextStyle(
+                                color: accentColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                  ))
+              .toList(),
         ),
       ),
     );
@@ -3546,8 +3769,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             onPressed: () {
               if (mounted) {
                 setState(() {
-                _replyingTo = null;
-              });
+                  _replyingTo = null;
+                });
               }
             },
           ),
@@ -3555,7 +3778,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   Widget _buildSwipeableMessage(Map<String, dynamic> msg) {
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 300),
@@ -3571,7 +3794,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         );
       },
       child: Dismissible(
-        key: Key(msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '${DateTime.now().millisecondsSinceEpoch}'),
+        key: Key(msg['id']?.toString() ??
+            msg['timestamp']?.toString() ??
+            '${DateTime.now().millisecondsSinceEpoch}'),
         direction: DismissDirection.endToStart,
         confirmDismiss: (direction) async {
           _replyToMessage(msg);
@@ -3591,11 +3816,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   // 🆕 ENHANCED MESSAGE BUBBLE (Modern Design)
   Widget _buildEnhancedMessageBubble(Map<String, dynamic> msg) {
     // ✅ isOwn: vergleiche userId (camelCase) und user_id (snake_case) + username als Fallback
-    final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
+    final msgUserId =
+        msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
     final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
         (msg['username']?.toString() == _username && _username.isNotEmpty);
     // Feature #10: iMessage-style grouping
@@ -3609,7 +3835,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         top: isGrouped ? 0 : 2,
       ),
       child: Row(
-        mainAxisAlignment: isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           // Avatar placeholder keeps alignment; hidden when grouped
@@ -3619,10 +3846,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                 onTap: () => UserQuickProfileSheet.show(
                   context,
                   username: msg['username']?.toString() ?? '',
-                  displayName: msg['display_name']?.toString()
-                      ?? msg['displayName']?.toString(),
-                  avatarUrl: msg['avatar_url']?.toString()
-                      ?? msg['avatarUrl']?.toString(),
+                  displayName: msg['display_name']?.toString() ??
+                      msg['displayName']?.toString(),
+                  avatarUrl: msg['avatar_url']?.toString() ??
+                      msg['avatarUrl']?.toString(),
                   accent: const Color(0xFF2979FF),
                   onMention: (u) {
                     final cur = _messageController.text;
@@ -3637,9 +3864,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   radius: 18,
                   backgroundColor: Colors.red.withValues(alpha: 0.2),
                   child: Text(
-                    msg['avatarEmoji']?.toString()
-                        ?? msg['avatar_emoji']?.toString()
-                        ?? '👤',
+                    msg['avatarEmoji']?.toString() ??
+                        msg['avatar_emoji']?.toString() ??
+                        '👤',
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),
@@ -3657,186 +3884,203 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                gradient: isOwn
-                    ? const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
-                      )
-                    : null,
-                color: isOwn ? null : const Color(0xCC1A1A24),
-                border: isOwn
-                    ? null
-                    : Border.all(color: Colors.white.withValues(alpha: 0.07)),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(isGrouped && !isOwn ? 4 : 16),
-                  topRight: Radius.circular(isGrouped && isOwn ? 4 : 16),
-                  bottomLeft: isOwn ? const Radius.circular(16) : const Radius.circular(4),
-                  bottomRight: isOwn ? const Radius.circular(4) : const Radius.circular(16),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.32),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+                  gradient: isOwn
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
+                        )
+                      : null,
+                  color: isOwn ? null : const Color(0xCC1A1A24),
+                  border: isOwn
+                      ? null
+                      : Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(isGrouped && !isOwn ? 4 : 16),
+                    topRight: Radius.circular(isGrouped && isOwn ? 4 : 16),
+                    bottomLeft: isOwn
+                        ? const Radius.circular(16)
+                        : const Radius.circular(4),
+                    bottomRight: isOwn
+                        ? const Radius.circular(4)
+                        : const Radius.circular(16),
                   ),
-                  if (isOwn)
+                  boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.30),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
+                      color: Colors.black.withValues(alpha: 0.32),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Username (nur bei anderen, nicht wenn gruppiert)
-                  if (!isOwn && !isGrouped)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        msg['username']?.toString() ?? 'Unbekannt',
-                        style: const TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                    if (isOwn)
+                      BoxShadow(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.30),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Username (nur bei anderen, nicht wenn gruppiert)
+                    if (!isOwn && !isGrouped)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          msg['username']?.toString() ?? 'Unbekannt',
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
 
-                  // Feature #14: Reply chain visualization
-                  if ((msg['reply_to_id']?.toString().isNotEmpty ?? false))
-                    _buildInlineReplyQuote(
-                      senderName: msg['reply_to_sender_name']?.toString(),
-                      content: msg['reply_to_content']?.toString(),
-                      color: const Color(0xFFE53935),
-                    ),
+                    // Feature #14: Reply chain visualization
+                    if ((msg['reply_to_id']?.toString().isNotEmpty ?? false))
+                      _buildInlineReplyQuote(
+                        senderName: msg['reply_to_sender_name']?.toString(),
+                        content: msg['reply_to_content']?.toString(),
+                        color: const Color(0xFFE53935),
+                      ),
 
-                  // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
-                  // FIX: sowohl camelCase (lokal optimistisch) als auch
-                  // snake_case (Realtime) berücksichtigen — vorher 100%
-                  // Mismatch bei Realtime → leerer/grauer Container.
-                  if (() {
-                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
-                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
-                    return t == 'voice' && url != null && url.isNotEmpty;
-                  }())
-                    // 🎵 VOICE MESSAGE PLAYER
-                    ChatVoicePlayer(
-                      audioUrl: (msg['mediaUrl'] ?? msg['media_url'] ?? '').toString(),
-                      duration: Duration(seconds: int.tryParse(
-                        msg['message']?.toString()
-                          .replaceAll('🎤 Sprachnachricht (', '')
-                          .replaceAll('s)', '')
-                          .replaceAll(')', '') ?? '0'
-                      ) ?? 0),
-                      accentColor: const Color(0xFF2196F3),
-                    )
-                  else if (() {
-                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
-                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
-                    return t == 'image' && url != null && url.isNotEmpty;
-                  }())
-                    // Feature #15: Tappable image with hero → fullscreen viewer
-                    Builder(builder: (_) {
-                      final url = (msg['mediaUrl'] ?? msg['media_url']).toString();
-                      return GestureDetector(
-                        onTap: () => ChatImageViewer.open(
-                          context,
-                          imageUrl: url,
-                          heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                          accentColor: const Color(0xFFE53935),
-                        ),
-                        child: Hero(
-                          tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CachedNetworkImage(
-                              imageUrl: url,
-                              width: 200,
-                              height: 200,
-                              fit: BoxFit.cover,
-                              errorWidget: (context, _, __) => Container(
+                    // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
+                    // FIX: sowohl camelCase (lokal optimistisch) als auch
+                    // snake_case (Realtime) berücksichtigen — vorher 100%
+                    // Mismatch bei Realtime → leerer/grauer Container.
+                    if (() {
+                      final t =
+                          (msg['mediaType'] ?? msg['message_type'])?.toString();
+                      final url =
+                          (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                      return t == 'voice' && url != null && url.isNotEmpty;
+                    }())
+                      // 🎵 VOICE MESSAGE PLAYER
+                      ChatVoicePlayer(
+                        audioUrl: (msg['mediaUrl'] ?? msg['media_url'] ?? '')
+                            .toString(),
+                        duration: Duration(
+                            seconds: int.tryParse(msg['message']
+                                        ?.toString()
+                                        .replaceAll('🎤 Sprachnachricht (', '')
+                                        .replaceAll('s)', '')
+                                        .replaceAll(')', '') ??
+                                    '0') ??
+                                0),
+                        accentColor: const Color(0xFF2196F3),
+                      )
+                    else if (() {
+                      final t =
+                          (msg['mediaType'] ?? msg['message_type'])?.toString();
+                      final url =
+                          (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                      return t == 'image' && url != null && url.isNotEmpty;
+                    }())
+                      // Feature #15: Tappable image with hero → fullscreen viewer
+                      Builder(builder: (_) {
+                        final url =
+                            (msg['mediaUrl'] ?? msg['media_url']).toString();
+                        return GestureDetector(
+                          onTap: () => ChatImageViewer.open(
+                            context,
+                            imageUrl: url,
+                            heroTag:
+                                'chat-img-${msg['id'] ?? msg['timestamp']}',
+                            accentColor: const Color(0xFFE53935),
+                          ),
+                          child: Hero(
+                            tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: CachedNetworkImage(
+                                imageUrl: url,
                                 width: 200,
-                                height: 150,
-                                color: Colors.grey[700],
-                                child: const Icon(Icons.broken_image, size: 48),
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorWidget: (context, _, __) => Container(
+                                  width: 200,
+                                  height: 150,
+                                  color: Colors.grey[700],
+                                  child:
+                                      const Icon(Icons.broken_image, size: 48),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    })
-                  else
-                    // Regular Text Message (Markdown-Light + klickbare Links)
-                    ChatMarkdownText(
-                      msg['message']?.toString() ?? '',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        height: 1.35,
-                      ),
-                    ),
-                  
-                  const SizedBox(height: 4),
-                  
-                  // Timestamp & Status
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatTime(msg['timestamp'] ?? msg['created_at']),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 11,
+                        );
+                      })
+                    else
+                      // Regular Text Message (Markdown-Light + klickbare Links)
+                      ChatMarkdownText(
+                        msg['message']?.toString() ?? '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          height: 1.35,
                         ),
                       ),
-                      if (isOwn) ...[
-                        const SizedBox(width: 4),
-                        Builder(builder: (_) {
-                          // Bundle 5.5: Optimistisch gequeuete Nachricht
-                          // zeigt Clock — sonst Doppelhaken. Server schreibt
-                          // read_by als Array; blau wenn jemand anderes
-                          // gelesen hat.
-                          if (msg['is_pending'] == true) {
+
+                    const SizedBox(height: 4),
+
+                    // Timestamp & Status
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _formatTime(msg['timestamp'] ?? msg['created_at']),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 11,
+                          ),
+                        ),
+                        if (isOwn) ...[
+                          const SizedBox(width: 4),
+                          Builder(builder: (_) {
+                            // Bundle 5.5: Optimistisch gequeuete Nachricht
+                            // zeigt Clock — sonst Doppelhaken. Server schreibt
+                            // read_by als Array; blau wenn jemand anderes
+                            // gelesen hat.
+                            if (msg['is_pending'] == true) {
+                              return Icon(
+                                Icons.access_time_rounded,
+                                size: 14,
+                                color: Colors.white.withValues(alpha: 0.6),
+                              );
+                            }
+                            final readBy = msg['read_by'];
+                            final readers = readBy is List
+                                ? readBy
+                                    .where((r) =>
+                                        r != null && r.toString() != _userId)
+                                    .length
+                                : 0;
+                            final isRead = readers > 0 || msg['read'] == true;
                             return Icon(
-                              Icons.access_time_rounded,
+                              Icons.done_all,
                               size: 14,
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: isRead
+                                  ? Colors.blue
+                                  : Colors.white.withValues(alpha: 0.6),
                             );
-                          }
-                          final readBy = msg['read_by'];
-                          final readers = readBy is List
-                              ? readBy.where((r) =>
-                                      r != null && r.toString() != _userId)
-                                  .length
-                              : 0;
-                          final isRead = readers > 0 || msg['read'] == true;
-                          return Icon(
-                            Icons.done_all,
-                            size: 14,
-                            color: isRead
-                                ? Colors.blue
-                                : Colors.white.withValues(alpha: 0.6),
-                          );
-                        }),
+                          }),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
-              ),
-            ), // Container
+                    ),
+                  ],
+                ),
+              ), // Container
             ), // InkWell
           ), // Flexible
         ],
       ),
     );
   }
-  
+
   // Feature #14: inline reply quote block inside bubble
-  Widget _buildInlineReplyQuote({String? senderName, String? content, required Color color}) {
-    final name = (senderName ?? '').trim().isEmpty ? 'Nachricht' : senderName!.trim();
+  Widget _buildInlineReplyQuote(
+      {String? senderName, String? content, required Color color}) {
+    final name =
+        (senderName ?? '').trim().isEmpty ? 'Nachricht' : senderName!.trim();
     final snippet = (content ?? '').trim();
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -3850,14 +4094,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          Text(name,
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w700, color: color)),
           if (snippet.isNotEmpty) ...[
             const SizedBox(height: 2),
             Text(
               snippet,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.65)),
+              style: TextStyle(
+                  fontSize: 11, color: Colors.white.withValues(alpha: 0.65)),
             ),
           ],
         ],
@@ -3887,7 +4134,20 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       label = 'Gestern';
     } else {
       const wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-      const mo = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+      const mo = [
+        'Jan',
+        'Feb',
+        'Mär',
+        'Apr',
+        'Mai',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Dez'
+      ];
       label = '${wd[date.weekday - 1]}, ${date.day}. ${mo[date.month - 1]}.';
     }
     return Padding(
@@ -3905,7 +4165,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ),
             child: Text(
               label,
-              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.4),
+              style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4),
             ),
           ),
           const SizedBox(width: 8),
@@ -3927,10 +4191,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       } else {
         return '';
       }
-      
+
       final now = DateTime.now();
       final diff = now.difference(dt);
-      
+
       if (diff.inMinutes < 1) return 'Jetzt';
       if (diff.inHours < 1) return '${diff.inMinutes}m';
       if (diff.inDays < 1) return '${diff.inHours}h';
@@ -3939,7 +4203,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       return '';
     }
   }
-  
+
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -3950,18 +4214,19 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   // 🔧 ADMIN MODERATION METHODS
-  
+
   /// 🚩 FLAG DIALOG: Report content for moderation
   void _showFlagDialog(Map<String, dynamic> msg) {
     final reasonController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Inhalt melden', style: TextStyle(color: Colors.orange)),
+        title:
+            const Text('Inhalt melden', style: TextStyle(color: Colors.orange)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3988,12 +4253,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              
+
               try {
                 final moderation = ModerationService();
                 await moderation.flagContent(
@@ -4003,7 +4269,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   reason: reasonController.text.trim(),
                   adminToken: _username,
                 );
-                
+
                 if (mounted) {
                   _showSnackBar('✅ Inhalt wurde gemeldet', Colors.green);
                 }
@@ -4020,7 +4286,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   /// 🗑️ ADMIN DELETE: Root admin can delete any message
   // ignore: unused_element
   void _adminDeleteMessage(Map<String, dynamic> msg) async {
@@ -4028,7 +4294,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Nachricht löschen (Admin)', style: TextStyle(color: Colors.red)),
+        title: const Text('Nachricht löschen (Admin)',
+            style: TextStyle(color: Colors.red)),
         content: Text(
           'Nachricht von ${msg['username']}: "${msg['message'] ?? ''}"',
           style: const TextStyle(color: Colors.white),
@@ -4036,7 +4303,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -4046,9 +4314,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         ],
       ),
     );
-    
+
     if (confirmed == true) {
-      final messageId = msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
+      final messageId =
+          msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
 
       // ✅ OPTIMISTIC UPDATE: Sofort lokal entfernen
       if (mounted) {
@@ -4062,43 +4331,48 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
       // Server-Update im Hintergrund
       if (messageId.isNotEmpty) {
-        _api.deleteChatMessage(
+        _api
+            .deleteChatMessage(
           roomId: _fullRoomId,
           messageId: messageId,
           userId: _userId,
           username: _username,
           realm: 'materie',
           isAdmin: true,
-        ).then((_) {
+        )
+            .then((_) {
           if (kDebugMode) debugPrint('✅ Materie Admin-Delete gespeichert');
         }).catchError((e) {
-          if (kDebugMode) debugPrint('⚠️ Materie Admin-Delete server error: $e');
+          if (kDebugMode)
+            debugPrint('⚠️ Materie Admin-Delete server error: $e');
         });
       }
     }
   }
-  
+
   /// 🔇 MUTE DIALOG: Temporarily or permanently mute user
   void _showMuteDialog(Map<String, dynamic> msg, bool isRootAdmin) {
     final reasonController = TextEditingController();
     String muteType = '24h'; // Default: 24h
-    
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           backgroundColor: const Color(0xFF1A1A2E),
-          title: const Text('User sperren', style: TextStyle(color: Colors.orange)),
+          title: const Text('User sperren',
+              style: TextStyle(color: Colors.orange)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'User: ${msg['username']}',
-                style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white70, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              
+
               // Mute Type Selector
               const Text('Sperrdauer:', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
@@ -4115,7 +4389,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   children: [
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('24 Stunden', style: TextStyle(color: Colors.white, fontSize: 14)),
+                        title: const Text('24 Stunden',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 14)),
                         value: '24h',
                         activeColor: Colors.orange,
                       ),
@@ -4123,7 +4399,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     if (isRootAdmin)
                       Expanded(
                         child: RadioListTile<String>(
-                          title: const Text('Permanent', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          title: const Text('Permanent',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 14)),
                           value: 'permanent',
                           activeColor: Colors.red,
                         ),
@@ -4131,7 +4409,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 16),
               TextField(
                 controller: reasonController,
@@ -4148,16 +4426,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white70)),
             ),
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context);
-                
+
                 try {
-                  final targetUserId = 'materie_${msg['username']}'; // Construct user_id
+                  final targetUserId =
+                      'materie_${msg['username']}'; // Construct user_id
                   final moderation = ModerationService();
-                  
+
                   await moderation.muteUser(
                     world: 'materie',
                     userId: targetUserId,
@@ -4166,10 +4446,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     reason: reasonController.text.trim(),
                     adminToken: _username,
                   );
-                  
+
                   if (mounted) {
-                    final durationText = muteType == '24h' ? '24 Stunden' : 'permanent';
-                    _showSnackBar('✅ User ${msg['username']} für $durationText gesperrt', Colors.green);
+                    final durationText =
+                        muteType == '24h' ? '24 Stunden' : 'permanent';
+                    _showSnackBar(
+                        '✅ User ${msg['username']} für $durationText gesperrt',
+                        Colors.green);
                   }
                 } catch (e) {
                   if (mounted) {
@@ -4178,7 +4461,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: muteType == 'permanent' ? Colors.red : Colors.orange,
+                backgroundColor:
+                    muteType == 'permanent' ? Colors.red : Colors.orange,
               ),
               child: const Text('Sperren'),
             ),
@@ -4213,32 +4497,45 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     AnimatedBuilder(
                       animation: _headerAuraCtrl,
                       builder: (_, __) => Container(
-                        width: 32, height: 32,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(colors: [
-                            const Color(0xFF2979FF).withValues(alpha: isMe ? 0.9 : 0.5),
-                            const Color(0xFF1565C0).withValues(alpha: isMe ? 0.7 : 0.3),
+                            const Color(0xFF2979FF)
+                                .withValues(alpha: isMe ? 0.9 : 0.5),
+                            const Color(0xFF1565C0)
+                                .withValues(alpha: isMe ? 0.7 : 0.3),
                           ]),
                           border: Border.all(
-                            color: const Color(0xFF2979FF).withValues(alpha: 0.5 + _headerAuraCtrl.value * 0.4),
+                            color: const Color(0xFF2979FF).withValues(
+                                alpha: 0.5 + _headerAuraCtrl.value * 0.4),
                             width: isMe ? 2.0 : 1.5,
                           ),
-                          boxShadow: [BoxShadow(
-                            color: const Color(0xFF2979FF).withValues(alpha: 0.3 + _headerAuraCtrl.value * 0.2),
-                            blurRadius: 6,
-                          )],
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF2979FF).withValues(
+                                  alpha: 0.3 + _headerAuraCtrl.value * 0.2),
+                              blurRadius: 6,
+                            )
+                          ],
                         ),
                         child: Center(
-                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤', style: const TextStyle(fontSize: 16)),
+                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤',
+                              style: const TextStyle(fontSize: 16)),
                         ),
                       ),
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      isMe ? 'Du' : m.username.length > 6 ? '${m.username.substring(0, 5)}…' : m.username,
+                      isMe
+                          ? 'Du'
+                          : m.username.length > 6
+                              ? '${m.username.substring(0, 5)}…'
+                              : m.username,
                       style: TextStyle(
-                        color: isMe ? const Color(0xFF2979FF) : Colors.grey[400],
+                        color:
+                            isMe ? const Color(0xFF2979FF) : Colors.grey[400],
                         fontSize: 8,
                         fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -4264,15 +4561,19 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
-          Text('Vibe: ', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+          Text('Vibe: ',
+              style: TextStyle(color: Colors.grey[500], fontSize: 11)),
           Text(_myMood, style: const TextStyle(fontSize: 14)),
           const SizedBox(width: 6),
-          Text('· ${_materieRooms[_selectedRoom]?['icon'] ?? '💬'} Raum', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
+          Text('· ${_materieRooms[_selectedRoom]?['icon'] ?? '💬'} Raum',
+              style: TextStyle(color: Colors.grey[600], fontSize: 10)),
           const Spacer(),
           ...moods.take(3).map((e) => Padding(
-            padding: const EdgeInsets.only(left: 2),
-            child: Text(e, style: const TextStyle(fontSize: 11, color: Colors.white24)),
-          )),
+                padding: const EdgeInsets.only(left: 2),
+                child: Text(e,
+                    style:
+                        const TextStyle(fontSize: 11, color: Colors.white24)),
+              )),
         ],
       ),
     );
@@ -4280,7 +4581,20 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
   // ✨ MOOD PICKER ROW
   Widget _buildMoodPickerRow() {
-    const moods = ['🎭', '🛸', '🔬', '👁️', '🏛️', '💡', '🌍', '⚠️', '🔴', '💎', '🔥', '🧠'];
+    const moods = [
+      '🎭',
+      '🛸',
+      '🔬',
+      '👁️',
+      '🏛️',
+      '💡',
+      '🌍',
+      '⚠️',
+      '🔴',
+      '💎',
+      '🔥',
+      '🧠'
+    ];
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -4288,9 +4602,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         scrollDirection: Axis.horizontal,
         children: [
           GestureDetector(
-            onTap: () => setState(() { _myMood = ''; _showMoodPicker = false; }),
+            onTap: () => setState(() {
+              _myMood = '';
+              _showMoodPicker = false;
+            }),
             child: Container(
-              width: 32, height: 32,
+              width: 32,
+              height: 32,
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFF0A1020),
@@ -4301,24 +4619,32 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ),
           ),
           ...moods.map((e) => GestureDetector(
-            onTap: () => setState(() { _myMood = e; _showMoodPicker = false; }),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 32, height: 32,
-              margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(
-                color: _myMood == e ? const Color(0xFF1A2A4A) : const Color(0xFF0A1020),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _myMood == e ? const Color(0xFF2979FF) : Colors.grey.withValues(alpha: 0.2),
+                onTap: () => setState(() {
+                  _myMood = e;
+                  _showMoodPicker = false;
+                }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 32,
+                  height: 32,
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: _myMood == e
+                        ? const Color(0xFF1A2A4A)
+                        : const Color(0xFF0A1020),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _myMood == e
+                          ? const Color(0xFF2979FF)
+                          : Colors.grey.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Center(
+                      child: Text(e, style: const TextStyle(fontSize: 16))),
                 ),
-              ),
-              child: Center(child: Text(e, style: const TextStyle(fontSize: 16))),
-            ),
-          )),
+              )),
         ],
       ),
     );
   }
 }
-

@@ -7,7 +7,7 @@ import '../utils/responsive_text_styles.dart';
 class UnreadBadge extends StatelessWidget {
   final String? roomId; // null = alle Räume
   final Color color;
-  
+
   const UnreadBadge({
     super.key,
     this.roomId,
@@ -18,20 +18,20 @@ class UnreadBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final utils = ResponsiveUtils.of(context);
     final textStyles = ResponsiveTextStyles.of(context);
-    
+
     return ListenableBuilder(
       listenable: ChatNotificationService(),
       builder: (context, child) {
         final service = ChatNotificationService();
-        final count = roomId != null 
-            ? service.getUnreadCount(roomId!) 
+        final count = roomId != null
+            ? service.getUnreadCount(roomId!)
             : service.getTotalUnreadCount();
-        
+
         if (count == 0) return const SizedBox.shrink();
-        
+
         return Container(
           padding: EdgeInsets.symmetric(
-            horizontal: utils.spacingXs / 2, 
+            horizontal: utils.spacingXs / 2,
             vertical: utils.spacingXs / 4,
           ),
           decoration: BoxDecoration(
@@ -66,7 +66,7 @@ class UnreadBadge extends StatelessWidget {
 /// Unread Badge für Bottom Navigation Bar
 class NavBarUnreadBadge extends StatelessWidget {
   final Color color;
-  
+
   const NavBarUnreadBadge({
     super.key,
     this.color = const Color(0xFF2196F3),
@@ -76,14 +76,14 @@ class NavBarUnreadBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final utils = ResponsiveUtils.of(context);
     final textStyles = ResponsiveTextStyles.of(context);
-    
+
     return ListenableBuilder(
       listenable: ChatNotificationService(),
       builder: (context, child) {
         final count = ChatNotificationService().getTotalUnreadCount();
-        
+
         if (count == 0) return const SizedBox.shrink();
-        
+
         return Positioned(
           right: 0,
           top: 0,

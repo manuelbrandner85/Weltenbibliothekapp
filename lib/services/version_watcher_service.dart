@@ -48,7 +48,8 @@ class WaybackSnapshot {
   }
 
   String get viewUrl => 'https://web.archive.org/web/$timestamp/$originalUrl';
-  String get rawUrl => 'https://web.archive.org/web/${timestamp}id_/$originalUrl';
+  String get rawUrl =>
+      'https://web.archive.org/web/${timestamp}id_/$originalUrl';
 }
 
 class DiffLine {
@@ -60,7 +61,8 @@ class DiffLine {
 class VersionWatcherService {
   static const Duration _timeout = Duration(seconds: 20);
 
-  Future<List<WaybackSnapshot>> getSnapshots(String url, {int limit = 100}) async {
+  Future<List<WaybackSnapshot>> getSnapshots(String url,
+      {int limit = 100}) async {
     try {
       final uri = Uri.parse('https://web.archive.org/cdx/search/cdx')
           .replace(queryParameters: {
@@ -80,19 +82,22 @@ class VersionWatcherService {
       if (data.isEmpty) return const [];
       // First row = headers
       final rows = data.skip(1).toList();
-      return rows.map((r) {
-        final list = r as List;
-        if (list.length < 7) return null;
-        return WaybackSnapshot(
-          urlKey: list[0].toString(),
-          timestamp: list[1].toString(),
-          originalUrl: list[2].toString(),
-          mimeType: list[3].toString(),
-          statusCode: int.tryParse(list[4].toString()) ?? 0,
-          digest: list[5].toString(),
-          length: int.tryParse(list[6].toString()) ?? 0,
-        );
-      }).whereType<WaybackSnapshot>().toList()
+      return rows
+          .map((r) {
+            final list = r as List;
+            if (list.length < 7) return null;
+            return WaybackSnapshot(
+              urlKey: list[0].toString(),
+              timestamp: list[1].toString(),
+              originalUrl: list[2].toString(),
+              mimeType: list[3].toString(),
+              statusCode: int.tryParse(list[4].toString()) ?? 0,
+              digest: list[5].toString(),
+              length: int.tryParse(list[6].toString()) ?? 0,
+            );
+          })
+          .whereType<WaybackSnapshot>()
+          .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } catch (e) {
       if (kDebugMode) debugPrint('CDX error: $e');
@@ -116,12 +121,16 @@ class VersionWatcherService {
     // Sehr einfach: Tags raus, Whitespace normalisieren
     var t = html;
     // Script/Style/Comments entfernen
-    t = t.replaceAll(RegExp(r'<script[^>]*>[\s\S]*?</script>', caseSensitive: false), '');
-    t = t.replaceAll(RegExp(r'<style[^>]*>[\s\S]*?</style>', caseSensitive: false), '');
+    t = t.replaceAll(
+        RegExp(r'<script[^>]*>[\s\S]*?</script>', caseSensitive: false), '');
+    t = t.replaceAll(
+        RegExp(r'<style[^>]*>[\s\S]*?</style>', caseSensitive: false), '');
     t = t.replaceAll(RegExp(r'<!--[\s\S]*?-->'), '');
     // <br> und block-Tags zu Newlines
     t = t.replaceAll(RegExp(r'<br[^>]*>', caseSensitive: false), '\n');
-    t = t.replaceAll(RegExp(r'</?(p|div|h[1-6]|li|tr|td|th)[^>]*>', caseSensitive: false), '\n');
+    t = t.replaceAll(
+        RegExp(r'</?(p|div|h[1-6]|li|tr|td|th)[^>]*>', caseSensitive: false),
+        '\n');
     // Restliche Tags weg
     t = t.replaceAll(RegExp(r'<[^>]+>'), ' ');
     // HTML-Entities
@@ -140,8 +149,16 @@ class VersionWatcherService {
 
   // Simple line-based diff (LCS-Algorithmus light)
   List<DiffLine> diff(String oldText, String newText) {
-    final oldLines = oldText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
-    final newLines = newText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    final oldLines = oldText
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    final newLines = newText
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
     final out = <DiffLine>[];
     final oldSet = oldLines.toSet();
     final newSet = newLines.toSet();

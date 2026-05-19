@@ -52,8 +52,7 @@ class GdeltEvent {
 }
 
 class GdeltService {
-  static const String _baseUrl =
-      'https://api.gdeltproject.org/api/v2/doc/doc';
+  static const String _baseUrl = 'https://api.gdeltproject.org/api/v2/doc/doc';
 
   /// Holt News-Events aus den letzten X Tagen, optional nach Land/Themen gefiltert.
   ///

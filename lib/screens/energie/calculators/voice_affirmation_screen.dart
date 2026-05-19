@@ -94,14 +94,15 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
 
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kvKey,
-        jsonEncode(_affirmations.map((a) => a.toJson()).toList()));
+    await prefs.setString(
+        _kvKey, jsonEncode(_affirmations.map((a) => a.toJson()).toList()));
   }
 
   Future<void> _startRecording() async {
     if (kIsWeb) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Aufnahme auf Web nicht verfügbar — bitte Mobile-App nutzen.'),
+        content:
+            Text('Aufnahme auf Web nicht verfügbar — bitte Mobile-App nutzen.'),
         backgroundColor: Colors.orange,
       ));
       return;
@@ -117,7 +118,8 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
     }
 
     final dir = await getApplicationDocumentsDirectory();
-    _currentRecordingPath = '${dir.path}/affirmation_${DateTime.now().millisecondsSinceEpoch}.aac';
+    _currentRecordingPath =
+        '${dir.path}/affirmation_${DateTime.now().millisecondsSinceEpoch}.aac';
 
     await _recorder.startRecorder(
       toFile: _currentRecordingPath,
@@ -156,13 +158,15 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
       return;
     }
     setState(() {
-      _affirmations.insert(0, _Affirmation(
-        id: 'aff_${DateTime.now().millisecondsSinceEpoch}',
-        title: title,
-        path: _currentRecordingPath!,
-        durationSec: _recordDuration.inSeconds,
-        createdAt: DateTime.now(),
-      ));
+      _affirmations.insert(
+          0,
+          _Affirmation(
+            id: 'aff_${DateTime.now().millisecondsSinceEpoch}',
+            title: title,
+            path: _currentRecordingPath!,
+            durationSec: _recordDuration.inSeconds,
+            createdAt: DateTime.now(),
+          ));
     });
     _currentRecordingPath = null;
     await _save();
@@ -174,7 +178,8 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: _surface,
-        title: const Text('Affirmation benennen', style: TextStyle(color: Colors.white)),
+        title: const Text('Affirmation benennen',
+            style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: ctrl,
           autofocus: true,
@@ -187,7 +192,8 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, null),
-            child: const Text('Verwerfen', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Verwerfen',
+                style: TextStyle(color: Colors.redAccent)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, ctrl.text),
@@ -249,7 +255,8 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
                         : ListView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                             itemCount: _affirmations.length,
-                            itemBuilder: (_, i) => _buildAffCard(_affirmations[i]),
+                            itemBuilder: (_, i) =>
+                                _buildAffCard(_affirmations[i]),
                           ),
                   ),
                   _buildRecordPanel(),
@@ -267,7 +274,10 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
           Text('💫', style: TextStyle(fontSize: 64)),
           SizedBox(height: 16),
           Text('Noch keine Affirmationen',
-              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
           Text(
             'Selbstsuggestion-Technik nach Émile Coué: deine eigene Stimme hat die '
@@ -314,8 +324,12 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(a.title,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-              Text('${a.durationSec}s · ${a.createdAt.day}.${a.createdAt.month}.${a.createdAt.year}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold)),
+              Text(
+                  '${a.durationSec}s · ${a.createdAt.day}.${a.createdAt.month}.${a.createdAt.year}',
                   style: const TextStyle(color: Colors.white60, fontSize: 11)),
             ],
           ),
@@ -340,21 +354,27 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
         children: [
           if (_recording)
             Text('🔴 Aufnahme · ${_recordDuration.inSeconds}s / 60s',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold)),
           if (_recording) const SizedBox(height: 8),
           GestureDetector(
             onTap: _recording ? _stopRecording : _startRecording,
             child: Container(
-              width: 78, height: 78,
+              width: 78,
+              height: 78,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
                   _recording ? Colors.redAccent : _accent,
-                  (_recording ? Colors.redAccent : _accent).withValues(alpha: 0.4),
+                  (_recording ? Colors.redAccent : _accent)
+                      .withValues(alpha: 0.4),
                 ]),
                 boxShadow: [
                   BoxShadow(
-                    color: (_recording ? Colors.redAccent : _accent).withValues(alpha: 0.5),
+                    color: (_recording ? Colors.redAccent : _accent)
+                        .withValues(alpha: 0.5),
                     blurRadius: 20,
                   ),
                 ],
@@ -389,8 +409,11 @@ class _Affirmation {
     required this.createdAt,
   });
   Map<String, dynamic> toJson() => {
-        'id': id, 'title': title, 'path': path,
-        'durationSec': durationSec, 'createdAt': createdAt.toIso8601String(),
+        'id': id,
+        'title': title,
+        'path': path,
+        'durationSec': durationSec,
+        'createdAt': createdAt.toIso8601String(),
       };
   factory _Affirmation.fromJson(Map<String, dynamic> j) => _Affirmation(
         id: j['id'] as String,

@@ -29,10 +29,11 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))
+    _pulseCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1800))
       ..repeat(reverse: true);
-    _pulse = Tween(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+    _pulse = Tween(begin: 0.8, end: 1.0)
+        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -56,8 +57,10 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
         'Ich vertraue darauf, dass ich im Leben gut versorgt bin.',
       ],
       'balanced': 'Du fühlst dich sicher, geerdet und verankert im Leben.',
-      'unbalanced': 'Ängste, Unsicherheit oder Überlebensinstinkte könnten dich belasten.',
-      'practice': 'Barfuß auf Gras gehen · Rote Lebensmittel · Granat/Rubin meditieren',
+      'unbalanced':
+          'Ängste, Unsicherheit oder Überlebensinstinkte könnten dich belasten.',
+      'practice':
+          'Barfuß auf Gras gehen · Rote Lebensmittel · Granat/Rubin meditieren',
     },
     {
       'name': 'Sakral-Chakra',
@@ -71,9 +74,12 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
         'Ich kann meine Emotionen frei und gesund ausdrücken.',
         'Meine Beziehungen fühlen sich ausgewogen und nährend an.',
       ],
-      'balanced': 'Kreativität, Freude und gesunde Beziehungen fließen durch dein Leben.',
-      'unbalanced': 'Kreativitätsblockaden, emotionale Taubheit oder Abhängigkeiten möglich.',
-      'practice': 'Im Wasser schwimmen · Orange meditieren · Tanzen / kreativ sein',
+      'balanced':
+          'Kreativität, Freude und gesunde Beziehungen fließen durch dein Leben.',
+      'unbalanced':
+          'Kreativitätsblockaden, emotionale Taubheit oder Abhängigkeiten möglich.',
+      'practice':
+          'Im Wasser schwimmen · Orange meditieren · Tanzen / kreativ sein',
     },
     {
       'name': 'Solarplexus-Chakra',
@@ -87,9 +93,12 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
         'Ich habe ein gesundes Selbstbewusstsein ohne Arroganz.',
         'Ich setze klare Grenzen und vertrete meine Meinung.',
       ],
-      'balanced': 'Du strahlst innere Stärke, Selbstvertrauen und Entschlossenheit aus.',
-      'unbalanced': 'Kontrollbedürfnis, Selbstzweifel oder Willensschwäche könnten präsent sein.',
-      'practice': 'Sonnenenergie tanken · Gelb meditieren · Kernkräftigung / Yoga',
+      'balanced':
+          'Du strahlst innere Stärke, Selbstvertrauen und Entschlossenheit aus.',
+      'unbalanced':
+          'Kontrollbedürfnis, Selbstzweifel oder Willensschwäche könnten präsent sein.',
+      'practice':
+          'Sonnenenergie tanken · Gelb meditieren · Kernkräftigung / Yoga',
     },
     {
       'name': 'Herz-Chakra',
@@ -103,8 +112,10 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
         'Ich vergebe leicht und trage keine alten Wunden mit mir.',
         'Ich empfinde Mitgefühl und Empathie für andere Lebewesen.',
       ],
-      'balanced': 'Liebe, Mitgefühl und Verbundenheit sind deine natürlichen Zustände.',
-      'unbalanced': 'Herzensschmerz, Selbstkritik oder Schwierigkeiten beim Loslassen.',
+      'balanced':
+          'Liebe, Mitgefühl und Verbundenheit sind deine natürlichen Zustände.',
+      'unbalanced':
+          'Herzensschmerz, Selbstkritik oder Schwierigkeiten beim Loslassen.',
       'practice': 'Liebende-Güte-Meditation · Grüner Kristall · Tief einatmen',
     },
     {
@@ -119,8 +130,10 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
         'Ich höre anderen aufmerksam zu ohne zu urteilen.',
         'Ich drücke mich kreativ aus (Schreiben, Musik, Kunst, Sprache).',
       ],
-      'balanced': 'Authentische Kommunikation und kreativer Selbstausdruck fließen leicht.',
-      'unbalanced': 'Schwierigkeiten beim Sprechen, Schweigen aus Angst, oder Überreden.',
+      'balanced':
+          'Authentische Kommunikation und kreativer Selbstausdruck fließen leicht.',
+      'unbalanced':
+          'Schwierigkeiten beim Sprechen, Schweigen aus Angst, oder Überreden.',
       'practice': 'Singen / Summen · Blaue Howlith meditieren · Journaling',
     },
     {
@@ -135,9 +148,12 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
         'Ich habe klare Visionen und einen Sinn für das große Ganze.',
         'Ich unterscheide zwischen Illusion und tiefer Wahrheit.',
       ],
-      'balanced': 'Klare Intuition, Weisheit und spirituelle Einsicht leiten dich.',
-      'unbalanced': 'Verwirrung, Überanalyse, Albträume oder fehlende Lebensrichtung.',
-      'practice': 'Indigo-Amethyst meditieren · Stille Kontemplation · Träume aufschreiben',
+      'balanced':
+          'Klare Intuition, Weisheit und spirituelle Einsicht leiten dich.',
+      'unbalanced':
+          'Verwirrung, Überanalyse, Albträume oder fehlende Lebensrichtung.',
+      'practice':
+          'Indigo-Amethyst meditieren · Stille Kontemplation · Träume aufschreiben',
     },
     {
       'name': 'Kronen-Chakra',
@@ -151,9 +167,12 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
         'Ich lebe aus einem tiefen Sinn für Zweck und Bedeutung.',
         'Ich bin offen für spirituelles Wachstum und höhere Wahrheiten.',
       ],
-      'balanced': 'Göttliche Verbindung, Einheitsbewusstsein und Sinn erfüllen dein Leben.',
-      'unbalanced': 'Spirituelle Leere, Materialismus oder ein Gefühl der Sinnlosigkeit.',
-      'practice': 'Stille Meditation · Weißes / violettes Licht visualisieren · Natur-Kontemplation',
+      'balanced':
+          'Göttliche Verbindung, Einheitsbewusstsein und Sinn erfüllen dein Leben.',
+      'unbalanced':
+          'Spirituelle Leere, Materialismus oder ein Gefühl der Sinnlosigkeit.',
+      'practice':
+          'Stille Meditation · Weißes / violettes Licht visualisieren · Natur-Kontemplation',
     },
   ];
 
@@ -196,10 +215,10 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
   }
 
   void _restart() => setState(() {
-    _step = 0;
-    _currentQ = 0;
-    _answers.clear();
-  });
+        _step = 0;
+        _currentQ = 0;
+        _answers.clear();
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +269,10 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                           stops: const [0.3, 1.0],
                         ),
                         boxShadow: [
-                          BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 40, spreadRadius: 10),
+                          BoxShadow(
+                              color: accent.withValues(alpha: 0.4),
+                              blurRadius: 40,
+                              spreadRadius: 10),
                         ],
                       ),
                       child: const Center(
@@ -291,7 +313,11 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 8)],
+                        boxShadow: [
+                          BoxShadow(
+                              color: color.withValues(alpha: 0.5),
+                              blurRadius: 8)
+                        ],
                       ),
                     );
                   }).toList(),
@@ -302,7 +328,8 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 48, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
                     ),
@@ -359,11 +386,16 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                 children: [
                   Text(
                     'Frage ${_currentQ + 1} von $totalQ',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12),
                   ),
                   Text(
                     '${(progress * 100).toInt()}%',
-                    style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -393,10 +425,12 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: color.withValues(alpha: 0.15),
-                    border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
+                    border: Border.all(
+                        color: color.withValues(alpha: 0.4), width: 2),
                   ),
                   child: Center(
-                    child: Text(chakra['emoji'] as String, style: const TextStyle(fontSize: 32)),
+                    child: Text(chakra['emoji'] as String,
+                        style: const TextStyle(fontSize: 32)),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -419,14 +453,17 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 14),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? color.withValues(alpha: 0.25)
                             : Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: isSelected ? color : Colors.white.withValues(alpha: 0.1),
+                          color: isSelected
+                              ? color
+                              : Colors.white.withValues(alpha: 0.1),
                           width: isSelected ? 1.5 : 1,
                         ),
                       ),
@@ -439,11 +476,14 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                               shape: BoxShape.circle,
                               color: isSelected ? color : Colors.transparent,
                               border: Border.all(
-                                color: isSelected ? color : Colors.white.withValues(alpha: 0.3),
+                                color: isSelected
+                                    ? color
+                                    : Colors.white.withValues(alpha: 0.3),
                               ),
                             ),
                             child: isSelected
-                                ? const Icon(Icons.check, color: Colors.white, size: 13)
+                                ? const Icon(Icons.check,
+                                    color: Colors.white, size: 13)
                                 : null,
                           ),
                           const SizedBox(width: 12),
@@ -452,7 +492,9 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                             style: TextStyle(
                               color: isSelected ? Colors.white : Colors.white70,
                               fontSize: 15,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                             ),
                           ),
                         ],
@@ -489,13 +531,13 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
               tooltip: 'Verlauf',
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (_) => const ChakraHistoryScreen()),
+                MaterialPageRoute(builder: (_) => const ChakraHistoryScreen()),
               ),
             ),
             TextButton(
               onPressed: _restart,
-              child: const Text('Neu', style: TextStyle(color: Color(0xFF7C4DFF))),
+              child:
+                  const Text('Neu', style: TextStyle(color: Color(0xFF7C4DFF))),
             ),
           ],
         ),
@@ -525,8 +567,8 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
       decoration: BoxDecoration(
         color: const Color(0xFF7C4DFF).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-            color: const Color(0xFF7C4DFF).withValues(alpha: 0.4)),
+        border:
+            Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,8 +618,8 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7C4DFF),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     minimumSize: const Size(0, 30),
                     textStyle: const TextStyle(
                         fontSize: 11, fontWeight: FontWeight.w700),
@@ -725,8 +767,11 @@ class _WheelPainter extends CustomPainter {
         ..style = PaintingStyle.fill;
       canvas.drawCircle(Offset(x, y), 8, dotPaint);
       canvas.drawCircle(
-        Offset(x, y), 4,
-        Paint()..color = Colors.white..style = PaintingStyle.fill);
+          Offset(x, y),
+          4,
+          Paint()
+            ..color = Colors.white
+            ..style = PaintingStyle.fill);
     }
   }
 
@@ -765,7 +810,8 @@ class _ChakraResultCardState extends State<_ChakraResultCard> {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  Text(s.chakra['emoji'] as String, style: const TextStyle(fontSize: 24)),
+                  Text(s.chakra['emoji'] as String,
+                      style: const TextStyle(fontSize: 24)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -790,11 +836,13 @@ class _ChakraResultCardState extends State<_ChakraResultCard> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: s.labelColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: s.labelColor.withValues(alpha: 0.4)),
+                      border: Border.all(
+                          color: s.labelColor.withValues(alpha: 0.4)),
                     ),
                     child: Text(
                       s.label,
@@ -807,7 +855,9 @@ class _ChakraResultCardState extends State<_ChakraResultCard> {
                   ),
                   const SizedBox(width: 8),
                   Icon(
-                    _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
                     color: Colors.white38,
                     size: 20,
                   ),

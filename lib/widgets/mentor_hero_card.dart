@@ -10,8 +10,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Welt-Identifier: 'materie' | 'energie' | 'vorhang' | 'ursprung'
 class MentorHeroCard extends StatefulWidget {
   final String world;
-  final String mentorName; // "Forscher", "Heiler", "Wahrheitssucher", "Alchemist"
-  final String tagline;    // 1-Zeilen-Beschreibung
+  final String
+      mentorName; // "Forscher", "Heiler", "Wahrheitssucher", "Alchemist"
+  final String tagline; // 1-Zeilen-Beschreibung
   final IconData icon;
   final VoidCallback onTap;
   final String? userFirstName;

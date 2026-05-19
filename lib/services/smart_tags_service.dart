@@ -65,9 +65,30 @@ class SmartTagsService {
         .toList();
     final counts = <String, int>{};
     const stop = {
-      'oder', 'aber', 'eine', 'einer', 'einen', 'dieser', 'diese', 'dieses',
-      'wenn', 'dann', 'sind', 'haben', 'wird', 'wurde', 'durch', 'gegen',
-      'ohne', 'unter', 'über', 'nach', 'noch', 'auch', 'nicht', 'kann',
+      'oder',
+      'aber',
+      'eine',
+      'einer',
+      'einen',
+      'dieser',
+      'diese',
+      'dieses',
+      'wenn',
+      'dann',
+      'sind',
+      'haben',
+      'wird',
+      'wurde',
+      'durch',
+      'gegen',
+      'ohne',
+      'unter',
+      'über',
+      'nach',
+      'noch',
+      'auch',
+      'nicht',
+      'kann',
     };
     for (final w in words) {
       if (stop.contains(w)) continue;
@@ -85,16 +106,16 @@ class SmartTagsService {
     if (tags.isEmpty) return;
     try {
       await _s.from('research_smart_tags').upsert(
-        tags
-            .map((t) => {
-                  'archive_id': archiveId,
-                  'tag': t.tag,
-                  'source': t.source,
-                  'confidence': t.confidence,
-                })
-            .toList(),
-        onConflict: 'archive_id,tag',
-      );
+            tags
+                .map((t) => {
+                      'archive_id': archiveId,
+                      'tag': t.tag,
+                      'source': t.source,
+                      'confidence': t.confidence,
+                    })
+                .toList(),
+            onConflict: 'archive_id,tag',
+          );
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ SmartTags persist: $e');
     }
@@ -107,16 +128,14 @@ class SmartTagsService {
           .select()
           .eq('archive_id', archiveId)
           .order('confidence', ascending: false);
-      return (res as List)
-          .map((r) {
-            final m = Map<String, dynamic>.from(r as Map);
-            return SmartTag(
-              tag: m['tag'] as String,
-              confidence: (m['confidence'] as num?)?.toDouble(),
-              source: m['source'] as String? ?? 'ai',
-            );
-          })
-          .toList();
+      return (res as List).map((r) {
+        final m = Map<String, dynamic>.from(r as Map);
+        return SmartTag(
+          tag: m['tag'] as String,
+          confidence: (m['confidence'] as num?)?.toDouble(),
+          source: m['source'] as String? ?? 'ai',
+        );
+      }).toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ SmartTags list: $e');
       return const [];

@@ -24,7 +24,8 @@ class FavoritesService {
             .toList();
       } catch (e, st) {
         if (kDebugMode) {
-          debugPrint('⚠️ FavoritesService: konnte Favoriten-JSON nicht parsen — '
+          debugPrint(
+              '⚠️ FavoritesService: konnte Favoriten-JSON nicht parsen — '
               'reset auf leere Liste. $e\n$st');
         }
         _favorites = [];
@@ -85,9 +86,7 @@ class FavoritesService {
   }
 
   static List<Favorite> getFavoritesByType(FavoriteType type) {
-    return _favorites
-        .where((f) => f.type == type)
-        .toList()
+    return _favorites.where((f) => f.type == type).toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 

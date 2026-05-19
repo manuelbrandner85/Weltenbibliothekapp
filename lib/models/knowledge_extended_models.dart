@@ -20,7 +20,7 @@ class KnowledgeEntry {
   final String? author;
   final int? yearPublished;
   final String? sourceUrl;
-  
+
   // Erweiterte Felder
   final int viewCount;
   final double rating; // 0.0 - 5.0
@@ -75,7 +75,9 @@ class KnowledgeEntry {
       fullContent: json['full_content'] as String,
       category: json['category'] as String,
       type: json['type'] as String,
-      tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      tags:
+          (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+              [],
       createdAt: DateTime.parse(json['created_at'] as String),
       imageUrl: json['image_url'] as String?,
       author: json['author'] as String?,
@@ -190,10 +192,12 @@ class KnowledgeNote {
       knowledgeId: json['knowledge_id'] as String,
       content: json['content'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null 
+      updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
-      tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      tags:
+          (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+              [],
     );
   }
 }
@@ -228,7 +232,7 @@ class ReadingProgress {
     return ReadingProgress(
       knowledgeId: json['knowledge_id'] as String,
       isRead: json['is_read'] as bool,
-      readAt: json['read_at'] != null 
+      readAt: json['read_at'] != null
           ? DateTime.parse(json['read_at'] as String)
           : null,
       progressPercent: json['progress_percent'] as int? ?? 0,
@@ -246,7 +250,7 @@ enum KnowledgeCategory {
   modernResearch,
   books,
   documentaries,
-  
+
   // ENERGIE
   meditation,
   astrology,

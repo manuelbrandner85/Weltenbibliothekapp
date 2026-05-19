@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 /// 📜 HERMETIK-ENGINE
-/// 
+///
 /// Basiert auf den 7 Hermetischen Prinzipien (Das Kybalion)
-/// 
+///
 /// 7 PRINZIPIEN:
 /// 1. Mentalismus - Alles ist Geist
 /// 2. Entsprechung - Wie oben, so unten
@@ -19,7 +19,8 @@ class HermeticEngine {
       'name': 'Mentalismus',
       'originalName': 'The Principle of Mentalism',
       'axiom': 'Das All ist Geist, das Universum ist mental',
-      'description': 'Die physische Realität ist eine Manifestation des universellen Geistes',
+      'description':
+          'Die physische Realität ist eine Manifestation des universellen Geistes',
       'application': 'Deine Gedanken erschaffen deine Realität',
       'color': Color(0xFF9C27B0),
       'element': 'Äther',
@@ -32,7 +33,8 @@ class HermeticEngine {
       'name': 'Entsprechung',
       'originalName': 'The Principle of Correspondence',
       'axiom': 'Wie oben, so unten; wie innen, so außen',
-      'description': 'Die Muster des Universums wiederholen sich auf allen Ebenen',
+      'description':
+          'Die Muster des Universums wiederholen sich auf allen Ebenen',
       'application': 'Erkenne die Spiegelungen zwischen Mikro- und Makrokosmos',
       'color': Color(0xFF2196F3),
       'element': 'Luft',
@@ -45,7 +47,8 @@ class HermeticEngine {
       'name': 'Schwingung',
       'originalName': 'The Principle of Vibration',
       'axiom': 'Nichts ruht, alles bewegt sich, alles schwingt',
-      'description': 'Alles im Universum ist in ständiger Bewegung und Schwingung',
+      'description':
+          'Alles im Universum ist in ständiger Bewegung und Schwingung',
       'application': 'Erhöhe deine Schwingung für positive Manifestation',
       'color': Color(0xFFFFEB3B),
       'element': 'Feuer',
@@ -58,7 +61,8 @@ class HermeticEngine {
       'name': 'Polarität',
       'originalName': 'The Principle of Polarity',
       'axiom': 'Alles ist dual, alles hat Pole, alles hat sein Gegenpaar',
-      'description': 'Gegensätze sind identisch in der Natur, aber unterschiedlich im Grad',
+      'description':
+          'Gegensätze sind identisch in der Natur, aber unterschiedlich im Grad',
       'application': 'Transformiere Negatives durch Verschiebung der Polarität',
       'color': Color(0xFFE91E63),
       'element': 'Wasser',
@@ -96,8 +100,10 @@ class HermeticEngine {
     7: {
       'name': 'Geschlecht',
       'originalName': 'The Principle of Gender',
-      'axiom': 'Geschlecht ist in allem, alles hat männliche und weibliche Prinzipien',
-      'description': 'Männlich (aktiv, projizierend) und weiblich (empfangend, formend) in allem',
+      'axiom':
+          'Geschlecht ist in allem, alles hat männliche und weibliche Prinzipien',
+      'description':
+          'Männlich (aktiv, projizierend) und weiblich (empfangend, formend) in allem',
       'application': 'Balanciere Yang (männlich) und Yin (weiblich) Energien',
       'color': Color(0xFFFF9800),
       'element': 'Feuer/Wasser',
@@ -115,7 +121,8 @@ class HermeticEngine {
   }
 
   /// Berechne zu entwickelndes Prinzip
-  static Map<String, dynamic> calculateDevelopmentPrinciple(int expressionNumber) {
+  static Map<String, dynamic> calculateDevelopmentPrinciple(
+      int expressionNumber) {
     int principleNumber = ((expressionNumber - 1) % 7) + 1;
     return _principles[principleNumber] ?? _principles[1]!;
   }
@@ -134,7 +141,7 @@ class HermeticEngine {
     int lifePathNumber,
   ) {
     final scores = <int, int>{};
-    
+
     // Basis-Score: 50
     for (int i = 1; i <= 7; i++) {
       scores[i] = 50;
@@ -192,7 +199,8 @@ class HermeticEngine {
   }
 
   /// Berechne Element-Verteilung
-  static Map<String, int> calculateElementDistribution(Map<int, int> principleScores) {
+  static Map<String, int> calculateElementDistribution(
+      Map<int, int> principleScores) {
     final elements = <String, int>{
       'Äther': principleScores[1] ?? 50,
       'Luft': principleScores[2] ?? 50,
@@ -214,8 +222,10 @@ class HermeticEngine {
     recommendations.add('🔮 Dein dominantes Prinzip: ${dominant['name']}');
     recommendations.add('✨ ${dominant['axiom']}');
     recommendations.add('🎯 Praktiziere: ${dominant['practice']}');
-    recommendations.add('⚠️ Schwaches Prinzip: ${weak['name']} - ${weak['practice']}');
-    recommendations.add('⚖️ Balance-Tipp: Integriere alle 7 Prinzipien gleichmäßig');
+    recommendations
+        .add('⚠️ Schwaches Prinzip: ${weak['name']} - ${weak['practice']}');
+    recommendations
+        .add('⚖️ Balance-Tipp: Integriere alle 7 Prinzipien gleichmäßig');
 
     return recommendations;
   }
@@ -248,8 +258,9 @@ class HermeticEngine {
   }
 
   /// Generiere Transmutations-Anleitung (Polaritäts-Prinzip)
-  static String generateTransmutationGuide(String negativeState, String desiredState) {
+  static String generateTransmutationGuide(
+      String negativeState, String desiredState) {
     return 'Transmutiere "$negativeState" zu "$desiredState" durch mentale Verschiebung der Polarität. '
-           'Fokussiere auf das gewünschte Gegenteil und erhöhe deine Schwingung.';
+        'Fokussiere auf das gewünschte Gegenteil und erhöhe deine Schwingung.';
   }
 }

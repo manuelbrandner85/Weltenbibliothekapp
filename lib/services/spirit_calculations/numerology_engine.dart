@@ -1,8 +1,8 @@
 /// 🔢 NUMEROLOGIE-BERECHNUNGS-ENGINE
-/// 
+///
 /// Basiert auf historischen pythagoräischen Methoden
 /// Quellen: Pythagoras, Chaldean Numerology, Modern Western Numerology
-/// 
+///
 /// Berechnungsmethoden:
 /// - Lebenszahl (Life Path): Geburtsdatum reduziert
 /// - Seelenzahl (Soul Urge): Vokale des Namens
@@ -22,15 +22,32 @@ library;
 class NumerologyEngine {
   /// Pythagorean Letter Values (A=1, B=2, ..., I=9, J=1, K=2, ...)
   static const Map<String, int> _pythagoreanValues = {
-    'A': 1, 'J': 1, 'S': 1,
-    'B': 2, 'K': 2, 'T': 2,
-    'C': 3, 'L': 3, 'U': 3,
-    'D': 4, 'M': 4, 'V': 4,
-    'E': 5, 'N': 5, 'W': 5,
-    'F': 6, 'O': 6, 'X': 6,
-    'G': 7, 'P': 7, 'Y': 7,
-    'H': 8, 'Q': 8, 'Z': 8,
-    'I': 9, 'R': 9,
+    'A': 1,
+    'J': 1,
+    'S': 1,
+    'B': 2,
+    'K': 2,
+    'T': 2,
+    'C': 3,
+    'L': 3,
+    'U': 3,
+    'D': 4,
+    'M': 4,
+    'V': 4,
+    'E': 5,
+    'N': 5,
+    'W': 5,
+    'F': 6,
+    'O': 6,
+    'X': 6,
+    'G': 7,
+    'P': 7,
+    'Y': 7,
+    'H': 8,
+    'Q': 8,
+    'Z': 8,
+    'I': 9,
+    'R': 9,
   };
 
   /// Chaldean Letter Values (ca. 4000 v.Chr., Babylonien).
@@ -59,7 +76,7 @@ class NumerologyEngine {
     final day = _reduceToSingleDigit(birthDate.day, keepMaster: true);
     final month = _reduceToSingleDigit(birthDate.month, keepMaster: true);
     final year = _reduceToSingleDigit(birthDate.year, keepMaster: true);
-    
+
     final sum = day + month + year;
     return _reduceToSingleDigit(sum, keepMaster: true);
   }
@@ -69,14 +86,14 @@ class NumerologyEngine {
   static int calculateSoulNumber(String firstName, String lastName) {
     final fullName = '$firstName $lastName'.toUpperCase();
     int sum = 0;
-    
+
     for (int i = 0; i < fullName.length; i++) {
       final char = fullName[i];
       if (_vowels.contains(char) && _pythagoreanValues.containsKey(char)) {
         sum += _pythagoreanValues[char]!;
       }
     }
-    
+
     return _reduceToSingleDigit(sum, keepMaster: true);
   }
 
@@ -85,14 +102,14 @@ class NumerologyEngine {
   static int calculateExpressionNumber(String firstName, String lastName) {
     final fullName = '$firstName $lastName'.toUpperCase();
     int sum = 0;
-    
+
     for (int i = 0; i < fullName.length; i++) {
       final char = fullName[i];
       if (_pythagoreanValues.containsKey(char)) {
         sum += _pythagoreanValues[char]!;
       }
     }
-    
+
     return _reduceToSingleDigit(sum, keepMaster: true);
   }
 
@@ -101,14 +118,14 @@ class NumerologyEngine {
   static int calculatePersonalityNumber(String firstName, String lastName) {
     final fullName = '$firstName $lastName'.toUpperCase();
     int sum = 0;
-    
+
     for (int i = 0; i < fullName.length; i++) {
       final char = fullName[i];
       if (!_vowels.contains(char) && _pythagoreanValues.containsKey(char)) {
         sum += _pythagoreanValues[char]!;
       }
     }
-    
+
     return _reduceToSingleDigit(sum, keepMaster: true);
   }
 
@@ -123,8 +140,9 @@ class NumerologyEngine {
   static int calculatePersonalYear(DateTime birthDate, DateTime currentDate) {
     final birthDay = _reduceToSingleDigit(birthDate.day, keepMaster: false);
     final birthMonth = _reduceToSingleDigit(birthDate.month, keepMaster: false);
-    final currentYear = _reduceToSingleDigit(currentDate.year, keepMaster: false);
-    
+    final currentYear =
+        _reduceToSingleDigit(currentDate.year, keepMaster: false);
+
     final sum = birthDay + birthMonth + currentYear;
     return _reduceToSingleDigit(sum, keepMaster: false);
   }
@@ -133,8 +151,9 @@ class NumerologyEngine {
   /// Methode: Persönliches Jahr + aktueller Monat
   static int calculatePersonalMonth(DateTime birthDate, DateTime currentDate) {
     final personalYear = calculatePersonalYear(birthDate, currentDate);
-    final currentMonth = _reduceToSingleDigit(currentDate.month, keepMaster: false);
-    
+    final currentMonth =
+        _reduceToSingleDigit(currentDate.month, keepMaster: false);
+
     final sum = personalYear + currentMonth;
     return _reduceToSingleDigit(sum, keepMaster: false);
   }
@@ -144,14 +163,14 @@ class NumerologyEngine {
   static int calculatePersonalDay(DateTime birthDate, DateTime currentDate) {
     final personalMonth = calculatePersonalMonth(birthDate, currentDate);
     final currentDay = _reduceToSingleDigit(currentDate.day, keepMaster: false);
-    
+
     final sum = personalMonth + currentDay;
     return _reduceToSingleDigit(sum, keepMaster: false);
   }
 
   /// Berechne Lebenszyklen (3 große Phasen)
   /// Zyklus 1: Geburt bis ~28 Jahre
-  /// Zyklus 2: ~28 bis ~56 Jahre  
+  /// Zyklus 2: ~28 bis ~56 Jahre
   /// Zyklus 3: ~56 Jahre bis Lebensende
   static List<Map<String, dynamic>> calculateLifeCycles(DateTime birthDate) {
     final month = _reduceToSingleDigit(birthDate.month, keepMaster: false);
@@ -184,17 +203,19 @@ class NumerologyEngine {
   }
 
   /// Berechne Pinnacle-Zyklen (4 Höhepunkte)
-  static List<Map<String, dynamic>> calculatePinnacleCycles(DateTime birthDate) {
+  static List<Map<String, dynamic>> calculatePinnacleCycles(
+      DateTime birthDate) {
     final lifePathNumber = calculateLifePath(birthDate);
     final month = _reduceToSingleDigit(birthDate.month, keepMaster: false);
     final day = _reduceToSingleDigit(birthDate.day, keepMaster: false);
     final year = _reduceToSingleDigit(birthDate.year, keepMaster: false);
 
     final firstDuration = 36 - lifePathNumber;
-    
+
     final pinnacle1 = _reduceToSingleDigit(month + day, keepMaster: false);
     final pinnacle2 = _reduceToSingleDigit(day + year, keepMaster: false);
-    final pinnacle3 = _reduceToSingleDigit(pinnacle1 + pinnacle2, keepMaster: false);
+    final pinnacle3 =
+        _reduceToSingleDigit(pinnacle1 + pinnacle2, keepMaster: false);
     final pinnacle4 = _reduceToSingleDigit(month + year, keepMaster: false);
 
     return [
@@ -245,17 +266,34 @@ class NumerologyEngine {
     final challenge4 = (monthReduced - yearReduced).abs();
 
     return [
-      {'challenge': 1, 'number': challenge1, 'theme': _getChallengeTheme(challenge1)},
-      {'challenge': 2, 'number': challenge2, 'theme': _getChallengeTheme(challenge2)},
-      {'challenge': 3, 'number': challenge3, 'theme': _getChallengeTheme(challenge3)},
-      {'challenge': 4, 'number': challenge4, 'theme': _getChallengeTheme(challenge4)},
+      {
+        'challenge': 1,
+        'number': challenge1,
+        'theme': _getChallengeTheme(challenge1)
+      },
+      {
+        'challenge': 2,
+        'number': challenge2,
+        'theme': _getChallengeTheme(challenge2)
+      },
+      {
+        'challenge': 3,
+        'number': challenge3,
+        'theme': _getChallengeTheme(challenge3)
+      },
+      {
+        'challenge': 4,
+        'number': challenge4,
+        'theme': _getChallengeTheme(challenge4)
+      },
     ];
   }
 
   /// Prüfe auf Meisterzahlen im Namen oder Geburtsdatum
-  static List<int> findMasterNumbers(String firstName, String lastName, DateTime birthDate) {
+  static List<int> findMasterNumbers(
+      String firstName, String lastName, DateTime birthDate) {
     final masterNumbers = <int>[];
-    
+
     // Check in name
     final fullName = '$firstName $lastName'.toUpperCase();
     int sum = 0;
@@ -279,9 +317,10 @@ class NumerologyEngine {
   }
 
   /// Prüfe auf Karma-Zahlen
-  static List<int> findKarmaNumbers(String firstName, String lastName, DateTime birthDate) {
+  static List<int> findKarmaNumbers(
+      String firstName, String lastName, DateTime birthDate) {
     final karmaNumbers = <int>[];
-    
+
     final fullName = '$firstName $lastName'.toUpperCase();
     int sum = 0;
     for (int i = 0; i < fullName.length; i++) {
@@ -402,8 +441,8 @@ class NumerologyEngine {
     };
   }
 
-  static String _interpretShift(int birthExp, int currentExp, int birthSoul,
-      int currentSoul) {
+  static String _interpretShift(
+      int birthExp, int currentExp, int birthSoul, int currentSoul) {
     if (birthExp == currentExp && birthSoul == currentSoul) {
       return 'Deine Schwingung ist unveraendert geblieben - du lebst auch '
           'mit dem neuen Namen deine urspruengliche Mission.';
@@ -445,8 +484,8 @@ class NumerologyEngine {
       _buildBridge('Lebenszahl', lifePath, 'Ausdruckszahl', expression),
       _buildBridge('Seelenzahl', soul, 'Persoenlichkeitszahl', personality),
       _buildBridge('Lebenszahl', lifePath, 'Seelenzahl', soul),
-      _buildBridge('Ausdruckszahl', expression, 'Persoenlichkeitszahl',
-          personality),
+      _buildBridge(
+          'Ausdruckszahl', expression, 'Persoenlichkeitszahl', personality),
     ];
   }
 
@@ -557,66 +596,138 @@ class NumerologyEngine {
   }
 
   static const Map<String, int> _compatibilityMatrix = {
-    '1-1': 75, '1-2': 60, '1-3': 80, '1-4': 50, '1-5': 90,
-    '1-6': 55, '1-7': 65, '1-8': 45, '1-9': 70,
-    '2-2': 80, '2-3': 75, '2-4': 85, '2-5': 40, '2-6': 95,
-    '2-7': 60, '2-8': 70, '2-9': 65,
-    '3-3': 70, '3-4': 35, '3-5': 85, '3-6': 90, '3-7': 55,
-    '3-8': 50, '3-9': 80,
-    '4-4': 65, '4-5': 30, '4-6': 80, '4-7': 70, '4-8': 90, '4-9': 45,
-    '5-5': 60, '5-6': 40, '5-7': 75, '5-8': 50, '5-9': 85,
-    '6-6': 75, '6-7': 45, '6-8': 55, '6-9': 90,
-    '7-7': 80, '7-8': 40, '7-9': 70,
-    '8-8': 65, '8-9': 50,
+    '1-1': 75,
+    '1-2': 60,
+    '1-3': 80,
+    '1-4': 50,
+    '1-5': 90,
+    '1-6': 55,
+    '1-7': 65,
+    '1-8': 45,
+    '1-9': 70,
+    '2-2': 80,
+    '2-3': 75,
+    '2-4': 85,
+    '2-5': 40,
+    '2-6': 95,
+    '2-7': 60,
+    '2-8': 70,
+    '2-9': 65,
+    '3-3': 70,
+    '3-4': 35,
+    '3-5': 85,
+    '3-6': 90,
+    '3-7': 55,
+    '3-8': 50,
+    '3-9': 80,
+    '4-4': 65,
+    '4-5': 30,
+    '4-6': 80,
+    '4-7': 70,
+    '4-8': 90,
+    '4-9': 45,
+    '5-5': 60,
+    '5-6': 40,
+    '5-7': 75,
+    '5-8': 50,
+    '5-9': 85,
+    '6-6': 75,
+    '6-7': 45,
+    '6-8': 55,
+    '6-9': 90,
+    '7-7': 80,
+    '7-8': 40,
+    '7-9': 70,
+    '8-8': 65,
+    '8-9': 50,
     '9-9': 75,
   };
 
   static const Map<String, String> _compatibilityDescriptions = {
-    '1-1': 'Zwei Pioniere - feurig und ambitioniert. Beide wollen fuehren, das kann Reibung erzeugen, aber auch enorme Power.',
-    '1-2': 'Pionier trifft Diplomat. Die 1 fuehrt, die 2 unterstuetzt sanft. Funktioniert wenn beide ihre Rollen ehren.',
-    '1-3': 'Pionier + Kuenstler. Sehr inspirierend und kreativ. Beide lieben Aufmerksamkeit, koennen sich gegenseitig bestaerken.',
-    '1-4': 'Pionier + Baumeister. Tempo trifft Geduld. Herausfordernd, aber die 4 erdet die 1, wenn beide nachgeben.',
-    '1-5': 'Eine elektrische, aufregende Verbindung! Beide lieben Freiheit und Abenteuer. Pionier (1) und Freigeist (5) inspirieren sich gegenseitig.',
-    '1-6': 'Pionier + Naehrender. Die 6 fordert Familienzeit, die 1 will durchstarten - Kompromisse noetig.',
-    '1-7': 'Pionier + Mystiker. Komplementaer: 7 bringt Tiefe, 1 bringt Aktion. Brauchen Verstaendnis fuer beide Welten.',
-    '1-8': 'Zwei Alphas auf demselben Feld. Machtkampf vorprogrammiert, sofern keine klare Rollenverteilung.',
-    '1-9': 'Pionier + Humanist. 9 zaehmt 1, 1 mobilisiert 9. Sehr fruchtbar wenn beide ihre Egos zuegeln.',
-    '2-2': 'Doppelte Harmonie - sanft, liebevoll, einfuehlsam. Risiko: Entscheidungsschwaeche.',
-    '2-3': 'Harmonisch und kreativ. 3 bringt Leichtigkeit, 2 bringt Tiefe. Schoene Balance.',
-    '2-4': 'Sehr stabile Verbindung. 2 sorgt fuer Frieden, 4 fuer Struktur. Klassisches Erfolgsteam.',
-    '2-5': 'Schwierig: 2 will Sicherheit, 5 will Freiheit. Nur bei viel Reife tragfaehig.',
-    '2-6': 'Top-Match. Beide werte-orientiert, fuersorglich und partnerschaftlich. Sehr nahrhaft.',
-    '2-7': 'Subtil und tief. 7 braucht Rueckzug, 2 sehnt sich nach Naehe - kann ungleich wirken.',
-    '2-8': 'Klassisches Klassikerpaar: 8 fuehrt, 2 unterstuetzt. Funktioniert wenn 8 die 2 wertschaetzt.',
-    '2-9': 'Beide humanitaer veranlagt, gemeinsame Mission moeglich. Sehr warm.',
-    '3-3': 'Doppelte Kreativitaet - viel Spass, aber auch viel Drama. Beide brauchen Buehne.',
-    '3-4': 'Herausfordernd: 3 liebt Spontanitaet, 4 will Planung. Kann sich aber wunderbar ergaenzen.',
-    '3-5': 'Lebhaft, freiheitsliebend, abenteuerlustig. Sehr inspirierend, kann fluechtig sein.',
-    '3-6': 'Warmes Kuenstler-Paar. 6 erdet die 3, 3 bringt Lebendigkeit in das 6er-Heim.',
-    '3-7': 'Kuenstler + Mystiker. Tief und kreativ - aber 7 braucht mehr Ruhe als 3 verstehen kann.',
-    '3-8': 'Aussen vs. Innen: 8 will Erfolg, 3 will Ausdruck. Kann sich ergaenzen, oft kontaer.',
-    '3-9': 'Beide kreativ und expressiv, mit Tiefe. Sehr inspirierend und farbig.',
+    '1-1':
+        'Zwei Pioniere - feurig und ambitioniert. Beide wollen fuehren, das kann Reibung erzeugen, aber auch enorme Power.',
+    '1-2':
+        'Pionier trifft Diplomat. Die 1 fuehrt, die 2 unterstuetzt sanft. Funktioniert wenn beide ihre Rollen ehren.',
+    '1-3':
+        'Pionier + Kuenstler. Sehr inspirierend und kreativ. Beide lieben Aufmerksamkeit, koennen sich gegenseitig bestaerken.',
+    '1-4':
+        'Pionier + Baumeister. Tempo trifft Geduld. Herausfordernd, aber die 4 erdet die 1, wenn beide nachgeben.',
+    '1-5':
+        'Eine elektrische, aufregende Verbindung! Beide lieben Freiheit und Abenteuer. Pionier (1) und Freigeist (5) inspirieren sich gegenseitig.',
+    '1-6':
+        'Pionier + Naehrender. Die 6 fordert Familienzeit, die 1 will durchstarten - Kompromisse noetig.',
+    '1-7':
+        'Pionier + Mystiker. Komplementaer: 7 bringt Tiefe, 1 bringt Aktion. Brauchen Verstaendnis fuer beide Welten.',
+    '1-8':
+        'Zwei Alphas auf demselben Feld. Machtkampf vorprogrammiert, sofern keine klare Rollenverteilung.',
+    '1-9':
+        'Pionier + Humanist. 9 zaehmt 1, 1 mobilisiert 9. Sehr fruchtbar wenn beide ihre Egos zuegeln.',
+    '2-2':
+        'Doppelte Harmonie - sanft, liebevoll, einfuehlsam. Risiko: Entscheidungsschwaeche.',
+    '2-3':
+        'Harmonisch und kreativ. 3 bringt Leichtigkeit, 2 bringt Tiefe. Schoene Balance.',
+    '2-4':
+        'Sehr stabile Verbindung. 2 sorgt fuer Frieden, 4 fuer Struktur. Klassisches Erfolgsteam.',
+    '2-5':
+        'Schwierig: 2 will Sicherheit, 5 will Freiheit. Nur bei viel Reife tragfaehig.',
+    '2-6':
+        'Top-Match. Beide werte-orientiert, fuersorglich und partnerschaftlich. Sehr nahrhaft.',
+    '2-7':
+        'Subtil und tief. 7 braucht Rueckzug, 2 sehnt sich nach Naehe - kann ungleich wirken.',
+    '2-8':
+        'Klassisches Klassikerpaar: 8 fuehrt, 2 unterstuetzt. Funktioniert wenn 8 die 2 wertschaetzt.',
+    '2-9':
+        'Beide humanitaer veranlagt, gemeinsame Mission moeglich. Sehr warm.',
+    '3-3':
+        'Doppelte Kreativitaet - viel Spass, aber auch viel Drama. Beide brauchen Buehne.',
+    '3-4':
+        'Herausfordernd: 3 liebt Spontanitaet, 4 will Planung. Kann sich aber wunderbar ergaenzen.',
+    '3-5':
+        'Lebhaft, freiheitsliebend, abenteuerlustig. Sehr inspirierend, kann fluechtig sein.',
+    '3-6':
+        'Warmes Kuenstler-Paar. 6 erdet die 3, 3 bringt Lebendigkeit in das 6er-Heim.',
+    '3-7':
+        'Kuenstler + Mystiker. Tief und kreativ - aber 7 braucht mehr Ruhe als 3 verstehen kann.',
+    '3-8':
+        'Aussen vs. Innen: 8 will Erfolg, 3 will Ausdruck. Kann sich ergaenzen, oft kontaer.',
+    '3-9':
+        'Beide kreativ und expressiv, mit Tiefe. Sehr inspirierend und farbig.',
     '4-4': 'Stabil, vorhersehbar, sicher. Risiko: zu wenig Funken, Routine.',
-    '4-5': 'Herausforderndste Kombi: Stabilitaet trifft Freiheit. Grosses Wachstumspotenzial bei Kompromissbereitschaft.',
-    '4-6': 'Solide Familien-Verbindung. Beide bauen, beide tragen Verantwortung.',
-    '4-7': 'Strukturiert + introspektiv. Funktioniert leise, beide schaetzen Tiefe.',
-    '4-8': 'Power-Duo: Disziplin + Erfolg. Sehr kraftvolle Verbindung, sehr ergebnisorientiert.',
-    '4-9': 'Pragmatiker + Idealist. 9 sieht das grosse Ganze, 4 die Details - braucht Geduld.',
-    '5-5': 'Doppelte Freiheit, dauerhafte Abwechslung. Schwer fuer Bindung, leicht fuer Erlebnisse.',
-    '5-6': 'Freigeist + Familienseele. Zugkraefte in entgegengesetzte Richtungen.',
+    '4-5':
+        'Herausforderndste Kombi: Stabilitaet trifft Freiheit. Grosses Wachstumspotenzial bei Kompromissbereitschaft.',
+    '4-6':
+        'Solide Familien-Verbindung. Beide bauen, beide tragen Verantwortung.',
+    '4-7':
+        'Strukturiert + introspektiv. Funktioniert leise, beide schaetzen Tiefe.',
+    '4-8':
+        'Power-Duo: Disziplin + Erfolg. Sehr kraftvolle Verbindung, sehr ergebnisorientiert.',
+    '4-9':
+        'Pragmatiker + Idealist. 9 sieht das grosse Ganze, 4 die Details - braucht Geduld.',
+    '5-5':
+        'Doppelte Freiheit, dauerhafte Abwechslung. Schwer fuer Bindung, leicht fuer Erlebnisse.',
+    '5-6':
+        'Freigeist + Familienseele. Zugkraefte in entgegengesetzte Richtungen.',
     '5-7': 'Beide unabhaengig und tief, geben sich Raum - sehr respektvoll.',
-    '5-8': 'Ehrgeiz + Freiheit. 8 will Stabilitaet im Erfolg, 5 will offene Tueren.',
-    '5-9': 'Universell und abenteuerlustig - beide wollen die Welt sehen und veraendern.',
+    '5-8':
+        'Ehrgeiz + Freiheit. 8 will Stabilitaet im Erfolg, 5 will offene Tueren.',
+    '5-9':
+        'Universell und abenteuerlustig - beide wollen die Welt sehen und veraendern.',
     '6-6': 'Warmes, fuersorgliches Paar. Familienzentriert, harmonisch.',
-    '6-7': 'Naehrer + Denker. 7 zieht sich zurueck, 6 will Naehe - sanfte Reibung.',
+    '6-7':
+        'Naehrer + Denker. 7 zieht sich zurueck, 6 will Naehe - sanfte Reibung.',
     '6-8': 'Solide, fokussiert - 6 schafft das Zuhause, 8 schafft den Erfolg.',
-    '6-9': 'Bedingungslose Liebe meets universelle Liebe - sehr selten und kostbar.',
+    '6-9':
+        'Bedingungslose Liebe meets universelle Liebe - sehr selten und kostbar.',
     '7-7': 'Tiefe, philosophische Verbindung. Beide brauchen viel Allein-Zeit.',
-    '7-8': 'Innenwelt + Aussenwelt - selten an einem Strang, aber komplementaer wenn ja.',
+    '7-8':
+        'Innenwelt + Aussenwelt - selten an einem Strang, aber komplementaer wenn ja.',
     '7-9': 'Mystiker + Humanist. Tief, weise, oft spirituell ausgerichtet.',
-    '8-8': 'Doppelte Power - oft Geschaeftspartner und Liebhaber zugleich. Klare Spielregeln noetig.',
-    '8-9': 'Ehrgeiz + Mitgefuehl. 9 erdet das Materielle der 8 im Sinn fuer das Hoehere.',
-    '9-9': 'Doppelter Idealismus - kann sich gegenseitig hochziehen oder gemeinsam erschoepfen.',
+    '8-8':
+        'Doppelte Power - oft Geschaeftspartner und Liebhaber zugleich. Klare Spielregeln noetig.',
+    '8-9':
+        'Ehrgeiz + Mitgefuehl. 9 erdet das Materielle der 8 im Sinn fuer das Hoehere.',
+    '9-9':
+        'Doppelter Idealismus - kann sich gegenseitig hochziehen oder gemeinsam erschoepfen.',
   };
 
   /// Gewichteter Gesamt-Score fuer Synastrie:
@@ -710,9 +821,10 @@ class NumerologyEngine {
 
   /// 3 Varianten pro Tagesenergie 1..9. Selektion deterministisch pro Datum.
   static String getDailyEnergyText(int personalDay, {DateTime? seed}) {
-    final variants = _dailyEnergyTexts[personalDay] ?? const [
-      'Heute traegt deine einzigartige Schwingung. Hoere auf dein Inneres.',
-    ];
+    final variants = _dailyEnergyTexts[personalDay] ??
+        const [
+          'Heute traegt deine einzigartige Schwingung. Hoere auf dein Inneres.',
+        ];
     if (variants.isEmpty) return '';
     final date = seed ?? DateTime.now();
     final idx = (date.day + date.month) % variants.length;
@@ -781,29 +893,39 @@ class NumerologyEngine {
         number ~/= 10;
       }
       number = sum;
-      
+
       // Check wieder auf Meisterzahl
       if (keepMaster && _masterNumbers.contains(number)) {
         return number;
       }
     }
-    
+
     return number;
   }
 
   /// Themen-Beschreibungen für Zyklen
   static String _getCycleTheme(int number) {
     switch (number) {
-      case 1: return 'Unabhängigkeit, Führung, Neuanfang';
-      case 2: return 'Partnerschaft, Diplomatie, Balance';
-      case 3: return 'Kreativität, Ausdruck, Freude';
-      case 4: return 'Stabilität, Ordnung, Arbeit';
-      case 5: return 'Freiheit, Veränderung, Abenteuer';
-      case 6: return 'Verantwortung, Familie, Dienst';
-      case 7: return 'Spiritualität, Analyse, Weisheit';
-      case 8: return 'Macht, Erfolg, Manifestation';
-      case 9: return 'Vollendung, Humanität, Loslassen';
-      default: return 'Unbekannt';
+      case 1:
+        return 'Unabhängigkeit, Führung, Neuanfang';
+      case 2:
+        return 'Partnerschaft, Diplomatie, Balance';
+      case 3:
+        return 'Kreativität, Ausdruck, Freude';
+      case 4:
+        return 'Stabilität, Ordnung, Arbeit';
+      case 5:
+        return 'Freiheit, Veränderung, Abenteuer';
+      case 6:
+        return 'Verantwortung, Familie, Dienst';
+      case 7:
+        return 'Spiritualität, Analyse, Weisheit';
+      case 8:
+        return 'Macht, Erfolg, Manifestation';
+      case 9:
+        return 'Vollendung, Humanität, Loslassen';
+      default:
+        return 'Unbekannt';
     }
   }
 
@@ -815,16 +937,26 @@ class NumerologyEngine {
   /// Themen-Beschreibungen für Herausforderungen
   static String _getChallengeTheme(int number) {
     switch (number) {
-      case 0: return 'Alle Lektionen gemeistert';
-      case 1: return 'Lernen, selbstständig zu sein';
-      case 2: return 'Lernen, mit anderen zusammenzuarbeiten';
-      case 3: return 'Lernen, sich auszudrücken';
-      case 4: return 'Lernen, diszipliniert zu sein';
-      case 5: return 'Lernen, Veränderung anzunehmen';
-      case 6: return 'Lernen, Verantwortung zu übernehmen';
-      case 7: return 'Lernen, Vertrauen zu entwickeln';
-      case 8: return 'Lernen, Macht weise einzusetzen';
-      default: return 'Spezielle Herausforderung';
+      case 0:
+        return 'Alle Lektionen gemeistert';
+      case 1:
+        return 'Lernen, selbstständig zu sein';
+      case 2:
+        return 'Lernen, mit anderen zusammenzuarbeiten';
+      case 3:
+        return 'Lernen, sich auszudrücken';
+      case 4:
+        return 'Lernen, diszipliniert zu sein';
+      case 5:
+        return 'Lernen, Veränderung anzunehmen';
+      case 6:
+        return 'Lernen, Verantwortung zu übernehmen';
+      case 7:
+        return 'Lernen, Vertrauen zu entwickeln';
+      case 8:
+        return 'Lernen, Macht weise einzusetzen';
+      default:
+        return 'Spezielle Herausforderung';
     }
   }
 
@@ -986,6 +1118,7 @@ ${_getNumerologyAffirmations(lifePathNumber)}
       8: '• "Ich manifestiere Fülle mühelos"\n• "Erfolg ist mein natürlicher Zustand"\n• "Ich nutze Macht weise und mitfühlend"\n• "Materieller und spiritueller Wohlstand vereinen sich"\n• "Ich bin Meister meiner Realität"',
       9: '• "Ich diene dem höchsten Wohl aller"\n• "Loslassen bringt Erneuerung"\n• "Mein Mitgefühl heilt die Welt"\n• "Vollendung ist Neuanfang"\n• "Ich bin ein Licht für andere"',
     };
-    return affirmations[number % 10] ?? '• "Ich ehre meine einzigartige Zahlen-Signatur"';
+    return affirmations[number % 10] ??
+        '• "Ich ehre meine einzigartige Zahlen-Signatur"';
   }
 }

@@ -1,6 +1,6 @@
-
 /// 📔 DREAM JOURNAL MODELS
 library;
+
 import 'dart:math' as math;
 
 class DreamEntry {
@@ -401,7 +401,8 @@ class SpiritToolsData {
       name: 'Das Empfangende',
       chineseName: 'Kūn',
       meaning: 'Hingabe, Erde, Empfänglichkeit',
-      judgment: 'Das Empfangende bewirkt Gelingen durch die Beharrlichkeit einer Stute',
+      judgment:
+          'Das Empfangende bewirkt Gelingen durch die Beharrlichkeit einer Stute',
       image: 'Die Beschaffenheit der Erde ist hingebungsvolle Empfänglichkeit',
       lines: [false, false, false, false, false, false],
     ),

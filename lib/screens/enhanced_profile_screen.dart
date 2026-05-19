@@ -12,13 +12,13 @@
 // =====================================================================
 
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/achievement_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/reward_service.dart';
 import '../services/daily_knowledge_service.dart';
-import '../config/enhanced_app_themes.dart';  // 🎨 NEW
+import '../config/enhanced_app_themes.dart'; // 🎨 NEW
 // 📱 NEW
 // ✨ NEW
 
@@ -41,8 +41,8 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return 'PROFIL';
     final meta = user.userMetadata;
-    final name = (meta?['display_name'] as String?) ??
-        (meta?['username'] as String?);
+    final name =
+        (meta?['display_name'] as String?) ?? (meta?['username'] as String?);
     if (name != null && name.trim().isNotEmpty) {
       return name.toUpperCase();
     }
@@ -69,7 +69,8 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
             expandedHeight: 200,
             floating: false,
             pinned: true,
-            backgroundColor: EnhancedAppThemes.energiePrimary,  // 🎨 NEW: Weltenbibliothek Color
+            backgroundColor: EnhancedAppThemes
+                .energiePrimary, // 🎨 NEW: Weltenbibliothek Color
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 _displayName(),
@@ -82,7 +83,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      EnhancedAppThemes.energieGradientStart,  // 🎨 NEW
+                      EnhancedAppThemes.energieGradientStart, // 🎨 NEW
                       EnhancedAppThemes.energieGradientEnd,
                     ],
                     begin: Alignment.topLeft,
@@ -406,7 +407,8 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          ...topAchievements.map((achievement) => _buildAchievementCard(achievement)),
+          ...topAchievements
+              .map((achievement) => _buildAchievementCard(achievement)),
         ],
       ),
     );

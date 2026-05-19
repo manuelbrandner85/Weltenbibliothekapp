@@ -30,8 +30,7 @@ class WaybackCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.history,
-                  color: Color(0xFF7E57C2), size: 18),
+              const Icon(Icons.history, color: Color(0xFF7E57C2), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'HISTORISCHE VERSIONEN',
@@ -97,7 +96,8 @@ class WaybackCard extends StatelessWidget {
 
   Widget _buildSnapshot(BuildContext context, WaybackSnapshot s) {
     final d = s.date;
-    final dateStr = '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+    final dateStr =
+        '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
     return InkWell(
       onTap: () => _open(s.archiveUrl),
       borderRadius: BorderRadius.circular(KbDesign.radiusSm),
@@ -114,8 +114,7 @@ class WaybackCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(6),
                 color: const Color(0xFF7E57C2).withValues(alpha: 0.18),

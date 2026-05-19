@@ -18,14 +18,12 @@ final livekitCallServiceProvider = Provider<LiveKitCallService>((ref) {
 });
 
 /// Reaktive Service-Wrapper — UI baut sich neu sobald notifyListeners feuert.
-final livekitCallProvider =
-    ChangeNotifierProvider<LiveKitCallService>((ref) {
+final livekitCallProvider = ChangeNotifierProvider<LiveKitCallService>((ref) {
   return ref.watch(livekitCallServiceProvider);
 });
 
 /// Convenience: Connection-State (für Top-Bar-Indicator).
-final livekitConnectionStateProvider =
-    Provider<LiveKitConnectionState>((ref) {
+final livekitConnectionStateProvider = Provider<LiveKitConnectionState>((ref) {
   return ref.watch(livekitCallProvider).connectionState;
 });
 

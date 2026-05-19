@@ -27,15 +27,23 @@ class ArchiveCard extends StatelessWidget {
             const Icon(Icons.archive, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('INTERNET ARCHIVE',
-                style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold)),
             const Spacer(),
             if (docs.isNotEmpty)
               Text('${docs.length}',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 11)),
           ]),
           const SizedBox(height: 4),
-          Text('archive.org · Wayback Machine · 50M+ Dokumente · Bücher · Videos',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
+          Text(
+              'archive.org · Wayback Machine · 50M+ Dokumente · Bücher · Videos',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
           const SizedBox(height: 14),
           if (loading)
             _buildLoading()
@@ -51,7 +59,10 @@ class ArchiveCard extends StatelessWidget {
   Widget _buildLoading() => const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: SizedBox(width: 28, height: 28, child: CircularProgressIndicator(color: _accent, strokeWidth: 2)),
+          child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(color: _accent, strokeWidth: 2)),
         ),
       );
 
@@ -68,7 +79,8 @@ class ArchiveCard extends StatelessWidget {
         onTap: () async {
           HapticFeedback.lightImpact();
           final uri = Uri.tryParse(d.url);
-          if (uri != null && await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (uri != null && await canLaunchUrl(uri))
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
         },
         borderRadius: BorderRadius.circular(10),
         child: Container(
@@ -80,7 +92,8 @@ class ArchiveCard extends StatelessWidget {
           ),
           child: Row(children: [
             Container(
-              width: 34, height: 34,
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _accent.withValues(alpha: 0.12),
@@ -90,34 +103,53 @@ class ArchiveCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(d.title,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                    maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 3),
-                Row(children: [
-                  _typeBadge(d.mediatype),
-                  if (d.creator.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(d.creator,
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 9),
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
-                  if (d.date.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Text(d.date.length > 10 ? d.date.substring(0, 4) : d.date,
-                        style: TextStyle(color: _accent.withValues(alpha: 0.6), fontSize: 9, fontWeight: FontWeight.w600)),
-                  ],
-                ]),
-                if (d.description.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(d.description,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 10, height: 1.3),
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
-                ],
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(d.title,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 3),
+                    Row(children: [
+                      _typeBadge(d.mediatype),
+                      if (d.creator.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(d.creator,
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  fontSize: 9),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                      if (d.date.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                            d.date.length > 10
+                                ? d.date.substring(0, 4)
+                                : d.date,
+                            style: TextStyle(
+                                color: _accent.withValues(alpha: 0.6),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ]),
+                    if (d.description.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(d.description,
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.4),
+                              fontSize: 10,
+                              height: 1.3),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
+                    ],
+                  ]),
             ),
             Icon(Icons.open_in_new, color: _accent, size: 13),
           ]),
@@ -135,27 +167,38 @@ class ArchiveCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(type.toUpperCase(),
-          style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.w800)),
+          style: TextStyle(
+              color: color, fontSize: 8, fontWeight: FontWeight.w800)),
     );
   }
 
   Color _colorForType(String type) {
     switch (type.toLowerCase()) {
-      case 'texts': return const Color(0xFF42A5F5);
-      case 'movies': return const Color(0xFFFF7043);
-      case 'audio': return const Color(0xFFAB47BC);
-      case 'image': return const Color(0xFF26A69A);
-      default: return _accent;
+      case 'texts':
+        return const Color(0xFF42A5F5);
+      case 'movies':
+        return const Color(0xFFFF7043);
+      case 'audio':
+        return const Color(0xFFAB47BC);
+      case 'image':
+        return const Color(0xFF26A69A);
+      default:
+        return _accent;
     }
   }
 
   IconData _iconForType(String type) {
     switch (type.toLowerCase()) {
-      case 'texts': return Icons.description;
-      case 'movies': return Icons.movie;
-      case 'audio': return Icons.headphones;
-      case 'image': return Icons.image;
-      default: return Icons.folder;
+      case 'texts':
+        return Icons.description;
+      case 'movies':
+        return Icons.movie;
+      case 'audio':
+        return Icons.headphones;
+      case 'image':
+        return Icons.image;
+      default:
+        return Icons.folder;
     }
   }
 }

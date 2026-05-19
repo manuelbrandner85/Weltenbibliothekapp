@@ -33,8 +33,7 @@ class SkandaleCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_fire_department,
-                  color: _accent, size: 18),
+              const Icon(Icons.local_fire_department, color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'SKANDALE · KONTROVERSEN',
@@ -50,8 +49,7 @@ class SkandaleCard extends StatelessWidget {
                 Text(
                   '${items.length}',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 11),
+                      color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
                 ),
             ],
           ),
@@ -79,8 +77,7 @@ class SkandaleCard extends StatelessWidget {
           child: SizedBox(
             width: 28,
             height: 28,
-            child:
-                CircularProgressIndicator(color: _accent, strokeWidth: 2),
+            child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
           ),
         ),
       );

@@ -47,12 +47,22 @@ class CrossReferenceService {
 
     // Alle 7 Quellen parallel anstossen.
     final results = await Future.wait<dynamic>([
-      api.fetchWikidataEntries(query, limit: 10).catchError((_) => <WikidataEntry>[]),
-      api.fetchOpenAlexWorks(query, limit: 10).catchError((_) => <OpenAlexWork>[]),
-      api.fetchPubMedStudies(query, limit: 8).catchError((_) => <PubMedStudy>[]),
+      api
+          .fetchWikidataEntries(query, limit: 10)
+          .catchError((_) => <WikidataEntry>[]),
+      api
+          .fetchOpenAlexWorks(query, limit: 10)
+          .catchError((_) => <OpenAlexWork>[]),
+      api
+          .fetchPubMedStudies(query, limit: 8)
+          .catchError((_) => <PubMedStudy>[]),
       api.fetchGdeltEvents(query: query).catchError((_) => <GdeltArticle>[]),
-      api.fetchGuardianNews(query, limit: 8).catchError((_) => <GuardianArticle>[]),
-      api.fetchCrossRefWorks(query, limit: 10).catchError((_) => <CrossRefWork>[]),
+      api
+          .fetchGuardianNews(query, limit: 8)
+          .catchError((_) => <GuardianArticle>[]),
+      api
+          .fetchCrossRefWorks(query, limit: 10)
+          .catchError((_) => <CrossRefWork>[]),
       _searchTimeline(query),
     ]);
 
@@ -66,8 +76,13 @@ class CrossReferenceService {
     final crossRef = (results[5] as List).cast<CrossRefWork>();
     final timeline = (results[6] as List).cast<TimelineEventV2>();
 
-    final total = wikidata.length + openAlex.length + pubmed.length +
-        gdelt.length + guardian.length + crossRef.length + timeline.length;
+    final total = wikidata.length +
+        openAlex.length +
+        pubmed.length +
+        gdelt.length +
+        guardian.length +
+        crossRef.length +
+        timeline.length;
 
     return CrossReferenceResult(
       wikidataEntries: wikidata,
@@ -94,7 +109,8 @@ class CrossReferenceService {
           .eq('verified', true)
           .limit(10);
       return (res as List)
-          .map((e) => TimelineEventV2.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              TimelineEventV2.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Timeline-Search: $e');

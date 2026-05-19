@@ -36,7 +36,8 @@ class AffirmationsStudioScreen extends StatefulWidget {
   const AffirmationsStudioScreen({super.key});
 
   @override
-  State<AffirmationsStudioScreen> createState() => _AffirmationsStudioScreenState();
+  State<AffirmationsStudioScreen> createState() =>
+      _AffirmationsStudioScreenState();
 }
 
 class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
@@ -49,6 +50,7 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _gold = Color(0xFFFFD54F);
 
   late final FlutterTts _tts;
@@ -71,10 +73,12 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
     _setupTts();
     _pageCtrl = PageController();
     _glowCtrl = AnimationController(
-      vsync: this, duration: const Duration(seconds: 4),
+      vsync: this,
+      duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
     _ambientCtrl = AnimationController(
-      vsync: this, duration: const Duration(seconds: 9),
+      vsync: this,
+      duration: const Duration(seconds: 9),
     )..repeat();
     _autoSelectByTime();
   }
@@ -129,7 +133,8 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
     });
     // Versuch 1: AI über Worker
     try {
-      final token = Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      final token =
+          Supabase.instance.client.auth.currentSession?.accessToken ?? '';
       final res = await http
           .post(
             Uri.parse('${ApiConfig.workerUrl}/api/mentor/chat'),
@@ -139,8 +144,7 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
             },
             body: jsonEncode({
               'personality': 'alchemist',
-              'message':
-                  'Erschaffe 6 kraftvolle deutsche Affirmationen im Bereich "${_selected.label}" '
+              'message': 'Erschaffe 6 kraftvolle deutsche Affirmationen im Bereich "${_selected.label}" '
                   '(${_selected.code}). Jede Affirmation ist 1 Satz, beginnt mit "Ich". '
                   'Verwende Gegenwartsform. Kein Disclaimer, keine Einleitung, '
                   'nur die 6 Sätze nummeriert 1. bis 6., jeweils auf einer Zeile.',
@@ -151,7 +155,11 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
           .timeout(const Duration(seconds: 25));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final answer = (data['reply'] ?? data['answer'] ?? data['response'] ?? data['message'] ?? '') as String;
+        final answer = (data['reply'] ??
+            data['answer'] ??
+            data['response'] ??
+            data['message'] ??
+            '') as String;
         final parsed = _parseAffirmations(answer);
         if (parsed.length >= 3) {
           if (mounted) {
@@ -212,7 +220,8 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
       userId: userId,
       username: username,
       tool: 'affirmation',
-      summary: '${_selected.emoji} ${_selected.label} · ${_affirmations.length} Affirmationen',
+      summary:
+          '${_selected.emoji} ${_selected.label} · ${_affirmations.length} Affirmationen',
       result: {
         'category_code': _selected.code,
         'category_label': _selected.label,
@@ -309,9 +318,7 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
                   _categoryPicker(),
                   const SizedBox(height: 14),
                   Expanded(
-                    child: hasResults
-                        ? _affirmationCards()
-                        : _idleState(),
+                    child: hasResults ? _affirmationCards() : _idleState(),
                   ),
                   const SizedBox(height: 8),
                   _generateButton(),
@@ -367,12 +374,17 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
                 decoration: BoxDecoration(
                   color: _selected.primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _selected.primary.withValues(alpha: 0.5)),
+                  border: Border.all(
+                      color: _selected.primary.withValues(alpha: 0.5)),
                 ),
                 child: const Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.auto_awesome, color: Colors.white, size: 11),
                   SizedBox(width: 3),
-                  Text('AI', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                  Text('AI',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold)),
                 ]),
               ),
           ]),
@@ -408,7 +420,8 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
                   gradient: sel
                       ? LinearGradient(
                           colors: [c.primary, c.accent],
-                          begin: Alignment.topLeft, end: Alignment.bottomRight)
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight)
                       : null,
                   color: sel ? null : Colors.white.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(14),
@@ -462,28 +475,35 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
               animation: _glowCtrl,
               builder: (_, __) {
                 return Container(
-                  width: 100, height: 100,
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        _selected.primary.withValues(alpha: 0.4 + 0.4 * _glowCtrl.value),
+                        _selected.primary
+                            .withValues(alpha: 0.4 + 0.4 * _glowCtrl.value),
                         Colors.transparent,
                       ],
                     ),
                   ),
                   child: Center(
-                    child: Icon(Icons.auto_awesome, color: _gold, size: 40 + 10 * _glowCtrl.value),
+                    child: Icon(Icons.auto_awesome,
+                        color: _gold, size: 40 + 10 * _glowCtrl.value),
                   ),
                 );
               },
             ),
             const SizedBox(height: 20),
             Text('Affirmationen werden erschaffen…',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
             const SizedBox(height: 6),
             const Text('Der Alchemist destilliert deine Kraft-Sätze',
-                style: TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic)),
+                style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic)),
           ],
         ),
       );
@@ -507,7 +527,8 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
             const SizedBox(height: 12),
             const Text(
                 'Tippe unten "Generieren" für 6 personalisierte\nAffirmationen — vom AI-Alchemisten oder klassisch.',
-                style: TextStyle(color: Colors.white54, fontSize: 12, height: 1.5),
+                style:
+                    TextStyle(color: Colors.white54, fontSize: 12, height: 1.5),
                 textAlign: TextAlign.center),
             if (_error != null) ...[
               const SizedBox(height: 12),
@@ -539,7 +560,8 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
                 scale: selected ? 1.0 : 0.92,
                 duration: const Duration(milliseconds: 250),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(22),
                     child: BackdropFilter(
@@ -598,8 +620,10 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 ElevatedButton.icon(
-                                  onPressed: _speakingIndex && i == _currentIndex
-                                      ? () => _tts.stop().then((_) => setState(() => _speakingIndex = false))
+                                  onPressed: _speakingIndex &&
+                                          i == _currentIndex
+                                      ? () => _tts.stop().then((_) => setState(
+                                          () => _speakingIndex = false))
                                       : () => _speak(i),
                                   icon: Icon(
                                     _speakingIndex && i == _currentIndex
@@ -607,9 +631,10 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
                                         : Icons.volume_up_rounded,
                                     size: 18,
                                   ),
-                                  label: Text(_speakingIndex && i == _currentIndex
-                                      ? 'Stop'
-                                      : 'Sprechen'),
+                                  label: Text(
+                                      _speakingIndex && i == _currentIndex
+                                          ? 'Stop'
+                                          : 'Sprechen'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: _selected.primary,
                                     foregroundColor: Colors.white,
@@ -620,14 +645,18 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
                                 const SizedBox(width: 10),
                                 IconButton(
                                   onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: _affirmations[i]));
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                      content: const Text('📋 In Zwischenablage'),
+                                    Clipboard.setData(
+                                        ClipboardData(text: _affirmations[i]));
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
+                                      content:
+                                          const Text('📋 In Zwischenablage'),
                                       backgroundColor: _selected.accent,
                                       duration: const Duration(seconds: 2),
                                     ));
                                   },
-                                  icon: Icon(Icons.copy_rounded, color: _gold.withValues(alpha: 0.8)),
+                                  icon: Icon(Icons.copy_rounded,
+                                      color: _gold.withValues(alpha: 0.8)),
                                   tooltip: 'Kopieren',
                                 ),
                               ],
@@ -649,7 +678,8 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
             final sel = i == _currentIndex;
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: sel ? 18 : 6, height: 6,
+              width: sel ? 18 : 6,
+              height: 6,
               decoration: BoxDecoration(
                 color: sel ? _selected.primary : Colors.white24,
                 borderRadius: BorderRadius.circular(3),
@@ -669,8 +699,10 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
         onPressed: _generating ? null : _generate,
         icon: _generating
             ? const SizedBox(
-                width: 20, height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white))
             : const Icon(Icons.auto_awesome_rounded),
         label: Text(
           _generating
@@ -684,7 +716,8 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
         style: ElevatedButton.styleFrom(
           backgroundColor: _selected.primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
         ),
       ),
@@ -701,14 +734,18 @@ class _Category {
   final Color primary;
   final Color accent;
   final List<String> staticAffirmations;
-  const _Category(this.code, this.label, this.emoji, this.tagline,
-      this.primary, this.accent, this.staticAffirmations);
+  const _Category(this.code, this.label, this.emoji, this.tagline, this.primary,
+      this.accent, this.staticAffirmations);
 }
 
 const List<_Category> _categories = [
   _Category(
-    'morgen', 'Morgens', '🌅', 'Der Tag öffnet sich für dich.',
-    Color(0xFFFFA726), Color(0xFFFFD54F),
+    'morgen',
+    'Morgens',
+    '🌅',
+    'Der Tag öffnet sich für dich.',
+    Color(0xFFFFA726),
+    Color(0xFFFFD54F),
     [
       'Ich begrüße diesen Tag mit offenem Herzen.',
       'Heute ziehe ich Gutes magnetisch an.',
@@ -719,8 +756,12 @@ const List<_Category> _categories = [
     ],
   ),
   _Category(
-    'fokus', 'Fokus & Kraft', '⚡', 'Klarheit jetzt — Distraction später.',
-    Color(0xFF26C6DA), Color(0xFF1976D2),
+    'fokus',
+    'Fokus & Kraft',
+    '⚡',
+    'Klarheit jetzt — Distraction später.',
+    Color(0xFF26C6DA),
+    Color(0xFF1976D2),
     [
       'Ich konzentriere mich auf das, was ich beeinflussen kann.',
       'Meine Gedanken sind klar und scharf.',
@@ -731,8 +772,12 @@ const List<_Category> _categories = [
     ],
   ),
   _Category(
-    'abend', 'Abends', '🌙', 'Loslassen ist eine heilige Kunst.',
-    Color(0xFF7E57C2), Color(0xFF5E35B1),
+    'abend',
+    'Abends',
+    '🌙',
+    'Loslassen ist eine heilige Kunst.',
+    Color(0xFF7E57C2),
+    Color(0xFF5E35B1),
     [
       'Ich entlasse den Tag, er hat seine Arbeit getan.',
       'Mein Körper sinkt in tiefe Erholung.',
@@ -743,8 +788,12 @@ const List<_Category> _categories = [
     ],
   ),
   _Category(
-    'liebe', 'Selbstliebe', '💖', 'Du darfst dich selbst meinen.',
-    Color(0xFFEC407A), Color(0xFFAD1457),
+    'liebe',
+    'Selbstliebe',
+    '💖',
+    'Du darfst dich selbst meinen.',
+    Color(0xFFEC407A),
+    Color(0xFFAD1457),
     [
       'Ich bin wertvoll, allein weil ich bin.',
       'Ich darf Grenzen setzen und sie wahren.',
@@ -755,8 +804,12 @@ const List<_Category> _categories = [
     ],
   ),
   _Category(
-    'fuelle', 'Fülle', '🌾', 'Dankbarkeit zieht mehr Fülle an.',
-    Color(0xFF66BB6A), Color(0xFF2E7D32),
+    'fuelle',
+    'Fülle',
+    '🌾',
+    'Dankbarkeit zieht mehr Fülle an.',
+    Color(0xFF66BB6A),
+    Color(0xFF2E7D32),
     [
       'Ich nehme wahr, was ich habe — und es wächst.',
       'Geld fließt zu mir aus erwarteten und unerwarteten Quellen.',
@@ -767,8 +820,12 @@ const List<_Category> _categories = [
     ],
   ),
   _Category(
-    'heilung', 'Heilung', '🌿', 'Dein Körper kennt den Weg.',
-    Color(0xFF26A69A), Color(0xFF00695C),
+    'heilung',
+    'Heilung',
+    '🌿',
+    'Dein Körper kennt den Weg.',
+    Color(0xFF26A69A),
+    Color(0xFF00695C),
     [
       'Jede Zelle in mir erinnert sich an Gesundheit.',
       'Mein Körper heilt, während ich atme.',
@@ -779,8 +836,12 @@ const List<_Category> _categories = [
     ],
   ),
   _Category(
-    'mut', 'Mut', '🦁', 'Du hast schon Schlimmeres überstanden.',
-    Color(0xFFFF7043), Color(0xFFBF360C),
+    'mut',
+    'Mut',
+    '🦁',
+    'Du hast schon Schlimmeres überstanden.',
+    Color(0xFFFF7043),
+    Color(0xFFBF360C),
     [
       'Ich bin mutiger als ich denke.',
       'Angst ist ein Kompass — sie zeigt, was wichtig ist.',
@@ -791,8 +852,12 @@ const List<_Category> _categories = [
     ],
   ),
   _Category(
-    'frieden', 'Frieden', '🕊️', 'Stille ist nicht leer — sie ist voll.',
-    Color(0xFF9FA8DA), Color(0xFF5C6BC0),
+    'frieden',
+    'Frieden',
+    '🕊️',
+    'Stille ist nicht leer — sie ist voll.',
+    Color(0xFF9FA8DA),
+    Color(0xFF5C6BC0),
     [
       'Ich gönne mir den Raum, nicht reagieren zu müssen.',
       'Mein Atem ist mein Anker.',
@@ -803,8 +868,12 @@ const List<_Category> _categories = [
     ],
   ),
   _Category(
-    'spirit', 'Spirit', '✨', 'Du bist nie allein.',
-    Color(0xFFAB47BC), Color(0xFF7B1FA2),
+    'spirit',
+    'Spirit',
+    '✨',
+    'Du bist nie allein.',
+    Color(0xFFAB47BC),
+    Color(0xFF7B1FA2),
     [
       'Ich vertraue dem unsichtbaren Plan, der mich trägt.',
       'Ich bin verbunden mit allem, was lebt.',
@@ -821,16 +890,29 @@ class _AffirmOrbsPainter extends CustomPainter {
   final double t;
   final Color primary;
   final Color accent;
-  _AffirmOrbsPainter({required this.t, required this.primary, required this.accent});
+  _AffirmOrbsPainter(
+      {required this.t, required this.primary, required this.accent});
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.18,
-        size.height * (0.35 + math.sin(t * 2 * math.pi) * 0.05)), 100, primary);
-    _draw(canvas, Offset(size.width * 0.86,
-        size.height * (0.50 + math.cos(t * 2 * math.pi) * 0.04)), 90, accent);
-    _draw(canvas, Offset(size.width * 0.50,
-        size.height * (0.92 + math.sin(t * math.pi) * 0.03)), 75, primary);
+    _draw(
+        canvas,
+        Offset(size.width * 0.18,
+            size.height * (0.35 + math.sin(t * 2 * math.pi) * 0.05)),
+        100,
+        primary);
+    _draw(
+        canvas,
+        Offset(size.width * 0.86,
+            size.height * (0.50 + math.cos(t * 2 * math.pi) * 0.04)),
+        90,
+        accent);
+    _draw(
+        canvas,
+        Offset(size.width * 0.50,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        75,
+        primary);
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

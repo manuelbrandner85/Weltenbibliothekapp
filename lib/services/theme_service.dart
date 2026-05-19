@@ -8,18 +8,18 @@ class ThemeService extends ChangeNotifier {
   ThemeService._internal();
 
   static const String _keyThemeMode = 'theme_mode';
-  
+
   ThemeMode _themeMode = ThemeMode.dark; // Default: Dark
-  
+
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
   bool get isLightMode => _themeMode == ThemeMode.light;
-  
+
   /// Initialisierung
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final savedMode = prefs.getString(_keyThemeMode);
-    
+
     if (savedMode == 'light') {
       _themeMode = ThemeMode.light;
     } else if (savedMode == 'dark') {
@@ -27,10 +27,10 @@ class ThemeService extends ChangeNotifier {
     } else {
       _themeMode = ThemeMode.system;
     }
-    
+
     notifyListeners();
   }
-  
+
   /// Theme wechseln
   Future<void> toggleTheme() async {
     if (_themeMode == ThemeMode.dark) {
@@ -38,23 +38,23 @@ class ThemeService extends ChangeNotifier {
     } else {
       _themeMode = ThemeMode.dark;
     }
-    
+
     await _saveThemeMode();
     notifyListeners();
   }
-  
+
   /// Spezifisches Theme setzen
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     await _saveThemeMode();
     notifyListeners();
   }
-  
+
   /// Theme Mode speichern
   Future<void> _saveThemeMode() async {
     final prefs = await SharedPreferences.getInstance();
     String modeString;
-    
+
     switch (_themeMode) {
       case ThemeMode.light:
         modeString = 'light';
@@ -66,7 +66,7 @@ class ThemeService extends ChangeNotifier {
         modeString = 'system';
         break;
     }
-    
+
     await prefs.setString(_keyThemeMode, modeString);
   }
 }
@@ -97,7 +97,7 @@ class AppThemes {
       centerTitle: true,
     ),
   );
-  
+
   // Light Theme (Neu)
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
@@ -128,7 +128,7 @@ class AppThemes {
       titleLarge: TextStyle(color: Color(0xFF212121)),
     ),
   );
-  
+
   // Gradient-Farben je nach Theme
   static List<Color> getMaterieGradient(bool isDark) {
     if (isDark) {
@@ -143,7 +143,7 @@ class AppThemes {
       ];
     }
   }
-  
+
   static List<Color> getEnergieGradient(bool isDark) {
     if (isDark) {
       return [

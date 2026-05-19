@@ -34,7 +34,8 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
 
   Future<void> _pickPhoto(ImageSource source) async {
     final picker = ImagePicker();
-    final p = await picker.pickImage(source: source, maxWidth: 1024, imageQuality: 85);
+    final p = await picker.pickImage(
+        source: source, maxWidth: 1024, imageQuality: 85);
     if (p == null) return;
     setState(() {
       _picked = p;
@@ -53,7 +54,8 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
     try {
       final bytes = await _picked!.readAsBytes();
       final base64 = base64Encode(bytes);
-      final token = Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      final token =
+          Supabase.instance.client.auth.currentSession?.accessToken ?? '';
       // Worker-Endpoint (existiert seit H4): /api/crystal/identify mit
       // {imageBase64} → {name, confidence, properties, model}
       final res = await http
@@ -87,7 +89,7 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
       } else if (res.statusCode == 503) {
         setState(() => _error =
             'Workers AI aktuell nicht verfügbar (CF Worker Free-Tier-Limit). '
-            'Bitte später nochmal versuchen.');
+                'Bitte später nochmal versuchen.');
       } else {
         setState(() => _error = 'Worker-Fehler ${res.statusCode}: ${res.body}');
       }
@@ -120,13 +122,15 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [_accent.withValues(alpha: 0.4), _surface]),
+                  gradient: LinearGradient(
+                      colors: [_accent.withValues(alpha: 0.4), _surface]),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Text(
                   'Fotografiere einen Kristall — KI-Vision identifiziert ihn anhand '
                   'von Farbe, Glanz, Form und Bruch. Bei Unsicherheit: 2-3 Kandidaten.',
-                  style: TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
+                  style:
+                      TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
                 ),
               ),
               const SizedBox(height: 16),
@@ -145,7 +149,9 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add_a_photo, color: _accent.withValues(alpha: 0.6), size: 64),
+                              Icon(Icons.add_a_photo,
+                                  color: _accent.withValues(alpha: 0.6),
+                                  size: 64),
                               const SizedBox(height: 12),
                               const Text('Tippe unten zum Aufnehmen',
                                   style: TextStyle(color: Colors.white60)),
@@ -178,7 +184,8 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _pickPhoto(ImageSource.gallery),
                       icon: const Icon(Icons.image, color: _accent),
-                      label: const Text('Galerie', style: TextStyle(color: _accent)),
+                      label: const Text('Galerie',
+                          style: TextStyle(color: _accent)),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: _accent),
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -194,14 +201,23 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _analyzing ? null : _analyze,
                     icon: _analyzing
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.auto_awesome),
-                    label: Text(_analyzing ? 'KI analysiert…' : 'STEIN IDENTIFIZIEREN',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                    label: Text(
+                        _analyzing ? 'KI analysiert…' : 'STEIN IDENTIFIZIEREN',
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF7C4DFF),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
                 ),
@@ -210,7 +226,10 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: [const Color(0xFF7C4DFF).withValues(alpha: 0.3), _surface]),
+                    gradient: LinearGradient(colors: [
+                      const Color(0xFF7C4DFF).withValues(alpha: 0.3),
+                      _surface
+                    ]),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: const Color(0xFF7C4DFF)),
                   ),
@@ -221,11 +240,16 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
                         Icon(Icons.auto_awesome, color: Color(0xFF7C4DFF)),
                         SizedBox(width: 8),
                         Text('KI-IDENTIFIKATION',
-                            style: TextStyle(color: Color(0xFF7C4DFF), fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                            style: TextStyle(
+                                color: Color(0xFF7C4DFF),
+                                fontSize: 11,
+                                letterSpacing: 2,
+                                fontWeight: FontWeight.bold)),
                       ]),
                       const SizedBox(height: 10),
                       SelectableText(_result!,
-                          style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.6)),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14, height: 1.6)),
                     ],
                   ),
                 ),
@@ -235,14 +259,16 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
                   decoration: BoxDecoration(
                     color: Colors.redAccent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
+                    border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.4)),
                   ),
                   child: Row(children: [
                     const Icon(Icons.warning_amber, color: Colors.redAccent),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(_error!,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13, height: 1.5)),
                     ),
                   ]),
                 ),

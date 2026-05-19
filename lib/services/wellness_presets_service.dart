@@ -87,7 +87,8 @@ class WellnessPresetsService {
           .select()
           .order('duration_min', ascending: true);
       return (res as List)
-          .map((r) => MeditationPreset.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              MeditationPreset.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Meditation presets: $e');
@@ -102,7 +103,8 @@ class WellnessPresetsService {
       if (category != null) q = q.eq('category', category);
       final res = await q.order('hz', ascending: true);
       return (res as List)
-          .map((r) => FrequencyPreset.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              FrequencyPreset.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Frequency presets: $e');
@@ -118,15 +120,19 @@ class WellnessPresetsService {
     String? description,
   }) async {
     try {
-      final res = await _s.from('frequency_presets').insert({
-        'user_id': userId,
-        'username': username,
-        'title': title,
-        'hz': hz,
-        'description': description,
-        'category': 'custom',
-        'is_system': false,
-      }).select().single();
+      final res = await _s
+          .from('frequency_presets')
+          .insert({
+            'user_id': userId,
+            'username': username,
+            'title': title,
+            'hz': hz,
+            'description': description,
+            'category': 'custom',
+            'is_system': false,
+          })
+          .select()
+          .single();
       return FrequencyPreset.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Frequency save: $e');

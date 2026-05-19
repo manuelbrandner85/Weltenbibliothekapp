@@ -44,8 +44,7 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
         positions[i].dy * canvasSize.height,
       );
       if ((details.localPosition - pos).distance < 24) {
-        setState(() =>
-            _selectedSephira = (_selectedSephira == i) ? null : i);
+        setState(() => _selectedSephira = (_selectedSephira == i) ? null : i);
         return;
       }
     }
@@ -116,8 +115,7 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final size =
-                    Size(constraints.maxWidth, constraints.maxHeight);
+                final size = Size(constraints.maxWidth, constraints.maxHeight);
                 return GestureDetector(
                   onTapDown: (d) => _onTreeTap(d, size),
                   child: AnimatedBuilder(
@@ -141,7 +139,8 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           child: _selectedSephira != null
-              ? _buildSephiraDetail(_kSephiroth[_selectedSephira!], _selectedSephira!)
+              ? _buildSephiraDetail(
+                  _kSephiroth[_selectedSephira!], _selectedSephira!)
               : Container(
                   padding: const EdgeInsets.all(16),
                   child: Text(
@@ -223,16 +222,19 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: (s['themes'] as List<String>).map((t) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: color.withValues(alpha: 0.3)),
-              ),
-              child: Text(t,
-                  style: TextStyle(color: color, fontSize: 11)),
-            )).toList(),
+            children: (s['themes'] as List<String>)
+                .map((t) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: color.withValues(alpha: 0.3)),
+                      ),
+                      child:
+                          Text(t, style: TextStyle(color: color, fontSize: 11)),
+                    ))
+                .toList(),
           ),
           const SizedBox(height: 8),
           Text(
@@ -363,8 +365,7 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
                                 color: color.withValues(alpha: 0.25)),
                           ),
                           child: Text(t,
-                              style:
-                                  TextStyle(color: color, fontSize: 10)),
+                              style: TextStyle(color: color, fontSize: 10)),
                         ))
                     .toList(),
               ),
@@ -463,7 +464,8 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFAB47BC).withValues(alpha: 0.15),
+                            color:
+                                const Color(0xFFAB47BC).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -503,16 +505,16 @@ class _TreeOfLifePainter extends CustomPainter {
 
   // 10 Sephiroth Positionen (normalisiert 0-1)
   static const sephirothPos = [
-    Offset(0.5, 0.06),   // 1 Kether
-    Offset(0.75, 0.19),  // 2 Chokmah
-    Offset(0.25, 0.19),  // 3 Binah
-    Offset(0.75, 0.38),  // 4 Chesed
-    Offset(0.25, 0.38),  // 5 Geburah
-    Offset(0.5, 0.51),   // 6 Tiphareth
-    Offset(0.75, 0.64),  // 7 Netzach
-    Offset(0.25, 0.64),  // 8 Hod
-    Offset(0.5, 0.75),   // 9 Yesod
-    Offset(0.5, 0.90),   // 10 Malkuth
+    Offset(0.5, 0.06), // 1 Kether
+    Offset(0.75, 0.19), // 2 Chokmah
+    Offset(0.25, 0.19), // 3 Binah
+    Offset(0.75, 0.38), // 4 Chesed
+    Offset(0.25, 0.38), // 5 Geburah
+    Offset(0.5, 0.51), // 6 Tiphareth
+    Offset(0.75, 0.64), // 7 Netzach
+    Offset(0.25, 0.64), // 8 Hod
+    Offset(0.5, 0.75), // 9 Yesod
+    Offset(0.5, 0.90), // 10 Malkuth
   ];
 
   static const _sephirothColors = [
@@ -530,16 +532,28 @@ class _TreeOfLifePainter extends CustomPainter {
 
   // 22 Pfade
   static const _paths = [
-    [0, 1], [0, 2], [0, 5],
-    [1, 2], [1, 3], [1, 5],
-    [2, 4], [2, 5],
-    [3, 4], [3, 5], [3, 6],
-    [4, 5], [4, 7],
-    [5, 6], [5, 7], [5, 8],
-    [6, 7], [6, 8],
+    [0, 1],
+    [0, 2],
+    [0, 5],
+    [1, 2],
+    [1, 3],
+    [1, 5],
+    [2, 4],
+    [2, 5],
+    [3, 4],
+    [3, 5],
+    [3, 6],
+    [4, 5],
+    [4, 7],
+    [5, 6],
+    [5, 7],
+    [5, 8],
+    [6, 7],
+    [6, 8],
     [7, 8],
     [8, 9],
-    [6, 9], [7, 9],
+    [6, 9],
+    [7, 9],
   ];
 
   @override
@@ -635,7 +649,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Metatron',
     'body': 'Kronenchakra / Pinealdrüse',
     'planet': 'Erstes Schwirren',
-    'lesson': 'Die höchste Einheit. Ursprung alles Seins. Hier ist kein Unterschied, nur reines Bewusstsein.',
+    'lesson':
+        'Die höchste Einheit. Ursprung alles Seins. Hier ist kein Unterschied, nur reines Bewusstsein.',
     'themes': ['Einheit', 'Göttlicher Wille', 'Ursprung', 'Stille'],
   },
   {
@@ -648,7 +663,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Ratziel',
     'body': 'Linke Hirnhälfte / Linkes Auge',
     'planet': 'Tierkreis / Fixsterne',
-    'lesson': 'Dynamische Weisheit. Erster Impuls des Schöpfers in die Existenz. Maskulines Prinzip.',
+    'lesson':
+        'Dynamische Weisheit. Erster Impuls des Schöpfers in die Existenz. Maskulines Prinzip.',
     'themes': ['Weisheit', 'Maskulinität', 'Inspiration', 'Urimpuls'],
   },
   {
@@ -661,7 +677,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Tzaphkiel',
     'body': 'Rechte Hirnhälfte / Rechtes Auge',
     'planet': 'Saturn',
-    'lesson': 'Empfangende Intelligenz. Form und Begrenzung. Feminines Prinzip. Große Mutter.',
+    'lesson':
+        'Empfangende Intelligenz. Form und Begrenzung. Feminines Prinzip. Große Mutter.',
     'themes': ['Verständnis', 'Form', 'Feminines Prinzip', 'Zeit'],
   },
   {
@@ -674,7 +691,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Tzadkiel',
     'body': 'Linker Arm / Linke Schulter',
     'planet': 'Jupiter',
-    'lesson': 'Göttliche Gnade und Barmherzigkeit. Ausdehnung und Fülle. Königliche Großzügigkeit.',
+    'lesson':
+        'Göttliche Gnade und Barmherzigkeit. Ausdehnung und Fülle. Königliche Großzügigkeit.',
     'themes': ['Gnade', 'Güte', 'Fülle', 'Liebe'],
   },
   {
@@ -687,7 +705,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Kamael',
     'body': 'Rechter Arm / Rechte Schulter',
     'planet': 'Mars',
-    'lesson': 'Göttliches Gericht und Stärke. Beschränkung des Übermaßes. Spirituelle Disziplin.',
+    'lesson':
+        'Göttliches Gericht und Stärke. Beschränkung des Übermaßes. Spirituelle Disziplin.',
     'themes': ['Stärke', 'Mut', 'Gericht', 'Reinigung'],
   },
   {
@@ -700,7 +719,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Raphael',
     'body': 'Herz / Brust',
     'planet': 'Sonne',
-    'lesson': 'Zentrum des Lebensbaums. Harmonie aller Kräfte. Sitz des höheren Selbst.',
+    'lesson':
+        'Zentrum des Lebensbaums. Harmonie aller Kräfte. Sitz des höheren Selbst.',
     'themes': ['Harmonie', 'Schönheit', 'Christusbewusstsein', 'Heilung'],
   },
   {
@@ -713,7 +733,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Haniel',
     'body': 'Linke Hüfte / Linkes Bein',
     'planet': 'Venus',
-    'lesson': 'Natürliche Welt, Emotion und Begehren. Sieg durch Ausdauer. Kreativität und Kunst.',
+    'lesson':
+        'Natürliche Welt, Emotion und Begehren. Sieg durch Ausdauer. Kreativität und Kunst.',
     'themes': ['Natur', 'Emotion', 'Kreativität', 'Liebe'],
   },
   {
@@ -726,7 +747,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Michael',
     'body': 'Rechte Hüfte / Rechtes Bein',
     'planet': 'Merkur',
-    'lesson': 'Intellekt in Aktion. Sprache, Kommunikation, Magie. Splendor des göttlichen Lichts.',
+    'lesson':
+        'Intellekt in Aktion. Sprache, Kommunikation, Magie. Splendor des göttlichen Lichts.',
     'themes': ['Intellekt', 'Sprache', 'Magie', 'Kommunikation'],
   },
   {
@@ -739,7 +761,8 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Gabriel',
     'body': 'Reproduktionsorgane / Sakralchakra',
     'planet': 'Mond',
-    'lesson': 'Astrale Welt. Unbewusstes. Verbindung zwischen dem Göttlichen und der Manifestation.',
+    'lesson':
+        'Astrale Welt. Unbewusstes. Verbindung zwischen dem Göttlichen und der Manifestation.',
     'themes': ['Unterbewusstsein', 'Mond', 'Träume', 'Astral'],
   },
   {
@@ -752,32 +775,165 @@ const List<Map<String, dynamic>> _kSephiroth = [
     'archangel': 'Sandalphon',
     'body': 'Füße / Wurzelchakra',
     'planet': 'Erde',
-    'lesson': 'Physische Manifestation. Erde als heiliger Ort. Das Ziel aller spirituellen Energien.',
+    'lesson':
+        'Physische Manifestation. Erde als heiliger Ort. Das Ziel aller spirituellen Energien.',
     'themes': ['Erdung', 'Materie', 'Manifestation', 'Königreich'],
   },
 ];
 
 const List<Map<String, String>> _kPaths = [
-  {'from': 'Kether', 'to': 'Chokmah', 'letter': 'Aleph א', 'tarot': 'Der Narr (0)', 'meaning': 'Reiner Geist, göttliche Torheit'},
-  {'from': 'Kether', 'to': 'Binah', 'letter': 'Beth ב', 'tarot': 'Der Magier (I)', 'meaning': 'Schöpferischer Wille'},
-  {'from': 'Kether', 'to': 'Tiphareth', 'letter': 'Gimel ג', 'tarot': 'Die Hohepriesterin (II)', 'meaning': 'Intuition, verborgenes Wissen'},
-  {'from': 'Chokmah', 'to': 'Binah', 'letter': 'Daleth ד', 'tarot': 'Die Kaiserin (III)', 'meaning': 'Fruchtbarkeit, Natur'},
-  {'from': 'Chokmah', 'to': 'Tiphareth', 'letter': 'Vau ו', 'tarot': 'Der Hierophant (V)', 'meaning': 'Spirituelle Führung'},
-  {'from': 'Chokmah', 'to': 'Chesed', 'letter': 'Heh ה', 'tarot': 'Der Kaiser (IV)', 'meaning': 'Autorität, Struktur'},
-  {'from': 'Binah', 'to': 'Tiphareth', 'letter': 'Zayin ז', 'tarot': 'Die Liebenden (VI)', 'meaning': 'Wahl, Verbindung'},
-  {'from': 'Binah', 'to': 'Geburah', 'letter': 'Cheth ח', 'tarot': 'Der Wagen (VII)', 'meaning': 'Triumph durch Kontrolle'},
-  {'from': 'Chesed', 'to': 'Geburah', 'letter': 'Teth ט', 'tarot': 'Die Stärke (VIII)', 'meaning': 'Innere Stärke'},
-  {'from': 'Chesed', 'to': 'Tiphareth', 'letter': 'Yod י', 'tarot': 'Der Eremit (IX)', 'meaning': 'Innere Weisheit, Einsamkeit'},
-  {'from': 'Chesed', 'to': 'Netzach', 'letter': 'Kaph כ', 'tarot': 'Das Rad des Schicksals (X)', 'meaning': 'Zyklus, Karma'},
-  {'from': 'Geburah', 'to': 'Tiphareth', 'letter': 'Lamed ל', 'tarot': 'Die Gerechtigkeit (XI)', 'meaning': 'Kausalität, Balance'},
-  {'from': 'Geburah', 'to': 'Hod', 'letter': 'Mem מ', 'tarot': 'Der Gehängte (XII)', 'meaning': 'Hingabe, neues Blickfeld'},
-  {'from': 'Tiphareth', 'to': 'Netzach', 'letter': 'Nun נ', 'tarot': 'Der Tod (XIII)', 'meaning': 'Transformation, Übergang'},
-  {'from': 'Tiphareth', 'to': 'Hod', 'letter': 'Samekh ס', 'tarot': 'Die Mäßigkeit (XIV)', 'meaning': 'Integration, Balance'},
-  {'from': 'Tiphareth', 'to': 'Yesod', 'letter': 'Ayin ע', 'tarot': 'Der Teufel (XV)', 'meaning': 'Bindungen lösen'},
-  {'from': 'Netzach', 'to': 'Hod', 'letter': 'Peh פ', 'tarot': 'Der Turm (XVI)', 'meaning': 'Plötzlicher Wandel'},
-  {'from': 'Netzach', 'to': 'Yesod', 'letter': 'Tzaddi צ', 'tarot': 'Der Stern (XVII)', 'meaning': 'Hoffnung, Erneuerung'},
-  {'from': 'Hod', 'to': 'Yesod', 'letter': 'Qoph ק', 'tarot': 'Der Mond (XVIII)', 'meaning': 'Illusion, Unterbewusstsein'},
-  {'from': 'Netzach', 'to': 'Malkuth', 'letter': 'Resh ר', 'tarot': 'Die Sonne (XIX)', 'meaning': 'Erleuchtung, Freude'},
-  {'from': 'Hod', 'to': 'Malkuth', 'letter': 'Shin ש', 'tarot': 'Das Gericht (XX)', 'meaning': 'Erwachen, Neugeburt'},
-  {'from': 'Yesod', 'to': 'Malkuth', 'letter': 'Tav ת', 'tarot': 'Die Welt (XXI)', 'meaning': 'Vollendung, Ganzheit'},
+  {
+    'from': 'Kether',
+    'to': 'Chokmah',
+    'letter': 'Aleph א',
+    'tarot': 'Der Narr (0)',
+    'meaning': 'Reiner Geist, göttliche Torheit'
+  },
+  {
+    'from': 'Kether',
+    'to': 'Binah',
+    'letter': 'Beth ב',
+    'tarot': 'Der Magier (I)',
+    'meaning': 'Schöpferischer Wille'
+  },
+  {
+    'from': 'Kether',
+    'to': 'Tiphareth',
+    'letter': 'Gimel ג',
+    'tarot': 'Die Hohepriesterin (II)',
+    'meaning': 'Intuition, verborgenes Wissen'
+  },
+  {
+    'from': 'Chokmah',
+    'to': 'Binah',
+    'letter': 'Daleth ד',
+    'tarot': 'Die Kaiserin (III)',
+    'meaning': 'Fruchtbarkeit, Natur'
+  },
+  {
+    'from': 'Chokmah',
+    'to': 'Tiphareth',
+    'letter': 'Vau ו',
+    'tarot': 'Der Hierophant (V)',
+    'meaning': 'Spirituelle Führung'
+  },
+  {
+    'from': 'Chokmah',
+    'to': 'Chesed',
+    'letter': 'Heh ה',
+    'tarot': 'Der Kaiser (IV)',
+    'meaning': 'Autorität, Struktur'
+  },
+  {
+    'from': 'Binah',
+    'to': 'Tiphareth',
+    'letter': 'Zayin ז',
+    'tarot': 'Die Liebenden (VI)',
+    'meaning': 'Wahl, Verbindung'
+  },
+  {
+    'from': 'Binah',
+    'to': 'Geburah',
+    'letter': 'Cheth ח',
+    'tarot': 'Der Wagen (VII)',
+    'meaning': 'Triumph durch Kontrolle'
+  },
+  {
+    'from': 'Chesed',
+    'to': 'Geburah',
+    'letter': 'Teth ט',
+    'tarot': 'Die Stärke (VIII)',
+    'meaning': 'Innere Stärke'
+  },
+  {
+    'from': 'Chesed',
+    'to': 'Tiphareth',
+    'letter': 'Yod י',
+    'tarot': 'Der Eremit (IX)',
+    'meaning': 'Innere Weisheit, Einsamkeit'
+  },
+  {
+    'from': 'Chesed',
+    'to': 'Netzach',
+    'letter': 'Kaph כ',
+    'tarot': 'Das Rad des Schicksals (X)',
+    'meaning': 'Zyklus, Karma'
+  },
+  {
+    'from': 'Geburah',
+    'to': 'Tiphareth',
+    'letter': 'Lamed ל',
+    'tarot': 'Die Gerechtigkeit (XI)',
+    'meaning': 'Kausalität, Balance'
+  },
+  {
+    'from': 'Geburah',
+    'to': 'Hod',
+    'letter': 'Mem מ',
+    'tarot': 'Der Gehängte (XII)',
+    'meaning': 'Hingabe, neues Blickfeld'
+  },
+  {
+    'from': 'Tiphareth',
+    'to': 'Netzach',
+    'letter': 'Nun נ',
+    'tarot': 'Der Tod (XIII)',
+    'meaning': 'Transformation, Übergang'
+  },
+  {
+    'from': 'Tiphareth',
+    'to': 'Hod',
+    'letter': 'Samekh ס',
+    'tarot': 'Die Mäßigkeit (XIV)',
+    'meaning': 'Integration, Balance'
+  },
+  {
+    'from': 'Tiphareth',
+    'to': 'Yesod',
+    'letter': 'Ayin ע',
+    'tarot': 'Der Teufel (XV)',
+    'meaning': 'Bindungen lösen'
+  },
+  {
+    'from': 'Netzach',
+    'to': 'Hod',
+    'letter': 'Peh פ',
+    'tarot': 'Der Turm (XVI)',
+    'meaning': 'Plötzlicher Wandel'
+  },
+  {
+    'from': 'Netzach',
+    'to': 'Yesod',
+    'letter': 'Tzaddi צ',
+    'tarot': 'Der Stern (XVII)',
+    'meaning': 'Hoffnung, Erneuerung'
+  },
+  {
+    'from': 'Hod',
+    'to': 'Yesod',
+    'letter': 'Qoph ק',
+    'tarot': 'Der Mond (XVIII)',
+    'meaning': 'Illusion, Unterbewusstsein'
+  },
+  {
+    'from': 'Netzach',
+    'to': 'Malkuth',
+    'letter': 'Resh ר',
+    'tarot': 'Die Sonne (XIX)',
+    'meaning': 'Erleuchtung, Freude'
+  },
+  {
+    'from': 'Hod',
+    'to': 'Malkuth',
+    'letter': 'Shin ש',
+    'tarot': 'Das Gericht (XX)',
+    'meaning': 'Erwachen, Neugeburt'
+  },
+  {
+    'from': 'Yesod',
+    'to': 'Malkuth',
+    'letter': 'Tav ת',
+    'tarot': 'Die Welt (XXI)',
+    'meaning': 'Vollendung, Ganzheit'
+  },
 ];

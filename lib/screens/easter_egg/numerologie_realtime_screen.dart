@@ -19,7 +19,8 @@ class NumerologieRealtimeScreen extends StatefulWidget {
   const NumerologieRealtimeScreen({super.key});
 
   @override
-  State<NumerologieRealtimeScreen> createState() => _NumerologieRealtimeScreenState();
+  State<NumerologieRealtimeScreen> createState() =>
+      _NumerologieRealtimeScreenState();
 }
 
 class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
@@ -32,6 +33,7 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFFAB47BC);
   static const Color _gold = Color(0xFFFFD54F);
 
@@ -58,8 +60,12 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
   @override
   void initState() {
     super.initState();
-    _glowCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 12))..repeat();
+    _glowCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat(reverse: true);
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12))
+          ..repeat();
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
@@ -96,16 +102,22 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
         titleWidget: ShaderMask(
-          shaderCallback: (r) => const LinearGradient(colors: [_gold, _primary]).createShader(r),
+          shaderCallback: (r) =>
+              const LinearGradient(colors: [_gold, _primary]).createShader(r),
           child: const Text('HEUTE IN ZAHLEN',
-              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 3)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
       ),
       body: Stack(fit: StackFit.expand, children: [
         Container(
           decoration: const BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment.center, radius: 1.5,
+              center: Alignment.center,
+              radius: 1.5,
               colors: [Color(0x554A148C), Color(0x331A0B33), _bgDark],
             ),
           ),
@@ -119,7 +131,8 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.neutral, count: 40)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.neutral, count: 40)),
         SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
@@ -128,7 +141,8 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
               AnimatedBuilder(
                 animation: _glowCtrl,
                 builder: (_, __) => Container(
-                  width: 180, height: 180,
+                  width: 180,
+                  height: 180,
                   margin: const EdgeInsets.only(top: 8, bottom: 16),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -140,7 +154,9 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
                   ),
                   child: Center(
                     child: ShaderMask(
-                      shaderCallback: (r) => const LinearGradient(colors: [_gold, _primary]).createShader(r),
+                      shaderCallback: (r) =>
+                          const LinearGradient(colors: [_gold, _primary])
+                              .createShader(r),
                       child: Text(
                         '$masterNum',
                         style: const TextStyle(
@@ -156,19 +172,28 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
               ),
               Text('JETZT',
                   style: TextStyle(
-                      color: _gold.withValues(alpha: 0.8), fontSize: 11, letterSpacing: 4, fontWeight: FontWeight.w700)),
+                      color: _gold.withValues(alpha: 0.8),
+                      fontSize: 11,
+                      letterSpacing: 4,
+                      fontWeight: FontWeight.w700)),
               const SizedBox(height: 6),
               Text(_meaning(masterNum),
-                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600),
                   textAlign: TextAlign.center),
 
               const SizedBox(height: 26),
               // Drei Komponenten
-              _component('📅 TAG', dateNum, '${_now.day}.${_now.month}.${_now.year}'),
+              _component(
+                  '📅 TAG', dateNum, '${_now.day}.${_now.month}.${_now.year}'),
               const SizedBox(height: 8),
-              _component('🕐 STUNDE', hourNum, '${_now.hour.toString().padLeft(2, '0')} Uhr'),
+              _component('🕐 STUNDE', hourNum,
+                  '${_now.hour.toString().padLeft(2, '0')} Uhr'),
               const SizedBox(height: 8),
-              _component('⏱️ MINUTE', minuteNum, '${_now.minute.toString().padLeft(2, '0')}\''),
+              _component('⏱️ MINUTE', minuteNum,
+                  '${_now.minute.toString().padLeft(2, '0')}\''),
 
               const SizedBox(height: 18),
               ClipRRect(
@@ -180,15 +205,27 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
                     decoration: BoxDecoration(
                       color: _primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: _primary.withValues(alpha: 0.3)),
                     ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('ENERGIE-DEUTUNG',
-                          style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 6),
-                      Text(_interpretation(dateNum, hourNum, minuteNum, masterNum),
-                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
-                    ]),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('ENERGIE-DEUTUNG',
+                              style: TextStyle(
+                                  color: _gold,
+                                  fontSize: 10,
+                                  letterSpacing: 2,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 6),
+                          Text(
+                              _interpretation(
+                                  dateNum, hourNum, minuteNum, masterNum),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  height: 1.6)),
+                        ]),
                   ),
                 ),
               ),
@@ -214,7 +251,8 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
           ),
           child: Row(children: [
             Container(
-              width: 50, height: 50,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _primary.withValues(alpha: 0.25),
@@ -222,19 +260,33 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
               ),
               child: Center(
                 child: Text('$num',
-                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(label,
-                    style: const TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text(detail, style: const TextStyle(color: Colors.white60, fontSize: 11)),
-                Text(_meaning(num),
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label,
+                        style: const TextStyle(
+                            color: _gold,
+                            fontSize: 10,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(detail,
+                        style: const TextStyle(
+                            color: Colors.white60, fontSize: 11)),
+                    Text(_meaning(num),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
+                  ]),
             ),
           ]),
         ),
@@ -259,12 +311,24 @@ class _NumOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        100, const Color(0xFFAB47BC));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        90, const Color(0xFFFFD54F));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        70, const Color(0xFF7C4DFF));
+    _draw(
+        canvas,
+        Offset(size.width * 0.2,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        100,
+        const Color(0xFFAB47BC));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        90,
+        const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        70,
+        const Color(0xFF7C4DFF));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

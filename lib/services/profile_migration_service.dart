@@ -107,8 +107,7 @@ class ProfileMigrationService {
       if (synced) {
         await prefs.setBool(_migrationFlag, true);
         if (kDebugMode) {
-          debugPrint(
-              '✅ ProfileMigration: Profil "$username" synchronisiert');
+          debugPrint('✅ ProfileMigration: Profil "$username" synchronisiert');
         }
       } else {
         if (kDebugMode) {

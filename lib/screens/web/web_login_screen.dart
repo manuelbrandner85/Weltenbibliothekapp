@@ -17,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/api_config.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
+
 class WebLoginScreen extends StatefulWidget {
   final VoidCallback? onLoginSuccess;
   const WebLoginScreen({super.key, this.onLoginSuccess});
@@ -58,6 +59,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _surface = Color(0xFF141414);
   static const Color _border = Color(0xFF2A2A2A);
 
@@ -80,8 +82,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
 
   void _onNameChanged() {
     final name = _nameController.text.trim();
-    final shouldShowPassword =
-        name.toLowerCase() == _adminName.toLowerCase();
+    final shouldShowPassword = name.toLowerCase() == _adminName.toLowerCase();
 
     if (shouldShowPassword != _isAdminMode) {
       setState(() {
@@ -208,8 +209,8 @@ class _WebLoginScreenState extends State<WebLoginScreen>
         try {
           await supabase
               .from('web_access_requests')
-              .update({'last_login_at': DateTime.now().toIso8601String()})
-              .eq('display_name', name);
+              .update({'last_login_at': DateTime.now().toIso8601String()}).eq(
+                  'display_name', name);
         } catch (_) {}
 
         if (!mounted) return;
@@ -254,8 +255,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
     }
 
     if (name.toLowerCase() == _adminName.toLowerCase()) {
-      setState(() =>
-          _errorMessage = 'Dieser Name ist reserviert.');
+      setState(() => _errorMessage = 'Dieser Name ist reserviert.');
       return;
     }
 
@@ -325,7 +325,8 @@ class _WebLoginScreenState extends State<WebLoginScreen>
         });
       } else {
         setState(() {
-          _errorMessage = 'Fehler beim Antrag stellen. Bitte versuche es erneut.';
+          _errorMessage =
+              'Fehler beim Antrag stellen. Bitte versuche es erneut.';
           _loading = false;
         });
       }
@@ -371,7 +372,6 @@ class _WebLoginScreenState extends State<WebLoginScreen>
                   ),
                 ),
                 const SizedBox(height: 48),
-
                 Container(
                   padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
@@ -550,8 +550,8 @@ class _WebLoginScreenState extends State<WebLoginScreen>
                                   foregroundColor: _goldLight,
                                   side:
                                       const BorderSide(color: _gold, width: 1),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 14),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10)),
                                 ),
@@ -568,7 +568,6 @@ class _WebLoginScreenState extends State<WebLoginScreen>
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 24),
                 const Text(
                   'Zugang nur für eingeladene Mitglieder',

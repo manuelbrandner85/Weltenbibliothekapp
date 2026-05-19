@@ -59,6 +59,7 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _accent = Color(0xFF9C6FFF);
   static const Color _accentLight = Color(0xFFB99FFF);
   static const Color _teal = Color(0xFF4ECDC4);
@@ -192,9 +193,7 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
         y ~/ 100 +
         y ~/ 400 -
         32045;
-    final jd = jdn.toDouble() +
-        (now.hour - 12) / 24.0 +
-        now.minute / 1440.0;
+    final jd = jdn.toDouble() + (now.hour - 12) / 24.0 + now.minute / 1440.0;
     const synodicMonth = 29.53058867;
     const knownNewMoon = 2451550.1; // 6. Januar 2000
     final raw = ((jd - knownNewMoon) % synodicMonth) / synodicMonth;
@@ -325,8 +324,7 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
             ),
             child: SafeArea(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
                   children: [
                     IconButton(
@@ -514,9 +512,8 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
                       style: TextStyle(
                         color: selected ? _accentLight : Colors.white70,
                         fontSize: 13,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -582,8 +579,7 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
                   decoration: BoxDecoration(
                     color: _accent.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: _accent.withValues(alpha: 0.3)),
+                    border: Border.all(color: _accent.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     prompt,
@@ -620,8 +616,8 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
                     )
                   : const Text(
                       'Eintrag speichern',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 15),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                     ),
             ),
           ),
@@ -794,10 +790,9 @@ class _StarfieldPainter extends CustomPainter {
           0.7 *
               (0.5 +
                   0.5 *
-                      math.sin(animValue * 2 * math.pi * star.speed +
-                          star.phase));
-      final paint = Paint()
-        ..color = Colors.white.withValues(alpha: twinkle);
+                      math.sin(
+                          animValue * 2 * math.pi * star.speed + star.phase));
+      final paint = Paint()..color = Colors.white.withValues(alpha: twinkle);
       if (star.size > 1.5) {
         paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.8);
       }
@@ -860,27 +855,26 @@ class _MoonPainter extends CustomPainter {
       final t = phase / 0.5; // 0..1
       if (t < 0.5) {
         // Neumond → erstes Viertel: linke Hälfte + ovale Überlagerung rechts
-        canvas.drawRect(
-            Rect.fromLTWH(cx - r, cy - r, r, r * 2), shadowPaint);
-        _drawShadowEllipse(
-            canvas, cx, cy, r, (1.0 - t * 2), left: false, paint: shadowPaint);
+        canvas.drawRect(Rect.fromLTWH(cx - r, cy - r, r, r * 2), shadowPaint);
+        _drawShadowEllipse(canvas, cx, cy, r, (1.0 - t * 2),
+            left: false, paint: shadowPaint);
       } else {
         // Erstes Viertel → Vollmond: Ellipse verschwindet rechts
-        _drawShadowEllipse(
-            canvas, cx, cy, r, (t * 2 - 1.0), left: true, paint: shadowPaint);
+        _drawShadowEllipse(canvas, cx, cy, r, (t * 2 - 1.0),
+            left: true, paint: shadowPaint);
       }
     } else {
       final t = (phase - 0.5) / 0.5; // 0..1
       if (t < 0.5) {
         // Vollmond → letztes Viertel: rechte Hälfte wird dunkel
         canvas.drawRect(Rect.fromLTWH(cx, cy - r, r, r * 2), shadowPaint);
-        _drawShadowEllipse(
-            canvas, cx, cy, r, (1.0 - t * 2), left: true, paint: shadowPaint);
+        _drawShadowEllipse(canvas, cx, cy, r, (1.0 - t * 2),
+            left: true, paint: shadowPaint);
       } else {
         // Letztes Viertel → Neumond
         canvas.drawRect(Rect.fromLTWH(cx, cy - r, r, r * 2), shadowPaint);
-        _drawShadowEllipse(
-            canvas, cx, cy, r, (t * 2 - 1.0), left: false, paint: shadowPaint);
+        _drawShadowEllipse(canvas, cx, cy, r, (t * 2 - 1.0),
+            left: false, paint: shadowPaint);
       }
     }
 
@@ -895,14 +889,14 @@ class _MoonPainter extends CustomPainter {
     canvas.drawCircle(Offset(cx, cy), r + 6, ringPaint);
   }
 
-  void _drawShadowEllipse(Canvas canvas, double cx, double cy, double r,
-      double scaleX, {required bool left, required Paint paint}) {
+  void _drawShadowEllipse(
+      Canvas canvas, double cx, double cy, double r, double scaleX,
+      {required bool left, required Paint paint}) {
     canvas.save();
     canvas.translate(cx, cy);
     if (left) canvas.scale(-1.0, 1.0);
     canvas.scale(scaleX.clamp(0.0, 1.0), 1.0);
-    canvas.drawOval(
-        Rect.fromCircle(center: Offset.zero, radius: r), paint);
+    canvas.drawOval(Rect.fromCircle(center: Offset.zero, radius: r), paint);
     canvas.restore();
   }
 
@@ -1053,8 +1047,18 @@ class _EntryCard extends StatelessWidget {
   const _EntryCard({required this.entry, required this.onDelete});
 
   static const List<String> _months = [
-    'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez',
+    'Jan',
+    'Feb',
+    'Mär',
+    'Apr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Dez',
   ];
 
   String _formatDate(DateTime dt) {
@@ -1108,8 +1112,7 @@ class _EntryCard extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: accent.withValues(alpha: 0.12),
-                border:
-                    Border.all(color: accent.withValues(alpha: 0.2)),
+                border: Border.all(color: accent.withValues(alpha: 0.2)),
               ),
               child: Text(_phaseIcon(entry.moonPhasePct),
                   style: const TextStyle(fontSize: 22)),
@@ -1130,8 +1133,7 @@ class _EntryCard extends StatelessWidget {
                       ),
                       if (entry.mood.isNotEmpty) ...[
                         const SizedBox(width: 6),
-                        Text(entry.mood,
-                            style: const TextStyle(fontSize: 14)),
+                        Text(entry.mood, style: const TextStyle(fontSize: 14)),
                       ],
                       const Spacer(),
                       Text(

@@ -60,7 +60,8 @@ class _PinnedBannerV2State extends State<PinnedBannerV2> {
 
   Future<void> _load() async {
     try {
-      final list = await PinnedMessageService.instance.listForRoom(widget.roomId);
+      final list =
+          await PinnedMessageService.instance.listForRoom(widget.roomId);
       if (mounted) {
         setState(() {
           _pins = list;

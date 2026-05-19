@@ -11,7 +11,7 @@ import '../../../services/storage_service.dart';
 //   Tab 2: Lexikon   (Zeichen / Planeten-Bedeutungen)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kPrimary   = Color(0xFF1A237E); // Dunkelblau
+const _kPrimary = Color(0xFF1A237E); // Dunkelblau
 const _kSecondary = Color(0xFFFFD54F); // Gold
 // Legacy alias:
 const _kIndigo = _kPrimary;
@@ -66,8 +66,7 @@ class _NatalChartToolScreenState extends State<NatalChartToolScreen>
         ),
         backgroundColor: Colors.transparent,
         title: const Text('♓ Geburtshoroskop',
-            style:
-                TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
@@ -178,7 +177,9 @@ class _NewChartTabState extends State<_NewChartTab> {
       if (p.timezoneOffsetHours != null) {
         _tzCtrl.text = p.timezoneOffsetHours!.toString();
       }
-      if (p.birthTime != null && p.birthTime!.contains(':') && !p.birthTimeUnknown) {
+      if (p.birthTime != null &&
+          p.birthTime!.contains(':') &&
+          !p.birthTimeUnknown) {
         final parts = p.birthTime!.split(':');
         final h = int.tryParse(parts[0]) ?? 12;
         final m = int.tryParse(parts[1]) ?? 0;
@@ -239,17 +240,16 @@ class _NewChartTabState extends State<_NewChartTab> {
     // Baue UTC-DateTime aus Geburtsdatum + Zeit − TZ-Offset.
     DateTime local;
     if (_timeUnknown || _birthTime == null) {
-      local = DateTime(_birthDate.year, _birthDate.month, _birthDate.day, 12, 0);
+      local =
+          DateTime(_birthDate.year, _birthDate.month, _birthDate.day, 12, 0);
     } else {
       local = DateTime(_birthDate.year, _birthDate.month, _birthDate.day,
           _birthTime!.hour, _birthTime!.minute);
     }
     final utc = local.subtract(Duration(minutes: (tz * 60).round())).toUtc();
 
-    final hasTimeAndPlace = !_timeUnknown &&
-        _birthTime != null &&
-        lat != null &&
-        lng != null;
+    final hasTimeAndPlace =
+        !_timeUnknown && _birthTime != null && lat != null && lng != null;
 
     final result = NatalAstrology.compute(
       birthDateUtc: utc,
@@ -277,14 +277,16 @@ class _NewChartTabState extends State<_NewChartTab> {
 
       final row = {
         'user_id': user.id,
-        'label': _labelCtrl.text.trim().isEmpty ? 'Chart' : _labelCtrl.text.trim(),
+        'label':
+            _labelCtrl.text.trim().isEmpty ? 'Chart' : _labelCtrl.text.trim(),
         'birth_date':
             '${_birthDate.year.toString().padLeft(4, "0")}-${_birthDate.month.toString().padLeft(2, "0")}-${_birthDate.day.toString().padLeft(2, "0")}',
         'birth_time': (_timeUnknown || _birthTime == null)
             ? null
             : '${_birthTime!.hour.toString().padLeft(2, "0")}:${_birthTime!.minute.toString().padLeft(2, "0")}:00',
         'birth_time_unknown': _timeUnknown,
-        'birth_place': _placeCtrl.text.trim().isEmpty ? null : _placeCtrl.text.trim(),
+        'birth_place':
+            _placeCtrl.text.trim().isEmpty ? null : _placeCtrl.text.trim(),
         'birth_latitude': lat,
         'birth_longitude': lng,
         'timezone_offset_hours': tz,
@@ -370,7 +372,8 @@ class _NewChartTabState extends State<_NewChartTab> {
           ],
         ),
         const SizedBox(height: 8),
-        _textField(_tzCtrl, 'Zeitzone Offset Stunden (z. B. 1 = MEZ, 2 = MESZ)'),
+        _textField(
+            _tzCtrl, 'Zeitzone Offset Stunden (z. B. 1 = MEZ, 2 = MESZ)'),
         const SizedBox(height: 24),
         Row(
           children: [
@@ -546,7 +549,10 @@ class _ChartResultCard extends StatelessWidget {
     );
   }
 
-  Widget _row({required String glyph, required String label, required PlanetPosition pos}) {
+  Widget _row(
+      {required String glyph,
+      required String label,
+      required PlanetPosition pos}) {
     final sign = kZodiacSigns[pos.sign];
     final glyphSign = kZodiacGlyphs[pos.sign];
     final deg = pos.degree.floor();
@@ -559,7 +565,9 @@ class _ChartResultCard extends StatelessWidget {
             width: 36,
             child: Text(glyph,
                 style: const TextStyle(
-                    color: _kIndigo, fontSize: 20, fontWeight: FontWeight.bold)),
+                    color: _kIndigo,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
           ),
           SizedBox(
             width: 90,
@@ -668,8 +676,9 @@ class _HistoryTabState extends State<_HistoryTab> {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
-            itemBuilder: (_, i) =>
-                _HistoryCard(data: items[i], onDelete: () => _delete(items[i]['id'] as String)),
+            itemBuilder: (_, i) => _HistoryCard(
+                data: items[i],
+                onDelete: () => _delete(items[i]['id'] as String)),
           );
         },
       ),
@@ -767,10 +776,9 @@ class _HistoryCard extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _kCardBg,
-        title: const Text('Chart löschen?',
-            style: TextStyle(color: Colors.white)),
-        content: Text(
-            'Möchtest du "${data['label']}" wirklich entfernen?',
+        title:
+            const Text('Chart löschen?', style: TextStyle(color: Colors.white)),
+        content: Text('Möchtest du "${data['label']}" wirklich entfernen?',
             style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
@@ -801,7 +809,8 @@ class _HistoryCard extends StatelessWidget {
         initialChildSize: 0.85,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (_, controller) => _ChartDetailView(data: data, scroll: controller),
+        builder: (_, controller) =>
+            _ChartDetailView(data: data, scroll: controller),
       ),
     );
   }
@@ -862,9 +871,7 @@ class _ChartDetailView extends StatelessWidget {
           Text(
             data['label'] as String? ?? 'Chart',
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold),
+                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
@@ -878,8 +885,7 @@ class _ChartDetailView extends StatelessWidget {
           if ((data['notes'] as String?)?.isNotEmpty == true) ...[
             const SizedBox(height: 20),
             const Text('Notizen',
-                style: TextStyle(
-                    color: _kIndigo, fontWeight: FontWeight.bold)),
+                style: TextStyle(color: _kIndigo, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             Text(data['notes'] as String,
                 style: const TextStyle(color: Colors.white70)),
@@ -905,7 +911,9 @@ class _ChartDetailView extends StatelessWidget {
             width: 36,
             child: Text(glyph,
                 style: const TextStyle(
-                    color: _kIndigo, fontSize: 20, fontWeight: FontWeight.bold)),
+                    color: _kIndigo,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
           ),
           SizedBox(
             width: 110,
@@ -1068,8 +1076,8 @@ class _LexiconCard extends StatelessWidget {
                           fontSize: 16)),
                   const SizedBox(height: 4),
                   Text(short,
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 13)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13)),
                   if (keywords.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Wrap(
@@ -1147,9 +1155,7 @@ class _LexiconCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(data['short_text'] as String? ?? '',
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      height: 1.4)),
+                      color: Colors.white, fontSize: 15, height: 1.4)),
               if ((data['deep_text'] as String?)?.isNotEmpty == true) ...[
                 const SizedBox(height: 20),
                 const Text('Vertiefung',
@@ -1220,38 +1226,88 @@ class _TransitTodayTab extends StatelessWidget {
   const _TransitTodayTab();
 
   static const List<String> _planets = [
-    'Sonne', 'Mond', 'Merkur', 'Venus', 'Mars',
-    'Jupiter', 'Saturn', 'Uranus', 'Neptun', 'Pluto',
+    'Sonne',
+    'Mond',
+    'Merkur',
+    'Venus',
+    'Mars',
+    'Jupiter',
+    'Saturn',
+    'Uranus',
+    'Neptun',
+    'Pluto',
   ];
 
   static const Map<String, String> _planetEmoji = {
-    'Sonne': '☀️', 'Mond': '🌙', 'Merkur': '☿', 'Venus': '♀',
-    'Mars': '♂', 'Jupiter': '♃', 'Saturn': '♄',
-    'Uranus': '♅', 'Neptun': '♆', 'Pluto': '♇',
+    'Sonne': '☀️',
+    'Mond': '🌙',
+    'Merkur': '☿',
+    'Venus': '♀',
+    'Mars': '♂',
+    'Jupiter': '♃',
+    'Saturn': '♄',
+    'Uranus': '♅',
+    'Neptun': '♆',
+    'Pluto': '♇',
   };
 
   static const List<String> _signs = [
-    'Widder', 'Stier', 'Zwillinge', 'Krebs', 'Löwe', 'Jungfrau',
-    'Waage', 'Skorpion', 'Schütze', 'Steinbock', 'Wassermann', 'Fische',
+    'Widder',
+    'Stier',
+    'Zwillinge',
+    'Krebs',
+    'Löwe',
+    'Jungfrau',
+    'Waage',
+    'Skorpion',
+    'Schütze',
+    'Steinbock',
+    'Wassermann',
+    'Fische',
   ];
 
   static const List<String> _signEmoji = [
-    '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓',
+    '♈',
+    '♉',
+    '♊',
+    '♋',
+    '♌',
+    '♍',
+    '♎',
+    '♏',
+    '♐',
+    '♑',
+    '♒',
+    '♓',
   ];
 
   // Vereinfachte Position-Berechnung — Synodische Periode pro Planet.
   // Ergibt zeitgenössische, korrekte Zeichen, aber keine sub-Grad-Präzision.
   static const Map<String, double> _periodDays = {
-    'Sonne': 365.25, 'Mond': 27.32, 'Merkur': 87.97, 'Venus': 224.7,
-    'Mars': 686.98, 'Jupiter': 4332.59, 'Saturn': 10759.22,
-    'Uranus': 30688.5, 'Neptun': 60182, 'Pluto': 90560,
+    'Sonne': 365.25,
+    'Mond': 27.32,
+    'Merkur': 87.97,
+    'Venus': 224.7,
+    'Mars': 686.98,
+    'Jupiter': 4332.59,
+    'Saturn': 10759.22,
+    'Uranus': 30688.5,
+    'Neptun': 60182,
+    'Pluto': 90560,
   };
 
   // J2000-Epoche-Offsets pro Planet (ekliptische Länge am 2000-01-01).
   static const Map<String, double> _j2000Longitude = {
-    'Sonne': 280.0, 'Mond': 218.0, 'Merkur': 252.0, 'Venus': 181.0,
-    'Mars': 355.0, 'Jupiter': 34.0, 'Saturn': 50.0,
-    'Uranus': 314.0, 'Neptun': 304.0, 'Pluto': 238.0,
+    'Sonne': 280.0,
+    'Mond': 218.0,
+    'Merkur': 252.0,
+    'Venus': 181.0,
+    'Mars': 355.0,
+    'Jupiter': 34.0,
+    'Saturn': 50.0,
+    'Uranus': 314.0,
+    'Neptun': 304.0,
+    'Pluto': 238.0,
   };
 
   double _getLongitude(String planet, DateTime date) {
@@ -1280,22 +1336,31 @@ class _TransitTodayTab extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF7C4DFF)]),
+              gradient: const LinearGradient(
+                  colors: [Color(0xFF1A237E), Color(0xFF7C4DFF)]),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('🌌 PLANETEN-TRANSITE HEUTE',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text('${today.day}.${today.month}.${today.year}',
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 const Text(
                   'Heutige Position der Hauptplaneten in den Sternzeichen. '
                   'Genauigkeit ±1 Grad — für tiefe Analyse die Ephemeride im Geburts-Tab nutzen.',
-                  style: TextStyle(color: Colors.white, fontSize: 12, height: 1.5),
+                  style:
+                      TextStyle(color: Colors.white, fontSize: 12, height: 1.5),
                 ),
               ],
             ),
@@ -1325,9 +1390,13 @@ class _TransitTodayTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(p,
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold)),
                   Text('${degInSign.toStringAsFixed(1)}° in ${sign.name}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                 ],
               ),
             ),

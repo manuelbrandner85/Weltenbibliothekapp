@@ -69,8 +69,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
       });
     }
 
-    _postsChannel = _db
-        .channel('stats_posts_${widget.world}')
+    _postsChannel = _db.channel('stats_posts_${widget.world}')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
@@ -84,8 +83,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
       )
       ..subscribe();
 
-    _chatChannel = _db
-        .channel('stats_chat_${widget.world}')
+    _chatChannel = _db.channel('stats_chat_${widget.world}')
       ..onPostgresChanges(
         event: PostgresChangeEvent.insert,
         schema: 'public',
@@ -115,13 +113,14 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
         _fetchChatDates(uid),
       ]);
 
-      final posts     = results[0] as List<Map<String, dynamic>>;
+      final posts = results[0] as List<Map<String, dynamic>>;
       final chatDates = results[1] as List<DateTime>;
 
-      final postCount    = posts.length;
-      final likesReceived = posts.fold<int>(0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
-      final chatCount    = chatDates.length;
-      final streak       = _calcCurrentStreak(chatDates);
+      final postCount = posts.length;
+      final likesReceived = posts.fold<int>(
+          0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
+      final chatCount = chatDates.length;
+      final streak = _calcCurrentStreak(chatDates);
 
       // Kategorieverteilung aus Posts
       final categoryDist = _groupByCategory(posts);
@@ -193,9 +192,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
 
   int _calcCurrentStreak(List<DateTime> dates) {
     if (dates.isEmpty) return 0;
-    final daySet = dates
-        .map((d) => DateTime(d.year, d.month, d.day))
-        .toSet();
+    final daySet = dates.map((d) => DateTime(d.year, d.month, d.day)).toSet();
     int streak = 0;
     var cursor = DateTime.now();
     cursor = DateTime(cursor.year, cursor.month, cursor.day);
@@ -209,7 +206,8 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
     return streak;
   }
 
-  List<Map<String, dynamic>> _groupByCategory(List<Map<String, dynamic>> posts) {
+  List<Map<String, dynamic>> _groupByCategory(
+      List<Map<String, dynamic>> posts) {
     // Wörter im Post-Content als Proxy für Kategorie
     final worldColor = widget.world == 'materie'
         ? const Color(0xFFE53935)
@@ -217,14 +215,16 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
     if (posts.isEmpty) return [];
     return [
       {
-        'category': widget.world == 'materie' ? 'Materie-Beiträge' : 'Energie-Beiträge',
+        'category':
+            widget.world == 'materie' ? 'Materie-Beiträge' : 'Energie-Beiträge',
         'count': posts.length,
         'color': worldColor,
       }
     ];
   }
 
-  List<Map<String, dynamic>> _buildProgressHistory(List<Map<String, dynamic>> posts) {
+  List<Map<String, dynamic>> _buildProgressHistory(
+      List<Map<String, dynamic>> posts) {
     final Map<String, int> daily = {};
     for (final row in posts) {
       final ts = DateTime.tryParse(row['created_at'] as String? ?? '');
@@ -314,66 +314,72 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),
           ),
           const Positioned.fill(child: IgnorePointer(child: WBVignette())),
           _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadAll,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCounterSection(),
-                    const SizedBox(height: 24),
-                    if (_categoryDistribution.isNotEmpty) ...[
-                      _buildSectionHeader(
-                          '📊 Aktivitätsübersicht', 'Deine Beiträge'),
-                      const SizedBox(height: 16),
-                      CategoryPieChart(
-                        data: _categoryDistribution,
-                        world: widget.world,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                    _buildSectionHeader('📈 Beitragsfortschritt', 'Letzte 30 Tage'),
-                    const SizedBox(height: 16),
-                    ReadingProgressChart(
-                      data: _progressHistory,
-                      world: widget.world,
-                    ),
-                    const SizedBox(height: 24),
-                    _buildSectionHeader('🔥 Chat-Aktivitätsverlauf', 'Letzte 90 Tage'),
-                    const SizedBox(height: 16),
-                    StreakHeatmap(
-                      data: _streakData,
-                      world: widget.world,
-                    ),
-                    const SizedBox(height: 24),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: Text(
-                          '💡 Tipp: Schreibe Posts und chatte täglich, um deinen Streak zu erhöhen!',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                  onRefresh: _loadAll,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildCounterSection(),
+                        const SizedBox(height: 24),
+                        if (_categoryDistribution.isNotEmpty) ...[
+                          _buildSectionHeader(
+                              '📊 Aktivitätsübersicht', 'Deine Beiträge'),
+                          const SizedBox(height: 16),
+                          CategoryPieChart(
+                            data: _categoryDistribution,
+                            world: widget.world,
                           ),
-                          textAlign: TextAlign.center,
+                          const SizedBox(height: 24),
+                        ],
+                        _buildSectionHeader(
+                            '📈 Beitragsfortschritt', 'Letzte 30 Tage'),
+                        const SizedBox(height: 16),
+                        ReadingProgressChart(
+                          data: _progressHistory,
+                          world: widget.world,
                         ),
-                      ),
+                        const SizedBox(height: 24),
+                        _buildSectionHeader(
+                            '🔥 Chat-Aktivitätsverlauf', 'Letzte 90 Tage'),
+                        const SizedBox(height: 16),
+                        StreakHeatmap(
+                          data: _streakData,
+                          world: widget.world,
+                        ),
+                        const SizedBox(height: 24),
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Text(
+                              '💡 Tipp: Schreibe Posts und chatte täglich, um deinen Streak zu erhöhen!',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
         ],
       ),
     );

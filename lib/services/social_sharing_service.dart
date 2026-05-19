@@ -123,13 +123,15 @@ class ShareRecord {
 // =====================================================================
 
 class SocialSharingService {
-  static final SocialSharingService _instance = SocialSharingService._internal();
+  static final SocialSharingService _instance =
+      SocialSharingService._internal();
   factory SocialSharingService() => _instance;
   SocialSharingService._internal();
 
   static const String _shareHistoryKey = 'share_history';
   static const String _referralCountKey = 'referral_count';
-  static const String _baseUrl = 'https://weltenbibliothek.app'; // Production URL
+  static const String _baseUrl =
+      'https://weltenbibliothek.app'; // Production URL
 
   SharedPreferences? _prefs;
   List<ShareRecord> _shareHistory = [];
@@ -144,7 +146,7 @@ class SocialSharingService {
       _prefs = await SharedPreferences.getInstance();
       await _loadShareHistory();
       _referralCount = _prefs?.getInt(_referralCountKey) ?? 0;
-      
+
       if (kDebugMode) {
         debugPrint('✅ SocialSharingService initialized');
         debugPrint('   📊 Total shares: ${_shareHistory.length}');
@@ -167,8 +169,9 @@ class SocialSharingService {
     required SharePlatform platform,
   }) async {
     final shareUrl = '$_baseUrl/narrative/$narrativeId';
-    final shareText = '📖 $narrativeTitle\n\nEntdecke diese faszinierende Geschichte in der Weltenbibliothek!';
-    
+    final shareText =
+        '📖 $narrativeTitle\n\nEntdecke diese faszinierende Geschichte in der Weltenbibliothek!';
+
     return await _share(
       platform: platform,
       text: shareText,
@@ -184,8 +187,9 @@ class SocialSharingService {
     required SharePlatform platform,
   }) async {
     final shareUrl = '$_baseUrl/achievements';
-    final shareText = '🏆 Ich habe "$achievementName" freigeschaltet!\n\nSchau dir meine Erfolge in der Weltenbibliothek an!';
-    
+    final shareText =
+        '🏆 Ich habe "$achievementName" freigeschaltet!\n\nSchau dir meine Erfolge in der Weltenbibliothek an!';
+
     return await _share(
       platform: platform,
       text: shareText,
@@ -202,8 +206,9 @@ class SocialSharingService {
     required SharePlatform platform,
   }) async {
     final shareUrl = '$_baseUrl/profile';
-    final shareText = '👤 $username - Level $level\n🏆 $achievementCount Achievements\n\nSieh dir mein Profil in der Weltenbibliothek an!';
-    
+    final shareText =
+        '👤 $username - Level $level\n🏆 $achievementCount Achievements\n\nSieh dir mein Profil in der Weltenbibliothek an!';
+
     return await _share(
       platform: platform,
       text: shareText,
@@ -217,8 +222,9 @@ class SocialSharingService {
     required SharePlatform platform,
   }) async {
     final shareUrl = _baseUrl;
-    final shareText = '📚 Entdecke die Weltenbibliothek!\n\nEine App voller faszinierender Geschichten, Geheimnisse und Wissen aus aller Welt. 🌍';
-    
+    final shareText =
+        '📚 Entdecke die Weltenbibliothek!\n\nEine App voller faszinierender Geschichten, Geheimnisse und Wissen aus aller Welt. 🌍';
+
     return await _share(
       platform: platform,
       text: shareText,
@@ -241,28 +247,33 @@ class SocialSharingService {
   }) async {
     try {
       String shareUrl;
-      
+
       switch (platform) {
         case SharePlatform.whatsapp:
-          shareUrl = 'https://wa.me/?text=${Uri.encodeComponent('$text\n\n$url')}';
+          shareUrl =
+              'https://wa.me/?text=${Uri.encodeComponent('$text\n\n$url')}';
           break;
-          
+
         case SharePlatform.telegram:
-          shareUrl = 'https://t.me/share/url?url=${Uri.encodeComponent(url)}&text=${Uri.encodeComponent(text)}';
+          shareUrl =
+              'https://t.me/share/url?url=${Uri.encodeComponent(url)}&text=${Uri.encodeComponent(text)}';
           break;
-          
+
         case SharePlatform.twitter:
-          shareUrl = 'https://twitter.com/intent/tweet?text=${Uri.encodeComponent(text)}&url=${Uri.encodeComponent(url)}';
+          shareUrl =
+              'https://twitter.com/intent/tweet?text=${Uri.encodeComponent(text)}&url=${Uri.encodeComponent(url)}';
           break;
-          
+
         case SharePlatform.facebook:
-          shareUrl = 'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(url)}';
+          shareUrl =
+              'https://www.facebook.com/sharer/sharer.php?u=${Uri.encodeComponent(url)}';
           break;
-          
+
         case SharePlatform.email:
-          shareUrl = 'mailto:?subject=${Uri.encodeComponent('Weltenbibliothek')}&body=${Uri.encodeComponent('$text\n\n$url')}';
+          shareUrl =
+              'mailto:?subject=${Uri.encodeComponent('Weltenbibliothek')}&body=${Uri.encodeComponent('$text\n\n$url')}';
           break;
-          
+
         case SharePlatform.copy:
           // For copy, return false to trigger clipboard copy in UI
           return false;
@@ -271,14 +282,14 @@ class SocialSharingService {
       final uri = Uri.parse(shareUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-        
+
         // Track share
         await _trackShare(platform, contentType, contentId);
-        
+
         if (kDebugMode) {
           debugPrint('✅ Shared $contentType via ${platform.label}');
         }
-        
+
         return true;
       } else {
         if (kDebugMode) {
@@ -326,7 +337,8 @@ class SocialSharingService {
       final historyJson = _prefs?.getString(_shareHistoryKey);
       if (historyJson != null) {
         final List<dynamic> decoded = json.decode(historyJson);
-        _shareHistory = decoded.map((json) => ShareRecord.fromJson(json)).toList();
+        _shareHistory =
+            decoded.map((json) => ShareRecord.fromJson(json)).toList();
       }
     } catch (e) {
       if (kDebugMode) {
@@ -356,7 +368,7 @@ class SocialSharingService {
     try {
       _referralCount++;
       await _prefs?.setInt(_referralCountKey, _referralCount);
-      
+
       if (kDebugMode) {
         debugPrint('👥 Referral count: $_referralCount');
       }
@@ -378,9 +390,8 @@ class SocialSharingService {
   Map<SharePlatform, int> get sharesByPlatform {
     final Map<SharePlatform, int> counts = {};
     for (var platform in SharePlatform.values) {
-      counts[platform] = _shareHistory
-          .where((r) => r.platform == platform)
-          .length;
+      counts[platform] =
+          _shareHistory.where((r) => r.platform == platform).length;
     }
     return counts;
   }

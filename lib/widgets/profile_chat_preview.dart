@@ -71,7 +71,8 @@ class ProfileChatPreview extends StatelessWidget {
                             ? avatarEmoji!
                             : (name.isNotEmpty ? name[0].toUpperCase() : '?'),
                         style: TextStyle(
-                          fontSize: (avatarEmoji?.isNotEmpty ?? false) ? 16 : 14,
+                          fontSize:
+                              (avatarEmoji?.isNotEmpty ?? false) ? 16 : 14,
                           fontWeight: FontWeight.w700,
                           color: accent,
                         ),
@@ -82,7 +83,8 @@ class ProfileChatPreview extends StatelessWidget {
               // Bubble
               Flexible(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: const BorderRadius.only(

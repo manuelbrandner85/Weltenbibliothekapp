@@ -25,7 +25,8 @@ class SpiritProfileService {
     try {
       final row = await _db
           .from('profiles')
-          .select('full_name, birth_date, birth_time, birth_place, username, avatar_url')
+          .select(
+              'full_name, birth_date, birth_time, birth_place, username, avatar_url')
           .eq('id', userId)
           .maybeSingle();
 
@@ -42,7 +43,8 @@ class SpiritProfileService {
     try {
       final row = await _db
           .from('profiles')
-          .select('full_name, birth_date, birth_time, birth_place, username, avatar_url')
+          .select(
+              'full_name, birth_date, birth_time, birth_place, username, avatar_url')
           .eq('id', userId)
           .maybeSingle();
 
@@ -102,7 +104,10 @@ class SpiritProfileService {
     final str = '${birthDate.year}${birthDate.month}${birthDate.day}';
     int sum = str.split('').fold(0, (a, c) => a + (int.tryParse(c) ?? 0));
     while (sum > 9 && sum != 11 && sum != 22 && sum != 33) {
-      sum = sum.toString().split('').fold(0, (a, c) => a + (int.tryParse(c) ?? 0));
+      sum = sum
+          .toString()
+          .split('')
+          .fold(0, (a, c) => a + (int.tryParse(c) ?? 0));
     }
     return sum;
   }
@@ -155,8 +160,7 @@ class SpiritProfileData {
   int? get lifePathNumber =>
       SpiritProfileService.calculateLifePathNumber(birthDate);
 
-  String? get zodiacSign =>
-      SpiritProfileService.calculateZodiacSign(birthDate);
+  String? get zodiacSign => SpiritProfileService.calculateZodiacSign(birthDate);
 
   factory SpiritProfileData.fromMap(Map<String, dynamic> map) {
     DateTime? birthDate;

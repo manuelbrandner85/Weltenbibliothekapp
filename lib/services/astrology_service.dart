@@ -11,7 +11,7 @@ class AstrologyService {
   Map<String, dynamic> getSunSign(DateTime birthDate) {
     final month = birthDate.month;
     final day = birthDate.day;
-    
+
     // Sternzeichen-Grenzen
     if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) {
       return _zodiacSigns[0]; // Widder
@@ -47,7 +47,7 @@ class AstrologyService {
     final daysSince2000 = birthDate.difference(DateTime(2000, 1, 1)).inDays;
     final moonCycle = (daysSince2000 * 13.176) % 360; // ~13 Umläufe pro Jahr
     final signIndex = (moonCycle / 30).floor() % 12;
-    
+
     return _zodiacSigns[signIndex];
   }
 
@@ -55,7 +55,7 @@ class AstrologyService {
   /// Aszendent wechselt ca. alle 2 Stunden
   Map<String, dynamic>? getAscendant(DateTime birthDate, String? birthTime) {
     if (birthTime == null || birthTime.isEmpty) return null;
-    
+
     try {
       final parts = birthTime.split(':');
       if (parts.isEmpty) return null;
@@ -64,11 +64,11 @@ class AstrologyService {
       final hour = int.tryParse(parts[0]);
       if (hour == null) return null;
       final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-      
+
       // Vereinfacht: 2 Stunden pro Zeichen, startend bei Sonnenaufgang (~6 Uhr)
       final offsetHours = (hour - 6 + (minute / 60)).toDouble();
       final signIndex = ((offsetHours / 2).floor() % 12).abs();
-      
+
       return _zodiacSigns[signIndex];
     } catch (e) {
       return null;
@@ -82,38 +82,39 @@ class AstrologyService {
     String? birthTime,
   ) {
     final elements = {'Feuer': 0, 'Erde': 0, 'Luft': 0, 'Wasser': 0};
-    
+
     // Sonnenzeichen
     final sun = getSunSign(birthDate);
     elements[sun['element'] as String] = (elements[sun['element']]! + 1);
-    
+
     // Mondzeichen
     final moon = getMoonSign(birthDate);
     elements[moon['element'] as String] = (elements[moon['element']]! + 1);
-    
+
     // Aszendent (falls vorhanden)
     final ascendant = getAscendant(birthDate, birthTime);
     if (ascendant != null) {
-      elements[ascendant['element'] as String] = (elements[ascendant['element']]! + 1);
+      elements[ascendant['element'] as String] =
+          (elements[ascendant['element']]! + 1);
     }
-    
+
     return elements;
   }
 
   /// DOMINANTES ELEMENT
   String getDominantElement(DateTime birthDate, String? birthTime) {
     final distribution = getElementDistribution(birthDate, birthTime);
-    
+
     String dominantElement = 'Feuer';
     int maxCount = 0;
-    
+
     distribution.forEach((element, count) {
       if (count > maxCount) {
         maxCount = count;
         dominantElement = element;
       }
     });
-    
+
     return dominantElement;
   }
 
@@ -126,11 +127,11 @@ class AstrologyService {
     final moon = getMoonSign(birthDate);
     final ascendant = getAscendant(birthDate, birthTime);
     final dominant = getDominantElement(birthDate, birthTime);
-    
-    final ascText = ascendant != null 
+
+    final ascText = ascendant != null
         ? '\n🌅 Aszendent: ${ascendant['name']} (${ascendant['element']})'
         : '';
-    
+
     return '''
 ☀️ Sonnenzeichen: ${sun['name']} (${sun['element']})
 ${sun['description']}

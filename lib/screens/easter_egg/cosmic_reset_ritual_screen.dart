@@ -21,7 +21,8 @@ class CosmicResetRitualScreen extends StatefulWidget {
   const CosmicResetRitualScreen({super.key});
 
   @override
-  State<CosmicResetRitualScreen> createState() => _CosmicResetRitualScreenState();
+  State<CosmicResetRitualScreen> createState() =>
+      _CosmicResetRitualScreenState();
 }
 
 class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
@@ -34,6 +35,7 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFFE53935);
   static const Color _accent = Color(0xFFFFB300);
 
@@ -49,13 +51,18 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
   @override
   void initState() {
     super.initState();
-    _holdAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))
-      ..addListener(() {
-        setState(() => _holdProgress = _holdAnimCtrl.value);
-        if (_holdAnimCtrl.isCompleted) _performReset();
-      });
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 14))..repeat();
-    _glowCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 5))..repeat(reverse: true);
+    _holdAnimCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..addListener(() {
+            setState(() => _holdProgress = _holdAnimCtrl.value);
+            if (_holdAnimCtrl.isCompleted) _performReset();
+          });
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 14))
+          ..repeat();
+    _glowCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 5))
+          ..repeat(reverse: true);
   }
 
   @override
@@ -72,23 +79,25 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
     HapticFeedback.heavyImpact();
     final prefs = await SharedPreferences.getInstance();
     // Reset spirit-tool-specific keys (nicht Auth/Profile)
-    final keys = prefs.getKeys().where((k) =>
-        k.contains('journal') ||
-        k.contains('tarot') ||
-        k.contains('runes') ||
-        k.contains('akasha') ||
-        k.contains('history') ||
-        k.contains('streak') ||
-        k.contains('biorhythm') ||
-        k.contains('transformation') ||
-        k.contains('shamanic') ||
-        k.contains('photo_progress') ||
-        k.contains('mantra_counter') ||
-        k.contains('iching') ||
-        k.contains('glitch') ||
-        k.contains('time_capsule') ||
-        k.contains('synchronizit')
-    ).toList();
+    final keys = prefs
+        .getKeys()
+        .where((k) =>
+            k.contains('journal') ||
+            k.contains('tarot') ||
+            k.contains('runes') ||
+            k.contains('akasha') ||
+            k.contains('history') ||
+            k.contains('streak') ||
+            k.contains('biorhythm') ||
+            k.contains('transformation') ||
+            k.contains('shamanic') ||
+            k.contains('photo_progress') ||
+            k.contains('mantra_counter') ||
+            k.contains('iching') ||
+            k.contains('glitch') ||
+            k.contains('time_capsule') ||
+            k.contains('synchronizit'))
+        .toList();
     for (final k in keys) {
       await prefs.remove(k);
     }
@@ -104,16 +113,22 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
         titleWidget: ShaderMask(
-          shaderCallback: (r) => const LinearGradient(colors: [_accent, _primary]).createShader(r),
+          shaderCallback: (r) =>
+              const LinearGradient(colors: [_accent, _primary]).createShader(r),
           child: const Text('COSMIC RESET',
-              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 3)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
       ),
       body: Stack(fit: StackFit.expand, children: [
         Container(
           decoration: const BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment.center, radius: 1.6,
+              center: Alignment.center,
+              radius: 1.6,
               colors: [Color(0x66B71C1C), Color(0x33420C0C), _bgDark],
             ),
           ),
@@ -127,7 +142,8 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.neutral, count: 40)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.neutral, count: 40)),
         SafeArea(child: _stepView()),
         const IgnorePointer(child: WBVignette()),
       ]),
@@ -136,24 +152,32 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
 
   Widget _stepView() {
     switch (_step) {
-      case 0: return _intro();
-      case 1: return _ask(
-        'Was lässt du jetzt los?',
-        'Schreib es bewusst auf — Gewohnheit, Erinnerung, alte Daten…',
-        _releaseCtrl,
-        '🔥', _primary,
-        () => setState(() => _step = 2),
-      );
-      case 2: return _ask(
-        'Was wünschst du dir stattdessen?',
-        'Was darf entstehen wenn dieser Raum frei wird?',
-        _wishCtrl,
-        '🌱', _accent,
-        () => setState(() => _step = 3),
-      );
-      case 3: return _holdView();
-      case 4: return _done();
-      default: return const SizedBox.shrink();
+      case 0:
+        return _intro();
+      case 1:
+        return _ask(
+          'Was lässt du jetzt los?',
+          'Schreib es bewusst auf — Gewohnheit, Erinnerung, alte Daten…',
+          _releaseCtrl,
+          '🔥',
+          _primary,
+          () => setState(() => _step = 2),
+        );
+      case 2:
+        return _ask(
+          'Was wünschst du dir stattdessen?',
+          'Was darf entstehen wenn dieser Raum frei wird?',
+          _wishCtrl,
+          '🌱',
+          _accent,
+          () => setState(() => _step = 3),
+        );
+      case 3:
+        return _holdView();
+      case 4:
+        return _done();
+      default:
+        return const SizedBox.shrink();
     }
   }
 
@@ -164,15 +188,23 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
         AnimatedBuilder(
           animation: _glowCtrl,
           builder: (_, __) => Text('♾️',
-              style: TextStyle(
-                  fontSize: 100,
-                  shadows: [Shadow(color: _accent.withValues(alpha: 0.4 + 0.3 * _glowCtrl.value), blurRadius: 30)])),
+              style: TextStyle(fontSize: 100, shadows: [
+                Shadow(
+                    color:
+                        _accent.withValues(alpha: 0.4 + 0.3 * _glowCtrl.value),
+                    blurRadius: 30)
+              ])),
         ),
         const SizedBox(height: 16),
         ShaderMask(
-          shaderCallback: (r) => const LinearGradient(colors: [_accent, _primary]).createShader(r),
+          shaderCallback: (r) =>
+              const LinearGradient(colors: [_accent, _primary]).createShader(r),
           child: const Text('COSMIC RESET',
-              style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 4)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 4)),
         ),
         const SizedBox(height: 14),
         const Text(
@@ -197,7 +229,8 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
               child: Text(
                 'Dieser Schritt ist nicht rückgängig.\n'
                 'Erst ziehen wir Intention, dann wird gelöscht.',
-                style: TextStyle(color: Colors.white, fontSize: 11, height: 1.4),
+                style:
+                    TextStyle(color: Colors.white, fontSize: 11, height: 1.4),
               ),
             ),
           ]),
@@ -206,10 +239,14 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () { HapticFeedback.mediumImpact(); setState(() => _step = 1); },
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              setState(() => _step = 1);
+            },
             icon: const Icon(Icons.local_fire_department_rounded),
             label: const Text('RITUAL BEGINNEN',
-                style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _primary,
               foregroundColor: Colors.white,
@@ -220,24 +257,30 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
         const SizedBox(height: 8),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Doch nicht', style: TextStyle(color: Colors.white54)),
+          child:
+              const Text('Doch nicht', style: TextStyle(color: Colors.white54)),
         ),
       ]),
     );
   }
 
-  Widget _ask(String title, String hint, TextEditingController ctrl, String emoji, Color color, VoidCallback onNext) {
+  Widget _ask(String title, String hint, TextEditingController ctrl,
+      String emoji, Color color, VoidCallback onNext) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Text(emoji, style: const TextStyle(fontSize: 60)),
         const SizedBox(height: 14),
         Text(title,
-            style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: color, fontSize: 20, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center),
         const SizedBox(height: 4),
         Text(hint,
-            style: const TextStyle(color: Colors.white54, fontSize: 12, fontStyle: FontStyle.italic),
+            style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                fontStyle: FontStyle.italic),
             textAlign: TextAlign.center),
         const SizedBox(height: 20),
         TextField(
@@ -270,14 +313,18 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
           child: ElevatedButton(
             onPressed: ctrl.text.trim().isEmpty
                 ? null
-                : () { HapticFeedback.selectionClick(); onNext(); },
+                : () {
+                    HapticFeedback.selectionClick();
+                    onNext();
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: color,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
             child: const Text('WEITER',
-                style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
           ),
         ),
       ]),
@@ -288,11 +335,14 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Text('🌊',
-            style: TextStyle(fontSize: 80)),
+        const Text('🌊', style: TextStyle(fontSize: 80)),
         const SizedBox(height: 14),
         const Text('HALTE 3 SEKUNDEN',
-            style: TextStyle(color: _accent, fontSize: 16, letterSpacing: 3, fontWeight: FontWeight.w800),
+            style: TextStyle(
+                color: _accent,
+                fontSize: 16,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w800),
             textAlign: TextAlign.center),
         const SizedBox(height: 4),
         const Text(
@@ -317,7 +367,8 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
             _holdAnimCtrl.reset();
           },
           child: Container(
-            width: 180, height: 180,
+            width: 180,
+            height: 180,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(colors: [
@@ -329,7 +380,8 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
             ),
             child: Stack(alignment: Alignment.center, children: [
               SizedBox(
-                width: 170, height: 170,
+                width: 170,
+                height: 170,
                 child: CircularProgressIndicator(
                   value: _holdProgress,
                   strokeWidth: 6,
@@ -339,9 +391,16 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
               ),
               Column(mainAxisSize: MainAxisSize.min, children: [
                 Text('${(_holdProgress * 100).toInt()}%',
-                    style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold)),
                 Text(_holding ? 'HALTEN' : 'DRÜCKEN',
-                    style: TextStyle(color: _accent, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                    style: TextStyle(
+                        color: _accent,
+                        fontSize: 11,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w700)),
               ]),
             ]),
           ),
@@ -357,26 +416,36 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
         AnimatedBuilder(
           animation: _glowCtrl,
           builder: (_, __) => Text('✨',
-              style: TextStyle(
-                  fontSize: 100,
-                  shadows: [Shadow(color: _accent.withValues(alpha: 0.5 + 0.3 * _glowCtrl.value), blurRadius: 30)])),
+              style: TextStyle(fontSize: 100, shadows: [
+                Shadow(
+                    color:
+                        _accent.withValues(alpha: 0.5 + 0.3 * _glowCtrl.value),
+                    blurRadius: 30)
+              ])),
         ),
         const SizedBox(height: 14),
         ShaderMask(
-          shaderCallback: (r) => const LinearGradient(colors: [_accent, _primary]).createShader(r),
+          shaderCallback: (r) =>
+              const LinearGradient(colors: [_accent, _primary]).createShader(r),
           child: const Text('VOLLBRACHT',
-              style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: 5)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 5)),
         ),
         const SizedBox(height: 16),
         Text(
           'Du hast losgelassen:\n"${_releaseCtrl.text.trim()}"',
-          style: const TextStyle(color: Colors.white70, fontSize: 13, fontStyle: FontStyle.italic),
+          style: const TextStyle(
+              color: Colors.white70, fontSize: 13, fontStyle: FontStyle.italic),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 14),
         Text(
           'Raum für:\n"${_wishCtrl.text.trim()}"',
-          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 32),
@@ -388,7 +457,8 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
           ),
           child: const Text('ZURÜCK',
-              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
         ),
       ]),
     );
@@ -401,12 +471,24 @@ class _ResetOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        110, const Color(0xFFE53935));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        100, const Color(0xFFFFB300));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        75, const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.2,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        110,
+        const Color(0xFFE53935));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        100,
+        const Color(0xFFFFB300));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        75,
+        const Color(0xFFFFD54F));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

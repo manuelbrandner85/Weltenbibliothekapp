@@ -71,13 +71,16 @@ class SpiritDashboardStatsService {
           total += entries.length;
           for (final e in entries) {
             try {
-              final m = (e is Map) ? Map<String, dynamic>.from(e) : <String, dynamic>{};
+              final m = (e is Map)
+                  ? Map<String, dynamic>.from(e)
+                  : <String, dynamic>{};
               final tsRaw = m['timestamp'] ?? m['created_at'] ?? m['date'];
               final t = tsRaw is String ? DateTime.tryParse(tsRaw) : null;
               if (t != null && (last == null || t.isAfter(last))) last = t;
               // Chakra-specific: häufigster Punkt
               if (box == 'chakra_results') {
-                final dom = (m['dominant_chakra'] ?? m['top_chakra']) as String?;
+                final dom =
+                    (m['dominant_chakra'] ?? m['top_chakra']) as String?;
                 if (dom != null) {
                   chakraCount[dom] = (chakraCount[dom] ?? 0) + 1;
                 }

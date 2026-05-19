@@ -108,11 +108,13 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
   void _openLesson(Map<String, dynamic> module) {
     final code = module['module_code'] as String?;
     if (code == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => UrsprungLessonScreen(moduleCode: code),
-      ),
-    ).then((_) => _fetchModules());
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder: (_) => UrsprungLessonScreen(moduleCode: code),
+          ),
+        )
+        .then((_) => _fetchModules());
   }
 
   @override
@@ -157,7 +159,8 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, color: _gold.withValues(alpha: 0.6), size: 48),
+            Icon(Icons.error_outline,
+                color: _gold.withValues(alpha: 0.6), size: 48),
             const SizedBox(height: 16),
             Text(
               'Module konnten nicht geladen werden',
@@ -171,13 +174,15 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
             Text(
               _error ?? '',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: _fetchModules,
               icon: const Icon(Icons.refresh, color: _gold),
-              label: const Text('Erneut versuchen', style: TextStyle(color: _gold)),
+              label: const Text('Erneut versuchen',
+                  style: TextStyle(color: _gold)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: _gold.withValues(alpha: 0.4)),
               ),
@@ -266,7 +271,8 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
     );
   }
 
-  Widget _buildBranchTile(String branchName, List<Map<String, dynamic>> modules) {
+  Widget _buildBranchTile(
+      String branchName, List<Map<String, dynamic>> modules) {
     final icon = _branchIcons[branchName] ?? Icons.folder;
     final completed = modules.where((m) => m['is_completed'] == true).length;
     final total = modules.length;
@@ -434,7 +440,8 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: _gold.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
@@ -452,7 +459,8 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
                         if (isBoss) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(colors: [
                                 _gold,
@@ -519,7 +527,8 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
                 ),
               ),
               if (isUnlocked || isCompleted)
-                Icon(Icons.chevron_right, color: _gold.withValues(alpha: 0.6), size: 20),
+                Icon(Icons.chevron_right,
+                    color: _gold.withValues(alpha: 0.6), size: 20),
             ],
           ),
         ),
@@ -644,15 +653,16 @@ class _BossTestScreenState extends State<_BossTestScreen> {
       widget.test.questions.length,
       (i) => _answers[i] ?? -1,
     );
-    final result = BranchBossTestService.instance.evaluate(widget.test, ordered);
+    final result =
+        BranchBossTestService.instance.evaluate(widget.test, ordered);
     setState(() {
       _submitted = true;
       _result = result;
     });
     final storage = StorageService();
-    final userId = (storage.getMaterieProfile()?.userId
-        ?? storage.getEnergieProfile()?.userId
-        ?? 'anon');
+    final userId = (storage.getMaterieProfile()?.userId ??
+        storage.getEnergieProfile()?.userId ??
+        'anon');
     await BranchBossTestService.instance.recordAttempt(
       userId: userId,
       branch: widget.branch,
@@ -690,7 +700,8 @@ class _BossTestScreenState extends State<_BossTestScreen> {
                     padding: const EdgeInsets.only(bottom: 14),
                     child: Text(
                       widget.test.description!,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                   ),
                 for (var i = 0; i < widget.test.questions.length; i++)
@@ -771,9 +782,7 @@ class _BossTestScreenState extends State<_BossTestScreen> {
               : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected
-                ? _gold
-                : Colors.white.withValues(alpha: 0.08),
+            color: selected ? _gold : Colors.white.withValues(alpha: 0.08),
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -826,7 +835,8 @@ class _BossTestScreenState extends State<_BossTestScreen> {
             if (passed) ...[
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: _gold.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -848,7 +858,8 @@ class _BossTestScreenState extends State<_BossTestScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: passed ? _gold : Colors.white12,
                 foregroundColor: passed ? Colors.black : Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

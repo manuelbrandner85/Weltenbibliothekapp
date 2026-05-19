@@ -21,7 +21,7 @@ class Book {
   final String abstract;
   final List<Reference> bibliography;
   final Map<String, String> metadata;
-  
+
   Book({
     required this.id,
     required this.title,
@@ -44,10 +44,11 @@ class Book {
     this.bibliography = const [],
     this.metadata = const {},
   });
-  
+
   // Berechnete Properties
   int get totalChapters => chapters.length;
-  int get totalWords => chapters.fold(0, (sum, chapter) => sum + chapter.wordCount);
+  int get totalWords =>
+      chapters.fold(0, (sum, chapter) => sum + chapter.wordCount);
   String get formattedReadingTime {
     final hours = estimatedReadingMinutes ~/ 60;
     final minutes = estimatedReadingMinutes % 60;
@@ -56,45 +57,49 @@ class Book {
     }
     return '$minutes Min';
   }
-  
+
   // JSON Serialization
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'author': author,
-    'category': category,
-    'description': description,
-    'coverImageUrl': coverImageUrl,
-    'chapters': chapters.map((c) => c.toJson()).toList(),
-    'tags': tags,
-    'estimatedReadingMinutes': estimatedReadingMinutes,
-    'type': type.toString(),
-    'difficulty': difficulty.toString(),
-    'publishedDate': publishedDate.toIso8601String(),
-    'language': language,
-  };
-  
+        'id': id,
+        'title': title,
+        'author': author,
+        'category': category,
+        'description': description,
+        'coverImageUrl': coverImageUrl,
+        'chapters': chapters.map((c) => c.toJson()).toList(),
+        'tags': tags,
+        'estimatedReadingMinutes': estimatedReadingMinutes,
+        'type': type.toString(),
+        'difficulty': difficulty.toString(),
+        'publishedDate': publishedDate.toIso8601String(),
+        'language': language,
+      };
+
   factory Book.fromJson(Map<String, dynamic> json) => Book(
-    id: json['id'] ?? '',
-    title: json['title'] ?? '',
-    author: json['author'] ?? '',
-    category: json['category'] ?? '',
-    description: json['description'] ?? '',
-    coverImageUrl: json['coverImageUrl'] ?? '',
-    chapters: (json['chapters'] as List?)?.map((c) => BookChapter.fromJson(c)).toList() ?? [],
-    tags: List<String>.from(json['tags'] ?? []),
-    estimatedReadingMinutes: json['estimatedReadingMinutes'] ?? 0,
-    type: BookType.values.firstWhere(
-      (e) => e.toString() == json['type'],
-      orElse: () => BookType.book,
-    ),
-    difficulty: DifficultyLevel.values.firstWhere(
-      (e) => e.toString() == json['difficulty'],
-      orElse: () => DifficultyLevel.intermediate,
-    ),
-    publishedDate: DateTime.parse(json['publishedDate'] ?? DateTime.now().toIso8601String()),
-    language: json['language'] ?? 'de',
-  );
+        id: json['id'] ?? '',
+        title: json['title'] ?? '',
+        author: json['author'] ?? '',
+        category: json['category'] ?? '',
+        description: json['description'] ?? '',
+        coverImageUrl: json['coverImageUrl'] ?? '',
+        chapters: (json['chapters'] as List?)
+                ?.map((c) => BookChapter.fromJson(c))
+                .toList() ??
+            [],
+        tags: List<String>.from(json['tags'] ?? []),
+        estimatedReadingMinutes: json['estimatedReadingMinutes'] ?? 0,
+        type: BookType.values.firstWhere(
+          (e) => e.toString() == json['type'],
+          orElse: () => BookType.book,
+        ),
+        difficulty: DifficultyLevel.values.firstWhere(
+          (e) => e.toString() == json['difficulty'],
+          orElse: () => DifficultyLevel.intermediate,
+        ),
+        publishedDate: DateTime.parse(
+            json['publishedDate'] ?? DateTime.now().toIso8601String()),
+        language: json['language'] ?? 'de',
+      );
 }
 
 /// 📖 BOOK CHAPTER - Wissenschaftliches Kapitel mit Quellen
@@ -110,7 +115,7 @@ class BookChapter {
   final List<Citation> citations;
   final List<Figure> figures;
   final String summary;
-  
+
   BookChapter({
     required this.id,
     required this.chapterNumber,
@@ -124,35 +129,35 @@ class BookChapter {
     this.figures = const [],
     this.summary = '',
   });
-  
+
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'chapterNumber': chapterNumber,
-    'title': title,
-    'content': content,
-    'sections': sections,
-    'wordCount': wordCount,
-    'estimatedMinutes': estimatedMinutes,
-  };
-  
+        'id': id,
+        'chapterNumber': chapterNumber,
+        'title': title,
+        'content': content,
+        'sections': sections,
+        'wordCount': wordCount,
+        'estimatedMinutes': estimatedMinutes,
+      };
+
   factory BookChapter.fromJson(Map<String, dynamic> json) => BookChapter(
-    id: json['id'] ?? '',
-    chapterNumber: json['chapterNumber'] ?? 0,
-    title: json['title'] ?? '',
-    content: json['content'] ?? '',
-    sections: List<String>.from(json['sections'] ?? []),
-    wordCount: json['wordCount'] ?? 0,
-    estimatedMinutes: json['estimatedMinutes'] ?? 0,
-  );
+        id: json['id'] ?? '',
+        chapterNumber: json['chapterNumber'] ?? 0,
+        title: json['title'] ?? '',
+        content: json['content'] ?? '',
+        sections: List<String>.from(json['sections'] ?? []),
+        wordCount: json['wordCount'] ?? 0,
+        estimatedMinutes: json['estimatedMinutes'] ?? 0,
+      );
 }
 
 /// 📚 BOOK TYPE - Art des Buches
 enum BookType {
-  book,           // Vollständiges Buch
-  practice,       // Praxis-Anleitung
-  encyclopedia,   // Lexikon/Enzyklopädie
-  source,         // Quellen-Sammlung
-  ritual,         // Ritual-Buch
+  book, // Vollständiges Buch
+  practice, // Praxis-Anleitung
+  encyclopedia, // Lexikon/Enzyklopädie
+  source, // Quellen-Sammlung
+  ritual, // Ritual-Buch
 }
 
 /// 📊 DIFFICULTY LEVEL
@@ -186,7 +191,7 @@ class Citation {
   final String source;
   final int page;
   final int year;
-  
+
   Citation({
     required this.id,
     required this.author,
@@ -206,7 +211,7 @@ class Reference {
   final int year;
   final String isbn;
   final ReferenceType type;
-  
+
   Reference({
     required this.id,
     required this.author,
@@ -216,7 +221,7 @@ class Reference {
     this.isbn = '',
     required this.type,
   });
-  
+
   String get formatted {
     switch (type) {
       case ReferenceType.book:
@@ -240,7 +245,7 @@ class Figure {
   final String description;
   final FigureType type;
   final String data; // Kann JSON für Diagramm-Daten enthalten
-  
+
   Figure({
     required this.id,
     required this.title,

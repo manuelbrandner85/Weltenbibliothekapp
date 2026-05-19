@@ -31,11 +31,11 @@ class MoonPhaseTrackerScreen extends StatefulWidget {
 
 class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
   String? _selectedPhase;
-  
+
   @override
   Widget build(BuildContext context) {
     final moonPhase = _getCurrentMoonPhase();
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
@@ -84,7 +84,7 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
             // Aktuelle Mondphase
             _buildCurrentMoonCard(moonPhase),
             SizedBox(height: 24),
-            
+
             // Info Card
             Container(
               padding: EdgeInsets.all(16),
@@ -101,9 +101,9 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
                 ),
               ),
             ),
-            
+
             SizedBox(height: 16),
-            
+
             // 8 Mondphasen
             Text(
               'Die 8 Mondphasen',
@@ -114,7 +114,7 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
               ),
             ),
             SizedBox(height: 16),
-            
+
             ..._getAllMoonPhases().map((phase) => _buildPhaseCard(phase)),
           ],
         ),
@@ -148,7 +148,7 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
             ),
           ),
           SizedBox(height: 16),
-          
+
           // Mond-Symbol
           Container(
             width: 120,
@@ -164,9 +164,9 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
               ),
             ),
           ),
-          
+
           SizedBox(height: 16),
-          
+
           Text(
             phase['name'],
             style: TextStyle(
@@ -175,9 +175,9 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
               color: Colors.white,
             ),
           ),
-          
+
           SizedBox(height: 12),
-          
+
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -199,7 +199,7 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
 
   Widget _buildPhaseCard(Map<String, dynamic> phase) {
     final isSelected = _selectedPhase == phase['name'];
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -216,8 +216,8 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
               : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected 
-                ? Colors.indigoAccent 
+            color: isSelected
+                ? Colors.indigoAccent
                 : Colors.white.withValues(alpha: 0.1),
             width: isSelected ? 2 : 1,
           ),
@@ -272,62 +272,73 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
       ),
     );
   }
-  
+
   void _showPhaseDetails(Map<String, dynamic> phase) {
     // Extended rituals and meanings for each phase
     final Map<int, Map<String, String>> phaseDetails = {
       0: {
         'energy': 'Neue Anfänge, Intention setzen, Manifestation',
-        'ritual': 'Schreibe deine Wünsche auf ein Papier. Visualisiere sie bei Kerzenlicht. Verbrenne das Papier als Symbol der Freigabe an das Universum.',
-        'meditation': 'Fokussiere auf Stille und innere Leere. Was möchtest du in dein Leben ziehen?',
+        'ritual':
+            'Schreibe deine Wünsche auf ein Papier. Visualisiere sie bei Kerzenlicht. Verbrenne das Papier als Symbol der Freigabe an das Universum.',
+        'meditation':
+            'Fokussiere auf Stille und innere Leere. Was möchtest du in dein Leben ziehen?',
         'element': 'Luft',
       },
       1: {
         'energy': 'Wachstum, Aufbau, Energie sammeln',
-        'ritual': 'Pflanze Samen (real oder metaphorisch). Bewässere deine Träume mit Taten.',
+        'ritual':
+            'Pflanze Samen (real oder metaphorisch). Bewässere deine Träume mit Taten.',
         'meditation': 'Visualisiere wie deine Ziele wachsen und Form annehmen.',
         'element': 'Feuer',
       },
       2: {
         'energy': 'Entscheidungen, Aktion, Herausforderungen meistern',
-        'ritual': 'Treffe eine wichtige Entscheidung. Schreibe Pro/Contra-Liste.',
+        'ritual':
+            'Treffe eine wichtige Entscheidung. Schreibe Pro/Contra-Liste.',
         'meditation': 'Frage dich: Was braucht jetzt meine Aufmerksamkeit?',
         'element': 'Feuer',
       },
       3: {
         'energy': 'Verfeinern, Anpassen, letzte Schritte vor dem Höhepunkt',
-        'ritual': 'Überprüfe deine Fortschritte. Korrigiere den Kurs wenn nötig.',
+        'ritual':
+            'Überprüfe deine Fortschritte. Korrigiere den Kurs wenn nötig.',
         'meditation': 'Sei geduldig. Der Höhepunkt naht.',
         'element': 'Wasser',
       },
       4: {
         'energy': 'Höhepunkt der Kraft, Manifestation, Dankbarkeit',
-        'ritual': 'Lade den Mond in dein Wasser. Trinke es am nächsten Morgen. Feiere deine Erfolge.',
-        'meditation': 'Bade im Mondlicht (real oder visualisiert). Sei dankbar.',
+        'ritual':
+            'Lade den Mond in dein Wasser. Trinke es am nächsten Morgen. Feiere deine Erfolge.',
+        'meditation':
+            'Bade im Mondlicht (real oder visualisiert). Sei dankbar.',
         'element': 'Wasser',
       },
       5: {
         'energy': 'Loslassen beginnt, Dankbarkeit, Reflexion',
-        'ritual': 'Schreibe auf, wof\u00fcr du dankbar bist. Erkenne was vollendet ist.',
+        'ritual':
+            'Schreibe auf, wof\u00fcr du dankbar bist. Erkenne was vollendet ist.',
         'meditation': 'Was ist bereit losgelassen zu werden?',
         'element': 'Erde',
       },
       6: {
         'energy': 'Loslassen, Heilung, Transformation',
-        'ritual': 'Räuchere deinen Raum. Reinige deine Energie. Lasse Altes ziehen.',
+        'ritual':
+            'Räuchere deinen Raum. Reinige deine Energie. Lasse Altes ziehen.',
         'meditation': 'Vergebung - dir selbst und anderen.',
         'element': 'Erde',
       },
       7: {
         'energy': 'Ruhe, Vorbereitung, Abschluss des Zyklus',
-        'ritual': 'Nimm ein Reinigungsbad mit Salz. Bereite dich auf Neues vor.',
-        'meditation': 'Was hast du gelernt? Was nimmst du mit in den neuen Zyklus?',
+        'ritual':
+            'Nimm ein Reinigungsbad mit Salz. Bereite dich auf Neues vor.',
+        'meditation':
+            'Was hast du gelernt? Was nimmst du mit in den neuen Zyklus?',
         'element': 'Luft',
       },
     };
-    
+
     final details = phaseDetails[phase['phase']]!;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -410,7 +421,8 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Schließen', style: TextStyle(color: Colors.indigoAccent)),
+            child:
+                Text('Schließen', style: TextStyle(color: Colors.indigoAccent)),
           ),
         ],
       ),
@@ -425,14 +437,34 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
 
   List<Map<String, dynamic>> _getAllMoonPhases() {
     return [
-      {'name': 'Neumond', 'ritual': 'Zeit für Neuanfänge & Manifestation', 'phase': 0},
+      {
+        'name': 'Neumond',
+        'ritual': 'Zeit für Neuanfänge & Manifestation',
+        'phase': 0
+      },
       {'name': 'Zunehmender Mond', 'ritual': 'Wachstum & Aufbau', 'phase': 1},
-      {'name': 'Erstes Viertel', 'ritual': 'Entscheidungen treffen', 'phase': 2},
-      {'name': 'Zunehmender Dreiviertelmond', 'ritual': 'Verfeinern & Optimieren', 'phase': 3},
+      {
+        'name': 'Erstes Viertel',
+        'ritual': 'Entscheidungen treffen',
+        'phase': 2
+      },
+      {
+        'name': 'Zunehmender Dreiviertelmond',
+        'ritual': 'Verfeinern & Optimieren',
+        'phase': 3
+      },
       {'name': 'Vollmond', 'ritual': 'Höhepunkt der Kraft', 'phase': 4},
-      {'name': 'Abnehmender Dreiviertelmond', 'ritual': 'Dankbarkeit & Loslassen', 'phase': 5},
+      {
+        'name': 'Abnehmender Dreiviertelmond',
+        'ritual': 'Dankbarkeit & Loslassen',
+        'phase': 5
+      },
       {'name': 'Letztes Viertel', 'ritual': 'Reflexion & Heilung', 'phase': 6},
-      {'name': 'Abnehmender Mond', 'ritual': 'Vorbereitung auf Neues', 'phase': 7},
+      {
+        'name': 'Abnehmender Mond',
+        'ritual': 'Vorbereitung auf Neues',
+        'phase': 7
+      },
     ];
   }
 
@@ -453,12 +485,13 @@ class TarotDailyDrawScreen extends StatefulWidget {
   State<TarotDailyDrawScreen> createState() => _TarotDailyDrawScreenState();
 }
 
-class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with SingleTickerProviderStateMixin {
+class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen>
+    with SingleTickerProviderStateMixin {
   final _storage = StorageService();
   Map<String, dynamic>? _drawnCard;
   late AnimationController _animationController;
   late Animation<double> _flipAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -470,7 +503,7 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -500,9 +533,7 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
             colors: [Color(0xFF4A148C), Color(0xFF000000)],
           ),
         ),
-        child: _drawnCard == null
-            ? _buildDrawOptions()
-            : _buildCardResult(),
+        child: _drawnCard == null ? _buildDrawOptions() : _buildCardResult(),
       ),
     );
   }
@@ -521,7 +552,7 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
             ),
           ),
           SizedBox(height: 40),
-          
+
           // Single Card
           _buildLegungCard(
             '🃏 Tageskarte',
@@ -529,7 +560,7 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
             () => _drawCard(),
           ),
           SizedBox(height: 16),
-          
+
           // 3-Card Reading
           _buildLegungCard(
             '🎴 3-Karten-Legung',
@@ -609,7 +640,8 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
                     final reading = readings[index];
                     return ListTile(
                       title: Text(reading.cardName),
-                      subtitle: Text(reading.timestamp.toString().split('.')[0]),
+                      subtitle:
+                          Text(reading.timestamp.toString().split('.')[0]),
                     );
                   },
                 ),
@@ -625,55 +657,55 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
   }
 
   // OLD drawCard method (kept for compatibility)
-    // return Column(
-      // mainAxisAlignment: MainAxisAlignment.center,
-      // children: [
-        // Text(
-          // 'Ziehe deine Tageskarte',
-          // style: TextStyle(
-            // fontSize: 24,
-            // fontWeight: FontWeight.bold,
-            // color: Colors.white,
-          // ),
-        // ),
-        // SizedBox(height: 40),
-         //         // GestureDetector(
-          // onTap: _drawCard,
-          // child: Container(
-            // width: 180,
-            // height: 280,
-            // decoration: BoxDecoration(
-              // gradient: LinearGradient(
-                // colors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
-              // ),
-              // borderRadius: BorderRadius.circular(16),
-              // boxShadow: [
-                // BoxShadow(
-                  // color: Color(0xFF6A1B9A).withValues(alpha: 0.5),
-                  // blurRadius: 30,
-                  // spreadRadius: 5,
-                // ),
-              // ],
-            // ),
-            // child: Column(
-              // mainAxisAlignment: MainAxisAlignment.center,
-              // children: [
-                // Icon(Icons.auto_awesome, size: 80, color: Colors.amber),
-                // SizedBox(height: 16),
-                // Text(
-                  // 'KARTE ZIEHEN',
-                  // style: TextStyle(
-                    // fontSize: 18,
-                    // fontWeight: FontWeight.bold,
-                    // color: Colors.white,
-                  // ),
-                // ),
-              // ],
-            // ),
-          // ),
-        // ),
-      // ],
-    // );
+  // return Column(
+  // mainAxisAlignment: MainAxisAlignment.center,
+  // children: [
+  // Text(
+  // 'Ziehe deine Tageskarte',
+  // style: TextStyle(
+  // fontSize: 24,
+  // fontWeight: FontWeight.bold,
+  // color: Colors.white,
+  // ),
+  // ),
+  // SizedBox(height: 40),
+  //         // GestureDetector(
+  // onTap: _drawCard,
+  // child: Container(
+  // width: 180,
+  // height: 280,
+  // decoration: BoxDecoration(
+  // gradient: LinearGradient(
+  // colors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
+  // ),
+  // borderRadius: BorderRadius.circular(16),
+  // boxShadow: [
+  // BoxShadow(
+  // color: Color(0xFF6A1B9A).withValues(alpha: 0.5),
+  // blurRadius: 30,
+  // spreadRadius: 5,
+  // ),
+  // ],
+  // ),
+  // child: Column(
+  // mainAxisAlignment: MainAxisAlignment.center,
+  // children: [
+  // Icon(Icons.auto_awesome, size: 80, color: Colors.amber),
+  // SizedBox(height: 16),
+  // Text(
+  // 'KARTE ZIEHEN',
+  // style: TextStyle(
+  // fontSize: 18,
+  // fontWeight: FontWeight.bold,
+  // color: Colors.white,
+  // ),
+  // ),
+  // ],
+  // ),
+  // ),
+  // ),
+  // ],
+  // );
   // }
 
   Widget _buildCardResult() {
@@ -683,13 +715,13 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
         final angle = _flipAnimation.value * math.pi;
         // Only show card when flip animation is complete
         final isFlipped = _flipAnimation.value > 0.5;
-        
+
         if (!isFlipped) {
           // Show back of card during flip
           final transform = Matrix4.identity()
             ..setEntry(3, 2, 0.001)
             ..rotateY(angle);
-          
+
           return Transform(
             transform: transform,
             alignment: Alignment.center,
@@ -708,7 +740,7 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
             ),
           );
         }
-        
+
         // Show front of card (no transform, normal orientation)
         return ListView(
           padding: EdgeInsets.all(20),
@@ -750,9 +782,9 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
                 ),
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             // Bedeutung
             Container(
               padding: EdgeInsets.all(20),
@@ -783,9 +815,9 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
                 ],
               ),
             ),
-            
+
             SizedBox(height: 16),
-            
+
             // Neue Karte ziehen
             ElevatedButton(
               onPressed: () {
@@ -814,7 +846,7 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
     final random = math.Random();
     final cards = _getTarotCards();
     final card = cards[random.nextInt(cards.length)];
-    
+
     setState(() => _drawnCard = card);
     _animationController.forward();
   }
@@ -824,32 +856,38 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
       {
         'name': 'Der Narr',
         'symbol': '🃏',
-        'meaning': 'Neuanfang, Spontanität, Vertrauen ins Leben. Wage den Sprung ins Unbekannte!',
+        'meaning':
+            'Neuanfang, Spontanität, Vertrauen ins Leben. Wage den Sprung ins Unbekannte!',
       },
       {
         'name': 'Der Magier',
         'symbol': '✨',
-        'meaning': 'Manifestationskraft, Willenskraft, Können. Du hast alle Werkzeuge, die du brauchst.',
+        'meaning':
+            'Manifestationskraft, Willenskraft, Können. Du hast alle Werkzeuge, die du brauchst.',
       },
       {
         'name': 'Die Hohepriesterin',
         'symbol': '🌙',
-        'meaning': 'Intuition, Geheimnisse, inneres Wissen. Höre auf deine innere Stimme.',
+        'meaning':
+            'Intuition, Geheimnisse, inneres Wissen. Höre auf deine innere Stimme.',
       },
       {
         'name': 'Die Herrscherin',
         'symbol': '👑',
-        'meaning': 'Fülle, Weiblichkeit, Kreativität. Zeit zu erschaffen und zu nähren.',
+        'meaning':
+            'Fülle, Weiblichkeit, Kreativität. Zeit zu erschaffen und zu nähren.',
       },
       {
         'name': 'Der Herrscher',
         'symbol': '⚡',
-        'meaning': 'Autorität, Struktur, Führung. Übernimm Verantwortung und führe.',
+        'meaning':
+            'Autorität, Struktur, Führung. Übernimm Verantwortung und führe.',
       },
       {
         'name': 'Der Hierophant',
         'symbol': '📿',
-        'meaning': 'Tradition, Lehre, spirituelle Weisheit. Suche nach tieferem Verständnis.',
+        'meaning':
+            'Tradition, Lehre, spirituelle Weisheit. Suche nach tieferem Verständnis.',
       },
       {
         'name': 'Die Liebenden',
@@ -869,7 +907,8 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
       {
         'name': 'Der Eremit',
         'symbol': '🕯️',
-        'meaning': 'Einsamkeit, Selbstreflexion, innere Führung. Zeit für Rückzug.',
+        'meaning':
+            'Einsamkeit, Selbstreflexion, innere Führung. Zeit für Rückzug.',
       },
     ];
   }
@@ -919,19 +958,20 @@ class _CrystalDatabaseScreenState extends State<CrystalDatabaseScreen> {
   @override
   Widget build(BuildContext context) {
     var crystals = _getCrystalDatabase();
-    
+
     // Filter by search
     if (_searchQuery.isNotEmpty) {
-      crystals = crystals.where((c) => 
-        c['name'].toLowerCase().contains(_searchQuery.toLowerCase())
-      ).toList();
+      crystals = crystals
+          .where((c) =>
+              c['name'].toLowerCase().contains(_searchQuery.toLowerCase()))
+          .toList();
     }
-    
+
     // Filter by chakra
     if (_filterChakra != 'Alle') {
       crystals = crystals.where((c) => c['chakra'] == _filterChakra).toList();
     }
-    
+
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
       appBar: WBGlassAppBar(
@@ -946,12 +986,20 @@ class _CrystalDatabaseScreenState extends State<CrystalDatabaseScreen> {
               });
             },
             itemBuilder: (context) => [
-              'Alle', 'Wurzelchakra', 'Sakralchakra', 'Solarplexus',
-              'Herzchakra', 'Halschakra', 'Stirnchakra', 'Kronenchakra'
-            ].map((chakra) => PopupMenuItem(
-              value: chakra,
-              child: Text(chakra),
-            )).toList(),
+              'Alle',
+              'Wurzelchakra',
+              'Sakralchakra',
+              'Solarplexus',
+              'Herzchakra',
+              'Halschakra',
+              'Stirnchakra',
+              'Kronenchakra'
+            ]
+                .map((chakra) => PopupMenuItem(
+                      value: chakra,
+                      child: Text(chakra),
+                    ))
+                .toList(),
           ),
         ],
       ),
@@ -1096,9 +1144,7 @@ class _CrystalDatabaseScreenState extends State<CrystalDatabaseScreen> {
               ),
             ],
           ),
-          
           SizedBox(height: 16),
-          
           Text(
             'Wirkung',
             style: TextStyle(
@@ -1128,28 +1174,32 @@ class _CrystalDatabaseScreenState extends State<CrystalDatabaseScreen> {
         'symbol': '💜',
         'chakra': 'Kronenchakra',
         'color': Color(0xFF9C27B0),
-        'effect': 'Spirituelles Wachstum, Intuition, Schutz vor negativen Energien. Beruhigt den Geist.',
+        'effect':
+            'Spirituelles Wachstum, Intuition, Schutz vor negativen Energien. Beruhigt den Geist.',
       },
       {
         'name': 'Rosenquarz',
         'symbol': '💗',
         'chakra': 'Herzchakra',
         'color': Color(0xFFE91E63),
-        'effect': 'Selbstliebe, Mitgefühl, emotionale Heilung. Öffnet das Herz für Liebe.',
+        'effect':
+            'Selbstliebe, Mitgefühl, emotionale Heilung. Öffnet das Herz für Liebe.',
       },
       {
         'name': 'Bergkristall',
         'symbol': '⚪',
         'chakra': 'Alle Chakren',
         'color': Color(0xFFFFFFFF),
-        'effect': 'Klarheit, Reinigung, Verstärkung. Der universelle Heilstein.',
+        'effect':
+            'Klarheit, Reinigung, Verstärkung. Der universelle Heilstein.',
       },
       {
         'name': 'Citrin',
         'symbol': '💛',
         'chakra': 'Solarplexus',
         'color': Color(0xFFFFEB3B),
-        'effect': 'Selbstvertrauen, Fülle, Freude. Zieht Wohlstand und Erfolg an.',
+        'effect':
+            'Selbstvertrauen, Fülle, Freude. Zieht Wohlstand und Erfolg an.',
       },
       {
         'name': 'Schwarzer Turmalin',
@@ -1163,7 +1213,8 @@ class _CrystalDatabaseScreenState extends State<CrystalDatabaseScreen> {
         'symbol': '💙',
         'chakra': 'Stirnchakra',
         'color': Color(0xFF1976D2),
-        'effect': 'Weisheit, Wahrheit, innere Vision. Aktiviert das dritte Auge.',
+        'effect':
+            'Weisheit, Wahrheit, innere Vision. Aktiviert das dritte Auge.',
       },
       {
         'name': 'Türkis',
@@ -1177,7 +1228,8 @@ class _CrystalDatabaseScreenState extends State<CrystalDatabaseScreen> {
         'symbol': '🧡',
         'chakra': 'Sakralchakra',
         'color': Color(0xFFFF5722),
-        'effect': 'Kreativität, Lebensfreude, Sexualität. Entfacht das innere Feuer.',
+        'effect':
+            'Kreativität, Lebensfreude, Sexualität. Entfacht das innere Feuer.',
       },
       {
         'name': 'Grüner Aventurin',
@@ -1191,7 +1243,8 @@ class _CrystalDatabaseScreenState extends State<CrystalDatabaseScreen> {
         'symbol': '🤍',
         'chakra': 'Sakralchakra',
         'color': Color(0xFFECEFF1),
-        'effect': 'Weiblichkeit, Intuition, Emotionen. Verbindet mit Mondenergie.',
+        'effect':
+            'Weiblichkeit, Intuition, Emotionen. Verbindet mit Mondenergie.',
       },
     ];
   }
@@ -1250,7 +1303,7 @@ class _ThreeCardSpreadDialogState extends State<ThreeCardSpreadDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Three Cards Layout
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1260,9 +1313,9 @@ class _ThreeCardSpreadDialogState extends State<ThreeCardSpreadDialog> {
                 _buildCard(2, 'Zukunft'),
               ],
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Reveal/Close Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1293,9 +1346,9 @@ class _ThreeCardSpreadDialogState extends State<ThreeCardSpreadDialog> {
 
   Widget _buildCard(int index, String position) {
     if (index >= _drawnCards.length) return const SizedBox();
-    
+
     final card = _drawnCards[index];
-    
+
     return Column(
       children: [
         Text(
@@ -1385,28 +1438,138 @@ class _ThreeCardSpreadDialogState extends State<ThreeCardSpreadDialog> {
 
   List<Map<String, dynamic>> _getTarotDeck() {
     return [
-      {'name': 'Der Narr', 'symbol': '🃏', 'meaning': 'Neue Anfänge, Unschuld, Spontanität', 'color': const Color(0xFFFFEB3B)},
-      {'name': 'Der Magier', 'symbol': '🪄', 'meaning': 'Manifestation, Willenskraft, Geschicklichkeit', 'color': const Color(0xFFE91E63)},
-      {'name': 'Die Hohepriesterin', 'symbol': '🌙', 'meaning': 'Intuition, Mysterien, innere Stimme', 'color': const Color(0xFF9C27B0)},
-      {'name': 'Die Herrscherin', 'symbol': '👑', 'meaning': 'Fruchtbarkeit, Fülle, Natur', 'color': const Color(0xFF4CAF50)},
-      {'name': 'Der Herrscher', 'symbol': '⚔️', 'meaning': 'Autorität, Struktur, Kontrolle', 'color': const Color(0xFFFF5722)},
-      {'name': 'Der Hierophant', 'symbol': '📿', 'meaning': 'Tradition, Spiritualität, Lehre', 'color': const Color(0xFF3F51B5)},
-      {'name': 'Die Liebenden', 'symbol': '💕', 'meaning': 'Liebe, Harmonie, Entscheidungen', 'color': const Color(0xFFE91E63)},
-      {'name': 'Der Wagen', 'symbol': '🏇', 'meaning': 'Willenskraft, Sieg, Entschlossenheit', 'color': const Color(0xFF2196F3)},
-      {'name': 'Die Kraft', 'symbol': '🦁', 'meaning': 'Mut, innere Stärke, Geduld', 'color': const Color(0xFFFF9800)},
-      {'name': 'Der Eremit', 'symbol': '🕯️', 'meaning': 'Innenschau, Weisheit, Einsamkeit', 'color': const Color(0xFF9E9E9E)},
-      {'name': 'Das Rad', 'symbol': '☸️', 'meaning': 'Schicksal, Zyklen, Wendepunkt', 'color': const Color(0xFF00BCD4)},
-      {'name': 'Die Gerechtigkeit', 'symbol': '⚖️', 'meaning': 'Fairness, Wahrheit, Gesetz', 'color': const Color(0xFF673AB7)},
-      {'name': 'Der Gehängte', 'symbol': '🙃', 'meaning': 'Loslassen, neue Perspektive, Opfer', 'color': const Color(0xFF607D8B)},
-      {'name': 'Der Tod', 'symbol': '💀', 'meaning': 'Transformation, Ende, Neuanfang', 'color': const Color(0xFF212121)},
-      {'name': 'Die Mäßigkeit', 'symbol': '🍷', 'meaning': 'Balance, Geduld, Harmonie', 'color': const Color(0xFF03A9F4)},
-      {'name': 'Der Teufel', 'symbol': '😈', 'meaning': 'Versuchung, Bindung, Materialismus', 'color': const Color(0xFFD32F2F)},
-      {'name': 'Der Turm', 'symbol': '🗼', 'meaning': 'Plötzliche Veränderung, Chaos, Befreiung', 'color': const Color(0xFFFF5722)},
-      {'name': 'Der Stern', 'symbol': '⭐', 'meaning': 'Hoffnung, Inspiration, Gelassenheit', 'color': const Color(0xFF00BCD4)},
-      {'name': 'Der Mond', 'symbol': '🌙', 'meaning': 'Illusion, Intuition, Unterbewusstsein', 'color': const Color(0xFF9C27B0)},
-      {'name': 'Die Sonne', 'symbol': '☀️', 'meaning': 'Freude, Erfolg, Vitalität', 'color': const Color(0xFFFFEB3B)},
-      {'name': 'Das Gericht', 'symbol': '📯', 'meaning': 'Wiedergeburt, innerer Ruf, Vergebung', 'color': const Color(0xFFFF9800)},
-      {'name': 'Die Welt', 'symbol': '🌍', 'meaning': 'Vollendung, Erfüllung, Einheit', 'color': const Color(0xFF4CAF50)},
+      {
+        'name': 'Der Narr',
+        'symbol': '🃏',
+        'meaning': 'Neue Anfänge, Unschuld, Spontanität',
+        'color': const Color(0xFFFFEB3B)
+      },
+      {
+        'name': 'Der Magier',
+        'symbol': '🪄',
+        'meaning': 'Manifestation, Willenskraft, Geschicklichkeit',
+        'color': const Color(0xFFE91E63)
+      },
+      {
+        'name': 'Die Hohepriesterin',
+        'symbol': '🌙',
+        'meaning': 'Intuition, Mysterien, innere Stimme',
+        'color': const Color(0xFF9C27B0)
+      },
+      {
+        'name': 'Die Herrscherin',
+        'symbol': '👑',
+        'meaning': 'Fruchtbarkeit, Fülle, Natur',
+        'color': const Color(0xFF4CAF50)
+      },
+      {
+        'name': 'Der Herrscher',
+        'symbol': '⚔️',
+        'meaning': 'Autorität, Struktur, Kontrolle',
+        'color': const Color(0xFFFF5722)
+      },
+      {
+        'name': 'Der Hierophant',
+        'symbol': '📿',
+        'meaning': 'Tradition, Spiritualität, Lehre',
+        'color': const Color(0xFF3F51B5)
+      },
+      {
+        'name': 'Die Liebenden',
+        'symbol': '💕',
+        'meaning': 'Liebe, Harmonie, Entscheidungen',
+        'color': const Color(0xFFE91E63)
+      },
+      {
+        'name': 'Der Wagen',
+        'symbol': '🏇',
+        'meaning': 'Willenskraft, Sieg, Entschlossenheit',
+        'color': const Color(0xFF2196F3)
+      },
+      {
+        'name': 'Die Kraft',
+        'symbol': '🦁',
+        'meaning': 'Mut, innere Stärke, Geduld',
+        'color': const Color(0xFFFF9800)
+      },
+      {
+        'name': 'Der Eremit',
+        'symbol': '🕯️',
+        'meaning': 'Innenschau, Weisheit, Einsamkeit',
+        'color': const Color(0xFF9E9E9E)
+      },
+      {
+        'name': 'Das Rad',
+        'symbol': '☸️',
+        'meaning': 'Schicksal, Zyklen, Wendepunkt',
+        'color': const Color(0xFF00BCD4)
+      },
+      {
+        'name': 'Die Gerechtigkeit',
+        'symbol': '⚖️',
+        'meaning': 'Fairness, Wahrheit, Gesetz',
+        'color': const Color(0xFF673AB7)
+      },
+      {
+        'name': 'Der Gehängte',
+        'symbol': '🙃',
+        'meaning': 'Loslassen, neue Perspektive, Opfer',
+        'color': const Color(0xFF607D8B)
+      },
+      {
+        'name': 'Der Tod',
+        'symbol': '💀',
+        'meaning': 'Transformation, Ende, Neuanfang',
+        'color': const Color(0xFF212121)
+      },
+      {
+        'name': 'Die Mäßigkeit',
+        'symbol': '🍷',
+        'meaning': 'Balance, Geduld, Harmonie',
+        'color': const Color(0xFF03A9F4)
+      },
+      {
+        'name': 'Der Teufel',
+        'symbol': '😈',
+        'meaning': 'Versuchung, Bindung, Materialismus',
+        'color': const Color(0xFFD32F2F)
+      },
+      {
+        'name': 'Der Turm',
+        'symbol': '🗼',
+        'meaning': 'Plötzliche Veränderung, Chaos, Befreiung',
+        'color': const Color(0xFFFF5722)
+      },
+      {
+        'name': 'Der Stern',
+        'symbol': '⭐',
+        'meaning': 'Hoffnung, Inspiration, Gelassenheit',
+        'color': const Color(0xFF00BCD4)
+      },
+      {
+        'name': 'Der Mond',
+        'symbol': '🌙',
+        'meaning': 'Illusion, Intuition, Unterbewusstsein',
+        'color': const Color(0xFF9C27B0)
+      },
+      {
+        'name': 'Die Sonne',
+        'symbol': '☀️',
+        'meaning': 'Freude, Erfolg, Vitalität',
+        'color': const Color(0xFFFFEB3B)
+      },
+      {
+        'name': 'Das Gericht',
+        'symbol': '📯',
+        'meaning': 'Wiedergeburt, innerer Ruf, Vergebung',
+        'color': const Color(0xFFFF9800)
+      },
+      {
+        'name': 'Die Welt',
+        'symbol': '🌍',
+        'meaning': 'Vollendung, Erfüllung, Einheit',
+        'color': const Color(0xFF4CAF50)
+      },
     ];
   }
 }
@@ -1423,7 +1586,8 @@ class GuidedMeditationsScreen extends StatefulWidget {
   const GuidedMeditationsScreen({super.key});
 
   @override
-  State<GuidedMeditationsScreen> createState() => _GuidedMeditationsScreenState();
+  State<GuidedMeditationsScreen> createState() =>
+      _GuidedMeditationsScreenState();
 }
 
 class _GuidedMeditationsScreenState extends State<GuidedMeditationsScreen> {
@@ -1621,7 +1785,18 @@ class _GuidedMeditationsScreenState extends State<GuidedMeditationsScreen> {
   }
 
   List<String> _getCategories() {
-    return ['Alle', 'Entspannung', 'Fokus', 'Energie', 'Herz', 'Manifestation', 'Stabilität', 'Bewegung', 'Sinne', 'Schlaf'];
+    return [
+      'Alle',
+      'Entspannung',
+      'Fokus',
+      'Energie',
+      'Herz',
+      'Manifestation',
+      'Stabilität',
+      'Bewegung',
+      'Sinne',
+      'Schlaf'
+    ];
   }
 
   List<Map<String, dynamic>> _getFilteredSessions() {
@@ -1658,7 +1833,7 @@ class _GuidedMeditationsScreenState extends State<GuidedMeditationsScreen> {
           children: [
             // Category Filter
             _buildCategoryFilter(),
-            
+
             // Sessions List
             Expanded(
               child: ListView(
@@ -1685,7 +1860,7 @@ class _GuidedMeditationsScreenState extends State<GuidedMeditationsScreen> {
         itemBuilder: (context, index) {
           final category = _getCategories()[index];
           final isSelected = _selectedCategory == category;
-          
+
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
@@ -1711,7 +1886,7 @@ class _GuidedMeditationsScreenState extends State<GuidedMeditationsScreen> {
 
   Widget _buildSessionCard(Map<String, dynamic> session) {
     final isFavorite = _favorites.contains(session['id']);
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       color: Colors.transparent,
@@ -1778,7 +1953,8 @@ class _GuidedMeditationsScreenState extends State<GuidedMeditationsScreen> {
                   ),
                   const SizedBox(width: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: Color(session['color']).withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(8),
@@ -1844,16 +2020,17 @@ class _GuidedMeditationsScreenState extends State<GuidedMeditationsScreen> {
 
 class MeditationSessionPlayer extends StatefulWidget {
   final Map<String, dynamic> session;
-  
+
   const MeditationSessionPlayer({super.key, required this.session});
 
   @override
-  State<MeditationSessionPlayer> createState() => _MeditationSessionPlayerState();
+  State<MeditationSessionPlayer> createState() =>
+      _MeditationSessionPlayerState();
 }
 
 class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
   final _storageService = StorageService();
-  
+
   int _currentStep = 0;
   int _remainingSeconds = 0;
   bool _isRunning = false;
@@ -1875,7 +2052,7 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
     setState(() {
       _isRunning = !_isRunning;
     });
-    
+
     if (_isRunning) {
       _startTimer();
     } else {
@@ -1886,12 +2063,14 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
   void _startTimer() {
     final totalSteps = (widget.session['steps'] as List).length;
     final secondsPerStep = (_remainingSeconds / totalSteps).floor();
-    
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_remainingSeconds > 0) {
         setState(() {
           _remainingSeconds--;
-          _currentStep = (widget.session['duration'] * 60 - _remainingSeconds) ~/ secondsPerStep;
+          _currentStep =
+              (widget.session['duration'] * 60 - _remainingSeconds) ~/
+                  secondsPerStep;
           if (_currentStep >= totalSteps) _currentStep = totalSteps - 1;
         });
       } else {
@@ -1905,7 +2084,7 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
     setState(() {
       _isRunning = false;
     });
-    
+
     // Save to stats
     await _storageService.saveMeditationSessionComplete({
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
@@ -1913,10 +2092,10 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
       'title': widget.session['title'] ?? 'Meditation',
       'timestamp': DateTime.now().toIso8601String(),
     });
-    
+
     // FIX v5.28.0: mounted-Check nach async gap
     if (!mounted) return;
-    
+
     // Show completion dialog
     showDialog(
       context: context,
@@ -1946,7 +2125,7 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
   @override
   Widget build(BuildContext context) {
     final steps = widget.session['steps'] as List;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: WBGlassAppBar(
@@ -1968,7 +2147,7 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
           child: Column(
             children: [
               const SizedBox(height: 40),
-              
+
               // Timer Circle
               Container(
                 width: 200,
@@ -1991,9 +2170,9 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Current Step
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -2005,9 +2184,9 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Step Text
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -2022,20 +2201,21 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
                   ),
                 ),
               ),
-              
+
               const Spacer(),
-              
+
               // Play/Pause Button
               Padding(
                 padding: const EdgeInsets.all(32),
                 child: FloatingActionButton.extended(
                   onPressed: _toggleTimer,
-                  backgroundColor: _isRunning ? Colors.red : Color(widget.session['color']),
+                  backgroundColor:
+                      _isRunning ? Colors.red : Color(widget.session['color']),
                   icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow),
                   label: Text(_isRunning ? 'PAUSE' : 'START'),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
             ],
           ),
@@ -2064,7 +2244,7 @@ class AuraColorReaderScreen extends StatefulWidget {
 
 class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
   Map<String, dynamic>? _result;
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -2081,9 +2261,7 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
             colors: [Color(0xFFAD1457), Color(0xFF000000)],
           ),
         ),
-        child: _result == null
-            ? _buildQuiz()
-            : _buildResult(),
+        child: _result == null ? _buildQuiz() : _buildResult(),
       ),
     );
   }
@@ -2105,7 +2283,6 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 40),
-            
             ElevatedButton(
               onPressed: _analyzeAura,
               style: ElevatedButton.styleFrom(
@@ -2154,9 +2331,9 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
             ),
           ),
         ),
-        
+
         SizedBox(height: 24),
-        
+
         Text(
           'Deine Aura-Farbe',
           style: TextStyle(
@@ -2165,9 +2342,9 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
           ),
           textAlign: TextAlign.center,
         ),
-        
+
         SizedBox(height: 8),
-        
+
         Text(
           _result!['name'],
           style: TextStyle(
@@ -2177,9 +2354,9 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
           ),
           textAlign: TextAlign.center,
         ),
-        
+
         SizedBox(height: 24),
-        
+
         Container(
           padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -2209,9 +2386,9 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
             ],
           ),
         ),
-        
+
         SizedBox(height: 16),
-        
+
         ElevatedButton(
           onPressed: () => setState(() => _result = null),
           style: ElevatedButton.styleFrom(
@@ -2233,7 +2410,7 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
   void _analyzeAura() {
     final random = math.Random();
     final auras = _getAuraColors();
-    
+
     setState(() {
       _result = auras[random.nextInt(auras.length)];
     });
@@ -2245,37 +2422,43 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
         'name': 'Rote Aura',
         'emoji': '❤️',
         'color': Color(0xFFF44336),
-        'meaning': 'Leidenschaft, Energie, Willenskraft. Du bist voller Lebenskraft und Durchsetzungsvermögen.',
+        'meaning':
+            'Leidenschaft, Energie, Willenskraft. Du bist voller Lebenskraft und Durchsetzungsvermögen.',
       },
       {
         'name': 'Blaue Aura',
         'emoji': '💙',
         'color': Color(0xFF2196F3),
-        'meaning': 'Wahrheit, Kommunikation, Frieden. Du sprichst mit Klarheit und Weisheit.',
+        'meaning':
+            'Wahrheit, Kommunikation, Frieden. Du sprichst mit Klarheit und Weisheit.',
       },
       {
         'name': 'Grüne Aura',
         'emoji': '💚',
         'color': Color(0xFF4CAF50),
-        'meaning': 'Heilung, Harmonie, Liebe. Du bist ein natürlicher Heiler und Friedensstifter.',
+        'meaning':
+            'Heilung, Harmonie, Liebe. Du bist ein natürlicher Heiler und Friedensstifter.',
       },
       {
         'name': 'Gelbe Aura',
         'emoji': '💛',
         'color': Color(0xFFFFEB3B),
-        'meaning': 'Freude, Optimismus, Intellekt. Du strahlst Sonnenschein und Inspiration aus.',
+        'meaning':
+            'Freude, Optimismus, Intellekt. Du strahlst Sonnenschein und Inspiration aus.',
       },
       {
         'name': 'Violette Aura',
         'emoji': '💜',
         'color': Color(0xFF9C27B0),
-        'meaning': 'Spiritualität, Intuition, Magie. Du bist tief verbunden mit dem Göttlichen.',
+        'meaning':
+            'Spiritualität, Intuition, Magie. Du bist tief verbunden mit dem Göttlichen.',
       },
       {
         'name': 'Weiße Aura',
         'emoji': '🤍',
         'color': Color(0xFFFFFFFF),
-        'meaning': 'Reinheit, Klarheit, Erleuchtung. Du verkörperst spirituelle Reinheit.',
+        'meaning':
+            'Reinheit, Klarheit, Erleuchtung. Du verkörperst spirituelle Reinheit.',
       },
     ];
   }
@@ -2289,16 +2472,18 @@ class DnaActivationTrackerScreen extends StatefulWidget {
   const DnaActivationTrackerScreen({super.key});
 
   @override
-  State<DnaActivationTrackerScreen> createState() => _DnaActivationTrackerScreenState();
+  State<DnaActivationTrackerScreen> createState() =>
+      _DnaActivationTrackerScreenState();
 }
 
-class _DnaActivationTrackerScreenState extends State<DnaActivationTrackerScreen> {
+class _DnaActivationTrackerScreenState
+    extends State<DnaActivationTrackerScreen> {
   final List<bool> _activatedStrands = List.filled(12, false);
-  
+
   @override
   Widget build(BuildContext context) {
     final activatedCount = _activatedStrands.where((s) => s).length;
-    
+
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
       appBar: WBGlassAppBar(
@@ -2357,9 +2542,9 @@ class _DnaActivationTrackerScreenState extends State<DnaActivationTrackerScreen>
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             Text(
               'Die 12 DNA-Stränge',
               style: TextStyle(
@@ -2369,7 +2554,7 @@ class _DnaActivationTrackerScreenState extends State<DnaActivationTrackerScreen>
               ),
             ),
             SizedBox(height: 16),
-            
+
             ..._getDnaStrands().asMap().entries.map((entry) {
               final index = entry.key;
               final strand = entry.value;
@@ -2383,19 +2568,17 @@ class _DnaActivationTrackerScreenState extends State<DnaActivationTrackerScreen>
 
   Widget _buildStrandCard(int index, Map<String, String> strand) {
     final isActivated = _activatedStrands[index];
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isActivated 
+        color: isActivated
             ? Color(0xFF00897B).withValues(alpha: 0.3)
             : Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isActivated 
-              ? Color(0xFF00897B)
-              : Colors.white24,
+          color: isActivated ? Color(0xFF00897B) : Colors.white24,
           width: 2,
         ),
       ),
@@ -2405,9 +2588,7 @@ class _DnaActivationTrackerScreenState extends State<DnaActivationTrackerScreen>
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: isActivated 
-                  ? Color(0xFF00897B)
-                  : Colors.white12,
+              color: isActivated ? Color(0xFF00897B) : Colors.white12,
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -2462,12 +2643,30 @@ class _DnaActivationTrackerScreenState extends State<DnaActivationTrackerScreen>
 
   List<Map<String, String>> _getDnaStrands() {
     return [
-      {'name': 'Strang 1 & 2', 'description': 'Physischer Körper - Grundbedürfnisse'},
-      {'name': 'Strang 3 & 4', 'description': 'Emotionalkörper - Gefühle & Beziehungen'},
-      {'name': 'Strang 5 & 6', 'description': 'Mentalkörper - Gedanken & Glaubenssätze'},
-      {'name': 'Strang 7 & 8', 'description': 'Spiritueller Körper - Höheres Selbst'},
-      {'name': 'Strang 9 & 10', 'description': 'Kosmisches Bewusstsein - Einheit'},
-      {'name': 'Strang 11 & 12', 'description': 'Christus-Bewusstsein - Vollendung'},
+      {
+        'name': 'Strang 1 & 2',
+        'description': 'Physischer Körper - Grundbedürfnisse'
+      },
+      {
+        'name': 'Strang 3 & 4',
+        'description': 'Emotionalkörper - Gefühle & Beziehungen'
+      },
+      {
+        'name': 'Strang 5 & 6',
+        'description': 'Mentalkörper - Gedanken & Glaubenssätze'
+      },
+      {
+        'name': 'Strang 7 & 8',
+        'description': 'Spiritueller Körper - Höheres Selbst'
+      },
+      {
+        'name': 'Strang 9 & 10',
+        'description': 'Kosmisches Bewusstsein - Einheit'
+      },
+      {
+        'name': 'Strang 11 & 12',
+        'description': 'Christus-Bewusstsein - Vollendung'
+      },
     ];
   }
 }
@@ -2481,13 +2680,15 @@ class FrequencyGeneratorScreenLegacy extends StatefulWidget {
   const FrequencyGeneratorScreenLegacy({super.key});
 
   @override
-  State<FrequencyGeneratorScreenLegacy> createState() => _FrequencyGeneratorScreenLegacyState();
+  State<FrequencyGeneratorScreenLegacy> createState() =>
+      _FrequencyGeneratorScreenLegacyState();
 }
 
-class _FrequencyGeneratorScreenLegacyState extends State<FrequencyGeneratorScreenLegacy> {
+class _FrequencyGeneratorScreenLegacyState
+    extends State<FrequencyGeneratorScreenLegacy> {
   final Set<String> _selectedFrequencies = {};
   bool _isPlaying = false;
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -2532,7 +2733,6 @@ class _FrequencyGeneratorScreenLegacyState extends State<FrequencyGeneratorScree
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70),
                   ),
-                  
                   if (_selectedFrequencies.isNotEmpty) ...[
                     SizedBox(height: 16),
                     Text(
@@ -2552,18 +2752,20 @@ class _FrequencyGeneratorScreenLegacyState extends State<FrequencyGeneratorScree
                       icon: Icon(_isPlaying ? Icons.stop : Icons.play_arrow),
                       label: Text(_isPlaying ? 'STOPPEN' : 'ABSPIELEN'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isPlaying ? Colors.red : Color(0xFFD32F2F),
+                        backgroundColor:
+                            _isPlaying ? Colors.red : Color(0xFFD32F2F),
                         foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
                     ),
                   ],
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             Text(
               'Wähle Frequenzen (Multi-Select)',
               style: TextStyle(
@@ -2573,8 +2775,9 @@ class _FrequencyGeneratorScreenLegacyState extends State<FrequencyGeneratorScree
               ),
             ),
             SizedBox(height: 16),
-            
-            ..._getSolfeggioFrequencies().map((freq) => _buildFrequencyCard(freq)),
+
+            ..._getSolfeggioFrequencies()
+                .map((freq) => _buildFrequencyCard(freq)),
           ],
         ),
       ),
@@ -2583,7 +2786,7 @@ class _FrequencyGeneratorScreenLegacyState extends State<FrequencyGeneratorScree
 
   Widget _buildFrequencyCard(Map<String, dynamic> freq) {
     final isSelected = _selectedFrequencies.contains(freq['hz']);
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -2759,12 +2962,14 @@ class AkashaChronicleJournalScreen extends StatefulWidget {
   const AkashaChronicleJournalScreen({super.key});
 
   @override
-  State<AkashaChronicleJournalScreen> createState() => _AkashaChronicleJournalScreenState();
+  State<AkashaChronicleJournalScreen> createState() =>
+      _AkashaChronicleJournalScreenState();
 }
 
-class _AkashaChronicleJournalScreenState extends State<AkashaChronicleJournalScreen> {
+class _AkashaChronicleJournalScreenState
+    extends State<AkashaChronicleJournalScreen> {
   final List<Map<String, String>> _entries = [];
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -2994,7 +3199,8 @@ class _AkashaEntryDialogState extends State<_AkashaEntryDialog> {
         if (!mounted) return;
         final base = _content.text;
         final transcription = result.recognizedWords;
-        _content.text = base.isEmpty ? transcription : '$base $transcription'.trim();
+        _content.text =
+            base.isEmpty ? transcription : '$base $transcription'.trim();
       },
     );
   }
@@ -3080,7 +3286,7 @@ class MantraLibraryScreen extends StatefulWidget {
 
 class _MantraLibraryScreenState extends State<MantraLibraryScreen> {
   final Map<String, int> _mantraCounters = {};
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -3128,9 +3334,9 @@ class _MantraLibraryScreenState extends State<MantraLibraryScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             ..._getMantras().map((mantra) => _buildMantraCard(mantra)),
           ],
         ),
@@ -3140,7 +3346,7 @@ class _MantraLibraryScreenState extends State<MantraLibraryScreen> {
 
   Widget _buildMantraCard(Map<String, String> mantra) {
     final counter = _mantraCounters[mantra['text']!] ?? 0;
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       padding: EdgeInsets.all(20),
@@ -3180,7 +3386,6 @@ class _MantraLibraryScreenState extends State<MantraLibraryScreen> {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 20),
-          
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -3258,7 +3463,7 @@ class SacredGeometryScreen extends StatefulWidget {
 
 class _SacredGeometryScreenState extends State<SacredGeometryScreen> {
   String? _selectedGeometry;
-  
+
   final List<Map<String, String>> _geometries = [
     {
       'emoji': '🌸',
@@ -3346,9 +3551,9 @@ class _SacredGeometryScreenState extends State<SacredGeometryScreen> {
                   ],
                 ),
               ),
-              
+
               SizedBox(height: 24),
-              
+
               // Grid View
               GridView.builder(
                 shrinkWrap: true,
@@ -3416,7 +3621,7 @@ class _SacredGeometryScreenState extends State<SacredGeometryScreen> {
       ),
     );
   }
-  
+
   void _showGeometryDetails(Map<String, String> geometry) {
     showDialog(
       context: context,
@@ -3468,7 +3673,8 @@ class _SacredGeometryScreenState extends State<SacredGeometryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Schließen', style: TextStyle(color: Colors.purpleAccent)),
+            child:
+                Text('Schließen', style: TextStyle(color: Colors.purpleAccent)),
           ),
         ],
       ),
@@ -3481,7 +3687,8 @@ class GroundingExercisesScreen extends StatefulWidget {
   const GroundingExercisesScreen({super.key});
 
   @override
-  State<GroundingExercisesScreen> createState() => _GroundingExercisesScreenState();
+  State<GroundingExercisesScreen> createState() =>
+      _GroundingExercisesScreenState();
 }
 
 class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
@@ -3539,48 +3746,55 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
     } catch (_) {}
     if (mounted) setState(() => _weatherLoading = false);
   }
-  
+
   final List<Map<String, String>> _exercises = [
     {
       'emoji': '👣',
       'name': 'Barfuß laufen',
       'duration': '10-15 Min',
-      'description': 'Gehe barfuß über Gras, Erde oder Sand. Spüre die Verbindung zur Erde.',
-      'benefits': 'Stärkt Erdverbindung, reduziert Stress, aktiviert Fußreflexzonen',
+      'description':
+          'Gehe barfuß über Gras, Erde oder Sand. Spüre die Verbindung zur Erde.',
+      'benefits':
+          'Stärkt Erdverbindung, reduziert Stress, aktiviert Fußreflexzonen',
     },
     {
       'emoji': '🫁',
       'name': '4-7-8 Atemübung',
       'duration': '5 Min',
-      'description': '4 Sekunden einatmen, 7 Sekunden halten, 8 Sekunden ausatmen.',
+      'description':
+          '4 Sekunden einatmen, 7 Sekunden halten, 8 Sekunden ausatmen.',
       'benefits': 'Beruhigt Nervensystem, reduziert Angst, verbessert Schlaf',
     },
     {
       'emoji': '🌳',
       'name': 'Baum-Meditation',
       'duration': '15 Min',
-      'description': 'Umarme einen Baum oder lehne dich an. Spüre seine Energie.',
+      'description':
+          'Umarme einen Baum oder lehne dich an. Spüre seine Energie.',
       'benefits': 'Tiefe Erdung, Energieausgleich, emotionale Stabilität',
     },
     {
       'emoji': '🧘',
       'name': 'Körper-Scan',
       'duration': '20 Min',
-      'description': 'Scanne deinen Körper von Kopf bis Fuß. Nimm jede Empfindung wahr.',
+      'description':
+          'Scanne deinen Körper von Kopf bis Fuß. Nimm jede Empfindung wahr.',
       'benefits': 'Achtsamkeit, Körperbewusstsein, Stressabbau',
     },
     {
       'emoji': '🍃',
       'name': 'Natur-Atemzug',
       'duration': '10 Min',
-      'description': 'Atme bewusst in der Natur. Rieche Erde, Pflanzen, frische Luft.',
+      'description':
+          'Atme bewusst in der Natur. Rieche Erde, Pflanzen, frische Luft.',
       'benefits': 'Sauerstoffaufnahme, mentale Klarheit, Naturverbindung',
     },
     {
       'emoji': '🪨',
       'name': 'Stein-Meditation',
       'duration': '10 Min',
-      'description': 'Halte einen Stein in der Hand. Spüre sein Gewicht und seine Energie.',
+      'description':
+          'Halte einen Stein in der Hand. Spüre sein Gewicht und seine Energie.',
       'benefits': 'Stabilität, Fokus, Erdung durch Mineralien',
     },
   ];
@@ -3635,9 +3849,9 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             ..._exercises.map((exercise) => _buildExerciseCard(exercise)),
           ],
         ),
@@ -3647,7 +3861,7 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
 
   Widget _buildExerciseCard(Map<String, String> exercise) {
     final isSelected = _selectedExercise == exercise['name'];
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -3704,7 +3918,7 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
       ),
     );
   }
-  
+
   void _showExerciseDetails(Map<String, String> exercise) {
     showDialog(
       context: context,
@@ -3766,7 +3980,8 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Schließen', style: TextStyle(color: Colors.brown.shade300)),
+            child: Text('Schließen',
+                style: TextStyle(color: Colors.brown.shade300)),
           ),
         ],
       ),
@@ -3783,8 +3998,10 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
         ),
         child: const Center(
           child: SizedBox(
-            width: 22, height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: Colors.white70),
           ),
         ),
       );
@@ -3799,8 +4016,10 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
         child: const Row(children: [
           Icon(Icons.location_off, color: Colors.white54, size: 22),
           SizedBox(width: 10),
-          Expanded(child: Text('Standort/Wetter nicht verfügbar — manuelle Übungs-Wahl',
-              style: TextStyle(color: Colors.white70, fontSize: 12))),
+          Expanded(
+              child: Text(
+                  'Standort/Wetter nicht verfügbar — manuelle Übungs-Wahl',
+                  style: TextStyle(color: Colors.white70, fontSize: 12))),
         ]),
       );
     }
@@ -3815,7 +4034,10 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [color.withValues(alpha: 0.4), color.withValues(alpha: 0.1)]),
+        gradient: LinearGradient(colors: [
+          color.withValues(alpha: 0.4),
+          color.withValues(alpha: 0.1)
+        ]),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
@@ -3827,9 +4049,13 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('${w.tempC.round()}°C · Wind ${w.windKmh.round()} km/h',
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold)),
               Text(rating.recommendation,
-                  style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4)),
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 12, height: 1.4)),
             ],
           ),
         ),
@@ -3840,7 +4066,8 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text('${rating.score}%',
-              style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: color, fontSize: 14, fontWeight: FontWeight.bold)),
         ),
       ]),
     );
@@ -3902,10 +4129,12 @@ class _WeatherSnapshot {
 class TransformationTrackerScreen extends StatefulWidget {
   const TransformationTrackerScreen({super.key});
   @override
-  State<TransformationTrackerScreen> createState() => _TransformationTrackerScreenState();
+  State<TransformationTrackerScreen> createState() =>
+      _TransformationTrackerScreenState();
 }
 
-class _TransformationTrackerScreenState extends State<TransformationTrackerScreen> {
+class _TransformationTrackerScreenState
+    extends State<TransformationTrackerScreen> {
   final List<Map<String, dynamic>> _milestones = [
     {
       'title': 'Erste Meditation',
@@ -3975,9 +4204,9 @@ class _TransformationTrackerScreenState extends State<TransformationTrackerScree
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             Text(
               'Bisherige Meilensteine',
               style: TextStyle(
@@ -3987,7 +4216,7 @@ class _TransformationTrackerScreenState extends State<TransformationTrackerScree
               ),
             ),
             SizedBox(height: 16),
-            
+
             ..._milestones.map((milestone) => _buildMilestoneCard(milestone)),
           ],
         ),
@@ -4078,18 +4307,21 @@ class LightLanguageDecoderScreen extends StatefulWidget {
   const LightLanguageDecoderScreen({super.key});
 
   @override
-  State<LightLanguageDecoderScreen> createState() => _LightLanguageDecoderScreenState();
+  State<LightLanguageDecoderScreen> createState() =>
+      _LightLanguageDecoderScreenState();
 }
 
-class _LightLanguageDecoderScreenState extends State<LightLanguageDecoderScreen> {
+class _LightLanguageDecoderScreenState
+    extends State<LightLanguageDecoderScreen> {
   String? _selectedCode;
-  
+
   final List<Map<String, String>> _codes = [
     {
       'symbol': '✧',
       'name': 'Stern-Code',
       'meaning': 'Verbindung zur Quelle',
-      'activation': 'Visualisiere einen strahlenden Stern über deinem Kronenchakra',
+      'activation':
+          'Visualisiere einen strahlenden Stern über deinem Kronenchakra',
       'frequency': '963 Hz - Einheit',
     },
     {
@@ -4204,9 +4436,9 @@ class _LightLanguageDecoderScreenState extends State<LightLanguageDecoderScreen>
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             ..._codes.map((code) => _buildCodeCard(code)),
           ],
         ),
@@ -4216,7 +4448,7 @@ class _LightLanguageDecoderScreenState extends State<LightLanguageDecoderScreen>
 
   Widget _buildCodeCard(Map<String, String> code) {
     final isSelected = _selectedCode == code['name'];
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -4290,7 +4522,7 @@ class _LightLanguageDecoderScreenState extends State<LightLanguageDecoderScreen>
       ),
     );
   }
-  
+
   void _showCodeDetails(Map<String, String> code) {
     showDialog(
       context: context,
@@ -4391,7 +4623,7 @@ class YogaAsanaGuideScreen extends StatefulWidget {
 
 class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
   String? _selectedAsana;
-  
+
   final List<Map<String, String>> _asanas = [
     {
       'name': 'Tadasana',
@@ -4399,7 +4631,8 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
       'difficulty': 'Anfänger',
       'benefits': 'Verbessert Haltung & Balance',
       'emoji': '🧍',
-      'description': 'Stehe aufrecht mit geschlossenen Füßen. Verteile dein Gewicht gleichmäßig. Strecke die Wirbelsäule und entspanne die Schultern.',
+      'description':
+          'Stehe aufrecht mit geschlossenen Füßen. Verteile dein Gewicht gleichmäßig. Strecke die Wirbelsäule und entspanne die Schultern.',
       'chakra': 'Wurzelchakra',
     },
     {
@@ -4408,7 +4641,8 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
       'difficulty': 'Anfänger',
       'benefits': 'Stärkt Arme & Beine, dehnt Rücken',
       'emoji': '🐕',
-      'description': 'Beginne im Vierfüßlerstand. Hebe das Becken nach oben und strecke die Beine. Bilde ein umgekehrtes V.',
+      'description':
+          'Beginne im Vierfüßlerstand. Hebe das Becken nach oben und strecke die Beine. Bilde ein umgekehrtes V.',
       'chakra': 'Herzchakra',
     },
     {
@@ -4417,7 +4651,8 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
       'difficulty': 'Mittelstufe',
       'benefits': 'Balance, Konzentration & Erdung',
       'emoji': '🌳',
-      'description': 'Stehe auf einem Bein. Platziere den anderen Fuß an der Innenseite des Oberschenkels. Hände vor der Brust oder nach oben.',
+      'description':
+          'Stehe auf einem Bein. Platziere den anderen Fuß an der Innenseite des Oberschenkels. Hände vor der Brust oder nach oben.',
       'chakra': 'Wurzel- und Kronenchakra',
     },
     {
@@ -4426,7 +4661,8 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
       'difficulty': 'Anfänger',
       'benefits': 'Tiefe Entspannung & Regeneration',
       'emoji': '🙏',
-      'description': 'Knie nieder, setze dich auf die Fersen zurück. Beuge dich nach vorne und lege die Stirn auf den Boden. Arme nach vorne oder seitlich.',
+      'description':
+          'Knie nieder, setze dich auf die Fersen zurück. Beuge dich nach vorne und lege die Stirn auf den Boden. Arme nach vorne oder seitlich.',
       'chakra': 'Drittes Auge',
     },
     {
@@ -4435,7 +4671,8 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
       'difficulty': 'Fortgeschritten',
       'benefits': 'Meditation & Flexibilität',
       'emoji': '🪷',
-      'description': 'Setze dich aufrecht. Lege einen Fuß auf den gegenüberliegenden Oberschenkel, dann den anderen. Erfordert flexible Hüften.',
+      'description':
+          'Setze dich aufrecht. Lege einen Fuß auf den gegenüberliegenden Oberschenkel, dann den anderen. Erfordert flexible Hüften.',
       'chakra': 'Kronenchakra',
     },
     {
@@ -4444,7 +4681,8 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
       'difficulty': 'Alle Stufen',
       'benefits': 'Vollständige Entspannung & Integration',
       'emoji': '😌',
-      'description': 'Liege flach auf dem Rücken. Arme und Beine leicht gespreizt. Schließe die Augen und atme ruhig. Lass komplett los.',
+      'description':
+          'Liege flach auf dem Rücken. Arme und Beine leicht gespreizt. Schließe die Augen und atme ruhig. Lass komplett los.',
       'chakra': 'Alle Chakren',
     },
   ];
@@ -4496,9 +4734,9 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             ..._asanas.map((asana) => _buildAsanaCard(asana)),
           ],
         ),
@@ -4508,7 +4746,7 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
 
   Widget _buildAsanaCard(Map<String, String> asana) {
     final isSelected = _selectedAsana == asana['name'];
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -4594,7 +4832,7 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
       ),
     );
   }
-  
+
   void _showAsanaDetails(Map<String, String> asana) {
     showDialog(
       context: context,
@@ -4689,25 +4927,31 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
           TextButton.icon(
             onPressed: () async {
               // YouTube-Suche nach 'asana name Tutorial deutsch'
-              final query = Uri.encodeComponent('${asana['name']} ${asana['german']} Yoga Tutorial');
-              final uri = Uri.parse('https://www.youtube.com/results?search_query=$query');
+              final query = Uri.encodeComponent(
+                  '${asana['name']} ${asana['german']} Yoga Tutorial');
+              final uri = Uri.parse(
+                  'https://www.youtube.com/results?search_query=$query');
               if (await canLaunchUrl(uri)) {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
               }
             },
-            icon: const Icon(Icons.play_circle_fill, color: Colors.red, size: 20),
+            icon:
+                const Icon(Icons.play_circle_fill, color: Colors.red, size: 20),
             label: const Text('YouTube-Tutorial',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Schließen', style: TextStyle(color: Colors.purple.shade300)),
+            child: Text('Schließen',
+                style: TextStyle(color: Colors.purple.shade300)),
           ),
         ],
       ),
     );
   }
 }
+
 class GoddessOracleScreen extends StatefulWidget {
   const GoddessOracleScreen({super.key});
   @override
@@ -4722,14 +4966,16 @@ class _GoddessOracleScreenState extends State<GoddessOracleScreen> {
       'name': 'Aphrodite',
       'culture': 'Griechisch',
       'domain': 'Liebe & Schönheit',
-      'message': 'Öffne dein Herz für die Liebe. Selbstliebe ist der Schlüssel.',
+      'message':
+          'Öffne dein Herz für die Liebe. Selbstliebe ist der Schlüssel.',
       'color': Color(0xFFE91E63),
     },
     {
       'name': 'Athena',
       'culture': 'Griechisch',
       'domain': 'Weisheit & Strategie',
-      'message': 'Vertraue deiner inneren Weisheit. Du kennst die Antwort bereits.',
+      'message':
+          'Vertraue deiner inneren Weisheit. Du kennst die Antwort bereits.',
       'color': Color(0xFF2196F3),
     },
     {
@@ -4743,21 +4989,24 @@ class _GoddessOracleScreenState extends State<GoddessOracleScreen> {
       'name': 'Kali',
       'culture': 'Hinduistisch',
       'domain': 'Transformation & Macht',
-      'message': 'Lass los, was nicht mehr dient. Transformation ist Befreiung.',
+      'message':
+          'Lass los, was nicht mehr dient. Transformation ist Befreiung.',
       'color': Color(0xFF000000),
     },
     {
       'name': 'Quan Yin',
       'culture': 'Chinesisch',
       'domain': 'Mitgefühl & Barmherzigkeit',
-      'message': 'Sei sanft mit dir selbst. Mitgefühl beginnt im eigenen Herzen.',
+      'message':
+          'Sei sanft mit dir selbst. Mitgefühl beginnt im eigenen Herzen.',
       'color': Color(0xFF00BCD4),
     },
     {
       'name': 'Freyja',
       'culture': 'Nordisch',
       'domain': 'Liebe & Krieg',
-      'message': 'Kämpfe für das, was du liebst. Wahre Stärke kommt aus dem Herzen.',
+      'message':
+          'Kämpfe für das, was du liebst. Wahre Stärke kommt aus dem Herzen.',
       'color': Color(0xFFFF9800),
     },
   ];
@@ -4813,9 +5062,9 @@ class _GoddessOracleScreenState extends State<GoddessOracleScreen> {
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             // Draw Button
             Center(
               child: ElevatedButton(
@@ -4833,9 +5082,9 @@ class _GoddessOracleScreenState extends State<GoddessOracleScreen> {
                 ),
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             // Selected Deity Card
             if (_selectedDeity != null)
               Container(
@@ -4892,9 +5141,9 @@ class _GoddessOracleScreenState extends State<GoddessOracleScreen> {
                   ],
                 ),
               ),
-            
+
             SizedBox(height: 24),
-            
+
             // Available Deities
             Text(
               'Verfügbare Gottheiten',
@@ -4905,54 +5154,55 @@ class _GoddessOracleScreenState extends State<GoddessOracleScreen> {
               ),
             ),
             SizedBox(height: 16),
-            
+
             ..._deities.map((deity) => Container(
-              margin: EdgeInsets.only(bottom: 8),
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: deity['color'].withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
+                  margin: EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
                       color: deity['color'].withValues(alpha: 0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          deity['name'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          '${deity['culture']} • ${deity['domain']}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white60,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
-                ],
-              ),
-            )),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: deity['color'].withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.auto_awesome,
+                            color: Colors.white, size: 20),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              deity['name'],
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              '${deity['culture']} • ${deity['domain']}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white60,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
           ],
         ),
       ),
@@ -4974,7 +5224,7 @@ class MoonCalendarScreen extends StatefulWidget {
 class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
   DateTime _currentMonth = DateTime.now();
   DateTime? _selectedDate;
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -5001,8 +5251,7 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
                   children: [
                     _buildCalendarGrid(),
                     const SizedBox(height: 24),
-                    if (_selectedDate != null)
-                      _buildDayDetails(_selectedDate!),
+                    if (_selectedDate != null) _buildDayDetails(_selectedDate!),
                   ],
                 ),
               ),
@@ -5015,7 +5264,7 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
 
   Widget _buildMonthNavigation() {
     final monthName = _getMonthName(_currentMonth.month);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -5071,15 +5320,15 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
       _currentMonth.month + 1,
       0,
     ).day;
-    
+
     final firstDayOfMonth = DateTime(
       _currentMonth.year,
       _currentMonth.month,
       1,
     );
-    
+
     final weekdayOfFirst = firstDayOfMonth.weekday;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -5102,17 +5351,17 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
             itemCount: 42,
             itemBuilder: (context, index) {
               final dayNumber = index - (weekdayOfFirst - 1) + 1;
-              
+
               if (dayNumber < 1 || dayNumber > daysInMonth) {
                 return const SizedBox();
               }
-              
+
               final date = DateTime(
                 _currentMonth.year,
                 _currentMonth.month,
                 dayNumber,
               );
-              
+
               return _buildDayCell(date);
             },
           ),
@@ -5123,7 +5372,7 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
 
   Widget _buildWeekdayHeader() {
     const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: weekdays.map((day) {
@@ -5146,10 +5395,11 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
   Widget _buildDayCell(DateTime date) {
     final moonPhase = _getMoonPhaseForDate(date);
     final isToday = _isSameDay(date, DateTime.now());
-    final isSelected = _selectedDate != null && _isSameDay(date, _selectedDate!);
+    final isSelected =
+        _selectedDate != null && _isSameDay(date, _selectedDate!);
     final isFullMoon = moonPhase['icon'] == '🌕';
     final isNewMoon = moonPhase['icon'] == '🌑';
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -5189,9 +5439,8 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
               style: TextStyle(
                 color: isSelected || isToday ? Colors.white : Colors.white70,
                 fontSize: 14,
-                fontWeight: isSelected || isToday
-                    ? FontWeight.bold
-                    : FontWeight.normal,
+                fontWeight:
+                    isSelected || isToday ? FontWeight.bold : FontWeight.normal,
               ),
             ),
             const SizedBox(height: 4),
@@ -5208,7 +5457,7 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
   Widget _buildDayDetails(DateTime date) {
     final moonPhase = _getMoonPhaseForDate(date);
     final dayName = _getDayName(date.weekday);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -5346,38 +5595,85 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
     final knownNewMoon = DateTime(2024, 1, 11);
     final daysSinceKnown = date.difference(knownNewMoon).inDays;
     final phaseDay = daysSinceKnown % lunarCycle;
-    
+
     if (phaseDay < 3.7) {
-      return {'icon': '🌑', 'name': 'Neumond', 'energy': 'Neue Anfänge, Innenschau'};
+      return {
+        'icon': '🌑',
+        'name': 'Neumond',
+        'energy': 'Neue Anfänge, Innenschau'
+      };
     } else if (phaseDay < 7.4) {
-      return {'icon': '🌒', 'name': 'Zunehmende Sichel', 'energy': 'Wachstum beginnen'};
+      return {
+        'icon': '🌒',
+        'name': 'Zunehmende Sichel',
+        'energy': 'Wachstum beginnen'
+      };
     } else if (phaseDay < 11.1) {
-      return {'icon': '🌓', 'name': 'Erstes Viertel', 'energy': 'Aktion & Entscheidung'};
+      return {
+        'icon': '🌓',
+        'name': 'Erstes Viertel',
+        'energy': 'Aktion & Entscheidung'
+      };
     } else if (phaseDay < 14.8) {
-      return {'icon': '🌔', 'name': 'Zunehmender Mond', 'energy': 'Aufbau & Expansion'};
+      return {
+        'icon': '🌔',
+        'name': 'Zunehmender Mond',
+        'energy': 'Aufbau & Expansion'
+      };
     } else if (phaseDay < 18.5) {
-      return {'icon': '🌕', 'name': 'Vollmond', 'energy': 'Höhepunkt & Manifestation'};
+      return {
+        'icon': '🌕',
+        'name': 'Vollmond',
+        'energy': 'Höhepunkt & Manifestation'
+      };
     } else if (phaseDay < 22.2) {
-      return {'icon': '🌖', 'name': 'Abnehmender Mond', 'energy': 'Dankbarkeit & Reflexion'};
+      return {
+        'icon': '🌖',
+        'name': 'Abnehmender Mond',
+        'energy': 'Dankbarkeit & Reflexion'
+      };
     } else if (phaseDay < 25.9) {
-      return {'icon': '🌗', 'name': 'Letztes Viertel', 'energy': 'Loslassen & Reinigung'};
+      return {
+        'icon': '🌗',
+        'name': 'Letztes Viertel',
+        'energy': 'Loslassen & Reinigung'
+      };
     } else {
-      return {'icon': '🌘', 'name': 'Abnehmende Sichel', 'energy': 'Ruhe & Vorbereitung'};
+      return {
+        'icon': '🌘',
+        'name': 'Abnehmende Sichel',
+        'energy': 'Ruhe & Vorbereitung'
+      };
     }
   }
 
   String _getMonthName(int month) {
     const months = [
-      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember'
     ];
     return months[month - 1];
   }
 
   String _getDayName(int weekday) {
     const days = [
-      'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag',
-      'Freitag', 'Samstag', 'Sonntag'
+      'Montag',
+      'Dienstag',
+      'Mittwoch',
+      'Donnerstag',
+      'Freitag',
+      'Samstag',
+      'Sonntag'
     ];
     return days[weekday - 1];
   }
@@ -5391,18 +5687,19 @@ class AstrologyCalculatorScreen extends StatefulWidget {
   const AstrologyCalculatorScreen({super.key});
 
   @override
-  State<AstrologyCalculatorScreen> createState() => _AstrologyCalculatorScreenState();
+  State<AstrologyCalculatorScreen> createState() =>
+      _AstrologyCalculatorScreenState();
 }
 
 class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
   DateTime _birthDate = DateTime(1990, 1, 1);
   TimeOfDay _birthTime = const TimeOfDay(hour: 12, minute: 0);
   // UNUSED FIELD: String _birthPlace = 'Berlin';
-  
+
   String? _sunSign;
   String? _moonSign;
   String? _ascendant;
-  
+
   Map<String, String>? _todayHoroscope;
 
   @override
@@ -5423,19 +5720,29 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
   String _calculateSunSign(DateTime date) {
     final day = date.day;
     final month = date.month;
-    
+
     // Zodiac sign date ranges
-    if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return 'Widder ♈';
-    if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return 'Stier ♉';
-    if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return 'Zwillinge ♊';
-    if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return 'Krebs ♋';
+    if ((month == 3 && day >= 21) || (month == 4 && day <= 19))
+      return 'Widder ♈';
+    if ((month == 4 && day >= 20) || (month == 5 && day <= 20))
+      return 'Stier ♉';
+    if ((month == 5 && day >= 21) || (month == 6 && day <= 20))
+      return 'Zwillinge ♊';
+    if ((month == 6 && day >= 21) || (month == 7 && day <= 22))
+      return 'Krebs ♋';
     if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return 'Löwe ♌';
-    if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return 'Jungfrau ♍';
-    if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return 'Waage ♎';
-    if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) return 'Skorpion ♏';
-    if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return 'Schütze ♐';
-    if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) return 'Steinbock ♑';
-    if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return 'Wassermann ♒';
+    if ((month == 8 && day >= 23) || (month == 9 && day <= 22))
+      return 'Jungfrau ♍';
+    if ((month == 9 && day >= 23) || (month == 10 && day <= 22))
+      return 'Waage ♎';
+    if ((month == 10 && day >= 23) || (month == 11 && day <= 21))
+      return 'Skorpion ♏';
+    if ((month == 11 && day >= 22) || (month == 12 && day <= 21))
+      return 'Schütze ♐';
+    if ((month == 12 && day >= 22) || (month == 1 && day <= 19))
+      return 'Steinbock ♑';
+    if ((month == 1 && day >= 20) || (month == 2 && day <= 18))
+      return 'Wassermann ♒';
     return 'Fische ♓';
   }
 
@@ -5443,13 +5750,22 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
     // Simplified moon sign calculation based on day of year
     final dayOfYear = date.difference(DateTime(date.year, 1, 1)).inDays;
     final moonCycle = dayOfYear % 12;
-    
+
     final signs = [
-      'Widder ♈', 'Stier ♉', 'Zwillinge ♊', 'Krebs ♋',
-      'Löwe ♌', 'Jungfrau ♍', 'Waage ♎', 'Skorpion ♏',
-      'Schütze ♐', 'Steinbock ♑', 'Wassermann ♒', 'Fische ♓'
+      'Widder ♈',
+      'Stier ♉',
+      'Zwillinge ♊',
+      'Krebs ♋',
+      'Löwe ♌',
+      'Jungfrau ♍',
+      'Waage ♎',
+      'Skorpion ♏',
+      'Schütze ♐',
+      'Steinbock ♑',
+      'Wassermann ♒',
+      'Fische ♓'
     ];
-    
+
     return signs[moonCycle];
   }
 
@@ -5457,11 +5773,20 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
     // Simplified ascendant calculation based on hour
     final hour = time.hour;
     final signs = [
-      'Widder ♈', 'Stier ♉', 'Zwillinge ♊', 'Krebs ♋',
-      'Löwe ♌', 'Jungfrau ♍', 'Waage ♎', 'Skorpion ♏',
-      'Schütze ♐', 'Steinbock ♑', 'Wassermann ♒', 'Fische ♓'
+      'Widder ♈',
+      'Stier ♉',
+      'Zwillinge ♊',
+      'Krebs ♋',
+      'Löwe ♌',
+      'Jungfrau ♍',
+      'Waage ♎',
+      'Skorpion ♏',
+      'Schütze ♐',
+      'Steinbock ♑',
+      'Wassermann ♒',
+      'Fische ♓'
     ];
-    
+
     return signs[hour % 12];
   }
 
@@ -5469,37 +5794,48 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
     // Get current horoscope based on sign
     final horoscopes = {
       'Widder ♈': {
-        'today': 'Heute ist ein großartiger Tag für neue Beginne. Deine Energie ist hoch und du fühlst dich bereit für Herausforderungen.',
-        'love': 'In der Liebe zeigst du Initiative. Single? Geh raus und lerne neue Menschen kennen.',
-        'career': 'Beruflich stehen Türen offen. Nutze deine Führungsqualitäten.',
-        'health': 'Deine Energie ist hoch, aber vergiss nicht, Pausen einzulegen.',
+        'today':
+            'Heute ist ein großartiger Tag für neue Beginne. Deine Energie ist hoch und du fühlst dich bereit für Herausforderungen.',
+        'love':
+            'In der Liebe zeigst du Initiative. Single? Geh raus und lerne neue Menschen kennen.',
+        'career':
+            'Beruflich stehen Türen offen. Nutze deine Führungsqualitäten.',
+        'health':
+            'Deine Energie ist hoch, aber vergiss nicht, Pausen einzulegen.',
       },
       'Stier ♉': {
-        'today': 'Stabilität und Sicherheit stehen heute im Fokus. Genieße die kleinen Freuden des Lebens.',
+        'today':
+            'Stabilität und Sicherheit stehen heute im Fokus. Genieße die kleinen Freuden des Lebens.',
         'love': 'Beziehungen vertiefen sich. Zeige deine zuverlässige Seite.',
-        'career': 'Geduld wird belohnt. Bleibe konsequent an deinen Zielen dran.',
+        'career':
+            'Geduld wird belohnt. Bleibe konsequent an deinen Zielen dran.',
         'health': 'Verwöhne deinen Körper mit gesundem Essen und Bewegung.',
       },
       'Zwillinge ♊': {
-        'today': 'Kommunikation steht im Mittelpunkt. Du bist gesprächig und neugierig.',
+        'today':
+            'Kommunikation steht im Mittelpunkt. Du bist gesprächig und neugierig.',
         'love': 'Interessante Gespräche können zu tiefen Verbindungen führen.',
         'career': 'Deine Vielseitigkeit ist gefragt. Networking bringt Erfolg.',
         'health': 'Geistige Aktivität energetisiert dich. Lerne etwas Neues.',
       },
       'Krebs ♋': {
-        'today': 'Emotionen sind intensiv. Höre auf dein Herz und deine Intuition.',
+        'today':
+            'Emotionen sind intensiv. Höre auf dein Herz und deine Intuition.',
         'love': 'Tiefe emotionale Verbindungen entstehen. Familie ist wichtig.',
         'career': 'Deine Empathie macht dich zum idealen Teamplayer.',
         'health': 'Selbstfürsorge ist wichtig. Nimm dir Zeit für dich.',
       },
       'Löwe ♌': {
-        'today': 'Du strahlst und ziehst Aufmerksamkeit an. Zeige, was du drauf hast.',
+        'today':
+            'Du strahlst und ziehst Aufmerksamkeit an. Zeige, was du drauf hast.',
         'love': 'Deine Großzügigkeit macht dich attraktiv. Romance blüht.',
-        'career': 'Führungsqualitäten werden anerkannt. Zeit für große Projekte.',
+        'career':
+            'Führungsqualitäten werden anerkannt. Zeit für große Projekte.',
         'health': 'Deine Vitalität ist hoch. Genieße körperliche Aktivitäten.',
       },
       'Jungfrau ♍': {
-        'today': 'Details und Organisation sind deine Stärke. Perfektioniere deine Arbeit.',
+        'today':
+            'Details und Organisation sind deine Stärke. Perfektioniere deine Arbeit.',
         'love': 'Praktische Liebe zeigt sich in kleinen Gesten der Fürsorge.',
         'career': 'Deine Analysen sind gefragt. Präzision führt zum Erfolg.',
         'health': 'Achte auf deine Gesundheit. Routinen sind hilfreich.',
@@ -5523,13 +5859,15 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
         'health': 'Bewegung und Natur geben dir Energie.',
       },
       'Steinbock ♑': {
-        'today': 'Disziplin und Verantwortung zahlen sich aus. Bleibe fokussiert.',
+        'today':
+            'Disziplin und Verantwortung zahlen sich aus. Bleibe fokussiert.',
         'love': 'Langfristige Bindungen werden gestärkt. Treue zählt.',
         'career': 'Harte Arbeit wird anerkannt. Karriereziele rücken näher.',
         'health': 'Struktur hilft dir, gesund zu bleiben.',
       },
       'Wassermann ♒': {
-        'today': 'Innovation und Originalität zeichnen dich aus. Sei einzigartig.',
+        'today':
+            'Innovation und Originalität zeichnen dich aus. Sei einzigartig.',
         'love': 'Freundschaft ist die Basis für Liebe. Sei authentisch.',
         'career': 'Deine Ideen sind revolutionär. Teile sie mit anderen.',
         'health': 'Gemeinschaft und soziale Kontakte tun gut.',
@@ -5541,7 +5879,7 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
         'health': 'Spirituelle Praktiken nähren deine Seele.',
       },
     };
-    
+
     return horoscopes[sunSign] ?? horoscopes['Widder ♈']!;
   }
 
@@ -5632,7 +5970,7 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
         'color': 0xFF00897B,
       },
     };
-    
+
     return details[sign] ?? details['Widder ♈']!;
   }
 
@@ -5657,9 +5995,9 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
           children: [
             // Input Card
             _buildInputCard(),
-            
+
             const SizedBox(height: 20),
-            
+
             // Results
             if (_sunSign != null) ...[
               _buildSignCard('Sternzeichen (Sonne)', _sunSign!),
@@ -5706,7 +6044,7 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Date Picker
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -5734,9 +6072,9 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
                 }
               },
             ),
-            
+
             const Divider(color: Colors.white24),
-            
+
             // Time Picker
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -5770,7 +6108,7 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
 
   Widget _buildSignCard(String title, String sign) {
     final details = _getSignDetails(sign);
-    
+
     return Card(
       color: Colors.transparent,
       child: Container(
@@ -5808,7 +6146,6 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
             _buildDetailRow('Element', details['element']),
             const SizedBox(height: 8),
             _buildDetailRow('Planet', details['planet']),
@@ -5851,7 +6188,7 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
 
   Widget _buildHoroscopeCard() {
     if (_todayHoroscope == null) return const SizedBox();
-    
+
     return Card(
       color: Colors.transparent,
       child: Container(
@@ -5881,14 +6218,14 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            
             _buildHoroscopeSection('💫 Heute', _todayHoroscope!['today']!),
             const SizedBox(height: 16),
             _buildHoroscopeSection('❤️ Liebe', _todayHoroscope!['love']!),
             const SizedBox(height: 16),
             _buildHoroscopeSection('💼 Karriere', _todayHoroscope!['career']!),
             const SizedBox(height: 16),
-            _buildHoroscopeSection('🏥 Gesundheit', _todayHoroscope!['health']!),
+            _buildHoroscopeSection(
+                '🏥 Gesundheit', _todayHoroscope!['health']!),
           ],
         ),
       ),
@@ -5924,4 +6261,3 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
 // ═══════════════════════════════════════════════════════════════
 // 🎵 FREQUENZ-GENERATOR - HEALING FREQUENCIES
 // ═══════════════════════════════════════════════════════════════
-

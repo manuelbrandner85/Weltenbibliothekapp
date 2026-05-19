@@ -47,8 +47,7 @@ class AbgeordneteCard extends StatelessWidget {
                 Text(
                   '${politicians.length}',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 11),
+                      color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
                 ),
             ],
           ),
@@ -76,8 +75,7 @@ class AbgeordneteCard extends StatelessWidget {
           child: SizedBox(
             width: 28,
             height: 28,
-            child:
-                CircularProgressIndicator(color: _accent, strokeWidth: 2),
+            child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
           ),
         ),
       );
@@ -186,8 +184,7 @@ class AbgeordneteCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right,
-                  color: _accent, size: 18),
+              const Icon(Icons.chevron_right, color: _accent, size: 18),
             ],
           ),
         ),

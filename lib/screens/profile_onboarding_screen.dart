@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../services/storage_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../models/materie_profile.dart';
@@ -14,7 +14,7 @@ class ProfileOnboardingScreen extends StatefulWidget {
   final MaterieProfile? existingMaterieProfile; // Für Edit-Modus
   final EnergieProfile? existingEnergieProfile; // Für Edit-Modus
   final VoidCallback? onProfileCreated; // 🆕 Callback nach Profil-Erstellung
-  
+
   const ProfileOnboardingScreen({
     super.key,
     required this.worldType,
@@ -24,17 +24,18 @@ class ProfileOnboardingScreen extends StatefulWidget {
   });
 
   @override
-  State<ProfileOnboardingScreen> createState() => _ProfileOnboardingScreenState();
+  State<ProfileOnboardingScreen> createState() =>
+      _ProfileOnboardingScreenState();
 }
 
 class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   final _formKey = GlobalKey<FormState>();
   final _storage = StorageService();
-  
+
   // Materie-Felder
   final _materieUsernameController = TextEditingController();
   final _materieNameController = TextEditingController();
-  
+
   // Energie-Felder
   final _energieUsernameController = TextEditingController();
   final _firstNameController = TextEditingController();
@@ -42,10 +43,10 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   final _birthPlaceController = TextEditingController();
   final _birthTimeController = TextEditingController();
   DateTime? _selectedBirthDate;
-  
+
   bool _isLoading = false;
-  
-  bool get _isEditMode => _isMaterie 
+
+  bool get _isEditMode => _isMaterie
       ? widget.existingMaterieProfile != null
       : widget.existingEnergieProfile != null;
 
@@ -54,7 +55,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
     super.initState();
     _loadExistingProfile();
   }
-  
+
   /// Vorhandene Profil-Daten laden (Edit-Modus)
   void _loadExistingProfile() {
     if (_isMaterie && widget.existingMaterieProfile != null) {
@@ -66,7 +67,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       _lastNameController.text = widget.existingEnergieProfile!.lastName;
       _birthPlaceController.text = widget.existingEnergieProfile!.birthPlace;
       _selectedBirthDate = widget.existingEnergieProfile!.birthDate;
-      
+
       // Geburtszeit optional (birthTime ist String im Format HH:mm)
       if (widget.existingEnergieProfile!.birthTime != null) {
         _birthTimeController.text = widget.existingEnergieProfile!.birthTime!;
@@ -99,7 +100,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           _isMaterie ? 'Materie-Profil' : 'Energie-Profil',
-          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
         ),
       ),
       extendBodyBehindAppBar: true,
@@ -132,18 +134,18 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
                     const SizedBox(height: 40),
                     _buildHeader(),
                     const SizedBox(height: 40),
-                  _buildInfoCard(),
-                  const SizedBox(height: 30),
-                  _isMaterie ? _buildMaterieForm() : _buildEnergieForm(),
-                  const SizedBox(height: 30),
-                  _buildSubmitButton(),
-                  const SizedBox(height: 20),
-                ],
+                    _buildInfoCard(),
+                    const SizedBox(height: 30),
+                    _isMaterie ? _buildMaterieForm() : _buildEnergieForm(),
+                    const SizedBox(height: 30),
+                    _buildSubmitButton(),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -169,8 +171,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         const SizedBox(height: 8),
         Text(
           _isEditMode
-              ? (_isMaterie 
-                  ? 'Bearbeite dein Recherche-Profil' 
+              ? (_isMaterie
+                  ? 'Bearbeite dein Recherche-Profil'
                   : 'Bearbeite dein Spirituelles Profil')
               : (_isMaterie
                   ? 'Erstelle dein Recherche-Profil'
@@ -350,7 +352,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           },
         ),
         const SizedBox(height: 20),
-        _buildFieldLabel('Geburtszeit', 'Optional - für präzisere Berechnungen'),
+        _buildFieldLabel(
+            'Geburtszeit', 'Optional - für präzisere Berechnungen'),
         const SizedBox(height: 8),
         _buildTextField(
           controller: _birthTimeController,
@@ -441,12 +444,15 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       onTap: () async {
         // Berechne erlaubte Datumsgrenzen
         final now = DateTime.now();
-        final minDate = DateTime(now.year - 120, now.month, now.day); // Max 120 Jahre alt
-        final maxDate = DateTime(now.year - 13, now.month, now.day);  // Min 13 Jahre alt
-        
+        final minDate =
+            DateTime(now.year - 120, now.month, now.day); // Max 120 Jahre alt
+        final maxDate =
+            DateTime(now.year - 13, now.month, now.day); // Min 13 Jahre alt
+
         final date = await showDatePicker(
           context: context,
-          initialDate: _selectedBirthDate ?? DateTime(now.year - 30, now.month, now.day),
+          initialDate:
+              _selectedBirthDate ?? DateTime(now.year - 30, now.month, now.day),
           firstDate: minDate,
           lastDate: maxDate,
           helpText: 'Geburtsdatum auswählen',
@@ -467,13 +473,16 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
             );
           },
         );
-        
+
         if (date != null) {
           // Zusätzliche Validierung (doppelte Sicherheit)
-          final age = now.year - date.year - 
-                      ((now.month < date.month || 
-                        (now.month == date.month && now.day < date.day)) ? 1 : 0);
-          
+          final age = now.year -
+              date.year -
+              ((now.month < date.month ||
+                      (now.month == date.month && now.day < date.day))
+                  ? 1
+                  : 0);
+
           if (age < 13) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -485,7 +494,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
             }
             return;
           }
-          
+
           if (age > 120) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -497,7 +506,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
             }
             return;
           }
-          
+
           setState(() => _selectedBirthDate = date);
         }
       },
@@ -583,14 +592,18 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       );
       return;
     }
-    
+
     // Energie: Alters-Validierung (13-120 Jahre)
     if (!_isMaterie && _selectedBirthDate != null) {
       final now = DateTime.now();
-      final age = now.year - _selectedBirthDate!.year - 
-                  ((now.month < _selectedBirthDate!.month || 
-                    (now.month == _selectedBirthDate!.month && now.day < _selectedBirthDate!.day)) ? 1 : 0);
-      
+      final age = now.year -
+          _selectedBirthDate!.year -
+          ((now.month < _selectedBirthDate!.month ||
+                  (now.month == _selectedBirthDate!.month &&
+                      now.day < _selectedBirthDate!.day))
+              ? 1
+              : 0);
+
       if (age < 13) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -600,7 +613,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         );
         return;
       }
-      
+
       if (age > 120) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -623,17 +636,20 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
               ? null
               : _materieNameController.text.trim(),
         );
-        
+
         // 🔥 FIX: Backend-Sync durchführen um userId & role zu erhalten
         final syncService = ProfileSyncService();
-        final syncedProfile = await syncService.saveMaterieProfileAndGetUpdated(profile);
-        
+        final syncedProfile =
+            await syncService.saveMaterieProfileAndGetUpdated(profile);
+
         if (syncedProfile != null) {
           await _storage.saveMaterieProfile(syncedProfile);
           // 🔄 Für spätere Neuinstallation registrieren
-          await ProfileRestoreService().registerProfileForRestore('materie', syncedProfile.username);
+          await ProfileRestoreService()
+              .registerProfileForRestore('materie', syncedProfile.username);
           if (kDebugMode) {
-            debugPrint('✅ Materie-Profil gespeichert mit Backend-Sync: ${syncedProfile.username}');
+            debugPrint(
+                '✅ Materie-Profil gespeichert mit Backend-Sync: ${syncedProfile.username}');
             debugPrint('   User ID: ${syncedProfile.userId}');
             debugPrint('   Role: ${syncedProfile.role}');
           }
@@ -641,9 +657,11 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           // Fallback: Lokales Profil speichern
           await _storage.saveMaterieProfile(profile);
           // 🔄 Auch bei Offline-Save registrieren
-          await ProfileRestoreService().registerProfileForRestore('materie', profile.username);
+          await ProfileRestoreService()
+              .registerProfileForRestore('materie', profile.username);
           if (kDebugMode) {
-            debugPrint('⚠️ Materie-Profil lokal gespeichert (Backend-Sync fehlgeschlagen)');
+            debugPrint(
+                '⚠️ Materie-Profil lokal gespeichert (Backend-Sync fehlgeschlagen)');
           }
         }
       } else {
@@ -658,17 +676,20 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
               ? null
               : _birthTimeController.text.trim(),
         );
-        
+
         // 🔥 FIX: Backend-Sync durchführen um userId & role zu erhalten
         final syncService = ProfileSyncService();
-        final syncedProfile = await syncService.saveEnergieProfileAndGetUpdated(profile);
-        
+        final syncedProfile =
+            await syncService.saveEnergieProfileAndGetUpdated(profile);
+
         if (syncedProfile != null) {
           await _storage.saveEnergieProfile(syncedProfile);
           // 🔄 Für spätere Neuinstallation registrieren
-          await ProfileRestoreService().registerProfileForRestore('energie', syncedProfile.username);
+          await ProfileRestoreService()
+              .registerProfileForRestore('energie', syncedProfile.username);
           if (kDebugMode) {
-            debugPrint('✅ Energie-Profil gespeichert mit Backend-Sync: ${syncedProfile.fullName}');
+            debugPrint(
+                '✅ Energie-Profil gespeichert mit Backend-Sync: ${syncedProfile.fullName}');
             debugPrint('   User ID: ${syncedProfile.userId}');
             debugPrint('   Role: ${syncedProfile.role}');
           }
@@ -676,9 +697,11 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           // Fallback: Lokales Profil speichern
           await _storage.saveEnergieProfile(profile);
           // 🔄 Auch bei Offline-Save registrieren
-          await ProfileRestoreService().registerProfileForRestore('energie', profile.username);
+          await ProfileRestoreService()
+              .registerProfileForRestore('energie', profile.username);
           if (kDebugMode) {
-            debugPrint('⚠️ Energie-Profil lokal gespeichert (Backend-Sync fehlgeschlagen)');
+            debugPrint(
+                '⚠️ Energie-Profil lokal gespeichert (Backend-Sync fehlgeschlagen)');
           }
         }
       }
@@ -686,7 +709,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       if (mounted) {
         // Callback aufrufen BEVOR wir poppen
         widget.onProfileCreated?.call();
-        
+
         // Zurück zur Welt und neu laden
         Navigator.pop(context, true); // true = Profil wurde erstellt
       }
@@ -694,7 +717,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       if (kDebugMode) {
         debugPrint('❌ Fehler beim Speichern: $e');
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -10,7 +10,7 @@ import 'storage_service.dart';
 /// Cloudflare Sync Service für Profile & Chat-History
 class CloudflareSyncService {
   static const String baseUrl = ApiConfig.workerUrl;
-  
+
   final Map<String, String> _headers = {
     'Content-Type': 'application/json',
   };
@@ -18,17 +18,20 @@ class CloudflareSyncService {
   /// Materie-Profil in Cloud sichern
   Future<bool> backupMaterieProfile(MaterieProfile profile) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/sync/materie-profile'),
-        headers: _headers,
-        body: json.encode({
-          'profile': profile.toJson(),
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        }),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Backup Materie profile timeout'),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/sync/materie-profile'),
+            headers: _headers,
+            body: json.encode({
+              'profile': profile.toJson(),
+              'timestamp': DateTime.now().millisecondsSinceEpoch,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Backup Materie profile timeout'),
+          );
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
@@ -52,17 +55,20 @@ class CloudflareSyncService {
   /// Energie-Profil in Cloud sichern
   Future<bool> backupEnergieProfile(EnergieProfile profile) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/sync/energie-profile'),
-        headers: _headers,
-        body: json.encode({
-          'profile': profile.toJson(),
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        }),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Backup Energie profile timeout'),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/sync/energie-profile'),
+            headers: _headers,
+            body: json.encode({
+              'profile': profile.toJson(),
+              'timestamp': DateTime.now().millisecondsSinceEpoch,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Backup Energie profile timeout'),
+          );
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
@@ -86,13 +92,16 @@ class CloudflareSyncService {
   /// Materie-Profil aus Cloud wiederherstellen
   Future<MaterieProfile?> restoreMaterieProfile(String username) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/sync/materie-profile/$username'),
-        headers: _headers,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Restore Materie profile timeout'),
-      );
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/api/sync/materie-profile/$username'),
+            headers: _headers,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Restore Materie profile timeout'),
+          );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -117,13 +126,16 @@ class CloudflareSyncService {
   /// Energie-Profil aus Cloud wiederherstellen
   Future<EnergieProfile?> restoreEnergieProfile(String username) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/sync/energie-profile/$username'),
-        headers: _headers,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Restore Energie profile timeout'),
-      );
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/api/sync/energie-profile/$username'),
+            headers: _headers,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Restore Energie profile timeout'),
+          );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -152,19 +164,22 @@ class CloudflareSyncService {
     required List<Map<String, dynamic>> messages,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/sync/chat-history'),
-        headers: _headers,
-        body: json.encode({
-          'room_id': roomId,
-          'realm': realm,
-          'messages': messages,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        }),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Backup chat history timeout'),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/sync/chat-history'),
+            headers: _headers,
+            body: json.encode({
+              'room_id': roomId,
+              'realm': realm,
+              'messages': messages,
+              'timestamp': DateTime.now().millisecondsSinceEpoch,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Backup chat history timeout'),
+          );
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
@@ -191,13 +206,16 @@ class CloudflareSyncService {
     required String realm,
   }) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/sync/chat-history/$realm/$roomId'),
-        headers: _headers,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Restore chat history timeout'),
-      );
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/api/sync/chat-history/$realm/$roomId'),
+            headers: _headers,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Restore chat history timeout'),
+          );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -224,19 +242,19 @@ class CloudflareSyncService {
     try {
       final storage = StorageService();
       await storage.init();
-      
+
       // Materie-Profil sync
       final materieProfile = storage.getMaterieProfile();
       if (materieProfile != null && materieProfile.isValid) {
         await backupMaterieProfile(materieProfile);
       }
-      
+
       // Energie-Profil sync
       final energieProfile = storage.getEnergieProfile();
       if (energieProfile != null && energieProfile.isValid) {
         await backupEnergieProfile(energieProfile);
       }
-      
+
       if (kDebugMode) {
         debugPrint('✅ Auto-Sync abgeschlossen');
       }
@@ -252,13 +270,15 @@ class CloudflareSyncService {
   /// Prüfe Sync-Status
   Future<Map<String, dynamic>> getSyncStatus(String username) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/sync/status/$username'),
-        headers: _headers,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Get sync status timeout'),
-      );
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/api/sync/status/$username'),
+            headers: _headers,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('Get sync status timeout'),
+          );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);

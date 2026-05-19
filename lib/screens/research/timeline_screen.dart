@@ -139,8 +139,7 @@ class _ResearchTimelineScreenState extends State<ResearchTimelineScreen> {
             if (_loading)
               const SliverFillRemaining(
                 hasScrollBody: false,
-                child:
-                    Center(child: CircularProgressIndicator(color: _accent)),
+                child: Center(child: CircularProgressIndicator(color: _accent)),
               )
             else if (_events.isEmpty)
               SliverFillRemaining(
@@ -168,8 +167,8 @@ class _ResearchTimelineScreenState extends State<ResearchTimelineScreen> {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
                             child: Center(
-                                child: CircularProgressIndicator(
-                                    color: _accent)),
+                                child:
+                                    CircularProgressIndicator(color: _accent)),
                           );
                         }
                         return const SizedBox.shrink();
@@ -311,8 +310,7 @@ class _ResearchTimelineScreenState extends State<ResearchTimelineScreen> {
                       ),
                       const SizedBox(width: 8),
                       if (event.verified)
-                        Icon(Icons.verified,
-                            color: event.color, size: 14),
+                        Icon(Icons.verified, color: event.color, size: 14),
                       const Spacer(),
                       _categoryBadge(event.category, event.color),
                     ],
@@ -353,8 +351,7 @@ class _ResearchTimelineScreenState extends State<ResearchTimelineScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.link,
-                                    color: event.color, size: 12),
+                                Icon(Icons.link, color: event.color, size: 12),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Quelle',
@@ -544,8 +541,7 @@ class _SuggestEventFormState extends State<_SuggestEventForm> {
           InkWell(
             onTap: _pickDate,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               decoration: BoxDecoration(
                 color: _surface,
                 border: Border.all(color: _accent.withValues(alpha: 0.3)),
@@ -604,8 +600,7 @@ class _SuggestEventFormState extends State<_SuggestEventForm> {
                           color: Colors.white, strokeWidth: 2))
                   : const Text('Senden',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold)),
+                          color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ),
         ],

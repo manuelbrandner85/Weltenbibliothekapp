@@ -1,6 +1,6 @@
 /// ⚡ PERFORMANCE OPTIMIZATION HELPERS
 /// Utilities for app performance optimization
-/// 
+///
 /// Features:
 /// - Image compression
 /// - Lazy loading
@@ -25,7 +25,7 @@ class PerformanceHelper {
       });
     };
   }
-  
+
   /// Throttle function calls
   static Function throttle(
     Function function, {
@@ -33,7 +33,7 @@ class PerformanceHelper {
   }) {
     Timer? timer; // ignore: unused_local_variable
     bool canCall = true;
-    
+
     return () {
       if (canCall) {
         function();
@@ -44,7 +44,7 @@ class PerformanceHelper {
       }
     };
   }
-  
+
   /// Lazy load widget
   static Widget lazyLoad({
     required Widget Function() builder,
@@ -60,7 +60,7 @@ class PerformanceHelper {
       },
     );
   }
-  
+
   /// Measure widget build time
   static Future<Duration> measureBuildTime(
     Widget Function() builder,
@@ -68,14 +68,14 @@ class PerformanceHelper {
     final stopwatch = Stopwatch()..start();
     builder();
     stopwatch.stop();
-    
+
     if (kDebugMode) {
       debugPrint('⏱️ Build time: ${stopwatch.elapsedMilliseconds}ms');
     }
-    
+
     return stopwatch.elapsed;
   }
-  
+
   /// Optimize list rendering with RepaintBoundary
   static Widget optimizedListItem({
     required Widget child,
@@ -86,17 +86,17 @@ class PerformanceHelper {
       child: child,
     );
   }
-  
+
   /// Cache images aggressively
   static ImageProvider cachedImage(String url) {
     return NetworkImage(url);
   }
-  
+
   /// Preload images
   static Future<void> preloadImage(String url, BuildContext context) async {
     try {
       await precacheImage(NetworkImage(url), context);
-      
+
       if (kDebugMode) {
         debugPrint('🖼️ Image preloaded: $url');
       }
@@ -106,7 +106,7 @@ class PerformanceHelper {
       }
     }
   }
-  
+
   /// Batch preload images
   static Future<void> preloadImages(
     List<String> urls,
@@ -116,7 +116,7 @@ class PerformanceHelper {
       await preloadImage(url, context);
     }
   }
-  
+
   /// Memory usage monitoring
   static void logMemoryUsage() {
     if (kDebugMode) {
@@ -124,22 +124,22 @@ class PerformanceHelper {
       // In production, use flutter_performance_plugin or similar
     }
   }
-  
+
   /// Clear image cache
   static void clearImageCache() {
     imageCache.clear();
     imageCache.clearLiveImages();
-    
+
     if (kDebugMode) {
       debugPrint('🗑️ Image cache cleared');
     }
   }
-  
+
   /// Set max cache size
   static void setMaxCacheSize(int maxImages, int maxBytes) {
     imageCache.maximumSize = maxImages;
     imageCache.maximumSizeBytes = maxBytes;
-    
+
     if (kDebugMode) {
       debugPrint('💾 Max cache size set: $maxImages images, $maxBytes bytes');
     }
@@ -150,17 +150,17 @@ class PerformanceHelper {
 class Timer {
   final Duration duration;
   final VoidCallback callback;
-  
+
   Future<void>? _future; // ignore: unused_field
-  
+
   Timer(this.duration, this.callback) {
     _start();
   }
-  
+
   void _start() {
     _future = Future.delayed(duration, callback);
   }
-  
+
   void cancel() {
     _future = null;
   }

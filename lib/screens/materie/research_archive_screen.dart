@@ -46,9 +46,16 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
 
   Future<void> _search(String q) async {
     if (q.trim().isEmpty) return;
-    setState(() { _loading = true; _query = q; });
+    setState(() {
+      _loading = true;
+      _query = q;
+    });
     final results = await _api.fetchOpenAlexWorks(q, limit: 20);
-    if (mounted) setState(() { _works = results; _loading = false; });
+    if (mounted)
+      setState(() {
+        _works = results;
+        _loading = false;
+      });
   }
 
   void _onSearchChanged(String val) {
@@ -77,7 +84,10 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [const Color(0xFF1A0000), accent.withValues(alpha: 0.15)],
+                    colors: [
+                      const Color(0xFF1A0000),
+                      accent.withValues(alpha: 0.15)
+                    ],
                   ),
                 ),
                 child: const Center(
@@ -97,11 +107,14 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: 'Thema suchen…',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFFE53935)),
+                    hintStyle:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                    prefixIcon:
+                        const Icon(Icons.search, color: Color(0xFFE53935)),
                     suffixIcon: _searchCtrl.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.white54),
+                            icon:
+                                const Icon(Icons.clear, color: Colors.white54),
                             onPressed: () {
                               _searchCtrl.clear();
                               _search(_defaultQueries[_queryIndex]);
@@ -136,14 +149,17 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
                       _search(_defaultQueries[i]);
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
                         color: active
                             ? accent.withValues(alpha: 0.25)
                             : Colors.white.withValues(alpha: 0.07),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: active ? accent : Colors.white.withValues(alpha: 0.15),
+                          color: active
+                              ? accent
+                              : Colors.white.withValues(alpha: 0.15),
                         ),
                       ),
                       child: Text(
@@ -151,7 +167,8 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
                         style: TextStyle(
                           color: active ? accent : Colors.white70,
                           fontSize: 12,
-                          fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              active ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -170,7 +187,8 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
                     CircularProgressIndicator(color: accent),
                     const SizedBox(height: 16),
                     Text('Durchsuche 250M+ Studien…',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6))),
                   ],
                 ),
               ),
@@ -185,7 +203,8 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
                         size: 64, color: Colors.white.withValues(alpha: 0.2)),
                     const SizedBox(height: 16),
                     Text('Keine Ergebnisse für "$_query"',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.5))),
                   ],
                 ),
               ),
@@ -238,8 +257,10 @@ class _WorkCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            final url = work.openAccessUrl ?? (work.doi != null ? 'https://doi.org/${work.doi}' : null);
-            if (url != null) launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+            final url = work.openAccessUrl ??
+                (work.doi != null ? 'https://doi.org/${work.doi}' : null);
+            if (url != null)
+              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
           },
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -262,7 +283,8 @@ class _WorkCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: accent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
@@ -319,7 +341,9 @@ class _WorkCard extends StatelessWidget {
                     ],
                     if (work.openAccessUrl != null) ...[
                       Icon(Icons.lock_open_rounded,
-                          size: 13, color: const Color(0xFF4CAF50).withValues(alpha: 0.8)),
+                          size: 13,
+                          color:
+                              const Color(0xFF4CAF50).withValues(alpha: 0.8)),
                       const SizedBox(width: 3),
                       Text(
                         'Open Access',
@@ -331,20 +355,21 @@ class _WorkCard extends StatelessWidget {
                     ],
                     const Spacer(),
                     ...work.concepts.take(2).map((c) => Container(
-                      margin: const EdgeInsets.only(left: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        c,
-                        style: TextStyle(
-                          color: accent.withValues(alpha: 0.8),
-                          fontSize: 10,
-                        ),
-                      ),
-                    )),
+                          margin: const EdgeInsets.only(left: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            c,
+                            style: TextStyle(
+                              color: accent.withValues(alpha: 0.8),
+                              fontSize: 10,
+                            ),
+                          ),
+                        )),
                   ],
                 ),
               ],

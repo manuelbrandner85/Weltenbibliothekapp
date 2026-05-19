@@ -19,7 +19,8 @@ import 'package:http/http.dart' as http;
 ///10. NewsAPI.org (kostenlos)  – Aktuelle Nachrichten (100 req/day free tier)
 
 class FreeResearchToolsService {
-  static const String _userAgent = 'Weltenbibliothek/5.28 (manuelbrandner85@github)';
+  static const String _userAgent =
+      'Weltenbibliothek/5.28 (manuelbrandner85@github)';
   static const Duration _timeout = Duration(seconds: 15);
 
   // ─────────────────────────────────────────────
@@ -28,10 +29,12 @@ class FreeResearchToolsService {
   // ─────────────────────────────────────────────
 
   /// Wikipedia-Zusammenfassung für einen Begriff
-  Future<WikipediaSummary?> getWikipediaSummary(String query, {String lang = 'de'}) async {
+  Future<WikipediaSummary?> getWikipediaSummary(String query,
+      {String lang = 'de'}) async {
     try {
       final encoded = Uri.encodeComponent(query.replaceAll(' ', '_'));
-      final url = 'https://$lang.wikipedia.org/api/rest_v1/page/summary/$encoded';
+      final url =
+          'https://$lang.wikipedia.org/api/rest_v1/page/summary/$encoded';
       final response = await http.get(
         Uri.parse(url),
         headers: {'User-Agent': _userAgent},
@@ -49,7 +52,8 @@ class FreeResearchToolsService {
   }
 
   /// Wikipedia-Volltextsuche
-  Future<List<WikipediaSearchResult>> searchWikipedia(String query, {
+  Future<List<WikipediaSearchResult>> searchWikipedia(
+    String query, {
     String lang = 'de',
     int limit = 10,
   }) async {
@@ -59,7 +63,8 @@ class FreeResearchToolsService {
         '?action=search&format=json&srsearch=${Uri.encodeComponent(query)}'
         '&srlimit=$limit&srinfo=totalhits&srprop=snippet|titlesnippet',
       );
-      final response = await http.get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
+      final response = await http
+          .get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -84,7 +89,8 @@ class FreeResearchToolsService {
         'https://api.duckduckgo.com/?q=${Uri.encodeComponent(query)}'
         '&format=json&no_html=1&skip_disambig=1',
       );
-      final response = await http.get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
+      final response = await http
+          .get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -102,7 +108,8 @@ class FreeResearchToolsService {
   // 250M+ wissenschaftliche Arbeiten, kein Key nötig
   // ─────────────────────────────────────────────
 
-  Future<List<OpenAlexWork>> searchOpenAlex(String query, {int limit = 10}) async {
+  Future<List<OpenAlexWork>> searchOpenAlex(String query,
+      {int limit = 10}) async {
     try {
       final url = Uri.parse(
         'https://api.openalex.org/works'
@@ -136,9 +143,11 @@ class FreeResearchToolsService {
   // Kostenlos, kein Key, XML oder JSON
   // ─────────────────────────────────────────────
 
-  Future<List<ArxivPaper>> searchArxiv(String query, {
+  Future<List<ArxivPaper>> searchArxiv(
+    String query, {
     int maxResults = 10,
-    String sortBy = 'relevance', // 'relevance' | 'lastUpdatedDate' | 'submittedDate'
+    String sortBy =
+        'relevance', // 'relevance' | 'lastUpdatedDate' | 'submittedDate'
   }) async {
     try {
       final url = Uri.parse(
@@ -148,7 +157,8 @@ class FreeResearchToolsService {
         '&sortBy=$sortBy'
         '&sortOrder=descending',
       );
-      final response = await http.get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
+      final response = await http
+          .get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
 
       if (response.statusCode == 200) {
         return _parseArxivXml(response.body);
@@ -168,7 +178,9 @@ class FreeResearchToolsService {
 
     for (final match in matches) {
       final entry = match.group(1) ?? '';
-      final id = _extractXml(entry, 'id')?.replaceAll('http://arxiv.org/abs/', '') ?? '';
+      final id =
+          _extractXml(entry, 'id')?.replaceAll('http://arxiv.org/abs/', '') ??
+              '';
       final title = _extractXml(entry, 'title')?.trim() ?? '';
       final summary = _extractXml(entry, 'summary')?.trim() ?? '';
       final published = _extractXml(entry, 'published') ?? '';
@@ -180,7 +192,9 @@ class FreeResearchToolsService {
         papers.add(ArxivPaper(
           id: id,
           title: title,
-          summary: summary.length > 300 ? '${summary.substring(0, 300)}...' : summary,
+          summary: summary.length > 300
+              ? '${summary.substring(0, 300)}...'
+              : summary,
           authors: authors,
           published: published,
           url: 'https://arxiv.org/abs/$id',
@@ -192,7 +206,8 @@ class FreeResearchToolsService {
   }
 
   String? _extractXml(String xml, String tag) {
-    final match = RegExp('<$tag[^>]*>(.*?)</$tag>', dotAll: true).firstMatch(xml);
+    final match =
+        RegExp('<$tag[^>]*>(.*?)</$tag>', dotAll: true).firstMatch(xml);
     return match?.group(1)?.trim();
   }
 
@@ -205,7 +220,8 @@ class FreeResearchToolsService {
       final apiUrl = Uri.parse(
         'https://archive.org/wayback/available?url=${Uri.encodeComponent(url)}',
       );
-      final response = await http.get(apiUrl, headers: {'User-Agent': _userAgent}).timeout(_timeout);
+      final response = await http
+          .get(apiUrl, headers: {'User-Agent': _userAgent}).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -219,7 +235,8 @@ class FreeResearchToolsService {
   }
 
   /// Internet Archive Volltext-Suche
-  Future<List<ArchiveSearchResult>> searchInternetArchive(String query, {int rows = 10}) async {
+  Future<List<ArchiveSearchResult>> searchInternetArchive(String query,
+      {int rows = 10}) async {
     try {
       final url = Uri.parse(
         'https://archive.org/advancedsearch.php'
@@ -227,7 +244,8 @@ class FreeResearchToolsService {
         '&fl=identifier,title,description,date,mediatype'
         '&rows=$rows&page=1&output=json',
       );
-      final response = await http.get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
+      final response = await http
+          .get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -254,7 +272,8 @@ class FreeResearchToolsService {
         '?action=wbsearchentities&search=${Uri.encodeComponent(searchQuery)}'
         '&language=de&format=json&limit=1',
       );
-      final searchResp = await http.get(searchUrl, headers: {'User-Agent': _userAgent}).timeout(_timeout);
+      final searchResp = await http.get(searchUrl,
+          headers: {'User-Agent': _userAgent}).timeout(_timeout);
 
       if (searchResp.statusCode != 200) return null;
       final searchData = jsonDecode(searchResp.body);
@@ -269,7 +288,8 @@ class FreeResearchToolsService {
         '?action=wbgetentities&ids=$entityId&format=json'
         '&languages=de|en&props=labels|descriptions|sitelinks',
       );
-      final entityResp = await http.get(entityUrl, headers: {'User-Agent': _userAgent}).timeout(_timeout);
+      final entityResp = await http.get(entityUrl,
+          headers: {'User-Agent': _userAgent}).timeout(_timeout);
 
       if (entityResp.statusCode != 200) return null;
       final entityData = jsonDecode(entityResp.body);
@@ -288,7 +308,8 @@ class FreeResearchToolsService {
   // DOI-Metadaten und Literatursuche
   // ─────────────────────────────────────────────
 
-  Future<List<CrossRefWork>> searchCrossRef(String query, {int rows = 10}) async {
+  Future<List<CrossRefWork>> searchCrossRef(String query,
+      {int rows = 10}) async {
     try {
       final url = Uri.parse(
         'https://api.crossref.org/works'
@@ -321,7 +342,8 @@ class FreeResearchToolsService {
   // 8. OPEN LIBRARY API
   // ─────────────────────────────────────────────
 
-  Future<List<OpenLibraryBook>> searchOpenLibrary(String query, {int limit = 10}) async {
+  Future<List<OpenLibraryBook>> searchOpenLibrary(String query,
+      {int limit = 10}) async {
     try {
       final url = Uri.parse(
         'https://openlibrary.org/search.json'
@@ -329,7 +351,8 @@ class FreeResearchToolsService {
         '&limit=$limit'
         '&fields=key,title,author_name,first_publish_year,subject,language',
       );
-      final response = await http.get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
+      final response = await http
+          .get(url, headers: {'User-Agent': _userAgent}).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -380,7 +403,8 @@ class FreeResearchToolsService {
 
     return UniversalResearchResult(
       query: query,
-      wikipediaResults: resultMap['wikipedia'] as List<WikipediaSearchResult>? ?? [],
+      wikipediaResults:
+          resultMap['wikipedia'] as List<WikipediaSearchResult>? ?? [],
       duckDuckGo: resultMap['duckduckgo'] as DuckDuckGoResult?,
       wikidataEntity: resultMap['wikidata'] as WikidataEntity?,
       arxivPapers: resultMap['arxiv'] as List<ArxivPaper>? ?? [],
@@ -412,9 +436,11 @@ class WikipediaSummary {
     return WikipediaSummary(
       title: json['title'] as String? ?? '',
       extract: json['extract'] as String? ?? '',
-      thumbnail: (json['thumbnail'] as Map<String, dynamic>?)?['source'] as String?,
-      url: (json['content_urls'] as Map<String, dynamic>?)?['mobile']?['page'] as String?
-          ?? 'https://de.wikipedia.org/wiki/${json['title']}',
+      thumbnail:
+          (json['thumbnail'] as Map<String, dynamic>?)?['source'] as String?,
+      url: (json['content_urls'] as Map<String, dynamic>?)?['mobile']?['page']
+              as String? ??
+          'https://de.wikipedia.org/wiki/${json['title']}',
     );
   }
 }
@@ -542,8 +568,10 @@ class ArxivPaper {
     required this.pdfUrl,
   });
 
-  String get authorsDisplay => authors.take(3).join(', ') + (authors.length > 3 ? ' et al.' : '');
-  String get yearDisplay => published.length >= 4 ? published.substring(0, 4) : published;
+  String get authorsDisplay =>
+      authors.take(3).join(', ') + (authors.length > 3 ? ' et al.' : '');
+  String get yearDisplay =>
+      published.length >= 4 ? published.substring(0, 4) : published;
 }
 
 class WaybackResult {
@@ -554,7 +582,8 @@ class WaybackResult {
   const WaybackResult({required this.available, this.url, this.timestamp});
 
   factory WaybackResult.fromJson(Map<String, dynamic> json) {
-    final snapshot = json['archived_snapshots']?['closest'] as Map<String, dynamic>?;
+    final snapshot =
+        json['archived_snapshots']?['closest'] as Map<String, dynamic>?;
     return WaybackResult(
       available: snapshot?['available'] as bool? ?? false,
       url: snapshot?['url'] as String?,
@@ -618,8 +647,10 @@ class WikidataEntity {
       id: id,
       labelDe: (labels['de'] as Map<String, dynamic>?)?['value'] as String?,
       labelEn: (labels['en'] as Map<String, dynamic>?)?['value'] as String?,
-      descriptionDe: (descs['de'] as Map<String, dynamic>?)?['value'] as String?,
-      descriptionEn: (descs['en'] as Map<String, dynamic>?)?['value'] as String?,
+      descriptionDe:
+          (descs['de'] as Map<String, dynamic>?)?['value'] as String?,
+      descriptionEn:
+          (descs['en'] as Map<String, dynamic>?)?['value'] as String?,
       wikipediaUrl: dewiki != null
           ? 'https://de.wikipedia.org/wiki/${dewiki['title']}'
           : null,
@@ -659,11 +690,13 @@ class CrossRefWork {
       title: titleList.isNotEmpty ? titleList[0] as String : 'Unbekannt',
       authors: authorList
           .take(3)
-          .map((a) => '${(a as Map)['given'] ?? ''} ${a['family'] ?? ''}'.trim())
+          .map(
+              (a) => '${(a as Map)['given'] ?? ''} ${a['family'] ?? ''}'.trim())
           .toList(),
-      publishedYear: dateParts?.isNotEmpty == true && (dateParts![0] as List).isNotEmpty
-          ? (dateParts[0] as List)[0].toString()
-          : null,
+      publishedYear:
+          dateParts?.isNotEmpty == true && (dateParts![0] as List).isNotEmpty
+              ? (dateParts[0] as List)[0].toString()
+              : null,
       journal: journalList.isNotEmpty ? journalList[0] as String : null,
       abstract: json['abstract'] as String?,
     );
@@ -693,14 +726,18 @@ class OpenLibraryBook {
     return OpenLibraryBook(
       key: json['key'] as String? ?? '',
       title: json['title'] as String? ?? '',
-      authors: (json['author_name'] as List? ?? []).cast<String>().take(3).toList(),
+      authors:
+          (json['author_name'] as List? ?? []).cast<String>().take(3).toList(),
       firstPublishYear: json['first_publish_year'] as int?,
-      subjects: (json['subject'] as List? ?? []).cast<String>().take(5).toList(),
-      languages: (json['language'] as List? ?? []).cast<String>().take(3).toList(),
+      subjects:
+          (json['subject'] as List? ?? []).cast<String>().take(5).toList(),
+      languages:
+          (json['language'] as List? ?? []).cast<String>().take(3).toList(),
     );
   }
 
-  String get url => 'https://openlibrary.org${key.replaceAll('/works/', '/books/')}';
+  String get url =>
+      'https://openlibrary.org${key.replaceAll('/works/', '/books/')}';
 }
 
 class UniversalResearchResult {
@@ -731,6 +768,8 @@ class UniversalResearchResult {
       books.length +
       archiveResults.length;
 
-  bool get hasScientificContent => arxivPapers.isNotEmpty || openAlexWorks.isNotEmpty;
-  bool get hasWikiContent => wikipediaResults.isNotEmpty || duckDuckGo?.hasContent == true;
+  bool get hasScientificContent =>
+      arxivPapers.isNotEmpty || openAlexWorks.isNotEmpty;
+  bool get hasWikiContent =>
+      wikipediaResults.isNotEmpty || duckDuckGo?.hasContent == true;
 }

@@ -20,21 +20,23 @@ class MaterieCommunityTabModern extends StatefulWidget {
   const MaterieCommunityTabModern({super.key});
 
   @override
-  State<MaterieCommunityTabModern> createState() => _MaterieCommunityTabModernState();
+  State<MaterieCommunityTabModern> createState() =>
+      _MaterieCommunityTabModernState();
 }
 
 // ── Design palette (mirrors Materie Home Dashboard V7) ────────────────────
-const _mBg    = Color(0xFF04080F);
-const _mCard  = Color(0xFF0A1020);
+const _mBg = Color(0xFF04080F);
+const _mCard = Color(0xFF0A1020);
 const _mCardB = Color(0xFF0D1528);
-const _mBlue  = Color(0xFF2979FF);
+const _mBlue = Color(0xFF2979FF);
 const _mBlueL = Color(0xFF82B1FF);
-const _mCyan  = Color(0xFF00E5FF);
+const _mCyan = Color(0xFF00E5FF);
 const _mAmber = Color(0xFFFFAB00);
 const _mGreen = Color(0xFF00E676);
-const _mRed   = Color(0xFFFF1744);
+const _mRed = Color(0xFFFF1744);
 
-class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> with TickerProviderStateMixin {
+class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern>
+    with TickerProviderStateMixin {
   bool _isLoading = false;
   String _selectedView = 'alle';
 
@@ -45,7 +47,8 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
 
   // 💬 TAB CONTROLLER für Posts vs Chat
   late TabController _tabController;
-  final ChatNotificationService _notificationService = ChatNotificationService();
+  final ChatNotificationService _notificationService =
+      ChatNotificationService();
   final CommunityService _communityService = CommunityService();
 
   // ── Hero-header animations (mirror home dashboard) ────────────────────
@@ -64,13 +67,16 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() => setState(() {}));
-    _auraCtrl = AnimationController(vsync: this,
-        duration: const Duration(seconds: 3))..repeat(reverse: true);
-    _entryCtrl = AnimationController(vsync: this,
-        duration: const Duration(milliseconds: 900));
-    _orbitCtrl = AnimationController(vsync: this,
-        duration: const Duration(seconds: 12))..repeat();
-    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _auraCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..repeat(reverse: true);
+    _entryCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900));
+    _orbitCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12))
+          ..repeat();
+    _entryAnim =
+        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
     _entryCtrl.forward();
     _scrollCtrl.addListener(() {
       if (mounted) setState(() => _scrollOffset = _scrollCtrl.offset);
@@ -115,8 +121,8 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF12121E),
-        title: const Text('Beitrag melden',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Beitrag melden', style: TextStyle(color: Colors.white)),
         content: StatefulBuilder(
           builder: (ctx, setLocal) => Column(
             mainAxisSize: MainAxisSize.min,
@@ -133,8 +139,8 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                   onChanged: (v) =>
                       setLocal(() => selectedReason = v ?? 'other'),
                   title: Text(r.$2,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13)),
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 13)),
                   activeColor: Colors.orange,
                   dense: true,
                 ),
@@ -161,8 +167,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                   style: TextStyle(color: Colors.white60))),
           ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
               child: const Text('Senden')),
         ],
       ),
@@ -187,11 +192,10 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content:
-          Text(success ? '✅ Meldung gesendet' : '❌ Fehler beim Senden'),
+      content: Text(success ? '✅ Meldung gesendet' : '❌ Fehler beim Senden'),
     ));
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -205,14 +209,16 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   /// 🌐 Lade echte Community-Posts von Cloudflare API
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    
+
     try {
-      final posts = await _communityService.fetchPosts(worldType: WorldType.materie);
-      
+      final posts =
+          await _communityService.fetchPosts(worldType: WorldType.materie);
+
       if (kDebugMode) {
-        debugPrint('🔵 MATERIE Community (AKTIV): ${posts.length} posts loaded');
+        debugPrint(
+            '🔵 MATERIE Community (AKTIV): ${posts.length} posts loaded');
       }
-      
+
       setState(() {
         _posts = posts;
         // posts loaded successfully
@@ -222,14 +228,14 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       if (kDebugMode) {
         debugPrint('🔵 MATERIE Community (AKTIV): Error loading posts: $e');
       }
-      
+
       setState(() {
         _isLoading = false;
         // keep showing old posts if any
       });
     }
   }
-  
+
   // Feature 6 — Inline Bottom-Sheet
   Future<void> _showCreatePostDialogV2() async {
     final result = await showModalBottomSheet<bool>(
@@ -299,13 +305,15 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.article_rounded, size: 15,
+                        Icon(Icons.article_rounded,
+                            size: 15,
                             color: !isChat ? Colors.white : Colors.white38),
                         const SizedBox(width: 6),
                         Text('Beiträge',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: !isChat ? FontWeight.w700 : FontWeight.w400,
+                              fontWeight:
+                                  !isChat ? FontWeight.w700 : FontWeight.w400,
                               color: !isChat ? Colors.white : Colors.white38,
                               letterSpacing: 0.2,
                             )),
@@ -323,31 +331,42 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_rounded, size: 15,
+                        Icon(Icons.chat_bubble_rounded,
+                            size: 15,
                             color: isChat ? Colors.white : Colors.white38),
                         const SizedBox(width: 6),
                         Text('Live-Chat',
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: isChat ? FontWeight.w700 : FontWeight.w400,
+                              fontWeight:
+                                  isChat ? FontWeight.w700 : FontWeight.w400,
                               color: isChat ? Colors.white : Colors.white38,
                               letterSpacing: 0.2,
                             )),
                         ListenableBuilder(
                           listenable: _notificationService,
                           builder: (context, _) {
-                            final count = _notificationService.getTotalUnreadCount();
+                            final count =
+                                _notificationService.getTotalUnreadCount();
                             if (count == 0) return const SizedBox.shrink();
                             return Container(
                               margin: const EdgeInsets.only(left: 5),
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
                                 color: Colors.red,
                                 borderRadius: BorderRadius.circular(6),
-                                boxShadow: [BoxShadow(color: Colors.red.withValues(alpha: 0.5), blurRadius: 4)],
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: Colors.red.withValues(alpha: 0.5),
+                                      blurRadius: 4)
+                                ],
                               ),
                               child: Text(count > 9 ? '9+' : '$count',
-                                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold)),
                             );
                           },
                         ),
@@ -373,8 +392,11 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            isChat ? 'Echtzeit-Gespräche · Raum wählen' : '${_posts.length} Beiträge in der Community',
-            style: const TextStyle(fontSize: 11, color: Colors.white38, letterSpacing: 0.1),
+            isChat
+                ? 'Echtzeit-Gespräche · Raum wählen'
+                : '${_posts.length} Beiträge in der Community',
+            style: const TextStyle(
+                fontSize: 11, color: Colors.white38, letterSpacing: 0.1),
           ),
         ),
       ),
@@ -387,19 +409,19 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       backgroundColor: _mBg,
       body: Column(
         children: [
-        _buildPillSwitcher(),
-        _buildContextSubtitle(),
-        // TAB VIEW: Posts oder Chat
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildPostsView(),
-              const MaterieLiveChatScreen(),
-            ],
+          _buildPillSwitcher(),
+          _buildContextSubtitle(),
+          // TAB VIEW: Posts oder Chat
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildPostsView(),
+                const MaterieLiveChatScreen(),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
       ),
       // ✅ Post-Button NUR im Posts-Tab anzeigen (nicht im Chat)
       floatingActionButton: _tabController.index == 0
@@ -437,14 +459,24 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
           : null, // Kein Button im Chat-Tab
     );
   }
-  
+
   List<CommunityPost> get _filteredPosts {
     switch (_selectedView) {
-      case 'fotos': return _posts.where((p) => p.mediaUrl != null && p.mediaUrl!.isNotEmpty).toList();
-      case 'trending': return (List.from(_posts)..sort((a, b) => b.likes.compareTo(a.likes))).cast<CommunityPost>();
-      case 'diskussion': return (List.from(_posts)..sort((a, b) => b.comments.compareTo(a.comments))).cast<CommunityPost>();
-      case 'gespeichert': return _posts.where((p) => _bookmarkedIds.contains(p.id)).toList();
-      default: return _posts;
+      case 'fotos':
+        return _posts
+            .where((p) => p.mediaUrl != null && p.mediaUrl!.isNotEmpty)
+            .toList();
+      case 'trending':
+        return (List.from(_posts)..sort((a, b) => b.likes.compareTo(a.likes)))
+            .cast<CommunityPost>();
+      case 'diskussion':
+        return (List.from(_posts)
+              ..sort((a, b) => b.comments.compareTo(a.comments)))
+            .cast<CommunityPost>();
+      case 'gespeichert':
+        return _posts.where((p) => _bookmarkedIds.contains(p.id)).toList();
+      default:
+        return _posts;
     }
   }
 
@@ -452,7 +484,9 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   Widget _buildPostsView() {
     final filtered = _filteredPosts;
     final hero = _posts.isNotEmpty
-        ? (List<CommunityPost>.from(_posts)..sort((a, b) => b.likes.compareTo(a.likes))).first
+        ? (List<CommunityPost>.from(_posts)
+              ..sort((a, b) => b.likes.compareTo(a.likes)))
+            .first
         : null;
 
     return Container(
@@ -463,17 +497,22 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
         onRefresh: _loadData,
         child: CustomScrollView(
           controller: _scrollCtrl,
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             _buildHeroHeader(),
             SliverToBoxAdapter(child: _buildFilterRow()),
             SliverToBoxAdapter(child: _buildLiveCounter()),
             SliverToBoxAdapter(child: _buildStatBanner()),
-            if (_posts.isNotEmpty) SliverToBoxAdapter(child: _buildStoryBubbles()),
-            if (_selectedView == 'trending') SliverToBoxAdapter(child: _buildTrendingSection()),
-            if (hero != null && _selectedView == 'alle') SliverToBoxAdapter(child: _buildHeroPost(hero)),
+            if (_posts.isNotEmpty)
+              SliverToBoxAdapter(child: _buildStoryBubbles()),
+            if (_selectedView == 'trending')
+              SliverToBoxAdapter(child: _buildTrendingSection()),
+            if (hero != null && _selectedView == 'alle')
+              SliverToBoxAdapter(child: _buildHeroPost(hero)),
             SliverToBoxAdapter(
-              child: _buildSectionTitle('🔥 Neueste Beiträge', subtitle: 'Fakten & Recherchen'),
+              child: _buildSectionTitle('🔥 Neueste Beiträge',
+                  subtitle: 'Fakten & Recherchen'),
             ),
             if (_isLoading)
               SliverPadding(
@@ -504,8 +543,8 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                             width: 1.5,
                           ),
                         ),
-                        child: Icon(Icons.forum_rounded,
-                            color: _mRed, size: 40),
+                        child:
+                            Icon(Icons.forum_rounded, color: _mRed, size: 40),
                       ),
                       const SizedBox(height: 20),
                       const Text(
@@ -550,8 +589,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
             else
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
-                sliver: SliverToBoxAdapter(
-                    child: _buildMasonryGrid(filtered)),
+                sliver: SliverToBoxAdapter(child: _buildMasonryGrid(filtered)),
               ),
           ],
         ),
@@ -568,9 +606,19 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: Column(children: left.map((p) => KeyedSubtree(key: ValueKey(p.id), child: _buildPostCard(p))).toList())),
+        Expanded(
+            child: Column(
+                children: left
+                    .map((p) => KeyedSubtree(
+                        key: ValueKey(p.id), child: _buildPostCard(p)))
+                    .toList())),
         const SizedBox(width: 8),
-        Expanded(child: Column(children: right.map((p) => KeyedSubtree(key: ValueKey(p.id), child: _buildPostCard(p))).toList())),
+        Expanded(
+            child: Column(
+                children: right
+                    .map((p) => KeyedSubtree(
+                        key: ValueKey(p.id), child: _buildPostCard(p)))
+                    .toList())),
       ],
     );
   }
@@ -580,12 +628,21 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF1A237E).withValues(alpha: 0.6), _mBlue.withValues(alpha: 0.2)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1A237E).withValues(alpha: 0.6),
+            _mBlue.withValues(alpha: 0.2)
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _mBlue.withValues(alpha: 0.5), width: 1.5),
-        boxShadow: [BoxShadow(color: _mBlue.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 2)],
+        boxShadow: [
+          BoxShadow(
+              color: _mBlue.withValues(alpha: 0.2),
+              blurRadius: 20,
+              spreadRadius: 2)
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -600,27 +657,42 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
               Text('🏆', style: TextStyle(fontSize: 11)),
               SizedBox(width: 4),
-              Text('Top Post der Woche', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+              Text('Top Post der Woche',
+                  style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold)),
             ]),
           ),
           const SizedBox(height: 10),
           Row(children: [
-            Text(post.authorAvatar ?? '🌍', style: const TextStyle(fontSize: 18)),
+            Text(post.authorAvatar ?? '🌍',
+                style: const TextStyle(fontSize: 18)),
             const SizedBox(width: 8),
-            Text(post.authorUsername, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            Text(post.authorUsername,
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ]),
           const SizedBox(height: 8),
-          Text(post.content, maxLines: 3, overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, height: 1.4)),
+          Text(post.content,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 14,
+                  height: 1.4)),
           const SizedBox(height: 10),
           Row(children: [
             Icon(Icons.favorite, color: _mRed, size: 14),
             const SizedBox(width: 4),
-            Text('${post.likes}', style: TextStyle(color: _mRed, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text('${post.likes}',
+                style: TextStyle(
+                    color: _mRed, fontSize: 12, fontWeight: FontWeight.bold)),
             const SizedBox(width: 12),
             Icon(Icons.comment_outlined, color: _mCyan, size: 14),
             const SizedBox(width: 4),
-            Text('${post.comments}', style: TextStyle(color: _mCyan, fontSize: 12)),
+            Text('${post.comments}',
+                style: TextStyle(color: _mCyan, fontSize: 12)),
           ]),
         ]),
       ),
@@ -631,7 +703,8 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     final recentPosters = <String, String>{};
     final cutoff = DateTime.now().subtract(const Duration(hours: 24));
     for (final p in _posts) {
-      if (p.createdAt.isAfter(cutoff) && !recentPosters.containsKey(p.authorUsername)) {
+      if (p.createdAt.isAfter(cutoff) &&
+          !recentPosters.containsKey(p.authorUsername)) {
         recentPosters[p.authorUsername] = p.authorAvatar ?? '🌍';
       }
     }
@@ -650,25 +723,41 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
             padding: const EdgeInsets.only(right: 12),
             child: Column(children: [
               Container(
-                width: 52, height: 52,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const SweepGradient(colors: [Color(0xFF2979FF), Color(0xFFFF1744), Color(0xFF2979FF)]),
-                  boxShadow: [BoxShadow(color: _mBlue.withValues(alpha: 0.4), blurRadius: 8)],
+                  gradient: const SweepGradient(colors: [
+                    Color(0xFF2979FF),
+                    Color(0xFFFF1744),
+                    Color(0xFF2979FF)
+                  ]),
+                  boxShadow: [
+                    BoxShadow(
+                        color: _mBlue.withValues(alpha: 0.4), blurRadius: 8)
+                  ],
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(2.5),
                   child: Container(
-                    decoration: const BoxDecoration(shape: BoxShape.circle, color: _mCard),
-                    child: Center(child: Text(avatar, style: const TextStyle(fontSize: 22))),
+                    decoration: const BoxDecoration(
+                        shape: BoxShape.circle, color: _mCard),
+                    child: Center(
+                        child:
+                            Text(avatar, style: const TextStyle(fontSize: 22))),
                   ),
                 ),
               ),
               const SizedBox(height: 4),
               SizedBox(
                 width: 52,
-                child: Text(name, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 9)),
+                child: Text(name,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 9)),
               ),
             ]),
           );
@@ -678,24 +767,35 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   }
 
   Widget _buildLiveCounter() {
-    final recent = _posts.where((p) => DateTime.now().difference(p.createdAt).inHours < 24).length;
+    final recent = _posts
+        .where((p) => DateTime.now().difference(p.createdAt).inHours < 24)
+        .length;
     final isActive = recent > 0;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Row(children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 600),
-          width: 8, height: 8,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isActive ? _mGreen : Colors.grey,
-            boxShadow: isActive ? [BoxShadow(color: _mGreen.withValues(alpha: 0.6), blurRadius: 6)] : null,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                        color: _mGreen.withValues(alpha: 0.6), blurRadius: 6)
+                  ]
+                : null,
           ),
         ),
         const SizedBox(width: 6),
         Text(
-          isActive ? '$recent neue Beiträge heute · Community aktiv' : 'Sei der Erste heute!',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
+          isActive
+              ? '$recent neue Beiträge heute · Community aktiv'
+              : 'Sei der Erste heute!',
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
         ),
       ]),
     );
@@ -742,22 +842,27 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                       AnimatedBuilder(
                         animation: _auraCtrl,
                         builder: (_, __) => Container(
-                          width: 54, height: 54,
+                          width: 54,
+                          height: 54,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(
                               colors: [
-                                _mBlue.withValues(alpha: 0.45 + _auraCtrl.value * 0.2),
+                                _mBlue.withValues(
+                                    alpha: 0.45 + _auraCtrl.value * 0.2),
                                 const Color(0xFF1A237E).withValues(alpha: 0.1),
                               ],
                             ),
                             border: Border.all(
-                                color: _mBlueL.withValues(alpha: 0.4 + _auraCtrl.value * 0.3),
+                                color: _mBlueL.withValues(
+                                    alpha: 0.4 + _auraCtrl.value * 0.3),
                                 width: 1.5),
                             boxShadow: [
                               BoxShadow(
-                                color: _mBlue.withValues(alpha: 0.25 + _auraCtrl.value * 0.2),
-                                blurRadius: 18, spreadRadius: 3,
+                                color: _mBlue.withValues(
+                                    alpha: 0.25 + _auraCtrl.value * 0.2),
+                                blurRadius: 18,
+                                spreadRadius: 3,
                               ),
                             ],
                           ),
@@ -772,29 +877,42 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text('🔍 Materie Community',
-                                style: TextStyle(color: Colors.white54, fontSize: 12,
+                                style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w500)),
                             const SizedBox(height: 2),
                             const Text('Community',
-                                style: TextStyle(color: Colors.white, fontSize: 20,
-                                    fontWeight: FontWeight.bold, letterSpacing: -0.3),
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: -0.3),
                                 overflow: TextOverflow.ellipsis),
                             const SizedBox(height: 3),
                             Row(children: [
                               AnimatedBuilder(
                                 animation: _auraCtrl,
                                 builder: (_, __) => Container(
-                                  width: 6, height: 6,
+                                  width: 6,
+                                  height: 6,
                                   decoration: BoxDecoration(
-                                    color: _mBlue.withValues(alpha: 0.5 + _auraCtrl.value * 0.5),
+                                    color: _mBlue.withValues(
+                                        alpha: 0.5 + _auraCtrl.value * 0.5),
                                     shape: BoxShape.circle,
-                                    boxShadow: [BoxShadow(color: _mBlue.withValues(alpha: 0.5), blurRadius: 4)],
+                                    boxShadow: [
+                                      BoxShadow(
+                                          color: _mBlue.withValues(alpha: 0.5),
+                                          blurRadius: 4)
+                                    ],
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Text('${_posts.length} Beiträge · Welt der MATERIE',
-                                  style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                              Text(
+                                  '${_posts.length} Beiträge · Welt der MATERIE',
+                                  style: const TextStyle(
+                                      color: Colors.white38, fontSize: 11)),
                             ]),
                           ],
                         ),
@@ -844,28 +962,42 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       ),
       child: Row(
         children: [
-          _mStat(Icons.article_outlined, 'Beiträge', _posts.length, _mBlue, true),
-          _mStat(Icons.comment_outlined, 'Komm.', _posts.fold(0, (s, p) => s + p.comments), _mCyan, true),
-          _mStat(Icons.favorite_outline, 'Likes', _posts.fold(0, (s, p) => s + p.likes), _mAmber, true),
-          _mStat(Icons.share_outlined, 'Geteilt', _posts.fold(0, (s, p) => s + (p.shares ?? 0)), _mGreen, false),
+          _mStat(
+              Icons.article_outlined, 'Beiträge', _posts.length, _mBlue, true),
+          _mStat(Icons.comment_outlined, 'Komm.',
+              _posts.fold(0, (s, p) => s + p.comments), _mCyan, true),
+          _mStat(Icons.favorite_outline, 'Likes',
+              _posts.fold(0, (s, p) => s + p.likes), _mAmber, true),
+          _mStat(Icons.share_outlined, 'Geteilt',
+              _posts.fold(0, (s, p) => s + (p.shares ?? 0)), _mGreen, false),
         ],
       ),
     );
   }
 
-  Widget _mStat(IconData icon, String label, int value, Color color, bool border) {
+  Widget _mStat(
+      IconData icon, String label, int value, Color color, bool border) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 3),
         decoration: border
-            ? BoxDecoration(border: Border(right: BorderSide(color: Colors.white.withValues(alpha: 0.05))))
+            ? BoxDecoration(
+                border: Border(
+                    right: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.05))))
             : null,
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, color: color, size: 17),
           const SizedBox(height: 4),
-          Text('$value', style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold)),
+          Text('$value',
+              style: TextStyle(
+                  color: color, fontSize: 15, fontWeight: FontWeight.bold)),
           const SizedBox(height: 1),
-          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.w500)),
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w500)),
         ]),
       ),
     );
@@ -875,10 +1007,17 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
       child: Row(children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
           if (subtitle.isNotEmpty)
-            Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+            Text(subtitle,
+                style: const TextStyle(color: Colors.white38, fontSize: 11)),
         ])),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
@@ -887,7 +1026,9 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _mBlue.withValues(alpha: 0.28)),
           ),
-          child: const Text('Alle →', style: TextStyle(color: _mBlueL, fontSize: 10, fontWeight: FontWeight.w600)),
+          child: const Text('Alle →',
+              style: TextStyle(
+                  color: _mBlueL, fontSize: 10, fontWeight: FontWeight.w600)),
         ),
       ]),
     );
@@ -901,13 +1042,20 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
+            color: isSelected
+                ? color.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.1),
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: color.withValues(alpha: 0.18), blurRadius: 10)]
+              ? [
+                  BoxShadow(
+                      color: color.withValues(alpha: 0.18), blurRadius: 10)
+                ]
               : null,
         ),
         child: Text(label,
@@ -920,17 +1068,38 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   }
 
   Widget _buildTrendingSection() {
-    const topics = ['Geopolitik', 'WikiLeaks', 'CERN', 'Transparenz', 'Kaninchenbau', 'Geschichte', 'UFOs'];
-    final colors = [_mBlue, Colors.orange, _mCyan, _mAmber, _mGreen, _mBlueL, _mRed];
+    const topics = [
+      'Geopolitik',
+      'WikiLeaks',
+      'CERN',
+      'Transparenz',
+      'Kaninchenbau',
+      'Geschichte',
+      'UFOs'
+    ];
+    final colors = [
+      _mBlue,
+      Colors.orange,
+      _mCyan,
+      _mAmber,
+      _mGreen,
+      _mBlueL,
+      _mRed
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('🔥 Trending Topics',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-            const Text('Heiß diskutiert', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold)),
+            const Text('Heiß diskutiert',
+                style: TextStyle(color: Colors.white38, fontSize: 11)),
           ]),
         ),
         SizedBox(
@@ -944,14 +1113,16 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
               final c = colors[i % colors.length];
               return Container(
                 margin: const EdgeInsets.only(right: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                 decoration: BoxDecoration(
                   color: c.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: c.withValues(alpha: 0.3)),
                 ),
                 child: Text('#${topics[i]}',
-                    style: TextStyle(color: c, fontSize: 13, fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        color: c, fontSize: 13, fontWeight: FontWeight.w600)),
               );
             },
           ),
@@ -972,7 +1143,12 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
         color: _mCard,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: _mBlue.withValues(alpha: 0.13)),
-        boxShadow: [BoxShadow(color: _mBlue.withValues(alpha: 0.07), blurRadius: 14, offset: const Offset(0, 5))],
+        boxShadow: [
+          BoxShadow(
+              color: _mBlue.withValues(alpha: 0.07),
+              blurRadius: 14,
+              offset: const Offset(0, 5))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -983,33 +1159,53 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
             child: Row(
               children: [
                 Container(
-                  width: 44, height: 44,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      colors: [_mBlue.withValues(alpha: 0.45), const Color(0xFF1A237E).withValues(alpha: 0.2)],
+                      colors: [
+                        _mBlue.withValues(alpha: 0.45),
+                        const Color(0xFF1A237E).withValues(alpha: 0.2)
+                      ],
                     ),
                     shape: BoxShape.circle,
-                    border: Border.all(color: _mBlueL.withValues(alpha: 0.35), width: 1.5),
-                    boxShadow: [BoxShadow(color: _mBlue.withValues(alpha: 0.25), blurRadius: 8)],
+                    border: Border.all(
+                        color: _mBlueL.withValues(alpha: 0.35), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                          color: _mBlue.withValues(alpha: 0.25), blurRadius: 8)
+                    ],
                   ),
-                  child: Center(child: Text(post.authorAvatar ?? '🌍', style: const TextStyle(fontSize: 20))),
+                  child: Center(
+                      child: Text(post.authorAvatar ?? '🌍',
+                          style: const TextStyle(fontSize: 20))),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Flexible(
-                        child: Text(post.authorUsername,
-                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                      // Feature 3 — Badge
-                      if (badge != null) ...[const SizedBox(width: 6), badge],
-                    ]),
-                    const SizedBox(height: 2),
-                    Text(_formatTimestamp(post.createdAt),
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.38), fontSize: 11)),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Flexible(
+                            child: Text(post.authorUsername,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                          // Feature 3 — Badge
+                          if (badge != null) ...[
+                            const SizedBox(width: 6),
+                            badge
+                          ],
+                        ]),
+                        const SizedBox(height: 2),
+                        Text(_formatTimestamp(post.createdAt),
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.38),
+                                fontSize: 11)),
+                      ]),
                 ),
                 // Feature 9 — Bookmark
                 IconButton(
@@ -1018,29 +1214,41 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                       : 'Lesezeichen hinzufügen',
                   icon: Icon(
                     isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                    color: isBookmarked ? _mAmber : Colors.white38, size: 22,
+                    color: isBookmarked ? _mAmber : Colors.white38,
+                    size: 22,
                   ),
                   onPressed: () => _toggleBookmark(post.id),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                  constraints:
+                      const BoxConstraints(minWidth: 44, minHeight: 44),
                 ),
                 IconButton(
                   tooltip: 'Mehr Optionen',
-                  icon: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.45), size: 20),
+                  icon: Icon(Icons.more_vert,
+                      color: Colors.white.withValues(alpha: 0.45), size: 20),
                   onPressed: () => showModalBottomSheet(
                     context: context,
                     backgroundColor: _mCardB,
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+                    shape: const RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(22))),
                     builder: (ctx) => SafeArea(
                       child: Wrap(children: [
                         ListTile(
                           leading: const Icon(Icons.share, color: Colors.white),
-                          title: const Text('Teilen', style: TextStyle(color: Colors.white)),
-                          onTap: () { Navigator.pop(ctx); Share.share('${post.content}\n\nGeteilt aus der Weltenbibliothek'); },
+                          title: const Text('Teilen',
+                              style: TextStyle(color: Colors.white)),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            Share.share(
+                                '${post.content}\n\nGeteilt aus der Weltenbibliothek');
+                          },
                         ),
                         ListTile(
-                          leading: const Icon(Icons.flag_outlined, color: Colors.orange),
-                          title: const Text('Melden', style: TextStyle(color: Colors.white)),
+                          leading: const Icon(Icons.flag_outlined,
+                              color: Colors.orange),
+                          title: const Text('Melden',
+                              style: TextStyle(color: Colors.white)),
                           onTap: () async {
                             Navigator.pop(ctx);
                             await _reportPost(post);
@@ -1050,7 +1258,8 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                     ),
                   ),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
               ],
             ),
@@ -1058,35 +1267,52 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
           // ── Content ──────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-            child: Text(post.content, style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5)),
+            child: Text(post.content,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 14, height: 1.5)),
           ),
           // ── Tags ─────────────────────────────────────────────────────────
           if (post.tags.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-              child: Wrap(spacing: 6, runSpacing: 6, children: post.tags.map(_buildPostTag).toList()),
+              child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: post.tags.map(_buildPostTag).toList()),
             ),
           // Feature 2 — Reactions
           _buildReactionsRow(post.id, postReactions),
           // ── Actions ──────────────────────────────────────────────────────
           Container(
             margin: const EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(border: Border(top: BorderSide(color: _mBlue.withValues(alpha: 0.1)))),
+            decoration: BoxDecoration(
+                border: Border(
+                    top: BorderSide(color: _mBlue.withValues(alpha: 0.1)))),
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
             child: Row(children: [
-              ArticleLikeButton(articleId: post.id, initialLikes: post.likes, initiallyLiked: false),
+              ArticleLikeButton(
+                  articleId: post.id,
+                  initialLikes: post.likes,
+                  initiallyLiked: false),
               const SizedBox(width: 18),
-              ArticleCommentsWidget(articleId: post.id, initialCommentCount: post.comments),
+              ArticleCommentsWidget(
+                  articleId: post.id, initialCommentCount: post.comments),
               const Spacer(),
               InkWell(
-                onTap: () => Share.share('${post.content}\n\nGeteilt aus der Weltenbibliothek'),
+                onTap: () => Share.share(
+                    '${post.content}\n\nGeteilt aus der Weltenbibliothek'),
                 borderRadius: BorderRadius.circular(16),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.share_outlined, color: Colors.white.withValues(alpha: 0.55), size: 18),
+                    Icon(Icons.share_outlined,
+                        color: Colors.white.withValues(alpha: 0.55), size: 18),
                     const SizedBox(width: 4),
-                    Text('${post.shares ?? 0}', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
+                    Text('${post.shares ?? 0}',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 13)),
                   ]),
                 ),
               ),
@@ -1099,7 +1325,8 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
 
   Widget? _postBadge(CommunityPost post) {
     final age = DateTime.now().difference(post.createdAt);
-    if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty) return _badge('📸 Foto', _mCyan);
+    if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty)
+      return _badge('📸 Foto', _mCyan);
     if (age.inHours < 2) return _badge('✨ Neu', _mGreen);
     if (post.likes > 20) return _badge('🔥 Trending', Colors.orange);
     if (post.comments > 10) return _badge('💬 Diskussion', _mAmber);
@@ -1107,13 +1334,16 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   }
 
   Widget _badge(String label, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6),
-      border: Border.all(color: color.withValues(alpha: 0.4)),
-    ),
-    child: Text(label, style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.bold)),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 9, color: color, fontWeight: FontWeight.bold)),
+      );
 
   Widget _buildReactionsRow(String postId, Map<String, int> reactions) {
     const emojis = ['❤️', '🔥', '✨', '💭', '🙏'];
@@ -1129,17 +1359,25 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
               margin: const EdgeInsets.only(right: 6),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: count > 0 ? _mBlue.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.04),
+                color: count > 0
+                    ? _mBlue.withValues(alpha: 0.18)
+                    : Colors.white.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: count > 0 ? _mBlue.withValues(alpha: 0.45) : Colors.white.withValues(alpha: 0.08),
+                  color: count > 0
+                      ? _mBlue.withValues(alpha: 0.45)
+                      : Colors.white.withValues(alpha: 0.08),
                 ),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Text(e, style: const TextStyle(fontSize: 14)),
                 if (count > 0) ...[
                   const SizedBox(width: 3),
-                  Text('$count', style: TextStyle(color: _mBlueL, fontSize: 11, fontWeight: FontWeight.bold)),
+                  Text('$count',
+                      style: TextStyle(
+                          color: _mBlueL,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
                 ],
               ]),
             ),
@@ -1163,7 +1401,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     } else if (tag.contains('CERN') || tag.contains('Physik')) {
       tagColor = Colors.cyan;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -1185,10 +1423,10 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     );
   }
 
-    String _formatTimestamp(DateTime timestamp) {
+  String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 60) {
       return 'vor ${difference.inMinutes} Min';
     } else if (difference.inHours < 24) {
@@ -1199,8 +1437,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       return 'vor ${(difference.inDays / 7).floor()} Wo';
     }
   }
-
-  }
+}
 
 class _CommunityAuraPainter extends CustomPainter {
   final double orbitProgress;
@@ -1231,14 +1468,18 @@ class _CommunityAuraPainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
     final glow1 = Paint()
-      ..color = color.withValues(alpha: 0.06 + math.sin(auraProgress * math.pi) * 0.04)
+      ..color = color.withValues(
+          alpha: 0.06 + math.sin(auraProgress * math.pi) * 0.04)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 70);
-    canvas.drawCircle(Offset(size.width * 0.4, size.height * 0.3), size.width * 0.55, glow1);
+    canvas.drawCircle(
+        Offset(size.width * 0.4, size.height * 0.3), size.width * 0.55, glow1);
 
     final glow2 = Paint()
-      ..color = const Color(0xFF82B1FF).withValues(alpha: 0.03 + auraProgress * 0.02)
+      ..color =
+          const Color(0xFF82B1FF).withValues(alpha: 0.03 + auraProgress * 0.02)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 50);
-    canvas.drawCircle(Offset(size.width * 0.75, size.height * 0.6), size.width * 0.3, glow2);
+    canvas.drawCircle(
+        Offset(size.width * 0.75, size.height * 0.6), size.width * 0.3, glow2);
 
     final particlePaint = Paint()..color = color.withValues(alpha: 0.25);
     for (int p = 0; p < 3; p++) {
@@ -1246,7 +1487,8 @@ class _CommunityAuraPainter extends CustomPainter {
       final radius = 26.0 + p * 12;
       final cx = size.width * 0.75 + math.cos(angle) * radius;
       final cy = size.height * 0.3 + math.sin(angle) * radius * 0.6;
-      canvas.drawCircle(Offset(cx, cy - scrollOffset * 0.1), 2.0 + p * 0.5, particlePaint);
+      canvas.drawCircle(
+          Offset(cx, cy - scrollOffset * 0.1), 2.0 + p * 0.5, particlePaint);
     }
 
     final starPaint = Paint();
@@ -1257,7 +1499,8 @@ class _CommunityAuraPainter extends CustomPainter {
       starPaint.color = Colors.white.withValues(alpha: alpha);
       canvas.drawCircle(
         Offset(s.dx * size.width, s.dy * size.height - scrollOffset * 0.12),
-        1.0 + (i % 3) * 0.4, starPaint,
+        1.0 + (i % 3) * 0.4,
+        starPaint,
       );
     }
   }

@@ -21,7 +21,8 @@ class GlitchMatrixDetektorScreen extends StatefulWidget {
   const GlitchMatrixDetektorScreen({super.key});
 
   @override
-  State<GlitchMatrixDetektorScreen> createState() => _GlitchMatrixDetektorScreenState();
+  State<GlitchMatrixDetektorScreen> createState() =>
+      _GlitchMatrixDetektorScreenState();
 }
 
 class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
@@ -35,6 +36,7 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFFFF7043);
   static const Color _gold = Color(0xFFFFD700);
 
@@ -47,16 +49,38 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
 
   // 4 verständliche Déjà-vu-Typen statt 6 esoterischer Begriffe
   static final _types = [
-    _GlitchType('ort', 'Déjà-vu am Ort', '📍', 'Ein Ort fühlte sich an als wärst du schon mal hier gewesen', const Color(0xFF26C6DA)),
-    _GlitchType('gespraech', 'Déjà-vu im Gespräch', '💬', 'Du wusstest was als nächstes gesagt wird — bevor es kam', const Color(0xFF7C4DFF)),
-    _GlitchType('situation', 'Déjà-vu in der Situation', '🌀', 'Die ganze Szene fühlte sich exakt schon mal erlebt an', const Color(0xFFFF7043)),
-    _GlitchType('gedanke', 'Gedanken-Treffer', '🧠', 'An jemanden gedacht — und plötzlich passierte etwas zu der Person', const Color(0xFFE91E63)),
+    _GlitchType(
+        'ort',
+        'Déjà-vu am Ort',
+        '📍',
+        'Ein Ort fühlte sich an als wärst du schon mal hier gewesen',
+        const Color(0xFF26C6DA)),
+    _GlitchType(
+        'gespraech',
+        'Déjà-vu im Gespräch',
+        '💬',
+        'Du wusstest was als nächstes gesagt wird — bevor es kam',
+        const Color(0xFF7C4DFF)),
+    _GlitchType(
+        'situation',
+        'Déjà-vu in der Situation',
+        '🌀',
+        'Die ganze Szene fühlte sich exakt schon mal erlebt an',
+        const Color(0xFFFF7043)),
+    _GlitchType(
+        'gedanke',
+        'Gedanken-Treffer',
+        '🧠',
+        'An jemanden gedacht — und plötzlich passierte etwas zu der Person',
+        const Color(0xFFE91E63)),
   ];
 
   @override
   void initState() {
     super.initState();
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 14))..repeat();
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 14))
+          ..repeat();
     _selectedType = _types.first;
     _load();
   }
@@ -71,10 +95,16 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_kKey) ?? const [];
-    _glitches = raw.map((s) {
-      try { return _Glitch.fromJson(jsonDecode(s) as Map<String, dynamic>); }
-      catch (_) { return null; }
-    }).whereType<_Glitch>().toList()
+    _glitches = raw
+        .map((s) {
+          try {
+            return _Glitch.fromJson(jsonDecode(s) as Map<String, dynamic>);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<_Glitch>()
+        .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     if (mounted) setState(() => _loading = false);
   }
@@ -82,15 +112,17 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
   Future<void> _save() async {
     if (_selectedType == null || _noteCtrl.text.trim().isEmpty) return;
     HapticFeedback.mediumImpact();
-    _glitches.insert(0, _Glitch(
-      type: _selectedType!.code,
-      note: _noteCtrl.text.trim(),
-      intensity: _intensity,
-      createdAt: DateTime.now(),
-    ));
+    _glitches.insert(
+        0,
+        _Glitch(
+          type: _selectedType!.code,
+          note: _noteCtrl.text.trim(),
+          intensity: _intensity,
+          createdAt: DateTime.now(),
+        ));
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_kKey,
-        _glitches.take(200).map((g) => jsonEncode(g.toJson())).toList());
+    await prefs.setStringList(
+        _kKey, _glitches.take(200).map((g) => jsonEncode(g.toJson())).toList());
     _noteCtrl.clear();
     setState(() => _intensity = 3);
     if (!mounted) return;
@@ -119,25 +151,34 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
         titleWidget: ShaderMask(
-          shaderCallback: (r) => const LinearGradient(colors: [_gold, _primary]).createShader(r),
+          shaderCallback: (r) =>
+              const LinearGradient(colors: [_gold, _primary]).createShader(r),
           child: const Text('DÉJÀ-VU SAMMLUNG',
-              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 3)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
       ),
       body: Stack(fit: StackFit.expand, children: [
         Container(
           decoration: const BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment.center, radius: 1.5,
+              center: Alignment.center,
+              radius: 1.5,
               colors: [Color(0x55BF360C), Color(0x33260C08), _bgDark],
             ),
           ),
         ),
-        IgnorePointer(child: AnimatedBuilder(
+        IgnorePointer(
+            child: AnimatedBuilder(
           animation: _ambientCtrl,
-          builder: (_, __) => CustomPaint(painter: _GmOrbsPainter(_ambientCtrl.value), size: Size.infinite),
+          builder: (_, __) => CustomPaint(
+              painter: _GmOrbsPainter(_ambientCtrl.value), size: Size.infinite),
         )),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.neutral, count: 40)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.neutral, count: 40)),
         SafeArea(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 28),
@@ -152,7 +193,8 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
                     decoration: BoxDecoration(
                       color: _primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: _primary.withValues(alpha: 0.3)),
                     ),
                     child: Row(children: [
                       _stat('${_glitches.length}', 'Total', _gold),
@@ -174,87 +216,136 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08)),
                     ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('NEUES DÉJÀ-VU',
-                          style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Halte deine Aha-Momente fest. Was hat dich überrascht?',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11, height: 1.3),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(spacing: 6, runSpacing: 6, children: _types.map((t) {
-                        final sel = t.code == _selectedType?.code;
-                        return GestureDetector(
-                          onTap: () { HapticFeedback.selectionClick(); setState(() => _selectedType = t); },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: sel ? t.color.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: sel ? t.color : Colors.transparent),
-                            ),
-                            child: Text('${t.emoji} ${t.label}',
-                                style: TextStyle(color: sel ? Colors.white : Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('NEUES DÉJÀ-VU',
+                              style: TextStyle(
+                                  color: _gold,
+                                  fontSize: 10,
+                                  letterSpacing: 2,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Halte deine Aha-Momente fest. Was hat dich überrascht?',
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.55),
+                                fontSize: 11,
+                                height: 1.3),
                           ),
-                        );
-                      }).toList()),
-                      if (_selectedType != null) ...[
-                        const SizedBox(height: 6),
-                        Text(_selectedType!.description,
-                            style: const TextStyle(color: Colors.white54, fontSize: 11, fontStyle: FontStyle.italic)),
-                      ],
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _noteCtrl,
-                        maxLines: 3, maxLength: 500,
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
-                        decoration: InputDecoration(
-                          hintText: 'Was war anders? Wo? Wann?',
-                          hintStyle: const TextStyle(color: Colors.white38),
-                          filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.04),
-                          counterStyle: const TextStyle(color: Colors.white24, fontSize: 9),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(children: [
-                        const Text('Intensität:', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                        const SizedBox(width: 8),
-                        ...List.generate(5, (i) {
-                          final n = i + 1;
-                          return GestureDetector(
-                            onTap: () { HapticFeedback.lightImpact(); setState(() => _intensity = n); },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 2),
-                              child: Icon(
-                                n <= _intensity ? Icons.flash_on : Icons.flash_off,
-                                color: n <= _intensity ? _primary : Colors.white24,
-                                size: 20,
+                          const SizedBox(height: 8),
+                          Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: _types.map((t) {
+                                final sel = t.code == _selectedType?.code;
+                                return GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() => _selectedType = t);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: sel
+                                          ? t.color.withValues(alpha: 0.3)
+                                          : Colors.white
+                                              .withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                          color: sel
+                                              ? t.color
+                                              : Colors.transparent),
+                                    ),
+                                    child: Text('${t.emoji} ${t.label}',
+                                        style: TextStyle(
+                                            color: sel
+                                                ? Colors.white
+                                                : Colors.white70,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600)),
+                                  ),
+                                );
+                              }).toList()),
+                          if (_selectedType != null) ...[
+                            const SizedBox(height: 6),
+                            Text(_selectedType!.description,
+                                style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    fontStyle: FontStyle.italic)),
+                          ],
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _noteCtrl,
+                            maxLines: 3,
+                            maxLength: 500,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Was war anders? Wo? Wann?',
+                              hintStyle: const TextStyle(color: Colors.white38),
+                              filled: true,
+                              fillColor: Colors.white.withValues(alpha: 0.04),
+                              counterStyle: const TextStyle(
+                                  color: Colors.white24, fontSize: 9),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(children: [
+                            const Text('Intensität:',
+                                style: TextStyle(
+                                    color: Colors.white60, fontSize: 11)),
+                            const SizedBox(width: 8),
+                            ...List.generate(5, (i) {
+                              final n = i + 1;
+                              return GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  setState(() => _intensity = n);
+                                },
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 2),
+                                  child: Icon(
+                                    n <= _intensity
+                                        ? Icons.flash_on
+                                        : Icons.flash_off,
+                                    color: n <= _intensity
+                                        ? _primary
+                                        : Colors.white24,
+                                    size: 20,
+                                  ),
+                                ),
+                              );
+                            }),
+                          ]),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _save,
+                              icon: const Icon(Icons.add_rounded, size: 16),
+                              label: const Text('DÉJÀ-VU LOGGEN',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.5)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _primary,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                             ),
-                          );
-                        }),
-                      ]),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _save,
-                          icon: const Icon(Icons.add_rounded, size: 16),
-                          label: const Text('DÉJÀ-VU LOGGEN',
-                              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                        ),
-                      ),
-                    ]),
+                        ]),
                   ),
                 ),
               ),
@@ -263,14 +354,21 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
               if (_glitches.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(child: Text('Noch keine Glitches geloggt.', style: TextStyle(color: Colors.white54))),
+                  child: Center(
+                      child: Text('Noch keine Glitches geloggt.',
+                          style: TextStyle(color: Colors.white54))),
                 )
               else ...[
                 const Text('VERLAUF',
-                    style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                    style: TextStyle(
+                        color: _gold,
+                        fontSize: 10,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
                 ..._glitches.take(30).map((g) {
-                  final t = _types.firstWhere((x) => x.code == g.type, orElse: () => _types.first);
+                  final t = _types.firstWhere((x) => x.code == g.type,
+                      orElse: () => _types.first);
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.all(10),
@@ -279,25 +377,43 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: t.color.withValues(alpha: 0.3)),
                     ),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(t.emoji, style: const TextStyle(fontSize: 20)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Row(children: [
-                            Text(t.label, style: TextStyle(color: t.color, fontSize: 11, fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 6),
-                            ...List.generate(g.intensity, (_) =>
-                                Icon(Icons.flash_on, color: t.color.withValues(alpha: 0.5), size: 10)),
-                            const Spacer(),
-                            Text(_fmt(g.createdAt),
-                                style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                          ]),
-                          const SizedBox(height: 2),
-                          Text(g.note, style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4)),
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(t.emoji, style: const TextStyle(fontSize: 20)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [
+                                    Text(t.label,
+                                        style: TextStyle(
+                                            color: t.color,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold)),
+                                    const SizedBox(width: 6),
+                                    ...List.generate(
+                                        g.intensity,
+                                        (_) => Icon(Icons.flash_on,
+                                            color:
+                                                t.color.withValues(alpha: 0.5),
+                                            size: 10)),
+                                    const Spacer(),
+                                    Text(_fmt(g.createdAt),
+                                        style: const TextStyle(
+                                            color: Colors.white38,
+                                            fontSize: 10)),
+                                  ]),
+                                  const SizedBox(height: 2),
+                                  Text(g.note,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          height: 1.4)),
+                                ]),
+                          ),
                         ]),
-                      ),
-                    ]),
                   );
                 }),
               ],
@@ -312,8 +428,11 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
   Widget _stat(String value, String label, Color color) {
     return Expanded(
       child: Column(children: [
-        Text(value, style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 10)),
+        Text(value,
+            style: TextStyle(
+                color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: const TextStyle(color: Colors.white60, fontSize: 10)),
       ]),
     );
   }
@@ -334,7 +453,8 @@ class _GlitchType {
   final String emoji;
   final String description;
   final Color color;
-  const _GlitchType(this.code, this.label, this.emoji, this.description, this.color);
+  const _GlitchType(
+      this.code, this.label, this.emoji, this.description, this.color);
 }
 
 class _Glitch {
@@ -342,7 +462,11 @@ class _Glitch {
   final String note;
   final int intensity;
   final DateTime createdAt;
-  const _Glitch({required this.type, required this.note, required this.intensity, required this.createdAt});
+  const _Glitch(
+      {required this.type,
+      required this.note,
+      required this.intensity,
+      required this.createdAt});
 
   Map<String, dynamic> toJson() => {
         'type': type,
@@ -355,7 +479,8 @@ class _Glitch {
         type: j['type'] as String? ?? 'mandela',
         note: j['note'] as String? ?? '',
         intensity: (j['intensity'] as int?) ?? 3,
-        createdAt: DateTime.tryParse(j['created'] as String? ?? '') ?? DateTime.now(),
+        createdAt:
+            DateTime.tryParse(j['created'] as String? ?? '') ?? DateTime.now(),
       );
 }
 
@@ -365,12 +490,24 @@ class _GmOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        100, const Color(0xFFFF7043));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        90, const Color(0xFFFFD700));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        70, const Color(0xFFE91E63));
+    _draw(
+        canvas,
+        Offset(size.width * 0.2,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        100,
+        const Color(0xFFFF7043));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        90,
+        const Color(0xFFFFD700));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        70,
+        const Color(0xFFE91E63));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

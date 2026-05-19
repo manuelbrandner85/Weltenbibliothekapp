@@ -296,8 +296,7 @@ class _VirgilPanelState extends State<VirgilPanel>
             ),
           ),
           IconButton(
-            icon:
-                const Icon(Icons.close, color: Colors.white60, size: 24),
+            icon: const Icon(Icons.close, color: Colors.white60, size: 24),
             onPressed: _close,
           ),
         ],
@@ -361,8 +360,8 @@ class _VirgilPanelState extends State<VirgilPanel>
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 320),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
@@ -427,16 +426,14 @@ class _VirgilPanelState extends State<VirgilPanel>
                   height: 10,
                   child: CircularProgressIndicator(
                     strokeWidth: 1.6,
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.white70),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
                   ),
                 ),
               ),
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               color: Colors.white.withValues(alpha: 0.06),
@@ -500,8 +497,8 @@ class _VirgilPanelState extends State<VirgilPanel>
                     fontSize: 14,
                   ),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 ),
               ),
             ),
@@ -534,8 +531,7 @@ class _VirgilPanelState extends State<VirgilPanel>
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Icon(Icons.arrow_upward,
-                      color: Colors.white),
+                  : const Icon(Icons.arrow_upward, color: Colors.white),
               onPressed: _sending ? null : _send,
             ),
           ),

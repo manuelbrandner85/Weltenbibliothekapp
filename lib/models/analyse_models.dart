@@ -1,6 +1,6 @@
 /// Analyse-Models für STEP 2
 /// Tiefenanalyse: Machtstrukturen, Geldflüsse, Akteure, Narrative
-/// 
+///
 /// VERWENDUNG:
 /// Nach STEP 1 (Fakten sammeln) → STEP 2 (Analyse & Alternative Sichtweisen)
 library;
@@ -370,21 +370,21 @@ enum GlaubwuerdigkeitsLevel {
 class AnalyseErgebnis {
   final String suchbegriff;
   final DateTime analyseZeit;
-  
+
   // Machtstrukturen
   final List<Machtstruktur> machtstrukturen;
   final List<Akteur> alleAkteure;
   final List<Geldfluss> geldFluesse;
-  
+
   // Narrative & Medien
   final List<Narrativ> narrative;
-  
+
   // Historischer Kontext
   final List<HistorischerKontext> timeline;
-  
+
   // Alternative Sichtweisen
   final List<AlternativeSichtweise> alternativeSichtweisen;
-  
+
   // Meta-Kontext
   final String? metaKontext;
   final bool istKiGeneriert; // Fallback wenn Step 1 leer
@@ -438,7 +438,7 @@ class AnalyseConfig {
   final bool analysiereTimeline;
   final bool generiereAlternativeSichtweisen;
   final bool verwendeKiFallback; // Cloudflare AI wenn keine Daten
-  
+
   const AnalyseConfig({
     this.analysiereMachtstrukturen = true,
     this.analysiereGeldfluesse = true,

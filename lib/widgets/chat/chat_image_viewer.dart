@@ -14,7 +14,10 @@ class ChatImageViewer extends StatelessWidget {
     required this.accentColor,
   });
 
-  static void open(BuildContext context, {required String imageUrl, required String heroTag, required Color accentColor}) {
+  static void open(BuildContext context,
+      {required String imageUrl,
+      required String heroTag,
+      required Color accentColor}) {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
@@ -41,7 +44,8 @@ class ChatImageViewer extends StatelessWidget {
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Bild', style: TextStyle(color: Colors.white, fontSize: 16)),
+        title: const Text('Bild',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
       ),
       body: Hero(
         tag: heroTag,
@@ -51,7 +55,8 @@ class ChatImageViewer extends StatelessWidget {
           maxScale: PhotoViewComputedScale.covered * 4,
           backgroundDecoration: const BoxDecoration(color: Colors.black),
           loadingBuilder: (_, __) => Center(
-            child: CircularProgressIndicator(color: accentColor, strokeWidth: 2),
+            child:
+                CircularProgressIndicator(color: accentColor, strokeWidth: 2),
           ),
           errorBuilder: (_, __, ___) => const Center(
             child: Icon(Icons.broken_image, color: Colors.white54, size: 64),

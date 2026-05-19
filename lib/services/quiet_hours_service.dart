@@ -11,7 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class QuietHoursPrefs {
   final bool enabled;
   final int startHour; // 0-23
-  final int endHour;   // 0-23
+  final int endHour; // 0-23
   const QuietHoursPrefs({
     required this.enabled,
     required this.startHour,

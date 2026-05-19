@@ -472,8 +472,8 @@ class _NumerologyQuizScreenState extends State<NumerologyQuizScreen> {
         _statCard('Auszeichnung', medal, Icons.workspace_premium_rounded),
         if (allRight) ...[
           const SizedBox(height: 8),
-          _statCard('Perfekt!', '💎 Zahlen-Guru (Platin)',
-              Icons.diamond_rounded),
+          _statCard(
+              'Perfekt!', '💎 Zahlen-Guru (Platin)', Icons.diamond_rounded),
         ],
         const SizedBox(height: 28),
         SizedBox(
@@ -489,8 +489,7 @@ class _NumerologyQuizScreenState extends State<NumerologyQuizScreen> {
               ),
             ),
             child: const Text('Nochmal versuchen',
-                style:
-                    TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
           ),
         ),
         const SizedBox(height: 8),
@@ -498,8 +497,8 @@ class _NumerologyQuizScreenState extends State<NumerologyQuizScreen> {
           width: double.infinity,
           child: TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Zurueck',
-                style: TextStyle(color: Colors.white70)),
+            child:
+                const Text('Zurueck', style: TextStyle(color: Colors.white70)),
           ),
         ),
       ],
@@ -759,8 +758,7 @@ List<_QuizQuestion> _expertenFragen() {
   // Berechne korrekte Antworten programmatisch -- NIE hartkodieren!
   final lp1 = NumerologyEngine.calculateLifePath(DateTime(1985, 11, 29));
   final lp2 = NumerologyEngine.calculateLifePath(DateTime(1990, 7, 4));
-  final exp1 =
-      NumerologyEngine.calculateExpressionNumber('Anna', 'Schmidt');
+  final exp1 = NumerologyEngine.calculateExpressionNumber('Anna', 'Schmidt');
   final soul1 = NumerologyEngine.calculateSoulNumber('Maria', 'Mueller');
   final personalYear1 = NumerologyEngine.calculatePersonalYear(
       DateTime(1985, 5, 15), DateTime(2024, 1, 1));
@@ -771,8 +769,7 @@ List<_QuizQuestion> _expertenFragen() {
   final compat = NumerologyEngine.calculateTrueCompatibility(4, 5);
 
   String opt(int n) => n.toString();
-  List<String> optsAround(int correct,
-      [int low = 1, int high = 11]) {
+  List<String> optsAround(int correct, [int low = 1, int high = 11]) {
     final s = <int>{correct};
     int extra = correct - 1;
     while (s.length < 4 && extra >= low) {
@@ -789,8 +786,7 @@ List<_QuizQuestion> _expertenFragen() {
   }
 
   List<String> opts4(int correct) => optsAround(correct);
-  int idxOf(int correct, List<String> opts) =>
-      opts.indexOf(opt(correct));
+  int idxOf(int correct, List<String> opts) => opts.indexOf(opt(correct));
 
   final q1Opts = opts4(lp1);
   final q2Opts = opts4(lp2);
@@ -822,8 +818,7 @@ List<_QuizQuestion> _expertenFragen() {
       question: 'Wie lautet die Ausdruckszahl von "Anna Schmidt"?',
       options: q3Opts,
       correctIndex: idxOf(exp1, q3Opts),
-      explanation:
-          'Alle Buchstaben pythagoraeisch summiert und reduziert.',
+      explanation: 'Alle Buchstaben pythagoraeisch summiert und reduziert.',
     ),
     _QuizQuestion(
       question: 'Wie lautet die Seelenzahl von "Maria Mueller"?',
@@ -832,12 +827,10 @@ List<_QuizQuestion> _expertenFragen() {
       explanation: 'Nur Vokale summieren und reduzieren.',
     ),
     _QuizQuestion(
-      question:
-          'Persoenliches Jahr fuer Geburtstag 15.05.1985 im Jahr 2024?',
+      question: 'Persoenliches Jahr fuer Geburtstag 15.05.1985 im Jahr 2024?',
       options: q5Opts,
       correctIndex: idxOf(personalYear1, q5Opts),
-      explanation:
-          'Tag 1+5 + Monat 5 + Jahr 2024->8 = 6+5+8 = 19 -> 10 -> 1.',
+      explanation: 'Tag 1+5 + Monat 5 + Jahr 2024->8 = 6+5+8 = 19 -> 10 -> 1.',
     ),
     _QuizQuestion(
       question: 'Hauszahl von "Musterstrasse 42"?',
@@ -862,8 +855,7 @@ List<_QuizQuestion> _expertenFragen() {
       question: 'Pythagoraeische Ausdruckszahl von "David Cohen"?',
       options: q9Opts,
       correctIndex: idxOf(pyth1, q9Opts),
-      explanation:
-          'Pythagoraeisch unterscheidet sich vom chaldaeischen Wert.',
+      explanation: 'Pythagoraeisch unterscheidet sich vom chaldaeischen Wert.',
     ),
     _QuizQuestion(
       question: 'Kompatibilitaets-Score Lebenszahl 4 + Lebenszahl 5?',

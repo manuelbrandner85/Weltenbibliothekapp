@@ -54,13 +54,13 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
       return Scaffold(
         backgroundColor: const Color(0xFF04080F),
         appBar: WBGlassAppBar(
-        world: WBWorld.materie,
-        title: 'MATERIE',
-        leading: IconButton(
+          world: WBWorld.materie,
+          title: 'MATERIE',
+          leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.blue),
             onPressed: () => Navigator.of(context).pop(),
           ),
-      ),
+        ),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

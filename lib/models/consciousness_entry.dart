@@ -29,7 +29,8 @@ class ConsciousnessEntry {
         'tags': tags,
       };
 
-  factory ConsciousnessEntry.fromJson(Map<String, dynamic> json) => ConsciousnessEntry(
+  factory ConsciousnessEntry.fromJson(Map<String, dynamic> json) =>
+      ConsciousnessEntry(
         timestamp: DateTime.parse(json['timestamp'] as String),
         activityType: json['activityType'] as String,
         duration: json['duration'] as int,

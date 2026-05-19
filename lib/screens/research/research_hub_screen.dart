@@ -104,8 +104,7 @@ class ResearchHubScreen extends StatelessWidget {
         if (routeName != null) {
           Navigator.pushNamed(context, routeName);
         } else if (screen != null) {
-          Navigator.push(
-              context, MaterialPageRoute(builder: (_) => screen));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
         }
       },
       child: Container(

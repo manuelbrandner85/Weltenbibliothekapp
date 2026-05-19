@@ -45,7 +45,8 @@ class AdminResolver {
         }
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ [AdminResolver] Supabase-Lookup-Fehler: $e');
+      if (kDebugMode)
+        debugPrint('⚠️ [AdminResolver] Supabase-Lookup-Fehler: $e');
     }
 
     // 2. Mobile-App via InvisibleAuth → Username aus lokalem Profil
@@ -55,11 +56,14 @@ class AdminResolver {
           storage.getEnergieProfile()?.username;
       if (localUsername != null && localUsername.isNotEmpty) {
         if (AppRoles.isRootAdminByUsername(localUsername)) {
-          if (kDebugMode) debugPrint('🔐 [AdminResolver] Local profile: ROOT_ADMIN ($localUsername)');
+          if (kDebugMode)
+            debugPrint(
+                '🔐 [AdminResolver] Local profile: ROOT_ADMIN ($localUsername)');
           return AppRoles.rootAdmin;
         }
         if (AppRoles.isContentEditorByUsername(localUsername)) {
-          if (kDebugMode) debugPrint('🔐 [AdminResolver] Local profile: CONTENT_EDITOR');
+          if (kDebugMode)
+            debugPrint('🔐 [AdminResolver] Local profile: CONTENT_EDITOR');
           return AppRoles.contentEditor;
         }
       }
@@ -76,7 +80,8 @@ class AdminResolver {
         if (webName != null && webName.isNotEmpty) {
           if (AppRoles.isRootAdminByUsername(webName)) {
             if (kDebugMode) {
-              debugPrint('🔐 [AdminResolver] Web: ROOT_ADMIN ($webName, web_is_admin=$webIsAdmin)');
+              debugPrint(
+                  '🔐 [AdminResolver] Web: ROOT_ADMIN ($webName, web_is_admin=$webIsAdmin)');
             }
             return AppRoles.rootAdmin;
           }
@@ -85,7 +90,8 @@ class AdminResolver {
           }
         }
       } catch (e) {
-        if (kDebugMode) debugPrint('⚠️ [AdminResolver] Web-Fallback-Fehler: $e');
+        if (kDebugMode)
+          debugPrint('⚠️ [AdminResolver] Web-Fallback-Fehler: $e');
       }
     }
 

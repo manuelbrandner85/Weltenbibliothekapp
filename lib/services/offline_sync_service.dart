@@ -43,33 +43,33 @@ class OfflineAction {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type.toString(),
-    'data': data,
-    'timestamp': timestamp.toIso8601String(),
-    'retryCount': retryCount,
-    'userId': userId,
-  };
+        'id': id,
+        'type': type.toString(),
+        'data': data,
+        'timestamp': timestamp.toIso8601String(),
+        'retryCount': retryCount,
+        'userId': userId,
+      };
 
   factory OfflineAction.fromJson(Map<String, dynamic> json) => OfflineAction(
-    id: json['id'] as String,
-    type: OfflineActionType.values.firstWhere(
-      (e) => e.toString() == json['type'],
-    ),
-    data: json['data'] as Map<String, dynamic>,
-    timestamp: DateTime.parse(json['timestamp'] as String),
-    retryCount: json['retryCount'] as int? ?? 0,
-    userId: json['userId'] as String?,
-  );
+        id: json['id'] as String,
+        type: OfflineActionType.values.firstWhere(
+          (e) => e.toString() == json['type'],
+        ),
+        data: json['data'] as Map<String, dynamic>,
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        retryCount: json['retryCount'] as int? ?? 0,
+        userId: json['userId'] as String?,
+      );
 
   OfflineAction copyWith({int? retryCount}) => OfflineAction(
-    id: id,
-    type: type,
-    data: data,
-    timestamp: timestamp,
-    retryCount: retryCount ?? this.retryCount,
-    userId: userId,
-  );
+        id: id,
+        type: type,
+        data: data,
+        timestamp: timestamp,
+        retryCount: retryCount ?? this.retryCount,
+        userId: userId,
+      );
 }
 
 /// Network State
@@ -89,20 +89,20 @@ class OfflineSyncService extends ChangeNotifier {
   DateTime? _lastSyncTime;
   int _pendingActions = 0;
 
-  final _networkStateController    = StreamController<NetworkState>.broadcast();
-  final _syncStatusController      = StreamController<bool>.broadcast();
-  final _pendingActionsController  = StreamController<int>.broadcast();
+  final _networkStateController = StreamController<NetworkState>.broadcast();
+  final _syncStatusController = StreamController<bool>.broadcast();
+  final _pendingActionsController = StreamController<int>.broadcast();
 
-  Stream<NetworkState> get networkStateStream   => _networkStateController.stream;
-  Stream<bool>         get syncStatusStream      => _syncStatusController.stream;
-  Stream<int>          get pendingActionsStream  => _pendingActionsController.stream;
+  Stream<NetworkState> get networkStateStream => _networkStateController.stream;
+  Stream<bool> get syncStatusStream => _syncStatusController.stream;
+  Stream<int> get pendingActionsStream => _pendingActionsController.stream;
 
-  NetworkState get networkState      => _networkState;
-  bool         get isOnline          => _networkState == NetworkState.online;
-  bool         get isOffline         => _networkState == NetworkState.offline;
-  bool         get isSyncing         => _isSyncing;
-  DateTime?    get lastSyncTime      => _lastSyncTime;
-  int          get pendingActionsCount => _pendingActions;
+  NetworkState get networkState => _networkState;
+  bool get isOnline => _networkState == NetworkState.online;
+  bool get isOffline => _networkState == NetworkState.offline;
+  bool get isSyncing => _isSyncing;
+  DateTime? get lastSyncTime => _lastSyncTime;
+  int get pendingActionsCount => _pendingActions;
 
   static const int _maxRetryAttempts = 3;
   static const Duration _syncInterval = Duration(seconds: 30);
@@ -119,14 +119,14 @@ class OfflineSyncService extends ChangeNotifier {
       final db = await AppDatabase.instance.db;
 
       // Pending count
-      final countResult = await db.rawQuery(
-          'SELECT COUNT(*) as c FROM offline_actions');
+      final countResult =
+          await db.rawQuery('SELECT COUNT(*) as c FROM offline_actions');
       _pendingActions = (countResult.first['c'] as int?) ?? 0;
       _pendingActionsController.add(_pendingActions);
 
       // Last sync time
-      final kv = await db.query('kv_store',
-          where: 'key = ?', whereArgs: ['last_sync_time']);
+      final kv = await db
+          .query('kv_store', where: 'key = ?', whereArgs: ['last_sync_time']);
       if (kv.isNotEmpty) {
         _lastSyncTime = DateTime.tryParse(kv.first['value'] as String);
       }
@@ -151,8 +151,8 @@ class OfflineSyncService extends ChangeNotifier {
   Future<void> _setupNetworkMonitoring() async {
     try {
       _updateNetworkState(await _connectivity.checkConnectivity());
-      _connectivitySubscription = _connectivity.onConnectivityChanged
-          .listen(_updateNetworkState);
+      _connectivitySubscription =
+          _connectivity.onConnectivityChanged.listen(_updateNetworkState);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ OfflineSync: Network setup failed - $e');
     }
@@ -272,19 +272,23 @@ class OfflineSyncService extends ChangeNotifier {
         }
       }
 
-      final countResult = await db.rawQuery(
-          'SELECT COUNT(*) as c FROM offline_actions');
+      final countResult =
+          await db.rawQuery('SELECT COUNT(*) as c FROM offline_actions');
       _pendingActions = (countResult.first['c'] as int?) ?? 0;
       _pendingActionsController.add(_pendingActions);
 
       _lastSyncTime = DateTime.now();
-      await db.insert('kv_store', {
-        'key': 'last_sync_time',
-        'value': _lastSyncTime!.toIso8601String(),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert(
+          'kv_store',
+          {
+            'key': 'last_sync_time',
+            'value': _lastSyncTime!.toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace);
 
       if (kDebugMode) {
-        debugPrint('✅ OfflineSync: done – ok=$ok, fail=$fail, remaining=$_pendingActions');
+        debugPrint(
+            '✅ OfflineSync: done – ok=$ok, fail=$fail, remaining=$_pendingActions');
       }
     } catch (e, stack) {
       if (kDebugMode) debugPrint('❌ OfflineSync: sync error - $e');
@@ -315,7 +319,8 @@ class OfflineSyncService extends ChangeNotifier {
 
     if (queuedUserId == null || queuedUserId.isEmpty) {
       // Action hat keinen Owner — drop (broken queue entry).
-      if (kDebugMode) debugPrint('⚠️  OfflineSync: queued action ohne userId — drop');
+      if (kDebugMode)
+        debugPrint('⚠️  OfflineSync: queued action ohne userId — drop');
       return true;
     }
     if (currentUserId == null) {
@@ -359,7 +364,8 @@ class OfflineSyncService extends ChangeNotifier {
           await api.editChatMessage(
             messageId: action.data['messageId'] ?? '',
             roomId: action.data['roomId'] ?? '',
-            newMessage: action.data['newContent'] ?? action.data['newMessage'] ?? '',
+            newMessage:
+                action.data['newContent'] ?? action.data['newMessage'] ?? '',
             userId: action.data['userId'] ?? '',
             username: action.data['username'] ?? 'Anonym',
             realm: action.data['realm'],
@@ -378,7 +384,9 @@ class OfflineSyncService extends ChangeNotifier {
           if (kDebugMode) debugPrint('📁 OfflineSync: File upload skipped');
           return true;
         case OfflineActionType.updateProfile:
-          if (kDebugMode) debugPrint('👤 OfflineSync: Profile update – use ProfileSyncService');
+          if (kDebugMode)
+            debugPrint(
+                '👤 OfflineSync: Profile update – use ProfileSyncService');
           return true;
         case OfflineActionType.createPost:
           await api.sendChatMessage(
@@ -391,7 +399,8 @@ class OfflineSyncService extends ChangeNotifier {
           return true;
         case OfflineActionType.updatePost:
         case OfflineActionType.deletePost:
-          if (kDebugMode) debugPrint('📝 OfflineSync: Post op – no offline support');
+          if (kDebugMode)
+            debugPrint('📝 OfflineSync: Post op – no offline support');
           return true;
       }
     } catch (e) {
@@ -409,12 +418,15 @@ class OfflineSyncService extends ChangeNotifier {
       final db = await AppDatabase.instance.db;
       final messageId = message['id'] ?? message['message_id'];
       if (messageId == null) return;
-      await db.insert('chat_messages', {
-        'id': messageId.toString(),
-        'room_id': message['room_id']?.toString() ?? '',
-        'data': jsonEncode(message),
-        'created_at': DateTime.now().millisecondsSinceEpoch,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert(
+          'chat_messages',
+          {
+            'id': messageId.toString(),
+            'room_id': message['room_id']?.toString() ?? '',
+            'data': jsonEncode(message),
+            'created_at': DateTime.now().millisecondsSinceEpoch,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ OfflineSync: saveMessage failed - $e');
     }
@@ -438,7 +450,8 @@ class OfflineSyncService extends ChangeNotifier {
           .map((r) => jsonDecode(r['data'] as String) as Map<String, dynamic>)
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ OfflineSync: getOfflineMessages failed - $e');
+      if (kDebugMode)
+        debugPrint('❌ OfflineSync: getOfflineMessages failed - $e');
       return [];
     }
   }
@@ -523,9 +536,9 @@ class OfflineSyncService extends ChangeNotifier {
     try {
       await _pendingActionsController.close();
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ pendingActionsController close failed: $e');
+      if (kDebugMode)
+        debugPrint('⚠️ pendingActionsController close failed: $e');
     }
     super.dispose();
   }
 }
-

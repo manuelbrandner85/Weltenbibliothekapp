@@ -168,8 +168,8 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
                     color: Colors.white38, size: 13),
                 const SizedBox(width: 5),
                 Text(q,
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 12)),
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 12)),
               ]),
             ),
           );
@@ -183,17 +183,24 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
     final filters = <(String, String, int)>[
       ('all', 'Alle', r.totalCount),
       ('wiki', 'Wiki', r.wikidataEntries.length),
-      ('study', 'Studien',
-          r.openAlexWorks.length + r.pubmedStudies.length + r.crossRefWorks.length),
-      ('news', 'Nachrichten',
-          r.gdeltArticles.length + r.guardianArticles.length),
+      (
+        'study',
+        'Studien',
+        r.openAlexWorks.length + r.pubmedStudies.length + r.crossRefWorks.length
+      ),
+      (
+        'news',
+        'Nachrichten',
+        r.gdeltArticles.length + r.guardianArticles.length
+      ),
       ('archive', 'Archiv', r.timelineEvents.length),
     ];
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: Row(children: filters.map((f) {
+        child: Row(
+            children: filters.map((f) {
           final sel = _filter == f.$1;
           return Padding(
             padding: const EdgeInsets.only(right: 6),
@@ -217,8 +224,7 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
                     style: TextStyle(
                         color: sel ? Colors.white : Colors.white70,
                         fontSize: 12,
-                        fontWeight:
-                            sel ? FontWeight.w800 : FontWeight.w600)),
+                        fontWeight: sel ? FontWeight.w800 : FontWeight.w600)),
               ),
             ),
           );
@@ -265,8 +271,7 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
     final r = _result!;
     if (r.isEmpty) {
       return const Center(
-        child: Text('Keine Treffer.',
-            style: TextStyle(color: Colors.white60)),
+        child: Text('Keine Treffer.', style: TextStyle(color: Colors.white60)),
       );
     }
     return ListView(
@@ -279,8 +284,8 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
           ),
         ),
         if (_includesSection('wiki') && r.wikidataEntries.isNotEmpty)
-          _section('Wikidata', '🌐', r.wikidataEntries.length, 'wiki', () =>
-              r.wikidataEntries.map((e) => _wikidataTile(e)).toList()),
+          _section('Wikidata', '🌐', r.wikidataEntries.length, 'wiki',
+              () => r.wikidataEntries.map((e) => _wikidataTile(e)).toList()),
         if (_includesSection('archive') && r.timelineEvents.isNotEmpty)
           _section('Eigenes Archiv', '🗄️', r.timelineEvents.length, 'archive',
               () => r.timelineEvents.map(_timelineTile).toList()),
@@ -294,8 +299,8 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
           _section('CrossRef', '📖', r.crossRefWorks.length, 'crossref',
               () => r.crossRefWorks.map(_crossRefTile).toList()),
         if (_includesSection('news') && r.guardianArticles.isNotEmpty)
-          _section('The Guardian', '📰', r.guardianArticles.length,
-              'guardian', () => r.guardianArticles.map(_guardianTile).toList()),
+          _section('The Guardian', '📰', r.guardianArticles.length, 'guardian',
+              () => r.guardianArticles.map(_guardianTile).toList()),
         if (_includesSection('news') && r.gdeltArticles.isNotEmpty)
           _section('GDELT (Live)', '🌍', r.gdeltArticles.length, 'gdelt',
               () => r.gdeltArticles.map(_gdeltTile).toList()),
@@ -332,7 +337,8 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
                       fontSize: 14)),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: _accent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),

@@ -46,7 +46,8 @@ class _BiorhythmCompatibilityScreenState
       lastDate: DateTime.now(),
       builder: (ctx, child) => Theme(
         data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _accent, surface: _surface),
+          colorScheme:
+              const ColorScheme.dark(primary: _accent, surface: _surface),
         ),
         child: child!,
       ),
@@ -75,14 +76,16 @@ class _BiorhythmCompatibilityScreenState
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [_accent.withValues(alpha: 0.4), _surface]),
+              gradient: LinearGradient(
+                  colors: [_accent.withValues(alpha: 0.4), _surface]),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Text(
               'Heutige Biorhythmus-Kompatibilität zweier Personen. 3 Zyklen — '
               'physisch (23d), emotional (28d), intellektuell (33d). Klassisches '
               'Modell nach Fliess/Swoboda, mit kritischem Realismus betrachten.',
-              style: TextStyle(color: Colors.white, fontSize: 12.5, height: 1.5),
+              style:
+                  TextStyle(color: Colors.white, fontSize: 12.5, height: 1.5),
             ),
           ),
           const SizedBox(height: 18),
@@ -114,12 +117,17 @@ class _BiorhythmCompatibilityScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold)),
                 Text(
                   d == null
                       ? 'Geburtsdatum wählen'
                       : '${d.day}.${d.month}.${d.year}',
-                  style: TextStyle(color: d == null ? Colors.white54 : Colors.white, fontSize: 14),
+                  style: TextStyle(
+                      color: d == null ? Colors.white54 : Colors.white,
+                      fontSize: 14),
                 ),
               ],
             ),
@@ -149,31 +157,48 @@ class _BiorhythmCompatibilityScreenState
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: RadialGradient(colors: [_accent, _accent.withValues(alpha: 0.3)]),
+            gradient: RadialGradient(
+                colors: [_accent, _accent.withValues(alpha: 0.3)]),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: _accent.withValues(alpha: 0.4), blurRadius: 20)],
+            boxShadow: [
+              BoxShadow(color: _accent.withValues(alpha: 0.4), blurRadius: 20)
+            ],
           ),
           child: Column(
             children: [
               const Text('HEUTIGE KOMPATIBILITÄT',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2.5, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      letterSpacing: 2.5,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               Text('$overall%',
-                  style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.w900)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 56,
+                      fontWeight: FontWeight.w900)),
               Text(_overallLabel(overall),
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontStyle: FontStyle.italic)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic)),
             ],
           ),
         ),
         const SizedBox(height: 18),
-        _cycleCard('💪 Physisch', '23-Tage-Zyklus · Energie & Körper',
-            aPhys, bPhys, physScore),
+        _cycleCard('💪 Physisch', '23-Tage-Zyklus · Energie & Körper', aPhys,
+            bPhys, physScore),
         const SizedBox(height: 10),
         _cycleCard('❤️ Emotional', '28-Tage-Zyklus · Gefühl & Empfindsamkeit',
             aEmot, bEmot, emotScore),
         const SizedBox(height: 10),
-        _cycleCard('🧠 Intellektuell', '33-Tage-Zyklus · Denken & Konzentration',
-            aIntel, bIntel, intelScore),
+        _cycleCard(
+            '🧠 Intellektuell',
+            '33-Tage-Zyklus · Denken & Konzentration',
+            aIntel,
+            bIntel,
+            intelScore),
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(14),
@@ -211,14 +236,21 @@ class _BiorhythmCompatibilityScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
                     Text(desc,
-                        style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 11)),
                   ],
                 ),
               ),
               Text('$score%',
-                  style: TextStyle(color: _accent, fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: _accent,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 10),

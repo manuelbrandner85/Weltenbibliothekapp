@@ -18,10 +18,9 @@ class Machtanalyse {
 
   factory Machtanalyse.fromJson(Map<String, dynamic> json) {
     return Machtanalyse(
-      akteure: (json['akteure'] as List?)
-              ?.map((a) => Akteur.fromJson(a))
-              .toList() ??
-          [],
+      akteure:
+          (json['akteure'] as List?)?.map((a) => Akteur.fromJson(a)).toList() ??
+              [],
       mechanismen: (json['mechanismen'] as List?)
               ?.map((m) => Mechanismus.fromJson(m))
               .toList() ??
@@ -247,7 +246,8 @@ class MetaSystemanalyse {
 }
 
 class SystemEbene {
-  final String name; // "Medien", "Politik", "Wirtschaft", "Ideologie", "Technologie"
+  final String
+      name; // "Medien", "Politik", "Wirtschaft", "Ideologie", "Technologie"
   final List<String> mechanismen;
   final List<String> akteure;
   final String einfluss;

@@ -125,8 +125,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
       _ytLoading = true;
       _ytLocationName = name;
     });
-    final videos = await YoutubeService.instance
-        .searchVideos('$name deutsch', max: 5);
+    final videos =
+        await YoutubeService.instance.searchVideos('$name deutsch', max: 5);
     if (!mounted) return;
     setState(() {
       _ytVideos = videos;
@@ -151,35 +151,37 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
 
   List<MaterieLocationDetail> get _filteredLocations {
     var locations = allMaterieLocations;
-    
+
     // Filter nach Kategorie (Single-Select)
     if (_selectedCategory != null) {
-      locations = locations.where((loc) => loc.category == _selectedCategory).toList();
+      locations =
+          locations.where((loc) => loc.category == _selectedCategory).toList();
     }
-    
+
     // 📅 TIMELINE-FILTER (±50 Jahre Toleranz)
     if (_showTimeline && _selectedYear != 2024) {
       locations = locations.where((loc) {
         if (loc.date == null) return false; // Events ohne Datum ausblenden
-        
+
         final eventYear = loc.date!.year;
         final tolerance = 50.0;
-        
-        return (eventYear >= _selectedYear - tolerance) && 
-               (eventYear <= _selectedYear + tolerance);
+
+        return (eventYear >= _selectedYear - tolerance) &&
+            (eventYear <= _selectedYear + tolerance);
       }).toList();
     }
-    
+
     // Filter nach Such-Query
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      locations = locations.where((loc) =>
-        loc.name.toLowerCase().contains(query) ||
-        loc.description.toLowerCase().contains(query) ||
-        loc.keywords.any((k) => k.toLowerCase().contains(query))
-      ).toList();
+      locations = locations
+          .where((loc) =>
+              loc.name.toLowerCase().contains(query) ||
+              loc.description.toLowerCase().contains(query) ||
+              loc.keywords.any((k) => k.toLowerCase().contains(query)))
+          .toList();
     }
-    
+
     return locations;
   }
 
@@ -262,7 +264,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                   );
                 }).toList(),
                 clusterColor: const Color(0xFFE53935),
-                maxClusterRadius: MapClusteringHelper.calculateOptimalClusterRadius(
+                maxClusterRadius:
+                    MapClusteringHelper.calculateOptimalClusterRadius(
                   _filteredLocations.length,
                 ),
               ),
@@ -343,7 +346,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              const Color(0xFFE53935).withValues(alpha: alpha.clamp(0.0, 0.06)),
+                              const Color(0xFFE53935)
+                                  .withValues(alpha: alpha.clamp(0.0, 0.06)),
                               Colors.transparent,
                             ],
                           ),
@@ -372,29 +376,37 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                         right: 0,
                         child: Center(
                           child: GestureDetector(
-                            onTap: () => setState(() => _headerCollapsed = false),
+                            onTap: () =>
+                                setState(() => _headerCollapsed = false),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                filter:
+                                    ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                                 child: Container(
                                   height: 32,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withValues(alpha: 0.45),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                        color: const Color(0xFFE53935).withValues(alpha: 0.4)),
+                                        color: const Color(0xFFE53935)
+                                            .withValues(alpha: 0.4)),
                                   ),
                                   child: const Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.search, color: Colors.white70, size: 16),
+                                      Icon(Icons.search,
+                                          color: Colors.white70, size: 16),
                                       SizedBox(width: 6),
                                       Text('Suchen…',
-                                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                          style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12)),
                                       SizedBox(width: 6),
-                                      Icon(Icons.expand_more, color: Colors.white70, size: 16),
+                                      Icon(Icons.expand_more,
+                                          color: Colors.white70, size: 16),
                                     ],
                                   ),
                                 ),
@@ -408,16 +420,17 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
               },
             ),
           ),
-          
+
           // 📅 TIMELINE SLIDER
           if (_showTimeline)
             Positioned(
-              top: 145,  // 📍 Angepasst: unter SafeArea+Column (16 margin + 12 spacing + Filter ~60px + 12 spacing)
+              top:
+                  145, // 📍 Angepasst: unter SafeArea+Column (16 margin + 12 spacing + Filter ~60px + 12 spacing)
               left: 0,
               right: 0,
               child: _buildTimelineSlider(),
             ),
-          
+
           // Bottom Info Panel
           if (_selectedLocation != null)
             Positioned(
@@ -483,15 +496,18 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                 IconButton(
                   icon: Icon(
                     _showTimeline ? Icons.timeline : Icons.timeline_outlined,
-                    color: _showTimeline ? const Color(0xFF3B82F6) : Colors.white,
+                    color:
+                        _showTimeline ? const Color(0xFF3B82F6) : Colors.white,
                     size: 24,
                   ),
-                  onPressed: () => setState(() => _showTimeline = !_showTimeline),
+                  onPressed: () =>
+                      setState(() => _showTimeline = !_showTimeline),
                   tooltip: 'Zeitleiste',
                 ),
                 if (_searchQuery.isNotEmpty)
                   IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white, size: 20),
+                    icon:
+                        const Icon(Icons.clear, color: Colors.white, size: 20),
                     onPressed: () {
                       setState(() {
                         _searchQuery = '';
@@ -546,34 +562,37 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                   fontWeight: allSelected ? FontWeight.bold : FontWeight.normal,
                 ),
                 side: BorderSide(
-                  color: allSelected 
-                    ? Colors.white 
-                    : Colors.white.withValues(alpha: 0.3),
+                  color: allSelected
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.3),
                 ),
               ),
             );
           }
-          
+
           final category = LocationCategory.values[index - 1];
-          final count = allMaterieLocations.where((l) => l.category == category).length;
+          final count =
+              allMaterieLocations.where((l) => l.category == category).length;
           final isSelected = _selectedCategory == category;
           final color = _getCategoryColor(category);
           final icon = _getCategoryIcon(category);
-          
+
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              avatar: Icon(icon, size: 18, color: isSelected ? Colors.white : color),
+              avatar: Icon(icon,
+                  size: 18, color: isSelected ? Colors.white : color),
               label: Text('${_getCategoryName(category)} ($count)'),
               selected: isSelected,
               onSelected: (selected) {
                 setState(() {
-                  _selectedCategory = selected ? category : null; // Single-Select
+                  _selectedCategory =
+                      selected ? category : null; // Single-Select
                 });
               },
-              backgroundColor: isSelected 
-                ? color.withValues(alpha: 0.8)
-                : Colors.black.withValues(alpha: 0.6),
+              backgroundColor: isSelected
+                  ? color.withValues(alpha: 0.8)
+                  : Colors.black.withValues(alpha: 0.6),
               selectedColor: color.withValues(alpha: 0.8),
               labelStyle: TextStyle(
                 color: Colors.white,
@@ -601,116 +620,122 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.75),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border.all(
-          color: _getCategoryColor(location.category).withValues(alpha: 0.4),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _getCategoryColor(location.category).withValues(alpha: 0.15),
-            blurRadius: 30,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 8, bottom: 12),
-            width: 40,
-            height: 4,
+            constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          
-          // Header — Feature A: pulsing icon
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                _PulsingIconContainerMaterie(
-                  color: _getCategoryColor(location.category),
-                  icon: _getCategoryIcon(location.category),
+              color: Colors.black.withValues(alpha: 0.75),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(
+                color:
+                    _getCategoryColor(location.category).withValues(alpha: 0.4),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _getCategoryColor(location.category)
+                      .withValues(alpha: 0.15),
+                  blurRadius: 30,
+                  spreadRadius: 2,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                // Handle
+                Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+
+                // Header — Feature A: pulsing icon
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
                     children: [
-                      Text(
-                        location.name,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      _PulsingIconContainerMaterie(
+                        color: _getCategoryColor(location.category),
+                        icon: _getCategoryIcon(location.category),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              location.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _getCategoryName(location.category),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getCategoryColor(location.category),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getCategoryName(location.category),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _getCategoryColor(location.category),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () {
+                          setState(() {
+                            _selectedLocation = null;
+                            _detailTabIndex = 0;
+                          });
+                          if (_savedMapCenter != null &&
+                              _savedMapZoom != null) {
+                            _mapController.move(
+                                _savedMapCenter!, _savedMapZoom!);
+                          }
+                        },
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () {
-                    setState(() {
-                      _selectedLocation = null;
-                      _detailTabIndex = 0;
-                    });
-                    if (_savedMapCenter != null && _savedMapZoom != null) {
-                      _mapController.move(_savedMapCenter!, _savedMapZoom!);
-                    }
-                  },
+
+                const SizedBox(height: 16),
+
+                // TABS — immer alle 3 sichtbar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      _buildTab('Info', 0, Icons.info_outline),
+                      _buildTab('Bilder', 1, Icons.image_outlined),
+                      _buildTab('Videos', 2, Icons.play_circle_outline),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _buildTabContent(location),
+                  ),
                 ),
               ],
             ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // TABS — immer alle 3 sichtbar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                _buildTab('Info', 0, Icons.info_outline),
-                _buildTab('Bilder', 1, Icons.image_outlined),
-                _buildTab('Videos', 2, Icons.play_circle_outline),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildTabContent(location),
-            ),
-          ),
-        ],
-      ),
-      ), // Container
+          ), // Container
         ), // BackdropFilter
       ), // ClipRRect
     ); // SlideTransition
   }
-  
+
   Widget _buildTab(String label, int index, IconData icon) {
     final isSelected = _detailTabIndex == index;
     return Expanded(
@@ -731,14 +756,18 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             children: [
               Icon(
                 icon,
-                color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                color: isSelected
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.5),
                 size: 18,
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.5),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   fontSize: 14,
                 ),
@@ -749,7 +778,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
       ),
     );
   }
-  
+
   Widget _buildTabContent(MaterieLocationDetail location) {
     switch (_detailTabIndex) {
       case 0: // INFO
@@ -762,7 +791,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         return _buildInfoTab(location);
     }
   }
-  
+
   Widget _buildInfoTab(MaterieLocationDetail location) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -777,7 +806,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             fontWeight: FontWeight.w500,
           ),
         ),
-        
+
         // Detailed Info (inkl. offizielle & alternative Sichtweisen)
         if (location.detailedInfo.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -790,7 +819,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             ),
           ),
         ],
-        
+
         // Keywords
         if (location.keywords.isNotEmpty) ...[
           const SizedBox(height: 20),
@@ -821,7 +850,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             }).toList(),
           ),
         ],
-        
+
         // Sources
         if (location.sources.isNotEmpty) ...[
           const SizedBox(height: 20),
@@ -835,22 +864,22 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
           ),
           const SizedBox(height: 8),
           ...location.sources.map((source) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              '• $source',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.6),
-              ),
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '• $source',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                ),
+              )),
         ],
-        
+
         const SizedBox(height: 20),
       ],
     );
   }
-  
+
   Widget _buildImagesTab(MaterieLocationDetail location) {
     // genspark.ai URLs sind temporäre KI-Bild-Links die nicht öffentlich zugänglich sind → filtern
     final allImages = [
@@ -865,7 +894,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
           children: [
             CircularProgressIndicator(color: Colors.red, strokeWidth: 2),
             SizedBox(height: 12),
-            Text('Suche Bilder…', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            Text('Suche Bilder…',
+                style: TextStyle(color: Colors.white54, fontSize: 12)),
           ],
         ),
       );
@@ -942,7 +972,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                         onTap: () => Navigator.of(context).push(
                           PageRouteBuilder(
                             opaque: false,
-                            pageBuilder: (_, __, ___) => _FullscreenImageViewerMaterie(
+                            pageBuilder: (_, __, ___) =>
+                                _FullscreenImageViewerMaterie(
                               images: allImages,
                               initialIndex: index,
                               locationName: location.name,
@@ -964,16 +995,19 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                                   loadingBuilder: (ctx, child, progress) {
                                     if (progress == null) return child;
                                     return Container(
-                                      color: Colors.white.withValues(alpha: 0.05),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.05),
                                       child: const Center(
-                                        child: CircularProgressIndicator(
-                                            color: Colors.red, strokeWidth: 2)),
+                                          child: CircularProgressIndicator(
+                                              color: Colors.red,
+                                              strokeWidth: 2)),
                                     );
                                   },
                                   errorBuilder: (_, __, ___) => Container(
                                     color: Colors.white.withValues(alpha: 0.05),
                                     child: Icon(Icons.broken_image,
-                                        color: Colors.white.withValues(alpha: 0.3),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.3),
                                         size: 48),
                                   ),
                                 ),
@@ -990,7 +1024,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                 top: 8,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(12),
@@ -1029,7 +1064,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
       ],
     );
   }
-  
+
   /// Erstellt YoutubeVideo-Objekte aus den hardcodierten IDs eines Ortes.
   List<YoutubeVideo> _hardcodedVideos(MaterieLocationDetail location) {
     return location.videoUrls
@@ -1049,7 +1084,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
     final staticVideos = _hardcodedVideos(location);
     final allVideos = [
       ...staticVideos,
-      ...(_ytVideos ?? []).where((v) => staticVideos.every((s) => s.videoId != v.videoId)),
+      ...(_ytVideos ?? [])
+          .where((v) => staticVideos.every((s) => s.videoId != v.videoId)),
     ];
 
     // Inline-Player wenn ein Video läuft
@@ -1091,7 +1127,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             const SizedBox(height: 8),
             Text(
               'Keine Videos verfügbar',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
             ),
           ],
         ),
@@ -1113,9 +1150,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isPlaying
-                  ? Colors.red
-                  : Colors.red.withValues(alpha: 0.3),
+              color: isPlaying ? Colors.red : Colors.red.withValues(alpha: 0.3),
               width: isPlaying ? 2 : 1,
             ),
             color: Colors.black.withValues(alpha: 0.3),
@@ -1155,7 +1190,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
               // Info
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1186,14 +1222,20 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                           if (video.isSubtitled)
                             Container(
                               margin: const EdgeInsets.only(left: 4),
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.blue.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.blue.withValues(alpha: 0.4), width: 0.8),
+                                border: Border.all(
+                                    color: Colors.blue.withValues(alpha: 0.4),
+                                    width: 0.8),
                               ),
                               child: const Text('🇩🇪 UT',
-                                  style: TextStyle(color: Colors.lightBlueAccent, fontSize: 8, fontWeight: FontWeight.w700)),
+                                  style: TextStyle(
+                                      color: Colors.lightBlueAccent,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w700)),
                             ),
                         ],
                       ),
@@ -1234,7 +1276,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         return const Color(0xFFFF9800); // Orange
       case LocationCategory.biotech:
         return const Color(0xFF8BC34A); // Light Green
-      
+
       // NEUE KATEGORIEN
       case LocationCategory.ancientCivilizations:
         return const Color(0xFF9E9D24); // Olive
@@ -1293,7 +1335,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         return Icons.visibility;
       case LocationCategory.biotech:
         return Icons.biotech;
-      
+
       // NEUE KATEGORIEN
       case LocationCategory.ancientCivilizations:
         return Icons.account_balance;
@@ -1363,7 +1405,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             children: [
               Row(
                 children: [
-                  const Icon(Icons.timeline, color: Color(0xFF2979FF), size: 24),
+                  const Icon(Icons.timeline,
+                      color: Color(0xFF2979FF), size: 24),
                   const SizedBox(width: 12),
                   Text(
                     'Zeitleiste',
@@ -1381,9 +1424,9 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // JAHR-ANZEIGE
           Center(
             child: Container(
@@ -1394,9 +1437,9 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                 border: Border.all(color: const Color(0xFF2979FF), width: 2),
               ),
               child: Text(
-                _selectedYear >= 0 
-                  ? '${_selectedYear.toInt()} n.Chr.'
-                  : '${(-_selectedYear).toInt()} v.Chr.',
+                _selectedYear >= 0
+                    ? '${_selectedYear.toInt()} n.Chr.'
+                    : '${(-_selectedYear).toInt()} v.Chr.',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -1406,9 +1449,9 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
               ),
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // SLIDER
           SliderTheme(
             data: SliderThemeData(
@@ -1421,30 +1464,33 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             ),
             child: Slider(
               value: _selectedYear,
-              min: -8000,  // 8000 v.Chr.
-              max: 2024,   // 2024 n.Chr.
+              min: -8000, // 8000 v.Chr.
+              max: 2024, // 2024 n.Chr.
               divisions: 201, // 50-Jahres-Schritte
-              label: _selectedYear >= 0 
-                ? '${_selectedYear.toInt()} n.Chr.'
-                : '${(-_selectedYear).toInt()} v.Chr.',
+              label: _selectedYear >= 0
+                  ? '${_selectedYear.toInt()} n.Chr.'
+                  : '${(-_selectedYear).toInt()} v.Chr.',
               onChanged: (value) {
                 setState(() => _selectedYear = value);
               },
             ),
           ),
-          
+
           // ZEIT-MARKER
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('8000 v.Chr.', style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
-              Text('0', style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
-              Text('2024 n.Chr.', style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+              Text('8000 v.Chr.',
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+              Text('0',
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
+              Text('2024 n.Chr.',
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 11)),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // SCHNELL-FILTER
           Wrap(
             spacing: 8,
@@ -1460,7 +1506,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
       ),
     );
   }
-  
+
   Widget _buildQuickYearFilter(String label, double year) {
     return InkWell(
       onTap: () => setState(() => _selectedYear = year),
@@ -1484,7 +1530,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
       ),
     );
   }
-  
+
   String _getCategoryName(LocationCategory category) {
     switch (category) {
       // URSPRÜNGLICH
@@ -1512,7 +1558,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         return 'Überwachung';
       case LocationCategory.biotech:
         return 'Biotech';
-      
+
       // NEU
       case LocationCategory.ancientCivilizations:
         return 'Antike';
@@ -1627,8 +1673,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                 fillColor: accent.withValues(alpha: 0.06),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: accent.withValues(alpha: 0.25)),
+                  borderSide: BorderSide(color: accent.withValues(alpha: 0.25)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1636,8 +1681,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: accent.withValues(alpha: 0.25)),
+                  borderSide: BorderSide(color: accent.withValues(alpha: 0.25)),
                 ),
               ),
             ),
@@ -1659,8 +1703,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: () =>
-                        Navigator.pop(ctx, controller.text.trim()),
+                    onPressed: () => Navigator.pop(ctx, controller.text.trim()),
                     icon: const Icon(Icons.send, size: 18),
                     label: const Text('Pin senden'),
                     style: ElevatedButton.styleFrom(
@@ -1719,7 +1762,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
     }
   }
-  
+
   // Feature E: Radial circular layer menu
   Widget _buildRadialLayerMenu() {
     const accent = Color(0xFFE53935);
@@ -1855,7 +1898,6 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
       ),
     );
   }
-
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2094,7 +2136,8 @@ class _FullscreenImageViewerMaterieState
                       color: Colors.black.withValues(alpha: 0.6),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                    child:
+                        const Icon(Icons.close, color: Colors.white, size: 20),
                   ),
                 ),
               ),

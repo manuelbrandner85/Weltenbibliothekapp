@@ -9,14 +9,14 @@ class ChatVoicePlayer extends StatefulWidget {
   final String audioUrl;
   final Duration duration;
   final Color accentColor;
-  
+
   const ChatVoicePlayer({
     super.key,
     required this.audioUrl,
     required this.duration,
     this.accentColor = const Color(0xFF9B51E0),
   });
-  
+
   @override
   State<ChatVoicePlayer> createState() => _ChatVoicePlayerState();
 }
@@ -30,14 +30,14 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
   StreamSubscription? _positionSubscription;
   StreamSubscription? _durationSubscription;
   StreamSubscription? _stateSubscription;
-  
+
   @override
   void initState() {
     super.initState();
     _totalDuration = widget.duration;
     _setupAudioPlayer();
   }
-  
+
   @override
   void dispose() {
     _positionSubscription?.cancel();
@@ -46,7 +46,7 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
     _audioPlayer.dispose();
     super.dispose();
   }
-  
+
   void _setupAudioPlayer() {
     // Listen to position changes
     _positionSubscription = _audioPlayer.onPositionChanged.listen((position) {
@@ -56,7 +56,7 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
         });
       }
     });
-    
+
     // Listen to duration changes
     _durationSubscription = _audioPlayer.onDurationChanged.listen((duration) {
       if (mounted) {
@@ -65,14 +65,14 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
         });
       }
     });
-    
+
     // Listen to player state changes
     _stateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
         setState(() {
           _isPlaying = state == PlayerState.playing;
           _isLoading = false;
-          
+
           // Auto-stop at end
           if (state == PlayerState.completed) {
             _currentPosition = Duration.zero;
@@ -82,14 +82,14 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
       }
     });
   }
-  
+
   Future<void> _togglePlayPause() async {
     try {
       if (_isPlaying) {
         await _audioPlayer.pause();
       } else {
         setState(() => _isLoading = true);
-        
+
         if (_currentPosition == Duration.zero) {
           await _audioPlayer.play(UrlSource(widget.audioUrl));
         } else {
@@ -108,20 +108,20 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
       }
     }
   }
-  
+
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$minutes:$seconds';
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final progress = _totalDuration.inMilliseconds > 0
         ? _currentPosition.inMilliseconds / _totalDuration.inMilliseconds
         : 0.0;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -159,9 +159,9 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
                     ),
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Waveform + Duration
           Expanded(
             child: Column(
@@ -173,9 +173,9 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
                   isPlaying: _isPlaying,
                   accentColor: widget.accentColor,
                 ),
-                
+
                 const SizedBox(height: 4),
-                
+
                 // Time Display
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -199,9 +199,9 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
               ],
             ),
           ),
-          
+
           const SizedBox(width: 8),
-          
+
           // Voice Icon
           Icon(
             Icons.graphic_eq,
@@ -223,13 +223,17 @@ class _WaveformBar extends StatefulWidget {
   final bool isPlaying;
   final Color accentColor;
 
-  const _WaveformBar({required this.progress, required this.isPlaying, required this.accentColor});
+  const _WaveformBar(
+      {required this.progress,
+      required this.isPlaying,
+      required this.accentColor});
 
   @override
   State<_WaveformBar> createState() => _WaveformBarState();
 }
 
-class _WaveformBarState extends State<_WaveformBar> with SingleTickerProviderStateMixin {
+class _WaveformBarState extends State<_WaveformBar>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   // Fixed waveform profile (36 bars) — seeded so it looks consistent
   static final List<double> _profile = List.generate(36, (i) {
@@ -240,7 +244,8 @@ class _WaveformBarState extends State<_WaveformBar> with SingleTickerProviderSta
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800))
       ..repeat(reverse: true);
   }
 
@@ -262,7 +267,8 @@ class _WaveformBarState extends State<_WaveformBar> with SingleTickerProviderSta
             children: List.generate(_profile.length, (i) {
               final fraction = i / _profile.length;
               final played = fraction <= widget.progress;
-              final nearCursor = widget.isPlaying && (fraction - widget.progress).abs() < 0.08;
+              final nearCursor =
+                  widget.isPlaying && (fraction - widget.progress).abs() < 0.08;
               final breathe = nearCursor ? (1.0 + _ctrl.value * 0.3) : 1.0;
               final height = (_profile[i] * 24 * breathe).clamp(4.0, 28.0);
               return Expanded(

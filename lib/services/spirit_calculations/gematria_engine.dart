@@ -1,8 +1,8 @@
 /// 🔯 GEMATRIA-BERECHNUNGS-ENGINE
-/// 
+///
 /// Basiert auf klassischen Gematria-Systemen
 /// Quellen: Hebräische Kabbala, Lateinische Numerologie
-/// 
+///
 /// Berechnungsmethoden:
 /// - Hebräische Gematria (Mispar Hechrachi - Standard)
 /// - Mispar Gadol (mit Endbuchstaben)
@@ -58,16 +58,62 @@ class GematriaEngine {
 
   /// Lateinisches Alphabet (Simple: A=1...Z=26)
   static const Map<String, int> _latinSimple = {
-    'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9,
-    'J': 10, 'K': 11, 'L': 12, 'M': 13, 'N': 14, 'O': 15, 'P': 16, 'Q': 17,
-    'R': 18, 'S': 19, 'T': 20, 'U': 21, 'V': 22, 'W': 23, 'X': 24, 'Y': 25, 'Z': 26,
+    'A': 1,
+    'B': 2,
+    'C': 3,
+    'D': 4,
+    'E': 5,
+    'F': 6,
+    'G': 7,
+    'H': 8,
+    'I': 9,
+    'J': 10,
+    'K': 11,
+    'L': 12,
+    'M': 13,
+    'N': 14,
+    'O': 15,
+    'P': 16,
+    'Q': 17,
+    'R': 18,
+    'S': 19,
+    'T': 20,
+    'U': 21,
+    'V': 22,
+    'W': 23,
+    'X': 24,
+    'Y': 25,
+    'Z': 26,
   };
 
   /// Englische Gematria (A=6, B=12, C=18...)
   static const Map<String, int> _englishGematria = {
-    'A': 6, 'B': 12, 'C': 18, 'D': 24, 'E': 30, 'F': 36, 'G': 42, 'H': 48, 'I': 54,
-    'J': 60, 'K': 66, 'L': 72, 'M': 78, 'N': 84, 'O': 90, 'P': 96, 'Q': 102,
-    'R': 108, 'S': 114, 'T': 120, 'U': 126, 'V': 132, 'W': 138, 'X': 144, 'Y': 150, 'Z': 156,
+    'A': 6,
+    'B': 12,
+    'C': 18,
+    'D': 24,
+    'E': 30,
+    'F': 36,
+    'G': 42,
+    'H': 48,
+    'I': 54,
+    'J': 60,
+    'K': 66,
+    'L': 72,
+    'M': 78,
+    'N': 84,
+    'O': 90,
+    'P': 96,
+    'Q': 102,
+    'R': 108,
+    'S': 114,
+    'T': 120,
+    'U': 126,
+    'V': 132,
+    'W': 138,
+    'X': 144,
+    'Y': 150,
+    'Z': 156,
   };
 
   /// Berechne Hebräische Gematria (Standard - Mispar Hechrachi)
@@ -87,7 +133,7 @@ class GematriaEngine {
     int sum = 0;
     for (int i = 0; i < text.length; i++) {
       final char = text[i];
-      
+
       // Prüfe zuerst auf Endbuchstaben
       if (_hebrewGadol.containsKey(char)) {
         sum += _hebrewGadol[char]!;
@@ -108,7 +154,7 @@ class GematriaEngine {
   static int calculateLatinSimple(String text) {
     int sum = 0;
     final upperText = text.toUpperCase();
-    
+
     for (int i = 0; i < upperText.length; i++) {
       final char = upperText[i];
       if (_latinSimple.containsKey(char)) {
@@ -122,7 +168,7 @@ class GematriaEngine {
   static int calculateEnglishGematria(String text) {
     int sum = 0;
     final upperText = text.toUpperCase();
-    
+
     for (int i = 0; i < upperText.length; i++) {
       final char = upperText[i];
       if (_englishGematria.containsKey(char)) {
@@ -149,8 +195,8 @@ class GematriaEngine {
     'υ': 400, 'Υ': 400, 'φ': 500, 'Φ': 500, 'χ': 600, 'Χ': 600,
     'ψ': 700, 'Ψ': 700, 'ω': 800, 'Ω': 800,
     // Archaische Buchstaben für 6, 90, 900
-    'ϛ': 6, 'Ϛ': 6,    // Stigma
-    'ϟ': 90, 'Ϟ': 90,  // Qoppa
+    'ϛ': 6, 'Ϛ': 6, // Stigma
+    'ϟ': 90, 'Ϟ': 90, // Qoppa
     'ϡ': 900, 'Ϡ': 900, // Sampi
   };
 
@@ -158,23 +204,23 @@ class GematriaEngine {
   /// Klassische östliche Anordnung Alif=1, Ba=2, Jeem=3, Dal=4, ...
   static const Map<String, int> _arabicAbjad = {
     'ا': 1, 'أ': 1, 'إ': 1, 'آ': 1, // Alif (alle Formen)
-    'ب': 2,   // Ba
-    'ج': 3,   // Jeem
-    'د': 4,   // Dal
+    'ب': 2, // Ba
+    'ج': 3, // Jeem
+    'د': 4, // Dal
     'ه': 5, 'ة': 5, // Ha / Ta marbuta
     'و': 6, 'ؤ': 6, // Waw
-    'ز': 7,   // Zay
-    'ح': 8,   // Ha (hard)
-    'ط': 9,   // Tah
+    'ز': 7, // Zay
+    'ح': 8, // Ha (hard)
+    'ط': 9, // Tah
     'ي': 10, 'ى': 10, 'ئ': 10, // Ya
-    'ك': 20,  // Kaf
-    'ل': 30,  // Lam
-    'م': 40,  // Meem
-    'ن': 50,  // Noon
-    'س': 60,  // Seen
-    'ع': 70,  // Ayn
-    'ف': 80,  // Fa
-    'ص': 90,  // Sad
+    'ك': 20, // Kaf
+    'ل': 30, // Lam
+    'م': 40, // Meem
+    'ن': 50, // Noon
+    'س': 60, // Seen
+    'ع': 70, // Ayn
+    'ف': 80, // Fa
+    'ص': 90, // Sad
     'ق': 100, // Qaf
     'ر': 200, // Ra
     'ش': 300, // Sheen
@@ -218,10 +264,33 @@ class GematriaEngine {
 
   /// Mispar Siduri — Ordinalwerte des Hebräischen Alphabets (1-22).
   static const Map<String, int> _hebrewSiduri = {
-    'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6, 'ז': 7, 'ח': 8,
-    'ט': 9, 'י': 10, 'כ': 11, 'ך': 11, 'ל': 12, 'מ': 13, 'ם': 13,
-    'נ': 14, 'ן': 14, 'ס': 15, 'ע': 16, 'פ': 17, 'ף': 17, 'צ': 18,
-    'ץ': 18, 'ק': 19, 'ר': 20, 'ש': 21, 'ת': 22,
+    'א': 1,
+    'ב': 2,
+    'ג': 3,
+    'ד': 4,
+    'ה': 5,
+    'ו': 6,
+    'ז': 7,
+    'ח': 8,
+    'ט': 9,
+    'י': 10,
+    'כ': 11,
+    'ך': 11,
+    'ל': 12,
+    'מ': 13,
+    'ם': 13,
+    'נ': 14,
+    'ן': 14,
+    'ס': 15,
+    'ע': 16,
+    'פ': 17,
+    'ף': 17,
+    'צ': 18,
+    'ץ': 18,
+    'ק': 19,
+    'ר': 20,
+    'ש': 21,
+    'ת': 22,
   };
 
   /// Berechne Mispar Siduri (Ordinalwerte 1-22).
@@ -302,9 +371,10 @@ class GematriaEngine {
   }
 
   /// Analysiere Namen für versteckte Zahlen
-  static Map<String, dynamic> analyzeNameForNumbers(String firstName, String lastName) {
+  static Map<String, dynamic> analyzeNameForNumbers(
+      String firstName, String lastName) {
     final fullName = '$firstName $lastName';
-    
+
     return {
       'fullName': fullName,
       'latinSimple': calculateLatinSimple(fullName),
@@ -324,7 +394,7 @@ class GematriaEngine {
   ) {
     final dateNumber = date.day + date.month + date.year;
     final dateReduced = _reduceToSingleDigit(dateNumber);
-    
+
     final wordValue = calculateLatinSimple(word);
     final wordReduced = _reduceToSingleDigit(wordValue);
 
@@ -397,8 +467,11 @@ class GematriaEngine {
   }
 
   // Wrapper-Methoden für einfachere API
-  static int calculateHebrewGematria(String text) => calculateHebrewStandard(text);
+  static int calculateHebrewGematria(String text) =>
+      calculateHebrewStandard(text);
   static int calculateLatinGematria(String text) => calculateLatinSimple(text);
-  static int calculateOrdinalGematria(String text) => calculateLatinSimple(text);
-  static int calculateReducedGematria(String text) => calculatePythagorean(text);
+  static int calculateOrdinalGematria(String text) =>
+      calculateLatinSimple(text);
+  static int calculateReducedGematria(String text) =>
+      calculatePythagorean(text);
 }

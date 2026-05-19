@@ -18,7 +18,8 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 ///
 /// 3. Lokale EXIF + Byte-Analyse als Fallback
 class ImageAnalysisService {
-  static const String _hfApiBase = 'https://api-inference.huggingface.co/models';
+  static const String _hfApiBase =
+      'https://api-inference.huggingface.co/models';
 
   // Hugging Face Free Token (public, nur für Rate-Limiting)
   // Ohne Token: 30 req/min (ausreichend für gelegentliche Nutzung)
@@ -29,9 +30,9 @@ class ImageAnalysisService {
   );
 
   static Map<String, String> get _hfHeaders => {
-    'Content-Type': 'application/json',
-    if (_hfToken.isNotEmpty) 'Authorization': 'Bearer $_hfToken',
-  };
+        'Content-Type': 'application/json',
+        if (_hfToken.isNotEmpty) 'Authorization': 'Bearer $_hfToken',
+      };
 
   // ─────────────────────────────────────────────
   // HAUPT-ANALYSE
@@ -73,9 +74,10 @@ class ImageAnalysisService {
   // HUGGING FACE ANALYSE (kostenlos)
   // ─────────────────────────────────────────────
 
-  static Future<Map<String, dynamic>> _analyzeWithHuggingFace(Uint8List imageBytes) async {
+  static Future<Map<String, dynamic>> _analyzeWithHuggingFace(
+      Uint8List imageBytes) async {
     final base64Image = base64Encode(imageBytes);
-    
+
     // Parallele Anfragen an mehrere kostenlose HF-Modelle
     final results = await Future.wait<Map<String, dynamic>?>([
       _hfClassify(base64Image),
@@ -103,20 +105,26 @@ class ImageAnalysisService {
   /// Bildklassifikation: Was ist auf dem Bild?
   static Future<Map<String, dynamic>?> _hfClassify(String base64Image) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_hfApiBase/google/vit-base-patch16-224'),
-        headers: _hfHeaders,
-        body: json.encode({'inputs': base64Image}),
-      ).timeout(const Duration(seconds: 25));
+      final response = await http
+          .post(
+            Uri.parse('$_hfApiBase/google/vit-base-patch16-224'),
+            headers: _hfHeaders,
+            body: json.encode({'inputs': base64Image}),
+          )
+          .timeout(const Duration(seconds: 25));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is List && data.isNotEmpty) {
           // Normalisiere Ergebnis
-          final topResults = data.take(5).map((item) => {
-            'label': (item['label'] as String? ?? '').replaceAll('_', ' '),
-            'score': ((item['score'] as num?)?.toDouble() ?? 0.0),
-          }).toList();
+          final topResults = data
+              .take(5)
+              .map((item) => {
+                    'label':
+                        (item['label'] as String? ?? '').replaceAll('_', ' '),
+                    'score': ((item['score'] as num?)?.toDouble() ?? 0.0),
+                  })
+              .toList();
 
           // v95 Crash-Fix: topResults kann leer sein wenn API leeres
           // Array liefert -- .first würde dann InvalidArgument werfen.
@@ -142,25 +150,29 @@ class ImageAnalysisService {
   static Future<Map<String, dynamic>?> _hfDetectAI(String base64Image) async {
     try {
       // LAION CLIP-basierten AI-Detektor verwenden
-      final response = await http.post(
-        Uri.parse('$_hfApiBase/umm-maybe/AI-image-detector'),
-        headers: _hfHeaders,
-        body: json.encode({'inputs': base64Image}),
-      ).timeout(const Duration(seconds: 25));
+      final response = await http
+          .post(
+            Uri.parse('$_hfApiBase/umm-maybe/AI-image-detector'),
+            headers: _hfHeaders,
+            body: json.encode({'inputs': base64Image}),
+          )
+          .timeout(const Duration(seconds: 25));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data is List) {
           // Ergebnis: [{label: "artificial", score: 0.8}, {label: "human", score: 0.2}]
           final List<dynamic> results = data;
-          
+
           double aiScore = 0.0;
           double humanScore = 0.0;
-          
+
           for (final item in results) {
             final label = (item['label'] as String? ?? '').toLowerCase();
             final score = (item['score'] as num?)?.toDouble() ?? 0.0;
-            if (label.contains('artif') || label.contains('ai') || label.contains('fake')) {
+            if (label.contains('artif') ||
+                label.contains('ai') ||
+                label.contains('fake')) {
               aiScore = score;
             } else if (label.contains('human') || label.contains('real')) {
               humanScore = score;
@@ -186,13 +198,16 @@ class ImageAnalysisService {
     return await _hfDetectAIFallback(base64Image);
   }
 
-  static Future<Map<String, dynamic>?> _hfDetectAIFallback(String base64Image) async {
+  static Future<Map<String, dynamic>?> _hfDetectAIFallback(
+      String base64Image) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_hfApiBase/Organika/sdxl-detector'),
-        headers: _hfHeaders,
-        body: json.encode({'inputs': base64Image}),
-      ).timeout(const Duration(seconds: 20));
+      final response = await http
+          .post(
+            Uri.parse('$_hfApiBase/Organika/sdxl-detector'),
+            headers: _hfHeaders,
+            body: json.encode({'inputs': base64Image}),
+          )
+          .timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -200,13 +215,17 @@ class ImageAnalysisService {
           for (final item in data) {
             final label = (item['label'] as String? ?? '').toLowerCase();
             final score = (item['score'] as num?)?.toDouble() ?? 0.0;
-            if (label.contains('ai') || label.contains('fake') || label.contains('artif')) {
+            if (label.contains('ai') ||
+                label.contains('fake') ||
+                label.contains('artif')) {
               return {
                 'model': 'sdxl-detector',
                 'isAIGenerated': score > 0.5,
                 'aiScore': score,
                 'confidence': score,
-                'verdict': score > 0.5 ? 'KI-generiert (SDXL)' : 'Wahrscheinlich authentisch',
+                'verdict': score > 0.5
+                    ? 'KI-generiert (SDXL)'
+                    : 'Wahrscheinlich authentisch',
               };
             }
           }
@@ -219,16 +238,18 @@ class ImageAnalysisService {
   /// Bildbeschreibung (Caption)
   static Future<Map<String, dynamic>?> _hfCaption(String base64Image) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_hfApiBase/Salesforce/blip-image-captioning-base'),
-        headers: _hfHeaders,
-        body: json.encode({'inputs': base64Image}),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse('$_hfApiBase/Salesforce/blip-image-captioning-base'),
+            headers: _hfHeaders,
+            body: json.encode({'inputs': base64Image}),
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         String? captionText;
-        
+
         if (data is List && data.isNotEmpty) {
           captionText = data[0]['generated_text'] as String?;
         } else if (data is Map) {
@@ -276,12 +297,16 @@ class ImageAnalysisService {
   static Map<String, dynamic> _analyzeEXIF(Uint8List bytes) {
     // JPEG EXIF: FF D8 FF E1 + "Exif"
     final hasJpegHeader = bytes.length > 3 &&
-        bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF;
+        bytes[0] == 0xFF &&
+        bytes[1] == 0xD8 &&
+        bytes[2] == 0xFF;
 
     // PNG: 89 50 4E 47
     final hasPngHeader = bytes.length > 3 &&
-        bytes[0] == 0x89 && bytes[1] == 0x50 &&
-        bytes[2] == 0x4E && bytes[3] == 0x47;
+        bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
+        bytes[3] == 0x47;
 
     bool hasExifData = false;
     String? software;
@@ -294,9 +319,10 @@ class ImageAnalysisService {
           hasExifData = true;
           // Suche nach "Photoshop" String im Bytes
           final segment = bytes.sublist(i, math.min(i + 200, bytes.length));
-          final segStr = String.fromCharCodes(
-              segment.where((b) => b >= 32 && b < 127));
-          if (segStr.contains('Photoshop') || segStr.contains('GIMP') ||
+          final segStr =
+              String.fromCharCodes(segment.where((b) => b >= 32 && b < 127));
+          if (segStr.contains('Photoshop') ||
+              segStr.contains('GIMP') ||
               segStr.contains('Lightroom')) {
             software = segStr.contains('Photoshop')
                 ? 'Adobe Photoshop'
@@ -330,11 +356,18 @@ class ImageAnalysisService {
   static Map<String, dynamic> _detectFormat(Uint8List bytes) {
     if (bytes.length < 4) return {'format': 'unbekannt', 'valid': false};
 
-    if (bytes[0] == 0xFF && bytes[1] == 0xD8) return {'format': 'JPEG', 'valid': true};
-    if (bytes[0] == 0x89 && bytes[1] == 0x50) return {'format': 'PNG', 'valid': true};
-    if (bytes[0] == 0x47 && bytes[1] == 0x49) return {'format': 'GIF', 'valid': true};
-    if (bytes[0] == 0x42 && bytes[1] == 0x4D) return {'format': 'BMP', 'valid': true};
-    if (bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[4] == 0x57 && bytes[5] == 0x45) {
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8)
+      return {'format': 'JPEG', 'valid': true};
+    if (bytes[0] == 0x89 && bytes[1] == 0x50)
+      return {'format': 'PNG', 'valid': true};
+    if (bytes[0] == 0x47 && bytes[1] == 0x49)
+      return {'format': 'GIF', 'valid': true};
+    if (bytes[0] == 0x42 && bytes[1] == 0x4D)
+      return {'format': 'BMP', 'valid': true};
+    if (bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[4] == 0x57 &&
+        bytes[5] == 0x45) {
       return {'format': 'WEBP', 'valid': true};
     }
 
@@ -366,7 +399,7 @@ class ImageAnalysisService {
       'suspicious': suspicious,
       'reason': suspicious
           ? entropy > 7.8
-              ? 'Sehr hohe Entropie (${ entropy.toStringAsFixed(1)}) – möglicherweise komprimiert/verschlüsselt'
+              ? 'Sehr hohe Entropie (${entropy.toStringAsFixed(1)}) – möglicherweise komprimiert/verschlüsselt'
               : 'Niedrige Entropie (${entropy.toStringAsFixed(1)}) – ungewöhnliche Dateistruktur'
           : 'Normale Entropie (${entropy.toStringAsFixed(1)})',
     };
@@ -471,7 +504,8 @@ class ImageAnalysisService {
 
     if (aiResults != null) {
       // Klassifikation
-      final classification = aiResults['classification'] as Map<String, dynamic>?;
+      final classification =
+          aiResults['classification'] as Map<String, dynamic>?;
       if (classification != null) {
         imageCategory = classification['topLabel'] as String?;
         tests['classification'] = classification;

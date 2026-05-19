@@ -42,10 +42,10 @@ Future<void> initSupabase() async {
   if (client.auth.currentUser == null) {
     try {
       // Timeout verhindert ewiges Hängen auf Web wenn Dashboard-Setting fehlt.
-      await client.auth.signInAnonymously()
-          .timeout(const Duration(seconds: 8));
+      await client.auth.signInAnonymously().timeout(const Duration(seconds: 8));
       if (kDebugMode) {
-        debugPrint('✅ [Supabase] Anonyme Session erstellt: ${client.auth.currentUser?.id}');
+        debugPrint(
+            '✅ [Supabase] Anonyme Session erstellt: ${client.auth.currentUser?.id}');
       }
     } catch (e) {
       // Tritt auf wenn Anonymous Sign-ins nicht aktiviert oder Timeout.
@@ -189,11 +189,8 @@ class SupabaseProfileService {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return null;
 
-    final response = await supabase
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
+    final response =
+        await supabase.from('profiles').select().eq('id', userId).maybeSingle();
 
     return response;
   }
@@ -300,30 +297,37 @@ class SupabaseCommunityService {
     if (user == null) throw Exception('Nicht eingeloggt');
 
     final profile = await SupabaseProfileService.instance.getMyProfile();
-    final username = profile?['username'] ?? user.email?.split('@').first ?? 'Anonym';
+    final username =
+        profile?['username'] ?? user.email?.split('@').first ?? 'Anonym';
 
     // Slug aus Titel generieren (Pflichtfeld in DB).
     // Thread-safe via UUID-Random-Suffix statt millisecondsSinceEpoch — bei
     // schnellen parallelen Posts würde ms-Suffix kollidieren.
-    final randomSuffix = (DateTime.now().microsecondsSinceEpoch % 1000000)
-        .toRadixString(36);
-    final slug = '${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '')}-$randomSuffix';
+    final randomSuffix =
+        (DateTime.now().microsecondsSinceEpoch % 1000000).toRadixString(36);
+    final slug =
+        '${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '')}-$randomSuffix';
 
-    final response = await supabase.from('articles').insert({
-      'user_id': user.id,
-      'username': username,
-      'title': title,
-      'slug': slug,
-      'content': content,
-      'world': world,
-      'category': category,
-      'tags': tags,
-      'image_url': imageUrl,
-      'cover_image_url': imageUrl,  // Beide Spalten befüllen
-      'is_published': true,
-    }).select().single();
+    final response = await supabase
+        .from('articles')
+        .insert({
+          'user_id': user.id,
+          'username': username,
+          'title': title,
+          'slug': slug,
+          'content': content,
+          'world': world,
+          'category': category,
+          'tags': tags,
+          'image_url': imageUrl,
+          'cover_image_url': imageUrl, // Beide Spalten befüllen
+          'is_published': true,
+        })
+        .select()
+        .single();
 
-    if (kDebugMode) debugPrint('✅ [Community] Artikel erstellt: ${response['id']}');
+    if (kDebugMode)
+      debugPrint('✅ [Community] Artikel erstellt: ${response['id']}');
     return response;
   }
 
@@ -456,12 +460,16 @@ class SupabaseCommunityService {
     final profile = await SupabaseProfileService.instance.getMyProfile();
     final username = profile?['username'] ?? 'Anonym';
 
-    final response = await supabase.from('comments').insert({
-      'article_id': articleId,
-      'user_id': user.id,
-      'username': username,
-      'content': content,
-    }).select().single();
+    final response = await supabase
+        .from('comments')
+        .insert({
+          'article_id': articleId,
+          'user_id': user.id,
+          'username': username,
+          'content': content,
+        })
+        .select()
+        .single();
 
     return response;
   }
@@ -558,7 +566,8 @@ class SupabaseChatService {
   }) async {
     final user = supabase.auth.currentUser;
     if (user == null && !allowAnonymous) {
-      throw Exception('Nicht eingeloggt – bitte anmelden, um Nachrichten zu senden.');
+      throw Exception(
+          'Nicht eingeloggt – bitte anmelden, um Nachrichten zu senden.');
     }
 
     // Username/Avatar: explizit gesetzt > Profil > Email-Prefix > 'Anonym'
@@ -611,7 +620,9 @@ class SupabaseChatService {
       insertData['reply_to_content'] =
           snippet.length > 280 ? '${snippet.substring(0, 280)}…' : snippet;
       insertData['reply_to_sender_name'] =
-          (replyToSenderName ?? '').trim().isEmpty ? null : replyToSenderName!.trim();
+          (replyToSenderName ?? '').trim().isEmpty
+              ? null
+              : replyToSenderName!.trim();
     }
 
     // maybeSingle() statt single() — gibt null zurück wenn SELECT-Policy die
@@ -661,7 +672,8 @@ class SupabaseChatService {
         .maybeSingle();
 
     if (result == null) {
-      throw Exception('Nachricht nicht gefunden oder keine Berechtigung zum Bearbeiten.');
+      throw Exception(
+          'Nachricht nicht gefunden oder keine Berechtigung zum Bearbeiten.');
     }
     return result;
   }
@@ -686,7 +698,8 @@ class SupabaseChatService {
         .maybeSingle();
 
     if (result == null) {
-      throw Exception('Nachricht nicht gefunden oder keine Berechtigung zum Löschen.');
+      throw Exception(
+          'Nachricht nicht gefunden oder keine Berechtigung zum Löschen.');
     }
   }
 
@@ -707,7 +720,10 @@ class SupabaseChatService {
         final emoji = row['emoji']?.toString() ?? '';
         final uname = row['username']?.toString() ?? '';
         if (msgId.isEmpty || emoji.isEmpty) continue;
-        result.putIfAbsent(msgId, () => {}).putIfAbsent(emoji, () => []).add(uname);
+        result
+            .putIfAbsent(msgId, () => {})
+            .putIfAbsent(emoji, () => [])
+            .add(uname);
       }
       return result;
     } catch (e) {
@@ -861,10 +877,7 @@ class SupabaseChatService {
 
   /// Chat-Räume laden.
   Future<List<Map<String, dynamic>>> getChatRooms({String? world}) async {
-    var query = supabase
-        .from('chat_rooms')
-        .select()
-        .eq('is_active', true);
+    var query = supabase.from('chat_rooms').select().eq('is_active', true);
 
     if (world != null) query = query.eq('world', world);
 
@@ -902,7 +915,8 @@ class SupabaseChatService {
         'p_room_id': roomId,
         'p_user_id': userId,
       });
-      if (kDebugMode) debugPrint('📖 [Chat] Alle Nachrichten in $roomId gelesen');
+      if (kDebugMode)
+        debugPrint('📖 [Chat] Alle Nachrichten in $roomId gelesen');
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ [Chat] markRoomMessagesAsRead failed: $e');
     }
@@ -978,9 +992,8 @@ class SupabaseChatService {
                 // Typen enthalten — niemals direkt casten, sonst crashed
                 // der ganze Realtime-Subscriber.
                 final lastReader = readBy.last;
-                final reader = lastReader is String
-                    ? lastReader
-                    : lastReader?.toString();
+                final reader =
+                    lastReader is String ? lastReader : lastReader?.toString();
                 final id = updated['id'];
                 if (reader != null && reader.isNotEmpty && id is String) {
                   onRead(id, reader);
@@ -1030,24 +1043,19 @@ class SupabaseNotificationService {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return [];
 
-    var query = supabase
-        .from('notifications')
-        .select()
-        .eq('user_id', userId);
+    var query = supabase.from('notifications').select().eq('user_id', userId);
 
     if (unreadOnly) query = query.eq('is_read', false);
 
-    final response = await query
-        .order('created_at', ascending: false)
-        .limit(limit);
+    final response =
+        await query.order('created_at', ascending: false).limit(limit);
     return List<Map<String, dynamic>>.from(response);
   }
 
   Future<void> markAsRead(String notificationId) async {
     await supabase
         .from('notifications')
-        .update({'is_read': true})
-        .eq('id', notificationId);
+        .update({'is_read': true}).eq('id', notificationId);
   }
 
   Future<void> markAllAsRead() async {
@@ -1117,7 +1125,6 @@ class SupabaseStorageService {
 
   /// Avatar hochladen.
   Future<String> uploadAvatar(List<int> bytes, String extension) async {
-    return await SupabaseProfileService.instance
-        .uploadAvatar(bytes, extension);
+    return await SupabaseProfileService.instance.uploadAvatar(bytes, extension);
   }
 }

@@ -61,8 +61,12 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
   @override
   void initState() {
     super.initState();
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat();
-    _glowCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 5))..repeat(reverse: true);
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat();
+    _glowCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 5))
+          ..repeat(reverse: true);
     _load();
   }
 
@@ -79,7 +83,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
     if (raw != null) {
       try {
         final list = jsonDecode(raw) as List;
-        _snaps = list.map((e) => _Snap.fromJson(e as Map<String, dynamic>)).toList();
+        _snaps =
+            list.map((e) => _Snap.fromJson(e as Map<String, dynamic>)).toList();
         _snaps.sort((a, b) => b.date.compareTo(a.date));
       } catch (_) {}
     }
@@ -88,20 +93,22 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
 
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kvKey,
-        jsonEncode(_snaps.map((s) => s.toJson()).toList()));
+    await prefs.setString(
+        _kvKey, jsonEncode(_snaps.map((s) => s.toJson()).toList()));
   }
 
   Future<void> _addPhoto() async {
     if (kIsWeb) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Foto-Aufnahme ist auf Web nicht verfügbar — bitte Mobile-App nutzen.'),
+        content: Text(
+            'Foto-Aufnahme ist auf Web nicht verfügbar — bitte Mobile-App nutzen.'),
         backgroundColor: Colors.orange,
       ));
       return;
     }
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.camera, maxWidth: 1200);
+    final picked =
+        await picker.pickImage(source: ImageSource.camera, maxWidth: 1200);
     if (picked == null) return;
 
     final dir = await getApplicationDocumentsDirectory();
@@ -113,13 +120,15 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
     if (tags == null) return;
 
     setState(() {
-      _snaps.insert(0, _Snap(
-        path: newPath,
-        date: DateTime.now(),
-        bodyNote: tags.body,
-        mindNote: tags.mind,
-        soulNote: tags.soul,
-      ));
+      _snaps.insert(
+          0,
+          _Snap(
+            path: newPath,
+            date: DateTime.now(),
+            bodyNote: tags.body,
+            mindNote: tags.mind,
+            soulNote: tags.soul,
+          ));
     });
     await _save();
   }
@@ -149,7 +158,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -169,14 +179,17 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.bold)),
+        Text(label,
+            style: TextStyle(
+                color: _accent, fontSize: 11, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         TextField(
           controller: ctrl,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             filled: true,
             fillColor: Colors.black.withValues(alpha: 0.4),
             border: OutlineInputBorder(
@@ -233,19 +246,26 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
         ..writeln('zwischen zwei Selbstbeobachtungs-Einträgen.')
         ..writeln('')
         ..writeln('VORHER (${_fmtDate(earlier.date)}):')
-        ..writeln('  💪 Körper: ${earlier.bodyNote.isEmpty ? "—" : earlier.bodyNote}')
-        ..writeln('  🧠 Geist: ${earlier.mindNote.isEmpty ? "—" : earlier.mindNote}')
-        ..writeln('  ✨ Seele: ${earlier.soulNote.isEmpty ? "—" : earlier.soulNote}')
+        ..writeln(
+            '  💪 Körper: ${earlier.bodyNote.isEmpty ? "—" : earlier.bodyNote}')
+        ..writeln(
+            '  🧠 Geist: ${earlier.mindNote.isEmpty ? "—" : earlier.mindNote}')
+        ..writeln(
+            '  ✨ Seele: ${earlier.soulNote.isEmpty ? "—" : earlier.soulNote}')
         ..writeln('')
         ..writeln('NACHHER (${_fmtDate(later.date)}):')
-        ..writeln('  💪 Körper: ${later.bodyNote.isEmpty ? "—" : later.bodyNote}')
-        ..writeln('  🧠 Geist: ${later.mindNote.isEmpty ? "—" : later.mindNote}')
+        ..writeln(
+            '  💪 Körper: ${later.bodyNote.isEmpty ? "—" : later.bodyNote}')
+        ..writeln(
+            '  🧠 Geist: ${later.mindNote.isEmpty ? "—" : later.mindNote}')
         ..writeln('  ✨ Seele: ${later.soulNote.isEmpty ? "—" : later.soulNote}')
         ..writeln('')
-        ..writeln('Gib eine 3-Absatz-Reflexion: 1) Welche Veränderung zeigt sich? '
+        ..writeln(
+            'Gib eine 3-Absatz-Reflexion: 1) Welche Veränderung zeigt sich? '
             '2) Was darf gewürdigt werden? 3) Was ist als nächster Schritt sichtbar? '
             'Du-Form, warm aber direkt, ohne Esoterik-Klischees.');
-      final token = Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      final token =
+          Supabase.instance.client.auth.currentSession?.accessToken ?? '';
       final res = await http
           .post(
             Uri.parse('${ApiConfig.workerUrl}/api/mentor/chat'),
@@ -263,7 +283,12 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
           .timeout(const Duration(seconds: 35));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final answer = ((data['reply'] ?? data['answer'] ?? data['response'] ?? data['message'] ?? '') as String).trim();
+        final answer = ((data['reply'] ??
+                data['answer'] ??
+                data['response'] ??
+                data['message'] ??
+                '') as String)
+            .trim();
         if (mounted) {
           setState(() {
             _compareReflection = answer;
@@ -274,7 +299,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
       }
       if (mounted) {
         setState(() {
-          _compareReflection = '⚠️ AI-Reflexion gerade nicht verfügbar (HTTP ${res.statusCode}).';
+          _compareReflection =
+              '⚠️ AI-Reflexion gerade nicht verfügbar (HTTP ${res.statusCode}).';
           _loadingReflection = false;
         });
       }
@@ -289,7 +315,7 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
   }
 
   String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')}.${d.year}';
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
   @override
   Widget build(BuildContext context) {
@@ -304,14 +330,17 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
           ).createShader(r),
           child: const Text('TRANSFORMATIONS-CHRONIK',
               style: TextStyle(
-                  color: Colors.white, fontSize: 13,
-                  fontWeight: FontWeight.w900, letterSpacing: 2)),
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2)),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: _accent,
         icon: const Icon(Icons.add_a_photo_rounded),
-        label: const Text('Neues Foto', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text('Neues Foto',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         onPressed: _addPhoto,
       ),
       body: Stack(fit: StackFit.expand, children: [
@@ -333,7 +362,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 30)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.energie, count: 30)),
         SafeArea(
           child: _loading
               ? const Center(child: CircularProgressIndicator(color: _accent))
@@ -356,7 +386,10 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
           Text('📸', style: TextStyle(fontSize: 64)),
           SizedBox(height: 16),
           Text('Noch keine Fotos',
-              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
           Text(
             'Tippe unten auf "Neues Foto" — Fotos bleiben rein lokal auf deinem Gerät.',
@@ -382,7 +415,9 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
             color: _surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: (isCompA || isCompB) ? _accent : _accent.withValues(alpha: 0.2),
+              color: (isCompA || isCompB)
+                  ? _accent
+                  : _accent.withValues(alpha: 0.2),
               width: (isCompA || isCompB) ? 2 : 1,
             ),
           ),
@@ -390,7 +425,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
                   child: localFileImage(
@@ -398,7 +434,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
                     errorWidget: Container(
                       color: Colors.grey.shade800,
                       child: const Center(
-                        child: Icon(Icons.broken_image, size: 64, color: Colors.white24),
+                        child: Icon(Icons.broken_image,
+                            size: 64, color: Colors.white24),
                       ),
                     ),
                   ),
@@ -412,11 +449,16 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
                     Row(
                       children: [
                         Text('${s.date.day}.${s.date.month}.${s.date.year}',
-                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold)),
                         const Spacer(),
                         IconButton(
                           icon: Icon(
-                            isCompA || isCompB ? Icons.compare_arrows : Icons.add_box_outlined,
+                            isCompA || isCompB
+                                ? Icons.compare_arrows
+                                : Icons.add_box_outlined,
                             color: _accent,
                             size: 20,
                           ),
@@ -424,17 +466,24 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
                           onPressed: () => _toggleCompare(i),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.white54, size: 20),
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.white54, size: 20),
                           onPressed: () => _delete(i),
                         ),
                       ],
                     ),
                     if (s.bodyNote.isNotEmpty)
-                      Text('💪 ${s.bodyNote}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text('💪 ${s.bodyNote}',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
                     if (s.mindNote.isNotEmpty)
-                      Text('🧠 ${s.mindNote}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text('🧠 ${s.mindNote}',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
                     if (s.soulNote.isNotEmpty)
-                      Text('✨ ${s.soulNote}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text('✨ ${s.soulNote}',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
                   ],
                 ),
               ),
@@ -463,18 +512,26 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                      colors: [_accent.withValues(alpha: 0.3), _gold.withValues(alpha: 0.15)]),
+                  gradient: LinearGradient(colors: [
+                    _accent.withValues(alpha: 0.3),
+                    _gold.withValues(alpha: 0.15)
+                  ]),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: _accent.withValues(alpha: 0.4)),
                 ),
                 child: Column(children: [
                   Text('VERGLEICH · $daysDiff TAGE',
                       style: const TextStyle(
-                          color: _gold, fontSize: 11, letterSpacing: 3, fontWeight: FontWeight.w700)),
+                          color: _gold,
+                          fontSize: 11,
+                          letterSpacing: 3,
+                          fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
                   Text('${_fmtDate(earlier.date)} → ${_fmtDate(later.date)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold)),
                 ]),
               ),
             ),
@@ -496,7 +553,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
               onPressed: _requestAiReflection,
               icon: const Icon(Icons.auto_awesome_rounded),
               label: const Text('AI-TRANSFORMATIONS-REFLEXION',
-                  style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, letterSpacing: 1.2)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _accent,
                 foregroundColor: Colors.white,
@@ -508,7 +566,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
               AnimatedBuilder(
                 animation: _glowCtrl,
                 builder: (_, __) => Container(
-                  width: 80, height: 80,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(colors: [
@@ -516,7 +575,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
                       Colors.transparent,
                     ]),
                   ),
-                  child: const Center(child: Icon(Icons.auto_awesome, color: _gold, size: 36)),
+                  child: const Center(
+                      child: Icon(Icons.auto_awesome, color: _gold, size: 36)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -535,17 +595,27 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: _accent.withValues(alpha: 0.4)),
                   ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Icon(Icons.auto_awesome_rounded, color: _gold, size: 16),
-                      const SizedBox(width: 6),
-                      const Text('ALCHEMIST · TRANSFORMATION',
-                          style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
-                    ]),
-                    const SizedBox(height: 10),
-                    SelectableText(_compareReflection!,
-                        style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Icon(Icons.auto_awesome_rounded,
+                              color: _gold, size: 16),
+                          const SizedBox(width: 6),
+                          const Text('ALCHEMIST · TRANSFORMATION',
+                              style: TextStyle(
+                                  color: _gold,
+                                  fontSize: 10,
+                                  letterSpacing: 2,
+                                  fontWeight: FontWeight.w700)),
+                        ]),
+                        const SizedBox(height: 10),
+                        SelectableText(_compareReflection!,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                height: 1.6)),
+                      ]),
                 ),
               ),
             ),
@@ -557,8 +627,10 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
               _compareReflection = null;
             }),
             icon: const Icon(Icons.arrow_back_rounded, color: Colors.white70),
-            label: const Text('Zurück zur Galerie', style: TextStyle(color: Colors.white70)),
-            style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.white24)),
+            label: const Text('Zurück zur Galerie',
+                style: TextStyle(color: Colors.white70)),
+            style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.white24)),
           ),
         ],
       ),
@@ -580,7 +652,11 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
             color: _accent,
             child: Text(label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.black, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold)),
           ),
           Expanded(
             child: ClipRRect(
@@ -588,7 +664,8 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
                 s.path,
                 errorWidget: Container(
                   color: Colors.grey.shade800,
-                  child: const Icon(Icons.broken_image, size: 64, color: Colors.white24),
+                  child: const Icon(Icons.broken_image,
+                      size: 64, color: Colors.white24),
                 ),
               ),
             ),
@@ -597,7 +674,10 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
             padding: const EdgeInsets.all(6),
             child: Text('${s.date.day}.${s.date.month}.${s.date.year}',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -612,12 +692,24 @@ class _PhotoOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        100, const Color(0xFFF57C00));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        90, const Color(0xFFFFD54F));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.9 + math.sin(t * math.pi) * 0.03)),
-        70, const Color(0xFFFF7043));
+    _draw(
+        canvas,
+        Offset(size.width * 0.2,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        100,
+        const Color(0xFFF57C00));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        90,
+        const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.9 + math.sin(t * math.pi) * 0.03)),
+        70,
+        const Color(0xFFFF7043));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

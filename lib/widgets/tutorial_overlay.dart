@@ -5,19 +5,20 @@ import 'dart:async';
 /// Tutorial Overlay für ersten App-Start (v5.38 - VOLLSTÄNDIG)
 class TutorialOverlay extends StatefulWidget {
   final VoidCallback onComplete;
-  
+
   const TutorialOverlay({super.key, required this.onComplete});
-  
+
   @override
   State<TutorialOverlay> createState() => _TutorialOverlayState();
 }
 
-class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProviderStateMixin {
+class _TutorialOverlayState extends State<TutorialOverlay>
+    with SingleTickerProviderStateMixin {
   int _currentStep = 0;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  
+
   final List<TutorialStep> _steps = [
     TutorialStep(
       title: '🌀 Das Portal zwischen den Welten',
@@ -63,7 +64,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
       backgroundColor: Color(0xFF006064),
     ),
   ];
-  
+
   @override
   void initState() {
     super.initState();
@@ -80,13 +81,13 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
     );
     _fadeController.forward();
   }
-  
+
   @override
   void dispose() {
     _fadeController.dispose();
     super.dispose();
   }
-  
+
   void _nextStep() {
     if (_currentStep < _steps.length - 1) {
       _fadeController.reverse().then((_) {
@@ -99,7 +100,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
       widget.onComplete();
     }
   }
-  
+
   void _previousStep() {
     if (_currentStep > 0) {
       _fadeController.reverse().then((_) {
@@ -110,15 +111,15 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
       });
     }
   }
-  
+
   void _skip() {
     widget.onComplete();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final step = _steps[_currentStep];
-    
+
     return Material(
       color: Colors.black.withValues(alpha: 0.92),
       child: SafeArea(
@@ -138,7 +139,7 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                 ),
               ),
             ),
-            
+
             // Skip Button
             Positioned(
               top: 20,
@@ -149,7 +150,8 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                   onTap: _skip,
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
@@ -170,14 +172,16 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.skip_next, color: Colors.white.withValues(alpha: 0.9), size: 18),
+                        Icon(Icons.skip_next,
+                            color: Colors.white.withValues(alpha: 0.9),
+                            size: 18),
                       ],
                     ),
                   ),
                 ),
               ),
             ),
-            
+
             // Content
             Center(
               child: FadeTransition(
@@ -205,16 +209,19 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                                   gradient: RadialGradient(
                                     colors: [
                                       step.iconColor.withValues(alpha: 0.4),
-                                      step.backgroundColor.withValues(alpha: 0.2),
+                                      step.backgroundColor
+                                          .withValues(alpha: 0.2),
                                     ],
                                   ),
                                   border: Border.all(
-                                    color: step.iconColor.withValues(alpha: 0.5),
+                                    color:
+                                        step.iconColor.withValues(alpha: 0.5),
                                     width: 3,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: step.iconColor.withValues(alpha: 0.5),
+                                      color:
+                                          step.iconColor.withValues(alpha: 0.5),
                                       blurRadius: 30,
                                       spreadRadius: 5,
                                     ),
@@ -229,9 +236,9 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                             );
                           },
                         ),
-                        
+
                         const SizedBox(height: 40),
-                        
+
                         // Title with Gradient
                         ShaderMask(
                           shaderCallback: (bounds) => LinearGradient(
@@ -251,9 +258,9 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                             textAlign: TextAlign.center,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 24),
-                        
+
                         // Description
                         Container(
                           padding: const EdgeInsets.all(20),
@@ -275,9 +282,9 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                             textAlign: TextAlign.center,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 60),
-                        
+
                         // Navigation Section
                         Column(
                           children: [
@@ -289,10 +296,11 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                                 (index) {
                                   final isActive = index == _currentStep;
                                   final isCompleted = index < _currentStep;
-                                  
+
                                   return AnimatedContainer(
                                     duration: const Duration(milliseconds: 300),
-                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 4),
                                     width: isActive ? 32 : 10,
                                     height: 10,
                                     decoration: BoxDecoration(
@@ -300,12 +308,14 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                                           ? step.iconColor
                                           : isActive
                                               ? step.iconColor
-                                              : Colors.white.withValues(alpha: 0.3),
+                                              : Colors.white
+                                                  .withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(5),
                                       boxShadow: isActive
                                           ? [
                                               BoxShadow(
-                                                color: step.iconColor.withValues(alpha: 0.5),
+                                                color: step.iconColor
+                                                    .withValues(alpha: 0.5),
                                                 blurRadius: 10,
                                                 spreadRadius: 2,
                                               ),
@@ -316,9 +326,9 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                                 },
                               ),
                             ),
-                            
+
                             const SizedBox(height: 32),
-                            
+
                             // Navigation Buttons
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -331,13 +341,17 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
                                     _previousStep,
                                     isPrimary: false,
                                   ),
-                                
+
                                 if (_currentStep > 0) const SizedBox(width: 16),
-                                
+
                                 // Next/Finish Button
                                 _buildNavButton(
-                                  _currentStep < _steps.length - 1 ? 'Weiter' : 'Los geht\'s!',
-                                  _currentStep < _steps.length - 1 ? Icons.arrow_forward : Icons.check_circle,
+                                  _currentStep < _steps.length - 1
+                                      ? 'Weiter'
+                                      : 'Los geht\'s!',
+                                  _currentStep < _steps.length - 1
+                                      ? Icons.arrow_forward
+                                      : Icons.check_circle,
                                   _nextStep,
                                   isPrimary: true,
                                   color: step.iconColor,
@@ -357,8 +371,9 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
       ),
     );
   }
-  
-  Widget _buildNavButton(String label, IconData icon, VoidCallback onPressed, {bool isPrimary = false, Color? color}) {
+
+  Widget _buildNavButton(String label, IconData icon, VoidCallback onPressed,
+      {bool isPrimary = false, Color? color}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -386,7 +401,8 @@ class _TutorialOverlayState extends State<TutorialOverlay> with SingleTickerProv
             boxShadow: isPrimary
                 ? [
                     BoxShadow(
-                      color: (color ?? const Color(0xFF64B5F6)).withValues(alpha: 0.4),
+                      color: (color ?? const Color(0xFF64B5F6))
+                          .withValues(alpha: 0.4),
                       blurRadius: 20,
                       spreadRadius: 2,
                     ),
@@ -423,7 +439,7 @@ class TutorialStep {
   final IconData icon;
   final Color iconColor;
   final Color backgroundColor;
-  
+
   TutorialStep({
     required this.title,
     required this.description,

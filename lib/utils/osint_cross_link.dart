@@ -9,9 +9,9 @@
 //   // hits = [{type: 'domain', value: 'example.com', tool: 'Domain-OSINT'}, ...]
 
 class OsintCrossHit {
-  final String type;   // 'domain' | 'email' | 'phone' | 'crypto' | 'ip' | 'hash'
+  final String type; // 'domain' | 'email' | 'phone' | 'crypto' | 'ip' | 'hash'
   final String value;
-  final String tool;   // Anzeige-Name des Ziel-Tools
+  final String tool; // Anzeige-Name des Ziel-Tools
   final String toolKey; // interner Key zum Öffnen
   const OsintCrossHit({
     required this.type,
@@ -27,8 +27,7 @@ class OsintCrossLink {
   static final _domain = RegExp(
       r'\b([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\b',
       caseSensitive: false);
-  static final _email = RegExp(
-      r'\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b',
+  static final _email = RegExp(r'\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}\b',
       caseSensitive: false);
   static final _ipv4 = RegExp(
       r'\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d?\d)\b');

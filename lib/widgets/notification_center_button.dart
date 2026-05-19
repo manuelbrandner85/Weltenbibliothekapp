@@ -16,10 +16,12 @@ import '../services/supabase_service.dart';
 class NotificationCenterButton extends StatefulWidget {
   final Color accent;
 
-  const NotificationCenterButton({super.key, this.accent = const Color(0xFFC9A84C)});
+  const NotificationCenterButton(
+      {super.key, this.accent = const Color(0xFFC9A84C)});
 
   @override
-  State<NotificationCenterButton> createState() => _NotificationCenterButtonState();
+  State<NotificationCenterButton> createState() =>
+      _NotificationCenterButtonState();
 }
 
 class _NotificationCenterButtonState extends State<NotificationCenterButton> {
@@ -56,8 +58,8 @@ class _NotificationCenterButtonState extends State<NotificationCenterButton> {
 
   void _subscribe() {
     try {
-      _channel = SupabaseNotificationService.instance
-          .subscribeToNotifications(onNotification: (_) {
+      _channel = SupabaseNotificationService.instance.subscribeToNotifications(
+          onNotification: (_) {
         if (mounted) _load();
       });
     } catch (_) {
@@ -72,7 +74,8 @@ class _NotificationCenterButtonState extends State<NotificationCenterButton> {
       children: [
         IconButton(
           tooltip: 'Benachrichtigungen',
-          icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+          icon:
+              const Icon(Icons.notifications_none_rounded, color: Colors.white),
           onPressed: () async {
             await _NotificationSheet.show(context, accent: widget.accent);
             _load();
@@ -89,7 +92,8 @@ class _NotificationCenterButtonState extends State<NotificationCenterButton> {
                 decoration: BoxDecoration(
                   color: Colors.red,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF050310), width: 1.5),
+                  border:
+                      Border.all(color: const Color(0xFF050310), width: 1.5),
                 ),
                 child: Text(
                   _unread > 99 ? '99+' : '$_unread',
@@ -142,7 +146,8 @@ class _NotificationListViewState extends State<_NotificationListView> {
 
   Future<void> _load() async {
     try {
-      final items = await SupabaseNotificationService.instance.getNotifications(limit: 30);
+      final items = await SupabaseNotificationService.instance
+          .getNotifications(limit: 30);
       if (!mounted) return;
       setState(() {
         _items = items;
@@ -226,7 +231,8 @@ class _NotificationListViewState extends State<_NotificationListView> {
                 if (_items.any((i) => i['is_read'] == false))
                   TextButton.icon(
                     onPressed: _markAllRead,
-                    icon: Icon(Icons.done_all_rounded, color: widget.accent, size: 16),
+                    icon: Icon(Icons.done_all_rounded,
+                        color: widget.accent, size: 16),
                     label: Text('Alle gelesen',
                         style: TextStyle(color: widget.accent, fontSize: 12)),
                   ),
@@ -275,7 +281,8 @@ class _NotificationListViewState extends State<_NotificationListView> {
                           final unread = n['is_read'] == false;
                           return ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: widget.accent.withValues(alpha: 0.15),
+                              backgroundColor:
+                                  widget.accent.withValues(alpha: 0.15),
                               child: Icon(_iconFor(n['type'] as String?),
                                   color: widget.accent, size: 18),
                             ),
@@ -284,7 +291,8 @@ class _NotificationListViewState extends State<_NotificationListView> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
-                                fontWeight: unread ? FontWeight.w700 : FontWeight.w500,
+                                fontWeight:
+                                    unread ? FontWeight.w700 : FontWeight.w500,
                               ),
                             ),
                             subtitle: Text(
@@ -324,7 +332,8 @@ class _NotificationListViewState extends State<_NotificationListView> {
                               if (unread) {
                                 final id = n['id']?.toString();
                                 if (id != null) {
-                                  await SupabaseNotificationService.instance.markAsRead(id);
+                                  await SupabaseNotificationService.instance
+                                      .markAsRead(id);
                                 }
                                 _load();
                               }

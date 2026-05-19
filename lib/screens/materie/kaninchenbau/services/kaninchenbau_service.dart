@@ -20,13 +20,42 @@ class KaninchenbauService {
   // ── Topic-Normalisierung ──────────────────────────────────────────────────
   // "JFK Akten" → "JFK"  |  "Chemtrails Verschwörung" → "Chemtrails"
   static const _deStopSuffixes = [
-    'akten', 'akte', 'affäre', 'affaere', 'verschwörung', 'verschwoerung',
-    'skandal', 'theorie', 'theorien', 'aufdeckung', 'enthüllung', 'enthuellung',
-    'geheimnis', 'geheimdokumente', 'dokumente', 'files', 'papers', 'report',
-    'leaks', 'leak', 'exposure', 'classified', 'declassified',
-    'geheimdienstakten', 'freigegebene', 'freigegebenen', 'vertuscht',
-    'vertuschung', 'komplott', 'netzwerk', 'operation', 'programm',
-    'projekt', 'plan', 'system', 'agenda',
+    'akten',
+    'akte',
+    'affäre',
+    'affaere',
+    'verschwörung',
+    'verschwoerung',
+    'skandal',
+    'theorie',
+    'theorien',
+    'aufdeckung',
+    'enthüllung',
+    'enthuellung',
+    'geheimnis',
+    'geheimdokumente',
+    'dokumente',
+    'files',
+    'papers',
+    'report',
+    'leaks',
+    'leak',
+    'exposure',
+    'classified',
+    'declassified',
+    'geheimdienstakten',
+    'freigegebene',
+    'freigegebenen',
+    'vertuscht',
+    'vertuschung',
+    'komplott',
+    'netzwerk',
+    'operation',
+    'programm',
+    'projekt',
+    'plan',
+    'system',
+    'agenda',
   ];
 
   String normalizeTopic(String topic) {
@@ -44,16 +73,20 @@ class KaninchenbauService {
 
   // ── Wikipedia-Netzwerk-Fallback ───────────────────────────────────────────
   Future<NetworkGraph> fetchWikipediaNetwork(String topic) async {
-    final centerNode = NetworkNode(
-        id: 'center', label: topic, type: 'concept', weight: 1.0);
+    final centerNode =
+        NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0);
     try {
-      final resp = await http.get(
-        Uri.parse(
-            '${ApiConfig.workerUrl}/api/kaninchenbau/wikipedia-network?topic=${Uri.encodeQueryComponent(topic)}'),
-      ).timeout(const Duration(seconds: 15));
-      if (resp.statusCode != 200) return NetworkGraph(nodes: [centerNode], edges: const []);
+      final resp = await http
+          .get(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/kaninchenbau/wikipedia-network?topic=${Uri.encodeQueryComponent(topic)}'),
+          )
+          .timeout(const Duration(seconds: 15));
+      if (resp.statusCode != 200)
+        return NetworkGraph(nodes: [centerNode], edges: const []);
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      if (data['found'] != true) return NetworkGraph(nodes: [centerNode], edges: const []);
+      if (data['found'] != true)
+        return NetworkGraph(nodes: [centerNode], edges: const []);
 
       final realCenter = NetworkNode(
         id: 'center',
@@ -62,7 +95,8 @@ class KaninchenbauService {
         weight: 1.0,
       );
       final links = (data['links'] as List?)?.cast<String>() ?? const [];
-      final categories = (data['categories'] as List?)?.cast<String>() ?? const [];
+      final categories =
+          (data['categories'] as List?)?.cast<String>() ?? const [];
 
       final nodes = <NetworkNode>[realCenter];
       final edges = <NetworkEdge>[];
@@ -110,22 +144,28 @@ class KaninchenbauService {
   // ── NARA — National Archives Catalog ─────────────────────────────────────
   Future<List<Map<String, String>>> fetchNaraDocuments(String topic) async {
     try {
-      final resp = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/nara?topic=${Uri.encodeQueryComponent(topic)}'),
-      ).timeout(const Duration(seconds: 15));
+      final resp = await http
+          .get(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/kaninchenbau/nara?topic=${Uri.encodeQueryComponent(topic)}'),
+          )
+          .timeout(const Duration(seconds: 15));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return ((data['items'] as List?) ?? const []).map((e) {
-        final m = e as Map<String, dynamic>;
-        return {
-          'title': m['title']?.toString() ?? '',
-          'date': m['date']?.toString() ?? '',
-          'description': m['description']?.toString() ?? '',
-          'url': m['url']?.toString() ?? '',
-          'access': m['access']?.toString() ?? '',
-          'source': 'NARA',
-        };
-      }).where((e) => (e['title'] ?? '').isNotEmpty).toList();
+      return ((data['items'] as List?) ?? const [])
+          .map((e) {
+            final m = e as Map<String, dynamic>;
+            return {
+              'title': m['title']?.toString() ?? '',
+              'date': m['date']?.toString() ?? '',
+              'description': m['description']?.toString() ?? '',
+              'url': m['url']?.toString() ?? '',
+              'access': m['access']?.toString() ?? '',
+              'source': 'NARA',
+            };
+          })
+          .where((e) => (e['title'] ?? '').isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('NARA-Error: $e');
       return [];
@@ -135,21 +175,27 @@ class KaninchenbauService {
   // ── Wikipedia keypersons fallback ─────────────────────────────────────────
   Future<List<KeyPerson>> fetchKeyPersonsWikipedia(String topic) async {
     try {
-      final resp = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/keypersons-wiki?topic=${Uri.encodeQueryComponent(topic)}'),
-      ).timeout(const Duration(seconds: 15));
+      final resp = await http
+          .get(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/kaninchenbau/keypersons-wiki?topic=${Uri.encodeQueryComponent(topic)}'),
+          )
+          .timeout(const Duration(seconds: 15));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return ((data['persons'] as List?) ?? const []).map((m) {
-        final e = m as Map<String, dynamic>;
-        return KeyPerson(
-          id: e['id']?.toString() ?? '',
-          name: e['name']?.toString() ?? '',
-          description: e['description']?.toString() ?? '',
-          role: e['role']?.toString() ?? 'Erwähnt',
-          imageUrl: null,
-        );
-      }).where((p) => p.name.isNotEmpty).toList();
+      return ((data['persons'] as List?) ?? const [])
+          .map((m) {
+            final e = m as Map<String, dynamic>;
+            return KeyPerson(
+              id: e['id']?.toString() ?? '',
+              name: e['name']?.toString() ?? '',
+              description: e['description']?.toString() ?? '',
+              role: e['role']?.toString() ?? 'Erwähnt',
+              imageUrl: null,
+            );
+          })
+          .where((p) => p.name.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('KeyPersonsWiki-Error: $e');
       return [];
@@ -288,7 +334,9 @@ LIMIT 30
 
       if (nodes.length == 1) {
         // Fallback 1: Wikidata-Suche für verwandte Einträge
-        final searchResults = await _free.fetchWikidataEntries(normalized.isNotEmpty ? normalized : topic, limit: 6);
+        final searchResults = await _free.fetchWikidataEntries(
+            normalized.isNotEmpty ? normalized : topic,
+            limit: 6);
         for (var i = 1; i < searchResults.length; i++) {
           final r = searchResults[i];
           nodes.add(NetworkNode(
@@ -298,10 +346,7 @@ LIMIT 30
             weight: 0.6 - (i * 0.05),
           ));
           edges.add(NetworkEdge(
-              fromId: 'center',
-              toId: 'n$i',
-              label: 'verwandt',
-              strength: 0.4));
+              fromId: 'center', toId: 'n$i', label: 'verwandt', strength: 0.4));
         }
       }
 
@@ -422,10 +467,12 @@ LIMIT 30
   Future<List<SourceItem>> fetchSources(String topic) async {
     final results = <SourceItem>[];
 
-    final guardianFuture =
-        _free.fetchGuardianNews(topic, limit: 4).catchError((_) => <GuardianArticle>[]);
-    final crossrefFuture =
-        _free.fetchCrossRefWorks(topic, limit: 4).catchError((_) => <CrossRefWork>[]);
+    final guardianFuture = _free
+        .fetchGuardianNews(topic, limit: 4)
+        .catchError((_) => <GuardianArticle>[]);
+    final crossrefFuture = _free
+        .fetchCrossRefWorks(topic, limit: 4)
+        .catchError((_) => <CrossRefWork>[]);
 
     final guardianList = await guardianFuture;
     for (final g in guardianList.take(3)) {
@@ -805,8 +852,7 @@ LIMIT 30
     // 6. DDoSecrets — Wikileaks-Nachfolger
     docs.add(LeakedDocument(
       title: 'DDoSecrets: $topic',
-      url:
-          'https://search.ddosecrets.com/?q=${Uri.encodeComponent(topic)}',
+      url: 'https://search.ddosecrets.com/?q=${Uri.encodeComponent(topic)}',
       archive: 'DDoSecrets',
       snippet:
           'BlueLeaks · Hacker-Dumps · Russland-Akten · 5+ TB Whistleblower-Daten',
@@ -871,7 +917,9 @@ LIMIT 30
   }
 
   _Cc _ccFromHost(String host) {
-    if (host.endsWith('.de') || host.contains('spiegel') || host.contains('zeit')) {
+    if (host.endsWith('.de') ||
+        host.contains('spiegel') ||
+        host.contains('zeit')) {
       return const _Cc('DE', 'Deutschland');
     }
     if (host.endsWith('.uk') ||
@@ -1022,8 +1070,7 @@ LIMIT 30
       });
       final resp = await http
           .post(
-            Uri.parse(
-                '${ApiConfig.workerUrl}/api/kaninchenbau/propaganda'),
+            Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/propaganda'),
             headers: {'Content-Type': 'application/json'},
             body: body,
           )
@@ -1043,19 +1090,23 @@ LIMIT 30
   Future<List<OffshoreEntity>> fetchOffshoreLeaks(String topic) async {
     try {
       final resp = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/offshore?topic=${Uri.encodeComponent(topic)}'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/kaninchenbau/offshore?topic=${Uri.encodeComponent(topic)}'))
           .timeout(const Duration(seconds: 18));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['entities'] as List? ?? []).map((e) => OffshoreEntity(
-        name: e['name'] as String? ?? '',
-        type: e['type'] as String? ?? '',
-        jurisdiction: e['jurisdiction'] as String? ?? '',
-        country: e['country'] as String? ?? '',
-        status: e['status'] as String? ?? '',
-        leakType: e['leakType'] as String? ?? 'ICIJ',
-        url: e['url'] as String?,
-      )).where((e) => e.name.isNotEmpty).toList();
+      return (data['entities'] as List? ?? [])
+          .map((e) => OffshoreEntity(
+                name: e['name'] as String? ?? '',
+                type: e['type'] as String? ?? '',
+                jurisdiction: e['jurisdiction'] as String? ?? '',
+                country: e['country'] as String? ?? '',
+                status: e['status'] as String? ?? '',
+                leakType: e['leakType'] as String? ?? 'ICIJ',
+                url: e['url'] as String?,
+              ))
+          .where((e) => e.name.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('OffshoreLeaks-Error: $e');
       return [];
@@ -1066,22 +1117,26 @@ LIMIT 30
   Future<List<CompanyEntry>> fetchCompanies(String topic) async {
     try {
       final resp = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/companies?topic=${Uri.encodeComponent(topic)}'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/kaninchenbau/companies?topic=${Uri.encodeComponent(topic)}'))
           .timeout(const Duration(seconds: 18));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['companies'] as List? ?? []).map((e) => CompanyEntry(
-        name: e['name'] as String? ?? '',
-        jurisdiction: e['jurisdiction'] as String? ?? '',
-        status: e['status'] as String? ?? '',
-        type: e['type'] as String? ?? '',
-        source: e['source'] as String? ?? '',
-        companyNumber: e['companyNumber'] as String?,
-        lei: e['lei'] as String?,
-        country: e['country'] as String?,
-        registered: e['registered'] as String?,
-        url: e['url'] as String?,
-      )).where((e) => e.name.isNotEmpty).toList();
+      return (data['companies'] as List? ?? [])
+          .map((e) => CompanyEntry(
+                name: e['name'] as String? ?? '',
+                jurisdiction: e['jurisdiction'] as String? ?? '',
+                status: e['status'] as String? ?? '',
+                type: e['type'] as String? ?? '',
+                source: e['source'] as String? ?? '',
+                companyNumber: e['companyNumber'] as String?,
+                lei: e['lei'] as String?,
+                country: e['country'] as String?,
+                registered: e['registered'] as String?,
+                url: e['url'] as String?,
+              ))
+          .where((e) => e.name.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('Companies-Error: $e');
       return [];
@@ -1092,20 +1147,24 @@ LIMIT 30
   Future<List<SanctionResult>> fetchOpenSanctions(String topic) async {
     try {
       final resp = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/opensanctions?topic=${Uri.encodeComponent(topic)}'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/kaninchenbau/opensanctions?topic=${Uri.encodeComponent(topic)}'))
           .timeout(const Duration(seconds: 18));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['results'] as List? ?? []).map((e) => SanctionResult(
-        id: e['id'] as String? ?? '',
-        name: e['name'] as String? ?? '',
-        schema: e['schema'] as String? ?? '',
-        topics: List<String>.from(e['topics'] as List? ?? []),
-        countries: List<String>.from(e['countries'] as List? ?? []),
-        datasets: List<String>.from(e['datasets'] as List? ?? []),
-        birthDate: e['birthDate'] as String?,
-        url: e['url'] as String?,
-      )).where((e) => e.name.isNotEmpty).toList();
+      return (data['results'] as List? ?? [])
+          .map((e) => SanctionResult(
+                id: e['id'] as String? ?? '',
+                name: e['name'] as String? ?? '',
+                schema: e['schema'] as String? ?? '',
+                topics: List<String>.from(e['topics'] as List? ?? []),
+                countries: List<String>.from(e['countries'] as List? ?? []),
+                datasets: List<String>.from(e['datasets'] as List? ?? []),
+                birthDate: e['birthDate'] as String?,
+                url: e['url'] as String?,
+              ))
+          .where((e) => e.name.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('OpenSanctions-Error: $e');
       return [];
@@ -1116,20 +1175,24 @@ LIMIT 30
   Future<List<AlephDocument>> fetchAleph(String topic) async {
     try {
       final resp = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/aleph?topic=${Uri.encodeComponent(topic)}'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/kaninchenbau/aleph?topic=${Uri.encodeComponent(topic)}'))
           .timeout(const Duration(seconds: 20));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['results'] as List? ?? []).map((e) => AlephDocument(
-        id: e['id'] as String? ?? '',
-        name: e['name'] as String? ?? '',
-        schema: e['schema'] as String? ?? '',
-        collection: e['collection'] as String? ?? '',
-        country: e['country'] as String? ?? '',
-        date: e['date'] as String?,
-        summary: e['summary'] as String?,
-        url: e['url'] as String?,
-      )).where((e) => e.name.isNotEmpty).toList();
+      return (data['results'] as List? ?? [])
+          .map((e) => AlephDocument(
+                id: e['id'] as String? ?? '',
+                name: e['name'] as String? ?? '',
+                schema: e['schema'] as String? ?? '',
+                collection: e['collection'] as String? ?? '',
+                country: e['country'] as String? ?? '',
+                date: e['date'] as String?,
+                summary: e['summary'] as String?,
+                url: e['url'] as String?,
+              ))
+          .where((e) => e.name.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('Aleph-Error: $e');
       return [];
@@ -1140,19 +1203,23 @@ LIMIT 30
   Future<List<PubMedPaper>> fetchPubMed(String topic) async {
     try {
       final resp = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/pubmed?topic=${Uri.encodeComponent(topic)}'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/kaninchenbau/pubmed?topic=${Uri.encodeComponent(topic)}'))
           .timeout(const Duration(seconds: 20));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['papers'] as List? ?? []).map((e) => PubMedPaper(
-        pmid: e['pmid'] as String? ?? '',
-        title: e['title'] as String? ?? '',
-        authors: e['authors'] as String? ?? '',
-        journal: e['journal'] as String? ?? '',
-        year: e['year'] as String? ?? '',
-        doi: e['doi'] as String?,
-        url: e['url'] as String? ?? '',
-      )).where((e) => e.title.isNotEmpty).toList();
+      return (data['papers'] as List? ?? [])
+          .map((e) => PubMedPaper(
+                pmid: e['pmid'] as String? ?? '',
+                title: e['title'] as String? ?? '',
+                authors: e['authors'] as String? ?? '',
+                journal: e['journal'] as String? ?? '',
+                year: e['year'] as String? ?? '',
+                doi: e['doi'] as String?,
+                url: e['url'] as String? ?? '',
+              ))
+          .where((e) => e.title.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('PubMed-Error: $e');
       return [];
@@ -1163,22 +1230,26 @@ LIMIT 30
   Future<List<SemanticPaper>> fetchSemanticPapers(String topic) async {
     try {
       final resp = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/semanticpapers?topic=${Uri.encodeComponent(topic)}'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/kaninchenbau/semanticpapers?topic=${Uri.encodeComponent(topic)}'))
           .timeout(const Duration(seconds: 18));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['papers'] as List? ?? []).map((e) => SemanticPaper(
-        paperId: e['paperId'] as String? ?? '',
-        title: e['title'] as String? ?? '',
-        authors: e['authors'] as String? ?? '',
-        year: e['year'] as int?,
-        citations: e['citations'] as int? ?? 0,
-        influential: e['influential'] as int? ?? 0,
-        doi: e['doi'] as String?,
-        openAccess: e['openAccess'] as String?,
-        abstract_: e['abstract'] as String? ?? '',
-        url: e['url'] as String? ?? '',
-      )).where((e) => e.title.isNotEmpty).toList();
+      return (data['papers'] as List? ?? [])
+          .map((e) => SemanticPaper(
+                paperId: e['paperId'] as String? ?? '',
+                title: e['title'] as String? ?? '',
+                authors: e['authors'] as String? ?? '',
+                year: e['year'] as int?,
+                citations: e['citations'] as int? ?? 0,
+                influential: e['influential'] as int? ?? 0,
+                doi: e['doi'] as String?,
+                openAccess: e['openAccess'] as String?,
+                abstract_: e['abstract'] as String? ?? '',
+                url: e['url'] as String? ?? '',
+              ))
+          .where((e) => e.title.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('SemanticScholar-Error: $e');
       return [];
@@ -1189,19 +1260,23 @@ LIMIT 30
   Future<List<ArchiveDoc>> fetchArchive(String topic) async {
     try {
       final resp = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/archive?topic=${Uri.encodeComponent(topic)}'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/kaninchenbau/archive?topic=${Uri.encodeComponent(topic)}'))
           .timeout(const Duration(seconds: 15));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['docs'] as List? ?? []).map((e) => ArchiveDoc(
-        id: e['id'] as String? ?? '',
-        title: e['title'] as String? ?? '',
-        creator: e['creator'] as String? ?? '',
-        date: e['date'] as String? ?? '',
-        mediatype: e['mediatype'] as String? ?? '',
-        description: e['description'] as String? ?? '',
-        url: e['url'] as String? ?? '',
-      )).where((e) => e.title.isNotEmpty).toList();
+      return (data['docs'] as List? ?? [])
+          .map((e) => ArchiveDoc(
+                id: e['id'] as String? ?? '',
+                title: e['title'] as String? ?? '',
+                creator: e['creator'] as String? ?? '',
+                date: e['date'] as String? ?? '',
+                mediatype: e['mediatype'] as String? ?? '',
+                description: e['description'] as String? ?? '',
+                url: e['url'] as String? ?? '',
+              ))
+          .where((e) => e.title.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('Archive-Error: $e');
       return [];
@@ -1212,20 +1287,24 @@ LIMIT 30
   Future<List<EuVote>> fetchEuVotes(String topic) async {
     try {
       final resp = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/euvotes?topic=${Uri.encodeComponent(topic)}'))
+          .get(Uri.parse(
+              '${ApiConfig.workerUrl}/api/kaninchenbau/euvotes?topic=${Uri.encodeComponent(topic)}'))
           .timeout(const Duration(seconds: 15));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['votes'] as List? ?? []).map((e) => EuVote(
-        id: e['id'] as String? ?? '',
-        title: e['title'] as String? ?? '',
-        date: e['date'] as String? ?? '',
-        result: e['result'] as String? ?? '',
-        forCount: e['forCount'] as int? ?? 0,
-        againstCount: e['againstCount'] as int? ?? 0,
-        abstainCount: e['abstainCount'] as int? ?? 0,
-        url: e['url'] as String? ?? '',
-      )).where((e) => e.title.isNotEmpty).toList();
+      return (data['votes'] as List? ?? [])
+          .map((e) => EuVote(
+                id: e['id'] as String? ?? '',
+                title: e['title'] as String? ?? '',
+                date: e['date'] as String? ?? '',
+                result: e['result'] as String? ?? '',
+                forCount: e['forCount'] as int? ?? 0,
+                againstCount: e['againstCount'] as int? ?? 0,
+                abstainCount: e['abstainCount'] as int? ?? 0,
+                url: e['url'] as String? ?? '',
+              ))
+          .where((e) => e.title.isNotEmpty)
+          .toList();
     } catch (e) {
       debugPrint('EuVotes-Error: $e');
       return [];
@@ -1242,8 +1321,7 @@ LIMIT 30
           'NDR-Panorama). Du sprichst NUR Deutsch. Stil: knapp, präzise, sachlich, '
           'keine Floskeln, keine Begrüßung, keine Markdown-Header.';
 
-      final userPrompt =
-          'Thema: "$topic"\n\n'
+      final userPrompt = 'Thema: "$topic"\n\n'
           '${context != null ? "Bekannte Fakten:\n$context\n\n" : ""}'
           'Schreibe DREI bis VIER prägnante Sätze auf Deutsch über:\n'
           '• Non-obvious Verbindungen (wer verbindet sich wirtschaftlich/politisch?)\n'
@@ -1338,8 +1416,8 @@ LIMIT 30
   Future<List<FecCandidate>> fetchFec(String topic) =>
       _fetchMindblow('fec', topic, FecCandidate.fromJson);
 
-  Future<List<LittleSisEntity>> fetchLittleSis(String topic) =>
-      _fetchMindblow('littlesis', normalizeTopic(topic), LittleSisEntity.fromJson);
+  Future<List<LittleSisEntity>> fetchLittleSis(String topic) => _fetchMindblow(
+      'littlesis', normalizeTopic(topic), LittleSisEntity.fromJson);
 
   Future<List<EveryPolitician>> fetchEveryPolitician(String topic) =>
       _fetchMindblow('everypolitician', topic, EveryPolitician.fromJson);

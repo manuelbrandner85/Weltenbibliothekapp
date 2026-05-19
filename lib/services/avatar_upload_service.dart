@@ -31,7 +31,7 @@ class AvatarUploadService {
   static const String _avatarKeyPrefix = 'user_avatar_';
 
   final ImagePicker _picker = ImagePicker();
-  
+
   /// Pick image from gallery
   Future<File?> pickImageFromGallery() async {
     if (kIsWeb) return null;
@@ -42,7 +42,7 @@ class AvatarUploadService {
         maxHeight: 512,
         imageQuality: 85,
       );
-      
+
       if (image != null) {
         if (kDebugMode) {
           debugPrint('🖼️ Image picked: ${image.path}');
@@ -57,7 +57,7 @@ class AvatarUploadService {
       return null;
     }
   }
-  
+
   /// Pick image from camera
   Future<File?> pickImageFromCamera() async {
     if (kIsWeb) return null;
@@ -68,7 +68,7 @@ class AvatarUploadService {
         maxHeight: 512,
         imageQuality: 85,
       );
-      
+
       if (image != null) {
         if (kDebugMode) {
           debugPrint('📸 Photo taken: ${image.path}');
@@ -83,7 +83,7 @@ class AvatarUploadService {
       return null;
     }
   }
-  
+
   /// Upload avatar to Cloudflare R2 — Legacy-API mit null-Return bei Fehler.
   /// Bestehende Caller erwarten `String?`. Backward-compatible.
   /// Für Error-Dialogs lieber [uploadAvatarOrThrow] nutzen.
@@ -100,35 +100,41 @@ class AvatarUploadService {
   /// Pfad: {userId}/avatar.jpg — upsert:true ersetzt automatisch das alte Bild.
   /// Speichert die öffentliche URL in profiles.avatar_url.
   Future<String> uploadAvatarOrThrow(File imageFile, String userId) async {
-    if (kDebugMode) debugPrint('⬆️ Uploading avatar for user $userId to Supabase Storage...');
+    if (kDebugMode)
+      debugPrint('⬆️ Uploading avatar for user $userId to Supabase Storage...');
 
     try {
       final client = Supabase.instance.client;
 
       if (client.auth.currentUser == null) {
-        throw AvatarUploadException('Nicht eingeloggt — bitte erneut anmelden.');
+        throw AvatarUploadException(
+            'Nicht eingeloggt — bitte erneut anmelden.');
       }
 
       final bytes = await imageFile.readAsBytes();
       // Dateiendung aus Pfad ermitteln, fallback auf jpg
       final ext = imageFile.path.split('.').last.toLowerCase();
-      final safeExt = ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+      final safeExt =
+          ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
       final storagePath = '$userId/avatar.$safeExt';
       final mimeType = safeExt == 'png' ? 'image/png' : 'image/jpeg';
 
       // Altes Bild mit upsert:true überschreiben (gleicher Pfad)
       await client.storage.from('avatars').uploadBinary(
-        storagePath,
-        bytes,
-        fileOptions: FileOptions(upsert: true, contentType: mimeType),
-      );
+            storagePath,
+            bytes,
+            fileOptions: FileOptions(upsert: true, contentType: mimeType),
+          );
 
       // Cache-Buster damit der Browser/App-Cache das neue Bild lädt
-      final publicUrl = client.storage.from('avatars').getPublicUrl(storagePath);
+      final publicUrl =
+          client.storage.from('avatars').getPublicUrl(storagePath);
       final avatarUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
 
       // profiles.avatar_url in Supabase DB aktualisieren
-      await client.from('profiles').update({'avatar_url': publicUrl}).eq('id', userId);
+      await client
+          .from('profiles')
+          .update({'avatar_url': publicUrl}).eq('id', userId);
 
       await saveAvatarUrl(userId, avatarUrl);
       if (kDebugMode) debugPrint('✅ Avatar uploaded: $avatarUrl');
@@ -148,13 +154,13 @@ class AvatarUploadService {
       );
     }
   }
-  
+
   /// Save avatar URL to local storage
   Future<void> saveAvatarUrl(String userId, String url) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('$_avatarKeyPrefix$userId', url);
-      
+
       if (kDebugMode) {
         debugPrint('💾 Avatar URL saved locally');
       }
@@ -164,7 +170,7 @@ class AvatarUploadService {
       }
     }
   }
-  
+
   /// Get avatar URL from local storage
   Future<String?> getAvatarUrl(String userId) async {
     try {
@@ -177,7 +183,7 @@ class AvatarUploadService {
       return null;
     }
   }
-  
+
   /// Delete avatar aus Supabase Storage + profiles.avatar_url leeren.
   Future<bool> deleteAvatar(String userId) async {
     try {
@@ -189,7 +195,9 @@ class AvatarUploadService {
           await client.storage.from('avatars').remove(['$userId/avatar.$ext']);
         } catch (_) {}
       }
-      await client.from('profiles').update({'avatar_url': null}).eq('id', userId);
+      await client
+          .from('profiles')
+          .update({'avatar_url': null}).eq('id', userId);
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('$_avatarKeyPrefix$userId');
       if (kDebugMode) debugPrint('✅ Avatar deleted');
@@ -199,9 +207,10 @@ class AvatarUploadService {
       return false;
     }
   }
-  
+
   /// Show image source selection dialog
-  static Future<ImageSource?> showImageSourceDialog(BuildContext context) async {
+  static Future<ImageSource?> showImageSourceDialog(
+      BuildContext context) async {
     return showDialog<ImageSource>(
       context: context,
       builder: (context) => AlertDialog(
@@ -224,7 +233,7 @@ class AvatarUploadService {
       ),
     );
   }
-  
+
   /// Avatar widget with cached image
   static Widget avatarWidget({
     String? avatarUrl,

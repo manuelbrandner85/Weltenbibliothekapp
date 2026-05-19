@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart'; // kDebugMode
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
-import 'dart:io' if (dart.library.html) '../../stubs/dart_io_stub.dart'; // File for uploads
+import 'dart:io'
+    if (dart.library.html) '../../stubs/dart_io_stub.dart'; // File for uploads
 import '../../config/api_config.dart';
 import '../shared/livekit_group_call_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase client für Auth
@@ -52,7 +53,8 @@ import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 // 📋 Admin Action Models
 // import '../../widgets/telegram_voice_recorder.dart'; // 🎙️ Telegram Voice Recorder (Disabled for Android)
 // 🎵 Telegram Voice Player
-import '../../widgets/voice_message_player.dart' show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
+import '../../widgets/voice_message_player.dart'
+    show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
 import '../../services/pinned_message_service.dart'; // 📌 E2 Pin-Service
 import '../../widgets/mention_autocomplete.dart'; // @ Mentions
 import '../../widgets/pinned_banner_v2.dart'; // 📌 E2 Sticky-Banner
@@ -102,27 +104,29 @@ import '../../widgets/cinematic/wb_vignette.dart';
 /// ✅ EINFACHER ENERGIE LIVE CHAT - MIT ALLEN 11 FEATURES!
 class EnergieLiveChatScreen extends StatefulWidget {
   final String? initialRoom;
-  
+
   const EnergieLiveChatScreen({super.key, this.initialRoom});
 
   @override
   State<EnergieLiveChatScreen> createState() => _EnergieLiveChatScreenState();
 }
 
-class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with TickerProviderStateMixin {
+class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
   // ignore: unused_field
   final UserService _userService = UserService();
   final ScrollController _scrollController = ScrollController();
-  final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
-  
+  final TypingIndicatorService _typingService =
+      TypingIndicatorService(); // ⌨️ NEW
+
   late String _selectedRoom;
-  
+
   /// Maps internal room key → DB room ID (energie world)
   static const Map<String, String> _roomIdMap = {
     'meditation': 'energie-meditation',
-    'astralreisen': 'energie-traeume',   // Map to closest existing room
+    'astralreisen': 'energie-traeume', // Map to closest existing room
     'chakren': 'energie-chakra',
     'chakra': 'energie-chakra',
     'spiritualitaet': 'energie-bewusstsein', // Map to closest existing room
@@ -133,16 +137,18 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     'kraftorte': 'energie-kraftorte',
     'traeume': 'energie-traeume',
     'traumarbeit': 'energie-traeume',
-    'frequenzen': 'energie-heilung',     // Map to closest existing room
+    'frequenzen': 'energie-heilung', // Map to closest existing room
   };
-  
+
   /// Returns the full DB room ID for the currently selected room.
-  String get _fullRoomId => _roomIdMap[_selectedRoom] ?? 'energie-$_selectedRoom';
+  String get _fullRoomId =>
+      _roomIdMap[_selectedRoom] ?? 'energie-$_selectedRoom';
   String _username = ''; // ✅ Leer bis Profil geladen
   String _avatar = '👤';
   String? _avatarUrl; // 🖼️ Hochgeladenes Profilbild (PRIORITÄT!)
-  late String _userId; // 🔥 Real User ID from UserService (initialized in initState)
-  
+  late String
+      _userId; // 🔥 Real User ID from UserService (initialized in initState)
+
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _polls = []; // 🆕 Polls list
 
@@ -164,7 +170,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
     }
     if (lastForeign == null) return null;
-    final text = (lastForeign['content'] ?? lastForeign['text'] ?? '').toString();
+    final text =
+        (lastForeign['content'] ?? lastForeign['text'] ?? '').toString();
     if (text.trim().isEmpty) return null;
     return SmartReplyComputer.computeQuick(
       lastMessageText: text,
@@ -185,7 +192,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         id: (p['id'] ?? '').toString(),
         question: (p['question'] ?? '').toString(),
         options: opts.map((o) {
-          final m = (o is Map) ? Map<String, dynamic>.from(o) : <String, dynamic>{};
+          final m =
+              (o is Map) ? Map<String, dynamic>.from(o) : <String, dynamic>{};
           return PollOption(
             label: (m['label'] ?? m['text'] ?? '').toString(),
             votes: (m['votes'] as num?)?.toInt() ?? 0,
@@ -196,26 +204,28 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
     }).toList(growable: false);
   }
+
   bool _isLoading = false;
   String? _errorMessage; // 🎨 NEW: Error state
   bool _isSending = false;
   Timer? _refreshTimer;
   StreamSubscription<int>? _pendingSub;
-  
+
   // 🆕 MENTIONS & MEDIA
   List<String> _mentionSuggestions = [];
   bool _showMentionPicker = false;
   final FocusNode _inputFocusNode = FocusNode();
-  bool _isInputFocused = false; // 🔧 FIX 10: Explicit focus state for reliable hiding
-  
+  bool _isInputFocused =
+      false; // 🔧 FIX 10: Explicit focus state for reliable hiding
+
   // 🎤➤ DYNAMIC BUTTON STATE
   bool _hasText = false; // true = Send Button, false = Voice Button
-  
+
   // ⏳ Voice-Room-Migration WebRTC → LiveKit. UI kommt im Folge-PR.
   // Voice-Button zeigt vorerst Coming-Soon-SnackBar.
-  
+
   // 🆕 ADMIN ACTION SERVICE
-  
+
   // 🆕 FEATURE 2: TYPING INDICATORS
   final Set<String> _typingUsers = {};
   Timer? _typingTimer;
@@ -226,29 +236,31 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   // Feature #16: Message scheduler
   final List<(DateTime, String)> _scheduledMessages = [];
   final List<Timer> _scheduledTimers = [];
-  
+
   // 🆕 FEATURE 3: SWIPE TO REPLY
   Map<String, dynamic>? _replyingTo;
   // ignore: unused_field
-  Map<String, dynamic>? _replyToMessageData; // Highlight indicator for scroll-to-message
+  Map<String, dynamic>?
+      _replyToMessageData; // Highlight indicator for scroll-to-message
 
   // 🆕 FEATURE 4: EMOJI REACTIONS
   // ignore: unused_field
-  final Map<String, Map<String, List<String>>> _messageReactions = {}; // messageId -> emoji -> userIds
-  
+  final Map<String, Map<String, List<String>>> _messageReactions =
+      {}; // messageId -> emoji -> userIds
+
   // 🆕 PHASE 2: MESSAGE EDIT/DELETE/SEARCH
   String? _editingMessageId;
   bool _showSearch = false;
-  
+
   // 🆕 PHASE 3: FILE UPLOAD & VOICE MESSAGES
   // ignore: unused_field
   File? _selectedFile;
   // ignore: unused_field
   String? _selectedFileType;
-  
+
   // ✅ PROFIL-DIALOG FLAG: Verhindert mehrfaches Anzeigen
   bool _profileDialogShown = false;
-  
+
   // 🔴 SUPABASE REALTIME: Live-Subscription für neue Nachrichten
   RealtimeChannel? _realtimeChannel;
 
@@ -268,7 +280,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   bool _meditationSyncActive = false;
   int _meditationSyncSeconds = 0;
   Timer? _meditationSyncTimer;
-  
+
   // 🔧 FIX 13: ENERGIE Räume reduziert auf 5 (Option C - Ausgewogen)
   // 🔧 FIX 17: ENERGIE Räume - API-kompatible IDs
   final Map<String, Map<String, dynamic>> _rooms = {
@@ -314,8 +326,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     super.initState();
 
     // ✨ Chat UX Redesign: Header-Animationen starten
-    _headerAuraCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
-    _headerOrbitCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 15))..repeat();
+    _headerAuraCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat(reverse: true);
+    _headerOrbitCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 15))
+          ..repeat();
 
     // 🔥 Initialize User ID from UserService
     _userId = UserService.getCurrentUserId();
@@ -329,16 +345,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
     // 🆕 Listen for @ mentions
     _messageController.addListener(_onInputChanged);
-    
+
     // 🔧 FIX 10: Listen for input focus changes with explicit state
     _inputFocusNode.addListener(() {
       if (mounted) {
         setState(() {
-        _isInputFocused = _inputFocusNode.hasFocus;
-      });
+          _isInputFocused = _inputFocusNode.hasFocus;
+        });
       }
     });
-    
+
     // ✨ Batch-1: Scroll-Listener für at-bottom Detection + Pagination
     _scrollController.addListener(_onScroll);
 
@@ -458,12 +474,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         });
       } catch (_) {}
       if (kDebugMode) {
-        debugPrint('✅ Energie-Profil geladen: ${energieProfile.username} (role: ${energieProfile.role})');
+        debugPrint(
+            '✅ Energie-Profil geladen: ${energieProfile.username} (role: ${energieProfile.role})');
       }
       // ✅ Flag NICHT zurücksetzen – verhindert Popup bei Rückkehr
     } else {
       // Kein Profil → Popup (nur einmal)
-      if (kDebugMode) debugPrint('⚠️ Kein Energie-Profil gefunden – zeige Profil-Dialog');
+      if (kDebugMode)
+        debugPrint('⚠️ Kein Energie-Profil gefunden – zeige Profil-Dialog');
       if (!_profileDialogShown && mounted) {
         _profileDialogShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -476,32 +494,33 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   Future<void> _loadMessages({bool silent = false}) async {
     if (!silent) {
       setState(() {
-      _isLoading = true;
-      _errorMessage = null; // Clear previous error
-    });
+        _isLoading = true;
+        _errorMessage = null; // Clear previous error
+      });
     }
-    
+
     try {
       final messages = await _api.getChatMessages(
         _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
         limit: 50,
       );
-      
+
       // 🔧 DEBUG: Log message count
-      debugPrint('✅ ENERGIE Chat loaded: ${messages.length} messages for room $_selectedRoom');
+      debugPrint(
+          '✅ ENERGIE Chat loaded: ${messages.length} messages for room $_selectedRoom');
       if (messages.isNotEmpty) {
         debugPrint('🔍 First message: ${messages.first}');
       }
-      
+
       if (mounted) {
         setState(() {
-        // Worker returns messages in ascending order (created_at.asc)
-        // → already chronological, no reversal needed
-        _messages = messages;
-        _isLoading = false;
-        _errorMessage = null;
-      });
+          // Worker returns messages in ascending order (created_at.asc)
+          // → already chronological, no reversal needed
+          _messages = messages;
+          _isLoading = false;
+          _errorMessage = null;
+        });
       }
 
       // Reactions aus DB nachladen und in _messages einpflegen
@@ -527,8 +546,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
     }
   }
-  
-  Future<void> _loadReactionsForMessages(List<Map<String, dynamic>> messages) async {
+
+  Future<void> _loadReactionsForMessages(
+      List<Map<String, dynamic>> messages) async {
     if (messages.isEmpty || !mounted) return;
     final ids = messages
         .map((m) => m['id']?.toString())
@@ -536,14 +556,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         .cast<String>()
         .toList();
     if (ids.isEmpty) return;
-    final reactionMap = await SupabaseChatService.instance.loadReactionsForMessages(ids);
+    final reactionMap =
+        await SupabaseChatService.instance.loadReactionsForMessages(ids);
     if (!mounted || reactionMap.isEmpty) return;
     setState(() {
       for (final msg in _messages) {
         final id = msg['id']?.toString();
         if (id != null && reactionMap.containsKey(id)) {
           msg['reactions'] = reactionMap[id]!.map(
-            (emoji, users) => MapEntry<String, dynamic>(emoji, List<dynamic>.from(users)),
+            (emoji, users) =>
+                MapEntry<String, dynamic>(emoji, List<dynamic>.from(users)),
           );
         }
       }
@@ -563,7 +585,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
     }
   }
-  
+
   // 🆕 MENTIONS DETECTION
   void _onInputChanged() {
     final text = _messageController.text;
@@ -575,21 +597,21 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     // 🎤➤ UPDATE BUTTON STATE: Voice/Send
     if (mounted) {
       setState(() {
-      _hasText = text.trim().isNotEmpty;
-    });
+        _hasText = text.trim().isNotEmpty;
+      });
     }
-    
+
     // 🆕 SEND TYPING INDICATOR
     if (text.trim().isNotEmpty) {
       _sendTypingIndicator();
     }
-    
+
     // Check if user is typing @mention
     if (cursorPos > 0 && text.length >= cursorPos) {
       final beforeCursor = text.substring(0, cursorPos);
       final words = beforeCursor.split(' ');
       final lastWord = words.isNotEmpty ? words.last : '';
-      
+
       if (lastWord.startsWith('@') && lastWord.length > 1) {
         // Show mention suggestions
         final query = lastWord.substring(1).toLowerCase();
@@ -598,34 +620,34 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             .where((u) => u != null && u != _username)
             .toSet()
             .toList();
-        
+
         if (mounted) {
           setState(() {
-          _mentionSuggestions = allUsers
-              .where((u) => u!.toLowerCase().contains(query))
-              .take(5)
-              .cast<String>()
-              .toList();
-          _showMentionPicker = _mentionSuggestions.isNotEmpty;
-        });
+            _mentionSuggestions = allUsers
+                .where((u) => u!.toLowerCase().contains(query))
+                .take(5)
+                .cast<String>()
+                .toList();
+            _showMentionPicker = _mentionSuggestions.isNotEmpty;
+          });
         }
       } else {
         if (mounted) {
           setState(() {
-          _showMentionPicker = false;
-          _mentionSuggestions = [];
-        });
+            _showMentionPicker = false;
+            _mentionSuggestions = [];
+          });
         }
       }
     }
   }
-  
+
   void _selectMention(String username) {
     final text = _messageController.text;
     final cursorPos = _messageController.selection.baseOffset;
     final beforeCursor = text.substring(0, cursorPos);
     final afterCursor = text.substring(cursorPos);
-    
+
     final words = beforeCursor.split(' ');
     if (words.isNotEmpty) {
       words[words.length - 1] = '@$username ';
@@ -635,12 +657,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         TextPosition(offset: words.join(' ').length),
       );
     }
-    
+
     if (mounted) {
       setState(() {
-      _showMentionPicker = false;
-      _mentionSuggestions = [];
-    });
+        _showMentionPicker = false;
+        _mentionSuggestions = [];
+      });
     }
   }
 
@@ -692,12 +714,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     HapticFeedbackService().messageSent();
 
     setState(() => _isSending = true);
-    
+
     try {
       // 📡 OFFLINE-FIRST: Check network status
       final offlineService = OfflineSyncService();
       final isOnline = offlineService.isOnline;
-      
+
       if (!isOnline) {
         // Queue message for later — _fullRoomId, damit beim Replay derselbe
         // Raum getroffen wird wie online (z.B. 'energie-meditation' statt
@@ -742,14 +764,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             _messages.add(pendingMsg);
             _replyingTo = null;
           });
-          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => _scrollToBottom());
         }
 
         _messageController.clear();
         ChatDraftService.instance.clear(_fullRoomId);
         return;
       }
-      
+
       // Online: Send directly via Supabase
       final replyData = _replyingTo;
       final serverMsg = await _api.sendChatMessage(
@@ -761,8 +784,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         avatarEmoji: _avatar,
         avatarUrl: _avatarUrl,
         replyToId: replyData?['id']?.toString(),
-        replyToContent: replyData?['message']?.toString()
-            ?? replyData?['content']?.toString(),
+        replyToContent: replyData?['message']?.toString() ??
+            replyData?['content']?.toString(),
         replyToSenderName: replyData?['username']?.toString(),
       );
 
@@ -787,15 +810,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         final err = e.toString();
         if (err.contains('Nicht eingeloggt')) {
           msg = 'Bitte Profil anlegen oder erneut versuchen.';
-        } else if (err.contains('permission denied') || err.contains('42501')
-            || err.contains('violates row-level security')) {
+        } else if (err.contains('permission denied') ||
+            err.contains('42501') ||
+            err.contains('violates row-level security')) {
           msg = 'DB-Fehler: $err';
         } else if (err.contains('null value') || err.contains('not-null')) {
           msg = 'Profil unvollständig. Bitte Profil-Einstellungen prüfen.';
         } else if (err.contains('foreign key') || err.contains('23503')) {
           msg = 'Raum nicht verfügbar. Bitte App neu starten.';
-        } else if (err.contains('SocketException') || err.contains('Failed host')
-            || err.contains('TimeoutException')) {
+        } else if (err.contains('SocketException') ||
+            err.contains('Failed host') ||
+            err.contains('TimeoutException')) {
           msg = 'Keine Verbindung. Bitte Netzwerk prüfen.';
         } else {
           final short = err.length > 80 ? '${err.substring(0, 80)}…' : err;
@@ -838,15 +863,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         });
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
-      
+
       if (kDebugMode) {
         debugPrint('✅ Voice message sent: $audioUrl');
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🎤 Sprachnachricht gesendet (${duration.inSeconds}s)'),
+            content:
+                Text('🎤 Sprachnachricht gesendet (${duration.inSeconds}s)'),
             backgroundColor: Colors.green,
           ),
         );
@@ -871,7 +897,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     if (kDebugMode) {
       debugPrint('🎤 Opening Android Voice Recorder...');
     }
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -925,10 +951,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
             }
-            
+
             // Send voice message
             await _sendVoiceMessage(audioUrl, duration);
-            
+
             if (mounted) {
               // ignore: use_build_context_synchronously
               Navigator.pop(context);
@@ -967,12 +993,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         maxHeight: 1280,
         imageQuality: 75,
       );
-      
+
       if (image == null) return;
-      
+
       // Read file bytes for preview
       final bytes = await image.readAsBytes();
-      
+
       // 🖼️ SHOW IMAGE PREVIEW DIALOG
       if (mounted) {
         final shouldUpload = await showDialog<bool>(
@@ -1019,10 +1045,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             ],
           ),
         );
-        
+
         if (shouldUpload != true) return;
       }
-      
+
       // Show uploading indicator
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1032,7 +1058,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 ),
                 SizedBox(width: 12),
                 Text('📤 Bild wird hochgeladen...'),
@@ -1042,7 +1069,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           ),
         );
       }
-      
+
       // Upload to Cloudflare R2
       final result = await _api.uploadFile(
         fileBytes: bytes,
@@ -1051,7 +1078,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         type: 'image',
         userId: _userId,
       );
-      
+
       if (result['success'] == true && result['url'] != null) {
         // Send message with image URL
         await _api.sendChatMessage(
@@ -1065,10 +1092,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           mediaType: 'image',
           mediaUrl: result['url'],
         );
-        
+
         // Reload messages
         await _loadMessages(silent: true);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1086,7 +1113,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Upload fehlgeschlagen: ${e.toString().substring(0, 50)}...'),
+            content: Text(
+                '❌ Upload fehlgeschlagen: ${e.toString().substring(0, 50)}...'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -1095,71 +1123,87 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     }
   }
 
-    // if (timestamp == null) return '';
-    // try {
-      // final dt = DateTime.parse(timestamp);
-      // final now = DateTime.now();
-      // final diff = now.difference(dt);
-       //       // if (diff.inMinutes < 1) return 'Gerade eben';
-      // if (diff.inMinutes < 60) return 'vor ${diff.inMinutes}m';
-      // if (diff.inHours < 24) return 'vor ${diff.inHours}h';
-      // return 'vor ${diff.inDays}d';
-    // } catch (e) {
-      // return timestamp;
-    // }
+  // if (timestamp == null) return '';
+  // try {
+  // final dt = DateTime.parse(timestamp);
+  // final now = DateTime.now();
+  // final diff = now.difference(dt);
+  //       // if (diff.inMinutes < 1) return 'Gerade eben';
+  // if (diff.inMinutes < 60) return 'vor ${diff.inMinutes}m';
+  // if (diff.inHours < 24) return 'vor ${diff.inHours}h';
+  // return 'vor ${diff.inDays}d';
+  // } catch (e) {
+  // return timestamp;
+  // }
   // }
 
   /// 🔧 NACHRICHT BEARBEITEN/LÖSCHEN MENÜ
-    // showModalBottomSheet(
-      // context: context,
-      // backgroundColor: const Color(0xFF050310),
-      // shape: const RoundedRectangleBorder(
-        // borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      // ),
-      // builder: (context) {
-        // return Container(
-          // padding: const EdgeInsets.all(24),
-          // child: Column(
-            // mainAxisSize: MainAxisSize.min,
-            // children: [
-              // Bearbeiten
-              // ListTile(
-                // leading: const Icon(Icons.edit, color: Colors.blue),
-                // title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
-                // onTap: () {
-                  // Navigator.pop(context);
-                  // _editMessage(messageId, currentText);
-                // },
-              // ),
-              // const Divider(color: Colors.white24),
-              // Löschen
-              // ListTile(
-                // leading: const Icon(Icons.delete, color: Colors.red),
-                // title: const Text('Löschen', style: TextStyle(color: Colors.white)),
-                // onTap: () {
-                  // Navigator.pop(context);
-                  // _deleteMessage(messageId);
-                // },
-              // ),
-              // const SizedBox(height: 16),
-              // Abbrechen
-              // TextButton(
-                // onPressed: () => Navigator.pop(context),
-                // child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
-              // ),
-            // ],
-          // ),
-        // );
-      // },
-    // );
+  // showModalBottomSheet(
+  // context: context,
+  // backgroundColor: const Color(0xFF050310),
+  // shape: const RoundedRectangleBorder(
+  // borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  // ),
+  // builder: (context) {
+  // return Container(
+  // padding: const EdgeInsets.all(24),
+  // child: Column(
+  // mainAxisSize: MainAxisSize.min,
+  // children: [
+  // Bearbeiten
+  // ListTile(
+  // leading: const Icon(Icons.edit, color: Colors.blue),
+  // title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+  // onTap: () {
+  // Navigator.pop(context);
+  // _editMessage(messageId, currentText);
+  // },
+  // ),
+  // const Divider(color: Colors.white24),
+  // Löschen
+  // ListTile(
+  // leading: const Icon(Icons.delete, color: Colors.red),
+  // title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+  // onTap: () {
+  // Navigator.pop(context);
+  // _deleteMessage(messageId);
+  // },
+  // ),
+  // const SizedBox(height: 16),
+  // Abbrechen
+  // TextButton(
+  // onPressed: () => Navigator.pop(context),
+  // child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+  // ),
+  // ],
+  // ),
+  // );
+  // },
+  // );
   // }
 
   /// ✏️ NACHRICHT BEARBEITEN
 
   /// 🎨 AVATAR-PICKER
   Future<void> _showAvatarPicker() async {
-    final avatars = ['🔮', '💎', '🧘', '🌙', '✨', '⚡', '🌈', '🔥', '💫', '🌟', '🦋', '🐉', '👤', '🎭', '🎨'];
-    
+    final avatars = [
+      '🔮',
+      '💎',
+      '🧘',
+      '🌙',
+      '✨',
+      '⚡',
+      '🌈',
+      '🔥',
+      '💫',
+      '🌟',
+      '🦋',
+      '🐉',
+      '👤',
+      '🎭',
+      '🎨'
+    ];
+
     final selected = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: const Color(0xFF1A1A2E),
@@ -1200,8 +1244,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: _avatar == avatar 
-                              ? Colors.white 
+                          color: _avatar == avatar
+                              ? Colors.white
                               : Colors.white.withValues(alpha: 0.3),
                           width: 2,
                         ),
@@ -1219,17 +1263,18 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white70)),
               ),
             ],
           ),
         );
       },
     );
-    
+
     if (selected != null) {
       setState(() => _avatar = selected);
-      
+
       // 💾 Speichere in Profil
       final storage = StorageService();
       final energieProfile = storage.getEnergieProfile();
@@ -1248,11 +1293,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           userId: energieProfile.userId, // 🔥 FIX: Behalte userId
           role: energieProfile.role, // 🔥 FIX: Behalte role
         );
-        
+
         // 🔥 FIX: Backend-Sync durchführen um role zu bewahren
         final syncService = ProfileSyncService();
-        final syncedProfile = await syncService.saveEnergieProfileAndGetUpdated(updated);
-        
+        final syncedProfile =
+            await syncService.saveEnergieProfileAndGetUpdated(updated);
+
         if (syncedProfile != null) {
           await storage.saveEnergieProfile(syncedProfile);
           if (kDebugMode) {
@@ -1263,7 +1309,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           // Fallback: Lokales Profil speichern
           await storage.saveEnergieProfile(updated);
         }
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1281,7 +1327,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   // ignore: unused_element
   void _showGroupTool() {
     final room = _rooms[_selectedRoom]!;
-    
+
     // ✅ NAVIGATION ZU ECHTEN TOOL-SCREENS
     if (_selectedRoom == 'meditation') {
       Navigator.of(context).push(
@@ -1291,7 +1337,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
       return;
     }
-    
+
     if (_selectedRoom == 'astralreisen') {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -1300,7 +1346,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
       return;
     }
-    
+
     if (_selectedRoom == 'chakra') {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -1309,7 +1355,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
       return;
     }
-    
+
     if (_selectedRoom == 'kristalle') {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -1318,7 +1364,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
       return;
     }
-    
+
     if (_selectedRoom == 'traumarbeit') {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -1327,7 +1373,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
       return;
     }
-    
+
     if (_selectedRoom == 'frequenzen') {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -1394,7 +1440,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               const SizedBox(height: 24),
               const Divider(color: Colors.white24),
               const SizedBox(height: 16),
-              
+
               // 🚀 GEMEINSAME FUNKTIONEN
               const Text(
                 '🌐 Gemeinsame Funktionen:',
@@ -1405,14 +1451,18 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 ),
               ),
               const SizedBox(height: 12),
-              
-              _buildToolFeature('👥', 'Echtzeit-Synchronisation', 'Alle Teilnehmer sehen Updates sofort'),
-              _buildToolFeature('💾', 'Gemeinsamer Speicher', 'Daten für die ganze Gruppe'),
-              _buildToolFeature('📊', 'Gruppen-Statistiken', 'Fortschritt gemeinsam tracken'),
-              _buildToolFeature('🔔', 'Benachrichtigungen', 'Bei Gruppen-Aktivitäten'),
-              
+
+              _buildToolFeature('👥', 'Echtzeit-Synchronisation',
+                  'Alle Teilnehmer sehen Updates sofort'),
+              _buildToolFeature(
+                  '💾', 'Gemeinsamer Speicher', 'Daten für die ganze Gruppe'),
+              _buildToolFeature(
+                  '📊', 'Gruppen-Statistiken', 'Fortschritt gemeinsam tracken'),
+              _buildToolFeature(
+                  '🔔', 'Benachrichtigungen', 'Bei Gruppen-Aktivitäten'),
+
               const SizedBox(height: 24),
-              
+
               // 📝 FEATURE-SPEZIFISCH
               Text(
                 '✨ ${_getToolSpecificFeatures(_selectedRoom)}',
@@ -1428,7 +1478,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Schließen', style: TextStyle(color: Colors.white54)),
+            child: const Text('Schließen',
+                style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton.icon(
             onPressed: () {
@@ -1447,7 +1498,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   Widget _buildToolFeature(String icon, String title, String description) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1481,7 +1532,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   String _getToolSpecificFeatures(String roomId) {
     switch (roomId) {
       case 'meditation':
@@ -1525,10 +1576,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      (_rooms[_selectedRoom]?['name'] as String? ?? 'ENERGIE LIVE-CHAT')
+                      (_rooms[_selectedRoom]?['name'] as String? ??
+                              'ENERGIE LIVE-CHAT')
                           .replaceAll(RegExp(r'^\S+\s'), ''),
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -1541,7 +1594,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     count > 0 ? '$count online · Energie-Welt' : 'Energie-Welt',
                     style: TextStyle(
                       fontSize: 11,
-                      color: count > 0 ? const Color(0xFF9B51E0) : Colors.grey[500],
+                      color: count > 0
+                          ? const Color(0xFF9B51E0)
+                          : Colors.grey[500],
                       fontWeight: FontWeight.w500,
                     ),
                   );
@@ -1558,7 +1613,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               if (!ApiConfig.isLivekitEnabled) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Sprach-Anruf ist serverseitig noch nicht aktiviert.'),
+                    content: Text(
+                        'Sprach-Anruf ist serverseitig noch nicht aktiviert.'),
                     duration: Duration(seconds: 3),
                   ),
                 );
@@ -1610,535 +1666,690 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             // Main content
             Builder(
               builder: (context) {
-            final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-            final hideHeaders = keyboardVisible || _isInputFocused;
+                final keyboardVisible =
+                    MediaQuery.of(context).viewInsets.bottom > 0;
+                final hideHeaders = keyboardVisible || _isInputFocused;
 
-            return GestureDetector(
-              onTap: () {
-                if (_isInputFocused) {
-                  FocusScope.of(context).unfocus();
-                  if (mounted) {
-                    setState(() {
-                    _isInputFocused = false;
-                  });
-                  }
-                }
-              },
-              child: Column(
-                children: [
-                  // ✨ Batch-1: Status-Banner (Offline / Reconnecting / Pending-Queue)
-                  ChatStatusBanner(
-                    reconnecting: _reconnecting,
-                    worldColor: const Color(0xFF9B51E0),
-                  ),
-                  // ✨ v5.43.1: Cinematic Live-Hero (oberhalb der Legacy-Banner)
-                  if (!hideHeaders)
-                    LiveChatHero(
-                      world: 'energie',
-                      totalRoomMembers: _messages.length > 50 ? 50 : _messages.length,
-                      activeCall: null, // wird in Phase 2 mit echtem Call-State verbunden
-                      onJoinCall: () {
-                        Navigator.push(
+                return GestureDetector(
+                  onTap: () {
+                    if (_isInputFocused) {
+                      FocusScope.of(context).unfocus();
+                      if (mounted) {
+                        setState(() {
+                          _isInputFocused = false;
+                        });
+                      }
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      // ✨ Batch-1: Status-Banner (Offline / Reconnecting / Pending-Queue)
+                      ChatStatusBanner(
+                        reconnecting: _reconnecting,
+                        worldColor: const Color(0xFF9B51E0),
+                      ),
+                      // ✨ v5.43.1: Cinematic Live-Hero (oberhalb der Legacy-Banner)
+                      if (!hideHeaders)
+                        LiveChatHero(
+                          world: 'energie',
+                          totalRoomMembers:
+                              _messages.length > 50 ? 50 : _messages.length,
+                          activeCall:
+                              null, // wird in Phase 2 mit echtem Call-State verbunden
+                          onJoinCall: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LiveKitGroupCallScreen(
+                                  roomName: 'wb-energie-$_selectedRoom',
+                                  world: 'energie',
+                                  displayName: _username.isNotEmpty
+                                      ? _username
+                                      : 'Mitglied',
+                                  avatarUrl: _avatarUrl,
+                                  audioOnly: false,
+                                  initialMicEnabled: true,
+                                ),
+                              ),
+                            );
+                          },
+                          onSeeReplays: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LiveReplayLibraryScreen(
+                                    world: 'energie'),
+                              ),
+                            );
+                          },
+                          onSchedule: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Live-Schedule kommt bald.')),
+                            );
+                          },
+                          // Starte einen neuen Live-Call: First-in-room ist Host.
+                          onStartLive: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => LiveKitGroupCallScreen(
+                                  roomName: 'wb-energie-$_selectedRoom',
+                                  world: 'energie',
+                                  displayName: _username.isNotEmpty
+                                      ? _username
+                                      : 'Mitglied',
+                                  avatarUrl: _avatarUrl,
+                                  audioOnly: true,
+                                  initialMicEnabled: true,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
+                      LiveRoomBanner(
+                        world: 'energie',
+                        currentRoomName: _fullRoomId,
+                        onJoin: (roomName) => Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => LiveKitGroupCallScreen(
-                              roomName: 'wb-energie-$_selectedRoom',
+                              roomName: 'wb-$roomName',
                               world: 'energie',
-                              displayName: _username.isNotEmpty ? _username : 'Mitglied',
+                              displayName:
+                                  _username.isNotEmpty ? _username : 'Mitglied',
                               avatarUrl: _avatarUrl,
                               audioOnly: false,
                               initialMicEnabled: true,
                             ),
                           ),
-                        );
-                      },
-                      onSeeReplays: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LiveReplayLibraryScreen(world: 'energie'),
-                          ),
-                        );
-                      },
-                      onSchedule: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Live-Schedule kommt bald.')),
-                        );
-                      },
-                      // Starte einen neuen Live-Call: First-in-room ist Host.
-                      onStartLive: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LiveKitGroupCallScreen(
-                              roomName: 'wb-energie-$_selectedRoom',
-                              world: 'energie',
-                              displayName:
-                                  _username.isNotEmpty ? _username : 'Mitglied',
-                              avatarUrl: _avatarUrl,
-                              audioOnly: true,
-                              initialMicEnabled: true,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
-                  LiveRoomBanner(
-                    world: 'energie',
-                    currentRoomName: _fullRoomId,
-                    onJoin: (roomName) => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LiveKitGroupCallScreen(
-                          roomName: 'wb-$roomName',
-                          world: 'energie',
-                          displayName:
-                              _username.isNotEmpty ? _username : 'Mitglied',
-                          avatarUrl: _avatarUrl,
-                          audioOnly: false,
-                          initialMicEnabled: true,
                         ),
                       ),
-                    ),
-                  ),
-                  // 🚩 v5.44.2 Phase 2 (Beta): neuer PinsPollsHeader hinter Flag.
-                  // Default OFF -> kein Effekt. Toggle via SharedPreferences-Key
-                  // feature_flag_newPinsHeader_v1=true wenn beta-fertig.
-                  if (FeatureFlags.instance.getSync(FeatureFlag.newPinsHeader))
-                    PinsPollsHeader(
-                      world: 'energie',
-                      pins: _pinsForNewHeaderEnergie,
-                      polls: _pollsForNewHeaderEnergie,
-                    )
-                  else
-                    // 📌 Legacy Sticky-Banner für angepinnte Nachrichten (E2)
-                    PinnedBannerV2(
-                      roomId: _fullRoomId,
-                      accent: const Color(0xFF9B51E0),
-                    ),
-                  // 🔍 SEARCH MODE
-                  if (_showSearch)
-                    Expanded(
-                      child: MessageSearchWidget(
-                        messages: _messages,
-                        onSelectMessage: _jumpToMessage,
-                        onClose: _toggleSearch,
-                      ),
-                    )
-                  else ...[
-                  // 🔧 HIDE WHEN INPUT FOCUSED OR KEYBOARD OPEN
-                  if (!hideHeaders) ...[
-                    // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
-                    _buildStoriesBar(),
-                    // 📌 PINNED MESSAGE BANNER (shrinkt selbst auf 0 wenn leer)
-                    PinnedMessageBanner(
-                      room: _selectedRoom,
-                      onRefresh: () {
-                        _loadMessages(silent: true);
-                      },
-                      onTap: () {
-                        // ✅ Scroll to bottom when pinned message tapped
-                        _scrollToBottom();
-                      },
-                      worldColor: const Color(0xFF9B51E0), // ENERGIE Purple
-                    ),
-                  
-                  // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
-                
-                  // 🎥 Voice-Header-Bar entfernt — kommt im LiveKit-Folge-PR.
-                  // ⌨️ TYPING INDICATORS
-                  if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
-                  
-                  // ✨ UPGRADED ROOM SELECTOR — Glassmorphism Chips mit Glow
-                  _buildRoomSelector(),
-                  // ✨ ROOM VIBE BANNER — Stimmungs-Emojis der aktiven User
-                  _buildRoomVibeBanner(),
-                  // ✨ v5.44 Phase 2: AI-Catchup wenn User > 24h weg war
-                  if (_unreadSeparatorTime != null)
-                    CatchupCard(
-                      world: 'energie',
-                      lastVisit: _unreadSeparatorTime!,
-                      recentMessages: _messages.take(50).toList(),
-                      onDismiss: () => setState(() => _unreadSeparatorTime = null),
-                    ),
-                  // ✨ v5.44 Phase 2: Topic-Cloud aus letzten Nachrichten
-                  if (_messages.length >= 10)
-                    TopicCloud(
-                      world: 'energie',
-                      recentMessages: _messages.take(100).toList(),
-                    ),
-                ], // End of keyboard-hidden headers
-          
-          // Messages List — Feature #21: swipe left/right between rooms
-          Expanded(
-            child: GestureDetector(
-              onHorizontalDragEnd: (details) {
-                final v = details.primaryVelocity ?? 0;
-                if (v.abs() < 350) return;
-                final keys = _rooms.keys.toList();
-                final idx = keys.indexOf(_selectedRoom);
-                if (v < 0 && idx < keys.length - 1) _switchToRoom(keys[idx + 1]);
-                if (v > 0 && idx > 0) _switchToRoom(keys[idx - 1]);
-              },
-              behavior: HitTestBehavior.translucent,
-              child: _errorMessage != null && _messages.isEmpty
-                ? ErrorDisplayWidget(
-                    error: _errorMessage!,
-                    onRetry: _loadMessages,
-                  )
-                : _isLoading && _messages.isEmpty
-                    ? const LoadingStateWidget(
-                        message: 'Lade Nachrichten...',
-                      )
-                    : _messages.isEmpty
-                        ? EmptyChatOrb(
-                            world: 'energie',
-                            roomName: _rooms[_selectedRoom]!['name'] as String,
-                          )
-                        : AnimatedBuilder(
-                            animation: UserBlockService.instance,
-                            builder: (_, __) {
-                              final visible = UserBlockService.instance
-                                  .filterMessages(_messages)
-                                  .toList(growable: false);
-                              // Feature #10/#11: pre-compute flat items with grouping + separators
-                              final chatItems = <Map<String, dynamic>>[];
-                              final lastSeen = UnreadTrackerService.instance.countForSync(_fullRoomId) > 0
-                                  ? _unreadSeparatorTime
-                                  : null;
-                              bool unreadSeparatorInserted = false;
-                              {
-                                DateTime? prevDate;
-                                String? prevSender;
-                                DateTime? prevTs;
-                                for (final msg in visible) {
-                                  final ts = _parseMessageTimestamp(msg['timestamp'] ?? msg['created_at']);
-                                  final msgDay = ts != null ? DateTime(ts.year, ts.month, ts.day) : null;
-                                  if (msgDay != null && msgDay != prevDate) {
-                                    chatItems.add({'type': 'separator', 'date': ts});
-                                    prevDate = msgDay;
-                                    prevSender = null;
-                                    prevTs = null;
-                                  }
-                                  // Ungelesen-Trennlinie einfügen vor der ersten ungelesenen Nachricht
-                                  if (!unreadSeparatorInserted && lastSeen != null && ts != null && ts.isAfter(lastSeen)) {
-                                    final isOwnMsg = (msg['username']?.toString() == _username) ||
-                                        (msg['user_id']?.toString() == _userId);
-                                    if (!isOwnMsg) {
-                                      chatItems.add({'type': 'unread_separator'});
-                                      unreadSeparatorInserted = true;
-                                    }
-                                  }
-                                  final isGrouped = prevSender != null &&
-                                      prevSender == msg['username']?.toString() &&
-                                      ts != null && prevTs != null &&
-                                      ts.difference(prevTs).inSeconds.abs() <= 120;
-                                  chatItems.add({'type': 'message', 'msg': Map<String, dynamic>.from(msg)..['_isGrouped'] = isGrouped});
-                                  prevSender = msg['username']?.toString();
-                                  prevTs = ts;
-                                }
-                              }
-                              return ListView.builder(
-                                reverse: false,
-                                controller: _scrollController,
-                                padding: const EdgeInsets.all(16),
-                                itemCount: chatItems.length + (_loadingOlder ? 1 : 0),
-                                cacheExtent: 500,
-                                addAutomaticKeepAlives: false,
-                                addRepaintBoundaries: true,
-                                itemBuilder: (context, index) {
-                                  if (_loadingOlder && index == 0) {
-                                    return const Padding(
-                                      padding: EdgeInsets.all(12),
-                                      child: Center(
-                                        child: SizedBox(
-                                          height: 20,
+                      // 🚩 v5.44.2 Phase 2 (Beta): neuer PinsPollsHeader hinter Flag.
+                      // Default OFF -> kein Effekt. Toggle via SharedPreferences-Key
+                      // feature_flag_newPinsHeader_v1=true wenn beta-fertig.
+                      if (FeatureFlags.instance
+                          .getSync(FeatureFlag.newPinsHeader))
+                        PinsPollsHeader(
+                          world: 'energie',
+                          pins: _pinsForNewHeaderEnergie,
+                          polls: _pollsForNewHeaderEnergie,
+                        )
+                      else
+                        // 📌 Legacy Sticky-Banner für angepinnte Nachrichten (E2)
+                        PinnedBannerV2(
+                          roomId: _fullRoomId,
+                          accent: const Color(0xFF9B51E0),
+                        ),
+                      // 🔍 SEARCH MODE
+                      if (_showSearch)
+                        Expanded(
+                          child: MessageSearchWidget(
+                            messages: _messages,
+                            onSelectMessage: _jumpToMessage,
+                            onClose: _toggleSearch,
+                          ),
+                        )
+                      else ...[
+                        // 🔧 HIDE WHEN INPUT FOCUSED OR KEYBOARD OPEN
+                        if (!hideHeaders) ...[
+                          // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
+                          _buildStoriesBar(),
+                          // 📌 PINNED MESSAGE BANNER (shrinkt selbst auf 0 wenn leer)
+                          PinnedMessageBanner(
+                            room: _selectedRoom,
+                            onRefresh: () {
+                              _loadMessages(silent: true);
+                            },
+                            onTap: () {
+                              // ✅ Scroll to bottom when pinned message tapped
+                              _scrollToBottom();
+                            },
+                            worldColor:
+                                const Color(0xFF9B51E0), // ENERGIE Purple
+                          ),
+
+                          // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
+
+                          // 🎥 Voice-Header-Bar entfernt — kommt im LiveKit-Folge-PR.
+                          // ⌨️ TYPING INDICATORS
+                          if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
+
+                          // ✨ UPGRADED ROOM SELECTOR — Glassmorphism Chips mit Glow
+                          _buildRoomSelector(),
+                          // ✨ ROOM VIBE BANNER — Stimmungs-Emojis der aktiven User
+                          _buildRoomVibeBanner(),
+                          // ✨ v5.44 Phase 2: AI-Catchup wenn User > 24h weg war
+                          if (_unreadSeparatorTime != null)
+                            CatchupCard(
+                              world: 'energie',
+                              lastVisit: _unreadSeparatorTime!,
+                              recentMessages: _messages.take(50).toList(),
+                              onDismiss: () =>
+                                  setState(() => _unreadSeparatorTime = null),
+                            ),
+                          // ✨ v5.44 Phase 2: Topic-Cloud aus letzten Nachrichten
+                          if (_messages.length >= 10)
+                            TopicCloud(
+                              world: 'energie',
+                              recentMessages: _messages.take(100).toList(),
+                            ),
+                        ], // End of keyboard-hidden headers
+
+                        // Messages List — Feature #21: swipe left/right between rooms
+                        Expanded(
+                          child: GestureDetector(
+                            onHorizontalDragEnd: (details) {
+                              final v = details.primaryVelocity ?? 0;
+                              if (v.abs() < 350) return;
+                              final keys = _rooms.keys.toList();
+                              final idx = keys.indexOf(_selectedRoom);
+                              if (v < 0 && idx < keys.length - 1)
+                                _switchToRoom(keys[idx + 1]);
+                              if (v > 0 && idx > 0)
+                                _switchToRoom(keys[idx - 1]);
+                            },
+                            behavior: HitTestBehavior.translucent,
+                            child: _errorMessage != null && _messages.isEmpty
+                                ? ErrorDisplayWidget(
+                                    error: _errorMessage!,
+                                    onRetry: _loadMessages,
+                                  )
+                                : _isLoading && _messages.isEmpty
+                                    ? const LoadingStateWidget(
+                                        message: 'Lade Nachrichten...',
+                                      )
+                                    : _messages.isEmpty
+                                        ? EmptyChatOrb(
+                                            world: 'energie',
+                                            roomName:
+                                                _rooms[_selectedRoom]!['name']
+                                                    as String,
+                                          )
+                                        : AnimatedBuilder(
+                                            animation:
+                                                UserBlockService.instance,
+                                            builder: (_, __) {
+                                              final visible = UserBlockService
+                                                  .instance
+                                                  .filterMessages(_messages)
+                                                  .toList(growable: false);
+                                              // Feature #10/#11: pre-compute flat items with grouping + separators
+                                              final chatItems =
+                                                  <Map<String, dynamic>>[];
+                                              final lastSeen =
+                                                  UnreadTrackerService.instance
+                                                              .countForSync(
+                                                                  _fullRoomId) >
+                                                          0
+                                                      ? _unreadSeparatorTime
+                                                      : null;
+                                              bool unreadSeparatorInserted =
+                                                  false;
+                                              {
+                                                DateTime? prevDate;
+                                                String? prevSender;
+                                                DateTime? prevTs;
+                                                for (final msg in visible) {
+                                                  final ts =
+                                                      _parseMessageTimestamp(
+                                                          msg['timestamp'] ??
+                                                              msg['created_at']);
+                                                  final msgDay = ts != null
+                                                      ? DateTime(ts.year,
+                                                          ts.month, ts.day)
+                                                      : null;
+                                                  if (msgDay != null &&
+                                                      msgDay != prevDate) {
+                                                    chatItems.add({
+                                                      'type': 'separator',
+                                                      'date': ts
+                                                    });
+                                                    prevDate = msgDay;
+                                                    prevSender = null;
+                                                    prevTs = null;
+                                                  }
+                                                  // Ungelesen-Trennlinie einfügen vor der ersten ungelesenen Nachricht
+                                                  if (!unreadSeparatorInserted &&
+                                                      lastSeen != null &&
+                                                      ts != null &&
+                                                      ts.isAfter(lastSeen)) {
+                                                    final isOwnMsg = (msg[
+                                                                    'username']
+                                                                ?.toString() ==
+                                                            _username) ||
+                                                        (msg['user_id']
+                                                                ?.toString() ==
+                                                            _userId);
+                                                    if (!isOwnMsg) {
+                                                      chatItems.add({
+                                                        'type':
+                                                            'unread_separator'
+                                                      });
+                                                      unreadSeparatorInserted =
+                                                          true;
+                                                    }
+                                                  }
+                                                  final isGrouped =
+                                                      prevSender != null &&
+                                                          prevSender ==
+                                                              msg['username']
+                                                                  ?.toString() &&
+                                                          ts != null &&
+                                                          prevTs != null &&
+                                                          ts
+                                                                  .difference(
+                                                                      prevTs)
+                                                                  .inSeconds
+                                                                  .abs() <=
+                                                              120;
+                                                  chatItems.add({
+                                                    'type': 'message',
+                                                    'msg': Map<String,
+                                                        dynamic>.from(msg)
+                                                      ..['_isGrouped'] =
+                                                          isGrouped
+                                                  });
+                                                  prevSender = msg['username']
+                                                      ?.toString();
+                                                  prevTs = ts;
+                                                }
+                                              }
+                                              return ListView.builder(
+                                                reverse: false,
+                                                controller: _scrollController,
+                                                padding:
+                                                    const EdgeInsets.all(16),
+                                                itemCount: chatItems.length +
+                                                    (_loadingOlder ? 1 : 0),
+                                                cacheExtent: 500,
+                                                addAutomaticKeepAlives: false,
+                                                addRepaintBoundaries: true,
+                                                itemBuilder: (context, index) {
+                                                  if (_loadingOlder &&
+                                                      index == 0) {
+                                                    return const Padding(
+                                                      padding:
+                                                          EdgeInsets.all(12),
+                                                      child: Center(
+                                                        child: SizedBox(
+                                                          height: 20,
+                                                          width: 20,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                            color: Color(
+                                                                0xFF9B51E0),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                  final item = chatItems[index -
+                                                      (_loadingOlder ? 1 : 0)];
+                                                  if (item['type'] ==
+                                                      'separator') {
+                                                    return _buildDateSeparator(
+                                                        item['date']
+                                                            as DateTime,
+                                                        const Color(
+                                                            0xFF9B51E0));
+                                                  }
+                                                  if (item['type'] ==
+                                                      'unread_separator') {
+                                                    return Container(
+                                                      margin: const EdgeInsets
+                                                          .symmetric(
+                                                          vertical: 8),
+                                                      child: Row(children: [
+                                                        const Expanded(
+                                                            child: Divider(
+                                                                color: Color(
+                                                                    0xFF9B51E0),
+                                                                thickness:
+                                                                    0.5)),
+                                                        const SizedBox(
+                                                            width: 8),
+                                                        Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      10,
+                                                                  vertical: 3),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: const Color(
+                                                                    0xFF9B51E0)
+                                                                .withValues(
+                                                                    alpha:
+                                                                        0.15),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20),
+                                                            border: Border.all(
+                                                                color: const Color(
+                                                                    0xFF9B51E0),
+                                                                width: 0.5),
+                                                          ),
+                                                          child: const Text(
+                                                              'Neue Nachrichten',
+                                                              style: TextStyle(
+                                                                  color: Color(
+                                                                      0xFF9B51E0),
+                                                                  fontSize: 11,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600)),
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 8),
+                                                        const Expanded(
+                                                            child: Divider(
+                                                                color: Color(
+                                                                    0xFF9B51E0),
+                                                                thickness:
+                                                                    0.5)),
+                                                      ]),
+                                                    );
+                                                  }
+                                                  final msg = item['msg']
+                                                      as Map<String, dynamic>;
+                                                  return RepaintBoundary(
+                                                    key: ValueKey(
+                                                        msg['message_id'] ??
+                                                            msg['id']),
+                                                    child:
+                                                        _buildSwipeableMessage(
+                                                            msg),
+                                                  );
+                                                },
+                                              );
+                                            },
+                                          ),
+                          ), // GestureDetector
+                        ), // Expanded
+
+                        // 🗳️ ACTIVE POLLS
+                        if (_polls.isNotEmpty)
+                          Container(
+                            height: 180,
+                            color:
+                                const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.all(12),
+                              itemCount: _polls.length,
+                              itemBuilder: (context, index) {
+                                final poll = _polls[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: SizedBox(
+                                    width: MediaQuery.of(context).size.width *
+                                        0.8, // 📱 Mobile: 80% screen width
+                                    child: PollWidget(
+                                      poll: poll,
+                                      currentUserId: _userId,
+                                      currentUsername: _username,
+                                      worldColor: const Color(
+                                          0xFF9B51E0), // ENERGIE Purple
+                                      onVote: (pollId, optionIndex) async {
+                                        await _api.voteOnPoll(
+                                          pollId: pollId,
+                                          userId: _userId,
+                                          username: _username,
+                                          optionIndex: optionIndex,
+                                        );
+                                        _loadPolls();
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                      ], // END else (search mode)
+
+                      // Input Area
+                      if (!_showSearch) // Hide input when searching
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF100B1E), // home-dashboard card
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, -2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // ⌨️ TYPING INDICATOR
+                              StreamBuilder<Map<String, Set<String>>>(
+                                stream: _typingService.typingStream,
+                                builder: (context, snapshot) {
+                                  final typingText = _typingService
+                                      .getTypingText(_selectedRoom, _username);
+                                  if (typingText.isEmpty)
+                                    return const SizedBox.shrink();
+
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const SizedBox(
                                           width: 20,
+                                          height: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: Color(0xFF9B51E0),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Color(0xFF9B51E0)),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          typingText,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 12,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              // ✨ MOOD PICKER
+                              if (_showMoodPicker) _buildMoodPickerRow(),
+                              // Feature #17: Smart replies
+                              _buildSmartRepliesRow(const Color(0xFF9B51E0)),
+                              // 🆕 REPLY PREVIEW
+                              _buildReplyPreview(),
+                              // 🆕 MENTION AUTOCOMPLETE
+                              if (_showMentionPicker)
+                                MentionAutoComplete(
+                                  suggestions: _mentionSuggestions,
+                                  onSelectUser: _selectMention,
+                                  accentColor: const Color(0xFF9B51E0),
+                                ),
+
+                              // 🚩 v5.44.4 Phase 2: MessageBarV2 hinter FeatureFlag (default OFF)
+                              // Wenn FeatureFlag.newMessageBar=true (per SharedPrefs gesetzt),
+                              // ersetzt die schlanke 3-Element-Bar die alte Telegram-Style-Row.
+                              // Default OFF -> nichts aendert sich fuer normale User.
+                              if (FeatureFlags.instance
+                                  .getSync(FeatureFlag.newMessageBar))
+                                MessageBarV2(
+                                  world: 'energie',
+                                  controller: _messageController,
+                                  focusNode: _inputFocusNode,
+                                  onSendText: _sendMessage,
+                                  onAttachImage: _showAttachmentSheet,
+                                  onAttachVoice: _openVoiceRecorder,
+                                  isRecordingVoice: false,
+                                  // ✨ v5.44.7: Smart-Reply-Suggestions aus letzter Fremd-Nachricht
+                                  smartReplySuggestions: _computeSmartReplies(),
+                                  onSmartReplyTap: (text) {
+                                    _messageController.text = text;
+                                    _messageController.selection =
+                                        TextSelection.fromPosition(
+                                      TextPosition(offset: text.length),
+                                    );
+                                  },
+                                )
+                              else
+                                // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    // ➕ ATTACH-BUTTON (Bild / Mood / Avatar hinter "+"-Menü)
+                                    IconButton(
+                                      icon: const Icon(Icons.add_circle_outline,
+                                          color: Color(0xFF9B51E0), size: 28),
+                                      onPressed: _showAttachmentSheet,
+                                      tooltip: 'Anhänge & Profil',
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(
+                                          minWidth: 40, minHeight: 40),
+                                    ),
+
+                                    // ✨ EMOJI-PICKER (inline)
+                                    ChatEmojiPickerButton(
+                                      onSelected: _insertEmoji,
+                                      color: const Color(0xFFBB86FC),
+                                    ),
+
+                                    // ✍️ TEXT-INPUT (kompakt)
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _messageController,
+                                        focusNode: _inputFocusNode,
+                                        enabled: true,
+                                        onTap: () {
+                                          if (!_isInputFocused && mounted) {
+                                            setState(
+                                                () => _isInputFocused = true);
+                                          }
+                                        },
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                        maxLength: 2000,
+                                        decoration: InputDecoration(
+                                          hintText: 'Nachricht',
+                                          hintStyle: const TextStyle(
+                                              color: Colors.white38),
+                                          filled: true,
+                                          fillColor: Colors.white
+                                              .withValues(alpha: 0.13),
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 10,
+                                          ),
+                                          isDense: true,
+                                          counterText: _messageController
+                                                      .text.length >
+                                                  1800
+                                              ? '${_messageController.text.length}/2000'
+                                              : '',
+                                          counterStyle: const TextStyle(
+                                              color: Colors.orange,
+                                              fontSize: 10),
+                                        ),
+                                        minLines: 1,
+                                        maxLines: 5,
+                                        textInputAction:
+                                            TextInputAction.newline,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+
+                                    // ➤ SEND / MIC BUTTON (swap bei Text-Eingabe)
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: _hasText
+                                              ? [
+                                                  const Color(0xFF9B51E0),
+                                                  const Color(0xFF6A5ACD)
+                                                ]
+                                              : [
+                                                  const Color(0xFF6B4FA8),
+                                                  const Color(0xFF4A3580)
+                                                ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: _isSending
+                                              ? null
+                                              : (_hasText
+                                                  ? _sendMessage
+                                                  : _openVoiceRecorder),
+                                          onLongPress: _hasText
+                                              ? _showScheduleMessageDialog
+                                              : null,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          child: Container(
+                                            width: 40,
+                                            height: 40,
+                                            alignment: Alignment.center,
+                                            child: _isSending
+                                                ? const SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  )
+                                                : Icon(
+                                                    _hasText
+                                                        ? Icons.send
+                                                        : Icons.mic_none,
+                                                    color: Colors.white,
+                                                    size: 20,
+                                                  ),
                                           ),
                                         ),
                                       ),
-                                    );
-                                  }
-                                  final item = chatItems[index - (_loadingOlder ? 1 : 0)];
-                                  if (item['type'] == 'separator') {
-                                    return _buildDateSeparator(item['date'] as DateTime, const Color(0xFF9B51E0));
-                                  }
-                                  if (item['type'] == 'unread_separator') {
-                                    return Container(
-                                      margin: const EdgeInsets.symmetric(vertical: 8),
-                                      child: Row(children: [
-                                        const Expanded(child: Divider(color: Color(0xFF9B51E0), thickness: 0.5)),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF9B51E0).withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(20),
-                                            border: Border.all(color: const Color(0xFF9B51E0), width: 0.5),
-                                          ),
-                                          child: const Text('Neue Nachrichten',
-                                              style: TextStyle(color: Color(0xFF9B51E0), fontSize: 11, fontWeight: FontWeight.w600)),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        const Expanded(child: Divider(color: Color(0xFF9B51E0), thickness: 0.5)),
-                                      ]),
-                                    );
-                                  }
-                                  final msg = item['msg'] as Map<String, dynamic>;
-                                  return RepaintBoundary(
-                                    key: ValueKey(msg['message_id'] ?? msg['id']),
-                                    child: _buildSwipeableMessage(msg),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-            ), // GestureDetector
-          ),  // Expanded
-
-          // 🗳️ ACTIVE POLLS
-          if (_polls.isNotEmpty)
-            Container(
-              height: 180,
-              color: const Color(0xFF1A1A2E).withValues(alpha: 0.5),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.all(12),
-                itemCount: _polls.length,
-                itemBuilder: (context, index) {
-                  final poll = _polls[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.8, // 📱 Mobile: 80% screen width
-                      child: PollWidget(
-                        poll: poll,
-                        currentUserId: _userId,
-                        currentUsername: _username,
-                        worldColor: const Color(0xFF9B51E0), // ENERGIE Purple
-                        onVote: (pollId, optionIndex) async {
-                          await _api.voteOnPoll(
-                            pollId: pollId,
-                            userId: _userId,
-                            username: _username,
-                            optionIndex: optionIndex,
-                          );
-                          _loadPolls();
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ], // END else (search mode)
-          
-          // Input Area
-          if (!_showSearch) // Hide input when searching
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF100B1E), // home-dashboard card
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ⌨️ TYPING INDICATOR
-                StreamBuilder<Map<String, Set<String>>>(
-                  stream: _typingService.typingStream,
-                  builder: (context, snapshot) {
-                    final typingText = _typingService.getTypingText(_selectedRoom, _username);
-                    if (typingText.isEmpty) return const SizedBox.shrink();
-                    
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF9B51E0)),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            typingText,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                // ✨ MOOD PICKER
-                if (_showMoodPicker) _buildMoodPickerRow(),
-                // Feature #17: Smart replies
-                _buildSmartRepliesRow(const Color(0xFF9B51E0)),
-                // 🆕 REPLY PREVIEW
-                _buildReplyPreview(),
-                // 🆕 MENTION AUTOCOMPLETE
-                if (_showMentionPicker)
-                  MentionAutoComplete(
-                    suggestions: _mentionSuggestions,
-                    onSelectUser: _selectMention,
-                    accentColor: const Color(0xFF9B51E0),
-                  ),
-                
-                // 🚩 v5.44.4 Phase 2: MessageBarV2 hinter FeatureFlag (default OFF)
-                // Wenn FeatureFlag.newMessageBar=true (per SharedPrefs gesetzt),
-                // ersetzt die schlanke 3-Element-Bar die alte Telegram-Style-Row.
-                // Default OFF -> nichts aendert sich fuer normale User.
-                if (FeatureFlags.instance.getSync(FeatureFlag.newMessageBar))
-                  MessageBarV2(
-                    world: 'energie',
-                    controller: _messageController,
-                    focusNode: _inputFocusNode,
-                    onSendText: _sendMessage,
-                    onAttachImage: _showAttachmentSheet,
-                    onAttachVoice: _openVoiceRecorder,
-                    isRecordingVoice: false,
-                    // ✨ v5.44.7: Smart-Reply-Suggestions aus letzter Fremd-Nachricht
-                    smartReplySuggestions: _computeSmartReplies(),
-                    onSmartReplyTap: (text) {
-                      _messageController.text = text;
-                      _messageController.selection = TextSelection.fromPosition(
-                        TextPosition(offset: text.length),
-                      );
-                    },
-                  )
-                else
-                // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // ➕ ATTACH-BUTTON (Bild / Mood / Avatar hinter "+"-Menü)
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline, color: Color(0xFF9B51E0), size: 28),
-                      onPressed: _showAttachmentSheet,
-                      tooltip: 'Anhänge & Profil',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    ),
-
-                    // ✨ EMOJI-PICKER (inline)
-                    ChatEmojiPickerButton(
-                      onSelected: _insertEmoji,
-                      color: const Color(0xFFBB86FC),
-                    ),
-
-                    // ✍️ TEXT-INPUT (kompakt)
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        focusNode: _inputFocusNode,
-                        enabled: true,
-                        onTap: () {
-                          if (!_isInputFocused && mounted) {
-                            setState(() => _isInputFocused = true);
-                          }
-                        },
-                        style: const TextStyle(color: Colors.white),
-                        maxLength: 2000,
-                        decoration: InputDecoration(
-                          hintText: 'Nachricht',
-                          hintStyle: const TextStyle(color: Colors.white38),
-                          filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.13),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          isDense: true,
-                          counterText: _messageController.text.length > 1800
-                              ? '${_messageController.text.length}/2000'
-                              : '',
-                          counterStyle: const TextStyle(color: Colors.orange, fontSize: 10),
-                        ),
-                        minLines: 1,
-                        maxLines: 5,
-                        textInputAction: TextInputAction.newline,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // ➤ SEND / MIC BUTTON (swap bei Text-Eingabe)
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: _hasText
-                              ? [const Color(0xFF9B51E0), const Color(0xFF6A5ACD)]
-                              : [const Color(0xFF6B4FA8), const Color(0xFF4A3580)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: _isSending
-                              ? null
-                              : (_hasText ? _sendMessage : _openVoiceRecorder),
-                          onLongPress: _hasText ? _showScheduleMessageDialog : null,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            alignment: Alignment.center,
-                            child: _isSending
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
                                     ),
-                                  )
-                                : Icon(
-                                    _hasText ? Icons.send : Icons.mic_none,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ), // Row Ende
-            ],
-          ), // Column (Input Area) Ende
-        ), // Container (Input Area) Ende
-      ], // End Column children
-      ), // End Column
-      ); // End GestureDetector
-    }, // End Builder builder
+                                  ],
+                                ), // Row Ende
+                            ],
+                          ), // Column (Input Area) Ende
+                        ), // Container (Input Area) Ende
+                    ], // End Column children
+                  ), // End Column
+                ); // End GestureDetector
+              }, // End Builder builder
             ), // End Builder
-            
+
             // 📡 OFFLINE INDICATOR (NEW Phase 3)
             const Positioned(
               top: 0,
@@ -2208,7 +2419,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     _realtimeRetryTimer = null;
     PresenceService.instance.leave();
     ReadReceiptService.instance.leave();
-    for (final t in _scheduledTimers) { t.cancel(); }
+    for (final t in _scheduledTimers) {
+      t.cancel();
+    }
     _scheduledTimers.clear();
     super.dispose();
   }
@@ -2237,7 +2450,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       worldColor: const Color(0xFF9B51E0),
     );
   }
-  
+
   /// Telegram-Style Attach-Menü: Bild / Mood / Avatar hinter "+"-Button.
   /// Spart horizontal Platz im Input, damit der Hint-Text nicht mehr umbricht.
   void _showAttachmentSheet() {
@@ -2335,7 +2548,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     final text = _messageController.text;
     final sel = _messageController.selection;
     final insertAt = sel.isValid ? sel.start : text.length;
-    final newText = text.replaceRange(insertAt, sel.isValid ? sel.end : text.length, emoji);
+    final newText =
+        text.replaceRange(insertAt, sel.isValid ? sel.end : text.length, emoji);
     _messageController.value = TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(offset: insertAt + emoji.length),
@@ -2382,7 +2596,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       });
     }
     // Am oberen Ende → ältere Nachrichten laden (Pagination).
-    if (pos.pixels <= 120 && _hasMoreOlder && !_loadingOlder && _messages.isNotEmpty) {
+    if (pos.pixels <= 120 &&
+        _hasMoreOlder &&
+        !_loadingOlder &&
+        _messages.isNotEmpty) {
       _loadOlderMessages();
     }
   }
@@ -2407,10 +2624,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         setState(() => _hasMoreOlder = false);
         return;
       }
-      final priorExtent =
-          _scrollController.hasClients ? _scrollController.position.maxScrollExtent : 0.0;
-      final priorOffset =
-          _scrollController.hasClients ? _scrollController.position.pixels : 0.0;
+      final priorExtent = _scrollController.hasClients
+          ? _scrollController.position.maxScrollExtent
+          : 0.0;
+      final priorOffset = _scrollController.hasClients
+          ? _scrollController.position.pixels
+          : 0.0;
       final existingIds = _messages.map((m) => m['id']).toSet();
       final merged = <Map<String, dynamic>>[
         ...older.where((m) => !existingIds.contains(m['id'])),
@@ -2420,8 +2639,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       // Scroll-Position erhalten: nach Layout-Pass wieder an gleiche Inhalts-Stelle.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_scrollController.hasClients) return;
-        final delta =
-            _scrollController.position.maxScrollExtent - priorExtent;
+        final delta = _scrollController.position.maxScrollExtent - priorExtent;
         _scrollController.jumpTo(priorOffset + delta);
       });
     } catch (e) {
@@ -2448,7 +2666,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         // Primärer Check via ID; sekundärer Check via username+content+Zeit
         // fängt den Race-Condition-Fall ab wo Realtime vor Server-Antwort ankommt.
         final newId = newMsg['id']?.toString();
-        final newContent = (newMsg['message'] ?? newMsg['content'] ?? '').toString();
+        final newContent =
+            (newMsg['message'] ?? newMsg['content'] ?? '').toString();
         final newUser = newMsg['username']?.toString() ?? '';
         final newCreated = newMsg['created_at']?.toString() ?? '';
         final exists = _messages.any((m) {
@@ -2478,12 +2697,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           });
           if (!isOwn) {
             HapticFeedbackService().messageReceived();
-            final text = (newMsg['message'] ?? newMsg['content'] ?? '').toString();
+            final text =
+                (newMsg['message'] ?? newMsg['content'] ?? '').toString();
             if (_username.isNotEmpty &&
                 MentionNotificationService.containsMention(text, _username)) {
               MentionNotificationService.instance.notifyMention(
-                fromUsername:
-                    (newMsg['username'] ?? 'Unbekannt').toString(),
+                fromUsername: (newMsg['username'] ?? 'Unbekannt').toString(),
                 roomLabel: _rooms[_selectedRoom]?['name']?.toString() ?? 'Chat',
                 snippet: text.length > 80 ? '${text.substring(0, 77)}…' : text,
               );
@@ -2492,9 +2711,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             // GERADE NICHT angetippt hat — flackerten vorher pro Fremd-Msg.
             // Bundle 5.6: Lass die alte Liste stehen wenn _replyingTo aktiv
             // ist oder Input-Feld fokussiert.
-            if (mounted &&
-                _replyingTo == null &&
-                !_inputFocusNode.hasFocus) {
+            if (mounted && _replyingTo == null && !_inputFocusNode.hasFocus) {
               setState(() => _smartReplies = _generateSmartReplies(text));
             }
           }
@@ -2507,7 +2724,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         if (id == null) return;
         // Soft-Delete: is_deleted=true → aus lokaler Liste entfernen
         if (updatedMsg['is_deleted'] == true) {
-          setState(() => _messages.removeWhere((m) => m['id']?.toString() == id));
+          setState(
+              () => _messages.removeWhere((m) => m['id']?.toString() == id));
           return;
         }
         final idx = _messages.indexWhere((m) => m['id']?.toString() == id);
@@ -2546,7 +2764,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         }
       },
     );
-    if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
+    if (kDebugMode)
+      debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
   }
 
   // C4: Realtime Auto-Reconnect mit Exponential Backoff
@@ -2567,7 +2786,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       _subscribeToRoom(roomId);
     });
   }
-  
+
   // ✅ PROFIL-WARNUNG als Popup mit Navigation
   void _showProfileRequiredDialog() {
     showDialog(
@@ -2597,7 +2816,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const ProfileEditorScreen(world: 'energie'),
+                  builder: (context) =>
+                      const ProfileEditorScreen(world: 'energie'),
                 ),
               );
               // Profil neu laden nachdem User zurückkehrt
@@ -2613,11 +2833,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 NEUE FEATURES - WEBRTC, TYPING, REACTIONS, SWIPE (ENERGIE)
   // ═══════════════════════════════════════════════════════════
-  
+
   // ⌨️ TYPING INDICATORS
   // Feature #12: improved typing indicator with avatars + bouncing dots
   Widget _buildTypingIndicators() {
@@ -2639,7 +2859,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     left: i * 14.0,
                     child: CircleAvatar(
                       radius: 14,
-                      backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.25),
+                      backgroundColor:
+                          const Color(0xFF9B51E0).withValues(alpha: 0.25),
                       child: Text(
                         users[i].isNotEmpty ? users[i][0].toUpperCase() : '?',
                         style: const TextStyle(
@@ -2666,7 +2887,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     : users.length == 2
                         ? '${users[0]} & ${users[1]} tippen...'
                         : '${_typingUsers.length} Personen tippen...',
-                style: TextStyle(color: Colors.grey[500], fontSize: 11, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic),
               ),
             ],
           ),
@@ -2674,7 +2898,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   DateTime? _lastTypingBroadcast;
   void _sendTypingIndicator() {
     _typingTimer?.cancel();
@@ -2683,10 +2907,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     // Spart 80%+ Realtime-Broadcasts ohne UX-Verlust (Indicator hält 3s).
     final now = DateTime.now();
     if (_lastTypingBroadcast == null ||
-        now.difference(_lastTypingBroadcast!) > const Duration(milliseconds: 1500)) {
+        now.difference(_lastTypingBroadcast!) >
+            const Duration(milliseconds: 1500)) {
       _typingService.startTyping(_selectedRoom, _username);
       SupabaseChatService.instance.sendTypingIndicator(
-        roomId: _fullRoomId, userId: _userId, username: _username, isTyping: true,
+        roomId: _fullRoomId,
+        userId: _userId,
+        username: _username,
+        isTyping: true,
       );
       _lastTypingBroadcast = now;
     }
@@ -2695,28 +2923,32 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     _typingTimer = Timer(const Duration(seconds: 3), () {
       _typingService.stopTyping(_selectedRoom, _username);
       SupabaseChatService.instance.sendTypingIndicator(
-        roomId: _fullRoomId, userId: _userId, username: _username, isTyping: false,
+        roomId: _fullRoomId,
+        userId: _userId,
+        username: _username,
+        isTyping: false,
       );
       _lastTypingBroadcast = null;
     });
   }
-  
+
   // 😀 EMOJI REACTIONS
   // 🛠️ MESSAGE OPTIONS (EDIT/DELETE)
-  void _showMessageOptions(BuildContext context, Map<String, dynamic> msg) async {
+  void _showMessageOptions(
+      BuildContext context, Map<String, dynamic> msg) async {
     final isOwnMessage = msg['username'] == _username;
-    
+
     // ✅ SECURE: Check admin status from Backend Role (EXACT Dashboard Match!)
     final storage = StorageService();
     final profile = storage.getEnergieProfile();
-    final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
-    
+    final backendRole = profile?.role; // 'root_admin', 'admin', or 'user'
+
     // v103: Migration weg von AdminPermissions zu AppRoles.
     final isAdmin = AppRoles.canViewModTools(backendRole);
     final adminBadge = AppRoles.getBadgeEmoji(backendRole);
     final canDeleteAny = AppRoles.canDeleteMessages(backendRole);
     final canBan = AppRoles.canBanUsers(backendRole);
-    
+
     await showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1A1A2E),
@@ -2738,7 +2970,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
+
             // Options
             if (isOwnMessage) ...[
               ListTile(
@@ -2788,13 +3020,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             ),
             ListTile(
               leading: const Icon(Icons.copy, color: Colors.white70),
-              title: const Text('Kopieren', style: TextStyle(color: Colors.white)),
+              title:
+                  const Text('Kopieren', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
-                final text = (msg['message'] ?? msg['content'] ?? '').toString();
+                final text =
+                    (msg['message'] ?? msg['content'] ?? '').toString();
                 Clipboard.setData(ClipboardData(text: text));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nachricht kopiert'), duration: Duration(seconds: 2)),
+                  const SnackBar(
+                      content: Text('Nachricht kopiert'),
+                      duration: Duration(seconds: 2)),
                 );
               },
             ),
@@ -2802,34 +3038,38 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             // 🔧 ADMIN MODERATION OPTIONS (Secure check via AdminPermissions)
             if (isAdmin) ...[
               const Divider(color: Color(0xFF9B51E0)),
-              
+
               // ADMIN: Delete any message (if has permission)
               if (canDeleteAny && !isOwnMessage)
                 ListTile(
                   leading: const Icon(Icons.delete_forever, color: Colors.red),
-                  title: Text('Nachricht löschen $adminBadge', style: const TextStyle(color: Colors.red)),
+                  title: Text('Nachricht löschen $adminBadge',
+                      style: const TextStyle(color: Colors.red)),
                   onTap: () {
                     Navigator.pop(context);
                     _deleteMessage(msg, isAdmin: true);
                   },
                 ),
-              
+
               // ADMIN: Flag Content
               if (!isOwnMessage)
                 ListTile(
                   leading: const Icon(Icons.flag, color: Color(0xFF9B51E0)),
-                  title: const Text('Inhalt melden', style: TextStyle(color: Color(0xFF9B51E0))),
+                  title: const Text('Inhalt melden',
+                      style: TextStyle(color: Color(0xFF9B51E0))),
                   onTap: () {
                     Navigator.pop(context);
                     _showFlagDialog(msg);
                   },
                 ),
-              
+
               // ADMIN: Ban/Mute User
               if (canBan && !isOwnMessage)
                 ListTile(
-                  leading: const Icon(Icons.volume_off, color: Color(0xFF9B51E0)),
-                  title: Text('User sperren $adminBadge', style: const TextStyle(color: Color(0xFF9B51E0))),
+                  leading:
+                      const Icon(Icons.volume_off, color: Color(0xFF9B51E0)),
+                  title: Text('User sperren $adminBadge',
+                      style: const TextStyle(color: Color(0xFF9B51E0))),
                   onTap: () {
                     Navigator.pop(context);
                     _showMuteDialog(msg, canBan);
@@ -2838,7 +3078,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
               // ADMIN: Pin/Unpin Message (E2)
               ListTile(
-                leading: const Icon(Icons.push_pin_rounded, color: Color(0xFF9B51E0)),
+                leading: const Icon(Icons.push_pin_rounded,
+                    color: Color(0xFF9B51E0)),
                 title: Text('Nachricht anpinnen $adminBadge',
                     style: const TextStyle(color: Color(0xFF9B51E0))),
                 onTap: () async {
@@ -2850,12 +3091,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     messageId: messageId,
                     pinnedBy: _username.isNotEmpty ? _username : 'admin',
                     pinnedByRole: backendRole,
-                    preview: (msg['message'] ?? msg['content'] ?? '').toString(),
+                    preview:
+                        (msg['message'] ?? msg['content'] ?? '').toString(),
                   );
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(ok ? '📌 Angepinnt' : '❌ Pin fehlgeschlagen'),
-                    backgroundColor: ok ? const Color(0xFF7C4DFF) : Colors.red.shade700,
+                    backgroundColor:
+                        ok ? const Color(0xFF7C4DFF) : Colors.red.shade700,
                     duration: const Duration(seconds: 2),
                   ));
                 },
@@ -2866,7 +3109,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   // 😀 EMOJI REACTIONS
   void _showReactionPicker(Map<String, dynamic> msg) {
     showModalBottomSheet(
@@ -2877,48 +3120,50 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   void _addReaction(Map<String, dynamic> msg, String emoji) {
     if (mounted) {
       setState(() {
-      // Initialize reactions map if not exists
-      if (msg['reactions'] == null) {
-        msg['reactions'] = <String, dynamic>{};
-      }
-      
-      final reactions = msg['reactions'] as Map<String, dynamic>;
-      
-      // Initialize emoji list if not exists
-      if (reactions[emoji] == null) {
-        reactions[emoji] = <String>[];
-      }
-      
-      final userList = reactions[emoji] as List<dynamic>;
-      
-      // Toggle reaction
-      if (userList.contains(_username)) {
-        userList.remove(_username);
-        if (userList.isEmpty) {
-          reactions.remove(emoji);
+        // Initialize reactions map if not exists
+        if (msg['reactions'] == null) {
+          msg['reactions'] = <String, dynamic>{};
         }
-      } else {
-        userList.add(_username);
-      }
-    });
+
+        final reactions = msg['reactions'] as Map<String, dynamic>;
+
+        // Initialize emoji list if not exists
+        if (reactions[emoji] == null) {
+          reactions[emoji] = <String>[];
+        }
+
+        final userList = reactions[emoji] as List<dynamic>;
+
+        // Toggle reaction
+        if (userList.contains(_username)) {
+          userList.remove(_username);
+          if (userList.isEmpty) {
+            reactions.remove(emoji);
+          }
+        } else {
+          userList.add(_username);
+        }
+      });
     }
   }
-  
+
   // ✏️ MESSAGE EDIT
   void _startEditingMessage(Map<String, dynamic> msg) {
-    final messageId = msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
+    final messageId =
+        msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
     if (mounted) {
       setState(() {
-      _editingMessageId = messageId;
-    });
+        _editingMessageId = messageId;
+      });
     }
   }
-  
-  Future<void> _saveEditedMessage(Map<String, dynamic> msg, String newContent) async {
+
+  Future<void> _saveEditedMessage(
+      Map<String, dynamic> msg, String newContent) async {
     if (mounted) {
       setState(() {
         msg['message'] = newContent;
@@ -2928,54 +3173,58 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         _editingMessageId = null;
       });
     }
-    
+
     // Server-Update im Hintergrund (fire-and-forget)
-    final messageId = msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
+    final messageId =
+        msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
     if (messageId.isNotEmpty) {
-      _api.editChatMessage(
+      _api
+          .editChatMessage(
         roomId: _fullRoomId,
         messageId: messageId,
         userId: _userId,
         username: _username,
         newMessage: newContent,
         realm: 'energie',
-      ).then((_) {
+      )
+          .then((_) {
         if (kDebugMode) debugPrint('✅ Energie Edit gespeichert');
       }).catchError((e) {
-        if (kDebugMode) debugPrint('⚠️ Energie Edit server error (optimistic bleibt): $e');
+        if (kDebugMode)
+          debugPrint('⚠️ Energie Edit server error (optimistic bleibt): $e');
       });
     }
   }
-  
+
   void _cancelEditingMessage() {
     if (mounted) {
       setState(() {
-      _editingMessageId = null;
-    });
+        _editingMessageId = null;
+      });
     }
   }
-  
+
   // 🗑️ MESSAGE DELETE
-  
+
   // 🔍 MESSAGE SEARCH
   void _toggleSearch() {
     if (mounted) {
       setState(() {
-      _showSearch = !_showSearch;
-      if (!_showSearch) {
-        // Reset search when closing
-        FocusScope.of(context).unfocus();
-      }
-    });
+        _showSearch = !_showSearch;
+        if (!_showSearch) {
+          // Reset search when closing
+          FocusScope.of(context).unfocus();
+        }
+      });
     }
   }
-  
+
   void _jumpToMessage(Map<String, dynamic> msg) {
     // Find message index
     final msgId = msg['id']?.toString() ?? '';
     final index = _messages.indexWhere((m) => m['id']?.toString() == msgId);
     if (index == -1) return;
-    
+
     // Scroll to message (approximate)
     final scrollPosition = index * 80.0; // Approximate message height
     _scrollController.animateTo(
@@ -2983,7 +3232,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
-    
+
     // ✅ Highlight message briefly
     if (mounted && msgId.isNotEmpty) {
       setState(() => _replyToMessageData = msg); // Use as highlight indicator
@@ -2992,11 +3241,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       });
     }
   }
-  
+
   Widget _buildMessageWithReactions(Map<String, dynamic> msg) {
-    final messageId = msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
+    final messageId =
+        msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
     final isEditing = _editingMessageId == messageId;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3018,7 +3268,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             onDoubleTap: () => _addReaction(msg, '❤️'),
             child: _buildEnhancedMessageBubble(msg),
           ),
-        
+
         // 😀 NEW: Unified Reactions Widget
         if (!isEditing)
           Padding(
@@ -3052,7 +3302,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   }
 
   Widget _buildReadReceiptRow(Map<String, dynamic> msg) {
-    final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
+    final msgUserId =
+        msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
     final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
         (msg['username']?.toString() == _username && _username.isNotEmpty);
     if (!isOwn) return const SizedBox.shrink();
@@ -3071,17 +3322,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   // 💬 SWIPE TO REPLY
   void _replyToMessage(Map<String, dynamic> msg) {
     if (mounted) {
       setState(() {
-      _replyingTo = msg;
-    });
+        _replyingTo = msg;
+      });
     }
     _inputFocusNode.requestFocus();
   }
-  
+
   /// 🆕 SHOW MESSAGE ACTIONS (Long-Press on own messages)
   void _showMessageActions(Map<String, dynamic> msg) {
     showModalBottomSheet(
@@ -3106,7 +3357,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.edit, color: Colors.blue),
-              title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+              title: const Text('Bearbeiten',
+                  style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
                 _editMessage(msg);
@@ -3114,7 +3366,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+              title:
+                  const Text('Löschen', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(context);
                 _deleteMessage(msg);
@@ -3126,15 +3379,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   /// 🆕 EDIT MESSAGE
   Future<void> _editMessage(Map<String, dynamic> msg) async {
-    final controller = TextEditingController(text: msg['message']?.toString() ?? '');
+    final controller =
+        TextEditingController(text: msg['message']?.toString() ?? '');
     final newText = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Nachricht bearbeiten', style: TextStyle(color: Colors.white)),
+        title: const Text('Nachricht bearbeiten',
+            style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: controller,
           style: const TextStyle(color: Colors.white),
@@ -3152,18 +3407,22 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+            child:
+                const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF9B51E0)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9B51E0)),
             onPressed: () => Navigator.pop(context, controller.text),
             child: const Text('Speichern'),
           ),
         ],
       ),
     );
-    
-    if (newText != null && newText.trim().isNotEmpty && newText != msg['message']) {
+
+    if (newText != null &&
+        newText.trim().isNotEmpty &&
+        newText != msg['message']) {
       final msgId = (msg['message_id'] ?? msg['id']).toString();
       final trimmed = newText.trim();
       final original = Map<String, dynamic>.from(msg);
@@ -3171,8 +3430,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       // Optimistic local update (Realtime UPDATE bestätigt später).
       if (mounted) {
         setState(() {
-          final idx = _messages.indexWhere(
-              (m) => (m['id']?.toString() ?? m['message_id']?.toString()) == msgId);
+          final idx = _messages.indexWhere((m) =>
+              (m['id']?.toString() ?? m['message_id']?.toString()) == msgId);
           if (idx >= 0) {
             _messages[idx] = {
               ..._messages[idx],
@@ -3206,8 +3465,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         // Rollback bei Fehler.
         if (mounted) {
           setState(() {
-            final idx = _messages.indexWhere(
-                (m) => (m['id']?.toString() ?? m['message_id']?.toString()) == msgId);
+            final idx = _messages.indexWhere((m) =>
+                (m['id']?.toString() ?? m['message_id']?.toString()) == msgId);
             if (idx >= 0) _messages[idx] = original;
           });
           ScaffoldMessenger.of(context).showSnackBar(
@@ -3223,12 +3482,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   }
 
   /// 🆕 DELETE MESSAGE
-  Future<void> _deleteMessage(Map<String, dynamic> msg, {bool isAdmin = false}) async {
+  Future<void> _deleteMessage(Map<String, dynamic> msg,
+      {bool isAdmin = false}) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Nachricht löschen?', style: TextStyle(color: Colors.white)),
+        title: const Text('Nachricht löschen?',
+            style: TextStyle(color: Colors.white)),
         content: const Text(
           'Diese Aktion kann nicht rückgängig gemacht werden.',
           style: TextStyle(color: Colors.grey),
@@ -3236,7 +3497,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+            child:
+                const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -3253,7 +3515,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
       // Backup für Rollback
       final backupMsg = Map<String, dynamic>.from(msg);
-      final backupIndex = _messages.indexWhere((m) => (m['message_id'] ?? m['id']) == msgId);
+      final backupIndex =
+          _messages.indexWhere((m) => (m['message_id'] ?? m['id']) == msgId);
 
       // Optimistic: sofort lokal entfernen
       if (mounted) {
@@ -3312,7 +3575,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Löschen fehlgeschlagen. Bitte erneut versuchen.'),
+              content:
+                  Text('❌ Löschen fehlgeschlagen. Bitte erneut versuchen.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 3),
             ),
@@ -3321,7 +3585,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
     }
   }
-  
+
   // Feature #21: programmatic room switch (also called from swipe gesture)
   Future<void> _switchToRoom(String roomId) async {
     if (roomId == _selectedRoom || !mounted) return;
@@ -3356,7 +3620,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1A1A2E),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -3367,7 +3632,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               const SizedBox(height: 10),
               Text(
                 room['name'] ?? roomId,
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               if (room['description'] != null) ...[
@@ -3386,7 +3654,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF9B51E0),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
@@ -3397,7 +3666,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   ),
                 )
               else
-                Text('Du bist bereits in diesem Raum', style: TextStyle(color: Colors.grey[500])),
+                Text('Du bist bereits in diesem Raum',
+                    style: TextStyle(color: Colors.grey[500])),
             ],
           ),
         ),
@@ -3421,7 +3691,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1A1A2E),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -3429,44 +3700,58 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Nachricht planen', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('Nachricht planen',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text('"${text.length > 50 ? '${text.substring(0, 47)}…' : text}"', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              Text('"${text.length > 50 ? '${text.substring(0, 47)}…' : text}"',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12)),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: List.generate(delays.length, (i) => GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    final sendAt = DateTime.now().add(delays[i]);
-                    setState(() {
-                      _scheduledMessages.add((sendAt, text));
-                      _messageController.clear();
-                    });
-                    final t = Timer(delays[i], () {
-                      if (mounted) {
-                        _messageController.text = text;
-                        _sendMessage();
-                      }
-                    });
-                    _scheduledTimers.add(t);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('✅ Geplant für ${labels[i]}'),
-                      backgroundColor: const Color(0xFF9B51E0),
-                      duration: const Duration(seconds: 2),
-                    ));
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF9B51E0).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF9B51E0).withValues(alpha: 0.4)),
-                    ),
-                    child: Text(labels[i], style: const TextStyle(color: Color(0xFF9B51E0), fontWeight: FontWeight.w600)),
-                  ),
-                )),
+                children: List.generate(
+                    delays.length,
+                    (i) => GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);
+                            final sendAt = DateTime.now().add(delays[i]);
+                            setState(() {
+                              _scheduledMessages.add((sendAt, text));
+                              _messageController.clear();
+                            });
+                            final t = Timer(delays[i], () {
+                              if (mounted) {
+                                _messageController.text = text;
+                                _sendMessage();
+                              }
+                            });
+                            _scheduledTimers.add(t);
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('✅ Geplant für ${labels[i]}'),
+                              backgroundColor: const Color(0xFF9B51E0),
+                              duration: const Duration(seconds: 2),
+                            ));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF9B51E0)
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: const Color(0xFF9B51E0)
+                                      .withValues(alpha: 0.4)),
+                            ),
+                            child: Text(labels[i],
+                                style: const TextStyle(
+                                    color: Color(0xFF9B51E0),
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        )),
               ),
             ],
           ),
@@ -3485,7 +3770,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       context: context,
       backgroundColor: const Color(0xFF1A1A2E),
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.55,
         maxChildSize: 0.9,
@@ -3494,15 +3780,25 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         builder: (_, ctrl) => Column(
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  const Icon(Icons.alternate_email, color: Color(0xFF9B51E0), size: 20),
+                  const Icon(Icons.alternate_email,
+                      color: Color(0xFF9B51E0), size: 20),
                   const SizedBox(width: 8),
-                  Text('Erwähnungen (${mentions.length})', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Erwähnungen (${mentions.length})',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
@@ -3510,39 +3806,57 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             const Divider(color: Colors.white12),
             Expanded(
               child: mentions.isEmpty
-                ? const Center(child: Text('Keine Erwähnungen in dieser Sitzung', style: TextStyle(color: Colors.grey)))
-                : ListView.builder(
-                    controller: ctrl,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: mentions.length,
-                    itemBuilder: (_, i) {
-                      final m = mentions[mentions.length - 1 - i]; // newest first
-                      final text = (m['message'] ?? m['content'] ?? '').toString();
-                      final sender = m['username']?.toString() ?? '?';
-                      final ts = _formatTime(m['timestamp'] ?? m['created_at']);
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF9B51E0).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF9B51E0).withValues(alpha: 0.3)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              Text(sender, style: const TextStyle(color: Color(0xFF9B51E0), fontWeight: FontWeight.bold, fontSize: 13)),
-                              const Spacer(),
-                              Text(ts, style: const TextStyle(color: Colors.grey, fontSize: 11)),
-                            ]),
-                            const SizedBox(height: 4),
-                            Text(text, style: const TextStyle(color: Colors.white, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                  ? const Center(
+                      child: Text('Keine Erwähnungen in dieser Sitzung',
+                          style: TextStyle(color: Colors.grey)))
+                  : ListView.builder(
+                      controller: ctrl,
+                      padding: const EdgeInsets.all(12),
+                      itemCount: mentions.length,
+                      itemBuilder: (_, i) {
+                        final m =
+                            mentions[mentions.length - 1 - i]; // newest first
+                        final text =
+                            (m['message'] ?? m['content'] ?? '').toString();
+                        final sender = m['username']?.toString() ?? '?';
+                        final ts =
+                            _formatTime(m['timestamp'] ?? m['created_at']);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF9B51E0).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: const Color(0xFF9B51E0)
+                                    .withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                Text(sender,
+                                    style: const TextStyle(
+                                        color: Color(0xFF9B51E0),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13)),
+                                const Spacer(),
+                                Text(ts,
+                                    style: const TextStyle(
+                                        color: Colors.grey, fontSize: 11)),
+                              ]),
+                              const SizedBox(height: 4),
+                              Text(text,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 13),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -3553,41 +3867,59 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   // Feature #17: smart reply suggestions based on last received message
   static List<String> _generateSmartReplies(String msg) {
     final lower = msg.toLowerCase();
-    if (msg.trim().endsWith('?')) return ['Ja', 'Nein', 'Vielleicht', 'Weiß nicht'];
-    if (lower.contains('danke') || lower.contains('thanks')) return ['Gerne!', 'Kein Problem', '👍', '😊'];
-    if (lower.contains('hallo') || lower.contains('hey') || lower.contains('hi')) return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
-    if (lower.contains('interessant') || lower.contains('spannend') || lower.contains('krass')) return ['Wirklich? 😮', 'Mehr davon!', 'Quelle?', '🔥'];
-    if (lower.contains('ok') || lower.contains('alles klar') || lower.contains('verstanden')) return ['👍', 'Super', '✅', 'Danke'];
+    if (msg.trim().endsWith('?'))
+      return ['Ja', 'Nein', 'Vielleicht', 'Weiß nicht'];
+    if (lower.contains('danke') || lower.contains('thanks'))
+      return ['Gerne!', 'Kein Problem', '👍', '😊'];
+    if (lower.contains('hallo') ||
+        lower.contains('hey') ||
+        lower.contains('hi')) return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
+    if (lower.contains('interessant') ||
+        lower.contains('spannend') ||
+        lower.contains('krass'))
+      return ['Wirklich? 😮', 'Mehr davon!', 'Quelle?', '🔥'];
+    if (lower.contains('ok') ||
+        lower.contains('alles klar') ||
+        lower.contains('verstanden')) return ['👍', 'Super', '✅', 'Danke'];
     return ['Ok', 'Verstanden', '👍', '❤️'];
   }
 
   Widget _buildSmartRepliesRow(Color accentColor) {
-    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty) return const SizedBox.shrink();
+    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty)
+      return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: _smartReplies.map((reply) => Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                _messageController.text = reply;
-                setState(() => _smartReplies = []);
-                _sendMessage();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: accentColor.withValues(alpha: 0.4)),
-                ),
-                child: Text(reply, style: TextStyle(color: accentColor, fontSize: 13, fontWeight: FontWeight.w500)),
-              ),
-            ),
-          )).toList(),
+          children: _smartReplies
+              .map((reply) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _messageController.text = reply;
+                        setState(() => _smartReplies = []);
+                        _sendMessage();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: accentColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: accentColor.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(reply,
+                            style: TextStyle(
+                                color: accentColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                  ))
+              .toList(),
         ),
       ),
     );
@@ -3595,7 +3927,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
   Widget _buildReplyPreview() {
     if (_replyingTo == null) return const SizedBox.shrink();
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 8),
@@ -3642,8 +3974,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             onPressed: () {
               if (mounted) {
                 setState(() {
-                _replyingTo = null;
-              });
+                  _replyingTo = null;
+                });
               }
             },
           ),
@@ -3651,7 +3983,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   Widget _buildSwipeableMessage(Map<String, dynamic> msg) {
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 300),
@@ -3667,7 +3999,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         );
       },
       child: Dismissible(
-        key: Key(msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '${DateTime.now().millisecondsSinceEpoch}'),
+        key: Key(msg['id']?.toString() ??
+            msg['timestamp']?.toString() ??
+            '${DateTime.now().millisecondsSinceEpoch}'),
         direction: DismissDirection.endToStart,
         confirmDismiss: (direction) async {
           _replyToMessage(msg);
@@ -3687,11 +4021,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   // 🆕 ENHANCED MESSAGE BUBBLE (Modern Design - ENERGIE Purple)
   Widget _buildEnhancedMessageBubble(Map<String, dynamic> msg) {
     // ✅ isOwn: vergleiche userId (camelCase und snake_case) + username als Fallback
-    final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
+    final msgUserId =
+        msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
     final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
         (msg['username']?.toString() == _username && _username.isNotEmpty);
     // Feature #10: iMessage-style grouping
@@ -3705,7 +4040,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         top: isGrouped ? 0 : 2,
       ),
       child: Row(
-        mainAxisAlignment: isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           // Avatar placeholder keeps alignment; hidden when grouped
@@ -3715,10 +4051,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 onTap: () => UserQuickProfileSheet.show(
                   context,
                   username: msg['username']?.toString() ?? '',
-                  displayName: msg['display_name']?.toString()
-                      ?? msg['displayName']?.toString(),
-                  avatarUrl: msg['avatar_url']?.toString()
-                      ?? msg['avatarUrl']?.toString(),
+                  displayName: msg['display_name']?.toString() ??
+                      msg['displayName']?.toString(),
+                  avatarUrl: msg['avatar_url']?.toString() ??
+                      msg['avatarUrl']?.toString(),
                   accent: const Color(0xFF9B51E0),
                   onMention: (u) {
                     final cur = _messageController.text;
@@ -3731,12 +4067,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 ),
                 child: CircleAvatar(
                   radius: 18,
-                  backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.2),
+                  backgroundColor:
+                      const Color(0xFF9B51E0).withValues(alpha: 0.2),
                   child: Text(
-                    msg['avatar']?.toString()
-                        ?? msg['avatar_emoji']?.toString()
-                        ?? msg['avatarEmoji']?.toString()
-                        ?? '👤',
+                    msg['avatar']?.toString() ??
+                        msg['avatar_emoji']?.toString() ??
+                        msg['avatarEmoji']?.toString() ??
+                        '👤',
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),
@@ -3768,8 +4105,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(isGrouped && !isOwn ? 4 : 16),
                     topRight: Radius.circular(isGrouped && isOwn ? 4 : 16),
-                    bottomLeft: isOwn ? const Radius.circular(16) : const Radius.circular(4),
-                    bottomRight: isOwn ? const Radius.circular(4) : const Radius.circular(16),
+                    bottomLeft: isOwn
+                        ? const Radius.circular(16)
+                        : const Radius.circular(4),
+                    bottomRight: isOwn
+                        ? const Radius.circular(4)
+                        : const Radius.circular(16),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -3785,132 +4126,144 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                       ),
                   ],
                 ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Username (nur bei anderen, nicht wenn gruppiert)
-                  if (!isOwn && !isGrouped)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        msg['username']?.toString() ?? 'Unbekannt',
-                        style: const TextStyle(
-                          color: Color(0xFFBB86FC),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Username (nur bei anderen, nicht wenn gruppiert)
+                    if (!isOwn && !isGrouped)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          msg['username']?.toString() ?? 'Unbekannt',
+                          style: const TextStyle(
+                            color: Color(0xFFBB86FC),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
 
-                  // Feature #14: Reply chain visualization
-                  if ((msg['reply_to_id']?.toString().isNotEmpty ?? false))
-                    _buildInlineReplyQuote(
-                      senderName: msg['reply_to_sender_name']?.toString(),
-                      content: msg['reply_to_content']?.toString(),
-                      color: const Color(0xFF9B51E0),
-                    ),
+                    // Feature #14: Reply chain visualization
+                    if ((msg['reply_to_id']?.toString().isNotEmpty ?? false))
+                      _buildInlineReplyQuote(
+                        senderName: msg['reply_to_sender_name']?.toString(),
+                        content: msg['reply_to_content']?.toString(),
+                        color: const Color(0xFF9B51E0),
+                      ),
 
-                  // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
-                  if (() {
-                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
-                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
-                    return t == 'voice' && url != null && url.isNotEmpty;
-                  }())
-                    // 🎵 VOICE MESSAGE PLAYER
-                    ChatVoicePlayer(
-                      audioUrl: (msg['mediaUrl'] ?? msg['media_url'] ?? '').toString(),
-                      duration: Duration(seconds: int.tryParse(
-                        msg['message']?.toString()
-                          .replaceAll('🎤 Sprachnachricht (', '')
-                          .replaceAll('s)', '')
-                          .replaceAll(')', '') ?? '0'
-                      ) ?? 0),
-                      accentColor: const Color(0xFF9B51E0),
-                    )
-                  else if (() {
-                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
-                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
-                    return t == 'image' && url != null && url.isNotEmpty;
-                  }())
-                    // Feature #15: Tappable image with hero → fullscreen viewer
-                    Builder(builder: (_) {
-                      final url = (msg['mediaUrl'] ?? msg['media_url']).toString();
-                      return GestureDetector(
-                        onTap: () => ChatImageViewer.open(
-                          context,
-                          imageUrl: url,
-                          heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                          accentColor: const Color(0xFF9B51E0),
-                        ),
-                        child: Hero(
-                          tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CachedNetworkImage(
-                              imageUrl: url,
-                              width: 200,
-                              height: 200,
-                              fit: BoxFit.cover,
-                              errorWidget: (context, _, __) => Container(
+                    // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
+                    if (() {
+                      final t =
+                          (msg['mediaType'] ?? msg['message_type'])?.toString();
+                      final url =
+                          (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                      return t == 'voice' && url != null && url.isNotEmpty;
+                    }())
+                      // 🎵 VOICE MESSAGE PLAYER
+                      ChatVoicePlayer(
+                        audioUrl: (msg['mediaUrl'] ?? msg['media_url'] ?? '')
+                            .toString(),
+                        duration: Duration(
+                            seconds: int.tryParse(msg['message']
+                                        ?.toString()
+                                        .replaceAll('🎤 Sprachnachricht (', '')
+                                        .replaceAll('s)', '')
+                                        .replaceAll(')', '') ??
+                                    '0') ??
+                                0),
+                        accentColor: const Color(0xFF9B51E0),
+                      )
+                    else if (() {
+                      final t =
+                          (msg['mediaType'] ?? msg['message_type'])?.toString();
+                      final url =
+                          (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                      return t == 'image' && url != null && url.isNotEmpty;
+                    }())
+                      // Feature #15: Tappable image with hero → fullscreen viewer
+                      Builder(builder: (_) {
+                        final url =
+                            (msg['mediaUrl'] ?? msg['media_url']).toString();
+                        return GestureDetector(
+                          onTap: () => ChatImageViewer.open(
+                            context,
+                            imageUrl: url,
+                            heroTag:
+                                'chat-img-${msg['id'] ?? msg['timestamp']}',
+                            accentColor: const Color(0xFF9B51E0),
+                          ),
+                          child: Hero(
+                            tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: CachedNetworkImage(
+                                imageUrl: url,
                                 width: 200,
-                                height: 150,
-                                color: const Color(0xFF2A2A3E),
-                                child: const Icon(Icons.broken_image, size: 48),
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorWidget: (context, _, __) => Container(
+                                  width: 200,
+                                  height: 150,
+                                  color: const Color(0xFF2A2A3E),
+                                  child:
+                                      const Icon(Icons.broken_image, size: 48),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    })
-                  else
-                    // Regular Text Message (Markdown-Light + klickbare Links)
-                    ChatMarkdownText(
-                      msg['message']?.toString() ?? '',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        height: 1.35,
-                      ),
-                    ),
-                  
-                  const SizedBox(height: 4),
-                  
-                  // Timestamp & Status
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatTime(msg['timestamp'] ?? msg['created_at']),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 11,
+                        );
+                      })
+                    else
+                      // Regular Text Message (Markdown-Light + klickbare Links)
+                      ChatMarkdownText(
+                        msg['message']?.toString() ?? '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          height: 1.35,
                         ),
                       ),
-                      if (isOwn) ...[
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.done_all,
-                          size: 14,
-                          color: msg['read'] == true 
-                              ? Colors.blue 
-                              : Colors.white.withValues(alpha: 0.6),
+
+                    const SizedBox(height: 4),
+
+                    // Timestamp & Status
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _formatTime(msg['timestamp'] ?? msg['created_at']),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 11,
+                          ),
                         ),
+                        if (isOwn) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.done_all,
+                            size: 14,
+                            color: msg['read'] == true
+                                ? Colors.blue
+                                : Colors.white.withValues(alpha: 0.6),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
-              ),
-            ), // Container
+                    ),
+                  ],
+                ),
+              ), // Container
             ), // InkWell
           ), // Flexible
         ],
       ),
     );
   }
-  
+
   // Feature #14: inline reply quote block inside bubble
-  Widget _buildInlineReplyQuote({String? senderName, String? content, required Color color}) {
-    final name = (senderName ?? '').trim().isEmpty ? 'Nachricht' : senderName!.trim();
+  Widget _buildInlineReplyQuote(
+      {String? senderName, String? content, required Color color}) {
+    final name =
+        (senderName ?? '').trim().isEmpty ? 'Nachricht' : senderName!.trim();
     final snippet = (content ?? '').trim();
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -3924,14 +4277,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          Text(name,
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w700, color: color)),
           if (snippet.isNotEmpty) ...[
             const SizedBox(height: 2),
             Text(
               snippet,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.65)),
+              style: TextStyle(
+                  fontSize: 11, color: Colors.white.withValues(alpha: 0.65)),
             ),
           ],
         ],
@@ -3961,7 +4317,20 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       label = 'Gestern';
     } else {
       const wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-      const mo = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+      const mo = [
+        'Jan',
+        'Feb',
+        'Mär',
+        'Apr',
+        'Mai',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Okt',
+        'Nov',
+        'Dez'
+      ];
       label = '${wd[date.weekday - 1]}, ${date.day}. ${mo[date.month - 1]}.';
     }
     return Padding(
@@ -3979,7 +4348,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             ),
             child: Text(
               label,
-              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.4),
+              style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4),
             ),
           ),
           const SizedBox(width: 8),
@@ -4013,7 +4386,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       return '';
     }
   }
-  
+
   void _showSnackBar(String message, Color color) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -4024,18 +4397,19 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       ),
     );
   }
-  
+
   // 🔧 ADMIN MODERATION METHODS
-  
+
   /// 🚩 FLAG DIALOG: Report content for moderation
   void _showFlagDialog(Map<String, dynamic> msg) {
     final reasonController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Inhalt melden', style: TextStyle(color: Color(0xFF9B51E0))),
+        title: const Text('Inhalt melden',
+            style: TextStyle(color: Color(0xFF9B51E0))),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -4062,12 +4436,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              
+
               try {
                 final moderation = ModerationService();
                 await moderation.flagContent(
@@ -4077,7 +4452,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   reason: reasonController.text.trim(),
                   adminToken: _username,
                 );
-                
+
                 if (mounted) {
                   _showSnackBar('✅ Inhalt wurde gemeldet', Colors.green);
                 }
@@ -4087,14 +4462,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF9B51E0)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF9B51E0)),
             child: const Text('Melden'),
           ),
         ],
       ),
     );
   }
-  
+
   /// 🗑️ ADMIN DELETE: Root admin can delete any message
   // ignore: unused_element
   void _adminDeleteMessage(Map<String, dynamic> msg) async {
@@ -4102,7 +4478,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Nachricht löschen (Admin)', style: TextStyle(color: Colors.red)),
+        title: const Text('Nachricht löschen (Admin)',
+            style: TextStyle(color: Colors.red)),
         content: Text(
           'Nachricht von ${msg['username']}: "${msg['message'] ?? ''}"',
           style: const TextStyle(color: Colors.white),
@@ -4110,7 +4487,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -4120,28 +4498,32 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         ],
       ),
     );
-    
+
     if (confirmed == true) {
-      final messageId = msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
+      final messageId =
+          msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
 
       // ✅ OPTIMISTIC UPDATE: Sofort lokal entfernen
       if (mounted) {
         setState(() {
-          _messages.removeWhere((m) => (m['id'] ?? m['message_id']) == messageId);
+          _messages
+              .removeWhere((m) => (m['id'] ?? m['message_id']) == messageId);
         });
         _showSnackBar('✅ Nachricht wurde gelöscht', Colors.green);
       }
 
       // Server-Update im Hintergrund
       if (messageId.isNotEmpty) {
-        _api.deleteChatMessage(
+        _api
+            .deleteChatMessage(
           roomId: _fullRoomId,
           messageId: messageId,
           userId: _userId,
           username: _username,
           realm: 'energie',
           isAdmin: true,
-        ).then((_) {
+        )
+            .then((_) {
           if (kDebugMode) debugPrint('✅ Admin-Delete gespeichert');
         }).catchError((e) {
           if (kDebugMode) debugPrint('⚠️ Admin-Delete server error: $e');
@@ -4154,23 +4536,25 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   void _showMuteDialog(Map<String, dynamic> msg, bool isRootAdmin) {
     final reasonController = TextEditingController();
     String muteType = '24h'; // Default: 24h
-    
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           backgroundColor: const Color(0xFF1A1A2E),
-          title: const Text('User sperren', style: TextStyle(color: Color(0xFF9B51E0))),
+          title: const Text('User sperren',
+              style: TextStyle(color: Color(0xFF9B51E0))),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'User: ${msg['username']}',
-                style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white70, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              
+
               // Mute Type Selector
               const Text('Sperrdauer:', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
@@ -4187,7 +4571,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   children: [
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('24 Stunden', style: TextStyle(color: Colors.white, fontSize: 14)),
+                        title: const Text('24 Stunden',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 14)),
                         value: '24h',
                         activeColor: const Color(0xFF9B51E0),
                       ),
@@ -4195,7 +4581,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     if (isRootAdmin)
                       Expanded(
                         child: RadioListTile<String>(
-                          title: const Text('Permanent', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          title: const Text('Permanent',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 14)),
                           value: 'permanent',
                           activeColor: Colors.red,
                         ),
@@ -4203,7 +4591,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 16),
               TextField(
                 controller: reasonController,
@@ -4220,16 +4608,18 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white70)),
             ),
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context);
-                
+
                 try {
-                  final targetUserId = 'energie_${msg['username']}'; // Construct user_id
+                  final targetUserId =
+                      'energie_${msg['username']}'; // Construct user_id
                   final moderation = ModerationService();
-                  
+
                   await moderation.muteUser(
                     world: 'energie',
                     userId: targetUserId,
@@ -4238,10 +4628,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     reason: reasonController.text.trim(),
                     adminToken: _username,
                   );
-                  
+
                   if (mounted) {
-                    final durationText = muteType == '24h' ? '24 Stunden' : 'permanent';
-                    _showSnackBar('✅ User ${msg['username']} für $durationText gesperrt', Colors.green);
+                    final durationText =
+                        muteType == '24h' ? '24 Stunden' : 'permanent';
+                    _showSnackBar(
+                        '✅ User ${msg['username']} für $durationText gesperrt',
+                        Colors.green);
                   }
                 } catch (e) {
                   if (mounted) {
@@ -4250,7 +4643,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: muteType == 'permanent' ? Colors.red : const Color(0xFF9B51E0),
+                backgroundColor: muteType == 'permanent'
+                    ? Colors.red
+                    : const Color(0xFF9B51E0),
               ),
               child: const Text('Sperren'),
             ),
@@ -4285,32 +4680,45 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     AnimatedBuilder(
                       animation: _headerAuraCtrl,
                       builder: (_, __) => Container(
-                        width: 32, height: 32,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(colors: [
-                            const Color(0xFF9B51E0).withValues(alpha: isMe ? 0.9 : 0.5),
-                            const Color(0xFF4A148C).withValues(alpha: isMe ? 0.7 : 0.3),
+                            const Color(0xFF9B51E0)
+                                .withValues(alpha: isMe ? 0.9 : 0.5),
+                            const Color(0xFF4A148C)
+                                .withValues(alpha: isMe ? 0.7 : 0.3),
                           ]),
                           border: Border.all(
-                            color: const Color(0xFF9B51E0).withValues(alpha: 0.5 + _headerAuraCtrl.value * 0.4),
+                            color: const Color(0xFF9B51E0).withValues(
+                                alpha: 0.5 + _headerAuraCtrl.value * 0.4),
                             width: isMe ? 2.0 : 1.5,
                           ),
-                          boxShadow: [BoxShadow(
-                            color: const Color(0xFF9B51E0).withValues(alpha: 0.3 + _headerAuraCtrl.value * 0.2),
-                            blurRadius: 6,
-                          )],
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF9B51E0).withValues(
+                                  alpha: 0.3 + _headerAuraCtrl.value * 0.2),
+                              blurRadius: 6,
+                            )
+                          ],
                         ),
                         child: Center(
-                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤', style: const TextStyle(fontSize: 16)),
+                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤',
+                              style: const TextStyle(fontSize: 16)),
                         ),
                       ),
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      isMe ? 'Du' : m.username.length > 6 ? '${m.username.substring(0, 5)}…' : m.username,
+                      isMe
+                          ? 'Du'
+                          : m.username.length > 6
+                              ? '${m.username.substring(0, 5)}…'
+                              : m.username,
                       style: TextStyle(
-                        color: isMe ? const Color(0xFF9B51E0) : Colors.grey[400],
+                        color:
+                            isMe ? const Color(0xFF9B51E0) : Colors.grey[400],
                         fontSize: 8,
                         fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -4352,7 +4760,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               onLongPress: () => _showRoomPreview(roomId, room),
               onTap: () async {
                 if (roomId != _selectedRoom) {
-                  ChatDraftService.instance.set(_fullRoomId, _messageController.text);
+                  ChatDraftService.instance
+                      .set(_fullRoomId, _messageController.text);
                   if (mounted) {
                     RecentRoomsService.instance.touch('energie', roomId);
                     setState(() {
@@ -4364,7 +4773,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                       _isAtBottom = true;
                     });
                   }
-                  _messageController.text = ChatDraftService.instance.get(_fullRoomId);
+                  _messageController.text =
+                      ChatDraftService.instance.get(_fullRoomId);
                   UnreadTrackerService.instance.markSeen(_fullRoomId);
                   // Voice-Service-switchRoom entfällt — LiveKit nutzt eigene Room-Logik.
                   await _refreshPresence();
@@ -4377,24 +4787,33 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.only(right: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 decoration: BoxDecoration(
-                  gradient: isSelected ? LinearGradient(colors: [
-                    const Color(0xFF4A148C).withValues(alpha: 0.8),
-                    const Color(0xFF7B1FA2).withValues(alpha: 0.6),
-                  ]) : null,
+                  gradient: isSelected
+                      ? LinearGradient(colors: [
+                          const Color(0xFF4A148C).withValues(alpha: 0.8),
+                          const Color(0xFF7B1FA2).withValues(alpha: 0.6),
+                        ])
+                      : null,
                   color: isSelected ? null : const Color(0xFF100B1E),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF9B51E0).withValues(alpha: 0.7 + _headerAuraCtrl.value * 0.3)
+                        ? const Color(0xFF9B51E0).withValues(
+                            alpha: 0.7 + _headerAuraCtrl.value * 0.3)
                         : const Color(0xFF2A1A4A).withValues(alpha: 0.5),
                     width: isSelected ? 1.5 : 1,
                   ),
-                  boxShadow: isSelected ? [BoxShadow(
-                    color: const Color(0xFF9B51E0).withValues(alpha: 0.25 + _headerAuraCtrl.value * 0.15),
-                    blurRadius: 12,
-                  )] : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF9B51E0).withValues(
+                                alpha: 0.25 + _headerAuraCtrl.value * 0.15),
+                            blurRadius: 12,
+                          )
+                        ]
+                      : null,
                 ),
                 child: Stack(
                   clipBehavior: Clip.none,
@@ -4402,20 +4821,27 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(room['icon'] ?? '💬', style: TextStyle(fontSize: isSelected ? 16 : 14)),
+                        Text(room['icon'] ?? '💬',
+                            style: TextStyle(fontSize: isSelected ? 16 : 14)),
                         const SizedBox(width: 5),
                         Text(
-                          (room['name'] as String).replaceAll(RegExp(r'^\S+\s'), '').split('&').first.trim(),
+                          (room['name'] as String)
+                              .replaceAll(RegExp(r'^\S+\s'), '')
+                              .split('&')
+                              .first
+                              .trim(),
                           style: TextStyle(
                             color: isSelected ? Colors.white : Colors.grey[400],
                             fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w400,
                           ),
                         ),
                       ],
                     ),
                     Positioned(
-                      top: -6, right: -6,
+                      top: -6,
+                      right: -6,
                       child: ChatUnreadBadge(roomId: chipFullRoomId),
                     ),
                   ],
@@ -4439,16 +4865,20 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
-          Text('Vibe: ', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+          Text('Vibe: ',
+              style: TextStyle(color: Colors.grey[500], fontSize: 11)),
           Text(_myMood, style: const TextStyle(fontSize: 14)),
           const SizedBox(width: 6),
-          Text('· Du bist im ${_rooms[_selectedRoom]?['icon'] ?? '💬'} Raum', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
+          Text('· Du bist im ${_rooms[_selectedRoom]?['icon'] ?? '💬'} Raum',
+              style: TextStyle(color: Colors.grey[600], fontSize: 10)),
           const Spacer(),
           // Show other online users' moods from room description (placeholder)
           ...moods.take(3).map((e) => Padding(
-            padding: const EdgeInsets.only(left: 2),
-            child: Text(e, style: const TextStyle(fontSize: 11, color: Colors.white24)),
-          )),
+                padding: const EdgeInsets.only(left: 2),
+                child: Text(e,
+                    style:
+                        const TextStyle(fontSize: 11, color: Colors.white24)),
+              )),
         ],
       ),
     );
@@ -4456,7 +4886,20 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
   // ✨ MOOD PICKER ROW — erscheint über dem Input-Feld
   Widget _buildMoodPickerRow() {
-    const moods = ['🧘', '💫', '🔮', '✨', '🌙', '💜', '🌟', '🕊️', '🌺', '⚡', '🔥', '💎'];
+    const moods = [
+      '🧘',
+      '💫',
+      '🔮',
+      '✨',
+      '🌙',
+      '💜',
+      '🌟',
+      '🕊️',
+      '🌺',
+      '⚡',
+      '🔥',
+      '💎'
+    ];
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -4464,9 +4907,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         scrollDirection: Axis.horizontal,
         children: [
           GestureDetector(
-            onTap: () => setState(() { _myMood = ''; _showMoodPicker = false; }),
+            onTap: () => setState(() {
+              _myMood = '';
+              _showMoodPicker = false;
+            }),
             child: Container(
-              width: 32, height: 32,
+              width: 32,
+              height: 32,
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFF1A0A2E),
@@ -4477,21 +4924,30 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             ),
           ),
           ...moods.map((e) => GestureDetector(
-            onTap: () => setState(() { _myMood = e; _showMoodPicker = false; }),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 32, height: 32,
-              margin: const EdgeInsets.only(right: 6),
-              decoration: BoxDecoration(
-                color: _myMood == e ? const Color(0xFF4A148C) : const Color(0xFF1A0A2E),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _myMood == e ? const Color(0xFF9B51E0) : Colors.grey.withValues(alpha: 0.2),
+                onTap: () => setState(() {
+                  _myMood = e;
+                  _showMoodPicker = false;
+                }),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 32,
+                  height: 32,
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: _myMood == e
+                        ? const Color(0xFF4A148C)
+                        : const Color(0xFF1A0A2E),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _myMood == e
+                          ? const Color(0xFF9B51E0)
+                          : Colors.grey.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Center(
+                      child: Text(e, style: const TextStyle(fontSize: 16))),
                 ),
-              ),
-              child: Center(child: Text(e, style: const TextStyle(fontSize: 16))),
-            ),
-          )),
+              )),
         ],
       ),
     );
@@ -4501,9 +4957,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   void _toggleMeditationSync() {
     if (_meditationSyncActive) {
       _meditationSyncTimer?.cancel();
-      setState(() { _meditationSyncActive = false; _meditationSyncSeconds = 0; });
+      setState(() {
+        _meditationSyncActive = false;
+        _meditationSyncSeconds = 0;
+      });
     } else {
-      setState(() { _meditationSyncActive = true; _meditationSyncSeconds = 0; });
+      setState(() {
+        _meditationSyncActive = true;
+        _meditationSyncSeconds = 0;
+      });
       _meditationSyncTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() => _meditationSyncSeconds++);
       });
@@ -4516,4 +4978,3 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     return '$m:$s';
   }
 }
-

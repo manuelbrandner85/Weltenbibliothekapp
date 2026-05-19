@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Social Media Share Widget v8.0
-/// 
+///
 /// Social Media Integration für Recherche-Sharing
 class SocialMediaShareWidget extends StatelessWidget {
   final String query;
@@ -40,9 +40,9 @@ class SocialMediaShareWidget extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Social Media Buttons
           Wrap(
             spacing: 12,
@@ -50,7 +50,7 @@ class SocialMediaShareWidget extends StatelessWidget {
             children: [
               _buildSocialButton(
                 context,
-                icon: '𝕏',  // Twitter/X Icon
+                icon: '𝕏', // Twitter/X Icon
                 label: 'Twitter',
                 color: Colors.black,
                 onTap: () => _shareToTwitter(),
@@ -123,9 +123,10 @@ class SocialMediaShareWidget extends StatelessWidget {
 
   // Twitter/X Share
   void _shareToTwitter() async {
-    final text = Uri.encodeComponent('Interessante Recherche: $query\n\n$url\n\n#Weltenbibliothek #AlternativeMedien');
+    final text = Uri.encodeComponent(
+        'Interessante Recherche: $query\n\n$url\n\n#Weltenbibliothek #AlternativeMedien');
     final uri = Uri.parse('https://twitter.com/intent/tweet?text=$text');
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -135,8 +136,9 @@ class SocialMediaShareWidget extends StatelessWidget {
   void _shareToReddit() async {
     final title = Uri.encodeComponent('Recherche: $query');
     final urlEncoded = Uri.encodeComponent(url);
-    final uri = Uri.parse('https://www.reddit.com/submit?title=$title&url=$urlEncoded');
-    
+    final uri =
+        Uri.parse('https://www.reddit.com/submit?title=$title&url=$urlEncoded');
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -146,7 +148,7 @@ class SocialMediaShareWidget extends StatelessWidget {
   void _shareToTelegram() async {
     final text = Uri.encodeComponent('Interessante Recherche: $query\n\n$url');
     final uri = Uri.parse('https://t.me/share/url?url=$url&text=$text');
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -156,7 +158,7 @@ class SocialMediaShareWidget extends StatelessWidget {
   void _shareToWhatsApp() async {
     final text = Uri.encodeComponent('Interessante Recherche: $query\n\n$url');
     final uri = Uri.parse('https://wa.me/?text=$text');
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -164,7 +166,7 @@ class SocialMediaShareWidget extends StatelessWidget {
 }
 
 /// Embed Code Generator Widget v8.0
-/// 
+///
 /// Erstellt Embed-Code für Websites
 class EmbedCodeWidget extends StatelessWidget {
   final String url;
@@ -213,9 +215,9 @@ class EmbedCodeWidget extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           Text(
             'Binde diese Recherche in deine Website ein:',
             style: TextStyle(
@@ -223,9 +225,9 @@ class EmbedCodeWidget extends StatelessWidget {
               color: Colors.grey[400],
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Code Container
           Container(
             padding: const EdgeInsets.all(12),
@@ -243,9 +245,9 @@ class EmbedCodeWidget extends StatelessWidget {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Copy Button
           SizedBox(
             width: double.infinity,

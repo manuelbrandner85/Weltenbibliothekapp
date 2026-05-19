@@ -10,7 +10,7 @@
 // =====================================================================
 
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../services/daily_challenges_service.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
@@ -65,43 +65,47 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),
           ),
           const Positioned.fill(child: IgnorePointer(child: WBVignette())),
           CustomScrollView(
-        slivers: [
-          // HEADER - PROGRESS OVERVIEW
-          SliverToBoxAdapter(
-            child: _buildProgressHeader(
-              completedCount,
-              totalCount,
-              completionPercent,
-            ),
-          ),
-
-          // CHALLENGES LIST
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final challenge = challenges[index];
-                  return _buildChallengeCard(challenge, index);
-                },
-                childCount: challenges.length,
+            slivers: [
+              // HEADER - PROGRESS OVERVIEW
+              SliverToBoxAdapter(
+                child: _buildProgressHeader(
+                  completedCount,
+                  totalCount,
+                  completionPercent,
+                ),
               ),
-            ),
-          ),
 
-          // FOOTER SPACER
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 80),
+              // CHALLENGES LIST
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final challenge = challenges[index];
+                      return _buildChallengeCard(challenge, index);
+                    },
+                    childCount: challenges.length,
+                  ),
+                ),
+              ),
+
+              // FOOTER SPACER
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 80),
+              ),
+            ],
           ),
-        ],
-      ),
         ],
       ),
     );
@@ -282,7 +286,8 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _getCategoryColor(challenge.category).withValues(alpha: 0.2),
+                    color: _getCategoryColor(challenge.category)
+                        .withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

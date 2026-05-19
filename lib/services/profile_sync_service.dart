@@ -10,40 +10,39 @@ import '../core/storage/unified_storage_service.dart';
 
 /// Cloudflare Profile Service
 /// Synchronisiert Profile-Daten mit Cloudflare D1 Backend
-/// 
+///
 /// ✅ PUBLIC ENDPOINTS (Keine Auth-Headers erforderlich):
 /// - POST /api/profile/materie - Profil erstellen/aktualisieren
 /// - POST /api/profile/energie - Profil erstellen/aktualisieren
 /// - GET /api/profile/:world/:username - Profil abrufen
-/// 
+///
 /// 🔐 PROTECTED ENDPOINTS (Auth-Headers erforderlich):
 /// - Siehe WorldAdminService für Admin-Endpoints
-/// 
+///
 /// ⚠️  WICHTIG: Profile Sync ist absichtlich public, da:
 /// - Jeder User muss sein erstes Profil erstellen können
 /// - Root-Admin Passwort wird backend-seitig validiert
 /// - Admin Endpoints sind separat geschützt (WorldAdminService)
-/// 
+///
 /// 🆕 NEUE METHODEN (FIX 2):
 /// - saveMaterieProfileAndGetUpdated() - Save + Get in einem (mit Backend-Rollen)
 /// - saveEnergieProfileAndGetUpdated() - Save + Get in einem (mit Backend-Rollen)
 class ProfileSyncService {
   // Cloudflare Worker URL (v2 - World-Based Multi-Profile System)
   static const String _baseUrl = ApiConfig.workerUrl;
-  
+
   // ════════════════════════════════════════════════════════════
   // MATERIE PROFILE
   // ════════════════════════════════════════════════════════════
-  
+
   /// Save Materie Profile to Cloud
-  /// 
+  ///
   /// ✅ FAIL-SAFE: Optional password parameter for Root Admin validation
   /// - password: Optional, only required for username "Weltenbibliothek"
   /// - Rückwärtskompatibel: Bestehende Aufrufe funktionieren weiter
-  Future<bool> saveMaterieProfile(
-    MaterieProfile profile,
-    {String? password}  // ✅ NEU: Optional Root-Admin Passwort
-  ) async {
+  Future<bool> saveMaterieProfile(MaterieProfile profile,
+      {String? password} // ✅ NEU: Optional Root-Admin Passwort
+      ) async {
     try {
       final url = Uri.parse('$_baseUrl/api/profile/materie');
 
@@ -58,9 +57,10 @@ class ProfileSyncService {
         'avatar_url': profile.avatarUrl,
         'avatar_emoji': profile.avatarEmoji,
         'bio': profile.bio,
-        if (invisibleId != null && invisibleId.isNotEmpty) 'userId': invisibleId,
+        if (invisibleId != null && invisibleId.isNotEmpty)
+          'userId': invisibleId,
       };
-      
+
       // ✅ NEU: Passwort nur hinzufügen wenn vorhanden
       if (password != null && password.isNotEmpty) {
         body['password'] = password;
@@ -68,14 +68,14 @@ class ProfileSyncService {
           debugPrint('🔐 Root-Admin Passwort wird gesendet');
         }
       }
-      
+
       return await HttpHelper.post<bool>(
         uri: url,
         headers: {'Content-Type': 'application/json'},
         body: body,
         parseResponse: (responseBody) {
           final data = jsonDecode(responseBody) as Map<String, dynamic>;
-          
+
           if (kDebugMode) {
             debugPrint('✅ Materie-Profil gespeichert: ${profile.username}');
             if (data['userId'] != null) {
@@ -101,33 +101,32 @@ class ProfileSyncService {
       return false;
     }
   }
-  
+
   /// Save Materie Profile to Cloud und return aktualisiertes Profil mit Backend-Daten
-  /// 
+  ///
   /// ✅ NEUE METHODE (FIX 2): Kombiniert Save + Get für kompletten Flow
   /// Returns: Updated MaterieProfile mit userId und role vom Backend
   Future<MaterieProfile?> saveMaterieProfileAndGetUpdated(
-    MaterieProfile profile,
-    {String? password}
-  ) async {
+      MaterieProfile profile,
+      {String? password}) async {
     // 1. Speichern
     final success = await saveMaterieProfile(profile, password: password);
-    
+
     if (!success) {
       return null;
     }
-    
+
     // 2. Aktualisiertes Profil vom Backend holen
     final updatedProfile = await getMaterieProfile(profile.username);
-    
+
     return updatedProfile;
   }
-  
+
   /// Get Materie Profile from Cloud
   Future<MaterieProfile?> getMaterieProfile(String username) async {
     try {
       final url = Uri.parse('$_baseUrl/api/profile/materie/$username');
-      
+
       return await HttpHelper.get<MaterieProfile?>(
         uri: url,
         headers: {},
@@ -135,11 +134,11 @@ class ProfileSyncService {
           final data = jsonDecode(body);
           if (data['success'] == true && data['profile'] != null) {
             final profileData = data['profile'];
-            
+
             return MaterieProfile(
               username: profileData['username'] as String,
-              userId: profileData['user_id'] as String?,      // ✅ Backend userId
-              role: profileData['role'] as String?,           // ✅ Backend role
+              userId: profileData['user_id'] as String?, // ✅ Backend userId
+              role: profileData['role'] as String?, // ✅ Backend role
               name: profileData['name'] as String?,
               avatarUrl: profileData['avatar_url'] as String?,
               avatarEmoji: profileData['avatar_emoji'] as String?,
@@ -156,12 +155,12 @@ class ProfileSyncService {
       return null;
     }
   }
-  
+
   /// Get All Materie Profiles
   Future<List<MaterieProfile>> getAllMaterieProfiles() async {
     try {
       final url = Uri.parse('$_baseUrl/api/profiles/materie');
-      
+
       return await HttpHelper.get<List<MaterieProfile>>(
         uri: url,
         headers: {},
@@ -169,14 +168,16 @@ class ProfileSyncService {
           final data = jsonDecode(body);
           if (data['success'] == true && data['profiles'] != null) {
             final profilesList = data['profiles'] as List<dynamic>;
-            
-            return profilesList.map((p) => MaterieProfile(
-              username: p['username'] as String,
-              name: p['name'] as String?,
-              avatarUrl: p['avatar_url'] as String?,
-              avatarEmoji: p['avatar_emoji'] as String?,
-              bio: p['bio'] as String?,
-            )).toList();
+
+            return profilesList
+                .map((p) => MaterieProfile(
+                      username: p['username'] as String,
+                      name: p['name'] as String?,
+                      avatarUrl: p['avatar_url'] as String?,
+                      avatarEmoji: p['avatar_emoji'] as String?,
+                      bio: p['bio'] as String?,
+                    ))
+                .toList();
           }
           return [];
         },
@@ -188,20 +189,19 @@ class ProfileSyncService {
       return [];
     }
   }
-  
+
   // ════════════════════════════════════════════════════════════
   // ENERGIE PROFILE
   // ════════════════════════════════════════════════════════════
-  
+
   /// Save Energie Profile to Cloud
-  /// 
+  ///
   /// ✅ FAIL-SAFE: Optional password parameter for Root Admin validation
   /// - password: Optional, only required for username "Weltenbibliothek"
   /// - Rückwärtskompatibel: Bestehende Aufrufe funktionieren weiter
-  Future<bool> saveEnergieProfile(
-    EnergieProfile profile,
-    {String? password}  // ✅ NEU: Optional Root-Admin Passwort
-  ) async {
+  Future<bool> saveEnergieProfile(EnergieProfile profile,
+      {String? password} // ✅ NEU: Optional Root-Admin Passwort
+      ) async {
     try {
       final url = Uri.parse('$_baseUrl/api/profile/energie');
 
@@ -228,15 +228,18 @@ class ProfileSyncService {
         'avatar_emoji': profile.avatarEmoji,
         'bio': profile.bio,
         // ✨ v93 Spirit-Tools-Extras
-        if (profile.birthLatitude != null) 'birth_latitude': profile.birthLatitude,
-        if (profile.birthLongitude != null) 'birth_longitude': profile.birthLongitude,
+        if (profile.birthLatitude != null)
+          'birth_latitude': profile.birthLatitude,
+        if (profile.birthLongitude != null)
+          'birth_longitude': profile.birthLongitude,
         if (profile.timezoneOffsetHours != null)
           'timezone_offset_hours': profile.timezoneOffsetHours,
         'birth_time_unknown': profile.birthTimeUnknown,
         if (profile.gender != null) 'gender': profile.gender,
-        if (invisibleId != null && invisibleId.isNotEmpty) 'userId': invisibleId,
+        if (invisibleId != null && invisibleId.isNotEmpty)
+          'userId': invisibleId,
       };
-      
+
       // ✅ NEU: Passwort nur hinzufügen wenn vorhanden
       if (password != null && password.isNotEmpty) {
         body['password'] = password;
@@ -244,14 +247,14 @@ class ProfileSyncService {
           debugPrint('🔐 Root-Admin Passwort wird gesendet');
         }
       }
-      
+
       return await HttpHelper.post<bool>(
         uri: url,
         headers: {'Content-Type': 'application/json'},
         body: body,
         parseResponse: (responseBody) {
           final data = jsonDecode(responseBody) as Map<String, dynamic>;
-          
+
           if (kDebugMode) {
             debugPrint('✅ Energie-Profil gespeichert: ${profile.username}');
             if (data['userId'] != null) {
@@ -277,33 +280,32 @@ class ProfileSyncService {
       return false;
     }
   }
-  
+
   /// Save Energie Profile to Cloud und return aktualisiertes Profil mit Backend-Daten
-  /// 
+  ///
   /// ✅ NEUE METHODE (FIX 2): Kombiniert Save + Get für kompletten Flow
   /// Returns: Updated EnergieProfile mit userId und role vom Backend
   Future<EnergieProfile?> saveEnergieProfileAndGetUpdated(
-    EnergieProfile profile,
-    {String? password}
-  ) async {
+      EnergieProfile profile,
+      {String? password}) async {
     // 1. Speichern
     final success = await saveEnergieProfile(profile, password: password);
-    
+
     if (!success) {
       return null;
     }
-    
+
     // 2. Aktualisiertes Profil vom Backend holen
     final updatedProfile = await getEnergieProfile(profile.username);
-    
+
     return updatedProfile;
   }
-  
+
   /// Get Energie Profile from Cloud
   Future<EnergieProfile?> getEnergieProfile(String username) async {
     try {
       final url = Uri.parse('$_baseUrl/api/profile/energie/$username');
-      
+
       return await HttpHelper.get<EnergieProfile?>(
         uri: url,
         headers: {},
@@ -311,7 +313,7 @@ class ProfileSyncService {
           final data = jsonDecode(body);
           if (data['success'] == true && data['profile'] != null) {
             final p = data['profile'];
-            
+
             // v93: full_name aufsplitten in first/last (Convention: erstes Wort = first)
             final fullName = (p['full_name'] as String?) ?? '';
             final nameParts = fullName.split(' ');
@@ -336,7 +338,8 @@ class ProfileSyncService {
               // ✨ v93 Spirit-Tools-Extras
               birthLatitude: (p['birth_latitude'] as num?)?.toDouble(),
               birthLongitude: (p['birth_longitude'] as num?)?.toDouble(),
-              timezoneOffsetHours: (p['timezone_offset_hours'] as num?)?.toDouble(),
+              timezoneOffsetHours:
+                  (p['timezone_offset_hours'] as num?)?.toDouble(),
               birthTimeUnknown: p['birth_time_unknown'] == true,
               gender: p['gender'] as String?,
             );
@@ -351,12 +354,12 @@ class ProfileSyncService {
       return null;
     }
   }
-  
+
   /// Get All Energie Profiles
   Future<List<EnergieProfile>> getAllEnergieProfiles() async {
     try {
       final url = Uri.parse('$_baseUrl/api/profiles/energie');
-      
+
       return await HttpHelper.get<List<EnergieProfile>>(
         uri: url,
         headers: {},
@@ -364,7 +367,7 @@ class ProfileSyncService {
           final data = jsonDecode(body);
           if (data['success'] == true && data['profiles'] != null) {
             final profilesList = data['profiles'] as List<dynamic>;
-            
+
             return profilesList.map((p) {
               final fullName = (p['full_name'] as String?) ?? '';
               final nameParts = fullName.split(' ');

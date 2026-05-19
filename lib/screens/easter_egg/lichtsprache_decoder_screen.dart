@@ -148,6 +148,7 @@ class _LichtspracheDecoderScreenState extends State<LichtspracheDecoderScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _gold = Color(0xFFFFD700);
   static const Color _primary = Color(0xFF7C4DFF);
   static const String _prefsKey = 'daily_symbol_history_v1';
@@ -353,9 +354,7 @@ class _LichtspracheDecoderScreenState extends State<LichtspracheDecoderScreen>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: _revealed
-                  ? _buildRevealed(symbol)
-                  : _buildInitial(),
+              child: _revealed ? _buildRevealed(symbol) : _buildInitial(),
             ),
           ),
           const IgnorePointer(child: WBVignette()),

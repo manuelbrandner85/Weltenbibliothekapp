@@ -39,17 +39,94 @@ Color _worldColor(String world) {
 /// Deutsche Stopword-Liste fuer Topic-Extraction.
 /// Bewusst klein gehalten (nur die haeufigsten Fuellwoerter).
 const Set<String> _stopwords = <String>{
-  'aber', 'auch', 'dann', 'wenn', 'sehr', 'ueber', 'über', 'dass', 'sich',
-  'mein', 'dein', 'sein', 'wird', 'wurde', 'sind', 'habe', 'haben',
-  'machen', 'heute', 'schon', 'noch', 'immer', 'nicht', 'dies', 'das',
-  'bei', 'vom', 'vor', 'nach', 'mit', 'ohne', 'aus', 'und', 'oder',
-  'der', 'die', 'des', 'dem', 'den', 'ein', 'eine', 'einer', 'eines',
-  'einem', 'einen', 'ich', 'du', 'er', 'sie', 'wir', 'ihr', 'was',
-  'wie', 'wo', 'wer', 'weil', 'denn', 'gibt', 'kann', 'mag', 'muss',
-  'soll', 'will', 'mehr', 'viel', 'viele', 'einfach', 'wirklich',
-  'ganz', 'eben', 'eigentlich', 'doch', 'mal', 'nur', 'auf', 'für',
-  'fuer', 'zum', 'zur', 'zu', 'im', 'in', 'an', 'als', 'so',
-  'ist', 'war', 'man',
+  'aber',
+  'auch',
+  'dann',
+  'wenn',
+  'sehr',
+  'ueber',
+  'über',
+  'dass',
+  'sich',
+  'mein',
+  'dein',
+  'sein',
+  'wird',
+  'wurde',
+  'sind',
+  'habe',
+  'haben',
+  'machen',
+  'heute',
+  'schon',
+  'noch',
+  'immer',
+  'nicht',
+  'dies',
+  'das',
+  'bei',
+  'vom',
+  'vor',
+  'nach',
+  'mit',
+  'ohne',
+  'aus',
+  'und',
+  'oder',
+  'der',
+  'die',
+  'des',
+  'dem',
+  'den',
+  'ein',
+  'eine',
+  'einer',
+  'eines',
+  'einem',
+  'einen',
+  'ich',
+  'du',
+  'er',
+  'sie',
+  'wir',
+  'ihr',
+  'was',
+  'wie',
+  'wo',
+  'wer',
+  'weil',
+  'denn',
+  'gibt',
+  'kann',
+  'mag',
+  'muss',
+  'soll',
+  'will',
+  'mehr',
+  'viel',
+  'viele',
+  'einfach',
+  'wirklich',
+  'ganz',
+  'eben',
+  'eigentlich',
+  'doch',
+  'mal',
+  'nur',
+  'auf',
+  'für',
+  'fuer',
+  'zum',
+  'zur',
+  'zu',
+  'im',
+  'in',
+  'an',
+  'als',
+  'so',
+  'ist',
+  'war',
+  'man',
 };
 
 /// Extrahiert die top-N Themen aus einer Message-Liste.
@@ -649,8 +726,16 @@ class SmartReplyComputer {
 
     // Begruessung
     const List<String> greetings = <String>[
-      'hallo', 'hi ', 'hey', 'servus', 'moin', 'guten morgen', 'guten abend',
-      'guten tag', 'gruess', 'grüß',
+      'hallo',
+      'hi ',
+      'hey',
+      'servus',
+      'moin',
+      'guten morgen',
+      'guten abend',
+      'guten tag',
+      'gruess',
+      'grüß',
     ];
     if (greetings.any((String g) => lower.startsWith(g)) ||
         greetings.any((String g) => lower.contains(g))) {
@@ -695,9 +780,12 @@ class SmartReplyComputer {
     }
 
     // Frage
-    if (text.endsWith('?') || lower.startsWith('wie ') ||
-        lower.startsWith('was ') || lower.startsWith('warum ') ||
-        lower.startsWith('wieso ') || lower.startsWith('weshalb ')) {
+    if (text.endsWith('?') ||
+        lower.startsWith('wie ') ||
+        lower.startsWith('was ') ||
+        lower.startsWith('warum ') ||
+        lower.startsWith('wieso ') ||
+        lower.startsWith('weshalb ')) {
       return const <String>[
         'Ja, finde ich auch.',
         'Hmm, ich sehe es anders.',

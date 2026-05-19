@@ -15,12 +15,12 @@ import 'version_watcher_screen.dart';
 // OSINT Datenbanken Hub — 7 direkte Datenbank-Zugänge via WebView
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kBg      = Color(0xFF0D0000);
+const _kBg = Color(0xFF0D0000);
 const _kSurface = Color(0xFF1A0808);
-const _kAccent  = Color(0xFFE53935);
-const _kText    = Colors.white;
-const _kMuted   = Color(0xFFB0A0A0);
-const _kBorder  = Color(0x33E53935);
+const _kAccent = Color(0xFFE53935);
+const _kText = Colors.white;
+const _kMuted = Color(0xFFB0A0A0);
+const _kBorder = Color(0x33E53935);
 
 class OsintToolsHub extends StatelessWidget {
   const OsintToolsHub({super.key});
@@ -32,7 +32,8 @@ class OsintToolsHub extends StatelessWidget {
       sub: 'OpenSanctions + 6 Leaks parallel',
       color: const Color(0xFFE53935),
       url: '',
-      description: 'Eine Suche → 2 Datenbanken parallel: OpenSanctions (EU/UN/OFAC, PEP) + Aleph OCCRP (Panama/Pandora/FinCEN/LuxLeaks/Suisse Secrets/Offshore Leaks). Mit Risk-Score, Watchlist, Detail-Drill-down.',
+      description:
+          'Eine Suche → 2 Datenbanken parallel: OpenSanctions (EU/UN/OFAC, PEP) + Aleph OCCRP (Panama/Pandora/FinCEN/LuxLeaks/Suisse Secrets/Offshore Leaks). Mit Risk-Score, Watchlist, Detail-Drill-down.',
       customScreenBuilder: () => const PowerNetworkExplorerScreen(),
     ),
     _DbDef(
@@ -41,7 +42,8 @@ class OsintToolsHub extends StatelessWidget {
       sub: 'PubMed + Semantic Scholar + AI',
       color: const Color(0xFF26C6DA),
       url: '',
-      description: 'Eine Suche → PubMed (35M) + Semantic Scholar (200M) parallel. Auto-Erkennung von Studien-Typ (RCT/Meta/Review), Quality-Score, AI-3-Satz-Zusammenfassung, persönliche Bibliothek.',
+      description:
+          'Eine Suche → PubMed (35M) + Semantic Scholar (200M) parallel. Auto-Erkennung von Studien-Typ (RCT/Meta/Review), Quality-Score, AI-3-Satz-Zusammenfassung, persönliche Bibliothek.',
       customScreenBuilder: () => const StudyAnalystScreen(),
     ),
     _DbDef(
@@ -50,7 +52,8 @@ class OsintToolsHub extends StatelessWidget {
       sub: 'Wayback-Diff + Watchlist',
       color: const Color(0xFFFF7043),
       url: '',
-      description: 'URL eingeben → Wayback-Verlauf, beliebige 2 Snapshots vergleichen (Text-Diff: was wurde gelöscht/hinzugefügt). Watchlist alarmiert bei neuen Versionen.',
+      description:
+          'URL eingeben → Wayback-Verlauf, beliebige 2 Snapshots vergleichen (Text-Diff: was wurde gelöscht/hinzugefügt). Watchlist alarmiert bei neuen Versionen.',
       customScreenBuilder: () => const VersionWatcherScreen(),
     ),
     _DbDef(
@@ -59,7 +62,8 @@ class OsintToolsHub extends StatelessWidget {
       sub: 'Live-Votes + Werte-Match',
       color: const Color(0xFF2196F3),
       url: '',
-      description: 'Letzte Plenar-Abstimmungen mit Result + Stimmen-Verteilung. 👍/👎-Markierung pro Vote baut deine Werte-Karte. MEP-Browser mit Country-Filter.',
+      description:
+          'Letzte Plenar-Abstimmungen mit Result + Stimmen-Verteilung. 👍/👎-Markierung pro Vote baut deine Werte-Karte. MEP-Browser mit Country-Filter.',
       customScreenBuilder: () => const EuParliamentTrackerScreen(),
     ),
   ];
@@ -74,7 +78,8 @@ class OsintToolsHub extends StatelessWidget {
           Icon(Icons.manage_search_rounded, color: _kAccent, size: 22),
           const SizedBox(width: 8),
           const Text('OSINT Datenbanken',
-              style: TextStyle(color: _kText, fontWeight: FontWeight.bold, fontSize: 18)),
+              style: TextStyle(
+                  color: _kText, fontWeight: FontWeight.bold, fontSize: 18)),
         ]),
         actions: [
           // 🕰️ D1: pro-Tool-History
@@ -166,7 +171,9 @@ class _DbCard extends StatelessWidget {
               const SizedBox(height: 10),
               Text(db.label,
                   style: const TextStyle(
-                      color: _kText, fontWeight: FontWeight.bold, fontSize: 13)),
+                      color: _kText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13)),
               const SizedBox(height: 3),
               Text(db.sub,
                   style: const TextStyle(color: _kMuted, fontSize: 10),
@@ -205,9 +212,16 @@ class _OsintWebViewScreenState extends State<_OsintWebViewScreen> {
     _ctrl = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (url) => setState(() { _currentUrl = url; _loading = true; }),
-        onPageFinished: (_) { if (mounted) setState(() => _loading = false); },
-        onWebResourceError: (_) { if (mounted) setState(() => _loading = false); },
+        onPageStarted: (url) => setState(() {
+          _currentUrl = url;
+          _loading = true;
+        }),
+        onPageFinished: (_) {
+          if (mounted) setState(() => _loading = false);
+        },
+        onWebResourceError: (_) {
+          if (mounted) setState(() => _loading = false);
+        },
       ))
       ..loadRequest(Uri.parse(widget.db.url));
   }
@@ -323,8 +337,8 @@ class _OsintHistoryScreenState extends State<_OsintHistoryScreen> {
       backgroundColor: const Color(0xFF04080F),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('OSINT-Verlauf',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('OSINT-Verlauf', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: _kAccent),
         actions: [
           if (_entries.isNotEmpty)
@@ -345,15 +359,16 @@ class _OsintHistoryScreenState extends State<_OsintHistoryScreen> {
               children: [
                 for (final t in _tools)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                     child: ChoiceChip(
-                      label: Text(t.$2,
-                          style: const TextStyle(fontSize: 12)),
+                      label: Text(t.$2, style: const TextStyle(fontSize: 12)),
                       selected: _selectedTool == t.$1,
                       selectedColor: _kAccent.withValues(alpha: 0.25),
                       backgroundColor: Colors.white.withValues(alpha: 0.04),
                       labelStyle: TextStyle(
-                        color: _selectedTool == t.$1 ? _kAccent : Colors.white70,
+                        color:
+                            _selectedTool == t.$1 ? _kAccent : Colors.white70,
                       ),
                       onSelected: (_) {
                         setState(() => _selectedTool = t.$1);
@@ -405,8 +420,11 @@ class _OsintHistoryScreenState extends State<_OsintHistoryScreen> {
                           children: [
                             IconButton(
                               icon: Icon(
-                                e.starred ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: e.starred ? Colors.amber : Colors.white38,
+                                e.starred
+                                    ? Icons.star_rounded
+                                    : Icons.star_outline_rounded,
+                                color:
+                                    e.starred ? Colors.amber : Colors.white38,
                               ),
                               onPressed: () => _star(e),
                             ),
@@ -414,8 +432,7 @@ class _OsintHistoryScreenState extends State<_OsintHistoryScreen> {
                               icon: const Icon(Icons.copy_rounded,
                                   color: Colors.white38, size: 18),
                               onPressed: () {
-                                Clipboard.setData(
-                                    ClipboardData(text: e.query));
+                                Clipboard.setData(ClipboardData(text: e.query));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('📋 Kopiert'),

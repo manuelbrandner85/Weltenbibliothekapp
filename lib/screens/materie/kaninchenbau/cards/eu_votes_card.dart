@@ -27,15 +27,22 @@ class EuVotesCard extends StatelessWidget {
             const Icon(Icons.how_to_vote, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('EU-PARLAMENT · ABSTIMMUNGEN',
-                style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold)),
             const Spacer(),
             if (votes.isNotEmpty)
               Text('${votes.length}',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 11)),
           ]),
           const SizedBox(height: 4),
           Text('HowTheyVote.eu · Europaparlament · Transparenz-Datenbank',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
           const SizedBox(height: 14),
           if (loading)
             _buildLoading()
@@ -51,7 +58,10 @@ class EuVotesCard extends StatelessWidget {
   Widget _buildLoading() => const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: SizedBox(width: 28, height: 28, child: CircularProgressIndicator(color: _accent, strokeWidth: 2)),
+          child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(color: _accent, strokeWidth: 2)),
         ),
       );
 
@@ -65,7 +75,9 @@ class EuVotesCard extends StatelessWidget {
     final total = v.forCount + v.againstCount + v.abstainCount;
     final forPct = total > 0 ? v.forCount / total : 0.0;
     final againstPct = total > 0 ? v.againstCount / total : 0.0;
-    final passed = v.result.toLowerCase().contains('adopt') || v.result.toLowerCase().contains('pass') || v.forCount > v.againstCount;
+    final passed = v.result.toLowerCase().contains('adopt') ||
+        v.result.toLowerCase().contains('pass') ||
+        v.forCount > v.againstCount;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -73,7 +85,8 @@ class EuVotesCard extends StatelessWidget {
         onTap: () async {
           HapticFeedback.lightImpact();
           final uri = Uri.tryParse(v.url);
-          if (uri != null && await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (uri != null && await canLaunchUrl(uri))
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
         },
         borderRadius: BorderRadius.circular(10),
         child: Container(
@@ -83,28 +96,36 @@ class EuVotesCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: _accent.withValues(alpha: 0.22)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(
                 child: Text(v.title,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                    maxLines: 3, overflow: TextOverflow.ellipsis),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
-                  color: (passed ? Colors.green : Colors.red).withValues(alpha: 0.18),
+                  color: (passed ? Colors.green : Colors.red)
+                      .withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(5),
                   border: Border.all(
-                    color: (passed ? Colors.greenAccent : Colors.redAccent).withValues(alpha: 0.4),
+                    color: (passed ? Colors.greenAccent : Colors.redAccent)
+                        .withValues(alpha: 0.4),
                     width: 0.8,
                   ),
                 ),
                 child: Text(passed ? 'ANGENOMMEN' : 'ABGELEHNT',
                     style: TextStyle(
                       color: passed ? Colors.greenAccent : Colors.redAccent,
-                      fontSize: 8, fontWeight: FontWeight.w800,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
                     )),
               ),
             ]),
@@ -116,7 +137,9 @@ class EuVotesCard extends StatelessWidget {
               _voteCount('✗ ${v.againstCount}', Colors.redAccent),
               _voteCount('○ ${v.abstainCount}', Colors.white38),
               Text(v.date.length > 10 ? v.date.substring(0, 10) : v.date,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 9)),
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      fontSize: 9)),
             ]),
           ]),
         ),

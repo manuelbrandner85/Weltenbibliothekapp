@@ -58,14 +58,12 @@ const Map<String, String> _spiritualContexts = {
       'Das Gesetz der Anziehung beschreibt, dass Gedanken und Gefühle die Realität formen. '
           'Spirituelle Traditionen lehren: Was du im Inneren lebst, erschaffst du im Außen. '
           'Klare Intention, emotionale Resonanz und geduldiges Loslassen sind der Schlüssel.',
-  'karma':
-      'Karma (Sanskrit: "Tat") bezeichnet das universelle Kausalitätsprinzip: Jede Handlung '
-          'erzeugt Wirkungen, die im selben oder künftigen Leben erfahren werden. '
-          'Karma ist kein Schicksal, sondern Einladung zur Verantwortung und Bewusstseinserweiterung.',
-  'chakren':
-      'Die sieben Hauptchakren sind Energiezentren entlang der Wirbelsäule aus der vedischen Tradition. '
-          'Von Muladhara (Wurzel) bis Sahasrara (Krone) regulieren sie körperliche, emotionale und '
-          'spirituelle Aspekte des Lebens. Blockierte Chakren zeigen sich als körperliche oder seelische Beschwerden.',
+  'karma': 'Karma (Sanskrit: "Tat") bezeichnet das universelle Kausalitätsprinzip: Jede Handlung '
+      'erzeugt Wirkungen, die im selben oder künftigen Leben erfahren werden. '
+      'Karma ist kein Schicksal, sondern Einladung zur Verantwortung und Bewusstseinserweiterung.',
+  'chakren': 'Die sieben Hauptchakren sind Energiezentren entlang der Wirbelsäule aus der vedischen Tradition. '
+      'Von Muladhara (Wurzel) bis Sahasrara (Krone) regulieren sie körperliche, emotionale und '
+      'spirituelle Aspekte des Lebens. Blockierte Chakren zeigen sich als körperliche oder seelische Beschwerden.',
   'akasha':
       'Die Akasha-Chronik (Sanskrit: "Äther, Himmel") ist nach theosophischer Lehre ein nichtlineares '
           'kosmisches Gedächtnis, das alle Erfahrungen jeder Seele enthält. '
@@ -78,10 +76,9 @@ const Map<String, String> _spiritualContexts = {
       'Der Mond beeinflusst nach alter Überlieferung nicht nur Gezeiten, sondern auch Energien, '
           'Emotionen und spirituelle Qualitäten. Neumond steht für Neuanfänge, Vollmond für Fülle '
           'und Enthüllung. Viele Rituale richten sich nach dem Mondkalender.',
-  'heilung':
-      'Spirituelle Heilung umfasst Energiearbeit, Gebet, Handauflegen und schamanische Praktiken. '
-          'Sie ergänzt schulmedizinische Behandlungen durch den Einbezug des Geist-Körper-Seele-Kontinuums. '
-          'Die Quantenphysik liefert erste Modelle für Fernheilung und Bewusstseinswirkung.',
+  'heilung': 'Spirituelle Heilung umfasst Energiearbeit, Gebet, Handauflegen und schamanische Praktiken. '
+      'Sie ergänzt schulmedizinische Behandlungen durch den Einbezug des Geist-Körper-Seele-Kontinuums. '
+      'Die Quantenphysik liefert erste Modelle für Fernheilung und Bewusstseinswirkung.',
   'quantenbewusstsein':
       'Die Quantenbewusstseinstheorie, vertreten u.a. von Penrose und Hameroff, postuliert dass '
           'Bewusstsein in Quantenprozessen in Mikrotubuli des Gehirns entsteht. '
@@ -90,10 +87,9 @@ const Map<String, String> _spiritualContexts = {
       'Die Dreifältige Göttin der Wicca und Neopaganismus repräsentiert in ihren Aspekten '
           'Jungfrau, Mutter und Weise die drei Lebensphasen der Frau und die Mondphasen. '
           'Sie verkörpert die Kraft der Natur und des göttlichen Weiblichen.',
-  'reiki':
-      'Reiki (japanisch: "universelle Lebensenergie") ist eine Energieheilmethode, '
-          'die 1922 von Mikao Usui entwickelt wurde. Durch Handauflegen soll Heilenergie '
-          'übertragen werden, die Blockaden löst und den natürlichen Energiefluss wiederherstellt.',
+  'reiki': 'Reiki (japanisch: "universelle Lebensenergie") ist eine Energieheilmethode, '
+      'die 1922 von Mikao Usui entwickelt wurde. Durch Handauflegen soll Heilenergie '
+      'übertragen werden, die Blockaden löst und den natürlichen Energiefluss wiederherstellt.',
   'schamanismus':
       'Schamanismus ist die älteste bekannte spirituelle Praxis der Menschheit. '
           'Schamanen reisen in veränderten Bewusstseinszuständen in andere Weltenebenen, '
@@ -114,18 +110,16 @@ const Map<String, String> _spiritualContexts = {
       'Heilkristalle werden seit Jahrtausenden in spirituellen Traditionen als Energie-Verstärker '
           'und Heilwerkzeuge eingesetzt. Jeder Kristall hat eine spezifische Schwingungsfrequenz, '
           'die bestimmte Chakren und Bewusstseinszustände unterstützt.',
-  'kabbala':
-      'Die Kabbala ist die mystische Tradition des Judentums. '
-          'Der Lebensbaum (Sephirot) beschreibt mit 10 Sefirot und 22 Pfaden '
-          'die Struktur der göttlichen Emanation und den Weg der Seele zur Erleuchtung.',
+  'kabbala': 'Die Kabbala ist die mystische Tradition des Judentums. '
+      'Der Lebensbaum (Sephirot) beschreibt mit 10 Sefirot und 22 Pfaden '
+      'die Struktur der göttlichen Emanation und den Weg der Seele zur Erleuchtung.',
   'hermetik':
       'Die Hermetik basiert auf den Schriften des mythischen Hermes Trismegistus. '
           'Die sieben Hermetischen Gesetze — wie "Wie oben, so unten" — '
           'beschreiben Universalprinzipien, die Materie, Energie und Bewusstsein verbinden.',
-  'yoga':
-      'Yoga (Sanskrit: "Verbindung") ist ein System spiritueller, mentaler und körperlicher Praktiken. '
-          'Ursprünglich aus dem alten Indien stammend, vereint es Asanas, Pranayama und Dhyana '
-          'zur Befreiung des Bewusstseins aus dem Kreislauf von Geburt und Tod.',
+  'yoga': 'Yoga (Sanskrit: "Verbindung") ist ein System spiritueller, mentaler und körperlicher Praktiken. '
+      'Ursprünglich aus dem alten Indien stammend, vereint es Asanas, Pranayama und Dhyana '
+      'zur Befreiung des Bewusstseins aus dem Kreislauf von Geburt und Tod.',
   'human design':
       'Human Design ist ein modernes Synthesesystem aus Astrologie, Kabbala, dem I-Ging und '
           'der Quantenphysik, entwickelt von Ra Uru Hu. Es beschreibt 4 Typen mit spezifischen '
@@ -172,11 +166,26 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
   static const _gold = Color(0xFFFFD54F);
 
   static const _suggestions = [
-    'Meditation', 'Manifestation', 'Karma', 'Chakren',
-    'Akasha', 'Astralreise', 'Mondphasen', 'Heilung',
-    'Quantenbewusstsein', 'Dreifältige Göttin', 'Reiki', 'Schamanismus',
-    'Numerologie', 'Astrologie', 'Tarot', 'Kristalle',
-    'Kabbala', 'Hermetik', 'Yoga', 'Human Design',
+    'Meditation',
+    'Manifestation',
+    'Karma',
+    'Chakren',
+    'Akasha',
+    'Astralreise',
+    'Mondphasen',
+    'Heilung',
+    'Quantenbewusstsein',
+    'Dreifältige Göttin',
+    'Reiki',
+    'Schamanismus',
+    'Numerologie',
+    'Astrologie',
+    'Tarot',
+    'Kristalle',
+    'Kabbala',
+    'Hermetik',
+    'Yoga',
+    'Human Design',
   ];
 
   // ── Sterne (für CustomPainter) ───────────────────────────────────────────
@@ -186,20 +195,26 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
   @override
   void initState() {
     super.initState();
-    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))
-      ..repeat(reverse: true);
-    _starCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))
-      ..repeat(reverse: true);
-    _entryCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
-    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _bgCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat(reverse: true);
+    _starCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat(reverse: true);
+    _entryCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 700));
+    _entryAnim =
+        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
     _entryCtrl.forward();
 
-    _stars = List.generate(100, (_) => _Star(
-      x: _rng.nextDouble(),
-      y: _rng.nextDouble(),
-      size: _rng.nextDouble() * 2.0 + 0.5,
-      brightness: _rng.nextDouble(),
-    ));
+    _stars = List.generate(
+        100,
+        (_) => _Star(
+              x: _rng.nextDouble(),
+              y: _rng.nextDouble(),
+              size: _rng.nextDouble() * 2.0 + 0.5,
+              brightness: _rng.nextDouble(),
+            ));
   }
 
   @override
@@ -235,7 +250,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
       _findSpiritualContext(query);
     } catch (e) {
       if (mounted) {
-        setState(() => _error = 'Fehler beim Laden: Bitte Internetverbindung prüfen.');
+        setState(() =>
+            _error = 'Fehler beim Laden: Bitte Internetverbindung prüfen.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -255,8 +271,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
   Future<void> _searchOpenLibrary(String query) async {
     try {
       final encoded = Uri.encodeComponent('$query spirituality');
-      final uri = Uri.parse(
-          'https://openlibrary.org/search.json?q=$encoded&limit=5');
+      final uri =
+          Uri.parse('https://openlibrary.org/search.json?q=$encoded&limit=5');
       final resp = await http.get(uri).timeout(const Duration(seconds: 8));
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body) as Map<String, dynamic>;
@@ -265,7 +281,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
           setState(() {
             _books = docs.take(5).map((d) {
               final doc = d as Map<String, dynamic>;
-              final authors = (doc['author_name'] as List<dynamic>?)?.cast<String>() ?? [];
+              final authors =
+                  (doc['author_name'] as List<dynamic>?)?.cast<String>() ?? [];
               return _BookResult(
                 title: (doc['title'] as String?) ?? 'Unbekannter Titel',
                 author: authors.isNotEmpty ? authors.first : 'Unbekannt',
@@ -287,7 +304,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
       final searchUri = Uri.parse(
           'https://de.wikipedia.org/w/api.php?action=query&list=search'
           '&srsearch=${Uri.encodeComponent(query)}&srlimit=4&format=json&origin=*');
-      final searchResp = await http.get(searchUri).timeout(const Duration(seconds: 8));
+      final searchResp =
+          await http.get(searchUri).timeout(const Duration(seconds: 8));
 
       if (searchResp.statusCode == 200) {
         final searchData = json.decode(searchResp.body) as Map<String, dynamic>;
@@ -329,17 +347,16 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
   Future<void> _searchPubMed(String query) async {
     try {
       final term = Uri.encodeComponent('$query meditation spirituality');
-      final uri = Uri.parse(
-          'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
-          '?db=pubmed&term=$term&retmax=5&retmode=json');
+      final uri =
+          Uri.parse('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
+              '?db=pubmed&term=$term&retmax=5&retmode=json');
       final resp = await http.get(uri).timeout(const Duration(seconds: 8));
 
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body) as Map<String, dynamic>;
         final esearchResult = data['esearchresult'] as Map<String, dynamic>?;
-        final ids = (esearchResult?['idlist'] as List<dynamic>?)
-                ?.cast<String>() ??
-            [];
+        final ids =
+            (esearchResult?['idlist'] as List<dynamic>?)?.cast<String>() ?? [];
 
         if (ids.isNotEmpty) {
           // Zusammenfassung per efetch
@@ -352,9 +369,9 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
 
           if (fetchResp.statusCode == 200) {
             final fData = json.decode(fetchResp.body) as Map<String, dynamic>;
-            final result =
-                (fData['result'] as Map<String, dynamic>?) ?? {};
-            final uids = (result['uids'] as List<dynamic>?)?.cast<String>() ?? [];
+            final result = (fData['result'] as Map<String, dynamic>?) ?? {};
+            final uids =
+                (result['uids'] as List<dynamic>?)?.cast<String>() ?? [];
 
             final results = <_PubMedResult>[];
             for (final uid in uids) {
@@ -405,9 +422,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
           child: Column(children: [
             _buildHeader(),
             Expanded(
-              child: _currentQuery == null
-                  ? _buildEmptyState()
-                  : _buildResults(),
+              child:
+                  _currentQuery == null ? _buildEmptyState() : _buildResults(),
             ),
           ]),
         ),
@@ -442,11 +458,13 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
             GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withValues(alpha: 0.08),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.15)),
                 ),
                 child: const Icon(Icons.arrow_back_ios_new,
                     color: Colors.white70, size: 16),
@@ -454,7 +472,9 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
             ),
             const SizedBox(width: 12),
             const Text('🔮 Spirituelle Recherche',
-                style: TextStyle(color: Colors.white, fontSize: 18,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold)),
           ]),
           const SizedBox(height: 14),
@@ -469,7 +489,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
                 ]),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                    color: _purple.withValues(alpha: 0.4 + _bgCtrl.value * 0.1)),
+                    color:
+                        _purple.withValues(alpha: 0.4 + _bgCtrl.value * 0.1)),
               ),
               child: Row(children: [
                 const SizedBox(width: 14),
@@ -493,14 +514,17 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
                   onTap: () => _search(_searchCtrl.text),
                   child: Container(
                     margin: const EdgeInsets.all(6),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [_purple, _purpleD]),
+                      gradient:
+                          const LinearGradient(colors: [_purple, _purpleD]),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: const Text('Suchen',
-                        style: TextStyle(color: Colors.white, fontSize: 12,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -522,15 +546,17 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
                 },
                 child: Container(
                   margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.12)),
                   ),
                   child: Text(_suggestions[i],
-                      style: const TextStyle(color: Colors.white60,
-                          fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white60, fontSize: 12)),
                 ),
               ),
             ),
@@ -550,7 +576,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 100, height: 100,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
@@ -558,10 +585,12 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
                   _teal.withValues(alpha: 0.1),
                   Colors.transparent,
                 ]),
-                boxShadow: [BoxShadow(
-                  color: _purple.withValues(alpha: 0.2 + _bgCtrl.value * 0.1),
-                  blurRadius: 30,
-                )],
+                boxShadow: [
+                  BoxShadow(
+                    color: _purple.withValues(alpha: 0.2 + _bgCtrl.value * 0.1),
+                    blurRadius: 30,
+                  )
+                ],
               ),
               child: Center(
                 child: Text('🔮',
@@ -570,7 +599,9 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
             ),
             const SizedBox(height: 20),
             const Text('Starte deine spirituelle Recherche',
-                style: TextStyle(color: Colors.white70, fontSize: 16,
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text('Bücher, Wikipedia, Wissenschaft & mehr',
@@ -600,8 +631,10 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
                 border: Border.all(color: _purple.withValues(alpha: 0.4)),
               ),
               child: Text('🔍 "$_currentQuery"',
-                  style: const TextStyle(color: Colors.white70,
-                      fontSize: 12, fontWeight: FontWeight.w500)),
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500)),
             ),
           ]),
         ),
@@ -628,29 +661,33 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
           // Bücher
           if (_books.isNotEmpty) ...[
             _buildSectionHeader('📖 Bücher & Texte'),
-            ..._books.asMap().entries.map(
-                (e) => _AnimatedCard(delay: e.key * 80, child: _buildBookCard(e.value))),
+            ..._books.asMap().entries.map((e) => _AnimatedCard(
+                delay: e.key * 80, child: _buildBookCard(e.value))),
             const SizedBox(height: 16),
           ],
 
           // Wikipedia
           if (_wikiResults.isNotEmpty) ...[
             _buildSectionHeader('🌐 Wikipedia'),
-            ..._wikiResults.asMap().entries.map(
-                (e) => _AnimatedCard(delay: e.key * 80, child: _buildWikiCard(e.value))),
+            ..._wikiResults.asMap().entries.map((e) => _AnimatedCard(
+                delay: e.key * 80, child: _buildWikiCard(e.value))),
             const SizedBox(height: 16),
           ],
 
           // PubMed
           if (_pubmedResults.isNotEmpty) ...[
             _buildSectionHeader('🔬 Wissenschaft & Spiritualität'),
-            ..._pubmedResults.asMap().entries.map(
-                (e) => _AnimatedCard(delay: e.key * 80, child: _buildPubMedCard(e.value))),
+            ..._pubmedResults.asMap().entries.map((e) => _AnimatedCard(
+                delay: e.key * 80, child: _buildPubMedCard(e.value))),
             const SizedBox(height: 16),
           ],
 
           // Keine Ergebnisse
-          if (_books.isEmpty && _wikiResults.isEmpty && _pubmedResults.isEmpty && _spiritualContext == null && !_isLoading)
+          if (_books.isEmpty &&
+              _wikiResults.isEmpty &&
+              _pubmedResults.isEmpty &&
+              _spiritualContext == null &&
+              !_isLoading)
             _buildNoResultsCard(),
         ],
       ],
@@ -661,8 +698,11 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(title,
-          style: const TextStyle(color: Colors.white70, fontSize: 13,
-              fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5)),
     );
   }
 
@@ -685,23 +725,30 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
               color: _purple.withValues(alpha: 0.4 + _bgCtrl.value * 0.1)),
-          boxShadow: [BoxShadow(
-            color: _purple.withValues(alpha: 0.18 + _bgCtrl.value * 0.07),
-            blurRadius: 20,
-          )],
+          boxShadow: [
+            BoxShadow(
+              color: _purple.withValues(alpha: 0.18 + _bgCtrl.value * 0.07),
+              blurRadius: 20,
+            )
+          ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Text('✨', style: TextStyle(fontSize: 22 + _bgCtrl.value * 3)),
             const SizedBox(width: 10),
             const Text('Spirituelle Bedeutung',
-                style: TextStyle(color: Colors.white, fontSize: 14,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold)),
           ]),
           const SizedBox(height: 10),
           Text(_spiritualContext!,
-              style: const TextStyle(color: Colors.white70, fontSize: 12,
-                  height: 1.6, fontStyle: FontStyle.italic)),
+              style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  height: 1.6,
+                  fontStyle: FontStyle.italic)),
         ]),
       ),
     );
@@ -714,27 +761,36 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.2)),
+        border:
+            Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.2)),
       ),
       child: Row(children: [
         Container(
-          width: 44, height: 44,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: const Color(0xFFFFD54F).withValues(alpha: 0.12),
-            border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.3)),
+            border: Border.all(
+                color: const Color(0xFFFFD54F).withValues(alpha: 0.3)),
           ),
-          child: const Center(child: Text('📖', style: TextStyle(fontSize: 22))),
+          child:
+              const Center(child: Text('📖', style: TextStyle(fontSize: 22))),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(book.title,
-                style: const TextStyle(color: Colors.white, fontSize: 13,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold),
-                maxLines: 2, overflow: TextOverflow.ellipsis),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis),
             const SizedBox(height: 3),
-            Text('${book.author}${book.year != null ? "  ·  ${book.year}" : ""}',
+            Text(
+                '${book.author}${book.year != null ? "  ·  ${book.year}" : ""}',
                 style: const TextStyle(color: Colors.white38, fontSize: 11)),
           ]),
         ),
@@ -757,26 +813,32 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
-            width: 32, height: 32,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _teal.withValues(alpha: 0.12),
               border: Border.all(color: _teal.withValues(alpha: 0.3)),
             ),
-            child: const Center(child: Text('🌐', style: TextStyle(fontSize: 16))),
+            child:
+                const Center(child: Text('🌐', style: TextStyle(fontSize: 16))),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(wiki.title,
-                style: const TextStyle(color: Colors.white, fontSize: 13,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis),
           ),
-          Icon(Icons.open_in_new, color: _teal.withValues(alpha: 0.5), size: 14),
+          Icon(Icons.open_in_new,
+              color: _teal.withValues(alpha: 0.5), size: 14),
         ]),
         const SizedBox(height: 8),
         Text(wiki.extract,
-            style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.5)),
+            style: const TextStyle(
+                color: Colors.white54, fontSize: 11, height: 1.5)),
       ]),
     );
   }
@@ -792,21 +854,27 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
       ),
       child: Row(children: [
         Container(
-          width: 44, height: 44,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             color: _purple.withValues(alpha: 0.12),
             border: Border.all(color: _purple.withValues(alpha: 0.3)),
           ),
-          child: const Center(child: Text('🔬', style: TextStyle(fontSize: 20))),
+          child:
+              const Center(child: Text('🔬', style: TextStyle(fontSize: 20))),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(study.title,
-                style: const TextStyle(color: Colors.white, fontSize: 12,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500),
-                maxLines: 3, overflow: TextOverflow.ellipsis),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis),
             const SizedBox(height: 4),
             Text('PubMed ID: ${study.pmid}',
                 style: const TextStyle(color: Colors.white38, fontSize: 10)),
@@ -821,7 +889,9 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
             border: Border.all(color: _purple.withValues(alpha: 0.4)),
           ),
           child: const Text('Ansehen',
-              style: TextStyle(color: Color(0xFFCE93D8), fontSize: 10,
+              style: TextStyle(
+                  color: Color(0xFFCE93D8),
+                  fontSize: 10,
                   fontWeight: FontWeight.bold)),
         ),
       ]),
@@ -833,7 +903,9 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
       Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Text(title,
-            style: const TextStyle(color: Colors.white38, fontSize: 13,
+            style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 13,
                 fontWeight: FontWeight.bold)),
       ),
       ...List.generate(2, (_) => _ShimmerCard()),
@@ -848,7 +920,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
       decoration: BoxDecoration(
         color: const Color(0xFFB71C1C).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEF5350).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFFEF5350).withValues(alpha: 0.3)),
       ),
       child: Row(children: [
         const Icon(Icons.wifi_off, color: Color(0xFFEF9A9A), size: 20),
@@ -873,7 +946,9 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
         Text('🌌', style: TextStyle(fontSize: 40)),
         SizedBox(height: 12),
         Text('Keine Ergebnisse gefunden',
-            style: TextStyle(color: Colors.white70, fontSize: 14,
+            style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
                 fontWeight: FontWeight.bold)),
         SizedBox(height: 6),
         Text('Versuche einen anderen Begriff aus den Vorschlägen',
@@ -972,7 +1047,8 @@ class _ShimmerCardState extends State<_ShimmerCard>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900))
       ..repeat(reverse: true);
     _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
   }
@@ -999,10 +1075,12 @@ class _ShimmerCardState extends State<_ShimmerCard>
           padding: const EdgeInsets.all(14),
           child: Row(children: [
             Container(
-              width: 36, height: 36,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.06 + _anim.value * 0.03),
+                color:
+                    Colors.white.withValues(alpha: 0.06 + _anim.value * 0.03),
               ),
             ),
             const SizedBox(width: 12),
@@ -1015,7 +1093,8 @@ class _ShimmerCardState extends State<_ShimmerCard>
                     height: 10,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.07 + _anim.value * 0.03),
+                      color: Colors.white
+                          .withValues(alpha: 0.07 + _anim.value * 0.03),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -1024,7 +1103,8 @@ class _ShimmerCardState extends State<_ShimmerCard>
                     height: 8,
                     width: 150,
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04 + _anim.value * 0.02),
+                      color: Colors.white
+                          .withValues(alpha: 0.04 + _anim.value * 0.02),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -1061,7 +1141,8 @@ class _AnimatedCardState extends State<_AnimatedCard>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 450));
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 450));
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _slide = Tween<Offset>(
       begin: const Offset(0, 0.12),

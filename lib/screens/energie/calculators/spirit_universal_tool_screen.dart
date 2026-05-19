@@ -23,7 +23,8 @@ class SpiritUniversalToolScreen extends StatefulWidget {
   });
 
   @override
-  State<SpiritUniversalToolScreen> createState() => _SpiritUniversalToolScreenState();
+  State<SpiritUniversalToolScreen> createState() =>
+      _SpiritUniversalToolScreenState();
 }
 
 class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
@@ -52,7 +53,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
 
   Future<void> _loadProfile() async {
     var profile = await _storage.loadEnergieProfile();
-    
+
     // 🎯 AUTO-CREATE DEMO PROFILE if none exists
     if (profile == null) {
       profile = EnergieProfile(
@@ -63,10 +64,10 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
         birthPlace: '',
         birthTime: '00:00',
       );
-      
+
       // Save demo profile
       await _storage.saveEnergieProfile(profile);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -77,7 +78,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
         );
       }
     }
-    
+
     if (mounted) {
       setState(() {
         _profile = profile;
@@ -89,7 +90,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     if (kDebugMode) {
       debugPrint('🔍 _calculate() called with toolType: ${widget.toolType}');
     }
-    
+
     if (_profile == null) {
       if (kDebugMode) {
         debugPrint('❌ _calculate() aborted: _profile is null');
@@ -98,7 +99,8 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     }
 
     if (kDebugMode) {
-      debugPrint('✅ Profile exists: ${_profile!.firstName} ${_profile!.lastName}');
+      debugPrint(
+          '✅ Profile exists: ${_profile!.firstName} ${_profile!.lastName}');
     }
 
     setState(() {
@@ -161,7 +163,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
           _result = result;
           _isCalculating = false;
         });
-        
+
         if (kDebugMode) {
           debugPrint('✅ UI updated with result');
         }
@@ -171,7 +173,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
         debugPrint('❌ ERROR in _calculate(): $e');
         debugPrint('Stack trace: ${StackTrace.current}');
       }
-      
+
       if (mounted) {
         setState(() {
           _isCalculating = false;
@@ -262,219 +264,265 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
           ],
         ),
         child: SafeArea(
-        child: _profile == null
-            ? ProfileRequiredWidget(
-                worldType: 'energie',
-                message: 'Energie-Profil erforderlich',
-                onProfileCreated: _loadProfile,
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            widget.toolColor.withValues(alpha: 0.22),
-                            widget.toolColor.withValues(alpha: 0.05),
+          child: _profile == null
+              ? ProfileRequiredWidget(
+                  worldType: 'energie',
+                  message: 'Energie-Profil erforderlich',
+                  onProfileCreated: _loadProfile,
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              widget.toolColor.withValues(alpha: 0.22),
+                              widget.toolColor.withValues(alpha: 0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: widget.toolColor.withValues(alpha: 0.45)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: widget.toolColor.withValues(alpha: 0.18),
+                              blurRadius: 18,
+                              offset: const Offset(0, 6),
+                            ),
                           ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: widget.toolColor.withValues(alpha: 0.45)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: widget.toolColor.withValues(alpha: 0.18),
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: widget.toolColor.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(widget.toolIcon, color: widget.toolColor, size: 32),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.toolName,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${_profile!.firstName} ${_profile!.lastName}',
-                                  style: TextStyle(
-                                    color: widget.toolColor.withValues(alpha: 0.8),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Berechnen-Button mit DEBUG INFO
-                    if (_result == null)
-                      Column(
-                        children: [
-                          // 🔍 DEBUG INFO CARD (nur im Debug-Modus sichtbar)
-                          if (kDebugMode)
+                        child: Row(
+                          children: [
                             Container(
-                              padding: const EdgeInsets.all(12),
-                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.4),
+                                color: widget.toolColor.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.yellow.withValues(alpha: 0.5), width: 2),
                               ),
+                              child: Icon(widget.toolIcon,
+                                  color: widget.toolColor, size: 32),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
                               child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.bug_report, color: Colors.yellow, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text('DEBUG INFO', style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 14)),
-                                    ],
+                                  Text(
+                                    widget.toolName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  _buildDebugRow('Profile', _profile != null ? '✅ ${_profile!.firstName} ${_profile!.lastName}' : '❌ NULL'),
-                                  _buildDebugRow('IsCalculating', _isCalculating ? '🔄 TRUE (Button disabled)' : '⏸️ FALSE (Button enabled)'),
-                                  _buildDebugRow('Result', _result != null ? '✅ EXISTS' : '❌ NULL'),
-                                  _buildDebugRow('ToolType', widget.toolType),
-                                  _buildDebugRow('Mounted', mounted ? '✅ TRUE' : '❌ FALSE'),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '👆 Klicke den Button und beobachte die Console (F12)',
-                                    style: TextStyle(color: Colors.yellow.withValues(alpha: 0.7), fontSize: 11, fontStyle: FontStyle.italic),
-                                    textAlign: TextAlign.center,
+                                    '${_profile!.firstName} ${_profile!.lastName}',
+                                    style: TextStyle(
+                                      color: widget.toolColor
+                                          .withValues(alpha: 0.8),
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                          
-                          // Button mit vollständiger Syntax
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                          onPressed: () {
-                            if (kDebugMode) {
-                              debugPrint('\n════════════════════════════════════════');
-                              debugPrint('🖱️  BUTTON CLICKED!');
-                              debugPrint('════════════════════════════════════════');
-                              debugPrint('  Time: ${DateTime.now().toIso8601String()}');
-                              debugPrint('  _isCalculating: $_isCalculating');
-                              debugPrint('  _profile: ${_profile?.firstName} ${_profile?.lastName}');
-                              debugPrint('  _result: ${_result?.runtimeType ?? "NULL"}');
-                              debugPrint('  widget.toolType: ${widget.toolType}');
-                              debugPrint('  mounted: $mounted');
-                              debugPrint('════════════════════════════════════════\n');
-                            }
-                            
-                            if (_isCalculating) {
-                              if (kDebugMode) {
-                                debugPrint('⚠️  BUTTON CLICK IGNORED: Already calculating');
-                              }
-                              return;
-                            }
-                            
-                            if (_profile == null) {
-                              if (kDebugMode) {
-                                debugPrint('⚠️  BUTTON CLICK IGNORED: Profile is NULL');
-                              }
-                              return;
-                            }
-                            
-                            if (kDebugMode) {
-                              debugPrint('✅ Calling _calculate()...');
-                            }
-                            _calculate();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: widget.toolColor,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: _isCalculating
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Berechnen-Button mit DEBUG INFO
+                      if (_result == null)
+                        Column(
+                          children: [
+                            // 🔍 DEBUG INFO CARD (nur im Debug-Modus sichtbar)
+                            if (kDebugMode)
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.4),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color:
+                                          Colors.yellow.withValues(alpha: 0.5),
+                                      width: 2),
+                                ),
+                                child: Column(
                                   children: [
-                                    Icon(widget.toolIcon, size: 20),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Berechnung starten',
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.bug_report,
+                                            color: Colors.yellow, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text('DEBUG INFO',
+                                            style: TextStyle(
+                                                color: Colors.yellow,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    _buildDebugRow(
+                                        'Profile',
+                                        _profile != null
+                                            ? '✅ ${_profile!.firstName} ${_profile!.lastName}'
+                                            : '❌ NULL'),
+                                    _buildDebugRow(
+                                        'IsCalculating',
+                                        _isCalculating
+                                            ? '🔄 TRUE (Button disabled)'
+                                            : '⏸️ FALSE (Button enabled)'),
+                                    _buildDebugRow(
+                                        'Result',
+                                        _result != null
+                                            ? '✅ EXISTS'
+                                            : '❌ NULL'),
+                                    _buildDebugRow('ToolType', widget.toolType),
+                                    _buildDebugRow('Mounted',
+                                        mounted ? '✅ TRUE' : '❌ FALSE'),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '👆 Klicke den Button und beobachte die Console (F12)',
+                                      style: TextStyle(
+                                          color: Colors.yellow
+                                              .withValues(alpha: 0.7),
+                                          fontSize: 11,
+                                          fontStyle: FontStyle.italic),
+                                      textAlign: TextAlign.center,
                                     ),
                                   ],
                                 ),
-                        ),
-                      ),
-                      ],
-                    ),
+                              ),
 
-                    // Ergebnis
-                    if (_result != null) ...[
-                      _buildResultSection(),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton(
-                          onPressed: _calculate,
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: widget.toolColor),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            // Button mit vollständiger Syntax
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (kDebugMode) {
+                                    debugPrint(
+                                        '\n════════════════════════════════════════');
+                                    debugPrint('🖱️  BUTTON CLICKED!');
+                                    debugPrint(
+                                        '════════════════════════════════════════');
+                                    debugPrint(
+                                        '  Time: ${DateTime.now().toIso8601String()}');
+                                    debugPrint(
+                                        '  _isCalculating: $_isCalculating');
+                                    debugPrint(
+                                        '  _profile: ${_profile?.firstName} ${_profile?.lastName}');
+                                    debugPrint(
+                                        '  _result: ${_result?.runtimeType ?? "NULL"}');
+                                    debugPrint(
+                                        '  widget.toolType: ${widget.toolType}');
+                                    debugPrint('  mounted: $mounted');
+                                    debugPrint(
+                                        '════════════════════════════════════════\n');
+                                  }
+
+                                  if (_isCalculating) {
+                                    if (kDebugMode) {
+                                      debugPrint(
+                                          '⚠️  BUTTON CLICK IGNORED: Already calculating');
+                                    }
+                                    return;
+                                  }
+
+                                  if (_profile == null) {
+                                    if (kDebugMode) {
+                                      debugPrint(
+                                          '⚠️  BUTTON CLICK IGNORED: Profile is NULL');
+                                    }
+                                    return;
+                                  }
+
+                                  if (kDebugMode) {
+                                    debugPrint('✅ Calling _calculate()...');
+                                  }
+                                  _calculate();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: widget.toolColor,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: _isCalculating
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation(
+                                              Colors.white),
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(widget.toolIcon, size: 20),
+                                          const SizedBox(width: 8),
+                                          const Text(
+                                            'Berechnung starten',
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                      // Ergebnis
+                      if (_result != null) ...[
+                        _buildResultSection(),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: _calculate,
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: widget.toolColor),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.refresh,
+                                    color: widget.toolColor, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Neu berechnen',
+                                  style: TextStyle(
+                                      color: widget.toolColor, fontSize: 16),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.refresh, color: widget.toolColor, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Neu berechnen',
-                                style: TextStyle(color: widget.toolColor, fontSize: 16),
-                              ),
-                            ],
-                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
         ),
       ),
     );
@@ -489,7 +537,10 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [widget.toolColor.withValues(alpha: 0.2), widget.toolColor.withValues(alpha: 0.05)],
+              colors: [
+                widget.toolColor.withValues(alpha: 0.2),
+                widget.toolColor.withValues(alpha: 0.05)
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -501,7 +552,8 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
             children: [
               Row(
                 children: [
-                  Icon(Icons.lightbulb_outline, color: widget.toolColor, size: 24),
+                  Icon(Icons.lightbulb_outline,
+                      color: widget.toolColor, size: 24),
                   const SizedBox(width: 8),
                   const Text(
                     'Interpretation',
@@ -578,13 +630,17 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as EnergyFieldToolResult;
     return Column(
       children: [
-        _buildValueCard('Gesamt-Feldstärke', '${result.overallFieldStrength.toStringAsFixed(0)}%', Icons.bolt),
+        _buildValueCard('Gesamt-Feldstärke',
+            '${result.overallFieldStrength.toStringAsFixed(0)}%', Icons.bolt),
         _buildValueCard('Feldqualität', result.fieldQuality, Icons.graphic_eq),
-        _buildValueCard('Kohärenz', '${result.coherence.toStringAsFixed(0)}%', Icons.sync),
+        _buildValueCard(
+            'Kohärenz', '${result.coherence.toStringAsFixed(0)}%', Icons.sync),
         _buildValueCard('Stabilität', result.stabilityLevel, Icons.shield),
         _buildValueCard('Energiefluss', result.energyFlow, Icons.water_drop),
-        if (result.resonantPoints.isNotEmpty) _buildListCard('Resonanzpunkte', result.resonantPoints, Icons.star),
-        if (result.activeZones.isNotEmpty) _buildListCard('Aktive Zonen', result.activeZones, Icons.flash_on),
+        if (result.resonantPoints.isNotEmpty)
+          _buildListCard('Resonanzpunkte', result.resonantPoints, Icons.star),
+        if (result.activeZones.isNotEmpty)
+          _buildListCard('Aktive Zonen', result.activeZones, Icons.flash_on),
       ],
     );
   }
@@ -593,12 +649,20 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as PolarityToolResult;
     return Column(
       children: [
-        _buildValueCard('Yin-Anteil', '${result.yinScore.toStringAsFixed(0)}%', Icons.nights_stay),
-        _buildValueCard('Yang-Anteil', '${result.yangScore.toStringAsFixed(0)}%', Icons.wb_sunny),
-        _buildValueCard('Balance-Verhältnis', '${(result.balanceRatio * 100).toStringAsFixed(0)}%', Icons.balance),
+        _buildValueCard('Yin-Anteil', '${result.yinScore.toStringAsFixed(0)}%',
+            Icons.nights_stay),
+        _buildValueCard('Yang-Anteil',
+            '${result.yangScore.toStringAsFixed(0)}%', Icons.wb_sunny),
+        _buildValueCard(
+            'Balance-Verhältnis',
+            '${(result.balanceRatio * 100).toStringAsFixed(0)}%',
+            Icons.balance),
         _buildValueCard('Dominanter Pol', result.dominantPole, Icons.adjust),
-        _buildValueCard('Balance-Zustand', result.balanceState, Icons.analytics),
-        if (result.tensionPoints.isNotEmpty) _buildListCard('Spannungsachsen', result.tensionPoints, Icons.warning_amber),
+        _buildValueCard(
+            'Balance-Zustand', result.balanceState, Icons.analytics),
+        if (result.tensionPoints.isNotEmpty)
+          _buildListCard(
+              'Spannungsachsen', result.tensionPoints, Icons.warning_amber),
       ],
     );
   }
@@ -607,12 +671,19 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as TransformationToolResult;
     return Column(
       children: [
-        _buildValueCard('Aktuelle Stufe', '${result.currentStage} - ${result.stageName}', Icons.stairs),
-        _buildValueCard('Fortschritt', '${result.stageProgress.toStringAsFixed(0)}%', Icons.trending_up),
+        _buildValueCard('Aktuelle Stufe',
+            '${result.currentStage} - ${result.stageName}', Icons.stairs),
+        _buildValueCard('Fortschritt',
+            '${result.stageProgress.toStringAsFixed(0)}%', Icons.trending_up),
         _buildValueCard('Reifegrad', result.maturityLevel, Icons.psychology),
-        _buildValueCard('Prozessintensität', result.processIntensity, Icons.speed),
-        if (result.transitionMarkers.isNotEmpty) _buildListCard('Übergangsmarker', result.transitionMarkers, Icons.flag),
-        if (result.recurrentThemes.isNotEmpty) _buildListCard('Wiederkehrende Themen', result.recurrentThemes, Icons.loop),
+        _buildValueCard(
+            'Prozessintensität', result.processIntensity, Icons.speed),
+        if (result.transitionMarkers.isNotEmpty)
+          _buildListCard(
+              'Übergangsmarker', result.transitionMarkers, Icons.flag),
+        if (result.recurrentThemes.isNotEmpty)
+          _buildListCard(
+              'Wiederkehrende Themen', result.recurrentThemes, Icons.loop),
       ],
     );
   }
@@ -621,13 +692,24 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as UnconsciousToolResult;
     return Column(
       children: [
-        _buildValueCard('Schatten-Stufe', '${result.shadowStage} - ${result.stageName}', Icons.dark_mode),
-        _buildValueCard('Integration', '${result.integrationLevel.toStringAsFixed(0)}%', Icons.compress),
-        _buildValueCard('Bewusstseinsgrad', result.awarenessLevel, Icons.visibility),
-        if (result.repeatingPatterns.isNotEmpty) _buildListCard('Wiederkehrende Muster', result.repeatingPatterns, Icons.loop),
-        if (result.projectionThemes.isNotEmpty) _buildListCard('Projektionsthemen', result.projectionThemes, Icons.theater_comedy),
-        if (result.resistancePoints.isNotEmpty) _buildListCard('Widerstandspunkte', result.resistancePoints, Icons.block),
-        if (result.integrationOpportunities.isNotEmpty) _buildListCard('Integrationschancen', result.integrationOpportunities, Icons.check_circle),
+        _buildValueCard('Schatten-Stufe',
+            '${result.shadowStage} - ${result.stageName}', Icons.dark_mode),
+        _buildValueCard('Integration',
+            '${result.integrationLevel.toStringAsFixed(0)}%', Icons.compress),
+        _buildValueCard(
+            'Bewusstseinsgrad', result.awarenessLevel, Icons.visibility),
+        if (result.repeatingPatterns.isNotEmpty)
+          _buildListCard(
+              'Wiederkehrende Muster', result.repeatingPatterns, Icons.loop),
+        if (result.projectionThemes.isNotEmpty)
+          _buildListCard('Projektionsthemen', result.projectionThemes,
+              Icons.theater_comedy),
+        if (result.resistancePoints.isNotEmpty)
+          _buildListCard(
+              'Widerstandspunkte', result.resistancePoints, Icons.block),
+        if (result.integrationOpportunities.isNotEmpty)
+          _buildListCard('Integrationschancen', result.integrationOpportunities,
+              Icons.check_circle),
       ],
     );
   }
@@ -636,13 +718,26 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as InnerMapsToolResult;
     return Column(
       children: [
-        _buildValueCard('Spiralposition', '${result.spiralPosition.toStringAsFixed(0)}%', Icons.track_changes),
-        _buildValueCard('Aktuelle Übung', result.currentExercise, Icons.explore),
-        _buildValueCard('Navigations-Zustand', result.navigationState, Icons.explore),
-        if (result.developmentAxes.isNotEmpty) _buildListCard('Entwicklungsachsen', result.developmentAxes, Icons.timeline),
-        if (result.transitionZones.isNotEmpty) _buildListCard('Übergangszonen', result.transitionZones, Icons.merge_type),
-        if (result.stillnessAreas.isNotEmpty) _buildListCard('Ruhebereiche', result.stillnessAreas, Icons.self_improvement),
-        if (result.movementAreas.isNotEmpty) _buildListCard('Bewegungsbereiche', result.movementAreas, Icons.directions_run),
+        _buildValueCard(
+            'Spiralposition',
+            '${result.spiralPosition.toStringAsFixed(0)}%',
+            Icons.track_changes),
+        _buildValueCard(
+            'Aktuelle Übung', result.currentExercise, Icons.explore),
+        _buildValueCard(
+            'Navigations-Zustand', result.navigationState, Icons.explore),
+        if (result.developmentAxes.isNotEmpty)
+          _buildListCard(
+              'Entwicklungsachsen', result.developmentAxes, Icons.timeline),
+        if (result.transitionZones.isNotEmpty)
+          _buildListCard(
+              'Übergangszonen', result.transitionZones, Icons.merge_type),
+        if (result.stillnessAreas.isNotEmpty)
+          _buildListCard(
+              'Ruhebereiche', result.stillnessAreas, Icons.self_improvement),
+        if (result.movementAreas.isNotEmpty)
+          _buildListCard(
+              'Bewegungsbereiche', result.movementAreas, Icons.directions_run),
       ],
     );
   }
@@ -651,13 +746,19 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as CyclesToolResult;
     return Column(
       children: [
-        _buildValueCard('7-Jahres-Zyklus', 'Jahr ${result.cycle7Year}', Icons.calendar_today),
+        _buildValueCard('7-Jahres-Zyklus', 'Jahr ${result.cycle7Year}',
+            Icons.calendar_today),
         _buildValueCard('Saturn-Phase', result.saturnPhase, Icons.public),
-        _buildValueCard('Persönliches Jahr', '${result.personalYear}', Icons.event),
-        _buildValueCard('Zyklus-Übereinstimmung', '${result.cycleAlignment.toStringAsFixed(0)}%', Icons.sync),
+        _buildValueCard(
+            'Persönliches Jahr', '${result.personalYear}', Icons.event),
+        _buildValueCard('Zyklus-Übereinstimmung',
+            '${result.cycleAlignment.toStringAsFixed(0)}%', Icons.sync),
         _buildValueCard('Zeitqualität', result.timeQuality, Icons.access_time),
-        _buildValueCard('Rhythmus-Zustand', result.rhythmState, Icons.graphic_eq),
-        if (result.overlappingCycles.isNotEmpty) _buildListCard('Überlappende Zyklen', result.overlappingCycles, Icons.layers),
+        _buildValueCard(
+            'Rhythmus-Zustand', result.rhythmState, Icons.graphic_eq),
+        if (result.overlappingCycles.isNotEmpty)
+          _buildListCard(
+              'Überlappende Zyklen', result.overlappingCycles, Icons.layers),
       ],
     );
   }
@@ -666,12 +767,21 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as OrientationToolResult;
     return Column(
       children: [
-        _buildValueCard('Entwicklungslevel', '${result.developmentLevel} - ${result.levelName}', Icons.trending_up),
-        _buildValueCard('Fortschritt', '${result.levelProgress.toStringAsFixed(0)}%', Icons.show_chart),
-        _buildValueCard('Stabilitäts-Zustand', result.stabilityState, Icons.shield),
-        _buildValueCard('Prozessintensität', result.processIntensity, Icons.speed),
-        if (result.pastLevels.isNotEmpty) _buildListCard('Durchlaufene Stufen', result.pastLevels, Icons.check),
-        if (result.umbruchMarkers.isNotEmpty) _buildListCard('Umbruch-Marker', result.umbruchMarkers, Icons.change_circle),
+        _buildValueCard(
+            'Entwicklungslevel',
+            '${result.developmentLevel} - ${result.levelName}',
+            Icons.trending_up),
+        _buildValueCard('Fortschritt',
+            '${result.levelProgress.toStringAsFixed(0)}%', Icons.show_chart),
+        _buildValueCard(
+            'Stabilitäts-Zustand', result.stabilityState, Icons.shield),
+        _buildValueCard(
+            'Prozessintensität', result.processIntensity, Icons.speed),
+        if (result.pastLevels.isNotEmpty)
+          _buildListCard('Durchlaufene Stufen', result.pastLevels, Icons.check),
+        if (result.umbruchMarkers.isNotEmpty)
+          _buildListCard(
+              'Umbruch-Marker', result.umbruchMarkers, Icons.change_circle),
       ],
     );
   }
@@ -680,13 +790,24 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as MetaMirrorToolResult;
     return Column(
       children: [
-        _buildValueCard('Resonanzstärke', '${result.resonanceStrength.toStringAsFixed(0)}%', Icons.vibration),
-        _buildValueCard('Fokus-Indikator', result.focusIndicator, Icons.center_focus_strong),
-        _buildValueCard('Spiegel-Qualität', result.mirrorQuality, Icons.image_aspect_ratio),
-        if (result.systemMirrors.isNotEmpty) _buildListCard('System-Spiegel', result.systemMirrors, Icons.grid_view),
-        if (result.themeOverlays.isNotEmpty) _buildListCard('Themen-Überlagerungen', result.themeOverlays, Icons.layers),
-        if (result.contradictions.isNotEmpty) _buildListCard('Widersprüche', result.contradictions, Icons.compare_arrows),
-        if (result.amplifiedThemes.isNotEmpty) _buildListCard('Verstärkte Themen', result.amplifiedThemes, Icons.volume_up),
+        _buildValueCard('Resonanzstärke',
+            '${result.resonanceStrength.toStringAsFixed(0)}%', Icons.vibration),
+        _buildValueCard('Fokus-Indikator', result.focusIndicator,
+            Icons.center_focus_strong),
+        _buildValueCard(
+            'Spiegel-Qualität', result.mirrorQuality, Icons.image_aspect_ratio),
+        if (result.systemMirrors.isNotEmpty)
+          _buildListCard(
+              'System-Spiegel', result.systemMirrors, Icons.grid_view),
+        if (result.themeOverlays.isNotEmpty)
+          _buildListCard(
+              'Themen-Überlagerungen', result.themeOverlays, Icons.layers),
+        if (result.contradictions.isNotEmpty)
+          _buildListCard(
+              'Widersprüche', result.contradictions, Icons.compare_arrows),
+        if (result.amplifiedThemes.isNotEmpty)
+          _buildListCard(
+              'Verstärkte Themen', result.amplifiedThemes, Icons.volume_up),
       ],
     );
   }
@@ -695,12 +816,25 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as PerceptionToolResult;
     return Column(
       children: [
-        _buildValueCard('Wahrnehmungs-Stufe', '${result.perceptionStage} - ${result.stageName}', Icons.remove_red_eye),
-        _buildValueCard('Flexibilitätsgrad', '${result.flexibilityDegree.toStringAsFixed(0)}%', Icons.settings_ethernet),
-        _buildValueCard('Perspektiven-Reichweite', result.perspectiveRange, Icons.panorama),
-        if (result.activeFilters.isNotEmpty) _buildListCard('Aktive Filter', result.activeFilters, Icons.filter_alt),
-        if (result.interpretationPatterns.isNotEmpty) _buildListCard('Interpretations-Muster', result.interpretationPatterns, Icons.pattern),
-        if (result.fixationPoints.isNotEmpty) _buildListCard('Fixierungspunkte', result.fixationPoints, Icons.push_pin),
+        _buildValueCard(
+            'Wahrnehmungs-Stufe',
+            '${result.perceptionStage} - ${result.stageName}',
+            Icons.remove_red_eye),
+        _buildValueCard(
+            'Flexibilitätsgrad',
+            '${result.flexibilityDegree.toStringAsFixed(0)}%',
+            Icons.settings_ethernet),
+        _buildValueCard(
+            'Perspektiven-Reichweite', result.perspectiveRange, Icons.panorama),
+        if (result.activeFilters.isNotEmpty)
+          _buildListCard(
+              'Aktive Filter', result.activeFilters, Icons.filter_alt),
+        if (result.interpretationPatterns.isNotEmpty)
+          _buildListCard('Interpretations-Muster',
+              result.interpretationPatterns, Icons.pattern),
+        if (result.fixationPoints.isNotEmpty)
+          _buildListCard(
+              'Fixierungspunkte', result.fixationPoints, Icons.push_pin),
       ],
     );
   }
@@ -709,13 +843,23 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
     final result = _result as SelfObservationToolResult;
     return Column(
       children: [
-        _buildValueCard('Gesamt-Einträge', '${result.totalEntries}', Icons.list_alt),
-        _buildValueCard('Beobachtungs-Qualität', result.observationQuality, Icons.remove_red_eye),
-        _buildValueCard('Meta-kognitives Level', '${result.metacognitiveLevel.toStringAsFixed(0)}%', Icons.psychology),
-        if (result.patternLog.isNotEmpty) _buildListCard('Muster-Log', result.patternLog, Icons.list),
-        if (result.cycleNotes.isNotEmpty) _buildListCard('Zyklus-Notizen', result.cycleNotes, Icons.event_note),
-        if (result.symbolTracker.isNotEmpty) _buildListCard('Symbol-Tracker', result.symbolTracker, Icons.tag),
-        if (result.trackingFocus.isNotEmpty) _buildListCard('Tracking-Fokus', result.trackingFocus, Icons.center_focus_strong),
+        _buildValueCard(
+            'Gesamt-Einträge', '${result.totalEntries}', Icons.list_alt),
+        _buildValueCard('Beobachtungs-Qualität', result.observationQuality,
+            Icons.remove_red_eye),
+        _buildValueCard(
+            'Meta-kognitives Level',
+            '${result.metacognitiveLevel.toStringAsFixed(0)}%',
+            Icons.psychology),
+        if (result.patternLog.isNotEmpty)
+          _buildListCard('Muster-Log', result.patternLog, Icons.list),
+        if (result.cycleNotes.isNotEmpty)
+          _buildListCard('Zyklus-Notizen', result.cycleNotes, Icons.event_note),
+        if (result.symbolTracker.isNotEmpty)
+          _buildListCard('Symbol-Tracker', result.symbolTracker, Icons.tag),
+        if (result.trackingFocus.isNotEmpty)
+          _buildListCard('Tracking-Fokus', result.trackingFocus,
+              Icons.center_focus_strong),
       ],
     );
   }

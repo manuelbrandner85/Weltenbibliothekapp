@@ -35,8 +35,7 @@ class AdminActionService {
   RealtimeChannel? _bansChannel;
 
   // Streams fuer UI (Admin-Dashboard, Chat-Filter).
-  final _actionLogController =
-      StreamController<List<AdminAction>>.broadcast();
+  final _actionLogController = StreamController<List<AdminAction>>.broadcast();
   final _bannedUsersController =
       StreamController<Map<String, UserBanInfo>>.broadcast();
 
@@ -179,10 +178,7 @@ class AdminActionService {
     required String targetUsername,
   }) async {
     try {
-      await supabase
-          .from('admin_bans')
-          .delete()
-          .eq('user_id', targetUserId);
+      await supabase.from('admin_bans').delete().eq('user_id', targetUserId);
       _bansCache.remove(targetUserId);
       _bannedUsersController.add(Map.unmodifiable(_bansCache));
       return _logAction(
@@ -325,10 +321,7 @@ class AdminActionService {
 
   Future<void> clearWarnings(String userId) async {
     try {
-      await supabase
-          .from('admin_warnings')
-          .delete()
-          .eq('user_id', userId);
+      await supabase.from('admin_warnings').delete().eq('user_id', userId);
     } catch (_) {}
   }
 

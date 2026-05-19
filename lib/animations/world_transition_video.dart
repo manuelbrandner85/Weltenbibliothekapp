@@ -265,8 +265,8 @@ class _WorldTransitionVideoState extends State<WorldTransitionVideo>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white.withValues(alpha: 0.9),
                   foregroundColor: Colors.black87,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -320,7 +320,8 @@ class _ProceduralTransition extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final center = Offset(size.width / 2, size.height / 2);
-    final maxRadius = math.sqrt(size.width * size.width + size.height * size.height) / 2;
+    final maxRadius =
+        math.sqrt(size.width * size.width + size.height * size.height) / 2;
 
     return AnimatedBuilder(
       animation: animation,
@@ -339,7 +340,8 @@ class _ProceduralTransition extends StatelessWidget {
             : t < 0.7
                 ? ((t - 0.25) / 0.15).clamp(0.0, 1.0)
                 : 1.0 - ((t - 0.7) / 0.15).clamp(0.0, 1.0);
-        final fadeToBlack = t < 0.85 ? 0.0 : ((t - 0.85) / 0.15).clamp(0.0, 1.0);
+        final fadeToBlack =
+            t < 0.85 ? 0.0 : ((t - 0.85) / 0.15).clamp(0.0, 1.0);
 
         return Stack(
           children: [
@@ -500,7 +502,8 @@ class _VortexPainter extends CustomPainter {
           Colors.white.withValues(alpha: 0.6 * progress),
         ],
         stops: const [0.0, 0.35, 0.55, 0.8, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: outerRadius.clamp(1.0, double.infinity)));
+      ).createShader(Rect.fromCircle(
+          center: center, radius: outerRadius.clamp(1.0, double.infinity)));
 
     canvas.drawCircle(center, outerRadius, paint);
 
@@ -564,7 +567,8 @@ class _ParticleRingPainter extends CustomPainter {
     final rng = math.Random(42); // Deterministisch für konsistente Partikel
     final particleCount = 60;
     final ringProgress = ((progress - 0.1) / 0.7).clamp(0.0, 1.0);
-    final fade = progress > 0.8 ? 1.0 - ((progress - 0.8) / 0.1).clamp(0.0, 1.0) : 1.0;
+    final fade =
+        progress > 0.8 ? 1.0 - ((progress - 0.8) / 0.1).clamp(0.0, 1.0) : 1.0;
 
     for (var i = 0; i < particleCount; i++) {
       final baseAngle = rng.nextDouble() * math.pi * 2;
@@ -582,8 +586,7 @@ class _ParticleRingPainter extends CustomPainter {
       final c = isSecondary ? secondaryColor : color;
       final alpha = (0.3 + rng.nextDouble() * 0.7) * fade;
 
-      final paint = Paint()
-        ..color = c.withValues(alpha: alpha.clamp(0.0, 1.0));
+      final paint = Paint()..color = c.withValues(alpha: alpha.clamp(0.0, 1.0));
 
       canvas.drawCircle(Offset(x, y), particleSize, paint);
 

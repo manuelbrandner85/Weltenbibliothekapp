@@ -11,10 +11,10 @@ import '../../../services/storage_service.dart';
 //   Tab 2: Lexikon   (Types, Authorities, Centers, 64 Gates)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kPrimary   = Color(0xFF00BCD4); // Türkis
+const _kPrimary = Color(0xFF00BCD4); // Türkis
 const _kSecondary = Color(0xFF7C4DFF); // Lila
 // Legacy alias:
-const _kTeal   = _kPrimary;
+const _kTeal = _kPrimary;
 const _kDarkBg = Color(0xFF06040F);
 const _kCardBg = Color(0xFF080D14);
 const _kBorder = Color(0xFF0E2030);
@@ -66,8 +66,7 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
         ),
         backgroundColor: Colors.transparent,
         title: const Text('🌀 Human Design',
-            style:
-                TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
@@ -166,7 +165,9 @@ class _NewHdTabState extends State<_NewHdTab> {
       if (p.timezoneOffsetHours != null) {
         _tzCtrl.text = p.timezoneOffsetHours!.toString();
       }
-      if (p.birthTime != null && p.birthTime!.contains(':') && !p.birthTimeUnknown) {
+      if (p.birthTime != null &&
+          p.birthTime!.contains(':') &&
+          !p.birthTimeUnknown) {
         final parts = p.birthTime!.split(':');
         final h = int.tryParse(parts[0]) ?? 12;
         final m = int.tryParse(parts[1]) ?? 0;
@@ -221,7 +222,8 @@ class _NewHdTabState extends State<_NewHdTab> {
     final tz = double.tryParse(_tzCtrl.text.replaceAll(',', '.')) ?? 0.0;
     DateTime local;
     if (_timeUnknown || _birthTime == null) {
-      local = DateTime(_birthDate.year, _birthDate.month, _birthDate.day, 12, 0);
+      local =
+          DateTime(_birthDate.year, _birthDate.month, _birthDate.day, 12, 0);
     } else {
       local = DateTime(_birthDate.year, _birthDate.month, _birthDate.day,
           _birthTime!.hour, _birthTime!.minute);
@@ -246,14 +248,17 @@ class _NewHdTabState extends State<_NewHdTab> {
       final r = _result!;
       final row = {
         'user_id': user.id,
-        'label': _labelCtrl.text.trim().isEmpty ? 'HD-Chart' : _labelCtrl.text.trim(),
+        'label': _labelCtrl.text.trim().isEmpty
+            ? 'HD-Chart'
+            : _labelCtrl.text.trim(),
         'birth_date':
             '${_birthDate.year.toString().padLeft(4, "0")}-${_birthDate.month.toString().padLeft(2, "0")}-${_birthDate.day.toString().padLeft(2, "0")}',
         'birth_time': (_timeUnknown || _birthTime == null)
             ? null
             : '${_birthTime!.hour.toString().padLeft(2, "0")}:${_birthTime!.minute.toString().padLeft(2, "0")}:00',
         'birth_time_unknown': _timeUnknown,
-        'birth_place': _placeCtrl.text.trim().isEmpty ? null : _placeCtrl.text.trim(),
+        'birth_place':
+            _placeCtrl.text.trim().isEmpty ? null : _placeCtrl.text.trim(),
         'timezone_offset_hours': tz,
         'type': r.type,
         'authority': r.authority,
@@ -315,7 +320,9 @@ class _NewHdTabState extends State<_NewHdTab> {
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
         ),
-        _section(_prefilled ? 'Ort + Zeitzone (aus deinem Profil)' : 'Ort + Zeitzone'),
+        _section(_prefilled
+            ? 'Ort + Zeitzone (aus deinem Profil)'
+            : 'Ort + Zeitzone'),
         _textField(_placeCtrl, 'Stadt, Land'),
         const SizedBox(height: 8),
         _textField(_tzCtrl, 'Zeitzone: 1 = MEZ (Winter) · 2 = MESZ (Sommer)'),
@@ -462,9 +469,7 @@ class _HdResultCard extends StatelessWidget {
         children: [
           const Text('Dein Human-Design',
               style: TextStyle(
-                  color: _kPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18)),
+                  color: _kPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
           const SizedBox(height: 12),
           _kvRow('Typ', kHdTypeLabels[result.type] ?? result.type),
           _kvRow('Profil', result.profile),
@@ -474,8 +479,8 @@ class _HdResultCard extends StatelessWidget {
               kHdAuthorityLabels[result.authority] ?? result.authority),
           const SizedBox(height: 16),
           const Text('Definierte Zentren',
-              style: TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           Wrap(
             spacing: 6,
@@ -483,7 +488,8 @@ class _HdResultCard extends StatelessWidget {
             children: kCenters.map((c) {
               final def = result.definedCenters.contains(c);
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: def ? _kTeal : _kCardBg,
                   borderRadius: BorderRadius.circular(14),
@@ -503,8 +509,8 @@ class _HdResultCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const Text('Aktivierte Tore',
-              style: TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           Wrap(
             spacing: 5,
@@ -516,8 +522,8 @@ class _HdResultCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: _kTeal.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: _kTeal.withValues(alpha: 0.4)),
+                        border:
+                            Border.all(color: _kTeal.withValues(alpha: 0.4)),
                       ),
                       child: Text('$g',
                           style: const TextStyle(
@@ -743,11 +749,9 @@ class _HdHistoryCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 6,
               children: [
-                if (type.isNotEmpty)
-                  _chip(kHdTypeLabels[type] ?? type),
+                if (type.isNotEmpty) _chip(kHdTypeLabels[type] ?? type),
                 if (profile.isNotEmpty) _chip('Profil $profile'),
-                if (auth.isNotEmpty)
-                  _chip(kHdAuthorityLabels[auth] ?? auth),
+                if (auth.isNotEmpty) _chip(kHdAuthorityLabels[auth] ?? auth),
               ],
             ),
           ],
@@ -763,8 +767,8 @@ class _HdHistoryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: _kTeal.withValues(alpha: 0.4)),
         ),
-        child: Text(s,
-            style: const TextStyle(color: Colors.white, fontSize: 11)),
+        child:
+            Text(s, style: const TextStyle(color: Colors.white, fontSize: 11)),
       );
 
   void _confirmDelete(BuildContext context) {
@@ -772,10 +776,9 @@ class _HdHistoryCard extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _kCardBg,
-        title: const Text('Chart löschen?',
-            style: TextStyle(color: Colors.white)),
-        content: Text(
-            'Möchtest du "${data['label']}" wirklich entfernen?',
+        title:
+            const Text('Chart löschen?', style: TextStyle(color: Colors.white)),
+        content: Text('Möchtest du "${data['label']}" wirklich entfernen?',
             style: const TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
@@ -819,9 +822,11 @@ class _HdChartDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final definedCenters = ((data['defined_centers'] as List?)?.cast<String>() ?? const [])
-        .toSet();
-    final definedGates = ((data['defined_gates'] as List?)?.cast<int>() ?? const []);
+    final definedCenters =
+        ((data['defined_centers'] as List?)?.cast<String>() ?? const [])
+            .toSet();
+    final definedGates =
+        ((data['defined_gates'] as List?)?.cast<int>() ?? const []);
     final type = (data['type'] as String?) ?? '';
     final profile = (data['profile'] as String?) ?? '';
     final auth = (data['authority'] as String?) ?? '';
@@ -850,9 +855,7 @@ class _HdChartDetailView extends StatelessWidget {
           Text(
             data['label'] as String? ?? 'HD-Chart',
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold),
+                color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 2),
           Text(
@@ -877,7 +880,8 @@ class _HdChartDetailView extends StatelessWidget {
             children: kCenters.map((c) {
               final def = definedCenters.contains(c);
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: def ? _kTeal : _kCardBg,
                   borderRadius: BorderRadius.circular(14),
@@ -1003,8 +1007,8 @@ class _HdLexiconTabState extends State<_HdLexiconTab> {
                 onTap: () => _switch(c['key']!),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: active ? _kTeal : _kCardBg,
                     borderRadius: BorderRadius.circular(20),
@@ -1096,8 +1100,8 @@ class _HdLexiconCard extends StatelessWidget {
                           fontSize: 15)),
                   const SizedBox(height: 4),
                   Text(short,
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 13)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13)),
                   if (keywords.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Wrap(
@@ -1243,7 +1247,14 @@ class _CineOrb extends StatelessWidget {
 class _HdCoachingTab extends StatelessWidget {
   const _HdCoachingTab();
 
-  static final List<({String typ, String emoji, String strategie, String autoritaet, List<String> uebungen})> _types = [
+  static final List<
+      ({
+        String typ,
+        String emoji,
+        String strategie,
+        String autoritaet,
+        List<String> uebungen
+      })> _types = [
     (
       typ: 'Generator',
       emoji: '⚡',
@@ -1317,14 +1328,16 @@ class _HdCoachingTab extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF0288D1), Color(0xFF26C6DA)]),
+              gradient: const LinearGradient(
+                  colors: [Color(0xFF0288D1), Color(0xFF26C6DA)]),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Text(
               'Pro HD-Typ vier praktische Übungen für deine STRATEGIE + AUTORITÄT. '
               'Tippe deinen Typ unten an, dann jeden Tag eine Übung. '
               '7 Tage Praxis = signifikante Erlebbarkeit der eigenen Energie.',
-              style: TextStyle(color: Colors.white, fontSize: 12.5, height: 1.5),
+              style:
+                  TextStyle(color: Colors.white, fontSize: 12.5, height: 1.5),
             ),
           );
         }
@@ -1333,12 +1346,16 @@ class _HdCoachingTab extends StatelessWidget {
           tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
           childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
           backgroundColor: const Color(0xFF0D1B3E).withValues(alpha: 0.6),
-          collapsedBackgroundColor: const Color(0xFF0D1B3E).withValues(alpha: 0.4),
+          collapsedBackgroundColor:
+              const Color(0xFF0D1B3E).withValues(alpha: 0.4),
           iconColor: const Color(0xFF26C6DA),
           collapsedIconColor: const Color(0xFF26C6DA),
           leading: Text(t.emoji, style: const TextStyle(fontSize: 28)),
           title: Text(t.typ,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
           subtitle: Text(t.strategie,
               style: const TextStyle(color: Color(0xFF26C6DA), fontSize: 11)),
           children: [
@@ -1346,7 +1363,10 @@ class _HdCoachingTab extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text('AUTORITÄT: ${t.autoritaet}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 10),
             for (var j = 0; j < t.uebungen.length; j++)
@@ -1366,11 +1386,15 @@ class _HdCoachingTab extends StatelessWidget {
                         border: Border.all(color: const Color(0xFF26C6DA)),
                       ),
                       child: Text('${j + 1}',
-                          style: const TextStyle(color: Color(0xFF26C6DA), fontSize: 10, fontWeight: FontWeight.bold)),
+                          style: const TextStyle(
+                              color: Color(0xFF26C6DA),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold)),
                     ),
                     Expanded(
                       child: Text(t.uebungen[j],
-                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13, height: 1.5)),
                     ),
                   ],
                 ),

@@ -2,7 +2,6 @@
 /// Für echte Multi-Source Recherche mit vollständigen Inhalten
 library;
 
-
 /// Quellentyp-Kategorien
 enum QuellenTyp {
   nachrichten,
@@ -57,11 +56,11 @@ extension QuellenTypExtension on QuellenTyp {
 
 /// Status einer einzelnen Quelle
 enum QuellenStatus {
-  pending,    // Wartet auf Verarbeitung
-  loading,    // Wird gerade geladen
-  success,    // Erfolgreich geladen
-  failed,     // Fehler beim Laden
-  noContent,  // Keine Inhalte gefunden
+  pending, // Wartet auf Verarbeitung
+  loading, // Wird gerade geladen
+  success, // Erfolgreich geladen
+  failed, // Fehler beim Laden
+  noContent, // Keine Inhalte gefunden
 }
 
 /// Einzelne Recherche-Quelle mit vollem Inhalt
@@ -72,8 +71,8 @@ class RechercheQuelle {
   final QuellenTyp typ;
   final String? autor;
   final DateTime? datum;
-  final String volltext;  // ← WICHTIG: Tatsächlicher Inhalt der Seite
-  final String zusammenfassung;  // KI-generierte Zusammenfassung
+  final String volltext; // ← WICHTIG: Tatsächlicher Inhalt der Seite
+  final String zusammenfassung; // KI-generierte Zusammenfassung
   final QuellenStatus status;
   final String? fehlerMeldung;
   final int zeichenAnzahl;
@@ -133,7 +132,8 @@ class RechercheQuelle {
   }
 
   /// Ist die Quelle erfolgreich geladen?
-  bool get istErfolgreich => status == QuellenStatus.success && volltext.isNotEmpty;
+  bool get istErfolgreich =>
+      status == QuellenStatus.success && volltext.isNotEmpty;
 
   /// Vorschau-Text (erste 200 Zeichen)
   String get vorschau {
@@ -159,7 +159,7 @@ class RechercheErgebnis {
   final int erfolgreicheQuellen;
   final int fehlgeschlageneQuellen;
   final bool istAbgeschlossen;
-  
+
   // MULTI-MEDIA Support
   final Map<String, dynamic>? media; // Videos, PDFs, Bilder, Audios
 
@@ -188,11 +188,12 @@ class RechercheErgebnis {
   /// Fortschritt in Prozent (0.0 - 1.0)
   double get fortschritt {
     if (gesamtQuellen == 0) return 0.0;
-    final verarbeitet = quellen.where((q) => 
-      q.status == QuellenStatus.success || 
-      q.status == QuellenStatus.failed ||
-      q.status == QuellenStatus.noContent
-    ).length;
+    final verarbeitet = quellen
+        .where((q) =>
+            q.status == QuellenStatus.success ||
+            q.status == QuellenStatus.failed ||
+            q.status == QuellenStatus.noContent)
+        .length;
     return verarbeitet / gesamtQuellen;
   }
 
@@ -235,7 +236,8 @@ class RechercheErgebnis {
       endZeit: endZeit ?? this.endZeit,
       gesamtQuellen: gesamtQuellen ?? this.gesamtQuellen,
       erfolgreicheQuellen: erfolgreicheQuellen ?? this.erfolgreicheQuellen,
-      fehlgeschlageneQuellen: fehlgeschlageneQuellen ?? this.fehlgeschlageneQuellen,
+      fehlgeschlageneQuellen:
+          fehlgeschlageneQuellen ?? this.fehlgeschlageneQuellen,
       istAbgeschlossen: istAbgeschlossen ?? this.istAbgeschlossen,
       media: media ?? this.media,
     );
@@ -250,7 +252,8 @@ class RechercheErgebnis {
     return copyWith(
       quellen: neueQuellen,
       erfolgreicheQuellen: neueQuellen.where((q) => q.istErfolgreich).length,
-      fehlgeschlageneQuellen: neueQuellen.where((q) => q.status == QuellenStatus.failed).length,
+      fehlgeschlageneQuellen:
+          neueQuellen.where((q) => q.status == QuellenStatus.failed).length,
     );
   }
 

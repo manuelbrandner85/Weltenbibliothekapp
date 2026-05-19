@@ -12,7 +12,7 @@ class OnboardingStep {
   final String description;
   final String? iconData;
   final String? targetWidget;
-  
+
   OnboardingStep({
     required this.id,
     required this.title,
@@ -35,7 +35,7 @@ class OnboardingService extends ChangeNotifier {
   bool _isCompleted = false;
   bool _isSkipped = false;
   int _currentStep = 0;
-  
+
   bool get isCompleted => _isCompleted;
   bool get isSkipped => _isSkipped;
   int get currentStep => _currentStep;
@@ -46,34 +46,39 @@ class OnboardingService extends ChangeNotifier {
     OnboardingStep(
       id: 'welcome',
       title: 'Willkommen zur Weltenbibliothek!',
-      description: 'Entdecke Wissen aus zwei Welten: Materie (Fakten, Geschichte, Politik) und Energie (Spiritualität, Bewusstsein, Meditation).',
+      description:
+          'Entdecke Wissen aus zwei Welten: Materie (Fakten, Geschichte, Politik) und Energie (Spiritualität, Bewusstsein, Meditation).',
       iconData: '🌟',
     ),
     OnboardingStep(
       id: 'two_worlds',
       title: 'Zwei Welten erkunden',
-      description: 'Wähle zwischen Materie-Welt (🔵 Blau) für wissenschaftliches Wissen oder Energie-Welt (🟣 Lila) für spirituelle Inhalte.',
+      description:
+          'Wähle zwischen Materie-Welt (🔵 Blau) für wissenschaftliches Wissen oder Energie-Welt (🟣 Lila) für spirituelle Inhalte.',
       iconData: '🌍',
       targetWidget: 'world_buttons',
     ),
     OnboardingStep(
       id: 'chat',
       title: 'Live-Chat Community',
-      description: 'Tausche dich mit anderen aus! Nutze die Chat-Räume, um Fragen zu stellen, zu diskutieren und neue Perspektiven zu entdecken.',
+      description:
+          'Tausche dich mit anderen aus! Nutze die Chat-Räume, um Fragen zu stellen, zu diskutieren und neue Perspektiven zu entdecken.',
       iconData: '💬',
       targetWidget: 'chat_button',
     ),
     OnboardingStep(
       id: 'voice_chat',
       title: 'Voice Chat & Screen Sharing',
-      description: 'Sprich direkt mit anderen Nutzern! Voice Chat für echte Gespräche und Screen Sharing für Präsentationen.',
+      description:
+          'Sprich direkt mit anderen Nutzern! Voice Chat für echte Gespräche und Screen Sharing für Präsentationen.',
       iconData: '🎙️',
       targetWidget: 'voice_chat',
     ),
     OnboardingStep(
       id: 'profile',
       title: 'Erstelle dein Profil',
-      description: 'Erstelle Profile für beide Welten! Speichere deine Favoriten, tracke deinen Fortschritt und werde Teil der Community.',
+      description:
+          'Erstelle Profile für beide Welten! Speichere deine Favoriten, tracke deinen Fortschritt und werde Teil der Community.',
       iconData: '👤',
       targetWidget: 'profile_button',
     ),
@@ -86,12 +91,13 @@ class OnboardingService extends ChangeNotifier {
       _isCompleted = prefs.getBool(_completedKey) ?? false;
       _isSkipped = prefs.getBool(_skippedKey) ?? false;
       _currentStep = prefs.getInt(_currentStepKey) ?? 0;
-      
+
       if (kDebugMode) {
         debugPrint('✅ Onboarding: Initialized');
-        debugPrint('   Completed: $_isCompleted, Skipped: $_isSkipped, Step: $_currentStep');
+        debugPrint(
+            '   Completed: $_isCompleted, Skipped: $_isSkipped, Step: $_currentStep');
       }
-      
+
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
@@ -126,11 +132,11 @@ class OnboardingService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_skippedKey, true);
       _isSkipped = true;
-      
+
       if (kDebugMode) {
         debugPrint('⏭️ Onboarding: Skipped');
       }
-      
+
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
@@ -145,11 +151,11 @@ class OnboardingService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_completedKey, true);
       _isCompleted = true;
-      
+
       if (kDebugMode) {
         debugPrint('✅ Onboarding: Completed');
       }
-      
+
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
@@ -165,15 +171,15 @@ class OnboardingService extends ChangeNotifier {
       await prefs.remove(_completedKey);
       await prefs.remove(_skippedKey);
       await prefs.remove(_currentStepKey);
-      
+
       _isCompleted = false;
       _isSkipped = false;
       _currentStep = 0;
-      
+
       if (kDebugMode) {
         debugPrint('🔄 Onboarding: Reset');
       }
-      
+
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {

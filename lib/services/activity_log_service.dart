@@ -98,7 +98,8 @@ class ActivityLogService {
       label: 'chat:$world/$roomId',
       metadata: {'room_id': roomId, 'len': messageLength},
     );
-    await _dispatch(evt, xp: 3, achievementsToBump: const ['first_post', 'commenter']);
+    await _dispatch(evt,
+        xp: 3, achievementsToBump: const ['first_post', 'commenter']);
   }
 
   /// Profil-Edit -- +10 XP, Achievement.
@@ -108,7 +109,8 @@ class ActivityLogService {
       world: world,
       label: 'profile_edit',
     );
-    await _dispatch(evt, xp: 10, achievementsToBump: const ['profile_complete']);
+    await _dispatch(evt,
+        xp: 10, achievementsToBump: const ['profile_complete']);
   }
 
   /// Artikel gelesen -- +3 XP.
@@ -153,7 +155,8 @@ class ActivityLogService {
   }
 
   /// PDF geteilt.
-  Future<void> logPdfShared({required String type, String world = 'energie'}) async {
+  Future<void> logPdfShared(
+      {required String type, String world = 'energie'}) async {
     final evt = ActivityEvent(
       kind: ActivityKind.pdfShared,
       world: world,

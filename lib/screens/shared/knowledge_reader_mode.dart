@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import 'package:flutter/services.dart';
 import '../../models/knowledge_extended_models.dart';
 import '../../services/annotation_service.dart'; // 🖍️ L3 Highlight + Notiz
@@ -35,7 +35,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
   final _knowledgeService = UnifiedKnowledgeService();
   final _scrollController = ScrollController();
   final _noteController = TextEditingController();
-  
+
   double _fontSize = 16.0;
   String _fontFamily = 'Sans';
   double _readProgress = 0.0;
@@ -48,7 +48,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
     super.initState();
     _loadData();
     _scrollController.addListener(_updateProgress);
-    
+
     // Auto-hide controls after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _showControls = false);
@@ -65,7 +65,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
   Future<void> _loadData() async {
     final isFav = await _knowledgeService.isFavorite(widget.entry.id);
     final note = await _knowledgeService.getNote(widget.entry.id);
-    
+
     setState(() {
       _isFavorite = isFav;
       _userNote = (note ?? '') as String;
@@ -79,10 +79,11 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
     setState(() {
       _readProgress = max > 0 ? (current / max).clamp(0.0, 1.0) : 0.0;
     });
-    
+
     // Mark as read when 80% scrolled
     if (_readProgress >= 0.8) {
-      _knowledgeService.updateProgress(widget.entry.id, isRead: true, progressPercent: 100);
+      _knowledgeService.updateProgress(widget.entry.id,
+          isRead: true, progressPercent: 100);
     }
   }
 
@@ -102,15 +103,17 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
     } else {
       await _knowledgeService.addFavorite(widget.entry.id);
     }
-    
+
     setState(() => _isFavorite = !_isFavorite);
-    
+
     HapticFeedback.mediumImpact();
-    
+
     // ignore: use_build_context_synchronously
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isFavorite ? '⭐ Zu Favoriten hinzugefügt' : '💔 Von Favoriten entfernt'),
+        content: Text(_isFavorite
+            ? '⭐ Zu Favoriten hinzugefügt'
+            : '💔 Von Favoriten entfernt'),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -178,7 +181,8 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                   color: Colors.white.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('„${highlight.length > 240 ? '${highlight.substring(0, 240)}…' : highlight}"',
+                child: Text(
+                    '„${highlight.length > 240 ? '${highlight.substring(0, 240)}…' : highlight}"',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 13,
@@ -199,7 +203,9 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                             shape: BoxShape.circle,
                             color: _colorFor(c),
                             border: Border.all(
-                              color: color == c ? Colors.white : Colors.transparent,
+                              color: color == c
+                                  ? Colors.white
+                                  : Colors.transparent,
                               width: 2,
                             ),
                           ),
@@ -215,7 +221,8 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Optionale Notiz…',
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                  hintStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.05),
                   border: OutlineInputBorder(
@@ -228,9 +235,9 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
               ElevatedButton.icon(
                 onPressed: () async {
                   final storage = StorageService();
-                  final userId = storage.getMaterieProfile()?.userId
-                      ?? storage.getEnergieProfile()?.userId
-                      ?? 'anon';
+                  final userId = storage.getMaterieProfile()?.userId ??
+                      storage.getEnergieProfile()?.userId ??
+                      'anon';
                   final ok = await AnnotationService.instance.add(
                     userId: userId,
                     resourceType: 'knowledge',
@@ -295,10 +302,10 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = widget.world == 'materie' 
-        ? const Color(0xFF2196F3) 
+    final primaryColor = widget.world == 'materie'
+        ? const Color(0xFF2196F3)
         : const Color(0xFF9C27B0);
-    
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0A0A0A) : Colors.white,
       body: GestureDetector(
@@ -361,7 +368,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                     ),
                   ],
                 ),
-                
+
                 // Progress Bar
                 SliverToBoxAdapter(
                   child: LinearProgressIndicator(
@@ -370,7 +377,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                     valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                   ),
                 ),
-                
+
                 // Reading Time Badge
                 SliverToBoxAdapter(
                   child: Container(
@@ -384,17 +391,19 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                           '${widget.entry.readingTimeMinutes} Min Lesezeit • ${(_readProgress * 100).toInt()}% gelesen',
                           style: TextStyle(
                             fontSize: 14,
-                            color: (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.6),
+                            color: (isDark ? Colors.white : Colors.black87)
+                                .withValues(alpha: 0.6),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                
+
                 // Main Content
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   sliver: SliverToBoxAdapter(
                     child: SelectableText(
                       widget.entry.fullContent,
@@ -402,7 +411,9 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                         fontSize: _fontSize,
                         height: 1.8,
                         fontFamily: _getFontFamily(),
-                        color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.9)
+                            : Colors.black87,
                       ),
                       // 🖍️ L3: Highlight + Annotate. Tap "Notiz" im
                       // Selection-Toolbar speichert die markierte Textstelle
@@ -416,8 +427,8 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                               label: '🖍️ Notiz',
                               onPressed: () {
                                 final sel = editable.textEditingValue.selection;
-                                final text = sel.textInside(
-                                    editable.textEditingValue.text);
+                                final text = sel
+                                    .textInside(editable.textEditingValue.text);
                                 editable.hideToolbar();
                                 if (text.trim().isEmpty) return;
                                 _showAnnotateDialog(
@@ -433,7 +444,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                     ),
                   ),
                 ),
-                
+
                 // User Note Section
                 if (_userNote.isNotEmpty)
                   SliverPadding(
@@ -469,7 +480,9 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                               _userNote,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: isDark ? Colors.white.withValues(alpha: 0.8) : Colors.black87,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.8)
+                                    : Colors.black87,
                               ),
                             ),
                           ],
@@ -477,14 +490,14 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                       ),
                     ),
                   ),
-                
+
                 // Bottom Padding
                 const SliverToBoxAdapter(
                   child: SizedBox(height: 100),
                 ),
               ],
             ),
-            
+
             // Floating Reader Controls
             if (_showControls)
               Positioned(
@@ -496,7 +509,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
           ],
         ),
       ),
-      
+
       // Floating Action Buttons
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -509,7 +522,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
             child: const Icon(Icons.note_add),
           ),
           const SizedBox(height: 12),
-          
+
           // Scroll to Top FAB
           if (_readProgress > 0.2)
             FloatingActionButton(
@@ -533,7 +546,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark 
+        color: isDark
             ? Colors.black.withValues(alpha: 0.9)
             : Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(20),
@@ -584,16 +597,19 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Font Family Selection
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildFontButton('Sans', 'Aa', _fontFamily == 'Sans', primaryColor),
-              _buildFontButton('Serif', 'Aa', _fontFamily == 'Serif', primaryColor),
-              _buildFontButton('Mono', 'Aa', _fontFamily == 'Mono', primaryColor),
+              _buildFontButton(
+                  'Sans', 'Aa', _fontFamily == 'Sans', primaryColor),
+              _buildFontButton(
+                  'Serif', 'Aa', _fontFamily == 'Serif', primaryColor),
+              _buildFontButton(
+                  'Mono', 'Aa', _fontFamily == 'Mono', primaryColor),
             ],
           ),
         ],
@@ -620,7 +636,8 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
     );
   }
 
-  Widget _buildFontButton(String family, String label, bool isSelected, Color primaryColor) {
+  Widget _buildFontButton(
+      String family, String label, bool isSelected, Color primaryColor) {
     return Expanded(
       child: InkWell(
         onTap: () => _changeFontFamily(family),
@@ -629,13 +646,13 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
           margin: const EdgeInsets.symmetric(horizontal: 4),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected 
+            color: isSelected
                 ? primaryColor.withValues(alpha: 0.2)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected 
-                  ? primaryColor 
+              color: isSelected
+                  ? primaryColor
                   : Colors.grey.withValues(alpha: 0.3),
             ),
           ),

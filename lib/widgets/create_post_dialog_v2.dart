@@ -18,7 +18,7 @@ import 'media_widgets.dart';
 import 'drawing_canvas_widget.dart';
 
 /// 🚀 CREATE POST DIALOG V2 - ALLE 10 FEATURES KOMPLETT!
-/// 
+///
 /// Features:
 /// 1. ✅ Emoji Picker
 /// 2. ✅ Poll System (Umfragen)
@@ -34,29 +34,30 @@ import 'drawing_canvas_widget.dart';
 class CreatePostDialogV2 extends StatefulWidget {
   final WorldType worldType;
   final DraftPost? draft; // Entwurf laden
-  
+
   const CreatePostDialogV2({
     super.key,
     required this.worldType,
     this.draft,
   });
-  
+
   @override
   State<CreatePostDialogV2> createState() => _CreatePostDialogV2State();
 }
 
-class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTickerProviderStateMixin {
+class _CreatePostDialogV2State extends State<CreatePostDialogV2>
+    with SingleTickerProviderStateMixin {
   // Controllers
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _tagsController = TextEditingController();
   late TabController _tabController;
-  
+
   // Services
   final CommunityService _communityService = CommunityService();
   final UserService _userService = UserService();
   final CloudflareApiService _cloudflareService = CloudflareApiService();
   final ImagePicker _picker = ImagePicker();
-  
+
   // State
   bool _isPosting = false;
   bool _isUploadingMedia = false; // ignore: unused_field
@@ -64,74 +65,74 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
   bool _showEmojiPicker = false;
   bool _showHashtagSuggestions = false;
   bool _showMentionSuggestions = false;
-  
+
   // Media
   XFile? _selectedMedia; // ignore: unused_field
   String? _mediaType;
   String? _uploadedMediaUrl;
   String? _selectedFilter = 'Original'; // ignore: unused_field
-  
+
   // 🎬 PHASE 2: Video/GIF/Multi-Image
   XFile? _selectedVideo;
   String? _selectedGifUrl;
   List<XFile> _selectedImages = [];
   Map<String, dynamic>? _videoMetadata;
-  
+
   // Feature 4: Reichweite
   PostVisibility _visibility = PostVisibility.public;
-  
+
   // Feature 2: Poll
   bool _isPollMode = false;
   List<TextEditingController> _pollOptions = [];
   DateTime? _pollExpiresAt;
-  
+
   // Feature 8: Scheduled Post
   DateTime? _scheduledFor;
-  
+
   // Feature 10: Link Preview
   LinkPreview? _linkPreview;
   bool _isLoadingLinkPreview = false;
-  
+
   // Feature 7: Hashtag Suggestions
   List<String> _tagSuggestions = [];
-  
+
   // Feature 9: Mention Autocomplete
   List<Map<String, String>> _mentionSuggestions = [];
   int _mentionStartIndex = -1;
-  
+
   // Auto-save timer for drafts
   Timer? _autoSaveTimer;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Load draft if provided
     if (widget.draft != null) {
       _loadDraft(widget.draft!);
     }
-    
+
     // Initialize poll options
     _pollOptions = [
       TextEditingController(),
       TextEditingController(),
     ];
-    
+
     // Auto-save drafts every 30 seconds
     _autoSaveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (_contentController.text.isNotEmpty) {
         _saveDraft();
       }
     });
-    
+
     // Listen to content changes for mentions and links
     _contentController.addListener(_onContentChanged);
-    
+
     // Load hashtag suggestions
     _loadHashtagSuggestions();
   }
-  
+
   void _loadDraft(DraftPost draft) {
     _contentController.text = draft.content;
     _tagsController.text = draft.tags.join(', ');
@@ -147,17 +148,17 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       _pollExpiresAt = draft.poll!.expiresAt;
     }
   }
-  
+
   void _loadHashtagSuggestions() {
     setState(() {
       _tagSuggestions = HashtagService.getTrendingTags(widget.worldType.name);
     });
   }
-  
+
   void _onContentChanged() {
     final text = _contentController.text;
     final cursorPos = _contentController.selection.baseOffset;
-    
+
     // Feature 9: Mention detection
     if (cursorPos > 0 && text[cursorPos - 1] == '@') {
       setState(() {
@@ -173,35 +174,36 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
         _searchMentions(query);
       }
     }
-    
+
     // Feature 10: Link detection
     final urls = LinkPreviewService.extractUrls(text);
     if (urls.isNotEmpty && _linkPreview == null && !_isLoadingLinkPreview) {
       _fetchLinkPreview(urls.first);
     }
   }
-  
+
   void _searchMentions(String query) {
     setState(() {
       _mentionSuggestions = MentionService.searchUsers(query);
     });
   }
-  
+
   void _insertMention(String username) {
     final text = _contentController.text;
     final cursorPos = _contentController.selection.baseOffset;
     final before = text.substring(0, _mentionStartIndex);
     final after = text.substring(cursorPos);
     final newText = '$before@$username $after';
-    
+
     _contentController.value = TextEditingValue(
       text: newText,
-      selection: TextSelection.collapsed(offset: _mentionStartIndex + username.length + 2),
+      selection: TextSelection.collapsed(
+          offset: _mentionStartIndex + username.length + 2),
     );
-    
+
     setState(() => _showMentionSuggestions = false);
   }
-  
+
   Future<void> _fetchLinkPreview(String url) async {
     setState(() => _isLoadingLinkPreview = true);
     final preview = await LinkPreviewService.fetchLinkPreview(url);
@@ -214,7 +216,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       setState(() => _isLoadingLinkPreview = false);
     }
   }
-  
+
   @override
   void dispose() {
     _contentController.dispose();
@@ -226,16 +228,16 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
     }
     super.dispose();
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // MEDIA HANDLING
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   // ignore: unused_element
   Future<void> _pickMedia(String mediaType) async {
     try {
       setState(() => _isUploadingMedia = true);
-      
+
       XFile? file;
       if (mediaType == 'Bild') {
         file = await _picker.pickImage(
@@ -252,7 +254,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
         );
         _mediaType = 'video';
       }
-      
+
       if (file != null) {
         // Show editor for images
         if (mediaType == 'Bild') {
@@ -268,7 +270,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       _showError('Media-Auswahl fehlgeschlagen: $e');
     }
   }
-  
+
   // Feature 5: Image Editor
   Future<void> _showImageEditor(XFile imageFile) async {
     final result = await showDialog<Map<String, dynamic>>(
@@ -278,7 +280,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
         worldType: widget.worldType,
       ),
     );
-    
+
     if (result != null) {
       final editedFile = result['file'] as XFile;
       _selectedFilter = result['filter'] as String;
@@ -287,12 +289,12 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       setState(() => _isUploadingMedia = false);
     }
   }
-  
+
   Future<void> _uploadMedia(XFile file) async {
     try {
       final bytes = await file.readAsBytes();
       final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
-      
+
       final user = await _userService.getCurrentUser();
       final result = await _cloudflareService.uploadMedia(
         fileBytes: bytes,
@@ -301,20 +303,20 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
         worldType: widget.worldType.name,
         username: user.username,
       );
-      
+
       setState(() {
         _selectedMedia = file;
         _uploadedMediaUrl = result['media_url'];
         _isUploadingMedia = false;
       });
-      
+
       _showSuccess('✅ Media erfolgreich hochgeladen!');
     } catch (e) {
       setState(() => _isUploadingMedia = false);
       _showError('Upload fehlgeschlagen: $e');
     }
   }
-  
+
   // ignore: unused_element
   void _removeMedia() {
     setState(() {
@@ -324,19 +326,23 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       _selectedFilter = 'Original';
     });
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // DRAFT & SCHEDULED POST
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   Future<void> _saveDraft() async {
     final content = _contentController.text.trim();
     if (content.isEmpty) return;
-    
+
     final draftData = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'content': content,
-      'tags': _tagsController.text.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList(),
+      'tags': _tagsController.text
+          .split(',')
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .toList(),
       'mediaUrl': _uploadedMediaUrl,
       'mediaType': _mediaType,
       'createdAt': DateTime.now().toIso8601String(),
@@ -345,18 +351,18 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       'visibility': _visibility.name,
       'poll': _isPollMode ? _getPollData()?.toJson() : null,
     };
-    
+
     await DraftService.saveDraft(draftData);
-    
+
     // Save to Hive
     final draftsBox = await StorageService().getBox('post_drafts');
     await draftsBox.put(draftData['id'], draftData);
-    
+
     if (mounted) {
       _showSuccess('💾 Entwurf gespeichert');
     }
   }
-  
+
   Future<void> _showSchedulePicker() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -364,13 +370,13 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 30)),
     );
-    
+
     if (picked != null && mounted) {
       final TimeOfDay? time = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.now(),
       );
-      
+
       if (time != null) {
         setState(() {
           _scheduledFor = DateTime(
@@ -384,14 +390,14 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       }
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // POST CREATION
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   PollData? _getPollData() {
     if (!_isPollMode) return null;
-    
+
     final options = _pollOptions
         .where((c) => c.text.trim().isNotEmpty)
         .map((c) => PollOption(
@@ -399,25 +405,25 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
               text: c.text.trim(),
             ))
         .toList();
-    
+
     if (options.length < 2) return null;
-    
+
     return PollData(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       options: options,
       expiresAt: _pollExpiresAt,
     );
   }
-  
+
   Future<void> _createPost() async {
     final content = _contentController.text.trim();
     if (content.isEmpty && !_isPollMode) {
       _showError('Bitte gib einen Text ein oder erstelle eine Umfrage');
       return;
     }
-    
+
     setState(() => _isPosting = true);
-    
+
     try {
       final user = await _userService.getCurrentUser();
       final tags = _tagsController.text
@@ -425,26 +431,27 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
           .map((t) => t.trim())
           .where((t) => t.isNotEmpty)
           .toList();
-      
+
       final mentions = MentionService.extractMentions(content);
-      
+
       // Check if scheduled
       if (_scheduledFor != null) {
         await _schedulePost(user, content, tags, mentions);
       } else {
         await _publishPost(user, content, tags, mentions);
       }
-      
+
       if (mounted) {
         Navigator.of(context).pop(true);
-        _showSuccess('✅ Beitrag erfolgreich ${_scheduledFor != null ? "geplant" : "erstellt"}!');
+        _showSuccess(
+            '✅ Beitrag erfolgreich ${_scheduledFor != null ? "geplant" : "erstellt"}!');
       }
     } catch (e) {
       setState(() => _isPosting = false);
       _showError('Fehler: $e');
     }
   }
-  
+
   Future<void> _publishPost(
     dynamic user,
     String content,
@@ -452,7 +459,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
     List<String> mentions,
   ) async {
     // Create extended post with all features
-    final extendedPost = CommunityPostExtended( // ignore: unused_local_variable
+    final extendedPost = CommunityPostExtended(
+      // ignore: unused_local_variable
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       authorUsername: user.username,
       authorAvatar: user.avatar,
@@ -468,7 +476,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       mentions: mentions,
       isDraft: false,
     );
-    
+
     // Save to Firestore/Hive
     await _communityService.createPost(
       username: user.username,
@@ -479,11 +487,11 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       mediaUrl: _uploadedMediaUrl,
       mediaType: _mediaType,
     );
-    
+
     // Save extended features to separate collection if needed
     // TODO: Save poll, mentions, scheduled data
   }
-  
+
   Future<void> _schedulePost(
     dynamic user,
     String content,
@@ -502,40 +510,40 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       'scheduledFor': _scheduledFor!.toIso8601String(),
       'mentions': mentions,
     };
-    
+
     await DraftService.schedulePost(postData, _scheduledFor!);
-    
+
     // Save to Hive scheduled_posts box
     final scheduledBox = await StorageService().getBox('scheduled_posts');
-    await scheduledBox.put(DateTime.now().millisecondsSinceEpoch.toString(), postData);
+    await scheduledBox.put(
+        DateTime.now().millisecondsSinceEpoch.toString(), postData);
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // UI HELPERS
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   void _showSuccess(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
-  
+
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
-  
-  Color get _primaryColor => widget.worldType == WorldType.materie 
-      ? Colors.blue 
-      : Colors.purple;
-  
+
+  Color get _primaryColor =>
+      widget.worldType == WorldType.materie ? Colors.blue : Colors.purple;
+
   // ═══════════════════════════════════════════════════════════════════════════
   // BUILD METHOD
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -574,27 +582,31 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // UI SECTIONS
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: _primaryColor.withValues(alpha: 0.2), width: 1),
+          bottom:
+              BorderSide(color: _primaryColor.withValues(alpha: 0.2), width: 1),
         ),
       ),
       child: Row(
         children: [
           GradientIcon(
-            icon: widget.worldType == WorldType.materie ? Icons.public : Icons.psychology,
+            icon: widget.worldType == WorldType.materie
+                ? Icons.public
+                : Icons.psychology,
             size: 28,
             colors: [
               _primaryColor,
-              _primaryColor.withValues(red: (_primaryColor.r * 1.5).clamp(0, 1)),
+              _primaryColor.withValues(
+                  red: (_primaryColor.r * 1.5).clamp(0, 1)),
             ],
           ),
           const SizedBox(width: 12),
@@ -664,7 +676,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildInputSection() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -674,7 +686,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
           // Feature 4: Visibility Selector
           _buildVisibilitySelector(),
           const SizedBox(height: 16),
-          
+
           // Tab Bar (Text/Poll/Media)
           TabBar(
             controller: _tabController,
@@ -693,7 +705,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Content based on tab
           IndexedStack(
             index: _tabController.index,
@@ -703,30 +715,29 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
               _buildMediaInput(),
             ],
           ),
-          
+
           // Feature 1: Emoji Picker Toggle
           if (_tabController.index == 0) ...[
             const SizedBox(height: 8),
             _buildEmojiButton(),
             if (_showEmojiPicker) _buildEmojiPicker(),
           ],
-          
+
           // Feature 9: Mention Suggestions
           if (_showMentionSuggestions && _tabController.index == 0)
             _buildMentionSuggestions(),
-          
+
           // Feature 7: Hashtag Input with Suggestions
           const SizedBox(height: 16),
           _buildHashtagInput(),
-          
+
           // Feature 10: Link Preview
-          if (_linkPreview != null)
-            _buildLinkPreviewCard(),
+          if (_linkPreview != null) _buildLinkPreviewCard(),
         ],
       ),
     );
   }
-  
+
   Widget _buildTextInput() {
     return TextField(
       controller: _contentController,
@@ -740,12 +751,13 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildPollInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Umfrage erstellen', style: TextStyle(fontWeight: FontWeight.bold)),
+        const Text('Umfrage erstellen',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         TextField(
           controller: _contentController,
@@ -818,7 +830,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ],
     );
   }
-  
+
   void _showPollExpiryPicker() async {
     final options = [
       {'label': '24 Stunden', 'hours': 24},
@@ -826,7 +838,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       {'label': '7 Tage', 'hours': 168},
       {'label': 'Nie', 'hours': null},
     ];
-    
+
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -851,7 +863,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildMediaInput() {
     return SingleChildScrollView(
       child: Column(
@@ -869,7 +881,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             ),
             const SizedBox(height: 12),
           ],
-          
+
           if (_selectedGifUrl != null) ...[
             GlassmorphismCard(
               blur: 15,
@@ -883,15 +895,18 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
                     height: 60,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3)),
                     ),
-                    child: const Icon(Icons.gif_box, color: Colors.white, size: 32),
+                    child: const Icon(Icons.gif_box,
+                        color: Colors.white, size: 32),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
                       'GIF ausgewählt',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                   IconButton(
@@ -903,11 +918,12 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             ),
             const SizedBox(height: 12),
           ],
-          
+
           if (_selectedImages.isNotEmpty) ...[
             MultiImageGalleryWidget(
               images: _selectedImages,
-              onRemove: (index) => setState(() => _selectedImages.removeAt(index)),
+              onRemove: (index) =>
+                  setState(() => _selectedImages.removeAt(index)),
               onAddMore: () async {
                 final image = await MultiImageService.pickSingleImage();
                 if (image != null && _selectedImages.length < 5) {
@@ -918,7 +934,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             ),
             const SizedBox(height: 12),
           ],
-          
+
           // Media Buttons Grid
           GridView.count(
             crossAxisCount: 2,
@@ -1024,7 +1040,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Caption Input
           TextField(
             controller: _contentController,
@@ -1045,7 +1061,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildMediaButton({
     required IconData icon,
     required String label,
@@ -1084,7 +1100,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildVisibilitySelector() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1144,19 +1160,20 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildEmojiButton() {
     return Row(
       children: [
         TextButton.icon(
           onPressed: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
           icon: const Icon(Icons.emoji_emotions, size: 18),
-          label: Text(_showEmojiPicker ? 'Emoji ausblenden' : 'Emoji hinzufügen'),
+          label:
+              Text(_showEmojiPicker ? 'Emoji ausblenden' : 'Emoji hinzufügen'),
         ),
       ],
     );
   }
-  
+
   Widget _buildEmojiPicker() {
     return Container(
       margin: const EdgeInsets.only(top: 8),
@@ -1168,7 +1185,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Häufig verwendet:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          const Text('Häufig verwendet:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -1192,7 +1210,9 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${entry.key}:', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                Text('${entry.key}:',
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -1212,17 +1232,18 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   void _insertEmoji(String emoji) {
     final text = _contentController.text;
     final selection = _contentController.selection;
     final newText = text.replaceRange(selection.start, selection.end, emoji);
     _contentController.value = TextEditingValue(
       text: newText,
-      selection: TextSelection.collapsed(offset: selection.start + emoji.length),
+      selection:
+          TextSelection.collapsed(offset: selection.start + emoji.length),
     );
   }
-  
+
   Widget _buildHashtagInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1235,8 +1256,11 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             prefixIcon: const Icon(Icons.tag),
             border: const OutlineInputBorder(),
             suffixIcon: IconButton(
-              icon: Icon(_showHashtagSuggestions ? Icons.expand_less : Icons.expand_more),
-              onPressed: () => setState(() => _showHashtagSuggestions = !_showHashtagSuggestions),
+              icon: Icon(_showHashtagSuggestions
+                  ? Icons.expand_less
+                  : Icons.expand_more),
+              onPressed: () => setState(
+                  () => _showHashtagSuggestions = !_showHashtagSuggestions),
             ),
           ),
         ),
@@ -1252,7 +1276,9 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Vorschläge:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                const Text('Vorschläge:',
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -1261,11 +1287,13 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
                     return InkWell(
                       onTap: () => _addTag(tag),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: _primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: _primaryColor.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: _primaryColor.withValues(alpha: 0.3)),
                         ),
                         child: Text(
                           '#$tag',
@@ -1282,16 +1310,17 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ],
     );
   }
-  
+
   void _addTag(String tag) {
     final current = _tagsController.text;
-    final tags = current.isEmpty ? [] : current.split(',').map((t) => t.trim()).toList();
+    final tags =
+        current.isEmpty ? [] : current.split(',').map((t) => t.trim()).toList();
     if (!tags.contains(tag)) {
       tags.add(tag);
       _tagsController.text = tags.join(', ');
     }
   }
-  
+
   Widget _buildMentionSuggestions() {
     return Container(
       margin: const EdgeInsets.only(top: 8),
@@ -1312,7 +1341,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
         children: _mentionSuggestions.map((user) {
           return ListTile(
             dense: true,
-            leading: Text(user['avatar']!, style: const TextStyle(fontSize: 24)),
+            leading:
+                Text(user['avatar']!, style: const TextStyle(fontSize: 24)),
             title: Text(user['username']!),
             onTap: () => _insertMention(user['username']!),
           );
@@ -1320,7 +1350,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildLinkPreviewCard() {
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -1349,7 +1379,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
                 if (_linkPreview!.title != null)
                   Text(
                     _linkPreview!.title!,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 13),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1376,11 +1407,12 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildPreviewSection() {
     return Container(
       decoration: BoxDecoration(
-        border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
+        border: Border(
+            left: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
         color: Colors.black.withValues(alpha: 0.3),
       ),
       child: Column(
@@ -1388,7 +1420,9 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
+              border: Border(
+                  bottom:
+                      BorderSide(color: Colors.white.withValues(alpha: 0.2))),
             ),
             child: const Row(
               children: [
@@ -1408,7 +1442,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildPostPreview() {
     return Container(
       decoration: BoxDecoration(
@@ -1429,14 +1463,18 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Dein Name', style: TextStyle(fontWeight: FontWeight.bold)),
-                      Text('Gerade eben', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text('Dein Name',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('Gerade eben',
+                          style: TextStyle(fontSize: 11, color: Colors.grey)),
                     ],
                   ),
                 ),
                 if (_visibility != PostVisibility.public)
                   Icon(
-                    _visibility == PostVisibility.friends ? Icons.people : Icons.lock,
+                    _visibility == PostVisibility.friends
+                        ? Icons.people
+                        : Icons.lock,
                     size: 16,
                     color: Colors.grey,
                   ),
@@ -1470,22 +1508,29 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('📊 Umfrage', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const Text('📊 Umfrage',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 8),
                   ..._pollOptions.where((c) => c.text.isNotEmpty).map((c) {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 6),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
                           const Icon(Icons.radio_button_unchecked, size: 18),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(c.text, style: const TextStyle(fontSize: 13))),
-                          const Text('0%', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                          Expanded(
+                              child: Text(c.text,
+                                  style: const TextStyle(fontSize: 13))),
+                          const Text('0%',
+                              style:
+                                  TextStyle(fontSize: 11, color: Colors.grey)),
                         ],
                       ),
                     );
@@ -1507,7 +1552,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
                   final cleanTag = tag.trim();
                   if (cleanTag.isEmpty) return const SizedBox.shrink();
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: _primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -1525,17 +1571,23 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Icon(Icons.thumb_up_outlined, size: 18, color: Colors.white.withValues(alpha: 0.7)),
+                Icon(Icons.thumb_up_outlined,
+                    size: 18, color: Colors.white.withValues(alpha: 0.7)),
                 const SizedBox(width: 4),
-                const Text('0', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const Text('0',
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(width: 16),
-                Icon(Icons.comment_outlined, size: 18, color: Colors.white.withValues(alpha: 0.7)),
+                Icon(Icons.comment_outlined,
+                    size: 18, color: Colors.white.withValues(alpha: 0.7)),
                 const SizedBox(width: 4),
-                const Text('0', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const Text('0',
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(width: 16),
-                Icon(Icons.share_outlined, size: 18, color: Colors.white.withValues(alpha: 0.7)),
+                Icon(Icons.share_outlined,
+                    size: 18, color: Colors.white.withValues(alpha: 0.7)),
                 const SizedBox(width: 4),
-                const Text('0', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const Text('0',
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
             ),
           ),
@@ -1543,12 +1595,13 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       ),
     );
   }
-  
+
   Widget _buildFooter() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
+        border:
+            Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
       ),
       child: Row(
         children: [
@@ -1567,8 +1620,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
               size: 18,
             ),
             label: Text(
-              _scheduledFor != null 
-                  ? '${_scheduledFor!.day}.${_scheduledFor!.month}' 
+              _scheduledFor != null
+                  ? '${_scheduledFor!.day}.${_scheduledFor!.month}'
                   : 'Planen',
             ),
           ),
@@ -1584,14 +1637,16 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
-                : Icon(_scheduledFor != null ? Icons.schedule_send : Icons.send, size: 18),
+                : Icon(_scheduledFor != null ? Icons.schedule_send : Icons.send,
+                    size: 18),
             label: Text(
-              _isPosting 
-                  ? 'Wird gepostet...' 
-                  : _scheduledFor != null 
-                      ? 'Planen' 
+              _isPosting
+                  ? 'Wird gepostet...'
+                  : _scheduledFor != null
+                      ? 'Planen'
                       : 'Posten',
             ),
             style: ElevatedButton.styleFrom(
@@ -1613,25 +1668,24 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
 class _ImageEditorDialog extends StatefulWidget {
   final XFile imageFile;
   final WorldType worldType;
-  
+
   const _ImageEditorDialog({
     required this.imageFile,
     required this.worldType,
   });
-  
+
   @override
   State<_ImageEditorDialog> createState() => _ImageEditorDialogState();
 }
 
 class _ImageEditorDialogState extends State<_ImageEditorDialog> {
   String _selectedFilter = 'Original';
-  
+
   @override
   Widget build(BuildContext context) {
-    final primaryColor = widget.worldType == WorldType.materie 
-        ? Colors.blue 
-        : Colors.purple;
-    
+    final primaryColor =
+        widget.worldType == WorldType.materie ? Colors.blue : Colors.purple;
+
     return Dialog(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
@@ -1667,7 +1721,8 @@ class _ImageEditorDialogState extends State<_ImageEditorDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text('Filter:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Filter:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             SizedBox(
               height: 80,
@@ -1676,13 +1731,16 @@ class _ImageEditorDialogState extends State<_ImageEditorDialog> {
                 children: ImageEditorService.filters.map((filter) {
                   final isSelected = _selectedFilter == filter['name'];
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedFilter = filter['name'] as String),
+                    onTap: () => setState(
+                        () => _selectedFilter = filter['name'] as String),
                     child: Container(
                       width: 70,
                       margin: const EdgeInsets.only(right: 12),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isSelected ? primaryColor : Colors.white.withValues(alpha: 0.3),
+                          color: isSelected
+                              ? primaryColor
+                              : Colors.white.withValues(alpha: 0.3),
                           width: isSelected ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(8),
@@ -1700,7 +1758,9 @@ class _ImageEditorDialogState extends State<_ImageEditorDialog> {
                             style: TextStyle(
                               fontSize: 10,
                               color: isSelected ? primaryColor : Colors.grey,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ],

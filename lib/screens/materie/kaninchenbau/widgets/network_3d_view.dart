@@ -133,8 +133,8 @@ class _Network3DViewState extends State<Network3DView>
                       )),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
                       color: Colors.white.withValues(alpha: 0.06),
@@ -157,8 +157,8 @@ class _Network3DViewState extends State<Network3DView>
               right: 0,
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     color: Colors.black.withValues(alpha: 0.5),
@@ -186,9 +186,8 @@ class _Network3DViewState extends State<Network3DView>
   void _handleTap(Offset p) {
     // Berechne welcher Knoten getroffen wurde via Painter-Logik
     final size = context.size ?? const Size(400, 800);
-    final autoY = _userInteracting
-        ? _rotY
-        : _rotY + _orbit.value * 2 * math.pi * 0.3;
+    final autoY =
+        _userInteracting ? _rotY : _rotY + _orbit.value * 2 * math.pi * 0.3;
 
     final positions = _projectAll(
       nodes: widget.nodes,
@@ -287,7 +286,11 @@ class _Projected {
   final double y;
   final double depth;
   final double radius;
-  _Projected({required this.x, required this.y, required this.depth, required this.radius});
+  _Projected(
+      {required this.x,
+      required this.y,
+      required this.depth,
+      required this.radius});
 }
 
 class _Graph3DPainter extends CustomPainter {

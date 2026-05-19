@@ -57,13 +57,15 @@ class VorhangService {
             .from('user_vorhang_progress')
             .select()
             .eq('user_id', userId);
-        for (final entry in (progressRaw as List).cast<Map<String, dynamic>>()) {
+        for (final entry
+            in (progressRaw as List).cast<Map<String, dynamic>>()) {
           final code = entry['module_code'] as String?;
           if (code != null) progressMap[code] = entry;
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('[VorhangService] progress fetch failed (continuing without): $e');
+          debugPrint(
+              '[VorhangService] progress fetch failed (continuing without): $e');
         }
       }
     }
@@ -77,7 +79,9 @@ class VorhangService {
       if (branch == null) continue;
       final enriched = Map<String, dynamic>.from(m);
       enriched['progress'] = progressMap[m['module_code']];
-      branches.putIfAbsent(branch, () => <Map<String, dynamic>>[]).add(enriched);
+      branches
+          .putIfAbsent(branch, () => <Map<String, dynamic>>[])
+          .add(enriched);
     }
 
     final completedCodes = progressMap.values
@@ -104,7 +108,8 @@ class VorhangService {
       'success': true,
       'total': total,
       'completed': completedCount,
-      'progress_percent': total == 0 ? 0 : ((completedCount / total) * 100).round(),
+      'progress_percent':
+          total == 0 ? 0 : ((completedCount / total) * 100).round(),
       'branches': branches,
     };
   }

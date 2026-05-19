@@ -48,7 +48,6 @@ class EnergieHomeTabV5 extends StatefulWidget {
 
 class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     with TickerProviderStateMixin {
-
   // ── Animations ─────────────────────────────────────────────────────────
   late AnimationController _auraCtrl;
   late AnimationController _entryCtrl;
@@ -84,28 +83,31 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   RealtimeChannel? _statsChannel;
 
   // ── Colors (via WbDesign-Tokens wo möglich) ────────────────────────────
-  static const _bg      = WbDesign.bgEnergie;
-  static const _card    = WbDesign.surfaceEnergie;
-  static const _cardB   = WbDesign.surfaceEnergieAlt;
-  static const _purple  = WbDesign.energiePurple;
+  static const _bg = WbDesign.bgEnergie;
+  static const _card = WbDesign.surfaceEnergie;
+  static const _cardB = WbDesign.surfaceEnergieAlt;
+  static const _purple = WbDesign.energiePurple;
   static const _purpleD = WbDesign.energiePurpleDark;
   static const _purpleL = WbDesign.energiePurpleLight;
-  static const _gold    = WbDesign.energieGold;
-  static const _teal    = WbDesign.energieTeal;
-  static const _pink    = WbDesign.energiePink;
-  static const _green   = WbDesign.energieGreen;
-  static const _indigo  = Color(0xFF5C6BC0);
+  static const _gold = WbDesign.energieGold;
+  static const _teal = WbDesign.energieTeal;
+  static const _pink = WbDesign.energiePink;
+  static const _green = WbDesign.energieGreen;
+  static const _indigo = Color(0xFF5C6BC0);
 
   @override
   void initState() {
     super.initState();
-    _auraCtrl = AnimationController(vsync: this,
-        duration: const Duration(seconds: 3))..repeat(reverse: true);
-    _entryCtrl = AnimationController(vsync: this,
-        duration: const Duration(milliseconds: 1000));
-    _orbitCtrl = AnimationController(vsync: this,
-        duration: const Duration(seconds: 12))..repeat();
-    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _auraCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..repeat(reverse: true);
+    _entryCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1000));
+    _orbitCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12))
+          ..repeat();
+    _entryAnim =
+        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
     _entryCtrl.forward();
     _scrollCtrl.addListener(() {
       final newOffset = _scrollCtrl.offset;
@@ -134,11 +136,17 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   // ── Data ───────────────────────────────────────────────────────────────
   Future<void> _loadAll() async {
-    if (mounted) setState(() { _loading = true; _errorMessage = null; });
+    if (mounted)
+      setState(() {
+        _loading = true;
+        _errorMessage = null;
+      });
     try {
       await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
     } catch (e) {
-      if (mounted) setState(() => _errorMessage = 'Daten konnten nicht geladen werden. Bitte Verbindung prüfen.');
+      if (mounted)
+        setState(() => _errorMessage =
+            'Daten konnten nicht geladen werden. Bitte Verbindung prüfen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -170,20 +178,21 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             .limit(500),
       ]);
 
-      final posts   = (results[0] as List?) ?? [];
-      final msgs    = (results[1] as List?) ?? [];
-      final likes   = posts.fold<int>(0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
-      final streak  = _calcStreak(msgs
+      final posts = (results[0] as List?) ?? [];
+      final msgs = (results[1] as List?) ?? [];
+      final likes = posts.fold<int>(
+          0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
+      final streak = _calcStreak(msgs
           .map((m) => DateTime.tryParse(m['created_at'] as String? ?? ''))
           .whereType<DateTime>()
           .toList());
 
       if (mounted) {
         setState(() {
-          _articles  = posts.length;
-          _sessions  = msgs.length;
+          _articles = posts.length;
+          _sessions = msgs.length;
           _bookmarks = likes;
-          _shares    = streak;
+          _shares = streak;
         });
       }
     } catch (_) {}
@@ -195,7 +204,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     int streak = 0;
     var cursor = DateTime.now();
     cursor = DateTime(cursor.year, cursor.month, cursor.day);
-    if (!daySet.contains(cursor)) cursor = cursor.subtract(const Duration(days: 1));
+    if (!daySet.contains(cursor))
+      cursor = cursor.subtract(const Duration(days: 1));
     while (daySet.contains(cursor)) {
       streak++;
       cursor = cursor.subtract(const Duration(days: 1));
@@ -205,10 +215,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   Future<void> _loadContent() async {
     try {
-      _latestArticles = await _dash.getRecentArticles(realm: 'energie', limit: 6);
-      _trending       = await _dash.getTrendingTopics(realm: 'energie', limit: 8);
-      final uid  = Supabase.instance.client.auth.currentUser?.id ??
-                   await StorageService().getUserId('energie');
+      _latestArticles =
+          await _dash.getRecentArticles(realm: 'energie', limit: 6);
+      _trending = await _dash.getTrendingTopics(realm: 'energie', limit: 8);
+      final uid = Supabase.instance.client.auth.currentUser?.id ??
+          await StorageService().getUserId('energie');
       // Unread-Count direkt aus DB (kein Umweg über getNotifications-Normalisierung)
       final unreadResult = await Supabase.instance.client
           .from('notifications')
@@ -227,35 +238,44 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     final client = Supabase.instance.client;
 
     // Realtime: community_posts → Content + Stats neu laden
-    _channel = client
-        .channel('energie_home_content')
+    _channel = client.channel('energie_home_content')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'community_posts',
-        callback: (_) { if (mounted) { _loadContent(); _loadStats(); } },
+        schema: 'public',
+        table: 'community_posts',
+        callback: (_) {
+          if (mounted) {
+            _loadContent();
+            _loadStats();
+          }
+        },
       )
       ..subscribe();
 
     // Realtime: chat_messages + community_posts → Stats neu laden
-    _statsChannel = client
-        .channel('energie_home_stats')
+    _statsChannel = client.channel('energie_home_stats')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'chat_messages',
-        callback: (_) { if (mounted) _loadStats(); },
+        schema: 'public',
+        table: 'chat_messages',
+        callback: (_) {
+          if (mounted) _loadStats();
+        },
       )
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'community_posts',
-        callback: (_) { if (mounted) _loadStats(); },
+        schema: 'public',
+        table: 'community_posts',
+        callback: (_) {
+          if (mounted) _loadStats();
+        },
       )
       ..subscribe();
 
     // Realtime: notifications → Glocken-Badge sofort aktualisieren
     final uid = client.auth.currentUser?.id;
     if (uid != null) {
-      _notifChannel = client
-          .channel('energie_home_notifs')
+      _notifChannel = client.channel('energie_home_notifs')
         ..onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
@@ -265,7 +285,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             column: 'user_id',
             value: uid,
           ),
-          callback: (_) { if (mounted) setState(() => _notifs++); },
+          callback: (_) {
+            if (mounted) setState(() => _notifs++);
+          },
         )
         ..onPostgresChanges(
           event: PostgresChangeEvent.update,
@@ -276,13 +298,16 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             column: 'user_id',
             value: uid,
           ),
-          callback: (_) { if (mounted) _refreshNotifCount(); },
+          callback: (_) {
+            if (mounted) _refreshNotifCount();
+          },
         )
         ..subscribe();
     }
 
-    _liveTimer = Timer.periodic(const Duration(minutes: 5),
-        (_) { if (mounted) _loadAll(); });
+    _liveTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      if (mounted) _loadAll();
+    });
   }
 
   Future<void> _loadWorldSubscription() async {
@@ -299,8 +324,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     ]);
     if (!mounted) return;
     setState(() {
-      _dailyQuote  = results[0] as DailyQuote?;
-      _sunData     = results[1] as SunData?;
+      _dailyQuote = results[0] as DailyQuote?;
+      _sunData = results[1] as SunData?;
       _donkiEvents = (results[2] as List<DonkiEvent>?) ?? [];
       _moonPhaseData = _freeApi.calcMoonPhase();
       _cosmicLoading = false;
@@ -316,8 +341,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             ? '🔔 Artikel-Benachrichtigungen aktiviert'
             : '🔕 Artikel-Benachrichtigungen deaktiviert'),
         duration: const Duration(seconds: 2),
-        backgroundColor:
-            newState ? const Color(0xFF7C4DFF) : Colors.grey[800],
+        backgroundColor: newState ? const Color(0xFF7C4DFF) : Colors.grey[800],
       ));
     }
   }
@@ -336,8 +360,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────
-  Future<void> _go(Widget screen) => Navigator.push<void>(
-      context, MaterialPageRoute(builder: (_) => screen));
+  Future<void> _go(Widget screen) =>
+      Navigator.push<void>(context, MaterialPageRoute(builder: (_) => screen));
 
   /// Zum Spirit-Tab wechseln: bevorzugt via Parent-Tab-Switch
   /// (identisches Look & State wie Bottom-Nav-Klick); fällt auf
@@ -362,7 +386,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   String get _greeting {
     final h = DateTime.now().hour;
-    if (h < 5)  return '🌙 Stille Stunden';
+    if (h < 5) return '🌙 Stille Stunden';
     if (h < 12) return '☀️ Guten Morgen';
     if (h < 17) return '🌤 Guten Tag';
     if (h < 21) return '🌅 Guten Abend';
@@ -372,8 +396,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   String get _moonPhase {
     final now = DateTime.now();
     final daysSinceNew = now.difference(DateTime(2000, 1, 6)).inDays % 29;
-    if (daysSinceNew < 4)  return '🌑 Neumond';
-    if (daysSinceNew < 8)  return '🌒 Zunehmend';
+    if (daysSinceNew < 4) return '🌑 Neumond';
+    if (daysSinceNew < 8) return '🌒 Zunehmend';
     if (daysSinceNew < 11) return '🌓 Halbmond';
     if (daysSinceNew < 15) return '🌔 Fast Voll';
     if (daysSinceNew < 19) return '🌕 Vollmond';
@@ -411,14 +435,19 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 child: Container(
                   width: double.infinity,
                   color: const Color(0xFF4A148C),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
                       const Icon(Icons.wifi_off, color: Colors.white, size: 16),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.white, fontSize: 13))),
+                      Expanded(
+                          child: Text(_errorMessage!,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 13))),
                       IconButton(
-                        icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+                        icon: const Icon(Icons.refresh,
+                            color: Colors.white, size: 18),
                         onPressed: _loadAll,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -452,11 +481,14 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     _buildLiveStatBanner(),
                     const SliverToBoxAdapter(child: DailyPathWidget()),
                     _buildActionGrid(),
-                    const SliverToBoxAdapter(child: _RecentSpiritReadingsSection()),
+                    const SliverToBoxAdapter(
+                        child: _RecentSpiritReadingsSection()),
                     _buildRecentRooms(),
-                    _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),
+                    _buildSectionTitle('✨ Spirituelle Themen',
+                        subtitle: 'Im Fokus'),
                     _buildTrendingChips(),
-                    _buildSectionTitle('📿 Neueste Artikel', subtitle: 'Wissen & Weisheit'),
+                    _buildSectionTitle('📿 Neueste Artikel',
+                        subtitle: 'Wissen & Weisheit'),
                     _buildArticleCards(),
                     _buildExploreSection(),
                     const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
@@ -540,7 +572,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       builder: (_, __) => GestureDetector(
         onTap: () => _go(const StatsDashboardScreen(world: 'energie')),
         child: Container(
-          width: 54, height: 54,
+          width: 54,
+          height: 54,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
@@ -580,15 +613,19 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       children: [
         Text(_greeting,
             style: const TextStyle(
-                color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500)),
+                color: Colors.white54,
+                fontSize: 12,
+                fontWeight: FontWeight.w500)),
         const SizedBox(height: 2),
         Row(children: [
           Flexible(
             child: Text(
               name,
               style: const TextStyle(
-                  color: Colors.white, fontSize: 20,
-                  fontWeight: FontWeight.bold, letterSpacing: -0.3),
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.3),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -602,11 +639,15 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           AnimatedBuilder(
             animation: _auraCtrl,
             builder: (_, __) => Container(
-              width: 6, height: 6,
+              width: 6,
+              height: 6,
               decoration: BoxDecoration(
                 color: _purple.withValues(alpha: 0.5 + _auraCtrl.value * 0.5),
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: _purple.withValues(alpha: 0.5), blurRadius: 4)],
+                boxShadow: [
+                  BoxShadow(
+                      color: _purple.withValues(alpha: 0.5), blurRadius: 4)
+                ],
               ),
             ),
           ),
@@ -626,7 +667,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       child: GestureDetector(
         onTap: _toggleWorldSubscription,
         child: Container(
-          width: 44, height: 44,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: _worldSubscribed
                 ? _purple.withValues(alpha: 0.2)
@@ -639,9 +681,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             ),
           ),
           child: Icon(
-            _worldSubscribed
-                ? Icons.newspaper
-                : Icons.newspaper_outlined,
+            _worldSubscribed ? Icons.newspaper : Icons.newspaper_outlined,
             color: _worldSubscribed ? _purple : Colors.white,
             size: 20,
           ),
@@ -660,7 +700,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.17),
               borderRadius: BorderRadius.circular(14),
@@ -674,14 +715,19 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           ),
           if (_notifs > 0)
             Positioned(
-              right: -4, top: -4,
+              right: -4,
+              top: -4,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: _pink, shape: BoxShape.circle),
+                decoration:
+                    const BoxDecoration(color: _pink, shape: BoxShape.circle),
                 constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                 child: Text(
                   _notifs > 9 ? '9+' : '$_notifs',
-                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -706,7 +752,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           ],
         ),
         child: Row(children: [
-          Icon(Icons.search_rounded, color: _purpleL.withValues(alpha: 0.9), size: 20),
+          Icon(Icons.search_rounded,
+              color: _purpleL.withValues(alpha: 0.9), size: 20),
           const SizedBox(width: 10),
           const Expanded(
             child: Text('Spirituelle Themen suchen…',
@@ -720,7 +767,10 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               border: Border.all(color: _purple.withValues(alpha: 0.3)),
             ),
             child: const Text('Suche',
-                style: TextStyle(color: _purpleL, fontSize: 10, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _purpleL,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700)),
           ),
         ]),
       ),
@@ -746,12 +796,14 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                           end: Alignment.bottomRight,
                           colors: [
                             _indigo.withValues(alpha: 0.4),
-                            _purpleD.withValues(alpha: 0.6 + _auraCtrl.value * 0.1),
+                            _purpleD.withValues(
+                                alpha: 0.6 + _auraCtrl.value * 0.1),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                            color: _purpleL.withValues(alpha: 0.18 + _auraCtrl.value * 0.08)),
+                            color: _purpleL.withValues(
+                                alpha: 0.18 + _auraCtrl.value * 0.08)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -851,17 +903,21 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           const SizedBox(height: 8),
           Text(moon.name,
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13)),
           const SizedBox(height: 4),
           Text('${moon.illuminationPercent}% beleuchtet',
-              style: TextStyle(color: _purpleL.withValues(alpha: 0.7), fontSize: 11)),
+              style: TextStyle(
+                  color: _purpleL.withValues(alpha: 0.7), fontSize: 11)),
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: moon.phase,
               backgroundColor: Colors.white12,
-              valueColor: AlwaysStoppedAnimation<Color>(_purpleL.withValues(alpha: 0.7)),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                  _purpleL.withValues(alpha: 0.7)),
               minHeight: 4,
             ),
           ),
@@ -885,7 +941,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           const SizedBox(height: 8),
           const Text('Sonnenenergie',
               style: TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13)),
           const SizedBox(height: 8),
           if (_sunData != null) ...[
             _sunRow('🌅', 'Aufgang', _sunData!.sunriseFormatted),
@@ -909,7 +967,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       children: [
         Text(emoji, style: const TextStyle(fontSize: 12)),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+        Text(label,
+            style: const TextStyle(color: Colors.white38, fontSize: 11)),
         const Spacer(),
         Text(value,
             style: TextStyle(
@@ -923,9 +982,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   Widget _buildDonkiCard() {
     final latest = _donkiEvents.first;
     final date = latest.parsedStart;
-    final dateStr = date != null
-        ? '${date.day}.${date.month}.${date.year}'
-        : 'kürzlich';
+    final dateStr =
+        date != null ? '${date.day}.${date.month}.${date.year}' : 'kürzlich';
 
     return AnimatedBuilder(
       animation: _auraCtrl,
@@ -956,7 +1014,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                           fontSize: 13)),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.orange.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -1028,11 +1087,14 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: _purpleL.withValues(alpha: 0.2 + _auraCtrl.value * 0.1)),
+                    color: _purpleL.withValues(
+                        alpha: 0.2 + _auraCtrl.value * 0.1)),
                 boxShadow: [
                   BoxShadow(
-                    color: _purple.withValues(alpha: 0.12 + _auraCtrl.value * 0.08),
-                    blurRadius: 20, offset: const Offset(0, 6),
+                    color: _purple.withValues(
+                        alpha: 0.12 + _auraCtrl.value * 0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
@@ -1044,8 +1106,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     angle: _orbitCtrl.value * math.pi * 2 * 0.1,
                     child: Text(
                       _moonEmoji,
-                      style: TextStyle(
-                          fontSize: 36 + _auraCtrl.value * 4),
+                      style: TextStyle(fontSize: 36 + _auraCtrl.value * 4),
                     ),
                   ),
                 ),
@@ -1055,33 +1116,44 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Spirituelles Zentrum',
-                          style: TextStyle(color: Colors.white, fontSize: 15,
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 3),
                       Row(children: [
                         Text(_moonName,
-                            style: TextStyle(color: _purpleL.withValues(alpha: 0.8),
-                                fontSize: 12, fontWeight: FontWeight.w500)),
+                            style: TextStyle(
+                                color: _purpleL.withValues(alpha: 0.8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500)),
                         const Text('  ·  ',
-                            style: TextStyle(color: Colors.white24, fontSize: 12)),
+                            style:
+                                TextStyle(color: Colors.white24, fontSize: 12)),
                         const Text('Chakras · Spirit',
-                            style: TextStyle(color: Colors.white38, fontSize: 11)),
+                            style:
+                                TextStyle(color: Colors.white38, fontSize: 11)),
                       ]),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                         colors: [Color(0xFF6A1B9A), Color(0xFFAB47BC)]),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
-                      BoxShadow(color: _purple.withValues(alpha: 0.3), blurRadius: 10),
+                      BoxShadow(
+                          color: _purple.withValues(alpha: 0.3),
+                          blurRadius: 10),
                     ],
                   ),
                   child: const Text('Öffnen',
-                      style: TextStyle(color: Colors.white, fontSize: 12,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold)),
                 ),
               ]),
@@ -1095,10 +1167,26 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   // ── LIVE STAT BANNER ───────────────────────────────────────────────────
   Widget _buildLiveStatBanner() {
     final stats = [
-      _StatDef(icon: Icons.edit_note,          label: 'Beiträge',  value: _articles,  color: _purple),
-      _StatDef(icon: Icons.chat_bubble_outline, label: 'Nachrichten', value: _sessions, color: _teal),
-      _StatDef(icon: Icons.favorite_border,   label: 'Likes',     value: _bookmarks, color: _pink),
-      _StatDef(icon: Icons.local_fire_department, label: 'Streak', value: _shares,   color: _gold),
+      _StatDef(
+          icon: Icons.edit_note,
+          label: 'Beiträge',
+          value: _articles,
+          color: _purple),
+      _StatDef(
+          icon: Icons.chat_bubble_outline,
+          label: 'Nachrichten',
+          value: _sessions,
+          color: _teal),
+      _StatDef(
+          icon: Icons.favorite_border,
+          label: 'Likes',
+          value: _bookmarks,
+          color: _pink),
+      _StatDef(
+          icon: Icons.local_fire_department,
+          label: 'Streak',
+          value: _shares,
+          color: _gold),
     ];
 
     return SliverToBoxAdapter(
@@ -1121,13 +1209,16 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 final s = e.value;
                 return Expanded(
                   child: GestureDetector(
-                    onTap: () => _go(const StatsDashboardScreen(world: 'energie')),
+                    onTap: () =>
+                        _go(const StatsDashboardScreen(world: 'energie')),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       decoration: i < stats.length - 1
                           ? BoxDecoration(
                               border: Border(
-                                right: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+                                right: BorderSide(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.05)),
                               ),
                             )
                           : null,
@@ -1139,13 +1230,18 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                           _loading
                               ? _Shimmer(w: 26, h: 16, r: 4)
                               : Text('${s.value}',
-                                  style: TextStyle(color: s.color, fontSize: 16,
+                                  style: TextStyle(
+                                      color: s.color,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold)),
                           const SizedBox(height: 1),
                           Text(s.label,
-                              style: const TextStyle(color: Colors.white38, fontSize: 9,
+                              style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w500),
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),
@@ -1219,10 +1315,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                         accent.withValues(alpha: 0.12),
                       ]),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.55), width: 1.4),
+                          color: Colors.white.withValues(alpha: 0.55),
+                          width: 1.4),
                     ),
-                    child: Text(card.emoji,
-                        style: const TextStyle(fontSize: 28)),
+                    child:
+                        Text(card.emoji, style: const TextStyle(fontSize: 28)),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -1300,92 +1397,202 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   // Reduzierte Major-Arcana Liste fuer Daily-Card-Pool.
   static const List<TarotCard> _tarotMajor22 = [
-    TarotCard(index: 0, name: 'Der Narr', nameEn: 'The Fool',
-        suit: TarotSuit.major, emoji: '🃏', element: 'Aether',
+    TarotCard(
+        index: 0,
+        name: 'Der Narr',
+        nameEn: 'The Fool',
+        suit: TarotSuit.major,
+        emoji: '🃏',
+        element: 'Aether',
         meaning: 'Neuer Anfang, naives Vertrauen, Sprung ins Unbekannte.',
         reversedMeaning: 'Unverantwortlichkeit, Naivität ohne Erkenntnis.'),
-    TarotCard(index: 1, name: 'Der Magier', nameEn: 'The Magician',
-        suit: TarotSuit.major, emoji: '🪄', element: 'Aether',
+    TarotCard(
+        index: 1,
+        name: 'Der Magier',
+        nameEn: 'The Magician',
+        suit: TarotSuit.major,
+        emoji: '🪄',
+        element: 'Aether',
         meaning: 'Willenskraft, Manifestation, aktive Schöpfung.',
         reversedMeaning: 'Manipulation, fehlende Konzentration.'),
-    TarotCard(index: 2, name: 'Die Hohepriesterin', nameEn: 'The High Priestess',
-        suit: TarotSuit.major, emoji: '🌙', element: 'Aether',
+    TarotCard(
+        index: 2,
+        name: 'Die Hohepriesterin',
+        nameEn: 'The High Priestess',
+        suit: TarotSuit.major,
+        emoji: '🌙',
+        element: 'Aether',
         meaning: 'Intuition, verborgenes Wissen, Stille.',
         reversedMeaning: 'Verdrängung der inneren Stimme.'),
-    TarotCard(index: 3, name: 'Die Herrscherin', nameEn: 'The Empress',
-        suit: TarotSuit.major, emoji: '👑', element: 'Aether',
+    TarotCard(
+        index: 3,
+        name: 'Die Herrscherin',
+        nameEn: 'The Empress',
+        suit: TarotSuit.major,
+        emoji: '👑',
+        element: 'Aether',
         meaning: 'Fülle, Mutterprinzip, Schöpfung.',
         reversedMeaning: 'Erstickende Fürsorge.'),
-    TarotCard(index: 4, name: 'Der Herrscher', nameEn: 'The Emperor',
-        suit: TarotSuit.major, emoji: '🏛️', element: 'Aether',
+    TarotCard(
+        index: 4,
+        name: 'Der Herrscher',
+        nameEn: 'The Emperor',
+        suit: TarotSuit.major,
+        emoji: '🏛️',
+        element: 'Aether',
         meaning: 'Struktur, Vaterprinzip, klare Grenzen.',
         reversedMeaning: 'Starre Tyrannei.'),
-    TarotCard(index: 5, name: 'Der Hierophant', nameEn: 'The Hierophant',
-        suit: TarotSuit.major, emoji: '🔑', element: 'Aether',
+    TarotCard(
+        index: 5,
+        name: 'Der Hierophant',
+        nameEn: 'The Hierophant',
+        suit: TarotSuit.major,
+        emoji: '🔑',
+        element: 'Aether',
         meaning: 'Tradition, spirituelle Lehre, Initiation.',
         reversedMeaning: 'Dogmatismus.'),
-    TarotCard(index: 6, name: 'Die Liebenden', nameEn: 'The Lovers',
-        suit: TarotSuit.major, emoji: '💞', element: 'Aether',
+    TarotCard(
+        index: 6,
+        name: 'Die Liebenden',
+        nameEn: 'The Lovers',
+        suit: TarotSuit.major,
+        emoji: '💞',
+        element: 'Aether',
         meaning: 'Wahl aus dem Herzen, Vereinigung.',
         reversedMeaning: 'Disharmonie, Bindungsangst.'),
-    TarotCard(index: 7, name: 'Der Wagen', nameEn: 'The Chariot',
-        suit: TarotSuit.major, emoji: '🏎️', element: 'Aether',
+    TarotCard(
+        index: 7,
+        name: 'Der Wagen',
+        nameEn: 'The Chariot',
+        suit: TarotSuit.major,
+        emoji: '🏎️',
+        element: 'Aether',
         meaning: 'Triumph durch Willenskraft.',
         reversedMeaning: 'Kontrollverlust.'),
-    TarotCard(index: 8, name: 'Die Kraft', nameEn: 'Strength',
-        suit: TarotSuit.major, emoji: '🦁', element: 'Aether',
+    TarotCard(
+        index: 8,
+        name: 'Die Kraft',
+        nameEn: 'Strength',
+        suit: TarotSuit.major,
+        emoji: '🦁',
+        element: 'Aether',
         meaning: 'Sanfte Stärke, innere Tapferkeit, Geduld.',
         reversedMeaning: 'Selbstzweifel.'),
-    TarotCard(index: 9, name: 'Der Eremit', nameEn: 'The Hermit',
-        suit: TarotSuit.major, emoji: '🕯️', element: 'Aether',
+    TarotCard(
+        index: 9,
+        name: 'Der Eremit',
+        nameEn: 'The Hermit',
+        suit: TarotSuit.major,
+        emoji: '🕯️',
+        element: 'Aether',
         meaning: 'Inneres Licht, Rückzug, Weisheits-Suche.',
         reversedMeaning: 'Isolation.'),
-    TarotCard(index: 10, name: 'Das Rad des Schicksals', nameEn: 'Wheel of Fortune',
-        suit: TarotSuit.major, emoji: '🎡', element: 'Aether',
+    TarotCard(
+        index: 10,
+        name: 'Das Rad des Schicksals',
+        nameEn: 'Wheel of Fortune',
+        suit: TarotSuit.major,
+        emoji: '🎡',
+        element: 'Aether',
         meaning: 'Wendepunkt, Zyklus, Schicksal.',
         reversedMeaning: 'Widerstand gegen den Wandel.'),
-    TarotCard(index: 11, name: 'Die Gerechtigkeit', nameEn: 'Justice',
-        suit: TarotSuit.major, emoji: '⚖️', element: 'Aether',
+    TarotCard(
+        index: 11,
+        name: 'Die Gerechtigkeit',
+        nameEn: 'Justice',
+        suit: TarotSuit.major,
+        emoji: '⚖️',
+        element: 'Aether',
         meaning: 'Wahrheit, Ausgleich, karmische Balance.',
         reversedMeaning: 'Unfairness.'),
-    TarotCard(index: 12, name: 'Der Gehängte', nameEn: 'The Hanged Man',
-        suit: TarotSuit.major, emoji: '🙃', element: 'Aether',
+    TarotCard(
+        index: 12,
+        name: 'Der Gehängte',
+        nameEn: 'The Hanged Man',
+        suit: TarotSuit.major,
+        emoji: '🙃',
+        element: 'Aether',
         meaning: 'Perspektivwechsel, Hingabe, freiwillige Pause.',
         reversedMeaning: 'Festhalten, Stagnation.'),
-    TarotCard(index: 13, name: 'Der Tod', nameEn: 'Death',
-        suit: TarotSuit.major, emoji: '💀', element: 'Aether',
+    TarotCard(
+        index: 13,
+        name: 'Der Tod',
+        nameEn: 'Death',
+        suit: TarotSuit.major,
+        emoji: '💀',
+        element: 'Aether',
         meaning: 'Transformation, Ende eines Zyklus, Neugeburt.',
         reversedMeaning: 'Widerstand gegen Veränderung.'),
-    TarotCard(index: 14, name: 'Die Mässigkeit', nameEn: 'Temperance',
-        suit: TarotSuit.major, emoji: '🌊', element: 'Aether',
+    TarotCard(
+        index: 14,
+        name: 'Die Mässigkeit',
+        nameEn: 'Temperance',
+        suit: TarotSuit.major,
+        emoji: '🌊',
+        element: 'Aether',
         meaning: 'Alchemie, Balance, geduldige Mischung.',
         reversedMeaning: 'Überschuss, Ungeduld.'),
-    TarotCard(index: 15, name: 'Der Teufel', nameEn: 'The Devil',
-        suit: TarotSuit.major, emoji: '😈', element: 'Aether',
+    TarotCard(
+        index: 15,
+        name: 'Der Teufel',
+        nameEn: 'The Devil',
+        suit: TarotSuit.major,
+        emoji: '😈',
+        element: 'Aether',
         meaning: 'Bindung, Schatten, Sucht.',
         reversedMeaning: 'Befreiung aus alten Mustern.'),
-    TarotCard(index: 16, name: 'Der Turm', nameEn: 'The Tower',
-        suit: TarotSuit.major, emoji: '🗼', element: 'Aether',
+    TarotCard(
+        index: 16,
+        name: 'Der Turm',
+        nameEn: 'The Tower',
+        suit: TarotSuit.major,
+        emoji: '🗼',
+        element: 'Aether',
         meaning: 'Plötzliche Erkenntnis, Zerstörung falscher Strukturen.',
         reversedMeaning: 'Vermeidung der Erschütterung.'),
-    TarotCard(index: 17, name: 'Der Stern', nameEn: 'The Star',
-        suit: TarotSuit.major, emoji: '⭐', element: 'Aether',
+    TarotCard(
+        index: 17,
+        name: 'Der Stern',
+        nameEn: 'The Star',
+        suit: TarotSuit.major,
+        emoji: '⭐',
+        element: 'Aether',
         meaning: 'Hoffnung, Heilung, Inspiration.',
         reversedMeaning: 'Verlust der Hoffnung.'),
-    TarotCard(index: 18, name: 'Der Mond', nameEn: 'The Moon',
-        suit: TarotSuit.major, emoji: '🌕', element: 'Aether',
+    TarotCard(
+        index: 18,
+        name: 'Der Mond',
+        nameEn: 'The Moon',
+        suit: TarotSuit.major,
+        emoji: '🌕',
+        element: 'Aether',
         meaning: 'Illusion, Unterbewusstes, Traum.',
         reversedMeaning: 'Verwirrung lichtet sich.'),
-    TarotCard(index: 19, name: 'Die Sonne', nameEn: 'The Sun',
-        suit: TarotSuit.major, emoji: '☀️', element: 'Aether',
+    TarotCard(
+        index: 19,
+        name: 'Die Sonne',
+        nameEn: 'The Sun',
+        suit: TarotSuit.major,
+        emoji: '☀️',
+        element: 'Aether',
         meaning: 'Lebensfreude, Klarheit, Erfolg.',
         reversedMeaning: 'Vorübergehende Trübung.'),
-    TarotCard(index: 20, name: 'Das Gericht', nameEn: 'Judgement',
-        suit: TarotSuit.major, emoji: '📯', element: 'Aether',
+    TarotCard(
+        index: 20,
+        name: 'Das Gericht',
+        nameEn: 'Judgement',
+        suit: TarotSuit.major,
+        emoji: '📯',
+        element: 'Aether',
         meaning: 'Erwachen, Berufung, höhere Einsicht.',
         reversedMeaning: 'Selbstverurteilung.'),
-    TarotCard(index: 21, name: 'Die Welt', nameEn: 'The World',
-        suit: TarotSuit.major, emoji: '🌍', element: 'Aether',
+    TarotCard(
+        index: 21,
+        name: 'Die Welt',
+        nameEn: 'The World',
+        suit: TarotSuit.major,
+        emoji: '🌍',
+        element: 'Aether',
         meaning: 'Vollendung, Ganzheit, Zyklus abgeschlossen.',
         reversedMeaning: 'Unvollendete Aufgaben.'),
   ];
@@ -1422,7 +1629,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         icon: Icons.self_improvement_rounded,
         label: 'Üben & Spirit',
         sub: 'Tools · Meditation · Chakras',
-        gradient: [const Color(0xFF3E0D6B), const Color(0xFF6A1B9A), const Color(0xFFAB47BC)],
+        gradient: [
+          const Color(0xFF3E0D6B),
+          const Color(0xFF6A1B9A),
+          const Color(0xFFAB47BC)
+        ],
         badge: 0,
         onTap: _openSpiritTab,
       ),
@@ -1430,7 +1641,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         icon: Icons.forum_rounded,
         label: 'Live Chat',
         sub: 'Spiritueller Austausch',
-        gradient: [const Color(0xFF004D40), const Color(0xFF00796B), const Color(0xFF26C6DA)],
+        gradient: [
+          const Color(0xFF004D40),
+          const Color(0xFF00796B),
+          const Color(0xFF26C6DA)
+        ],
         badge: _notifs,
         onTap: () => _go(const EnergieLiveChatScreen()),
       ),
@@ -1438,7 +1653,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         icon: Icons.spa_rounded,
         label: 'Chakras',
         sub: 'Energie & Balance',
-        gradient: [const Color(0xFF880E4F), const Color(0xFFC2185B), const Color(0xFFEC407A)],
+        gradient: [
+          const Color(0xFF880E4F),
+          const Color(0xFFC2185B),
+          const Color(0xFFEC407A)
+        ],
         badge: 0,
         onTap: () => _go(const ChakraCalculatorScreen()),
       ),
@@ -1446,7 +1665,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         icon: Icons.collections_bookmark_rounded,
         label: 'Gespeichert',
         sub: 'Deine Weisheiten',
-        gradient: [const Color(0xFF4A3B00), const Color(0xFF827717), const Color(0xFFFFD54F)],
+        gradient: [
+          const Color(0xFF4A3B00),
+          const Color(0xFF827717),
+          const Color(0xFFFFD54F)
+        ],
         badge: _bookmarks > 0 ? _bookmarks : 0,
         onTap: () => _go(const BookmarksScreen()),
       ),
@@ -1495,7 +1718,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             boxShadow: [
               BoxShadow(
                   color: t.gradient.last.withValues(alpha: 0.25),
-                  blurRadius: 20, offset: const Offset(0, 8)),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8)),
             ],
           ),
           child: ClipRRect(
@@ -1504,9 +1728,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               children: [
                 // Decorative circles
                 Positioned(
-                  right: -16, bottom: -16,
+                  right: -16,
+                  bottom: -16,
                   child: Container(
-                    width: 72, height: 72,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.06),
@@ -1529,11 +1755,14 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                       ),
                       const Spacer(),
                       Text(t.label,
-                          style: const TextStyle(color: Colors.white, fontSize: 13,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 1),
                       Text(t.sub,
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.7),
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 10)),
                     ],
                   ),
@@ -1541,16 +1770,20 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 // Badge
                 if (t.badge > 0)
                   Positioned(
-                    right: 10, top: 10,
+                    right: 10,
+                    top: 10,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         t.badge > 9 ? '9+' : '${t.badge}',
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold,
+                        style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
                             color: t.gradient.last),
                       ),
                     ),
@@ -1570,12 +1803,17 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
         child: Row(children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title,
-                  style: const TextStyle(color: Colors.white, fontSize: 17,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold)),
               if (subtitle.isNotEmpty)
-                Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                Text(subtitle,
+                    style:
+                        const TextStyle(color: Colors.white38, fontSize: 12)),
             ]),
           ),
           GestureDetector(
@@ -1588,7 +1826,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 border: Border.all(color: _purple.withValues(alpha: 0.3)),
               ),
               child: const Text('Alle →',
-                  style: TextStyle(color: _purpleL, fontSize: 11,
+                  style: TextStyle(
+                      color: _purpleL,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600)),
             ),
           ),
@@ -1669,7 +1909,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(meta.$1, style: const TextStyle(fontSize: 14)),
+                              Text(meta.$1,
+                                  style: const TextStyle(fontSize: 14)),
                               const SizedBox(width: 6),
                               Text(
                                 meta.$2,
@@ -1697,9 +1938,28 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   // ── TRENDING CHIPS ─────────────────────────────────────────────────────
   Widget _buildTrendingChips() {
     final topics = _trending.isNotEmpty
-        ? _trending.map((t) => t['topic'] ?? t['title'] ?? '').whereType<String>().toList()
-        : ['Meditation', 'Chakra', 'Mondkraft', 'Astrologie', 'Traumdeutung', 'Heilung', 'Bewusstsein'];
-    final chipColors = [_purple, _teal, _pink, _gold, _green, _indigo, _purpleL];
+        ? _trending
+            .map((t) => t['topic'] ?? t['title'] ?? '')
+            .whereType<String>()
+            .toList()
+        : [
+            'Meditation',
+            'Chakra',
+            'Mondkraft',
+            'Astrologie',
+            'Traumdeutung',
+            'Heilung',
+            'Bewusstsein'
+          ];
+    final chipColors = [
+      _purple,
+      _teal,
+      _pink,
+      _gold,
+      _green,
+      _indigo,
+      _purpleL
+    ];
 
     return SliverToBoxAdapter(
       child: SizedBox(
@@ -1722,15 +1982,16 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               onTap: _openSpiritTab,
               child: Container(
                 margin: const EdgeInsets.only(right: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: c.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(color: c.withValues(alpha: 0.3)),
                 ),
                 child: Text(topic,
-                    style: TextStyle(color: c, fontSize: 13,
-                        fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        color: c, fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             );
           },
@@ -1746,10 +2007,12 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
-            children: List.generate(3, (_) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _Shimmer(w: double.infinity, h: 88, r: 16),
-            )),
+            children: List.generate(
+                3,
+                (_) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _Shimmer(w: double.infinity, h: 88, r: 16),
+                    )),
           ),
         ),
       );
@@ -1768,13 +2031,20 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               border: Border.all(color: _purple.withValues(alpha: 0.15)),
             ),
             child: Column(children: [
-              Icon(Icons.auto_stories, color: _purpleL.withValues(alpha: 0.4), size: 44),
+              Icon(Icons.auto_stories,
+                  color: _purpleL.withValues(alpha: 0.4), size: 44),
               const SizedBox(height: 14),
               const Text('Spirit-Inhalte entdecken',
-                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 15)),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15)),
               const SizedBox(height: 6),
               const Text('Zum Spirit-Bereich →',
-                  style: TextStyle(color: _purpleL, fontSize: 13, fontWeight: FontWeight.w500)),
+                  style: TextStyle(
+                      color: _purpleL,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500)),
             ]),
           ),
         ),
@@ -1797,9 +2067,10 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             );
           }
           return Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16,
-                i == _latestArticles.length - 1 ? 0 : 10),
-            child: _ArticleCard(article: a, onTap: () => _goArticle(a), accent: _purple),
+            padding: EdgeInsets.fromLTRB(
+                16, 0, 16, i == _latestArticles.length - 1 ? 0 : 10),
+            child: _ArticleCard(
+                article: a, onTap: () => _goArticle(a), accent: _purple),
           );
         },
         childCount: _latestArticles.length,
@@ -1829,37 +2100,50 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 ),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                    color: _purple.withValues(alpha: 0.25 + _auraCtrl.value * 0.1)),
+                    color: _purple.withValues(
+                        alpha: 0.25 + _auraCtrl.value * 0.1)),
                 boxShadow: [
                   BoxShadow(
-                      color: _purple.withValues(alpha: 0.15 + _auraCtrl.value * 0.08),
-                      blurRadius: 24, offset: const Offset(0, 8)),
+                      color: _purple.withValues(
+                          alpha: 0.15 + _auraCtrl.value * 0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8)),
                 ],
               ),
               child: Row(children: [
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Statistiken & Insights',
-                        style: TextStyle(color: Colors.white, fontSize: 15,
-                            fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text('Deine spirituelle Reise',
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6), fontSize: 12)),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Statistiken & Insights',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Deine spirituelle Reise',
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontSize: 12)),
+                      ]),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.15)),
                   ),
                   child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.analytics_outlined, color: Colors.white, size: 16),
+                    Icon(Icons.analytics_outlined,
+                        color: Colors.white, size: 16),
                     SizedBox(width: 6),
                     Text('Öffnen',
-                        style: TextStyle(color: Colors.white, fontSize: 12,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold)),
                   ]),
                 ),
@@ -1906,14 +2190,18 @@ class _AuraPainter extends CustomPainter {
 
     // Aura glow
     final glow1 = Paint()
-      ..color = color.withValues(alpha: 0.06 + math.sin(auraProgress * math.pi) * 0.04)
+      ..color = color.withValues(
+          alpha: 0.06 + math.sin(auraProgress * math.pi) * 0.04)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 70);
-    canvas.drawCircle(Offset(size.width * 0.4, size.height * 0.3), size.width * 0.55, glow1);
+    canvas.drawCircle(
+        Offset(size.width * 0.4, size.height * 0.3), size.width * 0.55, glow1);
 
     final glow2 = Paint()
-      ..color = const Color(0xFFFFD54F).withValues(alpha: 0.03 + auraProgress * 0.02)
+      ..color =
+          const Color(0xFFFFD54F).withValues(alpha: 0.03 + auraProgress * 0.02)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 50);
-    canvas.drawCircle(Offset(size.width * 0.75, size.height * 0.6), size.width * 0.3, glow2);
+    canvas.drawCircle(
+        Offset(size.width * 0.75, size.height * 0.6), size.width * 0.3, glow2);
 
     // Orbiting particles
     final particlePaint = Paint()..color = color.withValues(alpha: 0.25);
@@ -1922,7 +2210,8 @@ class _AuraPainter extends CustomPainter {
       final radius = 30.0 + p * 15;
       final cx = size.width * 0.75 + math.cos(angle) * radius;
       final cy = size.height * 0.25 + math.sin(angle) * radius * 0.6;
-      canvas.drawCircle(Offset(cx, cy - scrollOffset * 0.1), 2.0 + p * 0.5, particlePaint);
+      canvas.drawCircle(
+          Offset(cx, cy - scrollOffset * 0.1), 2.0 + p * 0.5, particlePaint);
     }
 
     // Stars
@@ -1934,7 +2223,8 @@ class _AuraPainter extends CustomPainter {
       starPaint.color = Colors.white.withValues(alpha: alpha);
       canvas.drawCircle(
         Offset(s.dx * size.width, s.dy * size.height - scrollOffset * 0.12),
-        1.0 + (i % 3) * 0.4, starPaint,
+        1.0 + (i % 3) * 0.4,
+        starPaint,
       );
     }
   }
@@ -1955,18 +2245,20 @@ class _AdminBadge extends StatelessWidget {
   const _AdminBadge({required this.isRoot});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(colors: isRoot
-          ? [Colors.amber.shade700, Colors.orange.shade500]
-          : [const Color(0xFF9C27B0), const Color(0xFF6A1B9A)]),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(
-      isRoot ? '👑 ROOT' : '✨ ADM',
-      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: isRoot
+                  ? [Colors.amber.shade700, Colors.orange.shade500]
+                  : [const Color(0xFF9C27B0), const Color(0xFF6A1B9A)]),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          isRoot ? '👑 ROOT' : '✨ ADM',
+          style: const TextStyle(
+              color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+        ),
+      );
 }
 
 class _StatDef {
@@ -1974,7 +2266,11 @@ class _StatDef {
   final String label;
   final int value;
   final Color color;
-  const _StatDef({required this.icon, required this.label, required this.value, required this.color});
+  const _StatDef(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.color});
 }
 
 class _TileDef {
@@ -1983,8 +2279,13 @@ class _TileDef {
   final List<Color> gradient;
   final int badge;
   final VoidCallback onTap;
-  const _TileDef({required this.icon, required this.label, required this.sub,
-    required this.gradient, required this.badge, required this.onTap});
+  const _TileDef(
+      {required this.icon,
+      required this.label,
+      required this.sub,
+      required this.gradient,
+      required this.badge,
+      required this.onTap});
 }
 
 class _Shimmer extends StatelessWidget {
@@ -1992,12 +2293,13 @@ class _Shimmer extends StatelessWidget {
   const _Shimmer({required this.w, required this.h, required this.r});
   @override
   Widget build(BuildContext context) => Container(
-    width: w, height: h,
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.05),
-      borderRadius: BorderRadius.circular(r),
-    ),
-  );
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(r),
+        ),
+      );
 }
 
 // Featured card (large)
@@ -2005,14 +2307,17 @@ class _FeaturedArticleCard extends StatelessWidget {
   final Map<String, dynamic> article;
   final VoidCallback onTap;
   final Color accent;
-  const _FeaturedArticleCard({required this.article, required this.onTap, required this.accent});
+  const _FeaturedArticleCard(
+      {required this.article, required this.onTap, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    final title  = (article['title']  ?? 'Artikel').toString();
-    final source = (article['source'] ?? article['realm'] ?? 'Energie').toString();
-    final date   = (article['created_at'] ?? article['publishedAt'] ?? '').toString();
-    final tags   = (article['tags'] as List?)?.take(2).toList() ?? [];
+    final title = (article['title'] ?? 'Artikel').toString();
+    final source =
+        (article['source'] ?? article['realm'] ?? 'Energie').toString();
+    final date =
+        (article['created_at'] ?? article['publishedAt'] ?? '').toString();
+    final tags = (article['tags'] as List?)?.take(2).toList() ?? [];
 
     return GestureDetector(
       onTap: onTap,
@@ -2027,7 +2332,10 @@ class _FeaturedArticleCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: accent.withValues(alpha: 0.25)),
           boxShadow: [
-            BoxShadow(color: accent.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 6)),
+            BoxShadow(
+                color: accent.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 6)),
           ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2040,12 +2348,18 @@ class _FeaturedArticleCard extends StatelessWidget {
                 border: Border.all(color: accent.withValues(alpha: 0.3)),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Container(width: 6, height: 6,
-                    decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
+                Container(
+                    width: 6,
+                    height: 6,
+                    decoration:
+                        BoxDecoration(color: accent, shape: BoxShape.circle)),
                 const SizedBox(width: 5),
                 Text('TOP ARTIKEL',
-                    style: TextStyle(color: accent, fontSize: 9,
-                        fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    style: TextStyle(
+                        color: accent,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5)),
               ]),
             ),
             const Spacer(),
@@ -2055,25 +2369,34 @@ class _FeaturedArticleCard extends StatelessWidget {
           ]),
           const SizedBox(height: 12),
           Text(title,
-              style: const TextStyle(color: Colors.white, fontSize: 16,
-                  fontWeight: FontWeight.bold, height: 1.35),
-              maxLines: 3, overflow: TextOverflow.ellipsis),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  height: 1.35),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis),
           const SizedBox(height: 10),
           Row(children: [
-            Icon(Icons.source_outlined, color: accent.withValues(alpha: 0.7), size: 13),
+            Icon(Icons.source_outlined,
+                color: accent.withValues(alpha: 0.7), size: 13),
             const SizedBox(width: 4),
-            Text(source, style: TextStyle(color: accent.withValues(alpha: 0.8), fontSize: 12)),
+            Text(source,
+                style: TextStyle(
+                    color: accent.withValues(alpha: 0.8), fontSize: 12)),
             const Spacer(),
             ...tags.take(2).map((t) => Container(
-              margin: const EdgeInsets.only(left: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(t.toString(),
-                  style: const TextStyle(color: Colors.white38, fontSize: 10)),
-            )),
+                  margin: const EdgeInsets.only(left: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(t.toString(),
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 10)),
+                )),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.all(6),
@@ -2093,11 +2416,13 @@ class _FeaturedArticleCard extends StatelessWidget {
     try {
       final d = DateTime.parse(raw);
       final diff = DateTime.now().difference(d);
-      if (diff.inDays > 7)  return '${d.day}.${d.month}.${d.year}';
-      if (diff.inDays > 0)  return 'vor ${diff.inDays}T';
+      if (diff.inDays > 7) return '${d.day}.${d.month}.${d.year}';
+      if (diff.inDays > 0) return 'vor ${diff.inDays}T';
       if (diff.inHours > 0) return 'vor ${diff.inHours}h';
       return 'jetzt';
-    } catch (_) { return ''; }
+    } catch (_) {
+      return '';
+    }
   }
 }
 
@@ -2106,17 +2431,22 @@ class _ArticleCard extends StatelessWidget {
   final Map<String, dynamic> article;
   final VoidCallback onTap;
   final Color accent;
-  const _ArticleCard({required this.article, required this.onTap, required this.accent});
+  const _ArticleCard(
+      {required this.article, required this.onTap, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    final title  = (article['title']  ?? 'Artikel').toString();
-    final source = (article['source'] ?? article['realm'] ?? 'Energie').toString();
-    final date   = (article['created_at'] ?? article['publishedAt'] ?? '').toString();
-    final type   = (article['type'] ?? 'article').toString();
-    final icon   = type == 'video' ? Icons.play_circle_outline
-                 : type == 'meditation' ? Icons.self_improvement
-                 : Icons.auto_stories;
+    final title = (article['title'] ?? 'Artikel').toString();
+    final source =
+        (article['source'] ?? article['realm'] ?? 'Energie').toString();
+    final date =
+        (article['created_at'] ?? article['publishedAt'] ?? '').toString();
+    final type = (article['type'] ?? 'article').toString();
+    final icon = type == 'video'
+        ? Icons.play_circle_outline
+        : type == 'meditation'
+            ? Icons.self_improvement
+            : Icons.auto_stories;
 
     return GestureDetector(
       onTap: onTap,
@@ -2129,7 +2459,8 @@ class _ArticleCard extends StatelessWidget {
         ),
         child: Row(children: [
           Container(
-            width: 46, height: 46,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
@@ -2139,25 +2470,34 @@ class _ArticleCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title,
-                  style: const TextStyle(color: Colors.white, fontSize: 13,
-                      fontWeight: FontWeight.w600, height: 1.3),
-                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
               const SizedBox(height: 4),
               Row(children: [
                 Text(source,
-                    style: TextStyle(color: accent.withValues(alpha: 0.7), fontSize: 11)),
+                    style: TextStyle(
+                        color: accent.withValues(alpha: 0.7), fontSize: 11)),
                 if (date.isNotEmpty) ...[
-                  const Text(' · ', style: TextStyle(color: Colors.white24, fontSize: 11)),
+                  const Text(' · ',
+                      style: TextStyle(color: Colors.white24, fontSize: 11)),
                   Text(_fmtDate(date),
-                      style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 11)),
                 ],
               ]),
             ]),
           ),
           const SizedBox(width: 8),
-          Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 13),
+          Icon(Icons.arrow_forward_ios_rounded,
+              color: Colors.white24, size: 13),
         ]),
       ),
     );
@@ -2167,14 +2507,15 @@ class _ArticleCard extends StatelessWidget {
     try {
       final d = DateTime.parse(raw);
       final diff = DateTime.now().difference(d);
-      if (diff.inDays > 7)  return '${d.day}.${d.month}.${d.year}';
-      if (diff.inDays > 0)  return 'vor ${diff.inDays}T';
+      if (diff.inDays > 7) return '${d.day}.${d.month}.${d.year}';
+      if (diff.inDays > 0) return 'vor ${diff.inDays}T';
       if (diff.inHours > 0) return 'vor ${diff.inHours}h';
       return 'jetzt';
-    } catch (_) { return ''; }
+    } catch (_) {
+      return '';
+    }
   }
 }
-
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LETZTE SPIRIT-READINGS · Surface der gespeicherten Tool-Ergebnisse + Streak
@@ -2184,10 +2525,12 @@ class _RecentSpiritReadingsSection extends StatefulWidget {
   const _RecentSpiritReadingsSection();
 
   @override
-  State<_RecentSpiritReadingsSection> createState() => _RecentSpiritReadingsSectionState();
+  State<_RecentSpiritReadingsSection> createState() =>
+      _RecentSpiritReadingsSectionState();
 }
 
-class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSection> {
+class _RecentSpiritReadingsSectionState
+    extends State<_RecentSpiritReadingsSection> {
   static const Color _gold = Color(0xFFFFD54F);
   static const Color _accent = Color(0xFF7C4DFF);
   List<SpiritReading> _readings = [];
@@ -2203,7 +2546,8 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
     'geometry': const _ToolMeta('🔯', 'Geometrie', Color(0xFF00BCD4)),
     'birth_chart': const _ToolMeta('♓', 'Horoskop', Color(0xFF7E57C2)),
     'biorhythm': const _ToolMeta('📊', 'Biorhythmus', Color(0xFF26C6DA)),
-    'transformation': const _ToolMeta('🦋', 'Transformation', Color(0xFFFF7043)),
+    'transformation':
+        const _ToolMeta('🦋', 'Transformation', Color(0xFFFF7043)),
     'human_design': const _ToolMeta('🌀', 'Human Design', Color(0xFF00ACC1)),
     'shamanic_journey': const _ToolMeta('🥁', 'Schamanen', Color(0xFF6D4C41)),
     'affirmation': const _ToolMeta('💫', 'Affirmation', Color(0xFFE91E63)),
@@ -2225,7 +2569,8 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
         if (mounted) setState(() => _loading = false);
         return;
       }
-      final list = await SpiritReadingService.instance.recentAllTools(userId, limit: 8);
+      final list =
+          await SpiritReadingService.instance.recentAllTools(userId, limit: 8);
       // Streak = aufeinanderfolgende Tage mit mind. 1 Reading
       final days = <String>{};
       for (final r in list) {
@@ -2247,7 +2592,12 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
         }
         check = check.subtract(const Duration(days: 1));
       }
-      if (mounted) setState(() { _readings = list; _streak = streak; _loading = false; });
+      if (mounted)
+        setState(() {
+          _readings = list;
+          _streak = streak;
+          _loading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -2256,7 +2606,11 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const SizedBox(height: 130, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: _accent)));
+      return const SizedBox(
+          height: 130,
+          child: Center(
+              child:
+                  CircularProgressIndicator(strokeWidth: 2, color: _accent)));
     }
     if (_readings.isEmpty) {
       return Padding(
@@ -2271,13 +2625,19 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
           child: Row(children: [
             Text("✨", style: TextStyle(fontSize: 28)),
             const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-              Text("Noch keine Readings",
-                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-              SizedBox(height: 2),
-              Text("Probiere ein Spirit-Tool — Tarot, Runen, I-Ging…",
-                  style: TextStyle(color: Colors.white60, fontSize: 11)),
-            ])),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                  Text("Noch keine Readings",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700)),
+                  SizedBox(height: 2),
+                  Text("Probiere ein Spirit-Tool — Tarot, Runen, I-Ging…",
+                      style: TextStyle(color: Colors.white60, fontSize: 11)),
+                ])),
           ]),
         ),
       );
@@ -2287,7 +2647,10 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
         child: Row(children: [
           const Text("✨ Deine Readings",
-              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold)),
           const Spacer(),
           if (_streak > 0)
             Container(
@@ -2298,7 +2661,8 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
                 border: Border.all(color: _gold.withValues(alpha: 0.5)),
               ),
               child: Text("🔥 ${_streak}",
-                  style: const TextStyle(color: _gold, fontSize: 11, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: _gold, fontSize: 11, fontWeight: FontWeight.bold)),
             ),
         ]),
       ),
@@ -2322,28 +2686,42 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [color.withValues(alpha: 0.18), color.withValues(alpha: 0.04)],
+                  colors: [
+                    color.withValues(alpha: 0.18),
+                    color.withValues(alpha: 0.04)
+                  ],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: color.withValues(alpha: 0.3)),
               ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text(emoji, style: const TextStyle(fontSize: 18)),
-                  const SizedBox(width: 6),
-                  Expanded(child: Text(label,
-                      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                      maxLines: 1, overflow: TextOverflow.ellipsis)),
-                ]),
-                const SizedBox(height: 6),
-                Expanded(
-                  child: Text(r.summary ?? "—",
-                      style: const TextStyle(color: Colors.white, fontSize: 11, height: 1.3),
-                      maxLines: 3, overflow: TextOverflow.ellipsis),
-                ),
-                Text(_relTime(r.createdAt),
-                    style: const TextStyle(color: Colors.white38, fontSize: 9)),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text(emoji, style: const TextStyle(fontSize: 18)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                          child: Text(label,
+                              style: TextStyle(
+                                  color: color,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis)),
+                    ]),
+                    const SizedBox(height: 6),
+                    Expanded(
+                      child: Text(r.summary ?? "—",
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11, height: 1.3),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    Text(_relTime(r.createdAt),
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 9)),
+                  ]),
             );
           },
         ),
@@ -2361,11 +2739,9 @@ class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSecti
   }
 }
 
-
 class _ToolMeta {
   final String emoji;
   final String label;
   final Color color;
   const _ToolMeta(this.emoji, this.label, this.color);
 }
-

@@ -1,12 +1,13 @@
 /// 🏥 BACKEND HEALTH CHECK SERVICE
 /// Prüft Backend-Endpoints und simuliert Health-Checks für Worker ohne /health
-/// 
+///
 /// Features:
 /// - Health-Check für alle 6 Backend-APIs
 /// - Fallback für Worker ohne /health-Endpoint
 /// - Caching für Performance
 /// - Retry-Logik
 library;
+
 import '../config/api_config.dart';
 
 import 'dart:convert';
@@ -20,7 +21,8 @@ class BackendHealthService {
   static const String rechercheApiUrl = ApiConfig.workerUrl;
   static const String rechercheWorkerUrl = ApiConfig.workerUrl; // Fixed URL
   static const String mediaApiUrl = ApiConfig.workerUrl;
-  static const String groupToolsApiUrl = ApiConfig.workerUrl; // Fallback to community-api
+  static const String groupToolsApiUrl =
+      ApiConfig.workerUrl; // Fallback to community-api
 
   // 💾 Cache für Health-Status (5 Minuten)
   static final Map<String, HealthStatus> _cache = {};
@@ -44,7 +46,7 @@ class BackendHealthService {
     // eagerError:false — wenn 1 Health-Check failt, lassen wir die anderen
     // ihre Ergebnisse liefern statt alle zu verwerfen
     final statuses = await Future.wait(futures, eagerError: false);
-    
+
     results['Community API'] = statuses[0];
     results['Main API'] = statuses[1];
     results['Backend Recherche'] = statuses[2];
@@ -62,7 +64,7 @@ class BackendHealthService {
         final response = await http
             .get(Uri.parse('$communityApiUrl/api/health'))
             .timeout(const Duration(seconds: 5));
-        
+
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           return HealthStatus(
@@ -71,7 +73,8 @@ class BackendHealthService {
             message: 'Health endpoint: OK',
           );
         }
-        return HealthStatus(isHealthy: false, message: 'HTTP ${response.statusCode}');
+        return HealthStatus(
+            isHealthy: false, message: 'HTTP ${response.statusCode}');
       } catch (e) {
         return HealthStatus(isHealthy: false, message: e.toString());
       }
@@ -85,7 +88,7 @@ class BackendHealthService {
         final response = await http
             .get(Uri.parse('$mainApiUrl/api/health'))
             .timeout(const Duration(seconds: 5));
-        
+
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           return HealthStatus(
@@ -94,7 +97,8 @@ class BackendHealthService {
             message: 'All services online',
           );
         }
-        return HealthStatus(isHealthy: false, message: 'HTTP ${response.statusCode}');
+        return HealthStatus(
+            isHealthy: false, message: 'HTTP ${response.statusCode}');
       } catch (e) {
         return HealthStatus(isHealthy: false, message: e.toString());
       }
@@ -108,7 +112,7 @@ class BackendHealthService {
         final response = await http
             .get(Uri.parse('$rechercheApiUrl/health'))
             .timeout(const Duration(seconds: 5));
-        
+
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           return HealthStatus(
@@ -117,7 +121,8 @@ class BackendHealthService {
             message: 'PDFs & multimedia OK',
           );
         }
-        return HealthStatus(isHealthy: false, message: 'HTTP ${response.statusCode}');
+        return HealthStatus(
+            isHealthy: false, message: 'HTTP ${response.statusCode}');
       } catch (e) {
         return HealthStatus(isHealthy: false, message: e.toString());
       }
@@ -132,7 +137,7 @@ class BackendHealthService {
         final response = await http
             .get(Uri.parse('$rechercheWorkerUrl?q=test'))
             .timeout(const Duration(seconds: 5));
-        
+
         // Jede Antwort (auch 404/500) bedeutet: Worker läuft
         if (response.statusCode >= 200 && response.statusCode < 600) {
           return HealthStatus(
@@ -156,7 +161,7 @@ class BackendHealthService {
         final response = await http
             .head(Uri.parse('$mediaApiUrl/api/upload'))
             .timeout(const Duration(seconds: 5));
-        
+
         // 404 ist OK - API existiert, nur Endpoint fehlt
         if (response.statusCode == 404 || response.statusCode == 405) {
           return HealthStatus(
@@ -165,7 +170,8 @@ class BackendHealthService {
             message: 'API responds (no /health endpoint)',
           );
         }
-        return HealthStatus(isHealthy: false, message: 'HTTP ${response.statusCode}');
+        return HealthStatus(
+            isHealthy: false, message: 'HTTP ${response.statusCode}');
       } catch (e) {
         return HealthStatus(isHealthy: false, message: e.toString());
       }
@@ -180,7 +186,7 @@ class BackendHealthService {
         final response = await http
             .head(Uri.parse('$groupToolsApiUrl/api/tools'))
             .timeout(const Duration(seconds: 5));
-        
+
         // 404 ist OK - API existiert, nur Endpoint fehlt
         if (response.statusCode == 404 || response.statusCode == 405) {
           return HealthStatus(
@@ -189,7 +195,8 @@ class BackendHealthService {
             message: 'API responds (no /health endpoint)',
           );
         }
-        return HealthStatus(isHealthy: false, message: 'HTTP ${response.statusCode}');
+        return HealthStatus(
+            isHealthy: false, message: 'HTTP ${response.statusCode}');
       } catch (e) {
         return HealthStatus(isHealthy: false, message: e.toString());
       }
@@ -206,7 +213,8 @@ class BackendHealthService {
       final age = DateTime.now().difference(_cacheTime[key]!);
       if (age < _cacheDuration) {
         if (kDebugMode) {
-          debugPrint('🏥 [HEALTH] Using cached status for $key (age: ${age.inSeconds}s)');
+          debugPrint(
+              '🏥 [HEALTH] Using cached status for $key (age: ${age.inSeconds}s)');
         }
         return _cache[key]!;
       }
@@ -218,7 +226,8 @@ class BackendHealthService {
     _cacheTime[key] = DateTime.now();
 
     if (kDebugMode) {
-      debugPrint('🏥 [HEALTH] $key: ${status.isHealthy ? "✅" : "❌"} ${status.message}');
+      debugPrint(
+          '🏥 [HEALTH] $key: ${status.isHealthy ? "✅" : "❌"} ${status.message}');
     }
 
     return status;

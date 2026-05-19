@@ -35,7 +35,8 @@ const List<_GaldrRune> _galdrRunes = [
   _GaldrRune('ᛁ', 'Isa', 'Iiiii-saaaa', 'Eis, Stillstand, Konzentration'),
   _GaldrRune('ᛃ', 'Jera', 'Yeee-raaa', 'Jahr, Ernte, Zyklus'),
   _GaldrRune('ᛇ', 'Eihwaz', 'Eiiii-waaz', 'Eibe, Weltenbaum, Transformation'),
-  _GaldrRune('ᛈ', 'Perthro', 'Peeer-throoo', 'Wuerfelbecher, Schicksal, Mysterium'),
+  _GaldrRune(
+      'ᛈ', 'Perthro', 'Peeer-throoo', 'Wuerfelbecher, Schicksal, Mysterium'),
   _GaldrRune('ᛉ', 'Algiz', 'Aaal-giiz', 'Elch, Schutz, Verbindung Oben'),
   _GaldrRune('ᛊ', 'Sowilo', 'Sooo-wiiii-looo', 'Sonne, Sieg, Lebensenergie'),
   _GaldrRune('ᛏ', 'Tiwaz', 'Tiiii-waaz', 'Tyr, Gerechtigkeit, Mut'),
@@ -256,9 +257,7 @@ class _GaldrMeditationScreenState extends State<GaldrMeditationScreen>
                   const SizedBox(height: 2),
                   Text(_selected.shortMeaning,
                       style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          height: 1.4)),
+                          color: Colors.white70, fontSize: 12, height: 1.4)),
                 ],
               ),
             ),
@@ -275,8 +274,8 @@ class _GaldrMeditationScreenState extends State<GaldrMeditationScreen>
                 onTap: () => setState(() => _selectedMinutes = m),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 18, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
                     color: sel
                         ? _gold.withValues(alpha: 0.25)

@@ -39,11 +39,15 @@ class _UpdateHistoryScreenState extends State<UpdateHistoryScreen> {
 
   Future<void> _load() async {
     if (!mounted) return;
-    setState(() { _isLoading = true; _errorMsg = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
     try {
       final rows = await Supabase.instance.client
           .from('update_history')
-          .select('type, version, patch_number, changelog, published_at, github_run_url')
+          .select(
+              'type, version, patch_number, changelog, published_at, github_run_url')
           .order('published_at', ascending: false)
           .limit(50)
           .timeout(const Duration(seconds: 10));
@@ -77,7 +81,11 @@ class _UpdateHistoryScreenState extends State<UpdateHistoryScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),

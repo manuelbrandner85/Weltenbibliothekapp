@@ -137,7 +137,8 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
       // Fortschritt aller Mitglieder laden (inkl. Profil via join)
       final progressRes = await _supabase
           .from('guild_challenge_progress')
-          .select('challenge_id, user_id, current_value, completed, profiles(username, avatar_url)')
+          .select(
+              'challenge_id, user_id, current_value, completed, profiles(username, avatar_url)')
           .eq('challenge_id', widget.challengeId);
 
       final progressList = List<Map<String, dynamic>>.from(progressRes as List);
@@ -253,19 +254,22 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () {
               final val = int.tryParse(controller.text.trim());
               if (val == null || val < 0) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('Bitte eine gültige Zahl eingeben')),
+                  const SnackBar(
+                      content: Text('Bitte eine gültige Zahl eingeben')),
                 );
                 return;
               }
@@ -304,24 +308,28 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
         elevation: 0,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C4DFF)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF7C4DFF)))
           : _error != null
               ? _buildError()
               : _challenge == null
                   ? const Center(
-                      child: Text('Keine Daten', style: TextStyle(color: Colors.white54)),
+                      child: Text('Keine Daten',
+                          style: TextStyle(color: Colors.white54)),
                     )
                   : _buildContent(),
       bottomNavigationBar: (!_loading && _error == null && _challenge != null)
           ? SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _accent,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: _showProgressDialog,
                   icon: const Icon(Icons.add_chart),
@@ -354,7 +362,8 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: _accent),
               onPressed: _load,
-              child: const Text('Erneut versuchen', style: TextStyle(color: Colors.white)),
+              child: const Text('Erneut versuchen',
+                  style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -368,7 +377,8 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
     final typeColor = challengeColor(type);
     final goalValue = (ch['goal_value'] as num?)?.toInt() ?? 1;
     final rewardXp = (ch['reward_xp'] as num?)?.toInt() ?? 0;
-    final myCurrentValue = (_myProgress?['current_value'] as num?)?.toInt() ?? 0;
+    final myCurrentValue =
+        (_myProgress?['current_value'] as num?)?.toInt() ?? 0;
     final myCompleted = _myProgress?['completed'] == true;
     final myProgressFraction =
         (goalValue > 0) ? (myCurrentValue / goalValue).clamp(0.0, 1.0) : 0.0;
@@ -398,7 +408,8 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: typeColor.withAlpha(40),
                           borderRadius: BorderRadius.circular(20),
@@ -407,7 +418,8 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(challengeIcon(type), color: typeColor, size: 14),
+                            Icon(challengeIcon(type),
+                                color: typeColor, size: 14),
                             const SizedBox(width: 5),
                             Text(
                               challengeLabel(type),
@@ -422,16 +434,19 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF9A825).withAlpha(30),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFF9A825).withAlpha(100)),
+                          border: Border.all(
+                              color: const Color(0xFFF9A825).withAlpha(100)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star, color: Color(0xFFF9A825), size: 14),
+                            const Icon(Icons.star,
+                                color: Color(0xFFF9A825), size: 14),
                             const SizedBox(width: 4),
                             Text(
                               '+$rewardXp XP',
@@ -460,12 +475,14 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
                   // Datum-Bereich
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, color: Colors.white38, size: 13),
+                      const Icon(Icons.calendar_today,
+                          color: Colors.white38, size: 13),
                       const SizedBox(width: 5),
                       Text(
                         '${_formatDate(ch['start_date']?.toString())} – '
                         '${_formatDate(ch['end_date']?.toString())}',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 12),
                       ),
                     ],
                   ),
@@ -540,8 +557,8 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
                       const Spacer(),
                       if (myCompleted)
                         Container(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: const Color(0xFF4CAF50).withAlpha(40),
                             borderRadius: BorderRadius.circular(12),
@@ -582,7 +599,8 @@ class _GuildChallengeScreenState extends State<GuildChallengeScreen> {
                       ),
                       Text(
                         ' / $goalValue',
-                        style: const TextStyle(color: Colors.white38, fontSize: 16),
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 16),
                       ),
                     ],
                   ),

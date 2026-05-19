@@ -71,7 +71,9 @@ class ApkDownloadService {
     // Bestehende Teildatei prüfen
     final existingBytes = await file.exists() ? await file.length() : 0;
 
-    if (totalBytes != null && existingBytes >= totalBytes && existingBytes > 0) {
+    if (totalBytes != null &&
+        existingBytes >= totalBytes &&
+        existingBytes > 0) {
       // Datei bereits vollständig
       if (kDebugMode) {
         debugPrint('✅ [ApkDownload] bereits vollständig: ${file.path}');
@@ -88,7 +90,8 @@ class ApkDownloadService {
     if (existingBytes > 0 && totalBytes != null) {
       // Resume: Range-Request + Datei anhängen
       if (kDebugMode) {
-        debugPrint('▶️  [ApkDownload] Resume ab Byte $existingBytes / $totalBytes');
+        debugPrint(
+            '▶️  [ApkDownload] Resume ab Byte $existingBytes / $totalBytes');
       }
       await _resumeDownload(
         dio: dio,

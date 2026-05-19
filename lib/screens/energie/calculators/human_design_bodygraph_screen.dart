@@ -22,7 +22,8 @@ class HumanDesignBodyGraphScreen extends StatefulWidget {
   const HumanDesignBodyGraphScreen({super.key});
 
   @override
-  State<HumanDesignBodyGraphScreen> createState() => _HumanDesignBodyGraphScreenState();
+  State<HumanDesignBodyGraphScreen> createState() =>
+      _HumanDesignBodyGraphScreenState();
 }
 
 class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
@@ -35,6 +36,7 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFF00ACC1);
   static const Color _accent = Color(0xFFFFB300);
   static const Color _gold = Color(0xFFFFD54F);
@@ -49,8 +51,11 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
   @override
   void initState() {
     super.initState();
-    _revealCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 11))..repeat();
+    _revealCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2000));
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 11))
+          ..repeat();
   }
 
   @override
@@ -69,7 +74,8 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
       lastDate: DateTime.now(),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.dark(primary: _primary, onPrimary: Colors.white),
+          colorScheme: const ColorScheme.dark(
+              primary: _primary, onPrimary: Colors.white),
         ),
         child: child!,
       ),
@@ -80,7 +86,8 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
         context: context,
         initialTime: TimeOfDay.fromDateTime(_birthDate),
       );
-      _birthDate = DateTime(d.year, d.month, d.day, t?.hour ?? 12, t?.minute ?? 0);
+      _birthDate =
+          DateTime(d.year, d.month, d.day, t?.hour ?? 12, t?.minute ?? 0);
     } else {
       _birthDate = DateTime(d.year, d.month, d.day, 12, 0);
     }
@@ -97,15 +104,15 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
     final w = size?.width ?? 360;
     final h = w / 0.78;
     final positions = <String, Offset>{
-      'crown':        Offset(w * 0.5, h * 0.08),
-      'ajna':         Offset(w * 0.5, h * 0.22),
-      'throat':       Offset(w * 0.5, h * 0.37),
-      'g':            Offset(w * 0.5, h * 0.55),
-      'heart':        Offset(w * 0.75, h * 0.55),
-      'spleen':       Offset(w * 0.18, h * 0.65),
+      'crown': Offset(w * 0.5, h * 0.08),
+      'ajna': Offset(w * 0.5, h * 0.22),
+      'throat': Offset(w * 0.5, h * 0.37),
+      'g': Offset(w * 0.5, h * 0.55),
+      'heart': Offset(w * 0.75, h * 0.55),
+      'spleen': Offset(w * 0.18, h * 0.65),
       'solar_plexus': Offset(w * 0.82, h * 0.65),
-      'sacral':       Offset(w * 0.5, h * 0.75),
-      'root':         Offset(w * 0.5, h * 0.92),
+      'sacral': Offset(w * 0.5, h * 0.75),
+      'root': Offset(w * 0.5, h * 0.92),
     };
     String? hit;
     double bestDist = 40;
@@ -155,19 +162,27 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(saved != null ? '🌀 Body-Graph gespeichert' : '⚠️ Speichern fehlgeschlagen'),
+      content: Text(saved != null
+          ? '🌀 Body-Graph gespeichert'
+          : '⚠️ Speichern fehlgeschlagen'),
       backgroundColor: _primary,
     ));
   }
 
   String _typeEmoji(String type) {
     switch (type) {
-      case 'Manifestor': return '⚡';
-      case 'Generator': return '🔥';
-      case 'Manifesting Generator': return '⚡🔥';
-      case 'Projector': return '👁️';
-      case 'Reflector': return '🌙';
-      default: return '🌀';
+      case 'Manifestor':
+        return '⚡';
+      case 'Generator':
+        return '🔥';
+      case 'Manifesting Generator':
+        return '⚡🔥';
+      case 'Projector':
+        return '👁️';
+      case 'Reflector':
+        return '🌙';
+      default:
+        return '🌀';
     }
   }
 
@@ -190,7 +205,7 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
 
   String _fmtDate(DateTime dt) {
     final d = dt.toLocal();
-    return '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')}.${d.year} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
+    return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -205,8 +220,11 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
             colors: [_gold, _primary, _accent],
           ).createShader(r),
           child: const Text('HUMAN DESIGN',
-              style: TextStyle(color: Colors.white, fontSize: 14,
-                  fontWeight: FontWeight.w900, letterSpacing: 3)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
         actions: [
           if (_hd != null)
@@ -236,7 +254,8 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 38)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.energie, count: 38)),
         SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 28),
@@ -271,9 +290,14 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('GEBURTSZEITPUNKT',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 3, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             GestureDetector(
               onTap: _pickDate,
@@ -289,7 +313,10 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(_fmtDate(_birthDate),
-                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
                   ),
                   Icon(Icons.edit_rounded, color: _primary, size: 16),
                 ]),
@@ -304,14 +331,20 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
                 value: _hasTime,
                 onChanged: (v) => setState(() {
                   _hasTime = v;
-                  if (!v) _birthDate = DateTime(_birthDate.year, _birthDate.month, _birthDate.day, 12, 0);
+                  if (!v)
+                    _birthDate = DateTime(_birthDate.year, _birthDate.month,
+                        _birthDate.day, 12, 0);
                 }),
                 activeThumbColor: _primary,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ]),
-            const Text('Wichtig für HD! Profil + Linie können sich um 1 Stunde verschieben.',
-                style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic)),
+            const Text(
+                'Wichtig für HD! Profil + Linie können sich um 1 Stunde verschieben.',
+                style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic)),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -319,7 +352,8 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
                 onPressed: _compute,
                 icon: const Icon(Icons.auto_awesome_rounded, size: 16),
                 label: const Text('BODY-GRAPH BERECHNEN',
-                    style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primary,
                   foregroundColor: Colors.white,
@@ -337,13 +371,18 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 60),
       child: Column(children: [
-        Icon(Icons.bubble_chart_rounded, color: _primary.withValues(alpha: 0.4), size: 80),
+        Icon(Icons.bubble_chart_rounded,
+            color: _primary.withValues(alpha: 0.4), size: 80),
         const SizedBox(height: 16),
         const Text('Wähle Geburtszeit + Berechnen',
-            style: TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+            textAlign: TextAlign.center),
         const SizedBox(height: 4),
         const Text('für deinen einzigartigen Body-Graph',
-            style: TextStyle(color: Colors.white38, fontSize: 12, fontStyle: FontStyle.italic),
+            style: TextStyle(
+                color: Colors.white38,
+                fontSize: 12,
+                fontStyle: FontStyle.italic),
             textAlign: TextAlign.center),
       ]),
     );
@@ -358,7 +397,10 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [_primary.withValues(alpha: 0.3), _accent.withValues(alpha: 0.1)],
+              colors: [
+                _primary.withValues(alpha: 0.3),
+                _accent.withValues(alpha: 0.1)
+              ],
             ),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _primary.withValues(alpha: 0.4)),
@@ -367,21 +409,31 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
             Text(_typeEmoji(_hd!.type), style: const TextStyle(fontSize: 56)),
             const SizedBox(height: 6),
             ShaderMask(
-              shaderCallback: (r) => const LinearGradient(colors: [_gold, _primary]).createShader(r),
+              shaderCallback: (r) =>
+                  const LinearGradient(colors: [_gold, _primary])
+                      .createShader(r),
               child: Text(_hd!.type.toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 22,
-                      fontWeight: FontWeight.w900, letterSpacing: 3)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 3)),
             ),
             const SizedBox(height: 6),
-            Wrap(spacing: 6, runSpacing: 6, alignment: WrapAlignment.center, children: [
-              _chip(_hd!.profile, _accent),
-              _chip(_hd!.authority, _gold),
-              _chip('${_hd!.definedCenters.length} Zentren', _primary),
-              _chip('${_hd!.definedGates.length} Tore', Colors.greenAccent),
-            ]),
+            Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                alignment: WrapAlignment.center,
+                children: [
+                  _chip(_hd!.profile, _accent),
+                  _chip(_hd!.authority, _gold),
+                  _chip('${_hd!.definedCenters.length} Zentren', _primary),
+                  _chip('${_hd!.definedGates.length} Tore', Colors.greenAccent),
+                ]),
             const SizedBox(height: 12),
             Text(_typeDescription(_hd!.type),
-                style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6),
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 13, height: 1.6),
                 textAlign: TextAlign.center),
             const SizedBox(height: 8),
             Container(
@@ -396,7 +448,10 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text('Strategie: ${_hd!.strategy}',
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
                 ),
               ]),
             ),
@@ -414,7 +469,8 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
           border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Text(label,
-            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.bold)),
       );
 
   Widget _bodyGraphCard() {
@@ -431,7 +487,11 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
           ),
           child: Column(children: [
             const Text('BODY-GRAPH · 9 ZENTREN',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             AspectRatio(
               aspectRatio: 0.78,
@@ -455,7 +515,10 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
             const SizedBox(height: 8),
             const Text(
               'Gefüllt = definiert (konsistente Energie) · Hohl = undefiniert (offen für Einflüsse)',
-              style: TextStyle(color: Colors.white54, fontSize: 10, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic),
               textAlign: TextAlign.center,
             ),
           ]),
@@ -476,15 +539,22 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('DEINE DEFINITION',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            _detailRow('Definierte Zentren', _hd!.definedCenters.map((c) => _centerLabel(c)).join(' · ')),
+            _detailRow('Definierte Zentren',
+                _hd!.definedCenters.map((c) => _centerLabel(c)).join(' · ')),
             const SizedBox(height: 6),
             _detailRow('Aktive Tore', _hd!.definedGates.toList()..sort()),
             const SizedBox(height: 6),
-            _detailRow('Aktive Kanäle', _hd!.definedChannels.map((c) => '${c[0]}↔${c[1]}').join(' · ')),
+            _detailRow('Aktive Kanäle',
+                _hd!.definedChannels.map((c) => '${c[0]}↔${c[1]}').join(' · ')),
           ]),
         ),
       ),
@@ -497,14 +567,17 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
         : value.toString();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label,
-          style: const TextStyle(color: Colors.white60, fontSize: 10, letterSpacing: 1.5)),
+          style: const TextStyle(
+              color: Colors.white60, fontSize: 10, letterSpacing: 1.5)),
       const SizedBox(height: 2),
       Text(str.isEmpty ? '—' : str,
-          style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.5)),
+          style:
+              const TextStyle(color: Colors.white, fontSize: 12, height: 1.5)),
     ]);
   }
 
-  String _centerLabel(String code) => const {
+  String _centerLabel(String code) =>
+      const {
         'crown': 'Krone',
         'ajna': 'Ajna',
         'throat': 'Kehle',
@@ -514,7 +587,8 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
         'solar_plexus': 'Solar-Plexus',
         'sacral': 'Sakral',
         'root': 'Wurzel',
-      }[code] ?? code;
+      }[code] ??
+      code;
 }
 
 // ── PAINTER: Body-Graph ──────────────────────────────────────────────────────
@@ -565,30 +639,44 @@ class _BodyGraphPainter extends CustomPainter {
     final h = size.height;
     // Standard-Positionen (in 0..1 normalisiert auf 0.78 aspect ratio)
     final positions = <String, Offset>{
-      'crown':        Offset(w * 0.5, h * 0.08),
-      'ajna':         Offset(w * 0.5, h * 0.22),
-      'throat':       Offset(w * 0.5, h * 0.37),
-      'g':            Offset(w * 0.5, h * 0.55),
-      'heart':        Offset(w * 0.75, h * 0.55),
-      'spleen':       Offset(w * 0.18, h * 0.65),
+      'crown': Offset(w * 0.5, h * 0.08),
+      'ajna': Offset(w * 0.5, h * 0.22),
+      'throat': Offset(w * 0.5, h * 0.37),
+      'g': Offset(w * 0.5, h * 0.55),
+      'heart': Offset(w * 0.75, h * 0.55),
+      'spleen': Offset(w * 0.18, h * 0.65),
       'solar_plexus': Offset(w * 0.82, h * 0.65),
-      'sacral':       Offset(w * 0.5, h * 0.75),
-      'root':         Offset(w * 0.5, h * 0.92),
+      'sacral': Offset(w * 0.5, h * 0.75),
+      'root': Offset(w * 0.5, h * 0.92),
     };
     final sizes = <String, double>{
-      'crown': 50, 'ajna': 50, 'throat': 60, 'g': 56,
-      'heart': 44, 'spleen': 44, 'solar_plexus': 44,
-      'sacral': 60, 'root': 60,
+      'crown': 50,
+      'ajna': 50,
+      'throat': 60,
+      'g': 56,
+      'heart': 44,
+      'spleen': 44,
+      'solar_plexus': 44,
+      'sacral': 60,
+      'root': 60,
     };
 
     // Verbindungs-Linien zwischen Centern (klassische HD-Verbindungen)
     final connections = [
-      ['crown', 'ajna'], ['ajna', 'throat'],
-      ['throat', 'g'], ['throat', 'heart'], ['throat', 'spleen'], ['throat', 'solar_plexus'],
-      ['g', 'sacral'], ['g', 'heart'],
-      ['heart', 'sacral'], ['heart', 'solar_plexus'],
-      ['spleen', 'sacral'], ['spleen', 'root'],
-      ['solar_plexus', 'sacral'], ['solar_plexus', 'root'],
+      ['crown', 'ajna'],
+      ['ajna', 'throat'],
+      ['throat', 'g'],
+      ['throat', 'heart'],
+      ['throat', 'spleen'],
+      ['throat', 'solar_plexus'],
+      ['g', 'sacral'],
+      ['g', 'heart'],
+      ['heart', 'sacral'],
+      ['heart', 'solar_plexus'],
+      ['spleen', 'sacral'],
+      ['spleen', 'root'],
+      ['solar_plexus', 'sacral'],
+      ['solar_plexus', 'root'],
       ['sacral', 'root'],
     ];
     for (final c in connections) {
@@ -670,7 +758,15 @@ class _BodyGraphPainter extends CustomPainter {
 
     // Zentren
     final centerOrder = [
-      'crown','ajna','throat','heart','g','spleen','solar_plexus','sacral','root'
+      'crown',
+      'ajna',
+      'throat',
+      'heart',
+      'g',
+      'spleen',
+      'solar_plexus',
+      'sacral',
+      'root'
     ];
     final visibleCount = (centerOrder.length * reveal).ceil();
 
@@ -700,10 +796,13 @@ class _BodyGraphPainter extends CustomPainter {
     }
   }
 
-  void _drawCenter(Canvas canvas, Offset pos, double s, String key, bool isDefined, Color color) {
+  void _drawCenter(Canvas canvas, Offset pos, double s, String key,
+      bool isDefined, Color color) {
     final fillPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = isDefined ? color.withValues(alpha: 0.7 * reveal) : Colors.black.withValues(alpha: 0.4 * reveal);
+      ..color = isDefined
+          ? color.withValues(alpha: 0.7 * reveal)
+          : Colors.black.withValues(alpha: 0.4 * reveal);
     final strokePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = isDefined ? 2 : 1.5
@@ -833,12 +932,24 @@ class _HdOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.18, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        110, const Color(0xFF00ACC1));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        90, const Color(0xFFFFB300));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        70, const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.18,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        110,
+        const Color(0xFF00ACC1));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        90,
+        const Color(0xFFFFB300));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        70,
+        const Color(0xFFFFD54F));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {
@@ -851,7 +962,6 @@ class _HdOrbsPainter extends CustomPainter {
   @override
   bool shouldRepaint(_HdOrbsPainter old) => old.t != t;
 }
-
 
 class _CenterInfoSheet extends StatelessWidget {
   final String centerKey;
@@ -866,8 +976,10 @@ class _CenterInfoSheet extends StatelessWidget {
   static const _info = <String, Map<String, String>>{
     'crown': {
       'name': 'Krone',
-      'defined': 'Konstante Inspiration und mentaler Druck. Du hast feste Fragen.',
-      'open': 'Du nimmst die Fragen anderer auf. Unterscheide eigene von fremden Gedanken.',
+      'defined':
+          'Konstante Inspiration und mentaler Druck. Du hast feste Fragen.',
+      'open':
+          'Du nimmst die Fragen anderer auf. Unterscheide eigene von fremden Gedanken.',
     },
     'ajna': {
       'name': 'Ajna',
@@ -901,7 +1013,8 @@ class _CenterInfoSheet extends StatelessWidget {
     },
     'solar_plexus': {
       'name': 'Solar Plexus',
-      'defined': 'Emotionale Autoritaet. Warte auf Klarheit, keine spontanen Entscheidungen.',
+      'defined':
+          'Emotionale Autoritaet. Warte auf Klarheit, keine spontanen Entscheidungen.',
       'open': 'Empathie-Schwamm. Unterscheide eigene von fremden Emotionen.',
     },
     'root': {
@@ -913,10 +1026,12 @@ class _CenterInfoSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final info = _info[centerKey] ?? const {'name': 'Center', 'defined': '', 'open': ''};
+    final info =
+        _info[centerKey] ?? const {'name': 'Center', 'defined': '', 'open': ''};
     final body = isDefined ? info['defined']! : info['open']!;
     final status = isDefined ? 'DEFINIERT' : 'OFFEN';
-    final statusColor = isDefined ? const Color(0xFFFFD54F) : const Color(0xFF4FC3F7);
+    final statusColor =
+        isDefined ? const Color(0xFFFFD54F) : const Color(0xFF4FC3F7);
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       child: BackdropFilter(
@@ -925,7 +1040,9 @@ class _CenterInfoSheet extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
           decoration: BoxDecoration(
             color: const Color(0xFF0B0716).withValues(alpha: 0.96),
-            border: Border(top: BorderSide(color: accent.withValues(alpha: 0.4), width: 1.4)),
+            border: Border(
+                top: BorderSide(
+                    color: accent.withValues(alpha: 0.4), width: 1.4)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -933,7 +1050,8 @@ class _CenterInfoSheet extends StatelessWidget {
             children: [
               Center(
                 child: Container(
-                  width: 50, height: 4,
+                  width: 50,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: Colors.white24,
                     borderRadius: BorderRadius.circular(2),
@@ -949,11 +1067,13 @@ class _CenterInfoSheet extends StatelessWidget {
                         fontWeight: FontWeight.w900)),
                 const SizedBox(width: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+                    border:
+                        Border.all(color: statusColor.withValues(alpha: 0.5)),
                   ),
                   child: Text(status,
                       style: TextStyle(

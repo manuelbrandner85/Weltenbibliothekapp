@@ -41,7 +41,8 @@ class _RelationshipNumerologyScreenState
       lastDate: DateTime.now(),
       builder: (ctx, child) => Theme(
         data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _accent, surface: _surface),
+          colorScheme:
+              const ColorScheme.dark(primary: _accent, surface: _surface),
         ),
         child: child!,
       ),
@@ -97,7 +98,8 @@ class _RelationshipNumerologyScreenState
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [_accent.withValues(alpha: 0.4), _surface]),
+            gradient: LinearGradient(
+                colors: [_accent.withValues(alpha: 0.4), _surface]),
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Text(
@@ -107,22 +109,27 @@ class _RelationshipNumerologyScreenState
           ),
         ),
         const SizedBox(height: 18),
-        _personBlock('🧍 PERSON A', _aFirst, _aLast, _aBirth, () => _pickDate(true)),
+        _personBlock(
+            '🧍 PERSON A', _aFirst, _aLast, _aBirth, () => _pickDate(true)),
         const SizedBox(height: 18),
-        _personBlock('🧍 PERSON B', _bFirst, _bLast, _bBirth, () => _pickDate(false)),
+        _personBlock(
+            '🧍 PERSON B', _bFirst, _bLast, _bBirth, () => _pickDate(false)),
         const SizedBox(height: 18),
         SizedBox(
           height: 50,
           child: ElevatedButton(
-            onPressed: _canSubmit ? () => setState(() => _submitted = true) : null,
+            onPressed:
+                _canSubmit ? () => setState(() => _submitted = true) : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.white,
               disabledBackgroundColor: Colors.white12,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
             child: const Text('SYNASTRIE BERECHNEN',
-                style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
           ),
         ),
       ],
@@ -142,7 +149,11 @@ class _RelationshipNumerologyScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5)),
           const SizedBox(height: 10),
           TextField(
             controller: firstCtrl,
@@ -191,7 +202,8 @@ class _RelationshipNumerologyScreenState
         hintText: hint,
         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         filled: true,
         fillColor: Colors.black.withValues(alpha: 0.3),
         border: OutlineInputBorder(
@@ -203,10 +215,14 @@ class _RelationshipNumerologyScreenState
   Widget _buildResult() {
     final aLife = NumerologyEngine.calculateLifePath(_aBirth!);
     final bLife = NumerologyEngine.calculateLifePath(_bBirth!);
-    final aSoul = NumerologyEngine.calculateSoulNumber(_aFirst.text, _aLast.text);
-    final bSoul = NumerologyEngine.calculateSoulNumber(_bFirst.text, _bLast.text);
-    final aExpr = NumerologyEngine.calculateExpressionNumber(_aFirst.text, _aLast.text);
-    final bExpr = NumerologyEngine.calculateExpressionNumber(_bFirst.text, _bLast.text);
+    final aSoul =
+        NumerologyEngine.calculateSoulNumber(_aFirst.text, _aLast.text);
+    final bSoul =
+        NumerologyEngine.calculateSoulNumber(_bFirst.text, _bLast.text);
+    final aExpr =
+        NumerologyEngine.calculateExpressionNumber(_aFirst.text, _aLast.text);
+    final bExpr =
+        NumerologyEngine.calculateExpressionNumber(_bFirst.text, _bLast.text);
 
     final lifeScore = _scoreFor(aLife, bLife);
     final soulScore = _scoreFor(aSoul, bSoul);
@@ -235,41 +251,66 @@ class _RelationshipNumerologyScreenState
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: RadialGradient(colors: [_accent, _accent.withValues(alpha: 0.3)]),
+            gradient: RadialGradient(
+                colors: [_accent, _accent.withValues(alpha: 0.3)]),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: _accent.withValues(alpha: 0.5), blurRadius: 24)],
+            boxShadow: [
+              BoxShadow(color: _accent.withValues(alpha: 0.5), blurRadius: 24)
+            ],
           ),
           child: Column(
             children: [
               const Text('SYNASTRIE-SCORE',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 3, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      letterSpacing: 3,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Text('$overall%',
-                  style: const TextStyle(color: Colors.white, fontSize: 56, fontWeight: FontWeight.w900)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 56,
+                      fontWeight: FontWeight.w900)),
               Text(_overallLabel(overall),
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontStyle: FontStyle.italic)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic)),
               const SizedBox(height: 8),
               Text(
                 '${_aFirst.text} ❤️ ${_bFirst.text}',
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
         ),
         const SizedBox(height: 18),
-        _axisCard('🌟 Lebenszahl',
+        _axisCard(
+            '🌟 Lebenszahl',
             'Grundenergie & Lebensthema (40% Gewichtung)',
-            aLife, bLife, lifeScore,
+            aLife,
+            bLife,
+            lifeScore,
             description: _descriptionFor(aLife, bLife)),
         const SizedBox(height: 10),
-        _axisCard('💞 Seelenzahl',
+        _axisCard(
+            '💞 Seelenzahl',
             'Innere Sehnsucht aus Vokalen (35% Gewichtung)',
-            aSoul, bSoul, soulScore,
+            aSoul,
+            bSoul,
+            soulScore,
             description: _descriptionFor(aSoul, bSoul)),
         const SizedBox(height: 10),
-        _axisCard('🎯 Ausdruckszahl',
+        _axisCard(
+            '🎯 Ausdruckszahl',
             'Ausdruck & Talent aus vollem Namen (25% Gewichtung)',
-            aExpr, bExpr, exprScore,
+            aExpr,
+            bExpr,
+            exprScore,
             description: _descriptionFor(aExpr, bExpr)),
         const SizedBox(height: 18),
         // Staerkste gemeinsame Achse
@@ -299,7 +340,8 @@ class _RelationshipNumerologyScreenState
             border: Border.all(color: _accent.withValues(alpha: 0.3)),
           ),
           child: Text(_synastryNote(lifeScore, soulScore, exprScore),
-              style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, height: 1.6)),
         ),
         const SizedBox(height: 18),
         SizedBox(
@@ -307,7 +349,8 @@ class _RelationshipNumerologyScreenState
           child: OutlinedButton.icon(
             onPressed: () => setState(() => _submitted = false),
             icon: const Icon(Icons.refresh, color: Colors.white),
-            label: const Text('Neue Synastrie', style: TextStyle(color: Colors.white)),
+            label: const Text('Neue Synastrie',
+                style: TextStyle(color: Colors.white)),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
             ),
@@ -375,21 +418,29 @@ class _RelationshipNumerologyScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
                     Text(desc,
-                        style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 11)),
                   ],
                 ),
               ),
               Text('$score%',
-                  style: TextStyle(color: _accent, fontSize: 20, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: _accent,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: 10),
           Row(children: [
             _numberChip(a, _aFirst.text),
             const SizedBox(width: 8),
-            const Text('↔', style: TextStyle(color: Colors.white54, fontSize: 18)),
+            const Text('↔',
+                style: TextStyle(color: Colors.white54, fontSize: 18)),
             const SizedBox(width: 8),
             _numberChip(b, _bFirst.text),
             const SizedBox(width: 12),
@@ -425,14 +476,19 @@ class _RelationshipNumerologyScreenState
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: RadialGradient(colors: [_accent, _accent.withValues(alpha: 0.4)]),
+            gradient: RadialGradient(
+                colors: [_accent, _accent.withValues(alpha: 0.4)]),
           ),
           child: Text('$n',
-              style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold)),
         ),
         const SizedBox(height: 2),
         Text(name,
-            style: const TextStyle(color: Colors.white60, fontSize: 9), overflow: TextOverflow.ellipsis),
+            style: const TextStyle(color: Colors.white60, fontSize: 9),
+            overflow: TextOverflow.ellipsis),
       ],
     );
   }

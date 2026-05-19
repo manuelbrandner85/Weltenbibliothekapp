@@ -15,7 +15,7 @@ class CommunityPost {
   final String? mediaUrl; // 🆕 R2 Storage URL (Bild oder Video)
   final String? mediaType; // 🆕 'image' oder 'video'
   final WorldType worldType; // Materie oder Energie
-  
+
   CommunityPost({
     required this.id,
     required this.authorUsername,
@@ -27,20 +27,20 @@ class CommunityPost {
     this.comments = 0,
     this.shares,
     this.hasImage,
-    this.mediaUrl,  // 🆕
+    this.mediaUrl, // 🆕
     this.mediaType, // 🆕
     required this.worldType,
   });
-  
+
   /// Hat Post Media?
   bool get hasMedia => mediaUrl != null && mediaUrl!.isNotEmpty;
-  
+
   /// Ist Media ein Bild?
   bool get isImage => mediaType == 'image';
-  
+
   /// Ist Media ein Video?
   bool get isVideo => mediaType == 'video';
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -53,12 +53,12 @@ class CommunityPost {
       'comments': comments,
       'shares': shares,
       'hasImage': hasImage,
-      'mediaUrl': mediaUrl,   // 🆕
+      'mediaUrl': mediaUrl, // 🆕
       'mediaType': mediaType, // 🆕
       'worldType': worldType.name,
     };
   }
-  
+
   factory CommunityPost.fromJson(Map<String, dynamic> json) {
     // Parse tags - kann String (JSON) oder List sein
     List<String> parsedTags = [];
@@ -76,7 +76,7 @@ class CommunityPost {
         parsedTags = List<String>.from(json['tags'] as List);
       }
     }
-    
+
     return CommunityPost(
       id: json['id'] as String,
       authorUsername: json['authorUsername'] as String,
@@ -87,8 +87,12 @@ class CommunityPost {
       likes: json['likes'] as int? ?? 0,
       comments: json['comments'] as int? ?? 0,
       shares: json['shares'] as int?,
-      hasImage: json['hasImage'] == null ? null : (json['hasImage'] is bool ? json['hasImage'] as bool : (json['hasImage'] as int) == 1),
-      mediaUrl: json['mediaUrl'] as String?,   // 🆕
+      hasImage: json['hasImage'] == null
+          ? null
+          : (json['hasImage'] is bool
+              ? json['hasImage'] as bool
+              : (json['hasImage'] as int) == 1),
+      mediaUrl: json['mediaUrl'] as String?, // 🆕
       mediaType: json['mediaType'] as String?, // 🆕
       worldType: WorldType.values.firstWhere(
         (e) => e.name == json['worldType'],
@@ -100,6 +104,6 @@ class CommunityPost {
 
 /// Welten-Typ für strikte Trennung
 enum WorldType {
-  materie,  // Forschung, Fakten, Geopolitik
-  energie,  // Spiritualität, Bewusstsein
+  materie, // Forschung, Fakten, Geopolitik
+  energie, // Spiritualität, Bewusstsein
 }

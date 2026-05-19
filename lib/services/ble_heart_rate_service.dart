@@ -93,8 +93,7 @@ class BleHeartRateService {
   static const String _kPrefDeviceName = 'ble_hr_saved_device_name';
 
   // Internal state.
-  final StreamController<int> _hrController =
-      StreamController<int>.broadcast();
+  final StreamController<int> _hrController = StreamController<int>.broadcast();
   BluetoothDevice? _connectedDevice;
   String? _connectedDeviceName;
   StreamSubscription<List<int>>? _charSub;
@@ -410,9 +409,8 @@ class BleHeartRateService {
       });
 
       _connectedDevice = device;
-      final name = device.platformName.isNotEmpty
-          ? device.platformName
-          : 'BLE-Geraet';
+      final name =
+          device.platformName.isNotEmpty ? device.platformName : 'BLE-Geraet';
       _connectedDeviceName = name;
 
       // Persist for auto-reconnect.

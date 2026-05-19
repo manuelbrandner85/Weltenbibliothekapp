@@ -59,7 +59,9 @@ class _MantraGuideScreenState extends State<MantraGuideScreen>
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white60,
             labelStyle: const TextStyle(
-                fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 1.4),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.4),
             tabs: const [
               Tab(text: 'START'),
               Tab(text: 'WIRKUNG'),
@@ -106,7 +108,8 @@ class _IntroTab extends StatelessWidget {
     (
       icon: Icons.help_outline_rounded,
       title: 'Was ist ein Mantra?',
-      body: 'Ein Mantra ist ein heiliger Klang. Du wiederholst ihn -- gesprochen, '
+      body:
+          'Ein Mantra ist ein heiliger Klang. Du wiederholst ihn -- gesprochen, '
           'leise gedacht oder im Rhythmus deines Atems. Die Wiederholung beruhigt '
           'den Geist und legt eine Spur in dein Bewusstsein.\n\nKein Glauben '
           'noetig -- du kannst es einfach probieren und spueren wie es wirkt.',
@@ -125,7 +128,8 @@ class _IntroTab extends StatelessWidget {
     (
       icon: Icons.timer_outlined,
       title: 'Wie oft? Wie lange?',
-      body: 'Klassisch: 108 Wiederholungen (eine Mala). Das sind ca. 3-7 min.\n\n'
+      body:
+          'Klassisch: 108 Wiederholungen (eine Mala). Das sind ca. 3-7 min.\n\n'
           'Fuer Anfaenger:\n'
           '• 9 Wiederholungen: Mini-Atempause (30 sec)\n'
           '• 27 Wiederholungen: Kurze Praxis (1-2 min)\n'
@@ -175,7 +179,8 @@ class _IntroTab extends StatelessWidget {
             border: Border.all(
                 color: const Color(0xFFC9A84C).withValues(alpha: 0.4)),
           ),
-          child: const Column(crossAxisAlignment: CrossAxisAlignment.start,
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
                 Icon(Icons.tips_and_updates_rounded,
@@ -193,7 +198,8 @@ class _IntroTab extends StatelessWidget {
                   'Starte mit OM oder So Ham. Beide sind einfach, brauchen '
                   'keine Sanskrit-Kenntnisse, und du kannst sie ueberall '
                   'ueben -- im Bus, vorm Einschlafen, beim Spazieren.',
-                  style: TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 13, height: 1.5)),
             ],
           ),
         ),
@@ -214,11 +220,13 @@ class _IntroTab extends StatelessWidget {
             border: Border.all(
                 color: const Color(0xFF9C27B0).withValues(alpha: 0.4)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
                 Container(
-                  width: 36, height: 36,
+                  width: 36,
+                  height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -263,9 +271,8 @@ class _EffectsTabState extends State<_EffectsTab> {
   @override
   Widget build(BuildContext context) {
     final effects = allMantraEffects;
-    final filtered = _selected == null
-        ? mantraLibrary
-        : mantrasForEffect(_selected!);
+    final filtered =
+        _selected == null ? mantraLibrary : mantrasForEffect(_selected!);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       children: [
@@ -277,7 +284,8 @@ class _EffectsTabState extends State<_EffectsTab> {
                 letterSpacing: 0.5)),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 6, runSpacing: 6,
+          spacing: 6,
+          runSpacing: 6,
           children: [
             _filterChip('Alle', _selected == null,
                 () => setState(() => _selected = null)),
@@ -337,9 +345,8 @@ class _SituationsTabState extends State<_SituationsTab> {
   @override
   Widget build(BuildContext context) {
     final situations = allMantraSituations;
-    final filtered = _selected == null
-        ? <MantraEntry>[]
-        : mantrasForSituation(_selected!);
+    final filtered =
+        _selected == null ? <MantraEntry>[] : mantrasForSituation(_selected!);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       children: [
@@ -383,7 +390,8 @@ class _SituationsTabState extends State<_SituationsTab> {
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 14,
-                            fontWeight: sel ? FontWeight.w800 : FontWeight.w600)),
+                            fontWeight:
+                                sel ? FontWeight.w800 : FontWeight.w600)),
                   ),
                 ]),
               ),
@@ -449,8 +457,7 @@ class _JourneyTabState extends State<_JourneyTab> {
       }
     });
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-        _kKey, _done.map((d) => d.toString()).toList());
+    await prefs.setStringList(_kKey, _done.map((d) => d.toString()).toList());
   }
 
   @override
@@ -493,8 +500,7 @@ class _JourneyTabState extends State<_JourneyTab> {
               ),
               const SizedBox(height: 6),
               Text('$completed von 21 Tagen abgeschlossen',
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 11)),
+                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
             ],
           ),
         ),
@@ -502,8 +508,7 @@ class _JourneyTabState extends State<_JourneyTab> {
         ...mantraJourney21Days.map((d) {
           final day = int.parse(d['day']!);
           final mantraId = d['mantra']!;
-          final mantra = mantraLibrary.firstWhere(
-              (m) => m.id == mantraId,
+          final mantra = mantraLibrary.firstWhere((m) => m.id == mantraId,
               orElse: () => mantraLibrary.first);
           final done = _done.contains(day);
           return Padding(
@@ -526,7 +531,8 @@ class _JourneyTabState extends State<_JourneyTab> {
                 ),
                 child: Row(children: [
                   Container(
-                    width: 32, height: 32,
+                    width: 32,
+                    height: 32,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -562,8 +568,8 @@ class _JourneyTabState extends State<_JourneyTab> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
@@ -639,7 +645,8 @@ class _JournalTabState extends State<_JournalTab> {
           const Text(
               'Kurzer Eintrag nach jeder Mantra-Praxis hilft dir zu sehen, '
               'was bei dir wirkt.',
-              style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4)),
+              style:
+                  TextStyle(color: Colors.white60, fontSize: 12, height: 1.4)),
           const SizedBox(height: 14),
           if (_entries.isEmpty)
             const Padding(
@@ -653,7 +660,8 @@ class _JournalTabState extends State<_JournalTab> {
         ],
       ),
       Positioned(
-        right: 18, bottom: 18,
+        right: 18,
+        bottom: 18,
         child: FloatingActionButton.extended(
           backgroundColor: const Color(0xFF9C27B0),
           foregroundColor: Colors.white,
@@ -677,8 +685,8 @@ class _JournalTabState extends State<_JournalTab> {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: const Color(0xFF9C27B0).withValues(alpha: 0.3)),
+          border:
+              Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -691,25 +699,29 @@ class _JournalTabState extends State<_JournalTab> {
                       fontWeight: FontWeight.w800)),
               const Spacer(),
               if (ts != null)
-                Text('${ts.day}.${ts.month}. ${ts.hour}:${ts.minute.toString().padLeft(2, '0')}',
-                    style: const TextStyle(
-                        color: Colors.white60, fontSize: 11)),
+                Text(
+                    '${ts.day}.${ts.month}. ${ts.hour}:${ts.minute.toString().padLeft(2, '0')}',
+                    style:
+                        const TextStyle(color: Colors.white60, fontSize: 11)),
             ]),
             const SizedBox(height: 6),
             Row(children: [
               const Text('Stimmung:',
                   style: TextStyle(color: Colors.white60, fontSize: 11)),
               const SizedBox(width: 8),
-              ...List.generate(10, (i) => Container(
-                    width: 12, height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    decoration: BoxDecoration(
-                      color: i < feeling
-                          ? const Color(0xFFCE93D8)
-                          : Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  )),
+              ...List.generate(
+                  10,
+                  (i) => Container(
+                        width: 12,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                        decoration: BoxDecoration(
+                          color: i < feeling
+                              ? const Color(0xFFCE93D8)
+                              : Colors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      )),
               const SizedBox(width: 6),
               Text('$feeling/10',
                   style: const TextStyle(
@@ -886,8 +898,8 @@ class _MantraCardState extends State<_MantraCard> {
               ),
               if (m.recommendedReps != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFC9A84C).withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
@@ -918,26 +930,28 @@ class _MantraCardState extends State<_MantraCard> {
                 ),
                 child: Text(m.beginnerExplanation,
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.5,
-                        height: 1.55)),
+                        color: Colors.white, fontSize: 12.5, height: 1.55)),
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 4, runSpacing: 4,
-                children: m.effects.map((e) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF9C27B0).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(e,
-                          style: const TextStyle(
-                              color: Color(0xFFCE93D8),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700)),
-                    )).toList(),
+                spacing: 4,
+                runSpacing: 4,
+                children: m.effects
+                    .map((e) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF9C27B0).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(e,
+                              style: const TextStyle(
+                                  color: Color(0xFFCE93D8),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700)),
+                        ))
+                    .toList(),
               ),
             ],
           ],

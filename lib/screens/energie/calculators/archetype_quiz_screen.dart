@@ -22,128 +22,200 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   // 6=Rebell 7=Schöpfer 8=Herrscher 9=Magier 10=Weise 11=Narr
   static final _archetypes = [
     (
-      name: 'Unschuldiger', emoji: '🤍', trait: 'Vertrauen · Sehnsucht nach Paradies',
-      shadow: 'Naivität, Realitätsverleugnung', color: Color(0xFFE0F2F1),
+      name: 'Unschuldiger',
+      emoji: '🤍',
+      trait: 'Vertrauen · Sehnsucht nach Paradies',
+      shadow: 'Naivität, Realitätsverleugnung',
+      color: Color(0xFFE0F2F1),
     ),
     (
-      name: 'Gewöhnlicher', emoji: '🧑‍🤝‍🧑', trait: 'Bodenständigkeit · Zugehörigkeit',
-      shadow: 'Anpassung um jeden Preis', color: Color(0xFF8D6E63),
+      name: 'Gewöhnlicher',
+      emoji: '🧑‍🤝‍🧑',
+      trait: 'Bodenständigkeit · Zugehörigkeit',
+      shadow: 'Anpassung um jeden Preis',
+      color: Color(0xFF8D6E63),
     ),
     (
-      name: 'Held', emoji: '🦸', trait: 'Mut · Wettbewerb · Sieg',
-      shadow: 'Arroganz, Burnout', color: Color(0xFFE53935),
+      name: 'Held',
+      emoji: '🦸',
+      trait: 'Mut · Wettbewerb · Sieg',
+      shadow: 'Arroganz, Burnout',
+      color: Color(0xFFE53935),
     ),
     (
-      name: 'Fürsorger', emoji: '💕', trait: 'Mitgefühl · Schutz',
-      shadow: 'Märtyrertum, Burnout durch Geben', color: Color(0xFFE91E63),
+      name: 'Fürsorger',
+      emoji: '💕',
+      trait: 'Mitgefühl · Schutz',
+      shadow: 'Märtyrertum, Burnout durch Geben',
+      color: Color(0xFFE91E63),
     ),
     (
-      name: 'Suchender', emoji: '🔍', trait: 'Freiheit · Reise · Authentizität',
-      shadow: 'Entwurzelung, Bindungsunfähigkeit', color: Color(0xFFFB8C00),
+      name: 'Suchender',
+      emoji: '🔍',
+      trait: 'Freiheit · Reise · Authentizität',
+      shadow: 'Entwurzelung, Bindungsunfähigkeit',
+      color: Color(0xFFFB8C00),
     ),
     (
-      name: 'Liebender', emoji: '❤️', trait: 'Hingabe · Schönheit · Sinnlichkeit',
-      shadow: 'Eifersucht, Selbst-Verlust', color: Color(0xFFC2185B),
+      name: 'Liebender',
+      emoji: '❤️',
+      trait: 'Hingabe · Schönheit · Sinnlichkeit',
+      shadow: 'Eifersucht, Selbst-Verlust',
+      color: Color(0xFFC2185B),
     ),
     (
-      name: 'Rebell', emoji: '⚔️', trait: 'Befreiung · Disruption',
-      shadow: 'Wut als Identität', color: Color(0xFF263238),
+      name: 'Rebell',
+      emoji: '⚔️',
+      trait: 'Befreiung · Disruption',
+      shadow: 'Wut als Identität',
+      color: Color(0xFF263238),
     ),
     (
-      name: 'Schöpfer', emoji: '🎨', trait: 'Vision · Kreation',
-      shadow: 'Perfektionismus, blockierte Vision', color: Color(0xFF9C27B0),
+      name: 'Schöpfer',
+      emoji: '🎨',
+      trait: 'Vision · Kreation',
+      shadow: 'Perfektionismus, blockierte Vision',
+      color: Color(0xFF9C27B0),
     ),
     (
-      name: 'Herrscher', emoji: '👑', trait: 'Verantwortung · Souveränität',
-      shadow: 'Kontrolle, Tyrannei', color: Color(0xFFFFB300),
+      name: 'Herrscher',
+      emoji: '👑',
+      trait: 'Verantwortung · Souveränität',
+      shadow: 'Kontrolle, Tyrannei',
+      color: Color(0xFFFFB300),
     ),
     (
-      name: 'Magier', emoji: '✨', trait: 'Transformation · Vision-zu-Realität',
-      shadow: 'Manipulation, Macht-Missbrauch', color: Color(0xFF7C4DFF),
+      name: 'Magier',
+      emoji: '✨',
+      trait: 'Transformation · Vision-zu-Realität',
+      shadow: 'Manipulation, Macht-Missbrauch',
+      color: Color(0xFF7C4DFF),
     ),
     (
-      name: 'Weise', emoji: '🧙', trait: 'Wahrheit · Klarheit',
-      shadow: 'Lebens-Vermeidung durch Denken', color: Color(0xFF1E88E5),
+      name: 'Weise',
+      emoji: '🧙',
+      trait: 'Wahrheit · Klarheit',
+      shadow: 'Lebens-Vermeidung durch Denken',
+      color: Color(0xFF1E88E5),
     ),
     (
-      name: 'Narr', emoji: '🃏', trait: 'Freude · Heiligkeit des Augenblicks',
-      shadow: 'Eskapismus, Verantwortungslosigkeit', color: Color(0xFFFDD835),
+      name: 'Narr',
+      emoji: '🃏',
+      trait: 'Freude · Heiligkeit des Augenblicks',
+      shadow: 'Eskapismus, Verantwortungslosigkeit',
+      color: Color(0xFFFDD835),
     ),
   ];
 
   static final _questions = [
-    (q: 'Sonntagabend mit unverplanter Zeit — was tust du?', a: [
-      ('Spazierengehen, einfach sein', 0),
-      ('Mit Freunden treffen', 1),
-      ('Sport oder Wettkampf', 2),
-      ('Für jemanden kochen', 3),
-    ]),
-    (q: 'Im Job suchst du vor allem...', a: [
-      ('Sicherheit und Routine', 0),
-      ('Sinn und Wirkung', 9),
-      ('Aufstieg und Anerkennung', 8),
-      ('Kreative Freiheit', 7),
-    ]),
-    (q: 'In Konflikten...', a: [
-      ('Suche ich Harmonie', 0),
-      ('Setze ich klare Grenzen', 2),
-      ('Versuche zu vermitteln', 3),
-      ('Sage ich was Sache ist, koste es was es wolle', 6),
-    ]),
-    (q: 'Mein Lieblings-Genre in Büchern/Filmen?', a: [
-      ('Romance, Drama', 5),
-      ('Action, Abenteuer', 4),
-      ('Mystery, Sci-Fi', 9),
-      ('Sachbücher, Philosophie', 10),
-    ]),
-    (q: 'Was ist dir wichtiger?', a: [
-      ('Aufrichtigkeit', 0),
-      ('Erfolg', 2),
-      ('Tiefe Verbindungen', 5),
-      ('Freiheit', 4),
-    ]),
-    (q: 'Wenn du eine Schwäche zugeben müsstest...', a: [
-      ('Zu vertrauensselig', 0),
-      ('Zu kritisch mit mir', 7),
-      ('Zu viel zugleich wollen', 9),
-      ('Zu wenig auf mich achten', 3),
-    ]),
-    (q: 'In sozialer Runde bist du eher...', a: [
-      ('Der Comedian', 11),
-      ('Der Tiefgründige', 10),
-      ('Der Organisator', 8),
-      ('Der Außenseiter', 6),
-    ]),
-    (q: 'Welcher Satz beschreibt dich?', a: [
-      ('Ich liebe Menschen.', 3),
-      ('Ich liebe Schönheit.', 5),
-      ('Ich liebe Wahrheit.', 10),
-      ('Ich liebe das Spiel.', 11),
-    ]),
-    (q: 'Bei einer Reise willst du am liebsten...', a: [
-      ('Etwas Authentisches erleben', 4),
-      ('Tief in eine Kultur eintauchen', 10),
-      ('Adrenalin und Abenteuer', 2),
-      ('Etwas Lokales mit Insidern entdecken', 11),
-    ]),
-    (q: 'Was treibt dich an, morgens aufzustehen?', a: [
-      ('Verantwortung für andere', 3),
-      ('Mein nächstes Werk', 7),
-      ('Veränderung in der Welt', 6),
-      ('Pure Lebensfreude', 11),
-    ]),
-    (q: 'Welche Krise wäre für dich am schlimmsten?', a: [
-      ('Verlust der Liebe', 5),
-      ('Verlust der Macht', 8),
-      ('Verlust der Freiheit', 4),
-      ('Verlust der Bedeutung', 10),
-    ]),
-    (q: 'Wie willst du in Erinnerung bleiben?', a: [
-      ('Als jemand, der Großes vollbracht hat', 2),
-      ('Als jemand, der die Welt verändert hat', 9),
-      ('Als jemand, der wahrhaftig gelebt hat', 4),
-      ('Als jemand, der die Welt schöner gemacht hat', 7),
-    ]),
+    (
+      q: 'Sonntagabend mit unverplanter Zeit — was tust du?',
+      a: [
+        ('Spazierengehen, einfach sein', 0),
+        ('Mit Freunden treffen', 1),
+        ('Sport oder Wettkampf', 2),
+        ('Für jemanden kochen', 3),
+      ]
+    ),
+    (
+      q: 'Im Job suchst du vor allem...',
+      a: [
+        ('Sicherheit und Routine', 0),
+        ('Sinn und Wirkung', 9),
+        ('Aufstieg und Anerkennung', 8),
+        ('Kreative Freiheit', 7),
+      ]
+    ),
+    (
+      q: 'In Konflikten...',
+      a: [
+        ('Suche ich Harmonie', 0),
+        ('Setze ich klare Grenzen', 2),
+        ('Versuche zu vermitteln', 3),
+        ('Sage ich was Sache ist, koste es was es wolle', 6),
+      ]
+    ),
+    (
+      q: 'Mein Lieblings-Genre in Büchern/Filmen?',
+      a: [
+        ('Romance, Drama', 5),
+        ('Action, Abenteuer', 4),
+        ('Mystery, Sci-Fi', 9),
+        ('Sachbücher, Philosophie', 10),
+      ]
+    ),
+    (
+      q: 'Was ist dir wichtiger?',
+      a: [
+        ('Aufrichtigkeit', 0),
+        ('Erfolg', 2),
+        ('Tiefe Verbindungen', 5),
+        ('Freiheit', 4),
+      ]
+    ),
+    (
+      q: 'Wenn du eine Schwäche zugeben müsstest...',
+      a: [
+        ('Zu vertrauensselig', 0),
+        ('Zu kritisch mit mir', 7),
+        ('Zu viel zugleich wollen', 9),
+        ('Zu wenig auf mich achten', 3),
+      ]
+    ),
+    (
+      q: 'In sozialer Runde bist du eher...',
+      a: [
+        ('Der Comedian', 11),
+        ('Der Tiefgründige', 10),
+        ('Der Organisator', 8),
+        ('Der Außenseiter', 6),
+      ]
+    ),
+    (
+      q: 'Welcher Satz beschreibt dich?',
+      a: [
+        ('Ich liebe Menschen.', 3),
+        ('Ich liebe Schönheit.', 5),
+        ('Ich liebe Wahrheit.', 10),
+        ('Ich liebe das Spiel.', 11),
+      ]
+    ),
+    (
+      q: 'Bei einer Reise willst du am liebsten...',
+      a: [
+        ('Etwas Authentisches erleben', 4),
+        ('Tief in eine Kultur eintauchen', 10),
+        ('Adrenalin und Abenteuer', 2),
+        ('Etwas Lokales mit Insidern entdecken', 11),
+      ]
+    ),
+    (
+      q: 'Was treibt dich an, morgens aufzustehen?',
+      a: [
+        ('Verantwortung für andere', 3),
+        ('Mein nächstes Werk', 7),
+        ('Veränderung in der Welt', 6),
+        ('Pure Lebensfreude', 11),
+      ]
+    ),
+    (
+      q: 'Welche Krise wäre für dich am schlimmsten?',
+      a: [
+        ('Verlust der Liebe', 5),
+        ('Verlust der Macht', 8),
+        ('Verlust der Freiheit', 4),
+        ('Verlust der Bedeutung', 10),
+      ]
+    ),
+    (
+      q: 'Wie willst du in Erinnerung bleiben?',
+      a: [
+        ('Als jemand, der Großes vollbracht hat', 2),
+        ('Als jemand, der die Welt verändert hat', 9),
+        ('Als jemand, der wahrhaftig gelebt hat', 4),
+        ('Als jemand, der die Welt schöner gemacht hat', 7),
+      ]
+    ),
   ];
 
   final Map<int, int> _answers = {};
@@ -193,19 +265,24 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [_accent, _accent.withValues(alpha: 0.5)]),
+            gradient: LinearGradient(
+                colors: [_accent, _accent.withValues(alpha: 0.5)]),
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Pearson-12-Archetypen-Test',
-                  style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold)),
               SizedBox(height: 4),
               Text(
                 '12 Szenario-Fragen → dein dominanter Pearson-Archetyp. '
                 'Beantworte spontan, nicht "wie sollte ich sein".',
-                style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+                style:
+                    TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
               ),
             ],
           ),
@@ -220,10 +297,12 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
             child: const Text('AUSWERTEN',
-                style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
+                style:
+                    TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
           ),
         ),
       ],
@@ -244,24 +323,34 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('${i + 1}. ${q.q}',
-              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           for (var j = 0; j < q.a.length; j++)
             GestureDetector(
               onTap: () => setState(() => _answers[i] = j),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _answers[i] == j ? _accent.withValues(alpha: 0.25) : Colors.transparent,
+                  color: _answers[i] == j
+                      ? _accent.withValues(alpha: 0.25)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _answers[i] == j ? _accent : Colors.white.withValues(alpha: 0.1),
+                    color: _answers[i] == j
+                        ? _accent
+                        : Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
                 child: Row(children: [
                   Icon(
-                    _answers[i] == j ? Icons.radio_button_checked : Icons.radio_button_off,
+                    _answers[i] == j
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
                     size: 16,
                     color: _answers[i] == j ? _accent : Colors.white38,
                   ),
@@ -269,7 +358,8 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
                   Expanded(
                     child: Text(q.a[j].$1,
                         style: TextStyle(
-                          color: _answers[i] == j ? Colors.white : Colors.white70,
+                          color:
+                              _answers[i] == j ? Colors.white : Colors.white70,
                           fontSize: 12.5,
                         )),
                   ),
@@ -295,45 +385,72 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [dominant.color, dominant.color.withValues(alpha: 0.3)]),
+            gradient: LinearGradient(colors: [
+              dominant.color,
+              dominant.color.withValues(alpha: 0.3)
+            ]),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: dominant.color.withValues(alpha: 0.5), blurRadius: 24)],
+            boxShadow: [
+              BoxShadow(
+                  color: dominant.color.withValues(alpha: 0.5), blurRadius: 24)
+            ],
           ),
           child: Column(
             children: [
               Text(dominant.emoji, style: const TextStyle(fontSize: 72)),
               const SizedBox(height: 8),
               const Text('DEIN DOMINANTER ARCHETYP',
-                  style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2.5, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      letterSpacing: 2.5,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               Text(dominant.name,
-                  style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 3)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 3)),
               const SizedBox(height: 4),
               Text(dominant.trait,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontStyle: FontStyle.italic)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic)),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text('Schatten: ${dominant.shadow}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 11)),
               ),
             ],
           ),
         ),
         const SizedBox(height: 18),
         const Text('SEKUNDÄRE EINFLÜSSE',
-            style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         for (final entry in top3.skip(1))
           _buildSecondary(_archetypes[entry.key], entry.value),
         const SizedBox(height: 18),
         const Text('GESAMT-VERTEILUNG',
-            style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                letterSpacing: 2,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         for (var i = 0; i < _archetypes.length; i++)
           _buildScoreBar(_archetypes[i], scores[i], top3[0].value),
@@ -346,7 +463,8 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
               _answers.clear();
             }),
             icon: const Icon(Icons.refresh, color: Colors.white),
-            label: const Text('Quiz nochmal', style: TextStyle(color: Colors.white)),
+            label: const Text('Quiz nochmal',
+                style: TextStyle(color: Colors.white)),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
             ),
@@ -375,21 +493,26 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(a.name,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold)),
               Text(a.trait,
                   style: const TextStyle(color: Colors.white70, fontSize: 11)),
             ],
           ),
         ),
         Text('$score',
-            style: TextStyle(color: a.color, fontSize: 18, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: a.color, fontSize: 18, fontWeight: FontWeight.bold)),
       ]),
     );
   }
 
   Widget _buildScoreBar(
       ({String name, String emoji, String trait, String shadow, Color color}) a,
-      int score, int maxScore) {
+      int score,
+      int maxScore) {
     final percent = maxScore == 0 ? 0.0 : score / maxScore;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -397,7 +520,9 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
         SizedBox(
           width: 110,
           child: Text('${a.emoji} ${a.name}',
-              style: const TextStyle(color: Colors.white, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
         ),
         Expanded(
           child: ClipRRect(
@@ -415,7 +540,8 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
           width: 18,
           child: Text('$score',
               textAlign: TextAlign.right,
-              style: TextStyle(color: a.color, fontSize: 10, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: a.color, fontSize: 10, fontWeight: FontWeight.bold)),
         ),
       ]),
     );

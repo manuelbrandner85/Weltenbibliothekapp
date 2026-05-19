@@ -11,7 +11,7 @@
 // =====================================================================
 
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../services/leaderboard_service.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
@@ -28,7 +28,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     with SingleTickerProviderStateMixin {
   final _leaderboardService = LeaderboardService();
   late TabController _tabController;
-  
+
   LeaderboardType _currentType = LeaderboardType.allTime;
   List<LeaderboardEntry> _entries = [];
   LeaderboardEntry? _currentUserEntry;
@@ -61,8 +61,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   Future<void> _loadLeaderboard() async {
     try {
       final entries = await _leaderboardService.getLeaderboard(_currentType);
-      final currentUser = await _leaderboardService.getCurrentUserEntry(_currentType);
-      
+      final currentUser =
+          await _leaderboardService.getCurrentUserEntry(_currentType);
+
       setState(() {
         _entries = entries;
         _currentUserEntry = currentUser;
@@ -113,7 +114,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),
@@ -193,7 +198,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         children: [
           // Rank Badge
           _buildRankBadge(entry.rank, size: 50),
-          
+
           const SizedBox(width: 16),
 
           // User Info
@@ -233,7 +238,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     if (_entries.length < 3) return const SizedBox.shrink();
 
     final top3 = _entries.take(3).toList();
-    
+
     return Container(
       height: 280,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -256,7 +261,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   Widget _buildPodiumPlace(LeaderboardEntry entry, int rank, double height) {
     Color color;
     String medal;
-    
+
     switch (rank) {
       case 1:
         color = Colors.amber;
@@ -290,7 +295,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         children: [
           // Medal
           Text(medal, style: const TextStyle(fontSize: 40)),
-          
+
           const SizedBox(height: 8),
 
           // Avatar
@@ -405,7 +410,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           children: [
             // Rank
             _buildRankBadge(entry.rank),
-            
+
             const SizedBox(width: 16),
 
             // Avatar
@@ -490,7 +495,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: (rank <= 10 ? Colors.amber : Colors.blue).withValues(alpha: 0.3),
+            color: (rank <= 10 ? Colors.amber : Colors.blue)
+                .withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),

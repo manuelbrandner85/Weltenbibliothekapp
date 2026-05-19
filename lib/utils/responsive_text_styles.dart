@@ -243,8 +243,7 @@ class ResponsiveTextStyles {
       base.copyWith(color: Colors.white.withValues(alpha: 0.3));
 
   /// Fehler-Text (Rot)
-  TextStyle error(TextStyle base) =>
-      base.copyWith(color: Colors.red.shade300);
+  TextStyle error(TextStyle base) => base.copyWith(color: Colors.red.shade300);
 
   /// Erfolgs-Text (Grün)
   TextStyle success(TextStyle base) =>
@@ -255,8 +254,7 @@ class ResponsiveTextStyles {
       base.copyWith(color: Colors.orange.shade300);
 
   /// Info-Text (Blau)
-  TextStyle info(TextStyle base) =>
-      base.copyWith(color: Colors.blue.shade300);
+  TextStyle info(TextStyle base) => base.copyWith(color: Colors.blue.shade300);
 }
 
 /// Extension für einfachen Zugriff auf ResponsiveTextStyles

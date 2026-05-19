@@ -11,7 +11,7 @@ class PinnedMessageBanner extends StatefulWidget {
   final Color worldColor;
   final VoidCallback? onTap;
   final VoidCallback? onRefresh;
-  
+
   const PinnedMessageBanner({
     super.key,
     required this.room,
@@ -66,19 +66,19 @@ class _PinnedMessageBannerState extends State<PinnedMessageBanner> {
   Widget build(BuildContext context) {
     final utils = ResponsiveUtils.of(context);
     final textStyles = ResponsiveTextStyles.of(context);
-    
+
     if (_isLoading) {
       return const SizedBox.shrink();
     }
-    
+
     if (_pinnedMessage == null) {
       return const SizedBox.shrink();
     }
-    
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: utils.spacingMd, 
+        horizontal: utils.spacingMd,
         vertical: utils.spacingMd * 0.75,
       ),
       decoration: BoxDecoration(
@@ -92,9 +92,9 @@ class _PinnedMessageBannerState extends State<PinnedMessageBanner> {
       ),
       child: Row(
         children: [
-          Icon(Icons.push_pin, color: widget.worldColor, size: utils.iconSizeMd),
+          Icon(Icons.push_pin,
+              color: widget.worldColor, size: utils.iconSizeMd),
           SizedBox(width: utils.spacingMd * 0.75),
-          
           Expanded(
             child: GestureDetector(
               onTap: widget.onTap,
@@ -120,7 +120,6 @@ class _PinnedMessageBannerState extends State<PinnedMessageBanner> {
               ),
             ),
           ),
-          
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white70),
             iconSize: utils.iconSizeMd,

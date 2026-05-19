@@ -68,7 +68,9 @@ class LeaderboardEntry {
     final lvl = (profile['level'] as int?) ?? (xp ~/ 1000 + 1);
     return LeaderboardEntry(
       userId: profile['id'] as String? ?? '',
-      username: profile['username'] as String? ?? profile['display_name'] as String? ?? 'Anonym',
+      username: profile['username'] as String? ??
+          profile['display_name'] as String? ??
+          'Anonym',
       totalXp: xp,
       level: lvl,
       achievementCount: (profile['achievement_count'] as int?) ?? 0,
@@ -165,7 +167,8 @@ class LeaderboardService {
       // Query profiles sorted by xp (or level)
       var query = supabase
           .from('profiles')
-          .select('id, username, display_name, avatar_url, xp, level, achievement_count')
+          .select(
+              'id, username, display_name, avatar_url, xp, level, achievement_count')
           .order('xp', ascending: false)
           .limit(50);
 
@@ -174,7 +177,8 @@ class LeaderboardService {
         final since = DateTime.now().subtract(const Duration(days: 7));
         query = supabase
             .from('profiles')
-            .select('id, username, display_name, avatar_url, xp, level, achievement_count')
+            .select(
+                'id, username, display_name, avatar_url, xp, level, achievement_count')
             .gte('updated_at', since.toIso8601String())
             .order('xp', ascending: false)
             .limit(50);
@@ -182,7 +186,8 @@ class LeaderboardService {
         final since = DateTime.now().subtract(const Duration(days: 30));
         query = supabase
             .from('profiles')
-            .select('id, username, display_name, avatar_url, xp, level, achievement_count')
+            .select(
+                'id, username, display_name, avatar_url, xp, level, achievement_count')
             .gte('updated_at', since.toIso8601String())
             .order('xp', ascending: false)
             .limit(50);
@@ -200,7 +205,8 @@ class LeaderboardService {
         try {
           final myProfile = await supabase
               .from('profiles')
-              .select('id, username, display_name, avatar_url, xp, level, achievement_count')
+              .select(
+                  'id, username, display_name, avatar_url, xp, level, achievement_count')
               .eq('id', currentId)
               .single();
           entries.add(LeaderboardEntry.fromProfile(

@@ -47,8 +47,7 @@ class LobbyingCard extends StatelessWidget {
                 Text(
                   '${entries.length} Akteure',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 11),
+                      color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
                 ),
             ],
           ),
@@ -76,8 +75,7 @@ class LobbyingCard extends StatelessWidget {
           child: SizedBox(
             width: 28,
             height: 28,
-            child:
-                CircularProgressIndicator(color: _accent, strokeWidth: 2),
+            child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
           ),
         ),
       );
@@ -169,8 +167,7 @@ class LobbyingCard extends StatelessWidget {
                     _stat('Vollzeit', '${e.fullTimeStaff}'),
                   if (e.lobbyists != null)
                     _stat('Lobbyisten', '${e.lobbyists}'),
-                  if (e.meetings != null)
-                    _stat('EU-Treffen', '${e.meetings}'),
+                  if (e.meetings != null) _stat('EU-Treffen', '${e.meetings}'),
                 ],
               ),
             ],
@@ -191,8 +188,7 @@ class LobbyingCard extends StatelessWidget {
           children: [
             Text(label,
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontSize: 9)),
+                    color: Colors.white.withValues(alpha: 0.45), fontSize: 9)),
             const SizedBox(width: 4),
             Text(value,
                 style: const TextStyle(

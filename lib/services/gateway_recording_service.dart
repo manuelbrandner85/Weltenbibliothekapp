@@ -61,7 +61,8 @@ class GatewayRecordingService {
       if (raw == null || raw.isEmpty) return const [];
       final list = jsonDecode(raw) as List;
       return list
-          .map((e) => GatewaySession.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              GatewaySession.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList()
         ..sort((a, b) => b.date.compareTo(a.date));
     } catch (e) {

@@ -20,8 +20,7 @@ class SoulContractToolScreen extends StatefulWidget {
   const SoulContractToolScreen({super.key});
 
   @override
-  State<SoulContractToolScreen> createState() =>
-      _SoulContractToolScreenState();
+  State<SoulContractToolScreen> createState() => _SoulContractToolScreenState();
 }
 
 class _SoulContractToolScreenState extends State<SoulContractToolScreen>
@@ -53,8 +52,7 @@ class _SoulContractToolScreenState extends State<SoulContractToolScreen>
       appBar: AppBar(
         backgroundColor: Colors.white.withValues(alpha: 0.05),
         title: const Text('📜 Seelenvertrag',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
@@ -136,8 +134,7 @@ class _NewContractTabState extends State<_NewContractTab> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate:
-          _birthDate ?? DateTime(now.year - 30, now.month, now.day),
+      initialDate: _birthDate ?? DateTime(now.year - 30, now.month, now.day),
       firstDate: DateTime(1900),
       lastDate: now,
       builder: (ctx, child) => Theme(
@@ -158,8 +155,8 @@ class _NewContractTabState extends State<_NewContractTab> {
   void _compute() {
     if (!_formKey.currentState!.validate()) return;
     if (_birthDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Bitte Geburtsdatum wählen')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bitte Geburtsdatum wählen')));
       return;
     }
     try {
@@ -169,8 +166,8 @@ class _NewContractTabState extends State<_NewContractTab> {
       );
       setState(() => _result = r);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Berechnungs-Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Berechnungs-Fehler: $e')));
     }
   }
 
@@ -200,8 +197,7 @@ class _NewContractTabState extends State<_NewContractTab> {
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: _kGold.withValues(alpha: 0.4)),
+                border: Border.all(color: _kGold.withValues(alpha: 0.4)),
                 boxShadow: [
                   BoxShadow(
                       color: _kGold.withValues(alpha: 0.15),
@@ -225,8 +221,8 @@ class _NewContractTabState extends State<_NewContractTab> {
                         SizedBox(height: 4),
                         Text(
                             'Vollständiger Geburtsname + Geburtsdatum → Numerologie des Seelenvertrags.',
-                            style: TextStyle(
-                                color: Colors.white54, fontSize: 12)),
+                            style:
+                                TextStyle(color: Colors.white54, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -254,13 +250,13 @@ class _NewContractTabState extends State<_NewContractTab> {
               onTap: _pickBirthDate,
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2)),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: Row(children: [
                   const Icon(Icons.calendar_month, color: _kGold),
@@ -305,11 +301,9 @@ class _NewContractTabState extends State<_NewContractTab> {
                   icon: const Icon(Icons.menu_book),
                   label: const Text('Deutung & Speichern'),
                   style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Colors.white.withValues(alpha: 0.07),
+                      backgroundColor: Colors.white.withValues(alpha: 0.07),
                       foregroundColor: _kGold,
-                      padding:
-                          const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: const BorderSide(color: _kGoldDeep))),
@@ -331,10 +325,8 @@ class _NewContractTabState extends State<_NewContractTab> {
       [r.personality, 'personality'],
       ...r.karmicDebts.map((n) => [n, 'karmic_debt']),
     ];
-    final rows = await _db
-        .from('soul_number_meanings')
-        .select(
-            'number, category, title, keywords, short_text, deep_text, practice_text');
+    final rows = await _db.from('soul_number_meanings').select(
+        'number, category, title, keywords, short_text, deep_text, practice_text');
     final byKey = <String, Map<String, dynamic>>{
       for (final m in rows)
         '${m['number']}_${m['category']}': Map<String, dynamic>.from(m)
@@ -381,18 +373,15 @@ class _NewContractTabState extends State<_NewContractTab> {
         builder: (sheetCtx2, setSheet) => Container(
           decoration: BoxDecoration(
             color: const Color(0xFF0D0A1A),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border.all(
-                color: _kGold.withValues(alpha: 0.3), width: 1),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(color: _kGold.withValues(alpha: 0.3), width: 1),
           ),
           child: DraggableScrollableSheet(
             initialChildSize: 0.85,
             maxChildSize: 0.95,
             minChildSize: 0.5,
             expand: false,
-            builder: (_, sc) =>
-                FutureBuilder<List<Map<String, dynamic>>>(
+            builder: (_, sc) => FutureBuilder<List<Map<String, dynamic>>>(
               future: _loadMeanings(r),
               builder: (_, snap) {
                 if (snap.connectionState != ConnectionState.done) {
@@ -402,8 +391,7 @@ class _NewContractTabState extends State<_NewContractTab> {
                 if (snap.hasError) {
                   return Center(
                       child: Text('Fehler: ${snap.error}',
-                          style: const TextStyle(
-                              color: Colors.white54)));
+                          style: const TextStyle(color: Colors.white54)));
                 }
                 final meanings = snap.data ?? [];
                 return ListView(
@@ -426,37 +414,31 @@ class _NewContractTabState extends State<_NewContractTab> {
                             fontSize: 20,
                             fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    ...meanings
-                        .map((m) => _MeaningCard(meaning: m)),
+                    ...meanings.map((m) => _MeaningCard(meaning: m)),
                     const SizedBox(height: 16),
                     TextField(
                       controller: notesCtrl,
                       enabled: !saving && !saved,
                       maxLines: 3,
                       minLines: 2,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13),
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                       decoration: InputDecoration(
                         hintText: 'Optionale Notiz …',
                         hintStyle: const TextStyle(
                             color: Colors.white38, fontSize: 13),
                         filled: true,
-                        fillColor:
-                            Colors.white.withValues(alpha: 0.06),
+                        fillColor: Colors.white.withValues(alpha: 0.06),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                                color: Colors.white
-                                    .withValues(alpha: 0.2))),
+                                color: Colors.white.withValues(alpha: 0.2))),
                         enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                                color: Colors.white
-                                    .withValues(alpha: 0.2))),
+                                color: Colors.white.withValues(alpha: 0.2))),
                         focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: _kGold)),
+                            borderSide: const BorderSide(color: _kGold)),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -468,24 +450,21 @@ class _NewContractTabState extends State<_NewContractTab> {
                             : () async {
                                 setSheet(() => saving = true);
                                 try {
-                                  await _saveContract(
-                                      r, notesCtrl.text);
+                                  await _saveContract(r, notesCtrl.text);
                                   if (!sheetCtx2.mounted) return;
                                   setSheet(() {
                                     saving = false;
                                     saved = true;
                                   });
-                                  ScaffoldMessenger.of(sheetCtx2)
-                                      .showSnackBar(const SnackBar(
+                                  ScaffoldMessenger.of(sheetCtx2).showSnackBar(
+                                      const SnackBar(
                                           content: Text(
                                               '✅ Seelenvertrag gespeichert')));
                                 } catch (e) {
                                   if (!sheetCtx2.mounted) return;
                                   setSheet(() => saving = false);
-                                  ScaffoldMessenger.of(sheetCtx2)
-                                      .showSnackBar(SnackBar(
-                                          content:
-                                              Text('Fehler: $e')));
+                                  ScaffoldMessenger.of(sheetCtx2).showSnackBar(
+                                      SnackBar(content: Text('Fehler: $e')));
                                 }
                               },
                         icon: saving
@@ -493,30 +472,21 @@ class _NewContractTabState extends State<_NewContractTab> {
                                 width: 18,
                                 height: 18,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.black))
-                            : Icon(saved
-                                ? Icons.check_circle
-                                : Icons.save),
+                                    strokeWidth: 2, color: Colors.black))
+                            : Icon(saved ? Icons.check_circle : Icons.save),
                         label: Text(saving
                             ? 'Speichern …'
-                            : (saved
-                                ? 'Gespeichert'
-                                : 'Vertrag speichern')),
+                            : (saved ? 'Gespeichert' : 'Vertrag speichern')),
                         style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                saved ? Colors.green : _kGoldDeep,
+                            backgroundColor: saved ? Colors.green : _kGoldDeep,
                             foregroundColor: Colors.black,
                             disabledBackgroundColor: saved
                                 ? Colors.green
-                                : Colors.white
-                                    .withValues(alpha: 0.1),
+                                : Colors.white.withValues(alpha: 0.1),
                             disabledForegroundColor: Colors.white70,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(12))),
+                                borderRadius: BorderRadius.circular(12))),
                       ),
                     ),
                   ],
@@ -539,13 +509,11 @@ class _NewContractTabState extends State<_NewContractTab> {
       fillColor: Colors.white.withValues(alpha: 0.06),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -586,28 +554,19 @@ class _ResultPreview extends StatelessWidget {
         children: [
           const Text('Dein Seelenvertrag (Zahlen)',
               style: TextStyle(
-                  color: _kGold,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600)),
+                  color: _kGold, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 12),
+          _ResultRow(label: 'Lebensweg', value: result.lifePath.toString()),
+          _ResultRow(label: 'Ausdruck', value: result.destiny.toString()),
+          _ResultRow(label: 'Seelenantrieb', value: result.soulUrge.toString()),
           _ResultRow(
-              label: 'Lebensweg', value: result.lifePath.toString()),
-          _ResultRow(
-              label: 'Ausdruck', value: result.destiny.toString()),
-          _ResultRow(
-              label: 'Seelenantrieb',
-              value: result.soulUrge.toString()),
-          _ResultRow(
-              label: 'Persönlichkeit',
-              value: result.personality.toString()),
-          _ResultRow(
-              label: 'Geburtstag', value: result.birthDay.toString()),
+              label: 'Persönlichkeit', value: result.personality.toString()),
+          _ResultRow(label: 'Geburtstag', value: result.birthDay.toString()),
           if (result.karmicDebts.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               'Karmische Schulden: ${result.karmicDebts.join(', ')}',
-              style: const TextStyle(
-                  color: Colors.orangeAccent, fontSize: 13),
+              style: const TextStyle(color: Colors.orangeAccent, fontSize: 13),
             ),
           ],
           const SizedBox(height: 12),
@@ -634,8 +593,7 @@ class _ResultRow extends StatelessWidget {
         children: [
           Expanded(
             child: Text(label,
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 14)),
+                style: const TextStyle(color: Colors.white70, fontSize: 14)),
           ),
           // Große goldene Zahl mit Glow-Effekt
           Container(
@@ -655,9 +613,7 @@ class _ResultRow extends StatelessWidget {
             ),
             child: Text(value,
                 style: const TextStyle(
-                    color: _kGold,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold)),
+                    color: _kGold, fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -727,8 +683,7 @@ class _HistoryTabState extends State<_HistoryTab> {
         backgroundColor: const Color(0xFF0D0A1A),
         title: const Text('Seelenvertrag löschen?',
             style: TextStyle(color: Colors.white)),
-        content: const Text(
-            'Dieser Eintrag wird unwiderruflich gelöscht.',
+        content: const Text('Dieser Eintrag wird unwiderruflich gelöscht.',
             style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
@@ -737,8 +692,7 @@ class _HistoryTabState extends State<_HistoryTab> {
                   style: TextStyle(color: Colors.white54))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child:
-                  const Text('Löschen', style: TextStyle(color: _kGold))),
+              child: const Text('Löschen', style: TextStyle(color: _kGold))),
         ],
       ),
     );
@@ -747,12 +701,12 @@ class _HistoryTabState extends State<_HistoryTab> {
       await _db.from('soul_contracts').delete().eq('id', id);
       if (!mounted) return;
       setState(() => _rows.removeWhere((r) => r['id'] == id));
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Vertrag gelöscht')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Vertrag gelöscht')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -766,8 +720,7 @@ class _HistoryTabState extends State<_HistoryTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-          child: CircularProgressIndicator(color: _kGold));
+      return const Center(child: CircularProgressIndicator(color: _kGold));
     }
     if (_error != null) {
       return Center(
@@ -818,9 +771,7 @@ class _HistoryTabState extends State<_HistoryTab> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: _kGold.withValues(alpha: 0.3)),
               boxShadow: [
-                BoxShadow(
-                    color: _kGold.withValues(alpha: 0.05),
-                    blurRadius: 8),
+                BoxShadow(color: _kGold.withValues(alpha: 0.05), blurRadius: 8),
               ],
             ),
             child: Column(
@@ -860,16 +811,13 @@ class _HistoryTabState extends State<_HistoryTab> {
                     _NumBadge(label: 'Lebensweg', value: r['life_path']),
                     _NumBadge(label: 'Ausdruck', value: r['destiny']),
                     _NumBadge(label: 'Seele', value: r['soul_urge']),
-                    _NumBadge(
-                        label: 'Persönl.', value: r['personality']),
-                    _NumBadge(
-                        label: 'Geburtstag', value: r['birth_day']),
+                    _NumBadge(label: 'Persönl.', value: r['personality']),
+                    _NumBadge(label: 'Geburtstag', value: r['birth_day']),
                   ],
                 ),
                 if (karmic.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  Text(
-                      '⚖️ Karmische Schulden: ${karmic.join(", ")}',
+                  Text('⚖️ Karmische Schulden: ${karmic.join(", ")}',
                       style: const TextStyle(
                           color: Colors.orangeAccent, fontSize: 12)),
                 ],
@@ -881,8 +829,7 @@ class _HistoryTabState extends State<_HistoryTab> {
                         color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color:
-                                Colors.white.withValues(alpha: 0.15))),
+                            color: Colors.white.withValues(alpha: 0.15))),
                     child: Text(notes,
                         style: const TextStyle(
                             color: Colors.white70, fontSize: 12)),
@@ -911,21 +858,16 @@ class _NumBadge extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: _kGold.withValues(alpha: 0.4)),
           boxShadow: [
-            BoxShadow(
-                color: _kGold.withValues(alpha: 0.1),
-                blurRadius: 4),
+            BoxShadow(color: _kGold.withValues(alpha: 0.1), blurRadius: 4),
           ]),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('$label  ',
-              style: const TextStyle(
-                  color: Colors.white70, fontSize: 11)),
+              style: const TextStyle(color: Colors.white70, fontSize: 11)),
           Text('$value',
               style: const TextStyle(
-                  color: _kGold,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13)),
+                  color: _kGold, fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );
@@ -963,10 +905,8 @@ class _NumbersGuideTabState extends State<_NumbersGuideTab> {
 
   Future<void> _load() async {
     try {
-      final rows = await _db
-          .from('soul_number_meanings')
-          .select()
-          .order('sort_order');
+      final rows =
+          await _db.from('soul_number_meanings').select().order('sort_order');
       if (!mounted) return;
       setState(() {
         _all = List<Map<String, dynamic>>.from(rows);
@@ -981,19 +921,16 @@ class _NumbersGuideTabState extends State<_NumbersGuideTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-          child: CircularProgressIndicator(color: _kGold));
+      return const Center(child: CircularProgressIndicator(color: _kGold));
     }
-    final filtered =
-        _all.where((m) => m['category'] == _category).toList();
+    final filtered = _all.where((m) => m['category'] == _category).toList();
     return Column(
       children: [
         SizedBox(
           height: 44,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             itemCount: _tabs.length,
             itemBuilder: (_, i) {
               final t = _tabs[i];
@@ -1007,12 +944,10 @@ class _NumbersGuideTabState extends State<_NumbersGuideTab> {
                           fontSize: 12)),
                   selected: sel,
                   selectedColor: _kGold,
-                  backgroundColor:
-                      Colors.white.withValues(alpha: 0.06),
+                  backgroundColor: Colors.white.withValues(alpha: 0.06),
                   side: BorderSide(
-                      color: sel
-                          ? _kGold
-                          : Colors.white.withValues(alpha: 0.2)),
+                      color:
+                          sel ? _kGold : Colors.white.withValues(alpha: 0.2)),
                   onSelected: (_) => setState(() => _category = t.$1),
                 ),
               );
@@ -1066,9 +1001,7 @@ class _MeaningCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: accent.withValues(alpha: 0.4)),
         boxShadow: [
-          BoxShadow(
-              color: accent.withValues(alpha: 0.08),
-              blurRadius: 8),
+          BoxShadow(color: accent.withValues(alpha: 0.08), blurRadius: 8),
         ],
       ),
       child: Column(
@@ -1155,8 +1088,7 @@ class _MeaningCard extends StatelessWidget {
                   color: Colors.lightGreenAccent.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: Colors.lightGreenAccent
-                          .withValues(alpha: 0.4))),
+                      color: Colors.lightGreenAccent.withValues(alpha: 0.4))),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1168,9 +1100,7 @@ class _MeaningCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(practice,
                       style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          height: 1.35)),
+                          color: Colors.white70, fontSize: 12, height: 1.35)),
                 ],
               ),
             ),

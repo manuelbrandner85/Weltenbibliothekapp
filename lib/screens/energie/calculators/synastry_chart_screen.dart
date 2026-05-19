@@ -55,8 +55,10 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
         final m = int.tryParse(parts[1]);
         if (h != null && m != null) _timeA = TimeOfDay(hour: h, minute: m);
       }
-      if (p.birthLatitude != null) _latACtrl.text = p.birthLatitude!.toStringAsFixed(4);
-      if (p.birthLongitude != null) _lngACtrl.text = p.birthLongitude!.toStringAsFixed(4);
+      if (p.birthLatitude != null)
+        _latACtrl.text = p.birthLatitude!.toStringAsFixed(4);
+      if (p.birthLongitude != null)
+        _lngACtrl.text = p.birthLongitude!.toStringAsFixed(4);
     });
   }
 
@@ -73,10 +75,10 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
     if (_dateA == null || _dateB == null) return;
     final timeA = _timeA ?? const TimeOfDay(hour: 12, minute: 0);
     final timeB = _timeB ?? const TimeOfDay(hour: 12, minute: 0);
-    final dtA = DateTime.utc(_dateA!.year, _dateA!.month, _dateA!.day,
-        timeA.hour, timeA.minute);
-    final dtB = DateTime.utc(_dateB!.year, _dateB!.month, _dateB!.day,
-        timeB.hour, timeB.minute);
+    final dtA = DateTime.utc(
+        _dateA!.year, _dateA!.month, _dateA!.day, timeA.hour, timeA.minute);
+    final dtB = DateTime.utc(
+        _dateB!.year, _dateB!.month, _dateB!.day, timeB.hour, timeB.minute);
     final latA = double.tryParse(_latACtrl.text);
     final lngA = double.tryParse(_lngACtrl.text);
     final latB = double.tryParse(_latBCtrl.text);
@@ -113,18 +115,29 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 64, 20, 28),
               children: [
-                _personBlock('Person A', _dateA, _timeA, _latACtrl, _lngACtrl,
+                _personBlock(
+                    'Person A',
+                    _dateA,
+                    _timeA,
+                    _latACtrl,
+                    _lngACtrl,
                     (d) => setState(() => _dateA = d),
                     (t) => setState(() => _timeA = t)),
                 const SizedBox(height: 14),
-                _personBlock('Person B', _dateB, _timeB, _latBCtrl, _lngBCtrl,
+                _personBlock(
+                    'Person B',
+                    _dateB,
+                    _timeB,
+                    _latBCtrl,
+                    _lngBCtrl,
                     (d) => setState(() => _dateB = d),
                     (t) => setState(() => _timeB = t)),
                 const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: (_dateA != null && _dateB != null) ? _compute : null,
+                    onPressed:
+                        (_dateA != null && _dateB != null) ? _compute : null,
                     icon: const Icon(Icons.calculate_rounded),
                     label: const Text('Synastrie berechnen'),
                     style: ElevatedButton.styleFrom(
@@ -132,7 +145,8 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       textStyle: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: 0.6),
                     ),
                   ),
@@ -202,7 +216,8 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
                     onTap: () async {
                       final picked = await showTimePicker(
                           context: context,
-                          initialTime: time ?? const TimeOfDay(hour: 12, minute: 0));
+                          initialTime:
+                              time ?? const TimeOfDay(hour: 12, minute: 0));
                       if (picked != null) onTime(picked);
                     },
                     child: _inputBox(time == null
@@ -242,7 +257,8 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
   Widget _textField(TextEditingController c, String hint) {
     return TextField(
       controller: c,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+      keyboardType:
+          const TextInputType.numberWithOptions(decimal: true, signed: true),
       style: const TextStyle(color: Colors.white, fontSize: 13),
       decoration: InputDecoration(
         hintText: hint,
@@ -253,7 +269,8 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
     );
   }
@@ -263,10 +280,19 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
     final count = (_synastry!['count'] as int);
     Color tone;
     String label;
-    if (score >= 70) { tone = const Color(0xFF66BB6A); label = 'Stark harmonisch'; }
-    else if (score >= 55) { tone = _gold; label = 'Ueberwiegend harmonisch'; }
-    else if (score >= 45) { tone = const Color(0xFFFFB300); label = 'Gemischt'; }
-    else { tone = const Color(0xFFEF5350); label = 'Wachstumsbeziehung'; }
+    if (score >= 70) {
+      tone = const Color(0xFF66BB6A);
+      label = 'Stark harmonisch';
+    } else if (score >= 55) {
+      tone = _gold;
+      label = 'Ueberwiegend harmonisch';
+    } else if (score >= 45) {
+      tone = const Color(0xFFFFB300);
+      label = 'Gemischt';
+    } else {
+      tone = const Color(0xFFEF5350);
+      label = 'Wachstumsbeziehung';
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -285,8 +311,10 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
         children: [
           Text('SYNASTRIE-SCORE',
               style: TextStyle(
-                  color: tone, fontSize: 11,
-                  fontWeight: FontWeight.w800, letterSpacing: 2.5)),
+                  color: tone,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.5)),
           const SizedBox(height: 6),
           Text('$score%',
               style: const TextStyle(
@@ -302,16 +330,15 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
                   fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           Text('$count Aspekte gefunden',
-              style: const TextStyle(
-                  color: Colors.white70, fontSize: 12)),
+              style: const TextStyle(color: Colors.white70, fontSize: 12)),
         ],
       ),
     );
   }
 
   Widget _aspectsList() {
-    final aspects = (_synastry!['aspects'] as List)
-        .cast<Map<String, dynamic>>();
+    final aspects =
+        (_synastry!['aspects'] as List).cast<Map<String, dynamic>>();
     if (aspects.isEmpty) {
       return const Center(
         child: Text('Keine starken Aspekte gefunden.',
@@ -319,8 +346,7 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
       );
     }
     // Sort by strongest (lowest orb)
-    aspects.sort((a, b) =>
-        (a['orb'] as double).compareTo(b['orb'] as double));
+    aspects.sort((a, b) => (a['orb'] as double).compareTo(b['orb'] as double));
     final top = aspects.take(15).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,7 +376,8 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
               ),
               child: Row(children: [
                 Container(
-                  width: 10, height: 10,
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: color,

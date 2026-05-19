@@ -6,23 +6,25 @@ import 'package:flutter/material.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
   bool _notificationsEnabled = false;
   bool _dailyReminder = false;
   bool _achievementAlerts = false;
   bool _streakReminder = false;
-  
+
   final String _selectedTime = '09:00';
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,7 +38,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFF9800).withValues(alpha: 0.3), Color(0xFF000000)],
+            colors: [
+              Color(0xFFFF9800).withValues(alpha: 0.3),
+              Color(0xFF000000)
+            ],
           ),
         ),
         child: ListView(
@@ -53,11 +58,13 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Color(0xFFFF9800).withValues(alpha: 0.5)),
+                border:
+                    Border.all(color: Color(0xFFFF9800).withValues(alpha: 0.5)),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.notifications_active, size: 48, color: Colors.white),
+                  Icon(Icons.notifications_active,
+                      size: 48, color: Colors.white),
                   SizedBox(height: 12),
                   Text(
                     'Bleib auf deinem spirituellen Pfad',
@@ -77,9 +84,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ],
               ),
             ),
-            
+
             SizedBox(height: 24),
-            
+
             // Main Toggle
             _buildSettingCard(
               'Benachrichtigungen aktivieren',
@@ -95,16 +102,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                     _streakReminder = false;
                   }
                 });
-                
+
                 if (value) {
                   _requestPermission();
                 }
               },
             ),
-            
+
             if (_notificationsEnabled) ...[
               SizedBox(height: 16),
-              
+
               // Daily Reminder
               _buildSettingCard(
                 'Tägliche Erinnerung',
@@ -117,7 +124,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   });
                 },
               ),
-              
+
               // Time Picker
               if (_dailyReminder) ...[
                 SizedBox(height: 12),
@@ -151,9 +158,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   ),
                 ),
               ],
-              
+
               SizedBox(height: 16),
-              
+
               // Achievement Alerts
               _buildSettingCard(
                 'Achievement-Benachrichtigungen',
@@ -166,9 +173,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   });
                 },
               ),
-              
+
               SizedBox(height: 16),
-              
+
               // Streak Reminder
               _buildSettingCard(
                 'Streak-Erinnerung',
@@ -181,9 +188,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   });
                 },
               ),
-              
+
               SizedBox(height: 24),
-              
+
               // Test Notification Button
               SizedBox(
                 width: double.infinity,
@@ -202,14 +209,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ),
               ),
             ],
-            
+
             SizedBox(height: 80),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildSettingCard(
     String title,
     String subtitle,
@@ -265,7 +272,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       ),
     );
   }
-  
+
   void _requestPermission() {
     // Browser notification permission
     ScaffoldMessenger.of(context).showSnackBar(
@@ -275,7 +282,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       ),
     );
   }
-  
+
   void _sendTestNotification() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

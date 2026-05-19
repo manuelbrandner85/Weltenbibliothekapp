@@ -54,8 +54,8 @@ class DailySpiritPractice {
       basedOn: json['basedOn'] as String,
       recommendedDate: DateTime.parse(json['recommendedDate'] as String),
       completed: json['completed'] as bool? ?? false,
-      completedAt: json['completedAt'] != null 
-          ? DateTime.parse(json['completedAt'] as String) 
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
           : null,
     );
   }
@@ -392,7 +392,8 @@ class SpiritProgress {
       totalPoints: json['totalPoints'] as int,
       currentLevel: json['currentLevel'] as int,
       pointsToNextLevel: json['pointsToNextLevel'] as int,
-      unlockedAchievements: List<String>.from(json['unlockedAchievements'] as List),
+      unlockedAchievements:
+          List<String>.from(json['unlockedAchievements'] as List),
       activityCounts: Map<String, int>.from(json['activityCounts'] as Map),
       currentStreak: json['currentStreak'] as int,
       longestStreak: json['longestStreak'] as int,
@@ -421,12 +422,12 @@ class SpiritProgress {
 
 /// Achievement-Kategorien
 enum AchievementCategory {
-  streak,      // Streak-bezogen
-  checkIn,     // Check-In-bezogen
-  favorites,   // Favoriten-bezogen
+  streak, // Streak-bezogen
+  checkIn, // Check-In-bezogen
+  favorites, // Favoriten-bezogen
   spiritTools, // Spirit-Tools-bezogen
-  points,      // Punkte-bezogen
-  special,     // Spezielle Achievements
+  points, // Punkte-bezogen
+  special, // Spezielle Achievements
 }
 
 /// VORSCHLAG 8: ACHIEVEMENT DEFINITION

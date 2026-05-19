@@ -42,15 +42,32 @@ class SoulNumerologyResult {
 
 class SoulNumerology {
   static const Map<String, int> _letterValues = {
-    'A': 1, 'J': 1, 'S': 1,
-    'B': 2, 'K': 2, 'T': 2,
-    'C': 3, 'L': 3, 'U': 3,
-    'D': 4, 'M': 4, 'V': 4,
-    'E': 5, 'N': 5, 'W': 5,
-    'F': 6, 'O': 6, 'X': 6,
-    'G': 7, 'P': 7, 'Y': 7,
-    'H': 8, 'Q': 8, 'Z': 8,
-    'I': 9, 'R': 9,
+    'A': 1,
+    'J': 1,
+    'S': 1,
+    'B': 2,
+    'K': 2,
+    'T': 2,
+    'C': 3,
+    'L': 3,
+    'U': 3,
+    'D': 4,
+    'M': 4,
+    'V': 4,
+    'E': 5,
+    'N': 5,
+    'W': 5,
+    'F': 6,
+    'O': 6,
+    'X': 6,
+    'G': 7,
+    'P': 7,
+    'Y': 7,
+    'H': 8,
+    'Q': 8,
+    'Z': 8,
+    'I': 9,
+    'R': 9,
   };
 
   static const Set<String> _vowels = {'A', 'E', 'I', 'O', 'U'};
@@ -79,11 +96,8 @@ class SoulNumerology {
     final path = <int>[n];
     int cur = n;
     while (cur > 9 && cur != 11 && cur != 22 && cur != 33) {
-      final next = cur
-          .toString()
-          .split('')
-          .map(int.parse)
-          .fold<int>(0, (a, b) => a + b);
+      final next =
+          cur.toString().split('').map(int.parse).fold<int>(0, (a, b) => a + b);
       path.add(next);
       cur = next;
     }

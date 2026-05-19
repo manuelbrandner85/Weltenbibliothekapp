@@ -9,7 +9,7 @@ import '../../widgets/cinematic/wb_vignette.dart';
 import 'package:intl/intl.dart';
 
 /// 🔖 BOOKMARKS SCREEN
-/// 
+///
 /// Features:
 /// - Alle gespeicherten Bookmarks anzeigen
 /// - Kategorien-Filter (All, Recherche, Narratives)
@@ -69,7 +69,10 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         // Search filter
         final matchesSearch = _searchQuery.isEmpty ||
             bookmark.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            (bookmark.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+            (bookmark.description
+                    ?.toLowerCase()
+                    .contains(_searchQuery.toLowerCase()) ??
+                false);
 
         // Category filter
         final matchesCategory = _selectedCategory == null ||
@@ -121,7 +124,9 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
             action: SnackBarAction(
               label: 'Kopieren',
               onPressed: () async {
-                final text = exported.map((b) => '${b['title'] ?? ''}\n${b['url'] ?? ''}').join('\n\n');
+                final text = exported
+                    .map((b) => '${b['title'] ?? ''}\n${b['url'] ?? ''}')
+                    .join('\n\n');
                 await Clipboard.setData(ClipboardData(text: text));
               },
             ),
@@ -150,7 +155,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         actions: [
           // 📁 L5: Collections/Ordner-Manager
           IconButton(
-            icon: const Icon(Icons.folder_special_outlined, color: Colors.white),
+            icon:
+                const Icon(Icons.folder_special_outlined, color: Colors.white),
             tooltip: 'Sammlungen',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
@@ -178,81 +184,85 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),
           ),
           const Positioned.fill(child: IgnorePointer(child: WBVignette())),
           Column(
-        children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Bookmarks durchsuchen...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() => _searchQuery = '');
+            children: [
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Bookmarks durchsuchen...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() => _searchQuery = '');
+                              _filterBookmarks();
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                  ),
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                    _filterBookmarks();
+                  },
+                ),
+              ),
+
+              // Category Filter Chips
+              SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _categories.length,
+                  itemBuilder: (context, index) {
+                    final category = _categories[index];
+                    final isSelected = _selectedCategory == category ||
+                        (_selectedCategory == null && category == 'All');
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(category),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedCategory = selected
+                                ? (category == 'All' ? null : category)
+                                : null;
+                          });
                           _filterBookmarks();
                         },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                      ),
+                    );
+                  },
                 ),
-                filled: true,
               ),
-              onChanged: (value) {
-                setState(() => _searchQuery = value);
-                _filterBookmarks();
-              },
-            ),
+
+              const SizedBox(height: 8),
+
+              // Bookmarks List
+              Expanded(
+                child: _buildContent(),
+              ),
+            ],
           ),
-
-          // Category Filter Chips
-          SizedBox(
-            height: 50,
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                final isSelected = _selectedCategory == category ||
-                    (_selectedCategory == null && category == 'All');
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(category),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedCategory = selected
-                            ? (category == 'All' ? null : category)
-                            : null;
-                      });
-                      _filterBookmarks();
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Bookmarks List
-          Expanded(
-            child: _buildContent(),
-          ),
-        ],
-      ),
         ],
       ),
     );
@@ -279,8 +289,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   }
 
   Widget _buildEmptyState() {
-    final isFiltered =
-        _searchQuery.isNotEmpty || _selectedCategory != null;
+    final isFiltered = _searchQuery.isNotEmpty || _selectedCategory != null;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -455,8 +464,10 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildStatRow('Gesamt', stats['total'].toString()),
-            _buildStatRow('Recherche', stats['byCategory']['Recherche'].toString()),
-            _buildStatRow('Narratives', stats['byCategory']['Narratives'].toString()),
+            _buildStatRow(
+                'Recherche', stats['byCategory']['Recherche'].toString()),
+            _buildStatRow(
+                'Narratives', stats['byCategory']['Narratives'].toString()),
             _buildStatRow('Andere', stats['byCategory']['Andere'].toString()),
             const Divider(),
             _buildStatRow('Heute hinzugefügt', stats['addedToday'].toString()),

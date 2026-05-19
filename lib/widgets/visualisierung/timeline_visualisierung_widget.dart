@@ -1,6 +1,6 @@
 /// **WELTENBIBLIOTHEK - STEP 3 VISUALISIERUNG**
 /// Timeline-Visualisierung Widget für historische Ereignisse
-/// 
+///
 /// Zeigt chronologische Abfolge von Ereignissen mit Kontext und Quellen
 library;
 
@@ -16,7 +16,7 @@ class ZeitEreignis {
   final String kategorie; // politik, wirtschaft, gesellschaft, militär
   final List<String> quellen;
   final double relevanz; // 0.0 - 1.0
-  
+
   const ZeitEreignis({
     required this.id,
     required this.datum,
@@ -31,7 +31,7 @@ class ZeitEreignis {
 class TimelineVisualisierungWidget extends StatefulWidget {
   final List<ZeitEreignis> ereignisse;
   final String? highlightedId;
-  
+
   const TimelineVisualisierungWidget({
     super.key,
     required this.ereignisse,
@@ -39,14 +39,16 @@ class TimelineVisualisierungWidget extends StatefulWidget {
   });
 
   @override
-  State<TimelineVisualisierungWidget> createState() => _TimelineVisualisierungWidgetState();
+  State<TimelineVisualisierungWidget> createState() =>
+      _TimelineVisualisierungWidgetState();
 }
 
-class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWidget> {
+class _TimelineVisualisierungWidgetState
+    extends State<TimelineVisualisierungWidget> {
   final ScrollController _scrollController = ScrollController();
   ZeitEreignis? _selectedEreignis;
   String _filterKategorie = 'alle';
-  
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -55,11 +57,12 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
 
   List<ZeitEreignis> get _filteredEreignisse {
     var filtered = widget.ereignisse;
-    
+
     if (_filterKategorie != 'alle') {
-      filtered = filtered.where((e) => e.kategorie == _filterKategorie).toList();
+      filtered =
+          filtered.where((e) => e.kategorie == _filterKategorie).toList();
     }
-    
+
     filtered.sort((a, b) => a.datum.compareTo(b.datum));
     return filtered;
   }
@@ -112,7 +115,7 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
               final ereignis = _filteredEreignisse[index];
               final isLast = index == _filteredEreignisse.length - 1;
               final isHighlighted = ereignis.id == widget.highlightedId;
-              
+
               return _buildTimelineItem(ereignis, isLast, isHighlighted);
             },
           ),
@@ -123,8 +126,14 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
   }
 
   Widget _buildFilter() {
-    final kategorien = ['alle', 'politik', 'wirtschaft', 'gesellschaft', 'militär'];
-    
+    final kategorien = [
+      'alle',
+      'politik',
+      'wirtschaft',
+      'gesellschaft',
+      'militär'
+    ];
+
     return SizedBox(
       height: 40,
       child: ListView.builder(
@@ -133,7 +142,7 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
         itemBuilder: (context, index) {
           final kategorie = kategorien[index];
           final isSelected = _filterKategorie == kategorie;
-          
+
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
@@ -163,7 +172,8 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
     );
   }
 
-  Widget _buildTimelineItem(ZeitEreignis ereignis, bool isLast, bool isHighlighted) {
+  Widget _buildTimelineItem(
+      ZeitEreignis ereignis, bool isLast, bool isHighlighted) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +188,9 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
                   shape: BoxShape.circle,
                   color: _getKategorieColor(ereignis.kategorie),
                   border: Border.all(
-                    color: isHighlighted ? Colors.yellow : Colors.white.withValues(alpha: 0.5),
+                    color: isHighlighted
+                        ? Colors.yellow
+                        : Colors.white.withValues(alpha: 0.5),
                     width: isHighlighted ? 3 : 2,
                   ),
                   boxShadow: isHighlighted
@@ -223,7 +235,8 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedEreignis = _selectedEreignis?.id == ereignis.id ? null : ereignis;
+          _selectedEreignis =
+              _selectedEreignis?.id == ereignis.id ? null : ereignis;
         });
       },
       child: Container(
@@ -331,7 +344,7 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
 
   Widget _buildEreignisDetails() {
     final ereignis = _selectedEreignis!;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -368,7 +381,8 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
                       ),
                     ),
                     Text(
-                      DateFormat('dd. MMMM yyyy', 'de_DE').format(ereignis.datum),
+                      DateFormat('dd. MMMM yyyy', 'de_DE')
+                          .format(ereignis.datum),
                       style: TextStyle(
                         color: _getKategorieColor(ereignis.kategorie),
                         fontSize: 12,
@@ -400,28 +414,28 @@ class _TimelineVisualisierungWidgetState extends State<TimelineVisualisierungWid
             ),
             const SizedBox(height: 8),
             ...ereignis.quellen.map((quelle) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.arrow_right,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    size: 16,
-                  ),
-                  Expanded(
-                    child: Text(
-                      quelle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 12,
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.arrow_right,
+                        color: Colors.white.withValues(alpha: 0.5),
+                        size: 16,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      Expanded(
+                        child: Text(
+                          quelle,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )),
+                )),
           ],
         ],
       ),

@@ -3,7 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import 'dart:math' as math;
 import '../../models/spirit_tools_models.dart';
 import '../../services/achievement_service.dart';
@@ -25,7 +25,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
   // UNUSED FIELD: final _storage = StorageService();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  
+
   List<DreamEntry> _dreams = []; // ignore: unused_field
   DreamCategory _selectedCategory = DreamCategory.mundane;
   bool _isLucid = false;
@@ -47,7 +47,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
 
   Future<void> _saveDream() async {
     if (_titleController.text.isEmpty) return;
-    
+
     // TODO: Use dream entry or remove
     /*
     final dream = DreamEntry(
@@ -64,7 +64,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
     // Save to storage
     _titleController.clear();
     _contentController.clear();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('✅ Traum gespeichert!')),
@@ -97,7 +97,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Content Input
           TextField(
             controller: _contentController,
@@ -112,7 +112,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Category Selector
           DropdownButtonFormField<DreamCategory>(
             initialValue: _selectedCategory,
@@ -121,21 +121,23 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
             items: DreamCategory.values.map((cat) {
               return DropdownMenuItem(
                 value: cat,
-                child: Text(_getCategoryName(cat), style: const TextStyle(color: Colors.white)),
+                child: Text(_getCategoryName(cat),
+                    style: const TextStyle(color: Colors.white)),
               );
             }).toList(),
             onChanged: (value) => setState(() => _selectedCategory = value!),
           ),
           const SizedBox(height: 16),
-          
+
           // Lucid Toggle
           SwitchListTile(
-            title: const Text('Luzider Traum', style: TextStyle(color: Colors.white)),
+            title: const Text('Luzider Traum',
+                style: TextStyle(color: Colors.white)),
             value: _isLucid,
             onChanged: (value) => setState(() => _isLucid = value),
             activeThumbColor: Colors.purple,
           ),
-          
+
           // Clarity Slider
           const Text('Klarheit', style: TextStyle(color: Colors.white70)),
           Slider(
@@ -147,7 +149,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
             onChanged: (value) => setState(() => _clarity = value.toInt()),
           ),
           const SizedBox(height: 16),
-          
+
           // Save Button
           ElevatedButton(
             onPressed: _saveDream,
@@ -158,11 +160,12 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
             child: const Text('Traum speichern'),
           ),
           const SizedBox(height: 24),
-          
+
           // Dream Symbols Database
           const Text(
             '🔍 Traumsymbole',
-            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...SpiritToolsData.dreamSymbols.entries.take(5).map((entry) {
@@ -170,8 +173,10 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
               color: const Color(0xFF1A1A2E),
               child: ListTile(
                 leading: const Icon(Icons.psychology, color: Colors.purple),
-                title: Text(entry.key, style: const TextStyle(color: Colors.white)),
-                subtitle: Text(entry.value, style: const TextStyle(color: Colors.white70)),
+                title: Text(entry.key,
+                    style: const TextStyle(color: Colors.white)),
+                subtitle: Text(entry.value,
+                    style: const TextStyle(color: Colors.white70)),
               ),
             );
           }),
@@ -182,14 +187,22 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
 
   String _getCategoryName(DreamCategory cat) {
     switch (cat) {
-      case DreamCategory.adventure: return '🗺️ Abenteuer';
-      case DreamCategory.nightmare: return '😱 Albtraum';
-      case DreamCategory.lucid: return '✨ Luzid';
-      case DreamCategory.prophetic: return '🔮 Prophetisch';
-      case DreamCategory.recurring: return '🔄 Wiederkehrend';
-      case DreamCategory.healing: return '💚 Heilend';
-      case DreamCategory.spiritual: return '🙏 Spirituell';
-      case DreamCategory.mundane: return '😴 Alltäglich';
+      case DreamCategory.adventure:
+        return '🗺️ Abenteuer';
+      case DreamCategory.nightmare:
+        return '😱 Albtraum';
+      case DreamCategory.lucid:
+        return '✨ Luzid';
+      case DreamCategory.prophetic:
+        return '🔮 Prophetisch';
+      case DreamCategory.recurring:
+        return '🔄 Wiederkehrend';
+      case DreamCategory.healing:
+        return '💚 Heilend';
+      case DreamCategory.spiritual:
+        return '🙏 Spirituell';
+      case DreamCategory.mundane:
+        return '😴 Alltäglich';
     }
   }
 }
@@ -207,7 +220,7 @@ class RuneOracleScreen extends StatefulWidget {
 class _RuneOracleScreenState extends State<RuneOracleScreen> {
   final _achievement = AchievementService(); // ignore: unused_field
   final _questionController = TextEditingController();
-  
+
   List<DrawnRune>? _drawnRunes;
   bool _isDrawing = false;
 
@@ -220,13 +233,13 @@ class _RuneOracleScreenState extends State<RuneOracleScreen> {
     }
 
     setState(() => _isDrawing = true);
-    
+
     await Future.delayed(const Duration(seconds: 2));
-    
+
     final random = math.Random();
     final positions = ['Vergangenheit', 'Gegenwart', 'Zukunft'];
     final drawnRunes = <DrawnRune>[];
-    
+
     for (int i = 0; i < 3; i++) {
       final rune = SpiritToolsData.elderFuthark[random.nextInt(8)];
       drawnRunes.add(DrawnRune(
@@ -235,12 +248,12 @@ class _RuneOracleScreenState extends State<RuneOracleScreen> {
         position: positions[i],
       ));
     }
-    
+
     setState(() {
       _drawnRunes = drawnRunes;
       _isDrawing = false;
     });
-    
+
     // Achievement tracking
     if (mounted) {
       // TODO: Re-enable after achievement integration
@@ -266,11 +279,12 @@ class _RuneOracleScreenState extends State<RuneOracleScreen> {
             decoration: InputDecoration(
               labelText: 'Deine Frage',
               labelStyle: const TextStyle(color: Colors.white70),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Draw Button
           ElevatedButton(
             onPressed: _isDrawing ? null : _drawRunes,
@@ -283,12 +297,15 @@ class _RuneOracleScreenState extends State<RuneOracleScreen> {
                 : const Text('Runen ziehen'),
           ),
           const SizedBox(height: 24),
-          
+
           // Drawn Runes
           if (_drawnRunes != null) ...[
             const Text(
               '✨ Deine Runen-Legung',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ..._drawnRunes!.map((drawnRune) {
@@ -307,7 +324,8 @@ class _RuneOracleScreenState extends State<RuneOracleScreen> {
                         children: [
                           Text(
                             rune.symbol,
-                            style: const TextStyle(fontSize: 40, color: Colors.white),
+                            style: const TextStyle(
+                                fontSize: 40, color: Colors.white),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -324,34 +342,40 @@ class _RuneOracleScreenState extends State<RuneOracleScreen> {
                                 ),
                                 Text(
                                   drawnRune.position,
-                                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 12),
                                 ),
                               ],
                             ),
                           ),
                           if (drawnRune.isReversed)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.red.withValues(alpha: 0.3),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
                                 'Umgekehrt',
-                                style: TextStyle(color: Colors.red, fontSize: 10),
+                                style:
+                                    TextStyle(color: Colors.red, fontSize: 10),
                               ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        drawnRune.isReversed ? rune.reverseMeaning : rune.meaning,
+                        drawnRune.isReversed
+                            ? rune.reverseMeaning
+                            : rune.meaning,
                         style: const TextStyle(color: Colors.white70),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         rune.interpretation,
-                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.white60, fontSize: 12),
                       ),
                     ],
                   ),
@@ -407,13 +431,14 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
               items: AffirmationCategory.values.map((cat) {
                 return DropdownMenuItem(
                   value: cat,
-                  child: Text(_getCategoryName(cat), style: const TextStyle(color: Colors.white)),
+                  child: Text(_getCategoryName(cat),
+                      style: const TextStyle(color: Colors.white)),
                 );
               }).toList(),
               onChanged: (value) => setState(() => _selectedCategory = value!),
             ),
             const SizedBox(height: 24),
-            
+
             // Generate Button
             ElevatedButton(
               onPressed: _generateAffirmation,
@@ -424,7 +449,7 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
               child: const Text('Affirmation generieren'),
             ),
             const SizedBox(height: 32),
-            
+
             // Current Affirmation
             if (_currentAffirmation != null)
               Container(
@@ -457,12 +482,18 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
 
   String _getCategoryName(AffirmationCategory cat) {
     switch (cat) {
-      case AffirmationCategory.success: return '🏆 Erfolg';
-      case AffirmationCategory.love: return '❤️ Liebe';
-      case AffirmationCategory.health: return '💚 Gesundheit';
-      case AffirmationCategory.spirituality: return '🙏 Spiritualität';
-      case AffirmationCategory.abundance: return '💰 Fülle';
-      case AffirmationCategory.confidence: return '💪 Selbstvertrauen';
+      case AffirmationCategory.success:
+        return '🏆 Erfolg';
+      case AffirmationCategory.love:
+        return '❤️ Liebe';
+      case AffirmationCategory.health:
+        return '💚 Gesundheit';
+      case AffirmationCategory.spirituality:
+        return '🙏 Spiritualität';
+      case AffirmationCategory.abundance:
+        return '💰 Fülle';
+      case AffirmationCategory.confidence:
+        return '💪 Selbstvertrauen';
     }
   }
 }
@@ -488,7 +519,7 @@ class _BiorhythmScreenState extends State<BiorhythmScreen> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
-    
+
     if (date != null) {
       setState(() {
         _birthDate = date;
@@ -514,16 +545,19 @@ class _BiorhythmScreenState extends State<BiorhythmScreen> {
               backgroundColor: const Color(0xFF26A69A),
               padding: const EdgeInsets.all(16),
             ),
-            child: Text(_birthDate == null ? 'Geburtsdatum wählen' : 'Geburtsdatum: ${_birthDate!.day}.${_birthDate!.month}.${_birthDate!.year}'),
+            child: Text(_birthDate == null
+                ? 'Geburtsdatum wählen'
+                : 'Geburtsdatum: ${_birthDate!.day}.${_birthDate!.month}.${_birthDate!.year}'),
           ),
           const SizedBox(height: 24),
-          
           if (_biorhythm != null) ...[
             _buildRhythmCard('💪 Physisch', _biorhythm!.physical, Colors.red),
             const SizedBox(height: 12),
-            _buildRhythmCard('❤️ Emotional', _biorhythm!.emotional, Colors.blue),
+            _buildRhythmCard(
+                '❤️ Emotional', _biorhythm!.emotional, Colors.blue),
             const SizedBox(height: 12),
-            _buildRhythmCard('🧠 Intellektuell', _biorhythm!.intellectual, Colors.green),
+            _buildRhythmCard(
+                '🧠 Intellektuell', _biorhythm!.intellectual, Colors.green),
           ],
         ],
       ),
@@ -539,7 +573,8 @@ class _BiorhythmScreenState extends State<BiorhythmScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 18)),
+            Text(title,
+                style: const TextStyle(color: Colors.white, fontSize: 18)),
             const SizedBox(height: 8),
             LinearProgressIndicator(
               value: (value + 1) / 2,
@@ -548,7 +583,8 @@ class _BiorhythmScreenState extends State<BiorhythmScreen> {
               minHeight: 10,
             ),
             const SizedBox(height: 4),
-            Text('$percentage%', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            Text('$percentage%',
+                style: TextStyle(color: color, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -571,7 +607,8 @@ class _IChingScreenState extends State<IChingScreen> {
 
   void _throwCoins() {
     final random = math.Random();
-    final hexagram = SpiritToolsData.hexagrams[random.nextInt(SpiritToolsData.hexagrams.length)];
+    final hexagram = SpiritToolsData
+        .hexagrams[random.nextInt(SpiritToolsData.hexagrams.length)];
     setState(() => _drawnHexagram = hexagram);
   }
 
@@ -608,18 +645,25 @@ class _IChingScreenState extends State<IChingScreen> {
                         children: [
                           Text(
                             '${_drawnHexagram!.number}. ${_drawnHexagram!.name}',
-                            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold),
                           ),
                           Text(
                             _drawnHexagram!.chineseName,
-                            style: const TextStyle(color: Colors.white70, fontSize: 16),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 16),
                           ),
                           const SizedBox(height: 16),
-                          Text('Bedeutung: ${_drawnHexagram!.meaning}', style: const TextStyle(color: Colors.white70)),
+                          Text('Bedeutung: ${_drawnHexagram!.meaning}',
+                              style: const TextStyle(color: Colors.white70)),
                           const SizedBox(height: 12),
-                          Text('Urteil: ${_drawnHexagram!.judgment}', style: const TextStyle(color: Colors.white60)),
+                          Text('Urteil: ${_drawnHexagram!.judgment}',
+                              style: const TextStyle(color: Colors.white60)),
                           const SizedBox(height: 12),
-                          Text('Bild: ${_drawnHexagram!.image}', style: const TextStyle(color: Colors.white60)),
+                          Text('Bild: ${_drawnHexagram!.image}',
+                              style: const TextStyle(color: Colors.white60)),
                         ],
                       ),
                     ),

@@ -161,7 +161,8 @@ class StatsService {
     _achievements = Achievement.getAll();
     // Load unlocked status from prefs
     for (var achievement in _achievements!) {
-      final isUnlocked = _prefs.getBool('achievement_${achievement.id}') ?? false;
+      final isUnlocked =
+          _prefs.getBool('achievement_${achievement.id}') ?? false;
       achievement.isUnlocked = isUnlocked;
     }
   }
@@ -175,14 +176,14 @@ class StatsService {
   Future<void> trackSearch(String category) async {
     _stats!.totalSearches++;
     _stats!.lastSearchDate = DateTime.now();
-    
+
     if (!_stats!.searchesByCategory.containsKey(category)) {
       _stats!.searchesByCategory[category] = 0;
       _stats!.categoriesExplored++;
     }
-    _stats!.searchesByCategory[category] = 
+    _stats!.searchesByCategory[category] =
         (_stats!.searchesByCategory[category] ?? 0) + 1;
-    
+
     await _saveStats();
     await _checkAchievements();
   }
@@ -212,7 +213,8 @@ class StatsService {
           shouldUnlock = _stats!.bookmarksCount >= achievement.requiredCount;
           break;
         case 'categories':
-          shouldUnlock = _stats!.categoriesExplored >= achievement.requiredCount;
+          shouldUnlock =
+              _stats!.categoriesExplored >= achievement.requiredCount;
           break;
         case 'narratives':
           shouldUnlock = _stats!.narrativesViewed >= achievement.requiredCount;
@@ -229,23 +231,28 @@ class StatsService {
 
   UserStats get stats => _stats ?? UserStats();
   List<Achievement> get achievements => _achievements ?? [];
-  
+
   int get level {
     final searches = _stats?.totalSearches ?? 0;
     if (searches >= 100) return 5; // Meister
-    if (searches >= 50) return 4;  // Experte
-    if (searches >= 25) return 3;  // Fortgeschritten
-    if (searches >= 10) return 2;  // Forscher
+    if (searches >= 50) return 4; // Experte
+    if (searches >= 25) return 3; // Fortgeschritten
+    if (searches >= 10) return 2; // Forscher
     return 1; // Novize
   }
 
   String get levelName {
     switch (level) {
-      case 5: return '👑 Meister';
-      case 4: return '🎓 Experte';
-      case 3: return '📚 Fortgeschritten';
-      case 2: return '🔍 Forscher';
-      default: return '🌱 Novize';
+      case 5:
+        return '👑 Meister';
+      case 4:
+        return '🎓 Experte';
+      case 3:
+        return '📚 Fortgeschritten';
+      case 2:
+        return '🔍 Forscher';
+      default:
+        return '🌱 Novize';
     }
   }
 

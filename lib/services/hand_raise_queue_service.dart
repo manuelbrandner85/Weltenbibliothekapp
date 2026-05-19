@@ -26,7 +26,8 @@ class HandRaiseEntry {
         roomName: j['room_name'] as String? ?? '',
         identity: j['identity'] as String? ?? '',
         username: j['username'] as String?,
-        raisedAt: DateTime.tryParse(j['raised_at'] as String? ?? '') ?? DateTime.now(),
+        raisedAt: DateTime.tryParse(j['raised_at'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -56,10 +57,8 @@ class HandRaiseQueueService {
 
   Future<bool> clear(String entryId) async {
     try {
-      await _s
-          .from('hand_raise_queue')
-          .update({'cleared_at': DateTime.now().toIso8601String()})
-          .eq('id', entryId);
+      await _s.from('hand_raise_queue').update(
+          {'cleared_at': DateTime.now().toIso8601String()}).eq('id', entryId);
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ HandRaise clear: $e');
@@ -76,7 +75,8 @@ class HandRaiseQueueService {
           .isFilter('cleared_at', null)
           .order('raised_at', ascending: true);
       return (res as List)
-          .map((r) => HandRaiseEntry.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              HandRaiseEntry.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ HandRaise open: $e');
@@ -89,7 +89,8 @@ class HandRaiseQueueService {
     required void Function() onChange,
   }) {
     return _s
-        .channel('hand-raise-$roomName-${DateTime.now().millisecondsSinceEpoch}')
+        .channel(
+            'hand-raise-$roomName-${DateTime.now().millisecondsSinceEpoch}')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',

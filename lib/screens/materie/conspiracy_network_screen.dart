@@ -46,7 +46,8 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
   final Map<String, WikidataEntry> _entries = {}; // id -> Entry
   final List<WikidataRelation> _relations = [];
   final Map<String, int> _idToNodeId = {}; // wikidata-id -> graph-int-id
-  final Map<int, String> _nodeIdToWikidataId = {}; // graph-int-id -> wikidata-id
+  final Map<int, String> _nodeIdToWikidataId =
+      {}; // graph-int-id -> wikidata-id
   int _nextNodeId = 0;
 
   static const _seeds = [
@@ -96,9 +97,9 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
       // Fetch relations for the top-k seeds in parallel.
       final topSeeds = results.take(5).toList();
       final relResults = await Future.wait(
-        topSeeds
-            .map((e) => _api.fetchWikidataRelations(e.id).catchError((_) =>
-                <WikidataRelation>[])),
+        topSeeds.map((e) => _api
+            .fetchWikidataRelations(e.id)
+            .catchError((_) => <WikidataRelation>[])),
       );
       for (final rels in relResults) {
         for (final r in rels) {
@@ -277,15 +278,13 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
           ),
           if (_entries.isNotEmpty)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               color: Colors.black54,
               child: Row(
                 children: [
                   Text(
                     '${_entries.length}/$_kMaxNodes Knoten - ${_relations.length} Kanten',
-                    style: const TextStyle(
-                        color: Colors.white60, fontSize: 11),
+                    style: const TextStyle(color: Colors.white60, fontSize: 11),
                   ),
                 ],
               ),
@@ -338,21 +337,18 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
                 color: active ? _kAccent : _kSurface,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: active ? _kAccent : Colors.white12),
+                border: Border.all(color: active ? _kAccent : Colors.white12),
               ),
               child: Text(
                 seed,
                 style: TextStyle(
                   color: active ? Colors.white : Colors.white60,
                   fontSize: 12,
-                  fontWeight:
-                      active ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: active ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
@@ -569,8 +565,7 @@ class _ListCard extends StatelessWidget {
             Expanded(
               child: Text(
                 entry.description ?? entry.id,
-                style:
-                    const TextStyle(color: Colors.white54, fontSize: 11),
+                style: const TextStyle(color: Colors.white54, fontSize: 11),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -682,13 +677,11 @@ class _NodeDetailSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text('ID: ${entry.id}',
-              style:
-                  const TextStyle(color: Colors.white38, fontSize: 12)),
+              style: const TextStyle(color: Colors.white38, fontSize: 12)),
           if (entry.description != null && entry.description!.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(entry.description!,
-                style:
-                    const TextStyle(color: Colors.white70, fontSize: 14)),
+                style: const TextStyle(color: Colors.white70, fontSize: 14)),
           ],
           if (outRels.isNotEmpty) ...[
             const SizedBox(height: 18),
@@ -782,8 +775,8 @@ class _NodeDetailSheet extends StatelessWidget {
                   TextSpan(text: otherLabel),
                   TextSpan(
                       text: '  ($otherId)',
-                      style: const TextStyle(
-                          color: Colors.white38, fontSize: 10)),
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 10)),
                 ],
               ),
             ),

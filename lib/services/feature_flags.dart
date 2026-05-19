@@ -15,9 +15,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Alle verfuegbaren Feature-Flags. Default-State steht in [_kDefaults].
 enum FeatureFlag {
-  newPinsHeader,       // Phase 2 Live-Chat: PinsPollsHeader statt Legacy-Banner
-  newMessageBar,       // Phase 2 Live-Chat: MessageBarV2 statt inline TextField
-  sharedWeltLiveChat,  // Phase 2 Live-Chat: shared WeltLiveChatScreen statt Energie+Materie-Duplikate
+  newPinsHeader, // Phase 2 Live-Chat: PinsPollsHeader statt Legacy-Banner
+  newMessageBar, // Phase 2 Live-Chat: MessageBarV2 statt inline TextField
+  sharedWeltLiveChat, // Phase 2 Live-Chat: shared WeltLiveChatScreen statt Energie+Materie-Duplikate
 }
 
 const Map<FeatureFlag, bool> _kDefaults = <FeatureFlag, bool>{
@@ -74,7 +74,8 @@ class FeatureFlags {
       await _prefs!.setBool(_keyFor(f), value);
       _cache[f] = value;
     } catch (e) {
-      if (kDebugMode) debugPrint('[FeatureFlags] setEnabled $f=$value failed: $e');
+      if (kDebugMode)
+        debugPrint('[FeatureFlags] setEnabled $f=$value failed: $e');
     }
   }
 

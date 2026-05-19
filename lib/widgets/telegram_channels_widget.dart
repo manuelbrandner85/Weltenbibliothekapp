@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Telegram Channels Widget v7.4
-/// 
+///
 /// Zeigt Telegram-Kanäle mit direkten Links
 class TelegramChannelsWidget extends StatelessWidget {
   final List<dynamic> channels;

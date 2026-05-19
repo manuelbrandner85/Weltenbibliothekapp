@@ -6,9 +6,9 @@ import '../services/user_service.dart';
 /// 💬 ECHTES Kommentar-Dialog mit Backend-Integration
 class CommentsDialog extends StatefulWidget {
   final CommunityPost post;
-  
+
   const CommentsDialog({super.key, required this.post});
-  
+
   @override
   State<CommentsDialog> createState() => _CommentsDialogState();
 }
@@ -17,18 +17,18 @@ class _CommentsDialogState extends State<CommentsDialog> {
   final CommunityService _communityService = CommunityService();
   final UserService _userService = UserService();
   final TextEditingController _commentController = TextEditingController();
-  
+
   List<Map<String, dynamic>> _comments = [];
   bool _isLoading = true;
   bool _isPosting = false;
   String? _error;
-  
+
   @override
   void initState() {
     super.initState();
     _loadComments();
   }
-  
+
   /// Lade Kommentare vom Backend
   Future<void> _loadComments() async {
     try {
@@ -36,9 +36,9 @@ class _CommentsDialogState extends State<CommentsDialog> {
         _isLoading = true;
         _error = null;
       });
-      
+
       final comments = await _communityService.getComments(widget.post.id);
-      
+
       setState(() {
         _comments = comments;
         _isLoading = false;
@@ -50,17 +50,17 @@ class _CommentsDialogState extends State<CommentsDialog> {
       });
     }
   }
-  
+
   /// Poste neuen Kommentar
   Future<void> _postComment() async {
     if (_commentController.text.trim().isEmpty) return;
-    
+
     try {
       setState(() => _isPosting = true);
-      
+
       final user = await _userService.getCurrentUser();
       final commentText = _commentController.text.trim();
-      
+
       // Backend call (ECHTE API!)
       await _communityService.commentOnPost(
         widget.post.id,
@@ -68,13 +68,13 @@ class _CommentsDialogState extends State<CommentsDialog> {
         commentText,
         avatar: user.avatar,
       );
-      
+
       // Reload comments
       await _loadComments();
-      
+
       // Clear input
       _commentController.clear();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -97,7 +97,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
       setState(() => _isPosting = false);
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -129,7 +129,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
               ],
             ),
             const Divider(color: Colors.white12, height: 20),
-            
+
             // Comments List
             Expanded(
               child: _isLoading
@@ -139,7 +139,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error, color: Colors.red, size: 48),
+                              const Icon(Icons.error,
+                                  color: Colors.red, size: 48),
                               const SizedBox(height: 16),
                               Text(
                                 _error!,
@@ -159,7 +160,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.comment_outlined, size: 64, color: Colors.white24),
+                                  Icon(Icons.comment_outlined,
+                                      size: 64, color: Colors.white24),
                                   SizedBox(height: 16),
                                   Text(
                                     'Noch keine Kommentare',
@@ -168,7 +170,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                   SizedBox(height: 8),
                                   Text(
                                     'Sei der Erste, der kommentiert!',
-                                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                                    style: TextStyle(
+                                        color: Colors.white38, fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -181,9 +184,9 @@ class _CommentsDialogState extends State<CommentsDialog> {
                               },
                             ),
             ),
-            
+
             const Divider(color: Colors.white12, height: 20),
-            
+
             // Comment Input
             Row(
               children: [
@@ -201,7 +204,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                     ),
                     maxLines: 3,
                     minLines: 1,
@@ -232,7 +236,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(Icons.send, color: Colors.white, size: 24),
+                            : const Icon(Icons.send,
+                                color: Colors.white, size: 24),
                       ),
                     ),
                   ),
@@ -244,14 +249,14 @@ class _CommentsDialogState extends State<CommentsDialog> {
       ),
     );
   }
-  
+
   /// Build einzelner Kommentar
   Widget _buildCommentItem(Map<String, dynamic> comment) {
     final username = comment['username'] ?? 'Unbekannt';
     final avatar = comment['avatar'] ?? '👤';
     final text = comment['text'] ?? '';
     final createdAt = comment['createdAt'] ?? '';
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -325,14 +330,14 @@ class _CommentsDialogState extends State<CommentsDialog> {
       ),
     );
   }
-  
+
   /// Formatiere Zeitstempel
   String _formatTimeAgo(String dateTimeStr) {
     try {
       final dateTime = DateTime.parse(dateTimeStr);
       final now = DateTime.now();
       final difference = now.difference(dateTime);
-      
+
       if (difference.inMinutes < 1) return 'Gerade eben';
       if (difference.inMinutes < 60) return 'vor ${difference.inMinutes}m';
       if (difference.inHours < 24) return 'vor ${difference.inHours}h';
@@ -342,7 +347,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
       return dateTimeStr;
     }
   }
-  
+
   @override
   void dispose() {
     _commentController.dispose();

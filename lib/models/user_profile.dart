@@ -28,9 +28,12 @@ class UserProfile {
   });
 
   String get effectiveDisplayName =>
-      (displayName != null && displayName!.isNotEmpty) ? displayName! : username;
+      (displayName != null && displayName!.isNotEmpty)
+          ? displayName!
+          : username;
 
-  bool get isAdmin => role == 'admin' || role == 'root_admin' || role == 'root-admin';
+  bool get isAdmin =>
+      role == 'admin' || role == 'root_admin' || role == 'root-admin';
   bool get isRootAdmin => role == 'root_admin' || role == 'root-admin';
   bool get isModerator => role == 'moderator';
 

@@ -13,7 +13,8 @@ import 'synchronicity_service.dart';
 
 /// Anonymous Cloud Sync Service Singleton
 class AnonymousCloudSyncService {
-  static final AnonymousCloudSyncService _instance = AnonymousCloudSyncService._internal();
+  static final AnonymousCloudSyncService _instance =
+      AnonymousCloudSyncService._internal();
   factory AnonymousCloudSyncService() => _instance;
   AnonymousCloudSyncService._internal();
 
@@ -23,7 +24,7 @@ class AnonymousCloudSyncService {
 
   /// CLOUDFLARE WORKER URL (DEPLOYED)
   static String get baseUrl => ApiConfig.cloudSyncApiUrl;
-  
+
   /// Device ID (anonymous identifier)
   String? _deviceId;
   String? get deviceId => _deviceId;
@@ -55,7 +56,7 @@ class AnonymousCloudSyncService {
   /// Offline Queue for pending syncs
   final List<Map<String, dynamic>> _pendingSyncs = [];
   int get pendingSyncCount => _pendingSyncs.length;
-  
+
   /// Network status (simplified - will be enhanced)
   final bool _isOnline = true;
   bool get isOnline => _isOnline;
@@ -101,12 +102,13 @@ class AnonymousCloudSyncService {
   Future<void> _loadOrCreateDeviceId() async {
     final prefs = await SharedPreferences.getInstance();
     _deviceId = prefs.getString('device_id');
-    
+
     if (_deviceId == null) {
       // Generate anonymous device ID
-      _deviceId = 'device_${DateTime.now().millisecondsSinceEpoch}_${_generateRandomString(8)}';
+      _deviceId =
+          'device_${DateTime.now().millisecondsSinceEpoch}_${_generateRandomString(8)}';
       await prefs.setString('device_id', _deviceId!);
-      
+
       if (kDebugMode) {
         debugPrint('✅ Generated new device ID: $_deviceId');
       }
@@ -116,7 +118,10 @@ class AnonymousCloudSyncService {
   /// Generate random string
   String _generateRandomString(int length) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    return List.generate(length, (index) => chars[(DateTime.now().millisecondsSinceEpoch + index) % chars.length]).join();
+    return List.generate(
+        length,
+        (index) => chars[(DateTime.now().millisecondsSinceEpoch + index) %
+            chars.length]).join();
   }
 
   /// Load last sync time from storage
@@ -138,7 +143,8 @@ class AnonymousCloudSyncService {
   Future<void> _saveLastSyncTime() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('last_cloud_sync_at', DateTime.now().toIso8601String());
+      await prefs.setString(
+          'last_cloud_sync_at', DateTime.now().toIso8601String());
       _lastSyncAt = DateTime.now();
     } catch (e) {
       if (kDebugMode) {
@@ -153,7 +159,7 @@ class AnonymousCloudSyncService {
       final response = await _client
           .get(Uri.parse('$baseUrl/api/health'))
           .timeout(const Duration(seconds: 3));
-      
+
       _cloudSyncAvailable = response.statusCode == 200;
     } catch (e) {
       _cloudSyncAvailable = false;
@@ -250,22 +256,22 @@ class AnonymousCloudSyncService {
       _updateStatus(SyncStatus.error);
 
       // Add to offline queue if network error
-      if (e.toString().contains('SocketException') || 
+      if (e.toString().contains('SocketException') ||
           e.toString().contains('TimeoutException') ||
           e.toString().contains('Failed host lookup')) {
-        
         final backupData = {
           'device_id': _deviceId,
           'timestamp': DateTime.now().toIso8601String(),
-          'journal_entries': _journalService.entries.map((e) => e.toJson()).toList(),
+          'journal_entries':
+              _journalService.entries.map((e) => e.toJson()).toList(),
           'sync_entries': _syncService.entries.map((e) => e.toJson()).toList(),
         };
-        
+
         await _addToPendingQueue({
           'data': backupData,
           'timestamp': DateTime.now().toIso8601String(),
         });
-        
+
         return SyncResult(
           success: false,
           message: 'Offline - zur Warteschlange hinzugefügt',
@@ -292,7 +298,8 @@ class AnonymousCloudSyncService {
       final backupData = {
         'device_id': _deviceId,
         'timestamp': DateTime.now().toIso8601String(),
-        'journal_entries': _journalService.entries.map((e) => e.toJson()).toList(),
+        'journal_entries':
+            _journalService.entries.map((e) => e.toJson()).toList(),
         'sync_entries': _syncService.entries.map((e) => e.toJson()).toList(),
       };
 
@@ -331,14 +338,15 @@ class AnonymousCloudSyncService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final syncsJson = prefs.getStringList('pending_syncs') ?? [];
-      
+
       _pendingSyncs.clear();
       for (final syncStr in syncsJson) {
         _pendingSyncs.add(jsonDecode(syncStr));
       }
-      
+
       if (kDebugMode && _pendingSyncs.isNotEmpty) {
-        debugPrint('📦 Loaded ${_pendingSyncs.length} pending syncs from queue');
+        debugPrint(
+            '📦 Loaded ${_pendingSyncs.length} pending syncs from queue');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -364,7 +372,7 @@ class AnonymousCloudSyncService {
   Future<void> _addToPendingQueue(Map<String, dynamic> syncData) async {
     _pendingSyncs.add(syncData);
     await _savePendingSyncs();
-    
+
     if (kDebugMode) {
       debugPrint('➕ Added to offline queue (total: ${_pendingSyncs.length})');
     }
@@ -387,17 +395,19 @@ class AnonymousCloudSyncService {
       try {
         // Generate backup code if not present
         final backupCode = syncData['backup_code'] ?? _generateRandomString(6);
-        
-        final response = await _client.post(
-          Uri.parse('$baseUrl/api/backup'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'device_id': _deviceId,
-            'backup_code': backupCode,
-            'data': syncData['data'],
-            'timestamp': syncData['timestamp'],
-          }),
-        ).timeout(const Duration(seconds: 10));
+
+        final response = await _client
+            .post(
+              Uri.parse('$baseUrl/api/backup'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'device_id': _deviceId,
+                'backup_code': backupCode,
+                'data': syncData['data'],
+                'timestamp': syncData['timestamp'],
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
           _pendingSyncs.remove(syncData);
@@ -414,7 +424,8 @@ class AnonymousCloudSyncService {
     await _savePendingSyncs();
 
     if (kDebugMode) {
-      debugPrint('✅ Processed $successCount pending syncs (remaining: ${_pendingSyncs.length})');
+      debugPrint(
+          '✅ Processed $successCount pending syncs (remaining: ${_pendingSyncs.length})');
     }
   }
 
@@ -449,7 +460,7 @@ class AnonymousCloudSyncService {
   Future<void> clearPendingSyncs() async {
     _pendingSyncs.clear();
     await _savePendingSyncs();
-    
+
     if (kDebugMode) {
       debugPrint('🗑️ Cleared all pending syncs');
     }

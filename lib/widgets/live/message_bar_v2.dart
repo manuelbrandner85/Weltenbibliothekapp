@@ -159,7 +159,8 @@ class _MessageBarV2State extends State<MessageBarV2>
     }
 
     // Parse last word for mention trigger.
-    final mentionQuery = _extractMentionQuery(text, widget.controller.selection);
+    final mentionQuery =
+        _extractMentionQuery(text, widget.controller.selection);
     if (mentionQuery != _lastMentionQuery) {
       _lastMentionQuery = mentionQuery;
       if (widget.onMentionTrigger != null) {
@@ -555,8 +556,7 @@ class _PlusSheet extends StatelessWidget {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
@@ -788,8 +788,8 @@ class _MentionPicker extends StatelessWidget {
                           onPicked!(s);
                         },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
                       children: [
                         _MentionAvatar(s: s, tokens: tokens),
@@ -914,14 +914,10 @@ class _CircleIconButton extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: filled
-                ? color
-                : color.withOpacity(0.18),
+            color: filled ? color : color.withOpacity(0.18),
             shape: BoxShape.circle,
             border: Border.all(
-              color: filled
-                  ? color.withOpacity(0.0)
-                  : color.withOpacity(0.4),
+              color: filled ? color.withOpacity(0.0) : color.withOpacity(0.4),
               width: 1,
             ),
           ),

@@ -8,10 +8,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 //   Tab 2: Leitfäden  (6 öffentliche Guides)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kPrimary   = Color(0xFF795548); // Braun
+const _kPrimary = Color(0xFF795548); // Braun
 const _kSecondary = Color(0xFFFF7043); // Orange
 // Legacy alias so inner widgets still compile unchanged:
-const _kDeep   = _kPrimary;
+const _kDeep = _kPrimary;
 const _kDarkBg = Color(0xFF06040F);
 const _kCardBg = Color(0xFF140E0A);
 const _kBorder = Color(0xFF2A1F18);
@@ -64,8 +64,7 @@ class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
         ),
         backgroundColor: Colors.transparent,
         title: const Text('🥁 Schamanische Reise',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
@@ -171,8 +170,8 @@ class _NewJourneyTabState extends State<_NewJourneyTab> {
   Future<void> _start() async {
     final intention = _intentionCtrl.text.trim();
     if (intention.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Bitte formuliere eine Intention')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bitte formuliere eine Intention')));
       return;
     }
     await Navigator.push(
@@ -279,9 +278,8 @@ class _NewJourneyTabState extends State<_NewJourneyTab> {
                       backgroundColor: _kCardBg,
                       selectedColor: _kDeep,
                       labelStyle: TextStyle(
-                          color: _world == e.key
-                              ? Colors.white
-                              : Colors.white70,
+                          color:
+                              _world == e.key ? Colors.white : Colors.white70,
                           fontSize: 12,
                           fontWeight: FontWeight.w600),
                       side: BorderSide(
@@ -307,9 +305,8 @@ class _NewJourneyTabState extends State<_NewJourneyTab> {
                       backgroundColor: _kCardBg,
                       selectedColor: _kDeep,
                       labelStyle: TextStyle(
-                          color: _method == e.key
-                              ? Colors.white
-                              : Colors.white70,
+                          color:
+                              _method == e.key ? Colors.white : Colors.white70,
                           fontSize: 12,
                           fontWeight: FontWeight.w600),
                       side: BorderSide(
@@ -328,9 +325,7 @@ class _NewJourneyTabState extends State<_NewJourneyTab> {
             const Spacer(),
             Text('$_duration Min',
                 style: const TextStyle(
-                    color: _kDeep,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700)),
+                    color: _kDeep, fontSize: 14, fontWeight: FontWeight.w700)),
           ]),
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
@@ -357,8 +352,7 @@ class _NewJourneyTabState extends State<_NewJourneyTab> {
               onPressed: _start,
               icon: const Icon(Icons.play_arrow),
               label: const Text('Reise starten',
-                  style: TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kDeep,
                 foregroundColor: Colors.white,
@@ -452,8 +446,7 @@ class _JourneyTimerScreenState extends State<_JourneyTimerScreen> {
       backgroundColor: _kDarkBg,
       appBar: AppBar(
         backgroundColor: _kCardBg,
-        title: const Text('Reise läuft',
-            style: TextStyle(color: Colors.white)),
+        title: const Text('Reise läuft', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         automaticallyImplyLeading: false,
       ),
@@ -482,9 +475,7 @@ class _JourneyTimerScreenState extends State<_JourneyTimerScreen> {
                   const SizedBox(height: 6),
                   Text(widget.intention,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          height: 1.4)),
+                          color: Colors.white, fontSize: 15, height: 1.4)),
                 ],
               ),
             ),
@@ -586,8 +577,8 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
   Future<void> _save() async {
     final user = _db.auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bitte zuerst anmelden')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Bitte zuerst anmelden')));
       return;
     }
     setState(() => _saving = true);
@@ -612,23 +603,22 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
             _expCtrl.text.trim().isEmpty ? null : _expCtrl.text.trim(),
         'encountered_beings': beings,
         'symbols_received': symbols,
-        'message': _messageCtrl.text.trim().isEmpty
-            ? null
-            : _messageCtrl.text.trim(),
+        'message':
+            _messageCtrl.text.trim().isEmpty ? null : _messageCtrl.text.trim(),
         'integration': _integrationCtrl.text.trim().isEmpty
             ? null
             : _integrationCtrl.text.trim(),
         'journeyed_at': widget.startedAt.toUtc().toIso8601String(),
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reise gespeichert 🥁')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Reise gespeichert 🥁')));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -638,8 +628,8 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
       backgroundColor: _kDarkBg,
       appBar: AppBar(
         backgroundColor: _kCardBg,
-        title: const Text('Reise-Journal',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Reise-Journal', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: ListView(
@@ -668,8 +658,8 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
             ]),
           ),
           const SizedBox(height: 16),
-          _field(_expCtrl, 'Was hast du erlebt?',
-              Icons.auto_stories_outlined, 5),
+          _field(
+              _expCtrl, 'Was hast du erlebt?', Icons.auto_stories_outlined, 5),
           const SizedBox(height: 12),
           _field(_beingsCtrl, 'Begegnete Wesen (kommagetrennt)',
               Icons.pets_outlined, 1),
@@ -677,8 +667,8 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
           _field(_symbolsCtrl, 'Empfangene Symbole (kommagetrennt)',
               Icons.star_border, 1),
           const SizedBox(height: 12),
-          _field(_messageCtrl, 'Antwort / Botschaft',
-              Icons.message_outlined, 3),
+          _field(
+              _messageCtrl, 'Antwort / Botschaft', Icons.message_outlined, 3),
           const SizedBox(height: 12),
           _field(_integrationCtrl, 'Integration: was nimmst du mit?',
               Icons.integration_instructions_outlined, 3),
@@ -695,8 +685,7 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.save_outlined),
               label: const Text('Reise speichern',
-                  style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _kDeep,
                 foregroundColor: Colors.white,
@@ -711,8 +700,8 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
     );
   }
 
-  Widget _field(TextEditingController c, String label, IconData icon,
-      int maxLines) {
+  Widget _field(
+      TextEditingController c, String label, IconData icon, int maxLines) {
     return TextField(
       controller: c,
       maxLines: maxLines,
@@ -848,8 +837,8 @@ class _JourneysSubTabState extends State<_JourneysSubTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _kCardBg,
-        title: const Text('Reise löschen?',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Reise löschen?', style: TextStyle(color: Colors.white)),
         content: const Text('Dieser Eintrag wird unwiderruflich gelöscht.',
             style: TextStyle(color: Colors.white70)),
         actions: [
@@ -859,8 +848,7 @@ class _JourneysSubTabState extends State<_JourneysSubTab> {
                   style: TextStyle(color: Colors.white54))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Löschen',
-                  style: TextStyle(color: _kDeep))),
+              child: const Text('Löschen', style: TextStyle(color: _kDeep))),
         ],
       ),
     );
@@ -871,8 +859,8 @@ class _JourneysSubTabState extends State<_JourneysSubTab> {
       setState(() => _rows.removeWhere((r) => r['id'] == id));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -910,7 +898,8 @@ class _JourneysSubTabState extends State<_JourneysSubTab> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.nightlight_round, color: _kDeep, size: 48),
             SizedBox(height: 12),
-            Text('Noch keine Reisen dokumentiert.\nStarte deine erste im Neu-Tab.',
+            Text(
+                'Noch keine Reisen dokumentiert.\nStarte deine erste im Neu-Tab.',
                 style: TextStyle(color: Colors.white54),
                 textAlign: TextAlign.center),
           ]),
@@ -925,10 +914,10 @@ class _JourneysSubTabState extends State<_JourneysSubTab> {
         itemCount: _rows.length,
         itemBuilder: (_, i) {
           final r = _rows[i];
-          final beings = List<String>.from(
-              (r['encountered_beings'] as List?) ?? const []);
-          final symbols = List<String>.from(
-              (r['symbols_received'] as List?) ?? const []);
+          final beings =
+              List<String>.from((r['encountered_beings'] as List?) ?? const []);
+          final symbols =
+              List<String>.from((r['symbols_received'] as List?) ?? const []);
           return Card(
             color: _kCardBg,
             margin: const EdgeInsets.only(bottom: 10),
@@ -972,9 +961,7 @@ class _JourneysSubTabState extends State<_JourneysSubTab> {
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            height: 1.4)),
+                            color: Colors.white70, fontSize: 12, height: 1.4)),
                   ],
                   if (beings.isNotEmpty || symbols.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -994,11 +981,10 @@ class _JourneysSubTabState extends State<_JourneysSubTab> {
                       decoration: BoxDecoration(
                           color: _kDeep.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                              color: _kDeep.withValues(alpha: 0.3))),
+                          border:
+                              Border.all(color: _kDeep.withValues(alpha: 0.3))),
                       child: Row(children: [
-                        const Icon(Icons.format_quote,
-                            color: _kDeep, size: 16),
+                        const Icon(Icons.format_quote, color: _kDeep, size: 16),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(r['message'] as String,
@@ -1095,8 +1081,8 @@ class _PowerAnimalsSubTabState extends State<_PowerAnimalsSubTab> {
       setState(() => _rows.removeWhere((r) => r['id'] == id));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -1141,7 +1127,8 @@ class _PowerAnimalsSubTabState extends State<_PowerAnimalsSubTab> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.pets, color: _kDeep, size: 48),
             SizedBox(height: 12),
-            Text('Noch keine Krafttiere eingetragen.\nFüge dein erstes Krafttier hinzu.',
+            Text(
+                'Noch keine Krafttiere eingetragen.\nFüge dein erstes Krafttier hinzu.',
                 style: TextStyle(color: Colors.white54),
                 textAlign: TextAlign.center),
           ]),
@@ -1165,9 +1152,7 @@ class _PowerAnimalsSubTabState extends State<_PowerAnimalsSubTab> {
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
                 side: BorderSide(
-                    color: active
-                        ? _kDeep.withValues(alpha: 0.4)
-                        : _kBorder)),
+                    color: active ? _kDeep.withValues(alpha: 0.4) : _kBorder)),
             child: InkWell(
               borderRadius: BorderRadius.circular(14),
               onTap: () => _openEditor(existing: r),
@@ -1179,10 +1164,8 @@ class _PowerAnimalsSubTabState extends State<_PowerAnimalsSubTab> {
                     Row(children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundColor:
-                            active ? _kDeep : Colors.white24,
-                        child: const Text('🐾',
-                            style: TextStyle(fontSize: 20)),
+                        backgroundColor: active ? _kDeep : Colors.white24,
+                        child: const Text('🐾', style: TextStyle(fontSize: 20)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -1197,8 +1180,7 @@ class _PowerAnimalsSubTabState extends State<_PowerAnimalsSubTab> {
                             if (!active)
                               const Text('(nicht mehr aktiv)',
                                   style: TextStyle(
-                                      color: Colors.white38,
-                                      fontSize: 11)),
+                                      color: Colors.white38, fontSize: 11)),
                           ],
                         ),
                       ),
@@ -1217,8 +1199,7 @@ class _PowerAnimalsSubTabState extends State<_PowerAnimalsSubTab> {
                             .map((q) => Chip(
                                   label: Text(q,
                                       style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 11)),
+                                          color: Colors.white70, fontSize: 11)),
                                   backgroundColor: _kBorder,
                                   materialTapTargetSize:
                                       MaterialTapTargetSize.shrinkWrap,
@@ -1269,8 +1250,7 @@ class _PowerAnimalEditorSheetState extends State<_PowerAnimalEditorSheet> {
     if (e != null) {
       _animalCtrl.text = e['animal'] as String? ?? '';
       _qualitiesCtrl.text =
-          List<String>.from((e['qualities'] as List?) ?? const [])
-              .join(', ');
+          List<String>.from((e['qualities'] as List?) ?? const []).join(', ');
       _messageCtrl.text = e['message'] as String? ?? '';
       _giftsCtrl.text = e['gifts'] as String? ?? '';
       _active = e['is_active'] as bool? ?? true;
@@ -1305,12 +1285,9 @@ class _PowerAnimalEditorSheetState extends State<_PowerAnimalEditorSheet> {
       final payload = {
         'animal': animal,
         'qualities': qualities,
-        'message': _messageCtrl.text.trim().isEmpty
-            ? null
-            : _messageCtrl.text.trim(),
-        'gifts': _giftsCtrl.text.trim().isEmpty
-            ? null
-            : _giftsCtrl.text.trim(),
+        'message':
+            _messageCtrl.text.trim().isEmpty ? null : _messageCtrl.text.trim(),
+        'gifts': _giftsCtrl.text.trim().isEmpty ? null : _giftsCtrl.text.trim(),
         'is_active': _active,
         'updated_at': DateTime.now().toIso8601String(),
       };
@@ -1330,8 +1307,8 @@ class _PowerAnimalEditorSheetState extends State<_PowerAnimalEditorSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -1386,8 +1363,7 @@ class _PowerAnimalEditorSheetState extends State<_PowerAnimalEditorSheet> {
                 children: [
                   _field(_animalCtrl, 'Krafttier*', Icons.pets_outlined),
                   const SizedBox(height: 12),
-                  _field(_qualitiesCtrl,
-                      'Qualitäten (kommagetrennt)',
+                  _field(_qualitiesCtrl, 'Qualitäten (kommagetrennt)',
                       Icons.auto_awesome,
                       maxLines: 2),
                   const SizedBox(height: 12),
@@ -1403,10 +1379,8 @@ class _PowerAnimalEditorSheetState extends State<_PowerAnimalEditorSheet> {
                     activeThumbColor: _kDeep,
                     title: const Text('Aktiver Begleiter',
                         style: TextStyle(color: Colors.white)),
-                    subtitle: const Text(
-                        'Noch in meinem Leben präsent',
-                        style: TextStyle(
-                            color: Colors.white54, fontSize: 12)),
+                    subtitle: const Text('Noch in meinem Leben präsent',
+                        style: TextStyle(color: Colors.white54, fontSize: 12)),
                     value: _active,
                     onChanged: (v) => setState(() => _active = v),
                   ),
@@ -1607,16 +1581,14 @@ class _GuidesTabState extends State<_GuidesTab> {
                               const SizedBox(width: 3),
                               Text('${g['duration_minutes']} Min',
                                   style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 11)),
+                                      color: Colors.white54, fontSize: 11)),
                               const SizedBox(width: 10),
                               const Icon(Icons.format_list_numbered,
                                   color: Colors.white38, size: 12),
                               const SizedBox(width: 3),
                               Text('$steps Schritte',
                                   style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 11)),
+                                      color: Colors.white54, fontSize: 11)),
                             ]),
                           ],
                         ),
@@ -1627,9 +1599,7 @@ class _GuidesTabState extends State<_GuidesTab> {
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            height: 1.4)),
+                            color: Colors.white70, fontSize: 12, height: 1.4)),
                   ],
                 ),
               ),
@@ -1648,8 +1618,8 @@ class _GuideDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = List<String>.from((guide['steps'] as List?) ?? const []);
-    final intentions = List<String>.from(
-        (guide['sample_intentions'] as List?) ?? const []);
+    final intentions =
+        List<String>.from((guide['sample_intentions'] as List?) ?? const []);
     final preparation = guide['preparation'] as String?;
     final safety = guide['safety_notes'] as String?;
     return DraggableScrollableSheet(
@@ -1668,8 +1638,7 @@ class _GuideDetailSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2)),
+                color: Colors.white24, borderRadius: BorderRadius.circular(2)),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -1819,9 +1788,7 @@ class _GuideDetailSheet extends StatelessWidget {
               const SizedBox(height: 4),
               Text(body,
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      height: 1.4)),
+                      color: Colors.white, fontSize: 13, height: 1.4)),
             ],
           ),
         ),
@@ -1864,7 +1831,9 @@ class _CineOrb extends StatelessWidget {
 class _DrumLibraryTab extends StatelessWidget {
   const _DrumLibraryTab();
 
-  static final List<({String name, int bpm, String desc, String use, String emoji})> _drums = [
+  static final List<
+          ({String name, int bpm, String desc, String use, String emoji})>
+      _drums = [
     (
       emoji: '🐢',
       name: 'Slow Theta',
@@ -1913,7 +1882,8 @@ class _DrumLibraryTab extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF3E1F70), Color(0xFF1A0D3A)]),
+              gradient: const LinearGradient(
+                  colors: [Color(0xFF3E1F70), Color(0xFF1A0D3A)]),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Text(
@@ -1931,7 +1901,8 @@ class _DrumLibraryTab extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF1F1A35),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF8E5AE2).withValues(alpha: 0.3)),
+            border: Border.all(
+                color: const Color(0xFF8E5AE2).withValues(alpha: 0.3)),
           ),
           child: Row(children: [
             Text(d.emoji, style: const TextStyle(fontSize: 30)),
@@ -1942,23 +1913,35 @@ class _DrumLibraryTab extends StatelessWidget {
                 children: [
                   Row(children: [
                     Text(d.name,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold)),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFF8E5AE2).withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text('${d.bpm} BPM',
-                          style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 11, fontWeight: FontWeight.bold)),
+                          style: const TextStyle(
+                              color: Color(0xFFB39DDB),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ]),
                   const SizedBox(height: 4),
-                  Text(d.desc, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text(d.desc,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(d.use,
-                      style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 11, fontStyle: FontStyle.italic)),
+                      style: const TextStyle(
+                          color: Color(0xFFB39DDB),
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic)),
                 ],
               ),
             ),
@@ -1975,55 +1958,154 @@ class _DrumLibraryTab extends StatelessWidget {
 class _PowerAnimalsTab extends StatelessWidget {
   const _PowerAnimalsTab();
 
-  static final List<({String name, String emoji, String quality, String teaching})> _animals = [
-    (emoji: '🐺', name: 'Wolf', quality: 'Lehrer · Loyalität · Instinkt',
-        teaching: 'Folge deinem Bauchgefühl. Gemeinschaft ist Stärke. Bewege dich in Familie.'),
-    (emoji: '🦅', name: 'Adler', quality: 'Vision · Übersicht · Botschaft',
-        teaching: 'Steig auf, schau weit. Klarheit kommt aus der Höhe.'),
-    (emoji: '🦉', name: 'Eule', quality: 'Weisheit · Nachtsicht · Geheimnis',
-        teaching: 'Was im Dunkel ist, wird sichtbar wenn du still wirst.'),
-    (emoji: '🐻', name: 'Bär', quality: 'Kraft · Rückzug · Heilung',
-        teaching: 'Rückzug ist nicht Schwäche. Im Winter regeneriert das Tiefste.'),
-    (emoji: '🦌', name: 'Hirsch', quality: 'Anmut · Sanftmut · Schnelligkeit',
-        teaching: 'Sanft sein und dennoch klar. Sprünge wagen.'),
-    (emoji: '🐍', name: 'Schlange', quality: 'Transformation · Heilung · Häutung',
-        teaching: 'Was abgelegt werden muss, fällt von allein. Kundalini-Energie.'),
-    (emoji: '🦋', name: 'Schmetterling', quality: 'Wandlung · Leichtigkeit',
-        teaching: 'Die Verpuppung ist nötig. Du wirst nicht wer du warst.'),
-    (emoji: '🐎', name: 'Pferd', quality: 'Freiheit · Reise · Power',
-        teaching: 'Lass dich tragen, aber zähme nicht. Vertrauen ins Tempo.'),
-    (emoji: '🦁', name: 'Löwe', quality: 'Mut · Würde · Souveränität',
-        teaching: 'Brülle, wenn nötig. Sonne dich, wenn möglich. Sei König.'),
-    (emoji: '🐯', name: 'Tiger', quality: 'Stärke · Einsamkeit · Spannung',
-        teaching: 'Spannung halten ist Kunst. Allein-sein ist nicht einsam.'),
-    (emoji: '🐘', name: 'Elefant', quality: 'Erinnerung · Familie · Geduld',
-        teaching: 'Was du erinnerst, gibst du weiter. Die Ahnen tragen dich.'),
-    (emoji: '🐢', name: 'Schildkröte', quality: 'Beharrlichkeit · Erde · langes Leben',
-        teaching: 'Langsam siegt. Trage dein Haus immer mit dir.'),
-    (emoji: '🦊', name: 'Fuchs', quality: 'Listigkeit · Anpassung · Stille',
-        teaching: 'Sei klug, nicht groß. Wechsle den Pfad ohne Aufsehen.'),
-    (emoji: '🐦', name: 'Kolibri', quality: 'Freude · Liebe · Süßes',
-        teaching: 'Bleib in Bewegung. Das Süße ist überall, wenn du nippst.'),
-    (emoji: '🐬', name: 'Delfin', quality: 'Spiel · Schwarm · Atem',
-        teaching: 'Atme bewusst. Spielen ist heilig. Höre die Frequenzen.'),
-    (emoji: '🐋', name: 'Wal', quality: 'Tiefe · Ahnenlied · Universum',
-        teaching: 'Tauche in alte Erinnerung. Singe was du nicht in Worte fasst.'),
-    (emoji: '🦂', name: 'Skorpion', quality: 'Transformation · Dunkelheit · Tod-Rebirth',
-        teaching: 'Im Schatten liegt Wahrheit. Stachel ist Schutz, nicht Angriff.'),
-    (emoji: '🕷️', name: 'Spinne', quality: 'Weberin · Schöpferin · Schicksal',
-        teaching: 'Du webst deine Wirklichkeit. Geduldig, Faden um Faden.'),
-    (emoji: '🐝', name: 'Biene', quality: 'Fleiß · Gemeinschaft · Süße',
-        teaching: 'Sammle, was nährt. Gib zurück, was du erhältst.'),
-    (emoji: '🦌', name: 'Reh', quality: 'Sanftheit · Aufmerksamkeit',
-        teaching: 'Lausche zuerst. Verletzlich-sein ist Stärke.'),
-    (emoji: '🦝', name: 'Waschbär', quality: 'Neugier · Geschick · Maske',
-        teaching: 'Hinter jeder Maske ist eine Wahrheit. Spiel mit ihr.'),
-    (emoji: '🦆', name: 'Ente', quality: 'Wasser-Erde-Luft · Anpassung',
-        teaching: 'Drei Elemente meistern. Wasser abprallen lassen.'),
-    (emoji: '🦔', name: 'Igel', quality: 'Schutz · Selbst-Verteidigung',
-        teaching: 'Stachel raus, wenn Grenze gebraucht. Sonst weich bleiben.'),
-    (emoji: '🐇', name: 'Hase', quality: 'Fruchtbarkeit · Schnelligkeit · Furcht',
-        teaching: 'Spüre Angst, lass dich nicht von ihr lähmen. Mehrere Ausgänge.'),
+  static final List<
+          ({String name, String emoji, String quality, String teaching})>
+      _animals = [
+    (
+      emoji: '🐺',
+      name: 'Wolf',
+      quality: 'Lehrer · Loyalität · Instinkt',
+      teaching:
+          'Folge deinem Bauchgefühl. Gemeinschaft ist Stärke. Bewege dich in Familie.'
+    ),
+    (
+      emoji: '🦅',
+      name: 'Adler',
+      quality: 'Vision · Übersicht · Botschaft',
+      teaching: 'Steig auf, schau weit. Klarheit kommt aus der Höhe.'
+    ),
+    (
+      emoji: '🦉',
+      name: 'Eule',
+      quality: 'Weisheit · Nachtsicht · Geheimnis',
+      teaching: 'Was im Dunkel ist, wird sichtbar wenn du still wirst.'
+    ),
+    (
+      emoji: '🐻',
+      name: 'Bär',
+      quality: 'Kraft · Rückzug · Heilung',
+      teaching: 'Rückzug ist nicht Schwäche. Im Winter regeneriert das Tiefste.'
+    ),
+    (
+      emoji: '🦌',
+      name: 'Hirsch',
+      quality: 'Anmut · Sanftmut · Schnelligkeit',
+      teaching: 'Sanft sein und dennoch klar. Sprünge wagen.'
+    ),
+    (
+      emoji: '🐍',
+      name: 'Schlange',
+      quality: 'Transformation · Heilung · Häutung',
+      teaching: 'Was abgelegt werden muss, fällt von allein. Kundalini-Energie.'
+    ),
+    (
+      emoji: '🦋',
+      name: 'Schmetterling',
+      quality: 'Wandlung · Leichtigkeit',
+      teaching: 'Die Verpuppung ist nötig. Du wirst nicht wer du warst.'
+    ),
+    (
+      emoji: '🐎',
+      name: 'Pferd',
+      quality: 'Freiheit · Reise · Power',
+      teaching: 'Lass dich tragen, aber zähme nicht. Vertrauen ins Tempo.'
+    ),
+    (
+      emoji: '🦁',
+      name: 'Löwe',
+      quality: 'Mut · Würde · Souveränität',
+      teaching: 'Brülle, wenn nötig. Sonne dich, wenn möglich. Sei König.'
+    ),
+    (
+      emoji: '🐯',
+      name: 'Tiger',
+      quality: 'Stärke · Einsamkeit · Spannung',
+      teaching: 'Spannung halten ist Kunst. Allein-sein ist nicht einsam.'
+    ),
+    (
+      emoji: '🐘',
+      name: 'Elefant',
+      quality: 'Erinnerung · Familie · Geduld',
+      teaching: 'Was du erinnerst, gibst du weiter. Die Ahnen tragen dich.'
+    ),
+    (
+      emoji: '🐢',
+      name: 'Schildkröte',
+      quality: 'Beharrlichkeit · Erde · langes Leben',
+      teaching: 'Langsam siegt. Trage dein Haus immer mit dir.'
+    ),
+    (
+      emoji: '🦊',
+      name: 'Fuchs',
+      quality: 'Listigkeit · Anpassung · Stille',
+      teaching: 'Sei klug, nicht groß. Wechsle den Pfad ohne Aufsehen.'
+    ),
+    (
+      emoji: '🐦',
+      name: 'Kolibri',
+      quality: 'Freude · Liebe · Süßes',
+      teaching: 'Bleib in Bewegung. Das Süße ist überall, wenn du nippst.'
+    ),
+    (
+      emoji: '🐬',
+      name: 'Delfin',
+      quality: 'Spiel · Schwarm · Atem',
+      teaching: 'Atme bewusst. Spielen ist heilig. Höre die Frequenzen.'
+    ),
+    (
+      emoji: '🐋',
+      name: 'Wal',
+      quality: 'Tiefe · Ahnenlied · Universum',
+      teaching: 'Tauche in alte Erinnerung. Singe was du nicht in Worte fasst.'
+    ),
+    (
+      emoji: '🦂',
+      name: 'Skorpion',
+      quality: 'Transformation · Dunkelheit · Tod-Rebirth',
+      teaching: 'Im Schatten liegt Wahrheit. Stachel ist Schutz, nicht Angriff.'
+    ),
+    (
+      emoji: '🕷️',
+      name: 'Spinne',
+      quality: 'Weberin · Schöpferin · Schicksal',
+      teaching: 'Du webst deine Wirklichkeit. Geduldig, Faden um Faden.'
+    ),
+    (
+      emoji: '🐝',
+      name: 'Biene',
+      quality: 'Fleiß · Gemeinschaft · Süße',
+      teaching: 'Sammle, was nährt. Gib zurück, was du erhältst.'
+    ),
+    (
+      emoji: '🦌',
+      name: 'Reh',
+      quality: 'Sanftheit · Aufmerksamkeit',
+      teaching: 'Lausche zuerst. Verletzlich-sein ist Stärke.'
+    ),
+    (
+      emoji: '🦝',
+      name: 'Waschbär',
+      quality: 'Neugier · Geschick · Maske',
+      teaching: 'Hinter jeder Maske ist eine Wahrheit. Spiel mit ihr.'
+    ),
+    (
+      emoji: '🦆',
+      name: 'Ente',
+      quality: 'Wasser-Erde-Luft · Anpassung',
+      teaching: 'Drei Elemente meistern. Wasser abprallen lassen.'
+    ),
+    (
+      emoji: '🦔',
+      name: 'Igel',
+      quality: 'Schutz · Selbst-Verteidigung',
+      teaching: 'Stachel raus, wenn Grenze gebraucht. Sonst weich bleiben.'
+    ),
+    (
+      emoji: '🐇',
+      name: 'Hase',
+      quality: 'Fruchtbarkeit · Schnelligkeit · Furcht',
+      teaching: 'Spüre Angst, lass dich nicht von ihr lähmen. Mehrere Ausgänge.'
+    ),
   ];
 
   @override
@@ -2052,15 +2134,22 @@ class _PowerAnimalsTab extends StatelessWidget {
                 Text(a.emoji, style: const TextStyle(fontSize: 72)),
                 const SizedBox(height: 12),
                 Text(a.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(a.quality,
-                    style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 12, fontStyle: FontStyle.italic),
+                    style: const TextStyle(
+                        color: Color(0xFFB39DDB),
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic),
                     textAlign: TextAlign.center),
                 const SizedBox(height: 20),
                 Text(a.teaching,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.6)),
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 15, height: 1.6)),
                 const SizedBox(height: 18),
               ]),
             ),
@@ -2069,7 +2158,8 @@ class _PowerAnimalsTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1F1A35),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF8E5AE2).withValues(alpha: 0.3)),
+              border: Border.all(
+                  color: const Color(0xFF8E5AE2).withValues(alpha: 0.3)),
             ),
             padding: const EdgeInsets.all(8),
             child: Column(
@@ -2078,10 +2168,16 @@ class _PowerAnimalsTab extends StatelessWidget {
                 Text(a.emoji, style: const TextStyle(fontSize: 32)),
                 const SizedBox(height: 6),
                 Text(a.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
                 Text(a.quality.split(' · ').first,
-                    style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 9),
-                    textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    style:
+                        const TextStyle(color: Color(0xFFB39DDB), fontSize: 9),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),

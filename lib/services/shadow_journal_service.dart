@@ -88,7 +88,8 @@ class ShadowJournalService {
           .map((enc) {
             try {
               final decrypted = _xorReverse(enc, key);
-              return ShadowEntry.fromJson(jsonDecode(decrypted) as Map<String, dynamic>);
+              return ShadowEntry.fromJson(
+                  jsonDecode(decrypted) as Map<String, dynamic>);
             } catch (_) {
               return null;
             }

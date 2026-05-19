@@ -128,7 +128,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
   void _openLesson(String moduleCode) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => VorhangLessonScreen(moduleCode: moduleCode)),
+      MaterialPageRoute(
+          builder: (_) => VorhangLessonScreen(moduleCode: moduleCode)),
     ).then((_) => _fetch());
   }
 
@@ -202,7 +203,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: _gold.withValues(alpha: 0.5)),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                   ),
                 ),
               ),
@@ -247,7 +249,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: _gold.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
@@ -420,7 +423,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: _gold.withValues(alpha: 0.15),
-                              border: Border.all(color: _gold.withValues(alpha: 0.4)),
+                              border: Border.all(
+                                  color: _gold.withValues(alpha: 0.4)),
                             ),
                             child: Icon(
                               _branchIcons[name] ?? Icons.folder,
@@ -520,7 +524,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                   _surface,
                 ],
               ),
-              border: Border.all(color: _gold.withValues(alpha: 0.55), width: 1.4),
+              border:
+                  Border.all(color: _gold.withValues(alpha: 0.55), width: 1.4),
               boxShadow: [
                 BoxShadow(
                   color: _gold.withValues(alpha: 0.18),
@@ -535,7 +540,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: _gold.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
@@ -553,7 +559,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                     if (isBoss) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [_gold, Color(0xFFFFD700)],
@@ -609,7 +616,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    Icon(Icons.bolt, color: _gold.withValues(alpha: 0.85), size: 16),
+                    Icon(Icons.bolt,
+                        color: _gold.withValues(alpha: 0.85), size: 16),
                     const SizedBox(width: 4),
                     Text(
                       '+$xp XP',
@@ -692,9 +700,11 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: const Color(0xFF1B5E20).withValues(alpha: 0.4),
-                  border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
+                  border: Border.all(
+                      color: Colors.greenAccent.withValues(alpha: 0.5)),
                 ),
-                child: Icon(icon, color: Colors.greenAccent.withValues(alpha: 0.9), size: 18),
+                child: Icon(icon,
+                    color: Colors.greenAccent.withValues(alpha: 0.9), size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -713,7 +723,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.check_circle, color: Colors.greenAccent, size: 14),
+                        const Icon(Icons.check_circle,
+                            color: Colors.greenAccent, size: 14),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -730,7 +741,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: _gold.withValues(alpha: 0.5), size: 18),
+              Icon(Icons.chevron_right,
+                  color: _gold.withValues(alpha: 0.5), size: 18),
             ],
           ),
         ),
@@ -823,7 +835,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
           Expanded(
             child: Text(
               'Module konnten nicht geladen werden.',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
             ),
           ),
           TextButton(

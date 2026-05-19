@@ -215,7 +215,8 @@ class ResponsiveGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final itemWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        final itemWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
         return Wrap(
           spacing: spacing,
           runSpacing: runSpacing,
@@ -248,8 +249,10 @@ class ResponsiveContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveMaxWidth = maxWidth ?? ResponsiveHelper.responsiveCardMaxWidth(context);
-    final effectivePadding = padding ?? ResponsiveHelper.responsivePadding(context);
+    final effectiveMaxWidth =
+        maxWidth ?? ResponsiveHelper.responsiveCardMaxWidth(context);
+    final effectivePadding =
+        padding ?? ResponsiveHelper.responsivePadding(context);
 
     Widget content = Padding(
       padding: effectivePadding,

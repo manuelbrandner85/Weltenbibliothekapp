@@ -15,92 +15,202 @@ import '../../../widgets/cinematic/wb_vignette.dart';
 // Wir spiegeln die Major-Arcana hier als TarotCard-Liste, damit das
 // Lexikon ohne Refactor des bestehenden tarot_oracle_screen funktioniert.
 const List<TarotCard> _tarotMajor = [
-  TarotCard(index: 0, name: 'Der Narr', nameEn: 'The Fool', suit: TarotSuit.major,
-      emoji: '🃏', element: 'Aether',
+  TarotCard(
+      index: 0,
+      name: 'Der Narr',
+      nameEn: 'The Fool',
+      suit: TarotSuit.major,
+      emoji: '🃏',
+      element: 'Aether',
       meaning: 'Neuer Anfang, naives Vertrauen, Sprung ins Unbekannte.',
       reversedMeaning: 'Unverantwortlichkeit, Naivität ohne Erkenntnis.'),
-  TarotCard(index: 1, name: 'Der Magier', nameEn: 'The Magician', suit: TarotSuit.major,
-      emoji: '🪄', element: 'Aether',
+  TarotCard(
+      index: 1,
+      name: 'Der Magier',
+      nameEn: 'The Magician',
+      suit: TarotSuit.major,
+      emoji: '🪄',
+      element: 'Aether',
       meaning: 'Willenskraft, Manifestation, aktive Schöpfung.',
       reversedMeaning: 'Manipulation, fehlende Konzentration.'),
-  TarotCard(index: 2, name: 'Die Hohepriesterin', nameEn: 'The High Priestess', suit: TarotSuit.major,
-      emoji: '🌙', element: 'Aether',
+  TarotCard(
+      index: 2,
+      name: 'Die Hohepriesterin',
+      nameEn: 'The High Priestess',
+      suit: TarotSuit.major,
+      emoji: '🌙',
+      element: 'Aether',
       meaning: 'Intuition, verborgenes Wissen, Stille als Weisheits-Quelle.',
       reversedMeaning: 'Verdrängung der inneren Stimme.'),
-  TarotCard(index: 3, name: 'Die Herrscherin', nameEn: 'The Empress', suit: TarotSuit.major,
-      emoji: '👑', element: 'Aether',
+  TarotCard(
+      index: 3,
+      name: 'Die Herrscherin',
+      nameEn: 'The Empress',
+      suit: TarotSuit.major,
+      emoji: '👑',
+      element: 'Aether',
       meaning: 'Fülle, Mutterprinzip, Schöpfung, sinnliche Lebenslust.',
       reversedMeaning: 'Erstickende Fürsorge, materielle Anhaftung.'),
-  TarotCard(index: 4, name: 'Der Herrscher', nameEn: 'The Emperor', suit: TarotSuit.major,
-      emoji: '🏛️', element: 'Aether',
+  TarotCard(
+      index: 4,
+      name: 'Der Herrscher',
+      nameEn: 'The Emperor',
+      suit: TarotSuit.major,
+      emoji: '🏛️',
+      element: 'Aether',
       meaning: 'Struktur, Vaterprinzip, klare Grenzen.',
       reversedMeaning: 'Starre Tyrannei, Kontrollzwang.'),
-  TarotCard(index: 5, name: 'Der Hierophant', nameEn: 'The Hierophant', suit: TarotSuit.major,
-      emoji: '🔑', element: 'Aether',
+  TarotCard(
+      index: 5,
+      name: 'Der Hierophant',
+      nameEn: 'The Hierophant',
+      suit: TarotSuit.major,
+      emoji: '🔑',
+      element: 'Aether',
       meaning: 'Tradition, spirituelle Lehre, Initiation.',
       reversedMeaning: 'Dogmatismus, blinder Gehorsam.'),
-  TarotCard(index: 6, name: 'Die Liebenden', nameEn: 'The Lovers', suit: TarotSuit.major,
-      emoji: '💞', element: 'Aether',
+  TarotCard(
+      index: 6,
+      name: 'Die Liebenden',
+      nameEn: 'The Lovers',
+      suit: TarotSuit.major,
+      emoji: '💞',
+      element: 'Aether',
       meaning: 'Wahl aus dem Herzen, Vereinigung, Werte-Entscheidung.',
       reversedMeaning: 'Disharmonie, Bindungsangst.'),
-  TarotCard(index: 7, name: 'Der Wagen', nameEn: 'The Chariot', suit: TarotSuit.major,
-      emoji: '🏎️', element: 'Aether',
+  TarotCard(
+      index: 7,
+      name: 'Der Wagen',
+      nameEn: 'The Chariot',
+      suit: TarotSuit.major,
+      emoji: '🏎️',
+      element: 'Aether',
       meaning: 'Triumph durch Willenskraft, Kontrolle der Gegensätze.',
       reversedMeaning: 'Kontrollverlust, Aggression.'),
-  TarotCard(index: 8, name: 'Die Kraft', nameEn: 'Strength', suit: TarotSuit.major,
-      emoji: '🦁', element: 'Aether',
+  TarotCard(
+      index: 8,
+      name: 'Die Kraft',
+      nameEn: 'Strength',
+      suit: TarotSuit.major,
+      emoji: '🦁',
+      element: 'Aether',
       meaning: 'Sanfte Stärke, innere Tapferkeit, Geduld.',
       reversedMeaning: 'Selbstzweifel, ungezähmte Triebe.'),
-  TarotCard(index: 9, name: 'Der Eremit', nameEn: 'The Hermit', suit: TarotSuit.major,
-      emoji: '🕯️', element: 'Aether',
+  TarotCard(
+      index: 9,
+      name: 'Der Eremit',
+      nameEn: 'The Hermit',
+      suit: TarotSuit.major,
+      emoji: '🕯️',
+      element: 'Aether',
       meaning: 'Inneres Licht, Rückzug, Weisheits-Suche.',
       reversedMeaning: 'Isolation, Erstarrung.'),
-  TarotCard(index: 10, name: 'Das Rad des Schicksals', nameEn: 'Wheel of Fortune', suit: TarotSuit.major,
-      emoji: '🎡', element: 'Aether',
+  TarotCard(
+      index: 10,
+      name: 'Das Rad des Schicksals',
+      nameEn: 'Wheel of Fortune',
+      suit: TarotSuit.major,
+      emoji: '🎡',
+      element: 'Aether',
       meaning: 'Wendepunkt, Zyklus, Schicksal in Bewegung.',
       reversedMeaning: 'Widerstand gegen den Wandel.'),
-  TarotCard(index: 11, name: 'Die Gerechtigkeit', nameEn: 'Justice', suit: TarotSuit.major,
-      emoji: '⚖️', element: 'Aether',
+  TarotCard(
+      index: 11,
+      name: 'Die Gerechtigkeit',
+      nameEn: 'Justice',
+      suit: TarotSuit.major,
+      emoji: '⚖️',
+      element: 'Aether',
       meaning: 'Wahrheit, Ausgleich, karmische Balance.',
       reversedMeaning: 'Unfairness, Bias.'),
-  TarotCard(index: 12, name: 'Der Gehängte', nameEn: 'The Hanged Man', suit: TarotSuit.major,
-      emoji: '🙃', element: 'Aether',
+  TarotCard(
+      index: 12,
+      name: 'Der Gehängte',
+      nameEn: 'The Hanged Man',
+      suit: TarotSuit.major,
+      emoji: '🙃',
+      element: 'Aether',
       meaning: 'Perspektivwechsel, Hingabe, freiwillige Pause.',
       reversedMeaning: 'Festhalten, Stagnation.'),
-  TarotCard(index: 13, name: 'Der Tod', nameEn: 'Death', suit: TarotSuit.major,
-      emoji: '💀', element: 'Aether',
+  TarotCard(
+      index: 13,
+      name: 'Der Tod',
+      nameEn: 'Death',
+      suit: TarotSuit.major,
+      emoji: '💀',
+      element: 'Aether',
       meaning: 'Transformation, Ende eines Zyklus, Neugeburt.',
       reversedMeaning: 'Widerstand gegen Veränderung.'),
-  TarotCard(index: 14, name: 'Die Mässigkeit', nameEn: 'Temperance', suit: TarotSuit.major,
-      emoji: '🌊', element: 'Aether',
+  TarotCard(
+      index: 14,
+      name: 'Die Mässigkeit',
+      nameEn: 'Temperance',
+      suit: TarotSuit.major,
+      emoji: '🌊',
+      element: 'Aether',
       meaning: 'Alchemie, Balance, geduldige Mischung.',
       reversedMeaning: 'Überschuss, Ungeduld.'),
-  TarotCard(index: 15, name: 'Der Teufel', nameEn: 'The Devil', suit: TarotSuit.major,
-      emoji: '😈', element: 'Aether',
+  TarotCard(
+      index: 15,
+      name: 'Der Teufel',
+      nameEn: 'The Devil',
+      suit: TarotSuit.major,
+      emoji: '😈',
+      element: 'Aether',
       meaning: 'Bindung, Schatten, Sucht -- aber die Ketten sind lose.',
       reversedMeaning: 'Befreiung aus alten Mustern.'),
-  TarotCard(index: 16, name: 'Der Turm', nameEn: 'The Tower', suit: TarotSuit.major,
-      emoji: '🗼', element: 'Aether',
+  TarotCard(
+      index: 16,
+      name: 'Der Turm',
+      nameEn: 'The Tower',
+      suit: TarotSuit.major,
+      emoji: '🗼',
+      element: 'Aether',
       meaning: 'Plötzliche Erkenntnis, Zerstörung falscher Strukturen.',
       reversedMeaning: 'Vermeidung der notwendigen Erschütterung.'),
-  TarotCard(index: 17, name: 'Der Stern', nameEn: 'The Star', suit: TarotSuit.major,
-      emoji: '⭐', element: 'Aether',
+  TarotCard(
+      index: 17,
+      name: 'Der Stern',
+      nameEn: 'The Star',
+      suit: TarotSuit.major,
+      emoji: '⭐',
+      element: 'Aether',
       meaning: 'Hoffnung, Heilung, Inspiration nach dem Sturm.',
       reversedMeaning: 'Verlust der Hoffnung.'),
-  TarotCard(index: 18, name: 'Der Mond', nameEn: 'The Moon', suit: TarotSuit.major,
-      emoji: '🌕', element: 'Aether',
+  TarotCard(
+      index: 18,
+      name: 'Der Mond',
+      nameEn: 'The Moon',
+      suit: TarotSuit.major,
+      emoji: '🌕',
+      element: 'Aether',
       meaning: 'Illusion, Unterbewusstes, Traum.',
       reversedMeaning: 'Verwirrung lichtet sich.'),
-  TarotCard(index: 19, name: 'Die Sonne', nameEn: 'The Sun', suit: TarotSuit.major,
-      emoji: '☀️', element: 'Aether',
+  TarotCard(
+      index: 19,
+      name: 'Die Sonne',
+      nameEn: 'The Sun',
+      suit: TarotSuit.major,
+      emoji: '☀️',
+      element: 'Aether',
       meaning: 'Lebensfreude, Klarheit, Erfolg.',
       reversedMeaning: 'Vorübergehende Trübung.'),
-  TarotCard(index: 20, name: 'Das Gericht', nameEn: 'Judgement', suit: TarotSuit.major,
-      emoji: '📯', element: 'Aether',
+  TarotCard(
+      index: 20,
+      name: 'Das Gericht',
+      nameEn: 'Judgement',
+      suit: TarotSuit.major,
+      emoji: '📯',
+      element: 'Aether',
       meaning: 'Erwachen, Berufung, höhere Einsicht.',
       reversedMeaning: 'Selbstverurteilung, verdrängter Ruf.'),
-  TarotCard(index: 21, name: 'Die Welt', nameEn: 'The World', suit: TarotSuit.major,
-      emoji: '🌍', element: 'Aether',
+  TarotCard(
+      index: 21,
+      name: 'Die Welt',
+      nameEn: 'The World',
+      suit: TarotSuit.major,
+      emoji: '🌍',
+      element: 'Aether',
       meaning: 'Vollendung, Ganzheit, Zyklus abgeschlossen.',
       reversedMeaning: 'Unvollendete Aufgaben.'),
 ];
@@ -140,10 +250,12 @@ class _TarotLexiconScreenState extends State<TarotLexiconScreen> {
     if (_filter != null) list = list.where((c) => c.suit == _filter).toList();
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
-      list = list.where((c) =>
-          c.name.toLowerCase().contains(q) ||
-          c.nameEn.toLowerCase().contains(q) ||
-          c.keywords.any((k) => k.toLowerCase().contains(q))).toList();
+      list = list
+          .where((c) =>
+              c.name.toLowerCase().contains(q) ||
+              c.nameEn.toLowerCase().contains(q) ||
+              c.keywords.any((k) => k.toLowerCase().contains(q)))
+          .toList();
     }
     return list;
   }
@@ -251,14 +363,15 @@ class _TarotLexiconScreenState extends State<TarotLexiconScreen> {
               onTap: () => setState(() => _filter = suit),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: sel
                       ? _purple.withValues(alpha: 0.25)
                       : Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: sel ? _purple : Colors.transparent, width: 1.4),
+                      color: sel ? _purple : Colors.transparent, width: 1.4),
                 ),
                 child: Text(label,
                     style: TextStyle(
@@ -305,8 +418,8 @@ class _TarotLexiconScreenState extends State<TarotLexiconScreen> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: _suiteColor(c.suit).withValues(alpha: 0.4)),
+              border:
+                  Border.all(color: _suiteColor(c.suit).withValues(alpha: 0.4)),
             ),
             child: Row(
               children: [
@@ -389,7 +502,8 @@ class _CardDetailSheet extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF0B0716).withValues(alpha: 0.96),
               border: Border(
-                  top: BorderSide(color: accent.withValues(alpha: 0.4), width: 1.5)),
+                  top: BorderSide(
+                      color: accent.withValues(alpha: 0.4), width: 1.5)),
             ),
             child: ListView(
               controller: ctrl,
@@ -397,7 +511,8 @@ class _CardDetailSheet extends StatelessWidget {
               children: [
                 Center(
                   child: Container(
-                    width: 50, height: 4,
+                    width: 50,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(2),
@@ -406,8 +521,7 @@ class _CardDetailSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Center(
-                  child: Text(card.emoji,
-                      style: const TextStyle(fontSize: 70)),
+                  child: Text(card.emoji, style: const TextStyle(fontSize: 70)),
                 ),
                 const SizedBox(height: 16),
                 Center(
@@ -442,7 +556,8 @@ class _CardDetailSheet extends StatelessWidget {
                           letterSpacing: 1.5)),
                   const SizedBox(height: 8),
                   Wrap(
-                    spacing: 6, runSpacing: 6,
+                    spacing: 6,
+                    runSpacing: 6,
                     children: card.keywords
                         .map((k) => Container(
                               padding: const EdgeInsets.symmetric(
@@ -455,7 +570,8 @@ class _CardDetailSheet extends StatelessWidget {
                               ),
                               child: Text(k,
                                   style: TextStyle(
-                                      color: accent, fontSize: 11.5,
+                                      color: accent,
+                                      fontSize: 11.5,
                                       fontWeight: FontWeight.w700)),
                             ))
                         .toList(),

@@ -1,5 +1,5 @@
 /// 📁 EPSTEIN FILES - GOVERNMENT RESEARCH TOOL
-/// 
+///
 /// Funktionalität:
 /// - Lädt offiziell veröffentlichte Epstein-Dokumente von justice.gov
 /// - PDF-Download und In-App-Anzeige mit Übersetzungsfunktion
@@ -7,7 +7,7 @@
 library;
 
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -21,15 +21,17 @@ class EpsteinFilesSimpleScreen extends StatefulWidget {
   const EpsteinFilesSimpleScreen({super.key});
 
   @override
-  State<EpsteinFilesSimpleScreen> createState() => _EpsteinFilesSimpleScreenState();
+  State<EpsteinFilesSimpleScreen> createState() =>
+      _EpsteinFilesSimpleScreenState();
 }
 
-class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> with SingleTickerProviderStateMixin {
+class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   late WebViewController _jmailWebViewController;
   bool _translateEnabled = false; // 🌐 Übersetzung AN/AUS
-  
+
   // PDF Viewing State entfernt - Dokumenten-Archiv wurde gelöscht
   // (Code bleibt für potenzielle zukünftige Nutzung)
   bool _showPdfViewer = false;
@@ -39,22 +41,23 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
   String? _translatedText;
   bool _isTranslating = false;
   bool _isLoadingPdf = false;
-  
+
   final GoogleTranslator _translator = GoogleTranslator();
-  
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 1, vsync: this); // NUR 1 TAB: Epstein Files (JMail)
+    _tabController = TabController(
+        length: 1, vsync: this); // NUR 1 TAB: Epstein Files (JMail)
     _initJmailWebView(); // KORRIGIERT: JMail initialisieren
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   void _initJmailWebView() {
     _jmailWebViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -71,8 +74,11 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
           },
           onNavigationRequest: (NavigationRequest request) {
             // 🌐 Nur übersetzen wenn _translateEnabled = true
-            if (_translateEnabled && request.url.startsWith('http') && !request.url.contains('translate.google.com')) {
-              final translatedUrl = 'https://translate.google.com/translate?sl=auto&tl=de&u=${Uri.encodeComponent(request.url)}';
+            if (_translateEnabled &&
+                request.url.startsWith('http') &&
+                !request.url.contains('translate.google.com')) {
+              final translatedUrl =
+                  'https://translate.google.com/translate?sl=auto&tl=de&u=${Uri.encodeComponent(request.url)}';
               _jmailWebViewController.loadRequest(Uri.parse(translatedUrl));
               return NavigationDecision.prevent;
             }
@@ -84,18 +90,17 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       // 🌐 Lade JMail DIREKT (OHNE Übersetzung beim Start)
       ..loadRequest(Uri.parse('https://jmail.world/'));
   }
-  
+
   /// 🌐 Toggle Übersetzung - Lädt Seite mit/ohne Google Translate neu
   void _toggleTranslation() {
     setState(() {
       _translateEnabled = !_translateEnabled;
     });
-    
+
     // Lade Seite neu mit/ohne Übersetzung
     if (_translateEnabled) {
-      _jmailWebViewController.loadRequest(
-        Uri.parse('https://translate.google.com/translate?sl=en&tl=de&u=https://jmail.world/')
-      );
+      _jmailWebViewController.loadRequest(Uri.parse(
+          'https://translate.google.com/translate?sl=en&tl=de&u=https://jmail.world/'));
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('🌐 Übersetzung aktiviert - Seite wird übersetzt'),
@@ -114,7 +119,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       );
     }
   }
-  
+
   /// 🌐 Verstecke Google Translate Banner - Sieht sauberer aus
   void _hideGoogleTranslateBanner() {
     final jsCode = '''
@@ -134,7 +139,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
         console.log('✅ Google Translate Banner versteckt');
       })();
     ''';
-    
+
     // JavaScript nach 1 Sekunde ausführen
     Future.delayed(const Duration(seconds: 1), () {
       try {
@@ -146,11 +151,9 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       }
     });
   }
-  
-  // PDF Handler & Dokumenten-Archiv entfernt - nicht mehr benötigt
-  
 
-  
+  // PDF Handler & Dokumenten-Archiv entfernt - nicht mehr benötigt
+
   // ignore: unused_element
   Future<void> _openPdfInApp(String pdfUrl) async {
     if (kIsWeb) {
@@ -167,11 +170,11 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       }
       return;
     }
-    
+
     setState(() {
       _isLoadingPdf = true;
     });
-    
+
     try {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -195,38 +198,37 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
           ),
         );
       }
-      
-      final fullUrl = pdfUrl.startsWith('http') 
-          ? pdfUrl 
-          : 'https://www.justice.gov$pdfUrl';
-      
+
+      final fullUrl =
+          pdfUrl.startsWith('http') ? pdfUrl : 'https://www.justice.gov$pdfUrl';
+
       if (kDebugMode) {
         debugPrint('📥 Lade PDF: $fullUrl');
       }
-      
+
       final httpClient = HttpClient();
       final request = await httpClient.getUrl(Uri.parse(fullUrl));
       final response = await request.close();
-      
+
       if (response.statusCode != 200) {
         httpClient.close();
         throw Exception('PDF-Download fehlgeschlagen: ${response.statusCode}');
       }
-      
+
       final pdfBytes = await consolidateHttpClientResponseBytes(response);
       httpClient.close();
-      
+
       if (kDebugMode) {
         debugPrint('📄 PDF geladen: ${pdfBytes.length} bytes');
       }
-      
+
       String extractedText;
       try {
         final pdfDoc = PdfDocument(inputBytes: pdfBytes);
         final textExtractor = PdfTextExtractor(pdfDoc);
         extractedText = textExtractor.extractText();
         pdfDoc.dispose();
-        
+
         if (extractedText.trim().isEmpty) {
           extractedText = 'Dieses Dokument enthält keinen extrahierbaren Text.';
         }
@@ -234,13 +236,14 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
         if (kDebugMode) {
           debugPrint('⚠️ Text-Extraktion fehlgeschlagen: $e');
         }
-        extractedText = 'PDF konnte nicht gelesen werden. Möglicherweise ist es gescannt oder verschlüsselt.';
+        extractedText =
+            'PDF konnte nicht gelesen werden. Möglicherweise ist es gescannt oder verschlüsselt.';
       }
-      
+
       if (kDebugMode) {
         debugPrint('📄 Text extrahiert: ${extractedText.length} Zeichen');
       }
-      
+
       setState(() {
         _showPdfViewer = true;
         _currentPdfUrl = pdfUrl;
@@ -249,16 +252,15 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
         _translatedText = null;
         _isLoadingPdf = false;
       });
-      
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Fehler beim PDF-Laden: $e');
       }
-      
+
       setState(() {
         _isLoadingPdf = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -275,7 +277,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       }
     }
   }
-  
+
   Future<void> _translatePdf() async {
     if (_extractedText == null || _extractedText!.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -286,52 +288,52 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       );
       return;
     }
-    
+
     setState(() {
       _isTranslating = true;
     });
-    
+
     try {
       if (kDebugMode) {
         debugPrint('🌐 Übersetze ${_extractedText!.length} Zeichen...');
       }
-      
+
       String translatedText = '';
       const chunkSize = 4000;
       final chunks = <String>[];
       for (int i = 0; i < _extractedText!.length; i += chunkSize) {
-        final end = (i + chunkSize < _extractedText!.length) 
-            ? i + chunkSize 
+        final end = (i + chunkSize < _extractedText!.length)
+            ? i + chunkSize
             : _extractedText!.length;
         chunks.add(_extractedText!.substring(i, end));
       }
-      
+
       if (kDebugMode) {
         debugPrint('📦 Übersetze ${chunks.length} Abschnitte');
       }
-      
+
       for (int i = 0; i < chunks.length; i++) {
         final translation = await _translator.translate(
           chunks[i],
           from: 'en',
           to: 'de',
         );
-        
+
         translatedText += translation.text;
-        
+
         if (i < chunks.length - 1) {
           await Future.delayed(const Duration(milliseconds: 500));
         }
       }
-      
+
       setState(() {
         _translatedText = translatedText;
       });
-      
+
       if (kDebugMode) {
         debugPrint('✅ Übersetzung abgeschlossen');
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -341,12 +343,11 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
           ),
         );
       }
-      
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Übersetzungsfehler: $e');
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -366,7 +367,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       });
     }
   }
-  
+
   void _closePdfViewer() {
     setState(() {
       _showPdfViewer = false;
@@ -376,7 +377,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       _translatedText = null;
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -422,8 +423,8 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
                 tooltip: 'Zurück',
               )
             : null,
-        bottom: _showPdfViewer 
-            ? null 
+        bottom: _showPdfViewer
+            ? null
             : TabBar(
                 controller: _tabController,
                 indicatorColor: const Color(0xFFD32F2F),
@@ -437,8 +438,8 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
                 ],
               ),
       ),
-      body: _showPdfViewer 
-          ? _buildPdfViewer() 
+      body: _showPdfViewer
+          ? _buildPdfViewer()
           : TabBarView(
               controller: _tabController,
               children: [
@@ -448,9 +449,8 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       floatingActionButton: _showPdfViewer && _extractedText != null
           ? FloatingActionButton.extended(
               onPressed: _isTranslating ? null : _translatePdf,
-              backgroundColor: _isTranslating 
-                  ? Colors.grey 
-                  : const Color(0xFFD32F2F),
+              backgroundColor:
+                  _isTranslating ? Colors.grey : const Color(0xFFD32F2F),
               icon: _isTranslating
                   ? const SizedBox(
                       width: 20,
@@ -462,9 +462,11 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
                     )
                   : const Icon(Icons.translate),
               label: Text(
-                _isTranslating 
-                    ? 'ÜBERSETZE...' 
-                    : (_translatedText != null ? 'NEU ÜBERSETZEN' : 'INS DEUTSCHE'),
+                _isTranslating
+                    ? 'ÜBERSETZE...'
+                    : (_translatedText != null
+                        ? 'NEU ÜBERSETZEN'
+                        : 'INS DEUTSCHE'),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
@@ -474,15 +476,14 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
           : null,
     );
   }
-  
-  
+
   /// 🌐 JMail Tab (umbenannt als "Epstein Files")
   Widget _buildJmailTab() {
     return WebViewWidget(controller: _jmailWebViewController);
   }
-  
+
   // _buildEpsteinTab entfernt - Dokumenten-Archiv wurde gelöscht
-  
+
   Widget _buildPdfViewer() {
     return Column(
       children: [
@@ -522,7 +523,6 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
             ],
           ),
         ),
-        
         if (_extractedText != null)
           DefaultTabController(
             length: 2,
@@ -541,9 +541,11 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
                   Expanded(
                     child: TabBarView(
                       children: [
-                        _buildTextView(_extractedText!, 'Englischer Originaltext'),
+                        _buildTextView(
+                            _extractedText!, 'Englischer Originaltext'),
                         _translatedText != null
-                            ? _buildTextView(_translatedText!, 'Deutsche Übersetzung')
+                            ? _buildTextView(
+                                _translatedText!, 'Deutsche Übersetzung')
                             : _buildTranslationPlaceholder(),
                       ],
                     ),
@@ -565,7 +567,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       ],
     );
   }
-  
+
   Widget _buildTextView(String text, String hint) {
     return Container(
       color: const Color(0xFF0A0A0A),
@@ -582,7 +584,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
       ),
     );
   }
-  
+
   Widget _buildTranslationPlaceholder() {
     return Container(
       color: const Color(0xFF0A0A0A),

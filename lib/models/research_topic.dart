@@ -3,12 +3,13 @@ class ResearchTopic {
   final String id;
   final String title;
   final String description;
-  final List<String> categories; // z.B. "Geopolitik", "Geschichte", "Machtstrukturen"
+  final List<String>
+      categories; // z.B. "Geopolitik", "Geschichte", "Machtstrukturen"
   final List<String> sources;
   final DateTime createdAt;
   final int viewCount;
   final int commentCount;
-  
+
   ResearchTopic({
     required this.id,
     required this.title,
@@ -19,7 +20,7 @@ class ResearchTopic {
     this.viewCount = 0,
     this.commentCount = 0,
   });
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -32,7 +33,7 @@ class ResearchTopic {
       'commentCount': commentCount,
     };
   }
-  
+
   factory ResearchTopic.fromJson(Map<String, dynamic> json) {
     return ResearchTopic(
       id: json['id'] as String,

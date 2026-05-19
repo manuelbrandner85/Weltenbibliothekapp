@@ -151,8 +151,7 @@ class _BoardConnection {
         'label': label,
       };
 
-  factory _BoardConnection.fromJson(Map<String, dynamic> j) =>
-      _BoardConnection(
+  factory _BoardConnection.fromJson(Map<String, dynamic> j) => _BoardConnection(
         fromId: j['from'] as String? ?? '',
         toId: j['to'] as String? ?? '',
         label: j['label'] as String?,
@@ -275,8 +274,7 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Gespeichert'), backgroundColor: _accent),
+        const SnackBar(content: Text('Gespeichert'), backgroundColor: _accent),
       );
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Board save: $e');
@@ -297,7 +295,8 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
     );
     final spawn = base + scatter;
     setState(() {
-      final id = 'item_${DateTime.now().millisecondsSinceEpoch}_${_nextItemSeq++}';
+      final id =
+          'item_${DateTime.now().millisecondsSinceEpoch}_${_nextItemSeq++}';
       _items.add(_BoardItem(
         id: id,
         title: kind.label,
@@ -343,8 +342,7 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: StatefulBuilder(
           builder: (ctx, setSheet) => Padding(
             padding: const EdgeInsets.all(20),
@@ -396,8 +394,7 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
                         ],
                       ),
                       selected: sel,
-                      onSelected: (_) =>
-                          setSheet(() => selectedKind = k),
+                      onSelected: (_) => setSheet(() => selectedKind = k),
                       backgroundColor: _canvas,
                       selectedColor: k.color.withValues(alpha: 0.3),
                       side: BorderSide(
@@ -448,14 +445,13 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
         item.title = titleCtrl.text.trim().isEmpty
             ? selectedKind.label
             : titleCtrl.text.trim();
-        item.note =
-            noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim();
+        item.note = noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim();
         item.kind = selectedKind;
       });
     } else if (ok == false) {
       setState(() {
-        _connections.removeWhere(
-            (c) => c.fromId == item.id || c.toId == item.id);
+        _connections
+            .removeWhere((c) => c.fromId == item.id || c.toId == item.id);
         _items.removeWhere((e) => e.id == item.id);
         if (_selectedId == item.id) _selectedId = null;
         if (_connectingFrom == item.id) _connectingFrom = null;
@@ -576,8 +572,7 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
               Flexible(
                 child: Text(_title,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 16)),
+                    style: const TextStyle(color: Colors.white, fontSize: 16)),
               ),
               const SizedBox(width: 6),
               const Icon(Icons.edit, size: 14, color: Colors.white54),
@@ -607,8 +602,7 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.center_focus_strong,
-                color: Colors.white70),
+            icon: const Icon(Icons.center_focus_strong, color: Colors.white70),
             tooltip: 'Ansicht zuruecksetzen',
             onPressed: () => _transform.value = Matrix4.identity(),
           ),
@@ -681,8 +675,7 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
                   children: [
                     Icon(k.icon, color: k.color, size: 18),
                     const SizedBox(width: 10),
-                    Text(k.label,
-                        style: const TextStyle(color: Colors.white)),
+                    Text(k.label, style: const TextStyle(color: Colors.white)),
                   ],
                 ),
               ))
@@ -931,6 +924,5 @@ class _ConnectionsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConnectionsPainter oldDelegate) =>
-      oldDelegate.items != items ||
-      oldDelegate.connections != connections;
+      oldDelegate.items != items || oldDelegate.connections != connections;
 }

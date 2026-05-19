@@ -20,9 +20,9 @@ import 'screens/web/web_admin_panel.dart'; // 👑 Web Admin Panel
 import 'widgets/livekit_mini_bar.dart'; // 📞 Mini-Bar für aktiven LiveKit-Call
 import 'screens/energie_world_screen.dart'; // ✅ FIXED: Correct path
 import 'screens/energie/achievements_screen.dart';
-import 'screens/daily_challenges_screen.dart';  // 🎯 Daily Challenges
-import 'screens/leaderboard_screen.dart';  // 🏆 Leaderboard
-import 'screens/enhanced_profile_screen.dart';  // 👤 Enhanced Profile
+import 'screens/daily_challenges_screen.dart'; // 🎯 Daily Challenges
+import 'screens/leaderboard_screen.dart'; // 🏆 Leaderboard
+import 'screens/enhanced_profile_screen.dart'; // 👤 Enhanced Profile
 import 'screens/cloudflare_notification_settings_screen.dart'; // CLOUDFLARE PUSH
 import 'screens/materie/search_history_screen.dart';
 import 'screens/shared/update_history_screen.dart';
@@ -50,10 +50,10 @@ import 'services/image_cache_service.dart'; // 🖼️ IMAGE CACHE (NEW)
 import 'services/haptic_feedback_service.dart'; // 📳 HAPTIC FEEDBACK (NEW Phase 3)
 import 'services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Phase 3)
 import 'config/enhanced_app_themes.dart'; // 🎨 ENHANCED UI/UX THEMES
-import 'services/achievement_service.dart';  // 🏆 Achievement System
-import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
-import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
-import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
+import 'services/achievement_service.dart'; // 🏆 Achievement System
+import 'widgets/achievement_unlock_dialog.dart'; // 🏆 Achievement UI
+import 'utils/error_boundary.dart'; // 🛡️ Error Boundary
+import 'services/supabase_service.dart'; // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_migration_service.dart'; // 👻 GHOST-USER-MIGRATION (v103)
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
 import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (FCM + in-app)
@@ -132,47 +132,49 @@ void main() async {
 
   // 🔔 PUSH NOTIFICATION MANAGER - Auto-Register + in-app polling (nur Mobile)
   // (fire-and-forget; init itself is awaitable but non-critical)
-  if (!kIsWeb) unawaited(PushNotificationManager.instance.init(
-    onDeepLink: (data) {
-      final nav = appNavigatorKey.currentState;
-      if (nav == null) return;
-      final type = data['type']?.toString() ?? '';
-      final route = data['route']?.toString();
-      final roomId = data['room_id']?.toString() ?? data['roomId']?.toString();
+  if (!kIsWeb)
+    unawaited(PushNotificationManager.instance.init(
+      onDeepLink: (data) {
+        final nav = appNavigatorKey.currentState;
+        if (nav == null) return;
+        final type = data['type']?.toString() ?? '';
+        final route = data['route']?.toString();
+        final roomId =
+            data['room_id']?.toString() ?? data['roomId']?.toString();
 
-      // Explizite Route hat höchste Priorität
-      if (route != null && route.isNotEmpty) {
-        nav.pushNamed(route);
-        return;
-      }
+        // Explizite Route hat höchste Priorität
+        if (route != null && route.isNotEmpty) {
+          nav.pushNamed(route);
+          return;
+        }
 
-      switch (type) {
-        case 'chat_message':
-        case 'mention':
-        case 'reply':
-          // Chat-Räume: Energie-Prefix → Energie-Dashboard, sonst Home
-          if (roomId != null && roomId.startsWith('energie-')) {
-            nav.pushNamed('/dashboard');
-          }
-          // Materie-Räume landen auf PortalHome (kein eigener Materie-Route)
-          break;
-        case 'achievement':
-          nav.pushNamed('/achievements');
-          break;
-        case 'like':
-        case 'comment':
-        case 'follow':
-        case 'new_article':
-          // Benachrichtigungszentrum öffnen
-          nav.pushNamed('/notifications');
-          break;
-        default:
-          // Kein Route-Mapping → ignorieren (App bleibt auf aktuellem Screen)
-          break;
-      }
-    },
-  ));
-  
+        switch (type) {
+          case 'chat_message':
+          case 'mention':
+          case 'reply':
+            // Chat-Räume: Energie-Prefix → Energie-Dashboard, sonst Home
+            if (roomId != null && roomId.startsWith('energie-')) {
+              nav.pushNamed('/dashboard');
+            }
+            // Materie-Räume landen auf PortalHome (kein eigener Materie-Route)
+            break;
+          case 'achievement':
+            nav.pushNamed('/achievements');
+            break;
+          case 'like':
+          case 'comment':
+          case 'follow':
+          case 'new_article':
+            // Benachrichtigungszentrum öffnen
+            nav.pushNamed('/notifications');
+            break;
+          default:
+            // Kein Route-Mapping → ignorieren (App bleibt auf aktuellem Screen)
+            break;
+        }
+      },
+    ));
+
   // ═══════════════════════════════════════════════════════════
   // MOBILE SYSTEM UI OPTIMIERUNGEN (SYNC - SCHNELL) — nur auf Mobile
   // ═══════════════════════════════════════════════════════════
@@ -197,16 +199,16 @@ void main() async {
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // KRITISCHE SERVICES (SYNC - NUR DIESE BLOCKIEREN START)
   // ═══════════════════════════════════════════════════════════
-  
+
   // ═══════════════════════════════════════════════════════════
   // KRITISCHE SERVICES (SYNC - BLOCKING)
   // Managed by ServiceManager - NO arbitrary delays!
   // ═══════════════════════════════════════════════════════════
-  
+
   // 🌐 Web + Mobile: Critical Services laufen jetzt auf BEIDEN Plattformen.
   // Hard-Timeout 10s: wenn auf Web ein Service hängt (z.B. SharedPreferences
   // bei IndexedDB-Block, Supabase-Lookup ohne Antwort), läuft die App
@@ -240,11 +242,11 @@ void main() async {
   // 👻 GHOST-USER-MIGRATION (v103): Altnutzer ohne Supabase-Eintrag
   // einmalig nachsynchronisieren. Idempotent, mit Flag in Prefs.
   unawaited(ProfileMigrationService.migrateIfNeeded());
-  
+
   // ═══════════════════════════════════════════════════════════
   // APP STARTEN (NICHT BLOCKIEREND)
   // ═══════════════════════════════════════════════════════════
-  
+
   runApp(
     // 🆕 RIVERPOD: ProviderScope für Admin-System
     ProviderScope(
@@ -254,12 +256,12 @@ void main() async {
       ),
     ),
   );
-  
+
   // ═══════════════════════════════════════════════════════════
   // NICHT-KRITISCHE SERVICES (ASYNC - IM HINTERGRUND)
   // Managed by ServiceManager - Priority-based loading
   // ═══════════════════════════════════════════════════════════
-  
+
   if (!kIsWeb) {
     ServiceManager().initializeBackgroundServices();
   }
@@ -316,11 +318,11 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
       UserPresenceService.instance.stop();
     }
   }
-  
+
   /// 🏆 Setup Achievement Listeners
   void _setupAchievementListeners() {
     final achievementService = AchievementService();
-    
+
     // Listen for achievement unlocks
     achievementService.addUnlockListener((achievement, progress) {
       Future.delayed(Duration.zero, () {
@@ -334,7 +336,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
         }
       });
     });
-    
+
     // Listen for level ups
     achievementService.addLevelUpListener((userLevel) {
       Future.delayed(Duration.zero, () {
@@ -368,7 +370,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
       });
     });
   }
-  
+
   /// Höre auf Achievement-Unlocks (DISABLED - Toast notifications used instead)
   // void _listenToAchievementUnlocks() {
   //   AchievementService().unlockStream.listen((achievement) {
@@ -386,7 +388,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
   //     });
   //   });
   // }
-  
+
   @override
   Widget build(BuildContext context) {
     return provider.Consumer<ThemeService>(
@@ -395,12 +397,12 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
           title: 'Dual Realms - Deep Research',
           debugShowCheckedModeBanner: false,
           navigatorKey: appNavigatorKey,
-          
+
           // 🌗 THEME: Dark/Light via ThemeService (Toggle in Profil-Settings)
           themeMode: themeService.themeMode,
           theme: EnhancedAppThemes.lightTheme,
           darkTheme: EnhancedAppThemes.darkTheme,
-          
+
           // ═══════════════════════════════════════════════════════════
           // SCROLL PERFORMANCE (angepasst für Web und Mobile)
           // ═══════════════════════════════════════════════════════════
@@ -443,36 +445,47 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
           },
           // Web: Login-Gate vor dem Portal
           // Mobile: direkt zum Portal + UpdateGate für OTA-Patch-Dialog
-          home: kIsWeb
-              ? const WebAuthGate()
-              : const _MobileEntryGate(),
+          home: kIsWeb ? const WebAuthGate() : const _MobileEntryGate(),
           routes: {
             '/home': (context) => const IntroImageScreen(),
             '/dashboard': (context) => const EnergieWorldScreen(), // ✅ FIXED
             '/achievements': (context) => const AchievementsScreen(),
-            '/daily_challenges': (context) => const DailyChallengesScreen(),  // 🎯 Daily Challenges
-            '/leaderboard': (context) => const LeaderboardScreen(),  // 🏆 Leaderboard
-            '/enhanced_profile': (context) => const EnhancedProfileScreen(),  // 👤 Enhanced Profile
-            '/notifications': (context) => const CloudflareNotificationSettingsScreen(), // CLOUDFLARE
-            '/search_history': (context) => const SearchHistoryScreen(), // 🆕 SEARCH HISTORY
-            '/health': (context) => const BackendHealthMonitorScreen(), // 🏥 HEALTH MONITOR
-            UpdateHistoryScreen.routeName: (context) => const UpdateHistoryScreen(),
+            '/daily_challenges': (context) =>
+                const DailyChallengesScreen(), // 🎯 Daily Challenges
+            '/leaderboard': (context) =>
+                const LeaderboardScreen(), // 🏆 Leaderboard
+            '/enhanced_profile': (context) =>
+                const EnhancedProfileScreen(), // 👤 Enhanced Profile
+            '/notifications': (context) =>
+                const CloudflareNotificationSettingsScreen(), // CLOUDFLARE
+            '/search_history': (context) =>
+                const SearchHistoryScreen(), // 🆕 SEARCH HISTORY
+            '/health': (context) =>
+                const BackendHealthMonitorScreen(), // 🏥 HEALTH MONITOR
+            UpdateHistoryScreen.routeName: (context) =>
+                const UpdateHistoryScreen(),
             // REMOVED: '/simple_voice_test' route (deprecated Simple Voice Test)
             // 🔐 ADMIN-DASHBOARD (v101 unified, default ueber alle Welten)
             // Per Welt-Pfad bleiben fuer Rueckwaerts-Kompatibilitaet erhalten
             // -- alle laden das gleiche welt-uebergreifende Dashboard.
             '/admin': (context) => const WorldAdminDashboard(world: 'materie'),
-            '/admin/materie': (context) => const WorldAdminDashboard(world: 'materie'),
-            '/admin/energie': (context) => const WorldAdminDashboard(world: 'energie'),
-            '/admin/vorhang': (context) => const WorldAdminDashboard(world: 'vorhang'),
-            '/admin/ursprung': (context) => const WorldAdminDashboard(world: 'ursprung'),
+            '/admin/materie': (context) =>
+                const WorldAdminDashboard(world: 'materie'),
+            '/admin/energie': (context) =>
+                const WorldAdminDashboard(world: 'energie'),
+            '/admin/vorhang': (context) =>
+                const WorldAdminDashboard(world: 'vorhang'),
+            '/admin/ursprung': (context) =>
+                const WorldAdminDashboard(world: 'ursprung'),
             // 🌍 NEUE WELTEN
             '/vorhang': (context) => const VorhangWorldWrapper(),
             '/ursprung': (context) => const UrsprungWorldWrapper(),
             // KI-ANALYSE-TOOLS (für Recherche-Tab)
-            '/propaganda-detector': (context) => const PropagandaDetectorScreen(),
+            '/propaganda-detector': (context) =>
+                const PropagandaDetectorScreen(),
             '/image-forensics': (context) => const ImageForensicsScreen(),
-            '/power-network-mapper': (context) => const PowerNetworkMapperScreen(),
+            '/power-network-mapper': (context) =>
+                const PowerNetworkMapperScreen(),
             '/event-predictor': (context) => const EventPredictorScreen(),
             '/research-hub': (context) => const ResearchHubScreen(),
             // 🌐 WEB-ADMIN (Web-Zugänge verwalten)

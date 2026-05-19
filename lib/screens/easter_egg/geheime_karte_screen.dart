@@ -139,7 +139,8 @@ const List<_MysticPlace> _kPlaces = <_MysticPlace>[
     emoji: '🔺',
     name: 'Pyramiden von Gizeh',
     region: 'Aegypten',
-    description: '2.3 Mio Steinbloecke ueber 2.5t - Bautechnik bis heute Raetsel',
+    description:
+        '2.3 Mio Steinbloecke ueber 2.5t - Bautechnik bis heute Raetsel',
     lat: 29.9792,
     lng: 31.1342,
     category: _Category.antik,
@@ -157,7 +158,8 @@ const List<_MysticPlace> _kPlaces = <_MysticPlace>[
     emoji: '🏛️',
     name: 'Petra',
     region: 'Jordanien',
-    description: 'Aus rosa Fels gehauene Stadt, 1812 nach 600 Jahren wiederentdeckt',
+    description:
+        'Aus rosa Fels gehauene Stadt, 1812 nach 600 Jahren wiederentdeckt',
     lat: 30.3285,
     lng: 35.4444,
     category: _Category.antik,
@@ -166,7 +168,8 @@ const List<_MysticPlace> _kPlaces = <_MysticPlace>[
     emoji: '🗿',
     name: 'Goebekli Tepe',
     region: 'Tuerkei',
-    description: 'Aeltester Tempel der Welt, 11.500 Jahre - aelter als Ackerbau',
+    description:
+        'Aeltester Tempel der Welt, 11.500 Jahre - aelter als Ackerbau',
     lat: 37.2231,
     lng: 38.9224,
     category: _Category.antik,
@@ -260,7 +263,8 @@ const List<_MysticPlace> _kPlaces = <_MysticPlace>[
     emoji: '🪨',
     name: 'Bimini-Road',
     region: 'Bahamas',
-    description: 'Versunkene "Strasse" aus rechteckigen Steinen - Natur oder Bau?',
+    description:
+        'Versunkene "Strasse" aus rechteckigen Steinen - Natur oder Bau?',
     lat: 25.7651,
     lng: -79.2786,
     category: _Category.raetselhaft,
@@ -269,7 +273,8 @@ const List<_MysticPlace> _kPlaces = <_MysticPlace>[
     emoji: '🌊',
     name: 'Yonaguni Monument',
     region: 'Japan',
-    description: 'Versunkene Stein-Strukturen, moeglicherweise 10.000 Jahre alt',
+    description:
+        'Versunkene Stein-Strukturen, moeglicherweise 10.000 Jahre alt',
     lat: 24.4338,
     lng: 123.0117,
     category: _Category.raetselhaft,
@@ -780,8 +785,7 @@ class _PlaceCard extends StatelessWidget {
                                   borderRadius:
                                       BorderRadius.circular(WBRadius.pill),
                                   border: Border.all(
-                                    color:
-                                        _kNaturColor.withValues(alpha: 0.55),
+                                    color: _kNaturColor.withValues(alpha: 0.55),
                                     width: 1,
                                   ),
                                 ),

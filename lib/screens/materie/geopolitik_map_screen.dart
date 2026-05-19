@@ -273,8 +273,8 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
-                    border:
-                        Border.all(color: color.withValues(alpha: 0.6), width: 2),
+                    border: Border.all(
+                        color: color.withValues(alpha: 0.6), width: 2),
                   ),
                   child: Icon(Icons.warning_rounded, color: color, size: 28),
                 ),
@@ -298,7 +298,8 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: color.withValues(alpha: 0.4)),
+                          border:
+                              Border.all(color: color.withValues(alpha: 0.4)),
                         ),
                         child: Text(
                           'Intensität: $intensity',
@@ -312,8 +313,12 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
             ),
             const SizedBox(height: 16),
             _detailRow(Icons.public, 'Konfliktzone', name),
-            _detailRow(Icons.warning_amber_rounded, 'Konfliktstufe',
-                isHigh ? 'Hoch – aktiver Konflikt' : 'Mittel – angespannte Lage'),
+            _detailRow(
+                Icons.warning_amber_rounded,
+                'Konfliktstufe',
+                isHigh
+                    ? 'Hoch – aktiver Konflikt'
+                    : 'Mittel – angespannte Lage'),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -405,10 +410,9 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                 await _toolsService.createGeopoliticsEvent(
                   roomId: widget.roomId,
                   userId: UserService.getCurrentUserId(),
-                  username:
-                      UserService.getCurrentUserId() != 'user_anonymous'
-                          ? UserService.getCurrentUserId()
-                          : 'Anonym',
+                  username: UserService.getCurrentUserId() != 'user_anonymous'
+                      ? UserService.getCurrentUserId()
+                      : 'Anonym',
                   title: titleCtrl.text.trim(),
                   description: descCtrl.text.trim(),
                 );
@@ -423,8 +427,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                 // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text('Fehler: $e'),
-                      backgroundColor: Colors.red),
+                      content: Text('Fehler: $e'), backgroundColor: Colors.red),
                 );
               }
             },
@@ -563,8 +566,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
       final isHigh = hotspot['intensity'] == 'hoch';
       final color = isHigh ? Colors.red : Colors.orange;
       return Marker(
-        point: LatLng(
-            hotspot['lat'] as double, hotspot['lon'] as double),
+        point: LatLng(hotspot['lat'] as double, hotspot['lon'] as double),
         width: 32,
         height: 32,
         child: GestureDetector(
@@ -629,8 +631,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                   fontWeight: FontWeight.bold)),
           const SizedBox(width: 12),
           // Erdbeben hoch
-          _legendItem(
-              color: Colors.red, label: 'Erdbeben ≥M7', isCircle: true),
+          _legendItem(color: Colors.red, label: 'Erdbeben ≥M7', isCircle: true),
           const SizedBox(width: 10),
           _legendItem(
               color: Colors.orange, label: 'Erdbeben M6-7', isCircle: true),
@@ -676,7 +677,8 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
           ),
         ),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+        Text(label,
+            style: const TextStyle(color: Colors.white54, fontSize: 11)),
       ],
     );
   }
@@ -741,18 +743,15 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
           fillColor: Colors.white.withValues(alpha: 0.05),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: _accentRed.withValues(alpha: 0.5)),
+            borderSide: BorderSide(color: _accentRed.withValues(alpha: 0.5)),
           ),
           prefixIcon: const Icon(Icons.search, color: _accentRed, size: 20),
           suffixIcon: IconButton(
@@ -800,8 +799,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                   style: TextStyle(
                     color: isActive ? _accentRed : Colors.white60,
                     fontSize: 13,
-                    fontWeight:
-                        isActive ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ),
@@ -827,8 +825,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -896,8 +893,8 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
               children: [
                 const Text(
                   'GDELT Global Events',
-                  style: TextStyle(
-                      color: _accentRed, fontWeight: FontWeight.bold),
+                  style:
+                      TextStyle(color: _accentRed, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   '${_gdeltEvents.length} Artikel · Filter: $_activeFilter',
@@ -915,8 +912,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
     final date = article.parsedDate;
     final dateStr =
         date != null ? '${date.day}.${date.month}.${date.year}' : '';
-    final sourceName =
-        article.domain.replaceFirst(RegExp(r'^www\.'), '');
+    final sourceName = article.domain.replaceFirst(RegExp(r'^www\.'), '');
     final country = article.sourcecountry;
 
     return Container(
@@ -924,8 +920,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -977,8 +972,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.flag,
-                            size: 12, color: Colors.white38),
+                        const Icon(Icons.flag, size: 12, color: Colors.white38),
                         const SizedBox(width: 3),
                         Text(country,
                             style: const TextStyle(
@@ -1112,8 +1106,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -1161,8 +1154,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                         Icon(Icons.circle, size: 8, color: magColor),
                         const SizedBox(width: 4),
                         Text(eq.magnitudeLabel,
-                            style:
-                                TextStyle(color: magColor, fontSize: 12)),
+                            style: TextStyle(color: magColor, fontSize: 12)),
                         if (eq.depth != null) ...[
                           const SizedBox(width: 8),
                           const Icon(Icons.arrow_downward,
@@ -1193,8 +1185,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
 
   Widget _buildCommunityTab() {
     if (_loadingOwn) {
-      return const Center(
-          child: CircularProgressIndicator(color: _accentRed));
+      return const Center(child: CircularProgressIndicator(color: _accentRed));
     }
     if (_ownEvents.isEmpty) {
       return Center(
@@ -1217,8 +1208,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
               icon: const Icon(Icons.add),
               label: const Text('Erstes Ereignis'),
               style: ElevatedButton.styleFrom(
-                  backgroundColor: _accentRed,
-                  foregroundColor: Colors.white),
+                  backgroundColor: _accentRed, foregroundColor: Colors.white),
             ),
           ],
         ),
@@ -1234,8 +1224,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
           child: ListTile(
             contentPadding:
@@ -1246,8 +1235,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
               decoration: BoxDecoration(
                 color: _accentRed.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: _accentRed.withValues(alpha: 0.4)),
+                border: Border.all(color: _accentRed.withValues(alpha: 0.4)),
               ),
               child: const Center(
                   child: Text('🎭', style: TextStyle(fontSize: 22))),

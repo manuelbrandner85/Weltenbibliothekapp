@@ -71,7 +71,7 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                             color: Colors.white.withValues(alpha: 0.04),
                             child: const Center(
                               child: CircularProgressIndicator(
-                                color: _cyan, strokeWidth: 2),
+                                  color: _cyan, strokeWidth: 2),
                             ),
                           ),
                     errorBuilder: (_, __, ___) => Container(
@@ -97,7 +97,9 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                     ),
                     child: Text(s.badge,
                         style: const TextStyle(
-                            color: _cyan, fontSize: 12, fontWeight: FontWeight.w600)),
+                            color: _cyan,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(width: 10),
                   Container(
@@ -123,7 +125,9 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
               const SizedBox(height: 12),
               Text(s.name,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 3),
               Text(s.founded,
                   style: TextStyle(
@@ -138,7 +142,9 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                 const SizedBox(height: 16),
                 const Text('Schlüsselergebnisse',
                     style: TextStyle(
-                        color: _cyan, fontSize: 13, fontWeight: FontWeight.w600)),
+                        color: _cyan,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 ...s.findings.map((f) => Padding(
                       padding: const EdgeInsets.only(bottom: 6),
@@ -162,7 +168,9 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                 const SizedBox(height: 14),
                 const Text('Forscher',
                     style: TextStyle(
-                        color: _cyan, fontSize: 13, fontWeight: FontWeight.w600)),
+                        color: _cyan,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
@@ -243,7 +251,8 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                         ],
                       ),
                       child: sel
-                          ? const Icon(Icons.close, color: Colors.black, size: 14)
+                          ? const Icon(Icons.close,
+                              color: Colors.black, size: 14)
                           : null,
                     ),
                   ),
@@ -271,7 +280,8 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                 Text(
                   '${_sites.length} Forschungsstandorte · Marker antippen für Details',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45), fontSize: 12),
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontSize: 12),
                 ),
               ],
             ),

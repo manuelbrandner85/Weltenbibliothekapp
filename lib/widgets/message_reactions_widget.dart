@@ -6,20 +6,20 @@ class MessageReactionsWidget extends StatelessWidget {
   final Map<String, dynamic> message;
   final Function(String emoji) onReact;
   final String currentUsername;
-  
+
   const MessageReactionsWidget({
     super.key,
     required this.message,
     required this.onReact,
     required this.currentUsername,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     final reactions = message['reactions'] as Map<String, dynamic>? ?? {};
-    
+
     if (reactions.isEmpty) return const SizedBox.shrink();
-    
+
     return Wrap(
       spacing: 4,
       runSpacing: 4,
@@ -27,7 +27,7 @@ class MessageReactionsWidget extends StatelessWidget {
         final emoji = entry.key;
         final users = (entry.value as List<dynamic>).cast<String>();
         final hasReacted = users.contains(currentUsername);
-        
+
         return GestureDetector(
           onTap: () => onReact(emoji),
           child: Container(
@@ -54,7 +54,8 @@ class MessageReactionsWidget extends StatelessWidget {
                   style: TextStyle(
                     color: hasReacted ? Colors.white : Colors.white70,
                     fontSize: 12,
-                    fontWeight: hasReacted ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        hasReacted ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
               ],
@@ -69,15 +70,30 @@ class MessageReactionsWidget extends StatelessWidget {
 /// Reaction Picker Bottom Sheet
 class ReactionPickerSheet extends StatelessWidget {
   final Function(String emoji) onSelectEmoji;
-  
+
   const ReactionPickerSheet({super.key, required this.onSelectEmoji});
-  
+
   static final List<String> _emojis = [
-    '👍', '❤️', '😂', '😮', '😢', '😡',
-    '🔥', '✨', '💯', '🎉', '🙏', '👏',
-    '💪', '🌟', '⚡', '💎', '🌈', '🎯',
+    '👍',
+    '❤️',
+    '😂',
+    '😮',
+    '😢',
+    '😡',
+    '🔥',
+    '✨',
+    '💯',
+    '🎉',
+    '🙏',
+    '👏',
+    '💪',
+    '🌟',
+    '⚡',
+    '💎',
+    '🌈',
+    '🎯',
   ];
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -99,7 +115,7 @@ class ReactionPickerSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Title
           const Text(
             'Reaktion wählen',
@@ -110,7 +126,7 @@ class ReactionPickerSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Emoji Grid
           GridView.builder(
             shrinkWrap: true,

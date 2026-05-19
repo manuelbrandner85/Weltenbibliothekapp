@@ -29,8 +29,7 @@ class CourtCasesCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.gavel,
-                  color: Color(0xFFB39DDB), size: 18),
+              const Icon(Icons.gavel, color: Color(0xFFB39DDB), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'GERICHTSAKTEN',
@@ -127,8 +126,7 @@ class CourtCasesCard extends StatelessWidget {
                 ),
                 if (c.url != null)
                   Icon(Icons.open_in_new,
-                      size: 14,
-                      color: Colors.white.withValues(alpha: 0.5)),
+                      size: 14, color: Colors.white.withValues(alpha: 0.5)),
               ],
             ),
             const SizedBox(height: 6),
@@ -136,12 +134,11 @@ class CourtCasesCard extends StatelessWidget {
               children: [
                 if (c.court.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
-                      color:
-                          const Color(0xFFB39DDB).withValues(alpha: 0.18),
+                      color: const Color(0xFFB39DDB).withValues(alpha: 0.18),
                     ),
                     child: Text(
                       c.court,

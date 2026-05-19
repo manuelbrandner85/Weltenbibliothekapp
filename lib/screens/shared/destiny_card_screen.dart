@@ -431,8 +431,7 @@ class _DestinyCardScreenState extends State<DestinyCardScreen>
     final typeColor = Color(GamificationService.cardTypeColor(card.type));
     final typeEmoji = GamificationService.cardTypeEmoji(card.type);
     final dayDiff = DateTime.now().difference(card.drawnAt).inDays;
-    final dateLabel =
-        dayDiff == 1 ? 'Gestern' : 'Vor $dayDiff Tagen';
+    final dateLabel = dayDiff == 1 ? 'Gestern' : 'Vor $dayDiff Tagen';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -545,29 +544,23 @@ class _CardPatternPainter extends CustomPainter {
     const l = 30.0; // length
 
     // Top-left
-    canvas.drawLine(
-        const Offset(m, m + l), const Offset(m, m), cornerPaint);
-    canvas.drawLine(
-        const Offset(m, m), const Offset(m + l, m), cornerPaint);
+    canvas.drawLine(const Offset(m, m + l), const Offset(m, m), cornerPaint);
+    canvas.drawLine(const Offset(m, m), const Offset(m + l, m), cornerPaint);
     // Top-right
     canvas.drawLine(
         Offset(size.width - m, m + l), Offset(size.width - m, m), cornerPaint);
     canvas.drawLine(
         Offset(size.width - m, m), Offset(size.width - m - l, m), cornerPaint);
     // Bottom-left
-    canvas.drawLine(
-        Offset(m, size.height - m - l), Offset(m, size.height - m), cornerPaint);
-    canvas.drawLine(
-        Offset(m, size.height - m), Offset(m + l, size.height - m), cornerPaint);
+    canvas.drawLine(Offset(m, size.height - m - l), Offset(m, size.height - m),
+        cornerPaint);
+    canvas.drawLine(Offset(m, size.height - m), Offset(m + l, size.height - m),
+        cornerPaint);
     // Bottom-right
-    canvas.drawLine(
-        Offset(size.width - m, size.height - m - l),
-        Offset(size.width - m, size.height - m),
-        cornerPaint);
-    canvas.drawLine(
-        Offset(size.width - m, size.height - m),
-        Offset(size.width - m - l, size.height - m),
-        cornerPaint);
+    canvas.drawLine(Offset(size.width - m, size.height - m - l),
+        Offset(size.width - m, size.height - m), cornerPaint);
+    canvas.drawLine(Offset(size.width - m, size.height - m),
+        Offset(size.width - m - l, size.height - m), cornerPaint);
   }
 
   @override

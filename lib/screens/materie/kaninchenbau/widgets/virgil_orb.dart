@@ -23,8 +23,7 @@ class VirgilOrb extends StatefulWidget {
   State<VirgilOrb> createState() => _VirgilOrbState();
 }
 
-class _VirgilOrbState extends State<VirgilOrb>
-    with TickerProviderStateMixin {
+class _VirgilOrbState extends State<VirgilOrb> with TickerProviderStateMixin {
   late final AnimationController _breathe;
   late final AnimationController _think;
   bool _showBubble = false;
@@ -174,8 +173,7 @@ class _VirgilOrbState extends State<VirgilOrb>
           children: [
             Row(
               children: [
-                Icon(Icons.auto_awesome,
-                    size: 14, color: KbDesign.goldAccent),
+                Icon(Icons.auto_awesome, size: 14, color: KbDesign.goldAccent),
                 const SizedBox(width: 6),
                 const Text(
                   'VIRGIL',

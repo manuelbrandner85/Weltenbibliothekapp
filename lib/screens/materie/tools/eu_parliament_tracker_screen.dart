@@ -24,7 +24,8 @@ class EuParliamentTrackerScreen extends StatefulWidget {
   const EuParliamentTrackerScreen({super.key});
 
   @override
-  State<EuParliamentTrackerScreen> createState() => _EuParliamentTrackerScreenState();
+  State<EuParliamentTrackerScreen> createState() =>
+      _EuParliamentTrackerScreenState();
 }
 
 class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
@@ -37,6 +38,7 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFF2196F3);
   static const Color _accent = Color(0xFFFFD54F);
   static const String _kAlignKey = 'eu_alignments_v1';
@@ -59,7 +61,9 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
   @override
   void initState() {
     super.initState();
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 13))..repeat();
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 13))
+          ..repeat();
     _loadAlignments();
     _loadRecentVotes();
   }
@@ -77,7 +81,8 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
     if (raw != null) {
       try {
         final m = jsonDecode(raw) as Map<String, dynamic>;
-        _alignments = m.map((k, v) => MapEntry(int.parse(k), (v as num).toInt()));
+        _alignments =
+            m.map((k, v) => MapEntry(int.parse(k), (v as num).toInt()));
       } catch (_) {}
     }
     if (mounted) setState(() {});
@@ -85,11 +90,15 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
 
   Future<void> _persistAlignments() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kAlignKey, jsonEncode(_alignments.map((k, v) => MapEntry(k.toString(), v))));
+    await prefs.setString(_kAlignKey,
+        jsonEncode(_alignments.map((k, v) => MapEntry(k.toString(), v))));
   }
 
   Future<void> _loadRecentVotes() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final votes = await _service.getRecentVotes(limit: 50);
       if (mounted) {
@@ -99,7 +108,11 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = '$e'; _loading = false; });
+      if (mounted)
+        setState(() {
+          _error = '$e';
+          _loading = false;
+        });
     }
   }
 
@@ -110,14 +123,24 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
       return;
     }
     HapticFeedback.mediumImpact();
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final votes = await _service.searchVotes(q, limit: 30);
       if (mounted) {
-        setState(() { _votes = votes; _loading = false; });
+        setState(() {
+          _votes = votes;
+          _loading = false;
+        });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = '$e'; _loading = false; });
+      if (mounted)
+        setState(() {
+          _error = '$e';
+          _loading = false;
+        });
     }
   }
 
@@ -126,7 +149,11 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
     setState(() => _loadingMeps = true);
     try {
       final meps = await _service.getMembers(limit: 250);
-      if (mounted) setState(() { _meps = meps; _loadingMeps = false; });
+      if (mounted)
+        setState(() {
+          _meps = meps;
+          _loadingMeps = false;
+        });
     } catch (e) {
       if (mounted) setState(() => _loadingMeps = false);
     }
@@ -145,7 +172,8 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
   }
 
   Future<void> _openExternal(String url) async {
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    final ok =
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Konnte $url nicht öffnen'),
@@ -157,7 +185,8 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
   List<EuVote> get _filteredVotes {
     if (_filter == 'all') return _votes;
     if (_filter == 'adopted') return _votes.where((v) => v.isAdopted).toList();
-    if (_filter == 'rejected') return _votes.where((v) => v.result.toUpperCase() == 'REJECTED').toList();
+    if (_filter == 'rejected')
+      return _votes.where((v) => v.result.toUpperCase() == 'REJECTED').toList();
     return _votes;
   }
 
@@ -187,8 +216,11 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
             colors: [_accent, _primary],
           ).createShader(r),
           child: const Text('EU-PARLAMENT',
-              style: TextStyle(color: Colors.white, fontSize: 14,
-                  fontWeight: FontWeight.w900, letterSpacing: 3)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
         actions: [
           if (_alignments.isNotEmpty)
@@ -199,12 +231,18 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
                 onPressed: _showAlignmentSummary,
               ),
               Positioned(
-                right: 6, top: 6,
+                right: 6,
+                top: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(color: _primary, borderRadius: BorderRadius.circular(8)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                      color: _primary, borderRadius: BorderRadius.circular(8)),
                   child: Text('${_alignments.length}',
-                      style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold)),
                 ),
               ),
             ]),
@@ -229,7 +267,8 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.materie, count: 28)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.materie, count: 28)),
         SafeArea(
           child: Column(children: [
             _tabBar(),
@@ -264,12 +303,18 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: sel ? _primary.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.04),
+          color: sel
+              ? _primary.withValues(alpha: 0.3)
+              : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: sel ? _primary : Colors.transparent),
         ),
-        child: Center(child: Text(label,
-            style: TextStyle(color: sel ? Colors.white : Colors.white60, fontSize: 12, fontWeight: FontWeight.w700))),
+        child: Center(
+            child: Text(label,
+                style: TextStyle(
+                    color: sel ? Colors.white : Colors.white60,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700))),
       ),
     );
   }
@@ -287,21 +332,26 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.05),
-            prefixIcon: const Icon(Icons.search_rounded, color: Colors.white60, size: 18),
+            prefixIcon: const Icon(Icons.search_rounded,
+                color: Colors.white60, size: 18),
             isDense: true,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none),
           ),
         ),
       ),
-      SizedBox(height: 30, child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        children: [
-          _filterPill('Alle · ${_votes.length}', 'all'),
-          _filterPill('✅ Angenommen', 'adopted'),
-          _filterPill('❌ Abgelehnt', 'rejected'),
-        ],
-      )),
+      SizedBox(
+          height: 30,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            children: [
+              _filterPill('Alle · ${_votes.length}', 'all'),
+              _filterPill('✅ Angenommen', 'adopted'),
+              _filterPill('❌ Abgelehnt', 'rejected'),
+            ],
+          )),
       const SizedBox(height: 4),
       Expanded(child: _votesList()),
     ]);
@@ -316,21 +366,28 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: sel ? _primary.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.04),
+            color: sel
+                ? _primary.withValues(alpha: 0.25)
+                : Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: sel ? _primary : Colors.transparent),
           ),
           child: Text(label,
-              style: TextStyle(color: sel ? Colors.white : Colors.white60, fontSize: 10, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: sel ? Colors.white : Colors.white60,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600)),
         ),
       ),
     );
   }
 
   Widget _votesList() {
-    if (_loading) return Center(child: CircularProgressIndicator(color: _primary));
+    if (_loading)
+      return Center(child: CircularProgressIndicator(color: _primary));
     if (_error != null) {
-      return Center(child: Padding(
+      return Center(
+          child: Padding(
         padding: const EdgeInsets.all(24),
         child: Text(_error!,
             style: const TextStyle(color: Colors.redAccent, fontSize: 13),
@@ -338,8 +395,9 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
       ));
     }
     if (_filteredVotes.isEmpty) {
-      return const Center(child: Text('Keine Abstimmungen gefunden.',
-          style: TextStyle(color: Colors.white54)));
+      return const Center(
+          child: Text('Keine Abstimmungen gefunden.',
+              style: TextStyle(color: Colors.white54)));
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
@@ -370,14 +428,19 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: v.isAdopted ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
+                color: v.isAdopted
+                    ? Colors.green.withValues(alpha: 0.2)
+                    : Colors.red.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: v.isAdopted ? Colors.green : Colors.red),
+                border:
+                    Border.all(color: v.isAdopted ? Colors.green : Colors.red),
               ),
               child: Text(v.resultLabel,
                   style: TextStyle(
-                      color: v.isAdopted ? Colors.greenAccent : Colors.redAccent,
-                      fontSize: 9, fontWeight: FontWeight.bold)),
+                      color:
+                          v.isAdopted ? Colors.greenAccent : Colors.redAccent,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold)),
             ),
             const Spacer(),
             Text(v.fmtDate,
@@ -385,24 +448,36 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
           ]),
           const SizedBox(height: 8),
           Text(v.title,
-              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, height: 1.4),
-              maxLines: 3, overflow: TextOverflow.ellipsis),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis),
           if (v.total != null) ...[
             const SizedBox(height: 8),
             _voteBar(v),
           ],
           if (v.categories.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Wrap(spacing: 4, runSpacing: 4,
-                children: v.categories.take(3).map((c) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(c,
-                      style: const TextStyle(color: Colors.white60, fontSize: 9)),
-                )).toList()),
+            Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: v.categories
+                    .take(3)
+                    .map((c) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(c,
+                              style: const TextStyle(
+                                  color: Colors.white60, fontSize: 9)),
+                        ))
+                    .toList()),
           ],
           const SizedBox(height: 8),
           Row(children: [
@@ -411,11 +486,13 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
             _alignBtn(v.id, -1, '👎', alignment == -1),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.open_in_new_rounded, color: Colors.white38, size: 16),
+              icon: const Icon(Icons.open_in_new_rounded,
+                  color: Colors.white38, size: 16),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
               tooltip: 'Auf howtheyvote.eu öffnen',
-              onPressed: () => _openExternal('https://howtheyvote.eu/votes/${v.id}'),
+              onPressed: () =>
+                  _openExternal('https://howtheyvote.eu/votes/${v.id}'),
             ),
           ]),
         ]),
@@ -431,12 +508,15 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: selected
-              ? (value > 0 ? Colors.green.withValues(alpha: 0.3) : Colors.red.withValues(alpha: 0.3))
+              ? (value > 0
+                  ? Colors.green.withValues(alpha: 0.3)
+                  : Colors.red.withValues(alpha: 0.3))
               : Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: selected
-              ? (value > 0 ? Colors.green : Colors.red)
-              : Colors.white12),
+          border: Border.all(
+              color: selected
+                  ? (value > 0 ? Colors.green : Colors.red)
+                  : Colors.white12),
         ),
         child: Text(emoji, style: const TextStyle(fontSize: 14)),
       ),
@@ -451,23 +531,40 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
     return Column(children: [
       Row(children: [
         Text('$f',
-            style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+            style: const TextStyle(
+                color: Colors.green,
+                fontSize: 11,
+                fontWeight: FontWeight.bold)),
         const Spacer(),
         Text('$ab',
-            style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold)),
+            style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 11,
+                fontWeight: FontWeight.bold)),
         const Spacer(),
         Text('$a',
-            style: const TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
+            style: const TextStyle(
+                color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
       ]),
       const SizedBox(height: 3),
       SizedBox(
         height: 6,
         child: Row(children: [
-          Expanded(flex: f, child: Container(decoration: BoxDecoration(
-            color: Colors.green, borderRadius: const BorderRadius.horizontal(left: Radius.circular(3))))),
+          Expanded(
+              flex: f,
+              child: Container(
+                  decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(3))))),
           Expanded(flex: ab, child: Container(color: Colors.white24)),
-          Expanded(flex: a, child: Container(decoration: BoxDecoration(
-            color: Colors.red, borderRadius: const BorderRadius.horizontal(right: Radius.circular(3))))),
+          Expanded(
+              flex: a,
+              child: Container(
+                  decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: const BorderRadius.horizontal(
+                          right: Radius.circular(3))))),
         ]),
       ),
       const SizedBox(height: 2),
@@ -477,18 +574,22 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
   }
 
   Widget _mepsView() {
-    if (_loadingMeps) return Center(child: CircularProgressIndicator(color: _primary));
+    if (_loadingMeps)
+      return Center(child: CircularProgressIndicator(color: _primary));
     if (_meps.isEmpty) {
-      return Center(child: Padding(
+      return Center(
+          child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.people_rounded, color: _primary.withValues(alpha: 0.4), size: 60),
+          Icon(Icons.people_rounded,
+              color: _primary.withValues(alpha: 0.4), size: 60),
           const SizedBox(height: 14),
           ElevatedButton.icon(
             onPressed: _loadMeps,
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Abgeordnete laden'),
-            style: ElevatedButton.styleFrom(backgroundColor: _primary, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: _primary, foregroundColor: Colors.white),
           ),
         ]),
       ));
@@ -525,24 +626,34 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
                   CircleAvatar(
                     radius: 18,
                     backgroundColor: _primary.withValues(alpha: 0.2),
-                    backgroundImage: m.imageUrl != null ? NetworkImage(m.imageUrl!) : null,
+                    backgroundImage:
+                        m.imageUrl != null ? NetworkImage(m.imageUrl!) : null,
                     child: m.imageUrl == null
                         ? Text(m.firstName.isNotEmpty ? m.firstName[0] : '?',
-                            style: const TextStyle(color: Colors.white, fontSize: 14))
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 14))
                         : null,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(m.fullName,
-                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                      Text('${m.country ?? "?"} · ${m.group ?? "?"}',
-                          style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                    ]),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m.fullName,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600)),
+                          Text('${m.country ?? "?"} · ${m.group ?? "?"}',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11)),
+                        ]),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.open_in_new_rounded, color: Colors.white38, size: 16),
-                    onPressed: () => _openExternal('https://howtheyvote.eu/members/${m.id}'),
+                    icon: const Icon(Icons.open_in_new_rounded,
+                        color: Colors.white38, size: 16),
+                    onPressed: () =>
+                        _openExternal('https://howtheyvote.eu/members/${m.id}'),
                   ),
                 ]),
               ),
@@ -562,12 +673,17 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: sel ? _accent.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.04),
+            color: sel
+                ? _accent.withValues(alpha: 0.25)
+                : Colors.white.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: sel ? _accent : Colors.transparent),
           ),
           child: Text(label,
-              style: TextStyle(color: sel ? Colors.white : Colors.white60, fontSize: 10, fontWeight: FontWeight.w600)),
+              style: TextStyle(
+                  color: sel ? Colors.white : Colors.white60,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600)),
         ),
       ),
     );
@@ -584,47 +700,77 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6, minChildSize: 0.3, maxChildSize: 0.9,
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
         expand: false,
         builder: (_, scroll) => ListView(
           controller: scroll,
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           children: [
-            Center(child: Container(
-              width: 42, height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            Center(
+                child: Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2)),
             )),
             const SizedBox(height: 16),
             const Text('DEINE WERTE-MARKIERUNGEN',
-                style: TextStyle(color: _accent, fontSize: 12, letterSpacing: 3, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: _accent,
+                    fontSize: 12,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center),
             const SizedBox(height: 12),
             Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
               Column(children: [
                 Text('$yesCount',
-                    style: const TextStyle(color: Colors.greenAccent, fontSize: 32, fontWeight: FontWeight.bold)),
-                const Text('👍 dafür', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                    style: const TextStyle(
+                        color: Colors.greenAccent,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold)),
+                const Text('👍 dafür',
+                    style: TextStyle(color: Colors.white60, fontSize: 11)),
               ]),
               Column(children: [
                 Text('$noCount',
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 32, fontWeight: FontWeight.bold)),
-                const Text('👎 dagegen', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                    style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold)),
+                const Text('👎 dagegen',
+                    style: TextStyle(color: Colors.white60, fontSize: 11)),
               ]),
             ]),
             const SizedBox(height: 18),
             const Text(
               'Markiere mehr Votes mit 👍/👎 um deine Werte-Karte zu schärfen. '
               'Beim nächsten Update kann die App MEPs nach Übereinstimmung scoren.',
-              style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.5, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  height: 1.5,
+                  fontStyle: FontStyle.italic),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
             const Text('MARKIERTE VOTES',
-                style: TextStyle(color: _accent, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _accent,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             ..._alignments.entries.map((e) {
               final vote = _votes.firstWhere((v) => v.id == e.key,
-                  orElse: () => EuVote(id: e.key, title: 'Vote #${e.key}', result: '?', categories: const []));
+                  orElse: () => EuVote(
+                      id: e.key,
+                      title: 'Vote #${e.key}',
+                      result: '?',
+                      categories: const []));
               return Container(
                 margin: const EdgeInsets.only(bottom: 6),
                 padding: const EdgeInsets.all(10),
@@ -634,13 +780,18 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
                   border: Border.all(color: Colors.white12),
                 ),
                 child: Row(children: [
-                  Text(e.value > 0 ? '👍' : '👎', style: const TextStyle(fontSize: 18)),
+                  Text(e.value > 0 ? '👍' : '👎',
+                      style: const TextStyle(fontSize: 18)),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(vote.title,
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                      maxLines: 2, overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                      child: Text(vote.title,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis)),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Colors.redAccent, size: 14),
+                    icon: const Icon(Icons.close_rounded,
+                        color: Colors.redAccent, size: 14),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () {
@@ -666,12 +817,24 @@ class _EuOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.18, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        110, const Color(0xFF2196F3));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        100, const Color(0xFFFFD54F));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        75, const Color(0xFF1976D2));
+    _draw(
+        canvas,
+        Offset(size.width * 0.18,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        110,
+        const Color(0xFF2196F3));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        100,
+        const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        75,
+        const Color(0xFF1976D2));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

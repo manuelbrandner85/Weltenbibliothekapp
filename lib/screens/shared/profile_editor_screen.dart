@@ -37,14 +37,15 @@ import '../../widgets/profile/birth_place_autocomplete.dart'; // ✨ v93 Geocodi
 /// 🆕 RIVERPOD: ConsumerStatefulWidget für Auto-Refresh nach Speichern
 class ProfileEditorScreen extends ConsumerStatefulWidget {
   final String world; // 'materie' oder 'energie'
-  
+
   const ProfileEditorScreen({
     super.key,
     required this.world,
   });
 
   @override
-  ConsumerState<ProfileEditorScreen> createState() => _ProfileEditorScreenState();
+  ConsumerState<ProfileEditorScreen> createState() =>
+      _ProfileEditorScreenState();
 }
 
 class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
@@ -122,8 +123,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       case UsernameStatus.taken:
         return const Icon(Icons.cancel_rounded, color: Colors.red);
       case UsernameStatus.invalidFormat:
-        return const Icon(Icons.warning_amber_rounded,
-            color: Colors.orange);
+        return const Icon(Icons.warning_amber_rounded, color: Colors.orange);
       case UsernameStatus.checkFailed:
         return const Icon(Icons.cloud_off_rounded, color: Colors.grey);
     }
@@ -155,18 +155,19 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     }
     return TextStyle(color: color, fontSize: 12);
   }
-  
+
   // Gemeinsame Felder
   final _usernameController = TextEditingController();
   final _bioController = TextEditingController();
-  
+
   // ✅ NEU: Root-Admin Flow
   final _passwordController = TextEditingController();
-  bool _isWeltenbibliothek = false;  // Zeigt Admin Passwortfeld an (Root-Admin ODER Content-Editor)
-  
+  bool _isWeltenbibliothek =
+      false; // Zeigt Admin Passwortfeld an (Root-Admin ODER Content-Editor)
+
   // Materie-spezifisch
   final _nameController = TextEditingController();
-  
+
   // Energie-spezifisch
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -176,7 +177,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   final _birthLastNameController = TextEditingController();
   final _birthPlaceController = TextEditingController();
   final _birthTimeController = TextEditingController();
-  final _birthDateController = TextEditingController(); // ✅ NEU: Für manuelle Datumseingabe
+  final _birthDateController =
+      TextEditingController(); // ✅ NEU: Für manuelle Datumseingabe
   DateTime? _selectedBirthDate;
 
   // ✨ v93 Spirit-Tools-Extras (alle nullable, werden via Geocoding aus
@@ -199,7 +201,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   String? _selectedEmoji;
   String? _avatarUrl;
   File? _selectedImageFile;
-  
+
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -238,12 +240,33 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     );
     return result ?? false;
   }
-  
+
   // Emoji-Auswahl
   final List<String> _emojiOptions = [
-    '🧙‍♂️', '🔬', '📚', '🗿', '👁️', '🔮', '🌟', '💫', 
-    '🧘‍♀️', '🕉️', '☯️', '🌙', '✨', '🦋', '🌸', '🍃',
-    '🎭', '🎨', '🎯', '🗝️', '⚡', '🔥', '💎', '🌈',
+    '🧙‍♂️',
+    '🔬',
+    '📚',
+    '🗿',
+    '👁️',
+    '🔮',
+    '🌟',
+    '💫',
+    '🧘‍♀️',
+    '🕉️',
+    '☯️',
+    '🌙',
+    '✨',
+    '🦋',
+    '🌸',
+    '🍃',
+    '🎭',
+    '🎨',
+    '🎯',
+    '🗝️',
+    '⚡',
+    '🔥',
+    '💎',
+    '🌈',
   ];
 
   @override
@@ -252,7 +275,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     _loadProfile();
     _setupAutoSave(); // 🔄 Auto-Save Setup
   }
-  
+
   // 🔄 AUTO-SAVE SETUP
   void _setupAutoSave() {
     // Text-Felder mit Auto-Save verbinden (500ms Debounce)
@@ -264,7 +287,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         priority: SavePriority.medium,
       );
     });
-    
+
     _bioController.addListener(() {
       AutoSaveManager().scheduleSave(
         key: 'profile_${widget.world}_bio_draft',
@@ -273,7 +296,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         priority: SavePriority.low,
       );
     });
-    
+
     if (widget.world == 'materie') {
       _nameController.addListener(() {
         AutoSaveManager().scheduleSave(
@@ -318,7 +341,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
 
     _usernameDebounce?.cancel();
     _usernameController.dispose();
-    _passwordController.dispose();  // ✅ NEU
+    _passwordController.dispose(); // ✅ NEU
     _nameController.dispose();
     _bioController.dispose();
     _firstNameController.dispose();
@@ -331,7 +354,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     _birthDateController.dispose(); // ✅ NEU
     super.dispose();
   }
-  
+
   // 🖼️ BILD-UPLOAD FUNKTIONEN
   Future<void> _pickImage(ImageSource source) async {
     if (kIsWeb) return;
@@ -342,17 +365,17 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         maxHeight: 800,
         imageQuality: 85,
       );
-      
+
       if (pickedFile != null) {
         setState(() {
           _selectedImageFile = File(pickedFile.path);
           _avatarUrl = pickedFile.path; // Temporärer lokaler Pfad
         });
-        
+
         if (kDebugMode) {
           debugPrint('✅ Bild ausgewählt: ${pickedFile.path}');
         }
-        
+
         // 🚀 SOFORT HOCHLADEN zu Cloudflare
         await _uploadImageToCloudflare(pickedFile);
       }
@@ -368,30 +391,30 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       }
     }
   }
-  
+
   Future<void> _uploadImageToCloudflare(XFile imageFile) async {
     try {
       final uploadService = ImageUploadService();
-      
+
       // Upload mit User-ID
-      final userId = _usernameController.text.trim().isEmpty 
+      final userId = _usernameController.text.trim().isEmpty
           ? 'user_${DateTime.now().millisecondsSinceEpoch}'
           : _usernameController.text.trim();
-      
+
       final imageUrl = await uploadService.uploadProfileImage(
         imageFile: imageFile,
         userId: userId,
         profileType: widget.world,
       );
-      
+
       setState(() {
         _avatarUrl = imageUrl; // CDN URL setzen
       });
-      
+
       if (kDebugMode) {
         debugPrint('✅ Bild hochgeladen: $imageUrl');
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -405,7 +428,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Upload fehlgeschlagen: $e\n💡 Bild wird lokal gespeichert'),
+            content: Text(
+                '❌ Upload fehlgeschlagen: $e\n💡 Bild wird lokal gespeichert'),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
           ),
@@ -414,7 +438,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       // Behalte lokalen Pfad als Fallback
     }
   }
-  
+
   void _showImageSourceDialog() {
     showModalBottomSheet(
       context: context,
@@ -480,11 +504,11 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
 
   Future<void> _loadProfile() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final storage = StorageService();
       await storage.init();
-      
+
       if (widget.world == 'materie') {
         final profile = storage.getMaterieProfile();
         _materieProfile = profile;
@@ -510,8 +534,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           _birthTimeController.text = profile.birthTime ?? '';
           _selectedBirthDate = profile.birthDate;
           // ✅ NEU: Initialisiere Birth Date Controller
-          _birthDateController.text = DateFormat('dd.MM.yyyy').format(profile.birthDate);
-                  _bioController.text = profile.bio ?? '';
+          _birthDateController.text =
+              DateFormat('dd.MM.yyyy').format(profile.birthDate);
+          _bioController.text = profile.bio ?? '';
           _selectedEmoji = profile.avatarEmoji;
           _avatarUrl = profile.avatarUrl;
           // ✨ v93: Spirit-Tools-Extras laden
@@ -521,7 +546,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           _birthTimeUnknown = profile.birthTimeUnknown;
           _gender = profile.gender;
           // ✨ v92: Username-Immutability-Tracking
-          _originalUsername = profile.username.isEmpty ? null : profile.username;
+          _originalUsername =
+              profile.username.isEmpty ? null : profile.username;
           _userIsRootAdmin = profile.isRootAdmin();
           // Check for pending change request (async, fire-and-forget)
           if (_originalUsername != null && profile.userId != null) {
@@ -543,9 +569,12 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   /// "Antrag laeuft" markieren kann.
   Future<void> _loadPendingUsernameRequest(String userId) async {
     try {
-      final res = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/api/profile/my-username-request?userId=$userId'),
-      ).timeout(const Duration(seconds: 6));
+      final res = await http
+          .get(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/profile/my-username-request?userId=$userId'),
+          )
+          .timeout(const Duration(seconds: 6));
       if (res.statusCode != 200 || !mounted) return;
       final data = jsonDecode(res.body) as Map<String, dynamic>? ?? {};
       final req = data['request'];
@@ -580,17 +609,26 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.fromLTRB(
-          20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20,
+          20,
+          20,
+          20,
+          MediaQuery.of(ctx).viewInsets.bottom + 20,
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Text('📝 Username-Antrag stellen',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           Text(
             'Aktuell: @$_originalUsername\n\n'
             'Username ist nach erstmaliger Anlage gesperrt. '
             'Ein Admin entscheidet ueber deinen Wunschnamen.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, height: 1.4),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 13,
+                height: 1.4),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -602,7 +640,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
               labelStyle: const TextStyle(color: Colors.white70),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               helperText: '3-32 Zeichen, nur a-z A-Z 0-9 . _ -',
               helperStyle: const TextStyle(color: Colors.white38, fontSize: 11),
             ),
@@ -618,7 +657,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
               labelStyle: const TextStyle(color: Colors.white70),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               counterStyle: const TextStyle(color: Colors.white24, fontSize: 9),
             ),
           ),
@@ -627,7 +667,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             Expanded(
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white70)),
               ),
             ),
             const SizedBox(width: 12),
@@ -652,15 +693,18 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     final requested = newNameCtrl.text.trim();
     if (requested.isEmpty || requested == _originalUsername) return;
     try {
-      final res = await http.post(
-        Uri.parse('${ApiConfig.workerUrl}/api/profile/username-change-request'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userId': userId,
-          'requested_username': requested,
-          'reason': reasonCtrl.text.trim(),
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final res = await http
+          .post(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/profile/username-change-request'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'userId': userId,
+              'requested_username': requested,
+              'reason': reasonCtrl.text.trim(),
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
       if (!mounted) return;
       final data = jsonDecode(res.body) as Map<String, dynamic>? ?? {};
       if (res.statusCode == 200 && data['success'] == true) {
@@ -747,29 +791,31 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     try {
       final storage = StorageService();
       final syncService = ProfileSyncService(); // 🆕 Cloud-Sync Service
-      
+
       if (widget.world == 'materie') {
         // 🔥 FIX: Verwende saveMaterieProfileAndGetUpdated für vollständige Backend-Sync
-        final password = _isWeltenbibliothek ? _passwordController.text.trim() : null;
-        
+        final password =
+            _isWeltenbibliothek ? _passwordController.text.trim() : null;
+
         final profile = MaterieProfile(
           username: _usernameController.text.trim(),
-          name: _nameController.text.trim().isEmpty 
-              ? null 
+          name: _nameController.text.trim().isEmpty
+              ? null
               : _nameController.text.trim(),
-          bio: _bioController.text.trim().isEmpty 
-              ? null 
+          bio: _bioController.text.trim().isEmpty
+              ? null
               : _bioController.text.trim(),
           avatarEmoji: _selectedEmoji,
           avatarUrl: _avatarUrl,
         );
-        
+
         // 🔥 FIX: Backend-Sync + Get Updated Profile (mit userId & role)
-        final updatedProfile = await syncService.saveMaterieProfileAndGetUpdated(
+        final updatedProfile =
+            await syncService.saveMaterieProfileAndGetUpdated(
           profile,
           password: password,
         );
-        
+
         if (updatedProfile != null) {
           // 💾 Vollständiges Profil lokal speichern (mit userId & role)
           await storage.saveMaterieProfile(updatedProfile);
@@ -780,17 +826,19 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             'avatar_emoji': updatedProfile.avatarEmoji,
             'avatar_url': updatedProfile.avatarUrl,
           });
-          
+
           // ✅ Auth-Service aktualisieren für Inline-Tools
-          await UserAuthService.setUsername(updatedProfile.username, world: 'materie');
+          await UserAuthService.setUsername(updatedProfile.username,
+              world: 'materie');
           if (updatedProfile.userId != null) {
-            await UserAuthService.setUserId(updatedProfile.userId!, world: 'materie');
+            await UserAuthService.setUserId(updatedProfile.userId!,
+                world: 'materie');
           }
-          
+
           // 🔥 Track Admin-Status für Toast
           isAdmin = updatedProfile.isAdmin();
           isRootAdmin = updatedProfile.isRootAdmin();
-          
+
           if (kDebugMode) {
             debugPrint('✅ Materie-Profil gespeichert mit Backend-Daten:');
             debugPrint('   Username: ${updatedProfile.username}');
@@ -810,18 +858,18 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             'avatar_emoji': profile.avatarEmoji,
             'avatar_url': profile.avatarUrl,
           });
-          
+
           // ✅ Auth-Service aktualisieren (ohne Backend-User-ID)
           await UserAuthService.setUsername(profile.username, world: 'materie');
-          
+
           if (kDebugMode) {
-            debugPrint('⚠️ Materie-Profil nur lokal gespeichert (Backend nicht erreichbar)');
+            debugPrint(
+                '⚠️ Materie-Profil nur lokal gespeichert (Backend nicht erreichbar)');
             debugPrint('⚠️ Admin-Status erfordert Backend-Verbindung');
           }
-          
+
           // Kein Warning-Banner für normale User – nur stiller Fallback
         }
-        
       } else {
         // energie, vorhang, ursprung: all use the unified EnergieProfile (birth data)
         if (_selectedBirthDate == null) {
@@ -836,10 +884,11 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           setState(() => _isSaving = false);
           return;
         }
-        
+
         // 🔥 FIX: Verwende saveEnergieProfileAndGetUpdated für vollständige Backend-Sync
-        final password = _isWeltenbibliothek ? _passwordController.text.trim() : null;
-        
+        final password =
+            _isWeltenbibliothek ? _passwordController.text.trim() : null;
+
         final profile = EnergieProfile(
           username: _usernameController.text.trim(),
           firstName: _firstNameController.text.trim(),
@@ -873,11 +922,12 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         );
 
         // 🔥 FIX: Backend-Sync + Get Updated Profile (mit userId & role)
-        final updatedProfile = await syncService.saveEnergieProfileAndGetUpdated(
+        final updatedProfile =
+            await syncService.saveEnergieProfileAndGetUpdated(
           profile,
           password: password,
         );
-        
+
         if (updatedProfile != null) {
           // 💾 Vollständiges Profil lokal speichern (mit userId & role)
           await storage.saveEnergieProfile(updatedProfile);
@@ -905,17 +955,21 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           });
 
           // ✅ Auth-Service aktualisieren für Inline-Tools
-          await UserAuthService.setUsername(updatedProfile.username, world: 'energie');
-          await UserAuthService.setUsername(updatedProfile.username, world: 'materie');
+          await UserAuthService.setUsername(updatedProfile.username,
+              world: 'energie');
+          await UserAuthService.setUsername(updatedProfile.username,
+              world: 'materie');
           if (updatedProfile.userId != null) {
-            await UserAuthService.setUserId(updatedProfile.userId!, world: 'energie');
-            await UserAuthService.setUserId(updatedProfile.userId!, world: 'materie');
+            await UserAuthService.setUserId(updatedProfile.userId!,
+                world: 'energie');
+            await UserAuthService.setUserId(updatedProfile.userId!,
+                world: 'materie');
           }
 
           // 🔥 Track Admin-Status für Toast
           isAdmin = updatedProfile.isAdmin();
           isRootAdmin = updatedProfile.isRootAdmin();
-          
+
           if (kDebugMode) {
             debugPrint('✅ Energie-Profil gespeichert mit Backend-Daten:');
             debugPrint('   Username: ${updatedProfile.username}');
@@ -948,21 +1002,22 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           // ✅ Auth-Service aktualisieren (ohne Backend-User-ID)
           await UserAuthService.setUsername(profile.username, world: 'energie');
           await UserAuthService.setUsername(profile.username, world: 'materie');
-          
+
           if (kDebugMode) {
-            debugPrint('⚠️ Energie-Profil nur lokal gespeichert (Backend nicht erreichbar)');
+            debugPrint(
+                '⚠️ Energie-Profil nur lokal gespeichert (Backend nicht erreichbar)');
             debugPrint('⚠️ Admin-Status erfordert Backend-Verbindung');
           }
-          
+
           // Kein Warning-Banner für normale User – nur stiller Fallback
         }
       }
-      
+
       if (mounted) {
         // 🔥 FIX: Rolle-basierter Toast
         String message;
         Color backgroundColor;
-        
+
         if (isRootAdmin) {
           message = '👑 Root-Admin aktiviert!';
           backgroundColor = const Color(0xFFFF6B00); // Orange
@@ -973,20 +1028,21 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           message = '✅ Profil gespeichert!';
           backgroundColor = Colors.green;
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
             backgroundColor: backgroundColor,
           ),
         );
-        
+
         // 🌍 Spirit-Daten weltübergreifend in Supabase profiles speichern
         if (_selectedBirthDate != null ||
             _birthPlaceController.text.isNotEmpty ||
             _birthTimeController.text.isNotEmpty) {
           final fullName = widget.world == 'energie'
-              ? '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim()
+              ? '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
+                  .trim()
               : _nameController.text.trim();
           unawaited(SpiritProfileService.instance.save(
             fullName: fullName.isNotEmpty ? fullName : null,
@@ -1002,7 +1058,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
 
         // 🆕 RIVERPOD: Admin-State aktualisieren nach Profil-Speicherung
         ref.read(adminStateProvider(widget.world).notifier).refresh();
-        
+
         // 🔄 AUTO-SAVE: Clear drafts after successful save
         AutoSaveManager().clearSavesForPrefix('profile_${widget.world}_');
 
@@ -1039,8 +1095,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   // Materie hat weniger Pflichtfelder als Energie (Geburtsdaten für die
   // Spirit-Tools).
   List<ProfileField> _completenessFields() {
-    final hasAvatar = (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-        || (_selectedEmoji != null && _selectedEmoji!.isNotEmpty);
+    final hasAvatar = (_avatarUrl != null && _avatarUrl!.isNotEmpty) ||
+        (_selectedEmoji != null && _selectedEmoji!.isNotEmpty);
     final fields = <ProfileField>[
       ProfileField(
         key: 'username',
@@ -1093,7 +1149,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     final worldColor = widget.world == 'materie'
         ? const Color(0xFF1E88E5)
         : const Color(0xFF7E57C2);
-    
+
     return PopScope(
       canPop: !_hasUnsavedChanges,
       onPopInvokedWithResult: (didPop, _) async {
@@ -1104,756 +1160,813 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: WBGlassAppBar(
-        world: WBWorld.neutral,
-        title: '${widget.world == 'materie' ? 'Materie' : 'Energie'}-Profil bearbeiten',
-      ),
-      // ⛔ Speichern-FAB entfernt — der ElevatedButton "Profil speichern"
-      // unten im Form reicht (User-Wunsch: nur EIN Save-Button).
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ResponsiveWebContainer(
-              variant: WebContainerVariant.compact,
-              child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                onChanged: () {
-                  if (!_hasUnsavedChanges) {
-                    setState(() => _hasUnsavedChanges = true);
-                  }
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Gamification: Fortschritts-Banner motiviert User
-                    // die fehlenden Felder zu füllen.
-                    ProfileCompletenessBar(
-                      accent: worldColor,
-                      fields: _completenessFields(),
-                    ),
-                    // Live-Preview: so sieht das Profil im Chat aus
-                    ProfileChatPreview(
-                      avatarUrl: _avatarUrl,
-                      avatarEmoji: _selectedEmoji,
-                      username: _usernameController.text,
-                      displayName: widget.world == 'materie'
-                          ? _nameController.text
-                          : '${_firstNameController.text} ${_lastNameController.text}'.trim(),
-                      accent: worldColor,
-                    ),
-                    // Avatar-Bereich
-                    Center(
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [
-                                  worldColor,
-                                  worldColor.withValues(alpha: 0.6),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: worldColor.withValues(alpha: 0.5),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: _selectedImageFile != null || (_avatarUrl != null && _avatarUrl!.startsWith('http'))
-                              ? ClipOval(
-                                  child: _selectedImageFile != null && !kIsWeb
-                                    ? Image.file(
-                                        _selectedImageFile! as dynamic,
-                                        fit: BoxFit.cover,
-                                        width: 120,
-                                        height: 120,
-                                      )
-                                    : _avatarUrl != null
-                                      ? Image.network(
-                                          _avatarUrl!,
-                                          fit: BoxFit.cover,
-                                          width: 120,
-                                          height: 120,
-                                          errorBuilder: (context, error, stack) {
-                                            return Center(
-                                              child: Text(
-                                                _selectedEmoji ?? '👤',
-                                                style: const TextStyle(fontSize: 60),
-                                              ),
-                                            );
-                                          },
-                                        )
-                                      : Center(
-                                          child: Text(
-                                            _selectedEmoji ?? '👤',
-                                            style: const TextStyle(fontSize: 60),
-                                          ),
-                                        ),
-                                )
-                              : Center(
-                                  child: Text(
-                                    _selectedEmoji ?? '👤',
-                                    style: const TextStyle(fontSize: 60),
-                                  ),
-                                ),
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Profilbild Buttons
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+        backgroundColor: const Color(0xFF0A0A0A),
+        appBar: WBGlassAppBar(
+          world: WBWorld.neutral,
+          title:
+              '${widget.world == 'materie' ? 'Materie' : 'Energie'}-Profil bearbeiten',
+        ),
+        // ⛔ Speichern-FAB entfernt — der ElevatedButton "Profil speichern"
+        // unten im Form reicht (User-Wunsch: nur EIN Save-Button).
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ResponsiveWebContainer(
+                variant: WebContainerVariant.compact,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    onChanged: () {
+                      if (!_hasUnsavedChanges) {
+                        setState(() => _hasUnsavedChanges = true);
+                      }
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Gamification: Fortschritts-Banner motiviert User
+                        // die fehlenden Felder zu füllen.
+                        ProfileCompletenessBar(
+                          accent: worldColor,
+                          fields: _completenessFields(),
+                        ),
+                        // Live-Preview: so sieht das Profil im Chat aus
+                        ProfileChatPreview(
+                          avatarUrl: _avatarUrl,
+                          avatarEmoji: _selectedEmoji,
+                          username: _usernameController.text,
+                          displayName: widget.world == 'materie'
+                              ? _nameController.text
+                              : '${_firstNameController.text} ${_lastNameController.text}'
+                                  .trim(),
+                          accent: worldColor,
+                        ),
+                        // Avatar-Bereich
+                        Center(
+                          child: Column(
                             children: [
-                              ElevatedButton.icon(
-                                onPressed: _showImageSourceDialog,
-                                icon: const Icon(Icons.photo_camera, size: 18),
-                                label: const Text('Bild'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: worldColor,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      worldColor,
+                                      worldColor.withValues(alpha: 0.6),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: worldColor.withValues(alpha: 0.5),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
                                 ),
+                                child: _selectedImageFile != null ||
+                                        (_avatarUrl != null &&
+                                            _avatarUrl!.startsWith('http'))
+                                    ? ClipOval(
+                                        child: _selectedImageFile != null &&
+                                                !kIsWeb
+                                            ? Image.file(
+                                                _selectedImageFile! as dynamic,
+                                                fit: BoxFit.cover,
+                                                width: 120,
+                                                height: 120,
+                                              )
+                                            : _avatarUrl != null
+                                                ? Image.network(
+                                                    _avatarUrl!,
+                                                    fit: BoxFit.cover,
+                                                    width: 120,
+                                                    height: 120,
+                                                    errorBuilder: (context,
+                                                        error, stack) {
+                                                      return Center(
+                                                        child: Text(
+                                                          _selectedEmoji ??
+                                                              '👤',
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize: 60),
+                                                        ),
+                                                      );
+                                                    },
+                                                  )
+                                                : Center(
+                                                    child: Text(
+                                                      _selectedEmoji ?? '👤',
+                                                      style: const TextStyle(
+                                                          fontSize: 60),
+                                                    ),
+                                                  ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          _selectedEmoji ?? '👤',
+                                          style: const TextStyle(fontSize: 60),
+                                        ),
+                                      ),
                               ),
-                              const SizedBox(width: 12),
-                              ElevatedButton.icon(
-                                onPressed: _showEmojiPicker,
-                                icon: const Icon(Icons.emoji_emotions, size: 18),
-                                label: const Text('Emoji'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: worldColor.withValues(alpha: 0.8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                ),
+
+                              const SizedBox(height: 16),
+
+                              // Profilbild Buttons
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  ElevatedButton.icon(
+                                    onPressed: _showImageSourceDialog,
+                                    icon: const Icon(Icons.photo_camera,
+                                        size: 18),
+                                    label: const Text('Bild'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: worldColor,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  ElevatedButton.icon(
+                                    onPressed: _showEmojiPicker,
+                                    icon: const Icon(Icons.emoji_emotions,
+                                        size: 18),
+                                    label: const Text('Emoji'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          worldColor.withValues(alpha: 0.8),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 32),
-
-                    // ✨ v92: Username-Lock. Sobald _originalUsername gesetzt und
-                    // User NICHT root_admin -> Feld readOnly + Antrag-Button.
-                    // Root-Admin kann immer direkt aendern.
-                    if (_originalUsername != null && !_userIsRootAdmin) ...[
-                      // Read-only Anzeige
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.04)
-                              : Colors.grey.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.lock_outline, color: Colors.white54, size: 18),
-                          const SizedBox(width: 10),
-                          Expanded(
+
+                        const SizedBox(height: 32),
+
+                        // ✨ v92: Username-Lock. Sobald _originalUsername gesetzt und
+                        // User NICHT root_admin -> Feld readOnly + Antrag-Button.
+                        // Root-Admin kann immer direkt aendern.
+                        if (_originalUsername != null && !_userIsRootAdmin) ...[
+                          // Read-only Anzeige
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.04)
+                                  : Colors.grey.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.1)),
+                            ),
+                            child: Row(children: [
+                              const Icon(Icons.lock_outline,
+                                  color: Colors.white54, size: 18),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Benutzername (gesperrt)',
+                                        style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500)),
+                                    const SizedBox(height: 2),
+                                    Text('@$_originalUsername',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700)),
+                                  ],
+                                ),
+                              ),
+                            ]),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_pendingUsernameRequest) ...[
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFA726)
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: const Color(0xFFFFA726)
+                                        .withValues(alpha: 0.4)),
+                              ),
+                              child: Row(children: [
+                                const Icon(Icons.hourglass_top,
+                                    color: Color(0xFFFFA726), size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Antrag offen: @${_pendingRequestedUsername ?? ""} (wartet auf Admin)',
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 12),
+                                  ),
+                                ),
+                              ]),
+                            ),
+                          ] else ...[
+                            TextButton.icon(
+                              onPressed: _openUsernameChangeRequestDialog,
+                              icon: const Icon(Icons.edit_note, size: 18),
+                              label: const Text(
+                                  'Anderen Benutzernamen beantragen'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF7C4DFF),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                          ],
+                        ] else
+                          // Normal-Fall: erstes Anlegen ODER Root-Admin -> editable
+                          TextFormField(
+                            controller: _usernameController,
+                            decoration: InputDecoration(
+                              labelText: _userIsRootAdmin
+                                  ? 'Benutzername (Root-Admin: direkt aenderbar)'
+                                  : 'Benutzername (Chat-Name)',
+                              hintText: 'Dein Chat-Name',
+                              prefixIcon: const Icon(Icons.person),
+                              suffixIcon: _buildUsernameStatusIcon(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.white,
+                              helperText: _buildUsernameHelperText(),
+                              helperStyle: _buildUsernameHelperStyle(),
+                              helperMaxLines: 2,
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                final username = value.trim();
+                                _isWeltenbibliothek =
+                                    (username == 'Weltenbibliothek' ||
+                                        username == 'Weltenbibliothekedit');
+                              });
+                              _scheduleUsernameCheck(value);
+                            },
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Benutzername ist erforderlich';
+                              }
+                              return null;
+                            },
+                          ),
+                        // Vorschläge bei vergebenem Namen
+                        if (_usernameCheck?.status == UsernameStatus.taken &&
+                            _usernameCheck!.suggestions.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: _usernameCheck!.suggestions
+                                .where((s) => s.length >= 3 && s.length <= 20)
+                                .map((s) => ActionChip(
+                                      label: Text(s),
+                                      avatar: const Icon(Icons.auto_awesome,
+                                          size: 14, color: Colors.amber),
+                                      onPressed: () {
+                                        _usernameController.text = s;
+                                        _usernameController.selection =
+                                            TextSelection.collapsed(
+                                                offset: s.length);
+                                        _scheduleUsernameCheck(s);
+                                      },
+                                    ))
+                                .toList(),
+                          ),
+                        ],
+
+                        // ✅ NEU: Root-Admin Passwortfeld (conditional)
+                        if (_isWeltenbibliothek) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.1),
+                              border: Border.all(color: Colors.amber, width: 2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.all(16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Benutzername (gesperrt)',
-                                    style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w500)),
-                                const SizedBox(height: 2),
-                                Text('@$_originalUsername',
-                                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                              ],
-                            ),
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(height: 8),
-                      if (_pendingUsernameRequest) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFA726).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFFA726).withValues(alpha: 0.4)),
-                          ),
-                          child: Row(children: [
-                            const Icon(Icons.hourglass_top, color: Color(0xFFFFA726), size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Antrag offen: @${_pendingRequestedUsername ?? ""} (wartet auf Admin)',
-                                style: const TextStyle(color: Colors.white, fontSize: 12),
-                              ),
-                            ),
-                          ]),
-                        ),
-                      ] else ...[
-                        TextButton.icon(
-                          onPressed: _openUsernameChangeRequestDialog,
-                          icon: const Icon(Icons.edit_note, size: 18),
-                          label: const Text('Anderen Benutzernamen beantragen'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF7C4DFF),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                        ),
-                      ],
-                    ] else
-                    // Normal-Fall: erstes Anlegen ODER Root-Admin -> editable
-                    TextFormField(
-                      controller: _usernameController,
-                      decoration: InputDecoration(
-                        labelText: _userIsRootAdmin
-                            ? 'Benutzername (Root-Admin: direkt aenderbar)'
-                            : 'Benutzername (Chat-Name)',
-                        hintText: 'Dein Chat-Name',
-                        prefixIcon: const Icon(Icons.person),
-                        suffixIcon: _buildUsernameStatusIcon(),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.white,
-                        helperText: _buildUsernameHelperText(),
-                        helperStyle: _buildUsernameHelperStyle(),
-                        helperMaxLines: 2,
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          final username = value.trim();
-                          _isWeltenbibliothek = (username == 'Weltenbibliothek' ||
-                              username == 'Weltenbibliothekedit');
-                        });
-                        _scheduleUsernameCheck(value);
-                      },
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Benutzername ist erforderlich';
-                        }
-                        return null;
-                      },
-                    ),
-                    // Vorschläge bei vergebenem Namen
-                    if (_usernameCheck?.status == UsernameStatus.taken &&
-                        _usernameCheck!.suggestions.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: _usernameCheck!.suggestions
-                            .where((s) => s.length >= 3 && s.length <= 20)
-                            .map((s) => ActionChip(
-                                  label: Text(s),
-                                  avatar: const Icon(Icons.auto_awesome,
-                                      size: 14, color: Colors.amber),
-                                  onPressed: () {
-                                    _usernameController.text = s;
-                                    _usernameController.selection =
-                                        TextSelection.collapsed(
-                                            offset: s.length);
-                                    _scheduleUsernameCheck(s);
+                                Row(
+                                  children: [
+                                    const Icon(Icons.admin_panel_settings,
+                                        color: Colors.amber),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _usernameController.text.trim() ==
+                                              'Weltenbibliothek'
+                                          ? '👑 Root-Admin Zugriff'
+                                          : '✏️ Content-Editor Zugriff',
+                                      style: TextStyle(
+                                        color: Colors.amber.shade700,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: true,
+                                  decoration: InputDecoration(
+                                    labelText:
+                                        _usernameController.text.trim() ==
+                                                'Weltenbibliothek'
+                                            ? '🔐 Root-Admin Passwort'
+                                            : '🔐 Content-Editor Passwort',
+                                    hintText: _usernameController.text.trim() ==
+                                            'Weltenbibliothek'
+                                        ? 'Erforderlich für Root-Admin Rechte'
+                                        : 'Erforderlich für Content-Editor Rechte',
+                                    prefixIcon: const Icon(Icons.lock),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                  ),
+                                  validator: (value) {
+                                    if (_isWeltenbibliothek) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Admin-Passwort erforderlich';
+                                      }
+                                      if (value != 'Jolene2305') {
+                                        return 'Falsches Admin-Passwort';
+                                      }
+                                    }
+                                    return null;
                                   },
-                                ))
-                            .toList(),
-                      ),
-                    ],
-                    
-                    // ✅ NEU: Root-Admin Passwortfeld (conditional)
-                    if (_isWeltenbibliothek) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.1),
-                          border: Border.all(color: Colors.amber, width: 2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.admin_panel_settings, color: Colors.amber),
-                                const SizedBox(width: 8),
+                                ),
+                                const SizedBox(height: 8),
                                 Text(
-                                  _usernameController.text.trim() == 'Weltenbibliothek' 
-                                      ? '👑 Root-Admin Zugriff' 
-                                      : '✏️ Content-Editor Zugriff',
+                                  'ℹ️ Admin-Accounts benötigen ein Passwort:\n'
+                                  '👑 "Weltenbibliothek" = Root-Admin (Vollzugriff)\n'
+                                  '✏️ "Weltenbibliothekedit" = Content-Editor (nur Content)',
                                   style: TextStyle(
-                                    color: Colors.amber.shade700,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                labelText: _usernameController.text.trim() == 'Weltenbibliothek'
-                                    ? '🔐 Root-Admin Passwort'
-                                    : '🔐 Content-Editor Passwort',
-                                hintText: _usernameController.text.trim() == 'Weltenbibliothek'
-                                    ? 'Erforderlich für Root-Admin Rechte'
-                                    : 'Erforderlich für Content-Editor Rechte',
-                                prefixIcon: const Icon(Icons.lock),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                              ),
-                              validator: (value) {
-                                if (_isWeltenbibliothek) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Admin-Passwort erforderlich';
-                                  }
-                                  if (value != 'Jolene2305') {
-                                    return 'Falsches Admin-Passwort';
-                                  }
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'ℹ️ Admin-Accounts benötigen ein Passwort:\n'
-                              '👑 "Weltenbibliothek" = Root-Admin (Vollzugriff)\n'
-                              '✏️ "Weltenbibliothekedit" = Content-Editor (nur Content)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    
-                    const SizedBox(height: 16),
-                    
-                    // MATERIE-SPEZIFISCHE FELDER
-                    if (widget.world == 'materie') ...[
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Name (optional)',
-                          hintText: 'Dein echter Name',
-                          prefixIcon: const Icon(Icons.badge),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
                           ),
-                          filled: true,
-                          fillColor: isDark 
-                              ? Colors.white.withValues(alpha: 0.05) 
-                              : Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    
-                    // ENERGIE-SPEZIFISCHE FELDER
-                    if (widget.world == 'energie') ...[
-                      // Vorname
-                      TextFormField(
-                        controller: _firstNameController,
-                        decoration: InputDecoration(
-                          labelText: 'Vorname',
-                          hintText: 'Dein Vorname',
-                          prefixIcon: const Icon(Icons.person_outline),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: isDark 
-                              ? Colors.white.withValues(alpha: 0.05) 
-                              : Colors.white,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Vorname ist erforderlich';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Nachname
-                      TextFormField(
-                        controller: _lastNameController,
-                        decoration: InputDecoration(
-                          labelText: 'Nachname',
-                          hintText: 'Dein Nachname',
-                          prefixIcon: const Icon(Icons.person_outline),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: isDark 
-                              ? Colors.white.withValues(alpha: 0.05) 
-                              : Colors.white,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Nachname ist erforderlich';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ✨ v94 -- Geburtsname (optional, fuer Numerologie)
-                      // Klappbares ExpansionTile, damit die normale UX
-                      // nicht ueberladen wirkt. Erscheint NICHT als Pflicht.
-                      Theme(
-                        data: Theme.of(context).copyWith(
-                          dividerColor: Colors.transparent,
-                        ),
-                        child: ExpansionTile(
-                          tilePadding:
-                              const EdgeInsets.symmetric(horizontal: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          collapsedShape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor:
-                              const Color(0xFFC9A84C).withValues(alpha: 0.05),
-                          collapsedBackgroundColor: isDark
-                              ? Colors.white.withValues(alpha: 0.03)
-                              : Colors.white,
-                          iconColor: const Color(0xFFC9A84C),
-                          collapsedIconColor:
-                              const Color(0xFFC9A84C).withValues(alpha: 0.6),
-                          title: const Text(
-                            'Geburtsname (optional)',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: const Padding(
-                            padding: EdgeInsets.only(top: 2),
-                            child: Text(
-                              'Falls sich dein Name seit Geburt geaendert hat',
-                              style: TextStyle(fontSize: 11),
-                            ),
-                          ),
-                          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 8),
-                              child: Text(
-                                'Trage hier deinen vollstaendigen Geburtsnamen ein '
-                                '(Heirat, Adoption etc.). Wir nutzen ihn fuer die '
-                                'Vergleichskarte im Numerologie-Screen.',
-                                style: TextStyle(
-                                    fontSize: 11, height: 1.4),
-                              ),
-                            ),
-                            TextFormField(
-                              controller: _birthFirstNameController,
-                              decoration: InputDecoration(
-                                labelText: 'Geburts-Vorname',
-                                hintText: 'z.B. Maria',
-                                prefixIcon:
-                                    const Icon(Icons.history_edu_outlined),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                filled: true,
-                                fillColor: isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            TextFormField(
-                              controller: _birthMiddleNamesController,
-                              decoration: InputDecoration(
-                                labelText: 'Zweitnamen bei Geburt',
-                                hintText: 'z.B. Anna Theresia',
-                                prefixIcon: const Icon(Icons.notes_outlined),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                filled: true,
-                                fillColor: isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            TextFormField(
-                              controller: _birthLastNameController,
-                              decoration: InputDecoration(
-                                labelText: 'Geburts-Nachname',
-                                hintText: 'z.B. Maedchenname',
-                                prefixIcon: const Icon(Icons.account_tree_outlined),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                filled: true,
-                                fillColor: isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ✅ Geburtsdatum - Manuelle Eingabe mit Punkten + Kalender-Icon
-                      TextFormField(
-                        controller: _birthDateController,
-                        decoration: InputDecoration(
-                          labelText: 'Geburtsdatum',
-                          hintText: 'TT.MM.JJJJ (z.B. 15.03.1990)',
-                          prefixIcon: const Icon(Icons.cake),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.calendar_today),
-                            onPressed: _selectBirthDate,
-                            tooltip: 'Kalender öffnen',
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: isDark 
-                              ? Colors.white.withValues(alpha: 0.05) 
-                              : Colors.white,
-                        ),
-                        keyboardType: TextInputType.text, // ⌨️ Vollständige Text-Tastatur (nicht nur Zahlen)
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                          LengthLimitingTextInputFormatter(10),
-                          _DateInputFormatter(), // ✅ Auto-format with dots
                         ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Bitte Geburtsdatum eingeben';
-                          }
-                          // Validate format DD.MM.YYYY
-                          final dateRegex = RegExp(r'^\d{2}\.\d{2}\.\d{4}$');
-                          if (!dateRegex.hasMatch(value)) {
-                            return 'Format: TT.MM.JJJJ (z.B. 15.03.1990)';
-                          }
-                          // Parse and validate date
-                          try {
-                            final parts = value.split('.');
-                            final day = int.parse(parts[0]);
-                            final month = int.parse(parts[1]);
-                            final year = int.parse(parts[2]);
-                            final date = DateTime(year, month, day);
-                            if (date.isAfter(DateTime.now())) {
-                              return 'Datum darf nicht in der Zukunft liegen';
-                            }
-                            if (year < 1900) {
-                              return 'Jahr muss nach 1900 liegen';
-                            }
-                            // Update _selectedBirthDate when valid
-                            _selectedBirthDate = date;
-                          } catch (e) {
-                            return 'Ungültiges Datum';
-                          }
-                          return null;
-                        },
-                        onChanged: (value) {
-                          // Try to parse date on each change
-                          if (value.length == 10) {
-                            try {
-                              final parts = value.split('.');
-                              final day = int.parse(parts[0]);
-                              final month = int.parse(parts[1]);
-                              final year = int.parse(parts[2]);
-                              _selectedBirthDate = DateTime(year, month, day);
-                            } catch (e) {
-                              _selectedBirthDate = null;
-                            }
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // ✨ v93: Geburtsort mit Auto-Geocoding (Stadt -> lat/lng/tz)
-                      // User tippt nur Stadt-Name, wir holen Koordinaten + Timezone
-                      // automatisch via OpenStreetMap Nominatim. Keine manuelle
-                      // Eingabe von lat/lng/tz noetig.
-                      BirthPlaceAutocomplete(
-                        initialPlace: _birthPlaceController.text,
-                        initialLatitude: _birthLatitude,
-                        initialLongitude: _birthLongitude,
-                        accentColor: const Color(0xFF7C4DFF), // Energie Lila
-                        label: 'Geburtsort',
-                        hintText: 'Stadt, Land tippen...',
-                        onSelected: (place, lat, lng) {
-                          setState(() {
-                            _birthPlaceController.text = place;
-                            _birthLatitude = lat;
-                            _birthLongitude = lng;
-                            // Timezone auto-inferieren aus lat/lng + Geburtsdatum
-                            if (lat != null && lng != null) {
-                              _timezoneOffsetHours = TimezoneHelper.inferOffsetHours(
-                                latitude: lat,
-                                longitude: lng,
-                                birthDate: _selectedBirthDate,
-                              );
-                            } else {
-                              // User hat frei getippt - Koordinaten zuruecksetzen
-                              _timezoneOffsetHours = null;
-                            }
-                            _hasUnsavedChanges = true;
-                          });
-                        },
-                      ),
-                      if (_birthLatitude != null && _birthLongitude != null) ...[
-                        const SizedBox(height: 6),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            '✓ Koordinaten: ${_birthLatitude!.toStringAsFixed(4)}°, ${_birthLongitude!.toStringAsFixed(4)}°'
-                            '${_timezoneOffsetHours != null ? "  ·  TZ ${TimezoneHelper.formatOffset(_timezoneOffsetHours!)}" : ""}',
-                            style: TextStyle(
-                              color: const Color(0xFF7C4DFF).withValues(alpha: 0.75),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
+
+                        const SizedBox(height: 16),
+
+                        // MATERIE-SPEZIFISCHE FELDER
+                        if (widget.world == 'materie') ...[
+                          TextFormField(
+                            controller: _nameController,
+                            decoration: InputDecoration(
+                              labelText: 'Name (optional)',
+                              hintText: 'Dein echter Name',
+                              prefixIcon: const Icon(Icons.badge),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.white,
                             ),
                           ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // ENERGIE-SPEZIFISCHE FELDER
+                        if (widget.world == 'energie') ...[
+                          // Vorname
+                          TextFormField(
+                            controller: _firstNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Vorname',
+                              hintText: 'Dein Vorname',
+                              prefixIcon: const Icon(Icons.person_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.white,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Vorname ist erforderlich';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Nachname
+                          TextFormField(
+                            controller: _lastNameController,
+                            decoration: InputDecoration(
+                              labelText: 'Nachname',
+                              hintText: 'Dein Nachname',
+                              prefixIcon: const Icon(Icons.person_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.white,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Nachname ist erforderlich';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // ✨ v94 -- Geburtsname (optional, fuer Numerologie)
+                          // Klappbares ExpansionTile, damit die normale UX
+                          // nicht ueberladen wirkt. Erscheint NICHT als Pflicht.
+                          Theme(
+                            data: Theme.of(context).copyWith(
+                              dividerColor: Colors.transparent,
+                            ),
+                            child: ExpansionTile(
+                              tilePadding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              collapsedShape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: const Color(0xFFC9A84C)
+                                  .withValues(alpha: 0.05),
+                              collapsedBackgroundColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.03)
+                                  : Colors.white,
+                              iconColor: const Color(0xFFC9A84C),
+                              collapsedIconColor: const Color(0xFFC9A84C)
+                                  .withValues(alpha: 0.6),
+                              title: const Text(
+                                'Geburtsname (optional)',
+                                style: TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: const Padding(
+                                padding: EdgeInsets.only(top: 2),
+                                child: Text(
+                                  'Falls sich dein Name seit Geburt geaendert hat',
+                                  style: TextStyle(fontSize: 11),
+                                ),
+                              ),
+                              childrenPadding:
+                                  const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 4, vertical: 8),
+                                  child: Text(
+                                    'Trage hier deinen vollstaendigen Geburtsnamen ein '
+                                    '(Heirat, Adoption etc.). Wir nutzen ihn fuer die '
+                                    'Vergleichskarte im Numerologie-Screen.',
+                                    style: TextStyle(fontSize: 11, height: 1.4),
+                                  ),
+                                ),
+                                TextFormField(
+                                  controller: _birthFirstNameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Geburts-Vorname',
+                                    hintText: 'z.B. Maria',
+                                    prefixIcon:
+                                        const Icon(Icons.history_edu_outlined),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    filled: true,
+                                    fillColor: isDark
+                                        ? Colors.white.withValues(alpha: 0.05)
+                                        : Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextFormField(
+                                  controller: _birthMiddleNamesController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Zweitnamen bei Geburt',
+                                    hintText: 'z.B. Anna Theresia',
+                                    prefixIcon:
+                                        const Icon(Icons.notes_outlined),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    filled: true,
+                                    fillColor: isDark
+                                        ? Colors.white.withValues(alpha: 0.05)
+                                        : Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextFormField(
+                                  controller: _birthLastNameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Geburts-Nachname',
+                                    hintText: 'z.B. Maedchenname',
+                                    prefixIcon:
+                                        const Icon(Icons.account_tree_outlined),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    filled: true,
+                                    fillColor: isDark
+                                        ? Colors.white.withValues(alpha: 0.05)
+                                        : Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // ✅ Geburtsdatum - Manuelle Eingabe mit Punkten + Kalender-Icon
+                          TextFormField(
+                            controller: _birthDateController,
+                            decoration: InputDecoration(
+                              labelText: 'Geburtsdatum',
+                              hintText: 'TT.MM.JJJJ (z.B. 15.03.1990)',
+                              prefixIcon: const Icon(Icons.cake),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.calendar_today),
+                                onPressed: _selectBirthDate,
+                                tooltip: 'Kalender öffnen',
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.white,
+                            ),
+                            keyboardType: TextInputType
+                                .text, // ⌨️ Vollständige Text-Tastatur (nicht nur Zahlen)
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9.]')),
+                              LengthLimitingTextInputFormatter(10),
+                              _DateInputFormatter(), // ✅ Auto-format with dots
+                            ],
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Bitte Geburtsdatum eingeben';
+                              }
+                              // Validate format DD.MM.YYYY
+                              final dateRegex =
+                                  RegExp(r'^\d{2}\.\d{2}\.\d{4}$');
+                              if (!dateRegex.hasMatch(value)) {
+                                return 'Format: TT.MM.JJJJ (z.B. 15.03.1990)';
+                              }
+                              // Parse and validate date
+                              try {
+                                final parts = value.split('.');
+                                final day = int.parse(parts[0]);
+                                final month = int.parse(parts[1]);
+                                final year = int.parse(parts[2]);
+                                final date = DateTime(year, month, day);
+                                if (date.isAfter(DateTime.now())) {
+                                  return 'Datum darf nicht in der Zukunft liegen';
+                                }
+                                if (year < 1900) {
+                                  return 'Jahr muss nach 1900 liegen';
+                                }
+                                // Update _selectedBirthDate when valid
+                                _selectedBirthDate = date;
+                              } catch (e) {
+                                return 'Ungültiges Datum';
+                              }
+                              return null;
+                            },
+                            onChanged: (value) {
+                              // Try to parse date on each change
+                              if (value.length == 10) {
+                                try {
+                                  final parts = value.split('.');
+                                  final day = int.parse(parts[0]);
+                                  final month = int.parse(parts[1]);
+                                  final year = int.parse(parts[2]);
+                                  _selectedBirthDate =
+                                      DateTime(year, month, day);
+                                } catch (e) {
+                                  _selectedBirthDate = null;
+                                }
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 16),
+
+                          // ✨ v93: Geburtsort mit Auto-Geocoding (Stadt -> lat/lng/tz)
+                          // User tippt nur Stadt-Name, wir holen Koordinaten + Timezone
+                          // automatisch via OpenStreetMap Nominatim. Keine manuelle
+                          // Eingabe von lat/lng/tz noetig.
+                          BirthPlaceAutocomplete(
+                            initialPlace: _birthPlaceController.text,
+                            initialLatitude: _birthLatitude,
+                            initialLongitude: _birthLongitude,
+                            accentColor:
+                                const Color(0xFF7C4DFF), // Energie Lila
+                            label: 'Geburtsort',
+                            hintText: 'Stadt, Land tippen...',
+                            onSelected: (place, lat, lng) {
+                              setState(() {
+                                _birthPlaceController.text = place;
+                                _birthLatitude = lat;
+                                _birthLongitude = lng;
+                                // Timezone auto-inferieren aus lat/lng + Geburtsdatum
+                                if (lat != null && lng != null) {
+                                  _timezoneOffsetHours =
+                                      TimezoneHelper.inferOffsetHours(
+                                    latitude: lat,
+                                    longitude: lng,
+                                    birthDate: _selectedBirthDate,
+                                  );
+                                } else {
+                                  // User hat frei getippt - Koordinaten zuruecksetzen
+                                  _timezoneOffsetHours = null;
+                                }
+                                _hasUnsavedChanges = true;
+                              });
+                            },
+                          ),
+                          if (_birthLatitude != null &&
+                              _birthLongitude != null) ...[
+                            const SizedBox(height: 6),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text(
+                                '✓ Koordinaten: ${_birthLatitude!.toStringAsFixed(4)}°, ${_birthLongitude!.toStringAsFixed(4)}°'
+                                '${_timezoneOffsetHours != null ? "  ·  TZ ${TimezoneHelper.formatOffset(_timezoneOffsetHours!)}" : ""}',
+                                style: TextStyle(
+                                  color: const Color(0xFF7C4DFF)
+                                      .withValues(alpha: 0.75),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+
+                          // Geburtszeit (optional, oder explizit "unbekannt")
+                          TextFormField(
+                            controller: _birthTimeController,
+                            enabled: !_birthTimeUnknown,
+                            decoration: InputDecoration(
+                              labelText: _birthTimeUnknown
+                                  ? 'Geburtszeit (als unbekannt markiert)'
+                                  : 'Geburtszeit (optional)',
+                              hintText: 'HH:MM (z.B. 14:30)',
+                              prefixIcon: const Icon(Icons.access_time),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.white,
+                            ),
+                          ),
+                          // ✨ v93: birth_time_unknown Checkbox
+                          CheckboxListTile(
+                            value: _birthTimeUnknown,
+                            onChanged: (v) => setState(() {
+                              _birthTimeUnknown = v ?? false;
+                              if (_birthTimeUnknown)
+                                _birthTimeController.clear();
+                              _hasUnsavedChanges = true;
+                            }),
+                            title: const Text(
+                              'Geburtszeit ist unbekannt',
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 13),
+                            ),
+                            subtitle: Text(
+                              'Spirit-Tools nehmen 12:00 lokal als Annahme - keine Aszendent-Berechnung',
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  fontSize: 11),
+                            ),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            contentPadding: EdgeInsets.zero,
+                            activeColor: const Color(0xFF7C4DFF),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // ✨ v93: Geschlecht (optional, fuer gender-tuned Content)
+                          DropdownButtonFormField<String?>(
+                            initialValue: _gender,
+                            decoration: InputDecoration(
+                              labelText: 'Geschlecht (optional)',
+                              prefixIcon: const Icon(Icons.wc),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.white,
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                  value: null, child: Text('Keine Angabe')),
+                              DropdownMenuItem(
+                                  value: 'female', child: Text('Weiblich')),
+                              DropdownMenuItem(
+                                  value: 'male', child: Text('Maennlich')),
+                              DropdownMenuItem(
+                                  value: 'diverse', child: Text('Divers')),
+                              DropdownMenuItem(
+                                  value: 'prefer_not_say',
+                                  child: Text('Moechte ich nicht angeben')),
+                            ],
+                            onChanged: (v) => setState(() {
+                              _gender = v;
+                              _hasUnsavedChanges = true;
+                            }),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Bio (für beide Welten)
+                        TextFormField(
+                          controller: _bioController,
+                          maxLines: 4,
+                          maxLength: 200,
+                          decoration: InputDecoration(
+                            labelText: 'Bio (optional)',
+                            hintText: 'Erzähl etwas über dich...',
+                            prefixIcon: const Icon(Icons.description),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.white,
+                          ),
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // Speichern-Button
+                        ElevatedButton(
+                          onPressed: _isSaving ? null : _saveProfile,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: worldColor,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Profil speichern',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      
-                      // Geburtszeit (optional, oder explizit "unbekannt")
-                      TextFormField(
-                        controller: _birthTimeController,
-                        enabled: !_birthTimeUnknown,
-                        decoration: InputDecoration(
-                          labelText: _birthTimeUnknown
-                              ? 'Geburtszeit (als unbekannt markiert)'
-                              : 'Geburtszeit (optional)',
-                          hintText: 'HH:MM (z.B. 14:30)',
-                          prefixIcon: const Icon(Icons.access_time),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.white,
-                        ),
-                      ),
-                      // ✨ v93: birth_time_unknown Checkbox
-                      CheckboxListTile(
-                        value: _birthTimeUnknown,
-                        onChanged: (v) => setState(() {
-                          _birthTimeUnknown = v ?? false;
-                          if (_birthTimeUnknown) _birthTimeController.clear();
-                          _hasUnsavedChanges = true;
-                        }),
-                        title: const Text(
-                          'Geburtszeit ist unbekannt',
-                          style: TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
-                        subtitle: Text(
-                          'Spirit-Tools nehmen 12:00 lokal als Annahme - keine Aszendent-Berechnung',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
-                        ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        activeColor: const Color(0xFF7C4DFF),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ✨ v93: Geschlecht (optional, fuer gender-tuned Content)
-                      DropdownButtonFormField<String?>(
-                        initialValue: _gender,
-                        decoration: InputDecoration(
-                          labelText: 'Geschlecht (optional)',
-                          prefixIcon: const Icon(Icons.wc),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.white,
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: null, child: Text('Keine Angabe')),
-                          DropdownMenuItem(value: 'female', child: Text('Weiblich')),
-                          DropdownMenuItem(value: 'male', child: Text('Maennlich')),
-                          DropdownMenuItem(value: 'diverse', child: Text('Divers')),
-                          DropdownMenuItem(value: 'prefer_not_say', child: Text('Moechte ich nicht angeben')),
-                        ],
-                        onChanged: (v) => setState(() {
-                          _gender = v;
-                          _hasUnsavedChanges = true;
-                        }),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    
-                    // Bio (für beide Welten)
-                    TextFormField(
-                      controller: _bioController,
-                      maxLines: 4,
-                      maxLength: 200,
-                      decoration: InputDecoration(
-                        labelText: 'Bio (optional)',
-                        hintText: 'Erzähl etwas über dich...',
-                        prefixIcon: const Icon(Icons.description),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: isDark 
-                            ? Colors.white.withValues(alpha: 0.05) 
-                            : Colors.white,
-                      ),
                     ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Speichern-Button
-                    ElevatedButton(
-                      onPressed: _isSaving ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: worldColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Profil speichern',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            ),
-    ),
+      ),
     );
   }
 
@@ -1867,8 +1980,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.dark(
-              primary: widget.world == 'materie' 
-                  ? const Color(0xFF1E88E5) 
+              primary: widget.world == 'materie'
+                  ? const Color(0xFF1E88E5)
                   : const Color(0xFF7E57C2),
             ),
           ),
@@ -1876,7 +1989,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() {
         _selectedBirthDate = picked;
@@ -1912,7 +2025,6 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
               const Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
@@ -1923,7 +2035,6 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                   ),
                 ),
               ),
-              
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: GridView.builder(
@@ -1938,7 +2049,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                   itemBuilder: (context, index) {
                     final emoji = _emojiOptions[index];
                     final isSelected = emoji == _selectedEmoji;
-                    
+
                     return GestureDetector(
                       onTap: () {
                         setState(() => _selectedEmoji = emoji);
@@ -1946,11 +2057,11 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isSelected 
+                          color: isSelected
                               ? (widget.world == 'materie'
-                                  ? const Color(0xFF1E88E5)
-                                  : const Color(0xFF7E57C2)
-                                ).withValues(alpha: 0.2)
+                                      ? const Color(0xFF1E88E5)
+                                      : const Color(0xFF7E57C2))
+                                  .withValues(alpha: 0.2)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
@@ -1973,7 +2084,6 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                   },
                 ),
               ),
-              
               const SizedBox(height: 16),
             ],
           ),
@@ -1993,27 +2103,27 @@ class _DateInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final text = newValue.text;
-    
+
     // Nur Zahlen und Punkte erlauben
     if (text.isNotEmpty && !RegExp(r'^[0-9.]*$').hasMatch(text)) {
       return oldValue;
     }
-    
+
     // Auto-insert dots at positions 2 and 5 (after DD and MM)
     String formatted = text.replaceAll('.', ''); // Remove existing dots
-    
+
     if (formatted.length > 2) {
       formatted = '${formatted.substring(0, 2)}.${formatted.substring(2)}';
     }
     if (formatted.length > 5) {
       formatted = '${formatted.substring(0, 5)}.${formatted.substring(5)}';
     }
-    
+
     // Limit to 10 characters (DD.MM.YYYY)
     if (formatted.length > 10) {
       formatted = formatted.substring(0, 10);
     }
-    
+
     return TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),

@@ -1,6 +1,6 @@
 /// **WELTENBIBLIOTHEK - STEP 2 VISUALISIERUNG**
 /// Netzwerk-Graph Widget für Akteurs-Verbindungen
-/// 
+///
 /// Zeigt Akteure, Organisationen und deren Verbindungen als interaktives Netzwerk
 /// Basiert auf Analyse-Daten aus STEP 2
 library;
@@ -15,7 +15,7 @@ class NetzwerkAkteur {
   final String typ; // person, organisation, regierung, konzern
   final double einfluss; // 0.0 - 1.0
   final List<String> verbindungen; // IDs anderer Akteure
-  
+
   const NetzwerkAkteur({
     required this.id,
     required this.name,
@@ -31,7 +31,7 @@ class NetzwerkVerbindung {
   final String zu;
   final String art; // finanziell, politisch, persönlich, geschäftlich
   final double staerke; // 0.0 - 1.0
-  
+
   const NetzwerkVerbindung({
     required this.von,
     required this.zu,
@@ -43,7 +43,7 @@ class NetzwerkVerbindung {
 class NetzwerkGraphWidget extends StatefulWidget {
   final List<NetzwerkAkteur> akteure;
   final List<NetzwerkVerbindung> verbindungen;
-  
+
   const NetzwerkGraphWidget({
     super.key,
     required this.akteure,
@@ -58,12 +58,12 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
   final Graph graph = Graph();
   late SugiyamaConfiguration builder;
   NetzwerkAkteur? _selectedAkteur;
-  
+
   @override
   void initState() {
     super.initState();
     _buildGraph();
-    
+
     builder = SugiyamaConfiguration()
       ..nodeSeparation = (80)
       ..levelSeparation = (100)
@@ -73,7 +73,7 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
   void _buildGraph() {
     // Erstelle neuen Graph statt clear() zu verwenden
     // graph.clear(); // Nicht unterstützt in dieser GraphView-Version
-    
+
     // Nodes erstellen
     final nodeMap = <String, Node>{};
     for (final akteur in widget.akteure) {
@@ -81,7 +81,7 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
       graph.addNode(node);
       nodeMap[akteur.id] = node;
     }
-    
+
     // Edges erstellen
     for (final verbindung in widget.verbindungen) {
       final vonNode = nodeMap[verbindung.von];
@@ -150,7 +150,7 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
                   (a) => a.id == node.key!.value,
                   orElse: () => widget.akteure.first,
                 );
-                
+
                 return _buildAkteurNode(akteur);
               },
             ),
@@ -163,8 +163,9 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
 
   Widget _buildAkteurNode(NetzwerkAkteur akteur) {
     final isSelected = _selectedAkteur?.id == akteur.id;
-    final size = 40.0 + (akteur.einfluss * 30.0); // 40-70px basierend auf Einfluss
-    
+    final size =
+        40.0 + (akteur.einfluss * 30.0); // 40-70px basierend auf Einfluss
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -178,7 +179,9 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
           shape: BoxShape.circle,
           color: _getAkteurFarbe(akteur.typ),
           border: Border.all(
-            color: isSelected ? Colors.yellow : Colors.white.withValues(alpha: 0.5),
+            color: isSelected
+                ? Colors.yellow
+                : Colors.white.withValues(alpha: 0.5),
             width: isSelected ? 3 : 1,
           ),
           boxShadow: [
@@ -248,7 +251,7 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
     final verbindungen = widget.verbindungen
         .where((v) => v.von == akteur.id || v.zu == akteur.id)
         .toList();
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -332,7 +335,11 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
           value: einfluss,
           backgroundColor: Colors.white.withValues(alpha: 0.2),
           valueColor: AlwaysStoppedAnimation(
-            einfluss > 0.7 ? Colors.red : einfluss > 0.4 ? Colors.orange : Colors.green,
+            einfluss > 0.7
+                ? Colors.red
+                : einfluss > 0.4
+                    ? Colors.orange
+                    : Colors.green,
           ),
         ),
       ],
@@ -341,10 +348,14 @@ class _NetzwerkGraphWidgetState extends State<NetzwerkGraphWidget> {
 
   Widget _buildVerbindungItem(NetzwerkVerbindung verbindung) {
     final andererAkteur = widget.akteure.firstWhere(
-      (a) => a.id == (verbindung.von == _selectedAkteur!.id ? verbindung.zu : verbindung.von),
+      (a) =>
+          a.id ==
+          (verbindung.von == _selectedAkteur!.id
+              ? verbindung.zu
+              : verbindung.von),
       orElse: () => widget.akteure.first,
     );
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(

@@ -40,17 +40,28 @@ class UrsprungTopic {
 
   IconData get icon {
     switch (iconName) {
-      case 'psychology': return Icons.psychology_rounded;
-      case 'science': return Icons.science_rounded;
-      case 'hexagon': return Icons.hexagon_outlined;
-      case 'public': return Icons.public_rounded;
-      case 'self_improvement': return Icons.self_improvement_rounded;
-      case 'school': return Icons.school_rounded;
-      case 'blur_on': return Icons.blur_on_rounded;
-      case 'visibility': return Icons.visibility_rounded;
-      case 'graphic_eq': return Icons.graphic_eq_rounded;
-      case 'account_balance': return Icons.account_balance_rounded;
-      default: return Icons.public_rounded;
+      case 'psychology':
+        return Icons.psychology_rounded;
+      case 'science':
+        return Icons.science_rounded;
+      case 'hexagon':
+        return Icons.hexagon_outlined;
+      case 'public':
+        return Icons.public_rounded;
+      case 'self_improvement':
+        return Icons.self_improvement_rounded;
+      case 'school':
+        return Icons.school_rounded;
+      case 'blur_on':
+        return Icons.blur_on_rounded;
+      case 'visibility':
+        return Icons.visibility_rounded;
+      case 'graphic_eq':
+        return Icons.graphic_eq_rounded;
+      case 'account_balance':
+        return Icons.account_balance_rounded;
+      default:
+        return Icons.public_rounded;
     }
   }
 }
@@ -89,9 +100,8 @@ class UrsprungTopicsService {
           .take(2)
           .toList();
       if (words.isEmpty) return [];
-      final ors = words
-          .map((w) => 'title.ilike.%$w%,summary.ilike.%$w%')
-          .join(',');
+      final ors =
+          words.map((w) => 'title.ilike.%$w%,summary.ilike.%$w%').join(',');
       final res = await client
           .from('ursprung_topics')
           .select()

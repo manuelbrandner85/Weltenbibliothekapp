@@ -191,7 +191,8 @@ class _PortalDefenseGameScreenState extends State<PortalDefenseGameScreen>
 
   // ── Welt / Felder ─────────────────────────────────────────────────────────
   Size _fieldSize = Size.zero;
-  Offset get _portalCenter => Offset(_fieldSize.width / 2, _fieldSize.height / 2);
+  Offset get _portalCenter =>
+      Offset(_fieldSize.width / 2, _fieldSize.height / 2);
 
   final List<_GameOrb> _orbs = [];
   final List<_HitFx> _fx = [];
@@ -717,9 +718,7 @@ class _PortalDefenseGameScreenState extends State<PortalDefenseGameScreen>
             IconButton(
               tooltip: _paused ? 'Fortsetzen' : 'Pause',
               icon: Icon(
-                _paused
-                    ? Icons.play_arrow_rounded
-                    : Icons.pause_rounded,
+                _paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
                 color: Colors.white,
               ),
               onPressed: () {
@@ -810,7 +809,8 @@ class _PortalDefenseGameScreenState extends State<PortalDefenseGameScreen>
             ),
 
           // Overlays.
-          if (_phase == _PhaseKind.intro) _IntroOverlay(
+          if (_phase == _PhaseKind.intro)
+            _IntroOverlay(
               highScore: _highScore,
               totalGames: _totalGames,
               orbsKilled: _orbsKilledTotal,
@@ -910,7 +910,11 @@ class _HudBar extends StatelessWidget {
                     const SizedBox(height: 2),
                     ShaderMask(
                       shaderCallback: (rect) => const LinearGradient(
-                        colors: [_kPortalGold, Color(0xFFFFB347), Color(0xFFFF8A65)],
+                        colors: [
+                          _kPortalGold,
+                          Color(0xFFFFB347),
+                          Color(0xFFFF8A65)
+                        ],
                       ).createShader(rect),
                       child: Text(
                         '$score',
@@ -1390,8 +1394,8 @@ class _GameOverOverlayState extends State<_GameOverOverlay>
       builder: (context, _) {
         final t =
             Curves.easeOutCubic.transform(widget.fadeIn.value.clamp(0.0, 1.0));
-        final counted = (widget.score * Curves.easeOutCubic
-                .transform(_countCtrl.value.clamp(0.0, 1.0)))
+        final counted = (widget.score *
+                Curves.easeOutCubic.transform(_countCtrl.value.clamp(0.0, 1.0)))
             .round();
         return Opacity(
           opacity: t,
@@ -1605,7 +1609,8 @@ class _BackgroundPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final pulse = 0.85 + 0.15 * math.sin(t * math.pi * 2);
-    final rect = Rect.fromCircle(center: center, radius: size.longestSide * 0.6);
+    final rect =
+        Rect.fromCircle(center: center, radius: size.longestSide * 0.6);
     final paint = Paint()
       ..shader = RadialGradient(
         colors: [
@@ -1711,14 +1716,14 @@ class _GamePainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      tp.paint(canvas,
-          t.position - Offset(tp.width / 2, tp.height / 2));
+      tp.paint(canvas, t.position - Offset(tp.width / 2, tp.height / 2));
     }
   }
 
   void _drawPortal(Canvas canvas) {
     // Outer pulsing glow
-    final glowRadius = _kPortalRadius + 22 + 8 * math.sin(portalPulse * math.pi * 2);
+    final glowRadius =
+        _kPortalRadius + 22 + 8 * math.sin(portalPulse * math.pi * 2);
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
@@ -1731,7 +1736,8 @@ class _GamePainter extends CustomPainter {
 
     // Concentric rings.
     for (int i = 0; i < 3; i++) {
-      final r = _kPortalRadius - i * 9 + math.sin(portalPulse * math.pi * 2 + i) * 2;
+      final r =
+          _kPortalRadius - i * 9 + math.sin(portalPulse * math.pi * 2 + i) * 2;
       final p = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.6

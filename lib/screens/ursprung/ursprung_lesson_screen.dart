@@ -92,9 +92,9 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
       final uri = Uri.parse(
         '${ApiConfig.workerUrl}/api/ursprung/youtube/${Uri.encodeComponent(widget.moduleCode)}',
       );
-      final res = await http
-          .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 15));
+      final res = await http.get(uri, headers: {
+        'Accept': 'application/json'
+      }).timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final list = (data['videos'] as List?) ?? const [];
@@ -142,7 +142,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
     await _submitProgress(scorePercent: scorePercent, passed: passed);
   }
 
-  Future<void> _submitProgress({required int scorePercent, required bool passed}) async {
+  Future<void> _submitProgress(
+      {required int scorePercent, required bool passed}) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
     setState(() => _submittingProgress = true);
@@ -199,13 +200,19 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
   List<Map<String, dynamic>> _testQuestions() {
     final raw = _module?['test_questions'];
     if (raw is List) {
-      return raw.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+      return raw
+          .whereType<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList();
     }
     if (raw is String && raw.isNotEmpty) {
       try {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
-          return decoded.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
+          return decoded
+              .whereType<Map>()
+              .map((e) => e.cast<String, dynamic>())
+              .toList();
         }
       } catch (_) {}
     }
@@ -245,10 +252,14 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
                 ),
                 tabs: [
                   Tab(icon: Icon(Icons.menu_book, size: 18), text: 'Theorie'),
-                  Tab(icon: Icon(Icons.cases_outlined, size: 18), text: 'Fallstudie'),
+                  Tab(
+                      icon: Icon(Icons.cases_outlined, size: 18),
+                      text: 'Fallstudie'),
                   Tab(icon: Icon(Icons.edit_note, size: 18), text: 'Übung'),
                   Tab(icon: Icon(Icons.quiz_outlined, size: 18), text: 'Test'),
-                  Tab(icon: Icon(Icons.play_circle_outline, size: 18), text: 'Videos'),
+                  Tab(
+                      icon: Icon(Icons.play_circle_outline, size: 18),
+                      text: 'Videos'),
                 ],
               ),
             ),
@@ -257,7 +268,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
         body: SafeArea(
           child: _loading
               ? const Center(
-                  child: CircularProgressIndicator(color: _gold, strokeWidth: 2),
+                  child:
+                      CircularProgressIndicator(color: _gold, strokeWidth: 2),
                 )
               : _error != null
                   ? _buildError()
@@ -284,23 +296,27 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, color: _gold.withValues(alpha: 0.7), size: 48),
+            Icon(Icons.error_outline,
+                color: _gold.withValues(alpha: 0.7), size: 48),
             const SizedBox(height: 16),
             const Text(
               'Modul konnte nicht geladen werden',
-              style: TextStyle(color: _gold, fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: _gold, fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               _error ?? '',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: _fetchModule,
               icon: const Icon(Icons.refresh, color: _gold),
-              label: const Text('Erneut versuchen', style: TextStyle(color: _gold)),
+              label: const Text('Erneut versuchen',
+                  style: TextStyle(color: _gold)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: _gold.withValues(alpha: 0.4)),
               ),
@@ -314,7 +330,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
   // ── Tab 1: Theory ─────────────────────────────────────────────
   Widget _buildTheoryTab() {
     final text = (_module?['theory_content'] as String?) ?? '';
-    return _buildRichTextScroll(text, padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
+    return _buildRichTextScroll(text,
+        padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
   }
 
   // ── Tab 2: Case Study ─────────────────────────────────────────
@@ -329,7 +346,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
         ),
       );
     }
-    return _buildRichTextScroll(text, padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
+    return _buildRichTextScroll(text,
+        padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
   }
 
   // ── Tab 3: Exercise ───────────────────────────────────────────
@@ -386,7 +404,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.lightbulb_outline, color: _gold.withValues(alpha: 0.8), size: 18),
+                    Icon(Icons.lightbulb_outline,
+                        color: _gold.withValues(alpha: 0.8), size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -481,14 +500,16 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
                         : const Color(0xFF8B0000).withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: _quizPassed ? Colors.greenAccent : Colors.redAccent,
+                      color:
+                          _quizPassed ? Colors.greenAccent : Colors.redAccent,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         _quizPassed ? Icons.check_circle : Icons.cancel,
-                        color: _quizPassed ? Colors.greenAccent : Colors.redAccent,
+                        color:
+                            _quizPassed ? Colors.greenAccent : Colors.redAccent,
                         size: 24,
                       ),
                       const SizedBox(width: 10),
@@ -527,7 +548,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.black),
                   )
                 : const Icon(Icons.check, color: Colors.black),
             label: const Text(
@@ -555,7 +577,10 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
             icon: const Icon(Icons.refresh, color: _gold),
             label: const Text(
               'Erneut versuchen',
-              style: TextStyle(color: _gold, fontWeight: FontWeight.w700, letterSpacing: 1.5),
+              style: TextStyle(
+                  color: _gold,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5),
             ),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: _gold.withValues(alpha: 0.6)),
@@ -618,7 +643,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
           ),
           const SizedBox(height: 10),
           for (var i = 0; i < options.length; i++)
-            _buildOption(index, i, options[i].toString(), selected, correctIndex),
+            _buildOption(
+                index, i, options[i].toString(), selected, correctIndex),
           if (_quizSubmitted && explanation.isNotEmpty) ...[
             const SizedBox(height: 8),
             Container(
@@ -631,7 +657,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, color: _gold.withValues(alpha: 0.8), size: 16),
+                  Icon(Icons.info_outline,
+                      color: _gold.withValues(alpha: 0.8), size: 16),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -688,7 +715,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
       child: InkWell(
         onTap: _quizSubmitted
             ? null
-            : () => setState(() => _selectedAnswers[questionIndex] = optionIndex),
+            : () =>
+                setState(() => _selectedAnswers[questionIndex] = optionIndex),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           margin: const EdgeInsets.only(bottom: 6),
@@ -706,7 +734,9 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: borderColor),
-                  color: isSelected ? _gold.withValues(alpha: 0.3) : Colors.transparent,
+                  color: isSelected
+                      ? _gold.withValues(alpha: 0.3)
+                      : Colors.transparent,
                 ),
                 child: isSelected
                     ? const Icon(Icons.circle, color: _gold, size: 10)
@@ -827,7 +857,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: Stack(
@@ -855,7 +886,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
                         ),
                       ),
                       const Center(
-                        child: Icon(Icons.play_circle_fill, color: _gold, size: 56),
+                        child: Icon(Icons.play_circle_fill,
+                            color: _gold, size: 56),
                       ),
                     ],
                   ),
@@ -953,8 +985,7 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
             color: _gold.withValues(alpha: 0.05),
           ),
           child: _inlineRichText(line.substring(2),
-              baseColor: Colors.white.withValues(alpha: 0.85),
-              italic: true),
+              baseColor: Colors.white.withValues(alpha: 0.85), italic: true),
         ));
       } else if (line.startsWith('- ') || line.startsWith('* ')) {
         spans.add(Padding(
@@ -1053,7 +1084,8 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
   }
 
   /// Inline rich-text mit **bold** / *italic* support.
-  Widget _inlineRichText(String text, {required Color baseColor, bool italic = false}) {
+  Widget _inlineRichText(String text,
+      {required Color baseColor, bool italic = false}) {
     final parts = <TextSpan>[];
     final regex = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*');
     int last = 0;

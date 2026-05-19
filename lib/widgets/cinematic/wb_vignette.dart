@@ -30,9 +30,8 @@ class _VignetteImpl extends StatelessWidget {
     // v5.44.6 - theme-aware: dark mode = black vignette,
     // light mode = soft white vignette (helle Ausblendung)
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final edgeColor = isLight
-        ? const Color(0xFFFFFFFF)
-        : const Color(0xFF000000);
+    final edgeColor =
+        isLight ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
     return IgnorePointer(
       child: DecoratedBox(
         decoration: BoxDecoration(

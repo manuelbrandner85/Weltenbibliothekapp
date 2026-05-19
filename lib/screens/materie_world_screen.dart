@@ -103,7 +103,8 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
       body: Stack(
         children: [
           // Cosmic-Hintergrund + Welt-Ambient
-          const Positioned.fill(child: _CosmicBackground(world: WBWorld.materie)),
+          const Positioned.fill(
+              child: _CosmicBackground(world: WBWorld.materie)),
 
           // Ambient particles (Phase 6)
           const Positioned.fill(
@@ -147,7 +148,8 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
     );
   }
 
-  List<Widget> _buildAppBarActions(BuildContext context, AdminState adminState) {
+  List<Widget> _buildAppBarActions(
+      BuildContext context, AdminState adminState) {
     return [
       IconButton(
         tooltip: 'Suchen',
@@ -165,15 +167,15 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
       ),
       // Stats
       IconButton(
-        icon:
-            const Icon(Icons.analytics_outlined, color: Color(0xFF7DA7FF)),
+        icon: const Icon(Icons.analytics_outlined, color: Color(0xFF7DA7FF)),
         iconSize: 22,
         onPressed: () {
           HapticService.selectionClick();
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const StatsDashboardScreen(world: 'materie'),
+              builder: (context) =>
+                  const StatsDashboardScreen(world: 'materie'),
             ),
           );
         },

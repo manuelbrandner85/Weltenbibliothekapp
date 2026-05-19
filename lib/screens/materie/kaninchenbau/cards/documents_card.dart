@@ -26,8 +26,7 @@ class DocumentsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.folder_open,
-                  color: Color(0xFFFFB74D), size: 18),
+              const Icon(Icons.folder_open, color: Color(0xFFFFB74D), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'DOKUMENT-ARCHIV',
@@ -123,8 +122,7 @@ class DocumentsCard extends StatelessWidget {
                 ],
                 const Spacer(),
                 Icon(Icons.open_in_new,
-                    size: 14,
-                    color: Colors.white.withValues(alpha: 0.5)),
+                    size: 14, color: Colors.white.withValues(alpha: 0.5)),
               ],
             ),
             const SizedBox(height: 6),

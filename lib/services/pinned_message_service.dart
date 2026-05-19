@@ -28,8 +28,8 @@ class PinnedMessage {
         pinnedBy: j['pinned_by'] as String? ?? '',
         pinnedByRole: j['pinned_by_role'] as String?,
         preview: j['preview'] as String?,
-        createdAt:
-            DateTime.tryParse(j['created_at'] as String? ?? '') ?? DateTime.now(),
+        createdAt: DateTime.tryParse(j['created_at'] as String? ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -47,7 +47,8 @@ class PinnedMessageService {
           .eq('room_id', roomId)
           .order('created_at', ascending: false);
       return (res as List)
-          .map((r) => PinnedMessage.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              PinnedMessage.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Pinned list: $e');
@@ -68,7 +69,8 @@ class PinnedMessageService {
         'message_id': messageId,
         'pinned_by': pinnedBy,
         'pinned_by_role': pinnedByRole,
-        'preview': (preview ?? '').substring(0, (preview ?? '').length.clamp(0, 280)),
+        'preview':
+            (preview ?? '').substring(0, (preview ?? '').length.clamp(0, 280)),
       }, onConflict: 'room_id,message_id');
       return true;
     } catch (e) {
@@ -77,7 +79,8 @@ class PinnedMessageService {
     }
   }
 
-  Future<bool> unpin({required String roomId, required String messageId}) async {
+  Future<bool> unpin(
+      {required String roomId, required String messageId}) async {
     try {
       await _s
           .from('pinned_messages')

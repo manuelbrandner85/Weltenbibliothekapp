@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../config/wb_design.dart'; // 🎨 Design-Tokens
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
@@ -27,7 +27,7 @@ import 'shared/knowledge_graph_screen.dart';
 import 'health/health_settings_screen.dart';
 
 /// **PROFIL-EINSTELLUNGEN**
-/// 
+///
 /// Zentrale Verwaltung für beide Profile:
 /// - Materie-Profil anzeigen/bearbeiten
 /// - Energie-Profil anzeigen/bearbeiten
@@ -42,7 +42,7 @@ class ProfileSettingsScreen extends StatefulWidget {
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final StorageService _storageService = StorageService();
-  
+
   MaterieProfile? _materieProfile;
   EnergieProfile? _energieProfile;
 
@@ -69,20 +69,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
     return '⚠️ Upload fehlgeschlagen — bitte später erneut versuchen.';
   }
-  
+
   @override
   void initState() {
     super.initState();
     _loadProfiles();
   }
-  
+
   Future<void> _loadProfiles() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final materieProfile = _storageService.getMaterieProfile();
       final energieProfile = _storageService.getEnergieProfile();
-      
+
       setState(() {
         _materieProfile = materieProfile;
         _energieProfile = energieProfile;
@@ -97,11 +97,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       }
     }
   }
-  
+
   /// Materie-Profil bearbeiten
   Future<void> _editMaterieProfile() async {
     HapticService.selectionClick();
-    
+
     if (!mounted) return;
     final result = await Navigator.push<bool>(
       context,
@@ -111,10 +111,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ),
       ),
     );
-    
+
     if (result == true) {
       await _loadProfiles();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -125,7 +125,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       }
     }
   }
-  
+
   /// Profil bearbeiten — öffnet unified Energie-Editor (Spirit-Daten + Username)
   Future<void> _editEnergieProfile() async {
     HapticService.selectionClick();
@@ -153,11 +153,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       }
     }
   }
-  
+
   /// Materie-Profil löschen mit Bestätigung
   Future<void> _deleteMaterieProfile() async {
     HapticService.selectionClick();
-    
+
     if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -180,11 +180,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       await _storageService.deleteMaterieProfile();
       await _loadProfiles();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -195,11 +195,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       }
     }
   }
-  
+
   /// Energie-Profil löschen mit Bestätigung
   Future<void> _deleteEnergieProfile() async {
     HapticService.selectionClick();
-    
+
     if (!mounted) return;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -222,11 +222,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ],
       ),
     );
-    
+
     if (confirmed == true) {
       await _storageService.deleteEnergieProfile();
       await _loadProfiles();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -237,7 +237,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -254,79 +254,89 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                  colors: [
+                    Color(0xFF0D0A1A),
+                    Color(0xFF050310),
+                    Color(0xFF000004)
+                  ],
                 ),
               ),
             ),
           ),
           const Positioned.fill(child: IgnorePointer(child: WBVignette())),
           _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ResponsiveWebContainer(
-              variant: WebContainerVariant.compact,
-              child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // UNIFIED PROFIL SEKTION (eine Karte für alle 4 Welten)
-                  _buildSectionHeader('👤 MEIN PROFIL', const Color(0xFF7C4DFF)),
-                  const SizedBox(height: 12),
+              ? const Center(child: CircularProgressIndicator())
+              : ResponsiveWebContainer(
+                  variant: WebContainerVariant.compact,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // UNIFIED PROFIL SEKTION (eine Karte für alle 4 Welten)
+                        _buildSectionHeader(
+                            '👤 MEIN PROFIL', const Color(0xFF7C4DFF)),
+                        const SizedBox(height: 12),
 
-                  if (_energieProfile != null && _energieProfile!.isValid)
-                    _buildUnifiedProfileCard()
-                  else if (_materieProfile != null && _materieProfile!.isValid)
-                    _buildUnifiedProfileCard()
-                  else
-                    _buildEmptyProfileCard(
-                      worldName: 'Profil',
-                      worldColor: const Color(0xFF7C4DFF),
-                      onCreateTap: _editEnergieProfile,
+                        if (_energieProfile != null && _energieProfile!.isValid)
+                          _buildUnifiedProfileCard()
+                        else if (_materieProfile != null &&
+                            _materieProfile!.isValid)
+                          _buildUnifiedProfileCard()
+                        else
+                          _buildEmptyProfileCard(
+                            worldName: 'Profil',
+                            worldColor: const Color(0xFF7C4DFF),
+                            onCreateTap: _editEnergieProfile,
+                          ),
+
+                        const SizedBox(height: 32),
+
+                        // DATENSCHUTZ-HINWEIS
+                        _buildPrivacyNotice(),
+
+                        const SizedBox(height: 32),
+
+                        // DESIGN-EINSTELLUNGEN
+                        _buildSectionHeader('🎨 DESIGN', Colors.teal),
+                        const SizedBox(height: 12),
+                        const ThemeToggleWidget(),
+
+                        const SizedBox(height: 32),
+
+                        // 📳 HAPTIC FEEDBACK EINSTELLUNGEN (NEU)
+                        _buildSectionHeader(
+                            '📳 HAPTIC FEEDBACK', Colors.orange),
+                        const SizedBox(height: 12),
+                        _buildHapticFeedbackCard(),
+
+                        const SizedBox(height: 32),
+
+                        // 📚 GEHEIME BIBLIOTHEK — Ab Level 10
+                        _buildSectionHeader(
+                            '📚 GEHEIME BIBLIOTHEK', const Color(0xFFC9A84C)),
+                        const SizedBox(height: 12),
+                        _buildSecretLibraryCard(),
+
+                        const SizedBox(height: 32),
+
+                        // 🛡️ D3 Privacy-Mode für OSINT-Tools
+                        _buildSectionHeader(
+                            '🛡️ PRIVACY', const Color(0xFF00D4AA)),
+                        const SizedBox(height: 12),
+                        const _PrivacyModeCard(),
+
+                        const SizedBox(height: 32),
+
+                        // 🤝 MENSAENA — Schwester-Plattform für Nachbarschaftshilfe
+                        _buildSectionHeader(
+                            '🤝 GEMEINSCHAFT', const Color(0xFF26A69A)),
+                        const SizedBox(height: 12),
+                        _buildMensaenaCard(),
+                      ],
                     ),
-
-                  const SizedBox(height: 32),
-
-                  // DATENSCHUTZ-HINWEIS
-                  _buildPrivacyNotice(),
-
-                  const SizedBox(height: 32),
-
-                  // DESIGN-EINSTELLUNGEN
-                  _buildSectionHeader('🎨 DESIGN', Colors.teal),
-                  const SizedBox(height: 12),
-                  const ThemeToggleWidget(),
-
-                  const SizedBox(height: 32),
-
-                  // 📳 HAPTIC FEEDBACK EINSTELLUNGEN (NEU)
-                  _buildSectionHeader('📳 HAPTIC FEEDBACK', Colors.orange),
-                  const SizedBox(height: 12),
-                  _buildHapticFeedbackCard(),
-
-                  const SizedBox(height: 32),
-
-                  // 📚 GEHEIME BIBLIOTHEK — Ab Level 10
-                  _buildSectionHeader('📚 GEHEIME BIBLIOTHEK', const Color(0xFFC9A84C)),
-                  const SizedBox(height: 12),
-                  _buildSecretLibraryCard(),
-
-                  const SizedBox(height: 32),
-
-                  // 🛡️ D3 Privacy-Mode für OSINT-Tools
-                  _buildSectionHeader('🛡️ PRIVACY', const Color(0xFF00D4AA)),
-                  const SizedBox(height: 12),
-                  const _PrivacyModeCard(),
-
-                  const SizedBox(height: 32),
-
-                  // 🤝 MENSAENA — Schwester-Plattform für Nachbarschaftshilfe
-                  _buildSectionHeader('🤝 GEMEINSCHAFT', const Color(0xFF26A69A)),
-                  const SizedBox(height: 12),
-                  _buildMensaenaCard(),
-                ],
-              ),
-            ),
-            ),
+                  ),
+                ),
         ],
       ),
     );
@@ -360,7 +370,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ],
     );
   }
-  
+
   /// Unified Profil Card — zeigt EnergieProfile (mit Geburtsdaten) bevorzugt,
   /// fällt auf MaterieProfile zurück wenn EnergieProfile nicht existiert.
   Widget _buildUnifiedProfileCard() {
@@ -404,8 +414,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 onTap: _isUploadingAvatar
                     ? null
                     : () async {
-                        final source = await AvatarUploadService
-                            .showImageSourceDialog(context);
+                        final source =
+                            await AvatarUploadService.showImageSourceDialog(
+                                context);
                         if (source == null || !mounted) return;
                         final avatarService = AvatarUploadService();
                         final file = source == ImageSource.gallery
@@ -418,7 +429,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               _energieProfile?.userId ??
                               _materieProfile?.userId ??
                               'anonymous';
-                          final url = await avatarService.uploadAvatar(file, userId);
+                          final url =
+                              await avatarService.uploadAvatar(file, userId);
                           if (!mounted) return;
                           if (url != null) setState(() => _avatarUrl = url);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -435,7 +447,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             backgroundColor: Colors.red,
                           ));
                         } finally {
-                          if (mounted) setState(() => _isUploadingAvatar = false);
+                          if (mounted)
+                            setState(() => _isUploadingAvatar = false);
                         }
                       },
                 child: Stack(
@@ -458,7 +471,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 height: 24,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation(Colors.white)),
+                                    valueColor:
+                                        AlwaysStoppedAnimation(Colors.white)),
                               )
                             : Text(avatarEmoji,
                                 style: const TextStyle(fontSize: 28)),
@@ -540,7 +554,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ),
                   if (_energieProfile!.birthTime != null) ...[
                     const SizedBox(height: 8),
-                    _buildInfoRow('🕐 Geburtszeit', _energieProfile!.birthTime!),
+                    _buildInfoRow(
+                        '🕐 Geburtszeit', _energieProfile!.birthTime!),
                   ],
                   const SizedBox(height: 8),
                   _buildInfoRow('📍 Geburtsort', _energieProfile!.birthPlace),
@@ -707,8 +722,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           colors: [Color(0xFF2196F3), Color(0xFF00BCD4)],
                         ),
                         shape: BoxShape.circle,
-                        border: Border.all(
-                            color: WbDesign.materieBlue, width: 2),
+                        border:
+                            Border.all(color: WbDesign.materieBlue, width: 2),
                       ),
                       child: Center(
                         child: _isUploadingAvatar
@@ -717,8 +732,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 height: 24,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
-                                  valueColor: AlwaysStoppedAnimation(
-                                      Colors.white),
+                                  valueColor:
+                                      AlwaysStoppedAnimation(Colors.white),
                                 ),
                               )
                             : const Text(
@@ -774,9 +789,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Aktionen
           Row(
             children: [
@@ -809,11 +824,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ),
     );
   }
-  
+
   /// Energie-Profil Card
   Widget _buildEnergieProfileCard() {
     final dateFormat = DateFormat('dd.MM.yyyy');
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -837,25 +852,29 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             children: [
               GestureDetector(
                 onTap: () async {
-                  final source = await AvatarUploadService.showImageSourceDialog(context);
+                  final source =
+                      await AvatarUploadService.showImageSourceDialog(context);
                   if (source != null && mounted) {
                     final avatarService = AvatarUploadService();
                     final file = source == ImageSource.gallery
                         ? await avatarService.pickImageFromGallery()
                         : await avatarService.pickImageFromCamera();
-                    
+
                     if (file != null && mounted) {
                       // ✅ Upload avatar to server (Energie section)
-                      final userId = supabase.auth.currentUser?.id 
-                          ?? _energieProfile?.userId 
-                          ?? _materieProfile?.userId 
-                          ?? 'anonymous';
+                      final userId = supabase.auth.currentUser?.id ??
+                          _energieProfile?.userId ??
+                          _materieProfile?.userId ??
+                          'anonymous';
                       final avatarSvc = AvatarUploadService();
                       final url = await avatarSvc.uploadAvatar(file, userId);
                       if (mounted) {
                         if (url != null) setState(() => _avatarUrl = url);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(url != null ? '✅ Profilbild gespeichert' : '⚠️ Upload fehlgeschlagen')),
+                          SnackBar(
+                              content: Text(url != null
+                                  ? '✅ Profilbild gespeichert'
+                                  : '⚠️ Upload fehlgeschlagen')),
                         );
                       }
                     }
@@ -871,7 +890,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           colors: [Color(0xFF9C27B0), Color(0xFF673AB7)],
                         ),
                         shape: BoxShape.circle,
-                        border: Border.all(color: WbDesign.energiePurple, width: 2),
+                        border:
+                            Border.all(color: WbDesign.energiePurple, width: 2),
                       ),
                       child: const Center(
                         child: Text(
@@ -925,9 +945,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Geburtsdaten
           Container(
             padding: const EdgeInsets.all(12),
@@ -957,9 +977,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Aktionen
           Row(
             children: [
@@ -992,7 +1012,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ),
     );
   }
-  
+
   /// Info-Row (Label + Value)
   Widget _buildInfoRow(String label, String value) {
     return Row(
@@ -1016,7 +1036,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ],
     );
   }
-  
+
   /// Empty Profile Card (Profil erstellen)
   Widget _buildEmptyProfileCard({
     required String worldName,
@@ -1072,7 +1092,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ),
     );
   }
-  
+
   /// Datenschutz-Hinweis
   Widget _buildPrivacyNotice() {
     return Container(
@@ -1109,7 +1129,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ),
     );
   }
-  
+
   /// ☁️ Cloud-Sync Card — NICHT MEHR im Profil-Layout sichtbar (entfernt
   /// auf Wunsch des Users). Methode bleibt als Tot-Code zur Reaktivierung.
   // ignore: unused_element
@@ -1171,9 +1191,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Sync-Buttons
           Row(
             children: [
@@ -1208,7 +1228,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ),
     );
   }
-  
+
   /// 🏥 Backend Health Monitor Card
   // ignore: unused_element
   Widget _buildHealthMonitorCard() {
@@ -1339,9 +1359,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => const KnowledgeGraphScreen(world: 'energie'),
-                ));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const KnowledgeGraphScreen(world: 'energie'),
+                    ));
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF7C4DFF),
@@ -1367,9 +1390,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => const HealthSettingsScreen(),
-                ));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HealthSettingsScreen(),
+                    ));
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF26A69A),
@@ -1395,17 +1420,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       ),
     );
   }
-  
+
   /// ☁️ Sync to Cloud — UI entfernt, Methode bleibt erreichbar via
   /// `_buildCloudSyncCard` falls Sektion wieder eingeblendet wird.
   // ignore: unused_element
   Future<void> _syncToCloud() async {
     HapticService.selectionClick();
-    
+
     try {
       final syncService = CloudflareSyncService();
       await syncService.autoSync();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1425,7 +1450,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       }
     }
   }
-  
+
   /// ☁️ Restore from Cloud
   // ignore: unused_element
   Future<void> _restoreFromCloud() async {
@@ -1512,14 +1537,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       }
     }
   }
-  
+
   /// 📳 Haptic Feedback Card (NEU)
   Widget _buildHapticFeedbackCard() {
     return FutureBuilder<bool>(
-      future: HapticFeedbackService().initialize().then((_) => HapticFeedbackService().isEnabled),
+      future: HapticFeedbackService()
+          .initialize()
+          .then((_) => HapticFeedbackService().isEnabled),
       builder: (context, snapshot) {
         final isEnabled = snapshot.data ?? true;
-        
+
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -1566,9 +1593,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          isEnabled 
-                            ? '✅ Aktiviert - Spüre jede Interaktion'
-                            : '⚪ Deaktiviert - Keine Vibration',
+                          isEnabled
+                              ? '✅ Aktiviert - Spüre jede Interaktion'
+                              : '⚪ Deaktiviert - Keine Vibration',
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 12,
@@ -1590,9 +1617,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Feedback-Typ Beispiele
               Text(
                 '🎯 Feedback-Typen:',
@@ -1603,7 +1630,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -1646,9 +1673,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Info
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1682,7 +1709,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       },
     );
   }
-  
+
   /// Haptic Test Button Widget
   Widget _buildHapticTestButton({
     required String label,
@@ -1743,7 +1770,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           gradient: LinearGradient(
             colors: unlocked
                 ? [gold.withValues(alpha: 0.25), gold.withValues(alpha: 0.08)]
-                : [Colors.white.withValues(alpha: 0.04), Colors.white.withValues(alpha: 0.02)],
+                : [
+                    Colors.white.withValues(alpha: 0.04),
+                    Colors.white.withValues(alpha: 0.02)
+                  ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -1977,8 +2007,7 @@ class _VersionInfoCardState extends State<_VersionInfoCard> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline,
-              color: Color(0xFF00E5FF), size: 16),
+          const Icon(Icons.info_outline, color: Color(0xFF00E5FF), size: 16),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -2056,7 +2085,8 @@ class _PrivacyModeCardState extends State<_PrivacyModeCard> {
         color: const Color(0xFF12121E),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFF00D4AA).withValues(alpha: enabled ? 0.4 : 0.12),
+          color:
+              const Color(0xFF00D4AA).withValues(alpha: enabled ? 0.4 : 0.12),
         ),
       ),
       child: SwitchListTile(
@@ -2066,7 +2096,8 @@ class _PrivacyModeCardState extends State<_PrivacyModeCard> {
           enabled
               ? 'Aktiv — Tool-Calls über Worker-Proxy, anonymer User-Agent.'
               : 'Aus — Tools rufen Ziel-Server direkt an.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
         ),
         value: enabled,
         activeThumbColor: const Color(0xFF00D4AA),

@@ -218,7 +218,8 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       builder: (ctx) => AlertDialog(
         backgroundColor: _bgColor.withValues(alpha: 0.95),
         title: Text('Faktencheck',
-            style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+            style:
+                TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: claimCtrl,
           maxLines: 3,
@@ -227,7 +228,8 @@ class _MentorChatScreenState extends State<MentorChatScreen>
             hintText: 'Behauptung eingeben...',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: _primaryColor.withValues(alpha: 0.3)),
+              borderSide:
+                  BorderSide(color: _primaryColor.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(12),
             ),
             focusedBorder: OutlineInputBorder(
@@ -309,7 +311,8 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       builder: (ctx) => AlertDialog(
         backgroundColor: _bgColor.withValues(alpha: 0.95),
         title: Text('YouTube-Suche',
-            style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+            style:
+                TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: queryCtrl,
           style: const TextStyle(color: Colors.white),
@@ -317,7 +320,8 @@ class _MentorChatScreenState extends State<MentorChatScreen>
             hintText: 'Suchbegriff...',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: _primaryColor.withValues(alpha: 0.3)),
+              borderSide:
+                  BorderSide(color: _primaryColor.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(12),
             ),
             focusedBorder: OutlineInputBorder(
@@ -454,8 +458,7 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                           selected: depth == d,
                           selectedColor: _primaryColor,
                           backgroundColor: Colors.white.withValues(alpha: 0.08),
-                          onSelected: (_) =>
-                              setDialogState(() => depth = d),
+                          onSelected: (_) => setDialogState(() => depth = d),
                         ),
                       ),
                     ),
@@ -467,15 +470,14 @@ class _MentorChatScreenState extends State<MentorChatScreen>
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text('Abbrechen',
-                  style:
-                      TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(
                   ctx, {'topic': topicCtrl.text.trim(), 'depth': depth}),
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child:
-                  const Text('Recherchieren', style: TextStyle(color: Colors.black)),
+              child: const Text('Recherchieren',
+                  style: TextStyle(color: Colors.black)),
             ),
           ],
         ),
@@ -490,7 +492,8 @@ class _MentorChatScreenState extends State<MentorChatScreen>
     setState(() {
       _messages.add(MentorChatMessage(
         role: 'user',
-        content: '🔍 Recherche: "$topic" (${selectedDepth == 'basic' ? 'Kurz' : selectedDepth == 'deep' ? 'Tief' : 'Experte'})',
+        content:
+            '🔍 Recherche: "$topic" (${selectedDepth == 'basic' ? 'Kurz' : selectedDepth == 'deep' ? 'Tief' : 'Experte'})',
         type: 'investigation',
       ));
       _isLoading = true;
@@ -498,8 +501,7 @@ class _MentorChatScreenState extends State<MentorChatScreen>
     _scrollToBottom();
 
     try {
-      final inv =
-          await _service.investigate(topic, depth: selectedDepth);
+      final inv = await _service.investigate(topic, depth: selectedDepth);
       if (!mounted) return;
 
       final sb = StringBuffer();
@@ -518,8 +520,7 @@ class _MentorChatScreenState extends State<MentorChatScreen>
         }
       }
       if (inv.relatedTopics.isNotEmpty) {
-        sb.writeln(
-            '\n**Verwandte Themen:** ${inv.relatedTopics.join(', ')}');
+        sb.writeln('\n**Verwandte Themen:** ${inv.relatedTopics.join(', ')}');
       }
 
       setState(() {
@@ -551,8 +552,8 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _bgColor.withValues(alpha: 0.95),
-        title: const Text('Chat löschen?',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Chat löschen?', style: TextStyle(color: Colors.white)),
         content: const Text(
             'Der gesamte Verlauf mit diesem Mentor wird gelöscht.',
             style: TextStyle(color: Colors.white70)),
@@ -746,9 +747,7 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                       padding: const EdgeInsets.all(12),
                       child: Icon(
                         Icons.send,
-                        color: _isLoading
-                            ? Colors.black38
-                            : Colors.black87,
+                        color: _isLoading ? Colors.black38 : Colors.black87,
                         size: 22,
                       ),
                     ),
@@ -911,7 +910,8 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                 decoration: BoxDecoration(
                   color: verdictColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: verdictColor.withValues(alpha: 0.5)),
+                  border:
+                      Border.all(color: verdictColor.withValues(alpha: 0.5)),
                 ),
                 child: Text(verdict,
                     style: TextStyle(
@@ -945,8 +945,7 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                 child: Text(
                   '- ${s['source'] ?? ''}: ${s['rating'] ?? ''}',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12),
+                      color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
                 ),
               ),
           ],
@@ -1099,8 +1098,7 @@ class _MentorChatScreenState extends State<MentorChatScreen>
   }
 
   // ── Action Chip ──
-  Widget _buildActionChip(
-      IconData icon, String label, VoidCallback onPressed) {
+  Widget _buildActionChip(IconData icon, String label, VoidCallback onPressed) {
     return ActionChip(
       avatar: Icon(icon, size: 16, color: _primaryColor),
       label: Text(label,

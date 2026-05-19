@@ -147,7 +147,8 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
     );
   }
 
-  List<Widget> _buildAppBarActions(BuildContext context, AdminState adminState) {
+  List<Widget> _buildAppBarActions(
+      BuildContext context, AdminState adminState) {
     return [
       IconButton(
         tooltip: 'Suchen',
@@ -172,7 +173,8 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const StatsDashboardScreen(world: 'vorhang'),
+              builder: (context) =>
+                  const StatsDashboardScreen(world: 'vorhang'),
             ),
           );
         },

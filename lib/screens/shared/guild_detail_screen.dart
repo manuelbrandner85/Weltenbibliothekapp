@@ -130,7 +130,8 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
     try {
       final res = await _supabase
           .from('guild_members')
-          .select('guild_id, user_id, role, joined_at, profiles(username, avatar_url)')
+          .select(
+              'guild_id, user_id, role, joined_at, profiles(username, avatar_url)')
           .eq('guild_id', widget.guildId)
           .order('joined_at', ascending: true)
           .timeout(const Duration(seconds: 10));
@@ -220,8 +221,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
         'joined_at': DateTime.now().toIso8601String(),
       });
       // member_count hochzählen
-      final currentCount =
-          (_guild?['member_count'] as num?)?.toInt() ?? 0;
+      final currentCount = (_guild?['member_count'] as num?)?.toInt() ?? 0;
       await _supabase
           .from('guilds')
           .update({'member_count': currentCount + 1}).eq('id', widget.guildId);
@@ -295,8 +295,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
           .eq('guild_id', widget.guildId)
           .eq('user_id', _currentUserId);
 
-      final currentCount =
-          (_guild?['member_count'] as num?)?.toInt() ?? 1;
+      final currentCount = (_guild?['member_count'] as num?)?.toInt() ?? 1;
       await _supabase.from('guilds').update({
         'member_count': (currentCount - 1).clamp(0, 999999),
       }).eq('id', widget.guildId);
@@ -350,8 +349,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text(
             'Neue Challenge',
-            style:
-                TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -359,8 +357,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
               children: [
                 _dialogField(titleCtrl, 'Titel', Icons.title),
                 const SizedBox(height: 10),
-                _dialogField(
-                    descCtrl, 'Beschreibung', Icons.description,
+                _dialogField(descCtrl, 'Beschreibung', Icons.description,
                     maxLines: 3),
                 const SizedBox(height: 10),
                 // Typ-Auswahl
@@ -375,13 +372,11 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                     fillColor: const Color(0xFF0D0D1A),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                          color: _accentColor.withAlpha(80)),
+                      borderSide: BorderSide(color: _accentColor.withAlpha(80)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                          color: _accentColor.withAlpha(60)),
+                      borderSide: BorderSide(color: _accentColor.withAlpha(60)),
                     ),
                   ),
                   items: types.map((t) {
@@ -391,8 +386,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                       child: Row(
                         children: [
                           Icon(challengeIcon(ct),
-                              size: 16,
-                              color: challengeColor(ct)),
+                              size: 16, color: challengeColor(ct)),
                           const SizedBox(width: 8),
                           Text(challengeLabel(ct)),
                         ],
@@ -406,13 +400,11 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                 Row(
                   children: [
                     Expanded(
-                        child: _dialogField(goalCtrl, 'Ziel-Wert',
-                            Icons.flag,
+                        child: _dialogField(goalCtrl, 'Ziel-Wert', Icons.flag,
                             inputType: TextInputType.number)),
                     const SizedBox(width: 8),
                     Expanded(
-                        child: _dialogField(xpCtrl, 'Belohnungs-XP',
-                            Icons.star,
+                        child: _dialogField(xpCtrl, 'Belohnungs-XP', Icons.star,
                             inputType: TextInputType.number)),
                   ],
                 ),
@@ -434,8 +426,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                 final title = titleCtrl.text.trim();
                 if (title.isEmpty) {
                   ScaffoldMessenger.of(ctx).showSnackBar(
-                    const SnackBar(
-                        content: Text('Bitte einen Titel eingeben')),
+                    const SnackBar(content: Text('Bitte einen Titel eingeben')),
                   );
                   return;
                 }
@@ -444,10 +435,8 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                   title: title,
                   description: descCtrl.text.trim(),
                   type: selectedType,
-                  goalValue:
-                      int.tryParse(goalCtrl.text.trim()) ?? 10,
-                  rewardXp:
-                      int.tryParse(xpCtrl.text.trim()) ?? 50,
+                  goalValue: int.tryParse(goalCtrl.text.trim()) ?? 10,
+                  rewardXp: int.tryParse(xpCtrl.text.trim()) ?? 50,
                 );
               },
               child: const Text('Erstellen'),
@@ -596,8 +585,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: _accentColor),
+                style: ElevatedButton.styleFrom(backgroundColor: _accentColor),
                 onPressed: _loadAll,
                 child: const Text('Erneut versuchen',
                     style: TextStyle(color: Colors.white)),
@@ -611,10 +599,12 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
     final guild = _guild!;
     final world = guild['world']?.toString() ?? 'energie';
     final accentColor = _worldColors[world] ?? const Color(0xFF7C4DFF);
-    final memberCount = (guild['member_count'] as num?)?.toInt() ?? _members.length;
+    final memberCount =
+        (guild['member_count'] as num?)?.toInt() ?? _members.length;
     final maxMembers = (guild['max_members'] as num?)?.toInt() ?? 50;
     final emblIcon = _parseEmblemIcon(guild['emblem_icon']?.toString());
-    final emblColor = _parseEmblemColor(guild['emblem_color']?.toString(), accentColor);
+    final emblColor =
+        _parseEmblemColor(guild['emblem_color']?.toString(), accentColor);
 
     return Scaffold(
       backgroundColor: _bg,
@@ -640,8 +630,8 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                 indicatorColor: accentColor,
                 labelColor: accentColor,
                 unselectedLabelColor: Colors.white38,
-                labelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 13),
+                labelStyle:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 tabs: const [
                   Tab(text: 'Mitglieder'),
                   Tab(text: 'Challenges'),
@@ -777,8 +767,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                       decoration: BoxDecoration(
                         color: accentColor.withAlpha(40),
                         borderRadius: BorderRadius.circular(12),
-                        border:
-                            Border.all(color: accentColor.withAlpha(120)),
+                        border: Border.all(color: accentColor.withAlpha(120)),
                       ),
                       child: Text(
                         _worldLabels[world] ?? world,
@@ -928,8 +917,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
         itemCount: sorted.length,
-        itemBuilder: (_, i) =>
-            _buildMemberTile(sorted[i], accentColor),
+        itemBuilder: (_, i) => _buildMemberTile(sorted[i], accentColor),
       ),
     );
   }
@@ -980,8 +968,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                   style: TextStyle(
                     color: isMe ? accentColor : Colors.white,
                     fontSize: 14,
-                    fontWeight:
-                        isMe ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -989,8 +976,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                   const SizedBox(height: 2),
                   Text(
                     'Seit ${_formatDate(member['joined_at']?.toString())}',
-                    style: const TextStyle(
-                        color: Colors.white38, fontSize: 11),
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
                   ),
                 ],
               ],
@@ -1070,16 +1056,15 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
         itemCount: _challenges.length,
-        itemBuilder: (_, i) =>
-            _buildChallengeTile(_challenges[i], accentColor),
+        itemBuilder: (_, i) => _buildChallengeTile(_challenges[i], accentColor),
       ),
     );
   }
 
   Widget _buildChallengeTile(
       Map<String, dynamic> challenge, Color accentColor) {
-    final type = parseChallengeType(
-        challenge['challenge_type']?.toString() ?? 'quiz');
+    final type =
+        parseChallengeType(challenge['challenge_type']?.toString() ?? 'quiz');
     final typeColor = challengeColor(type);
     final title = challenge['title']?.toString() ?? 'Challenge';
     final rewardXp = (challenge['reward_xp'] as num?)?.toInt() ?? 0;
@@ -1087,8 +1072,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
     final challengeId = challenge['id']?.toString() ?? '';
     final completions = _challengeCompletions[challengeId] ?? 0;
     final totalMembers = _members.length.clamp(1, 999999);
-    final completionFraction =
-        (completions / totalMembers).clamp(0.0, 1.0);
+    final completionFraction = (completions / totalMembers).clamp(0.0, 1.0);
 
     final now = DateTime.now();
     bool isActive = true;
@@ -1127,8 +1111,8 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
               children: [
                 // Typ-Chip
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: typeColor.withAlpha(35),
                     borderRadius: BorderRadius.circular(20),
@@ -1153,8 +1137,8 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                 const Spacer(),
                 // Aktiv-Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
                     color: isActive
                         ? const Color(0xFF4CAF50).withAlpha(30)
@@ -1164,9 +1148,8 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                   child: Text(
                     isActive ? 'Aktiv' : 'Beendet',
                     style: TextStyle(
-                      color: isActive
-                          ? const Color(0xFF4CAF50)
-                          : Colors.white38,
+                      color:
+                          isActive ? const Color(0xFF4CAF50) : Colors.white38,
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1175,8 +1158,8 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                 const SizedBox(width: 6),
                 // XP-Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF9A825).withAlpha(25),
                     borderRadius: BorderRadius.circular(8),
@@ -1230,8 +1213,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                     child: LinearProgressIndicator(
                       value: completionFraction,
                       backgroundColor: Colors.white12,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(typeColor),
+                      valueColor: AlwaysStoppedAnimation<Color>(typeColor),
                       minHeight: 6,
                     ),
                   ),
@@ -1239,8 +1221,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
                 const SizedBox(width: 10),
                 Text(
                   '$completions/$totalMembers abgeschlossen',
-                  style:
-                      const TextStyle(color: Colors.white38, fontSize: 10),
+                  style: const TextStyle(color: Colors.white38, fontSize: 10),
                 ),
               ],
             ),

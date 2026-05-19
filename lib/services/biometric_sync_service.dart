@@ -58,8 +58,7 @@ class BiometricSyncService {
         'value': value,
         'unit': unit,
         'source': source ?? 'manual',
-        'measured_at':
-            (measuredAt ?? DateTime.now()).toIso8601String(),
+        'measured_at': (measuredAt ?? DateTime.now()).toIso8601String(),
       });
       return true;
     } catch (e) {
@@ -82,7 +81,8 @@ class BiometricSyncService {
           .order('measured_at', ascending: false)
           .limit(limit);
       return (res as List)
-          .map((r) => BiometricSample.fromJson(Map<String, dynamic>.from(r as Map)))
+          .map((r) =>
+              BiometricSample.fromJson(Map<String, dynamic>.from(r as Map)))
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Bio latest: $e');

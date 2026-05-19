@@ -50,7 +50,10 @@ class AudioPlayer {
   Future<Duration?> setFilePath(String path) async => null;
   Future<Duration?> setAsset(String path) async => null;
   Future<Duration?> setAudioSource(AudioSource source,
-      {Duration? initialPosition, int? initialIndex, bool preload = true}) async => null;
+          {Duration? initialPosition,
+          int? initialIndex,
+          bool preload = true}) async =>
+      null;
   Future<void> play() async {}
   Future<void> pause() async {}
   Future<void> stop() async {}

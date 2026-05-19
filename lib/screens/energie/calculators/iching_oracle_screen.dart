@@ -48,7 +48,8 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
   _Phase _phase = _Phase.idle;
   final _questionCtrl = TextEditingController();
   int _currentLine = 0; // 0..5
-  final List<int> _lineValues = []; // 6=alter Yin, 7=junges Yang, 8=junges Yin, 9=altes Yang
+  final List<int> _lineValues =
+      []; // 6=alter Yin, 7=junges Yang, 8=junges Yin, 9=altes Yang
   String? _aiInterpretation;
   bool _aiLoading = false;
   List<_JournalEntry> _journal = [];
@@ -56,9 +57,11 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
   @override
   void initState() {
     super.initState();
-    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 10))
-      ..repeat(reverse: true);
-    _coinCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+    _bgCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat(reverse: true);
+    _coinCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500));
     _loadJournal();
   }
 
@@ -76,7 +79,9 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
     if (raw != null) {
       try {
         final list = jsonDecode(raw) as List;
-        _journal = list.map((e) => _JournalEntry.fromJson(e as Map<String, dynamic>)).toList();
+        _journal = list
+            .map((e) => _JournalEntry.fromJson(e as Map<String, dynamic>))
+            .toList();
       } catch (_) {}
     }
     if (mounted) setState(() {});
@@ -84,7 +89,8 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
 
   Future<void> _saveJournal() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kvKey, jsonEncode(_journal.map((e) => e.toJson()).toList()));
+    await prefs.setString(
+        _kvKey, jsonEncode(_journal.map((e) => e.toJson()).toList()));
   }
 
   Future<void> _throwAll() async {
@@ -146,10 +152,70 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
   // Binary (bottom-up, 6 bits) → King-Wen-Index (1..64)
   // Standard-Lookup nach Wilhelm. Vereinfachte Permutation:
   static const List<int> _kingWenLookup = [
-    2, 24, 7, 19, 15, 36, 46, 11, 16, 51, 40, 54, 62, 55, 32, 34,
-    8, 3, 29, 60, 39, 63, 48, 5, 45, 17, 47, 58, 31, 49, 28, 43,
-    23, 27, 4, 41, 52, 22, 18, 26, 35, 21, 64, 38, 56, 30, 50, 14,
-    20, 42, 59, 61, 53, 37, 57, 9, 12, 25, 6, 10, 33, 13, 44, 1,
+    2,
+    24,
+    7,
+    19,
+    15,
+    36,
+    46,
+    11,
+    16,
+    51,
+    40,
+    54,
+    62,
+    55,
+    32,
+    34,
+    8,
+    3,
+    29,
+    60,
+    39,
+    63,
+    48,
+    5,
+    45,
+    17,
+    47,
+    58,
+    31,
+    49,
+    28,
+    43,
+    23,
+    27,
+    4,
+    41,
+    52,
+    22,
+    18,
+    26,
+    35,
+    21,
+    64,
+    38,
+    56,
+    30,
+    50,
+    14,
+    20,
+    42,
+    59,
+    61,
+    53,
+    37,
+    57,
+    9,
+    12,
+    25,
+    6,
+    10,
+    33,
+    13,
+    44,
+    1,
   ];
 
   int _kingWenIndexFromBinary(int bin) {
@@ -159,13 +225,18 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
   Future<void> _saveCurrentToJournal() async {
     final primaryIdx = _primaryHexIdx();
     final changingIdx = _changingHexIdx();
-    _journal.insert(0, _JournalEntry(
-      timestamp: DateTime.now(),
-      question: _questionCtrl.text.trim(),
-      primaryHex: primaryIdx,
-      changingHex: changingIdx,
-      changingLines: [for (var i = 0; i < _lineValues.length; i++) if (_lineValues[i] == 6 || _lineValues[i] == 9) i],
-    ));
+    _journal.insert(
+        0,
+        _JournalEntry(
+          timestamp: DateTime.now(),
+          question: _questionCtrl.text.trim(),
+          primaryHex: primaryIdx,
+          changingHex: changingIdx,
+          changingLines: [
+            for (var i = 0; i < _lineValues.length; i++)
+              if (_lineValues[i] == 6 || _lineValues[i] == 9) i
+          ],
+        ));
     if (_journal.length > 50) _journal = _journal.sublist(0, 50);
     await _saveJournal();
   }
@@ -173,28 +244,34 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
   Future<void> _runAILesung() async {
     setState(() => _aiLoading = true);
     final primary = ichingKingWen64[_primaryHexIdx() - 1];
-    final changing = _changingHexIdx() != null ? ichingKingWen64[_changingHexIdx()! - 1] : null;
+    final changing = _changingHexIdx() != null
+        ? ichingKingWen64[_changingHexIdx()! - 1]
+        : null;
     final question = _questionCtrl.text.trim();
 
     final message = StringBuffer()
-      ..writeln('Meine Frage: ${question.isEmpty ? "(keine konkrete Frage)" : question}')
+      ..writeln(
+          'Meine Frage: ${question.isEmpty ? "(keine konkrete Frage)" : question}')
       ..writeln('')
       ..writeln('Primäres Hexagramm: ${primary.title} (${primary.subtitle})')
       ..writeln('Bedeutung: ${primary.meaning}');
     if (changing != null) {
       message
         ..writeln('')
-        ..writeln('Wandlungs-Hexagramm: ${changing.title} (${changing.subtitle})')
+        ..writeln(
+            'Wandlungs-Hexagramm: ${changing.title} (${changing.subtitle})')
         ..writeln('Bedeutung: ${changing.meaning}');
     }
     message
       ..writeln('')
-      ..writeln('Bitte deute meine Befragung im Stil der Wilhelm-Übersetzung. Beziehe '
+      ..writeln(
+          'Bitte deute meine Befragung im Stil der Wilhelm-Übersetzung. Beziehe '
           'mich konkret auf meine Frage. Strukturiere: 1) Was die Situation jetzt zeigt '
           '2) Die richtige Haltung 3) Konkrete nächste Handlung.');
 
     try {
-      final token = Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      final token =
+          Supabase.instance.client.auth.currentSession?.accessToken ?? '';
       final uid = Supabase.instance.client.auth.currentUser?.id ?? '';
       final res = await http
           .post(
@@ -211,8 +288,8 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
               'userId': uid,
               'systemPrompt':
                   'Du bist ein erfahrener I-Ging-Deuter im Stil von Richard Wilhelm. '
-                  'Du sprichst weise, knapp, mit konkreten Hinweisen. Du erkennst '
-                  'die Symbolik der Trigramme und Linien-Wandlungen.',
+                      'Du sprichst weise, knapp, mit konkreten Hinweisen. Du erkennst '
+                      'die Symbolik der Trigramme und Linien-Wandlungen.',
               'mentorDisplayName': 'I-Ging-Deuter',
               'mentorAvatarEmoji': '☯',
             }),
@@ -223,9 +300,11 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
         final reply = (data['response'] as String?) ??
             (data['message'] as String?) ??
             (data['reply'] as String?);
-        if (mounted) setState(() => _aiInterpretation = reply ?? '(keine Antwort)');
+        if (mounted)
+          setState(() => _aiInterpretation = reply ?? '(keine Antwort)');
       } else {
-        if (mounted) setState(() => _aiInterpretation = 'Worker-Fehler ${res.statusCode}');
+        if (mounted)
+          setState(() => _aiInterpretation = 'Worker-Fehler ${res.statusCode}');
       }
     } catch (e) {
       if (mounted) setState(() => _aiInterpretation = 'Netzwerk-Fehler: $e');
@@ -251,9 +330,14 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         titleWidget: ShaderMask(
-          shaderCallback: (r) => const LinearGradient(colors: [_gold, _accent]).createShader(r),
+          shaderCallback: (r) =>
+              const LinearGradient(colors: [_gold, _accent]).createShader(r),
           child: const Text('I-GING ORAKEL',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: 3.2, color: Colors.white)),
+              style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 3.2,
+                  color: Colors.white)),
         ),
         actions: [
           IconButton(
@@ -266,10 +350,12 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
         animation: _bgCtrl,
         builder: (_, child) => Stack(
           children: [
-            Positioned.fill(child: DecoratedBox(
+            Positioned.fill(
+                child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
-                  center: Alignment(0.4 - _bgCtrl.value * 0.5, -0.4 + _bgCtrl.value * 0.3),
+                  center: Alignment(
+                      0.4 - _bgCtrl.value * 0.5, -0.4 + _bgCtrl.value * 0.3),
                   radius: 1.4,
                   colors: [
                     _accent.withValues(alpha: 0.20),
@@ -280,16 +366,23 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
                 ),
               ),
             )),
-            Positioned(top: -100 + _bgCtrl.value * 60, right: -70,
+            Positioned(
+                top: -100 + _bgCtrl.value * 60,
+                right: -70,
                 child: _orb(_accent, 360, 0.15 + _bgCtrl.value * 0.06)),
-            Positioned(bottom: -120 + _bgCtrl.value * 40, left: -60,
+            Positioned(
+                bottom: -120 + _bgCtrl.value * 40,
+                left: -60,
                 child: _orb(_primary, 300, 0.12)),
             Positioned(
               top: MediaQuery.of(context).size.height * 0.45,
               left: MediaQuery.of(context).size.width * 0.3,
               child: _orb(_gold, 200, 0.08),
             ),
-            const Positioned.fill(child: IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 32))),
+            const Positioned.fill(
+                child: IgnorePointer(
+                    child:
+                        WBAmbientParticles(world: WBWorld.energie, count: 32))),
             const Positioned.fill(child: IgnorePointer(child: WBVignette())),
             child!,
           ],
@@ -313,7 +406,9 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
         children: [
           const SizedBox(height: 20),
           ShaderMask(
-            shaderCallback: (r) => const LinearGradient(colors: [_gold, _accent, _gold]).createShader(r),
+            shaderCallback: (r) =>
+                const LinearGradient(colors: [_gold, _accent, _gold])
+                    .createShader(r),
             child: const Text('☯',
                 style: TextStyle(fontSize: 120, color: Colors.white, shadows: [
                   Shadow(color: Colors.black87, blurRadius: 32),
@@ -321,7 +416,11 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
           ),
           const SizedBox(height: 20),
           const Text('Stell deine Frage',
-              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: 1.5)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5)),
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
@@ -339,8 +438,11 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
                   style: const TextStyle(color: Colors.white, fontSize: 15),
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: 'z.B. "Wie sollte ich mit dieser Veränderung umgehen?"',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13),
+                    hintText:
+                        'z.B. "Wie sollte ich mit dieser Veränderung umgehen?"',
+                    hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        fontSize: 13),
                     border: InputBorder.none,
                   ),
                 ),
@@ -354,12 +456,14 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
               onPressed: _throwAll,
               icon: const Text('🪙', style: TextStyle(fontSize: 20)),
               label: const Text('MÜNZEN WERFEN · 6 LINIEN',
-                  style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.8)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800, letterSpacing: 1.8)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _accent,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
@@ -381,7 +485,11 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
         children: [
           const SizedBox(height: 20),
           Text('LINIE ${_currentLine + 1} VON 6',
-              style: TextStyle(color: _gold, fontSize: 12, letterSpacing: 3, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: _gold,
+                  fontSize: 12,
+                  letterSpacing: 3,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           const Text('Münzen fallen…',
               style: TextStyle(color: Colors.white70, fontSize: 14)),
@@ -407,10 +515,14 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
                             ..setEntry(3, 2, 0.003)
                             ..rotateY(rotation),
                           child: Container(
-                            width: 64, height: 64,
+                            width: 64,
+                            height: 64,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: RadialGradient(colors: [_gold, _gold.withValues(alpha: 0.6)]),
+                              gradient: RadialGradient(colors: [
+                                _gold,
+                                _gold.withValues(alpha: 0.6)
+                              ]),
                               boxShadow: [
                                 BoxShadow(
                                   color: _gold.withValues(alpha: 0.6),
@@ -420,7 +532,9 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
                               ],
                             ),
                             child: const Center(
-                              child: Text('☯', style: TextStyle(fontSize: 28, color: Colors.black87)),
+                              child: Text('☯',
+                                  style: TextStyle(
+                                      fontSize: 28, color: Colors.black87)),
                             ),
                           ),
                         ),
@@ -434,7 +548,8 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
           ),
           const SizedBox(height: 18),
           // Schon geworfene Linien (von unten nach oben)
-          for (var i = 5; i >= 0; i--) _renderLine(i, isPlaceholder: i >= _lineValues.length),
+          for (var i = 5; i >= 0; i--)
+            _renderLine(i, isPlaceholder: i >= _lineValues.length),
         ],
       ),
     );
@@ -475,7 +590,10 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
             decoration: BoxDecoration(
               color: changing ? _gold : Colors.white,
               boxShadow: changing
-                  ? [BoxShadow(color: _gold.withValues(alpha: 0.7), blurRadius: 10)]
+                  ? [
+                      BoxShadow(
+                          color: _gold.withValues(alpha: 0.7), blurRadius: 10)
+                    ]
                   : null,
             ),
           ),
@@ -487,7 +605,10 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
             decoration: BoxDecoration(
               color: changing ? _gold : Colors.white,
               boxShadow: changing
-                  ? [BoxShadow(color: _gold.withValues(alpha: 0.7), blurRadius: 10)]
+                  ? [
+                      BoxShadow(
+                          color: _gold.withValues(alpha: 0.7), blurRadius: 10)
+                    ]
                   : null,
             ),
           ),
@@ -500,7 +621,8 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
     final primaryIdx = _primaryHexIdx();
     final changingIdx = _changingHexIdx();
     final primary = ichingKingWen64[primaryIdx - 1];
-    final changing = changingIdx != null ? ichingKingWen64[changingIdx - 1] : null;
+    final changing =
+        changingIdx != null ? ichingKingWen64[changingIdx - 1] : null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
@@ -518,25 +640,35 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
               ),
               child: Text('"${_questionCtrl.text.trim()}"',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontStyle: FontStyle.italic)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic)),
             ),
-          _hexCard('PRIMÄRES HEXAGRAMM', primary, _lineValues, isChanging: false),
+          _hexCard('PRIMÄRES HEXAGRAMM', primary, _lineValues,
+              isChanging: false),
           if (changing != null) ...[
             const SizedBox(height: 14),
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: _gold.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: _gold.withValues(alpha: 0.5)),
                 ),
                 child: const Text('↓ wandelt sich zu ↓',
-                    style: TextStyle(color: _gold, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: _gold,
+                        fontSize: 11,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 14),
-            _hexCard('WANDLUNGS-HEXAGRAMM', changing, _lineValues, isChanging: true),
+            _hexCard('WANDLUNGS-HEXAGRAMM', changing, _lineValues,
+                isChanging: true),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -548,8 +680,13 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('SICH WANDELNDE LINIEN (${_lineValues.where((v) => v == 6 || v == 9).length})',
-                      style: const TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                  Text(
+                      'SICH WANDELNDE LINIEN (${_lineValues.where((v) => v == 6 || v == 9).length})',
+                      style: const TextStyle(
+                          color: _gold,
+                          fontSize: 10,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   for (var i = 0; i < _lineValues.length; i++)
                     if (_lineValues[i] == 6 || _lineValues[i] == 9)
@@ -558,7 +695,8 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
                         child: Text(
                           'Linie ${i + 1} (${_lineValues[i] == 9 ? "Altes Yang" : "Altes Yin"}): '
                           '${_lineValues[i] == 9 ? "Voll-ausgereiftes Yang wandelt sich zu Yin — das Maximum kippt." : "Voll-ausgereiftes Yin wandelt sich zu Yang — die Stille bricht auf."}',
-                          style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12, height: 1.4),
                         ),
                       ),
                 ],
@@ -574,12 +712,14 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
                 onPressed: _runAILesung,
                 icon: const Icon(Icons.auto_awesome),
                 label: const Text('AI-LESUNG (WILHELM-STIL)',
-                    style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _gold,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
                 ),
               ),
             ),
@@ -594,7 +734,10 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [_gold.withValues(alpha: 0.15), _accent.withValues(alpha: 0.08)]),
+                gradient: LinearGradient(colors: [
+                  _gold.withValues(alpha: 0.15),
+                  _accent.withValues(alpha: 0.08)
+                ]),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: _gold.withValues(alpha: 0.4)),
               ),
@@ -605,11 +748,16 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
                     Text('🪶', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 6),
                     Text('AI-LESUNG',
-                        style: TextStyle(color: _gold, fontSize: 11, letterSpacing: 2.5, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            color: _gold,
+                            fontSize: 11,
+                            letterSpacing: 2.5,
+                            fontWeight: FontWeight.bold)),
                   ]),
                   const SizedBox(height: 10),
                   SelectableText(_aiInterpretation!,
-                      style: const TextStyle(color: Colors.white, fontSize: 13.5, height: 1.6)),
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 13.5, height: 1.6)),
                 ],
               ),
             ),
@@ -618,18 +766,27 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
           OutlinedButton.icon(
             onPressed: _resetToIdle,
             icon: const Icon(Icons.refresh, color: _accent),
-            label: const Text('Neue Befragung', style: TextStyle(color: _accent)),
-            style: OutlinedButton.styleFrom(side: BorderSide(color: _accent.withValues(alpha: 0.5))),
+            label:
+                const Text('Neue Befragung', style: TextStyle(color: _accent)),
+            style: OutlinedButton.styleFrom(
+                side: BorderSide(color: _accent.withValues(alpha: 0.5))),
           ),
         ],
       ),
     );
   }
 
-  Widget _hexCard(String label, LessonSeriesEntry hex, List<int> lines, {required bool isChanging}) {
+  Widget _hexCard(String label, LessonSeriesEntry hex, List<int> lines,
+      {required bool isChanging}) {
     final binaryYang = isChanging
-        ? <bool>[for (var i = 0; i < lines.length; i++) lines[i] == 6 || lines[i] == 7]
-        : <bool>[for (var i = 0; i < lines.length; i++) lines[i] == 7 || lines[i] == 9];
+        ? <bool>[
+            for (var i = 0; i < lines.length; i++)
+              lines[i] == 6 || lines[i] == 7
+          ]
+        : <bool>[
+            for (var i = 0; i < lines.length; i++)
+              lines[i] == 7 || lines[i] == 9
+          ];
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
@@ -641,32 +798,50 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
             border: Border.all(color: _accent.withValues(alpha: 0.4)),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
-              BoxShadow(color: _accent.withValues(alpha: 0.25), blurRadius: 20, spreadRadius: -4),
+              BoxShadow(
+                  color: _accent.withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  spreadRadius: -4),
             ],
           ),
           child: Column(
             children: [
               Text(label,
-                  style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2.5, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: _gold,
+                      fontSize: 10,
+                      letterSpacing: 2.5,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              Text(hex.symbol, style: const TextStyle(fontSize: 64, color: _gold,
-                  shadows: [Shadow(color: Colors.black87, blurRadius: 14)])),
+              Text(hex.symbol,
+                  style: const TextStyle(fontSize: 64, color: _gold, shadows: [
+                    Shadow(color: Colors.black87, blurRadius: 14)
+                  ])),
               const SizedBox(height: 8),
               ShaderMask(
-                shaderCallback: (r) => const LinearGradient(colors: [_gold, _accent]).createShader(r),
+                shaderCallback: (r) =>
+                    const LinearGradient(colors: [_gold, _accent])
+                        .createShader(r),
                 child: Text(hex.title,
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
               ),
               Text(hex.subtitle,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic)),
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic)),
               const SizedBox(height: 14),
               // 6 Linien von oben (idx 5) nach unten (idx 0)
               for (var i = 5; i >= 0; i--) _staticLine(binaryYang[i]),
               const SizedBox(height: 14),
               Text(hex.meaning,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 13, height: 1.5)),
             ],
           ),
         ),
@@ -684,9 +859,17 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
       );
     }
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Container(margin: const EdgeInsets.symmetric(vertical: 3), height: 5, width: 40, color: Colors.white),
+      Container(
+          margin: const EdgeInsets.symmetric(vertical: 3),
+          height: 5,
+          width: 40,
+          color: Colors.white),
       const SizedBox(width: 10),
-      Container(margin: const EdgeInsets.symmetric(vertical: 3), height: 5, width: 40, color: Colors.white),
+      Container(
+          margin: const EdgeInsets.symmetric(vertical: 3),
+          height: 5,
+          width: 40,
+          color: Colors.white),
     ]);
   }
 
@@ -701,11 +884,17 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
               onPressed: () => setState(() => _phase = _Phase.idle),
             ),
             Text('VERLAUF · ${_journal.length} BEFRAGUNGEN',
-                style: TextStyle(color: _gold, fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 12,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold)),
           ]),
           Expanded(
             child: _journal.isEmpty
-                ? const Center(child: Text('Noch keine Befragungen', style: TextStyle(color: Colors.white60)))
+                ? const Center(
+                    child: Text('Noch keine Befragungen',
+                        style: TextStyle(color: Colors.white60)))
                 : ListView.builder(
                     itemCount: _journal.length,
                     itemBuilder: (_, i) {
@@ -717,26 +906,43 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.04),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _accent.withValues(alpha: 0.2)),
+                          border:
+                              Border.all(color: _accent.withValues(alpha: 0.2)),
                         ),
                         child: Row(children: [
-                          Text(hex.symbol, style: const TextStyle(fontSize: 32, color: _gold)),
+                          Text(hex.symbol,
+                              style:
+                                  const TextStyle(fontSize: 32, color: _gold)),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${e.timestamp.day}.${e.timestamp.month}.${e.timestamp.year}',
-                                    style: TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.w600)),
+                                Text(
+                                    '${e.timestamp.day}.${e.timestamp.month}.${e.timestamp.year}',
+                                    style: TextStyle(
+                                        color: _accent,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600)),
                                 Text(hex.title,
-                                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold)),
                                 if (e.question.isNotEmpty)
                                   Text('"${e.question}"',
-                                      style: const TextStyle(color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic),
-                                      maxLines: 2, overflow: TextOverflow.ellipsis),
+                                      style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 11,
+                                          fontStyle: FontStyle.italic),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis),
                                 if (e.changingHex != null)
-                                  Text('→ ${ichingKingWen64[e.changingHex! - 1].title}',
-                                      style: TextStyle(color: _gold.withValues(alpha: 0.8), fontSize: 10)),
+                                  Text(
+                                      '→ ${ichingKingWen64[e.changingHex! - 1].title}',
+                                      style: TextStyle(
+                                          color: _gold.withValues(alpha: 0.8),
+                                          fontSize: 10)),
                               ],
                             ),
                           ),
@@ -753,7 +959,8 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
   Widget _orb(Color color, double size, double opacity) {
     return IgnorePointer(
       child: Container(
-        width: size, height: size,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(colors: [
@@ -792,6 +999,8 @@ class _JournalEntry {
         question: j['question'] as String? ?? '',
         primaryHex: (j['primaryHex'] as num).toInt(),
         changingHex: (j['changingHex'] as num?)?.toInt(),
-        changingLines: ((j['changingLines'] as List?)?.cast<num>() ?? const []).map((e) => e.toInt()).toList(),
+        changingLines: ((j['changingLines'] as List?)?.cast<num>() ?? const [])
+            .map((e) => e.toInt())
+            .toList(),
       );
 }

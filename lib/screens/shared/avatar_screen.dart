@@ -126,8 +126,7 @@ class _AvatarScreenState extends State<AvatarScreen>
       // user_avatar aus Supabase
       String customTitle = '';
       try {
-        final userId =
-            Supabase.instance.client.auth.currentUser?.id;
+        final userId = Supabase.instance.client.auth.currentUser?.id;
         if (userId != null) {
           final row = await Supabase.instance.client
               .from('user_avatar')
@@ -200,7 +199,8 @@ class _AvatarScreenState extends State<AvatarScreen>
               color: _kEnergie,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
                   children: [
                     // ── Avatar Widget ──────────────────────────────────────
@@ -220,8 +220,7 @@ class _AvatarScreenState extends State<AvatarScreen>
                       customTitle: _customTitle,
                       editing: _editingTitle,
                       controller: _titleController,
-                      onEdit: () =>
-                          setState(() => _editingTitle = true),
+                      onEdit: () => setState(() => _editingTitle = true),
                       onSave: _saveTitle,
                       onCancel: () {
                         _titleController.text = _customTitle;
@@ -347,8 +346,7 @@ class AvatarPainter extends CustomPainter {
     paint.color = const Color(0xFF2D2D3A);
     // Rumpf
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(cx, cy + 30), width: 80, height: 120),
+      Rect.fromCenter(center: Offset(cx, cy + 30), width: 80, height: 120),
       paint,
     );
     // Kopf
@@ -385,8 +383,7 @@ class AvatarPainter extends CustomPainter {
       ..color = const Color(0xFF3A3A4E)
       ..style = PaintingStyle.fill;
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(cx, cy + 30), width: 80, height: 120),
+      Rect.fromCenter(center: Offset(cx, cy + 30), width: 80, height: 120),
       paint,
     );
     canvas.drawCircle(Offset(cx, cy - 50), 32, paint);
@@ -397,8 +394,7 @@ class AvatarPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(cx, cy + 30), width: 80, height: 120),
+      Rect.fromCenter(center: Offset(cx, cy + 30), width: 80, height: 120),
       paint,
     );
     canvas.drawCircle(Offset(cx, cy - 50), 32, paint);
@@ -444,8 +440,7 @@ class AvatarPainter extends CustomPainter {
       ..color = const Color(0xFF2A2A3E)
       ..style = PaintingStyle.fill;
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(cx, cy + 30), width: 80, height: 120),
+      Rect.fromCenter(center: Offset(cx, cy + 30), width: 80, height: 120),
       paint,
     );
     canvas.drawCircle(Offset(cx, cy - 50), 32, paint);
@@ -530,8 +525,7 @@ class AvatarPainter extends CustomPainter {
       ..color = const Color(0xFF3A2E50)
       ..style = PaintingStyle.fill;
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(cx, cy + 30), width: 80, height: 120),
+      Rect.fromCenter(center: Offset(cx, cy + 30), width: 80, height: 120),
       paint,
     );
     canvas.drawCircle(Offset(cx, cy - 50), 32, paint);
@@ -541,8 +535,7 @@ class AvatarPainter extends CustomPainter {
       ..color = _kVorhang.withAlpha(60)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, 15);
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(cx, cy + 30), width: 84, height: 124),
+      Rect.fromCenter(center: Offset(cx, cy + 30), width: 84, height: 124),
       paint,
     );
     canvas.drawCircle(Offset(cx, cy - 50), 34, paint);
@@ -583,10 +576,8 @@ class AvatarPainter extends CustomPainter {
       final sx = rng.nextDouble() * size.width;
       final sy = rng.nextDouble() * size.height;
       final sr = rng.nextDouble() * 1.2 + 0.3;
-      final starPulse = 0.4 +
-          0.6 *
-              (0.5 +
-                  0.5 * sin(animValue * 2 * pi + i * 0.7));
+      final starPulse =
+          0.4 + 0.6 * (0.5 + 0.5 * sin(animValue * 2 * pi + i * 0.7));
       paint.color = Colors.white.withAlpha((starPulse * 160).round());
       canvas.drawCircle(Offset(sx, sy), sr, paint);
     }
@@ -594,8 +585,7 @@ class AvatarPainter extends CustomPainter {
     // Äußere Torus-Ringe (ovale Ellipsen, verschieden geneigt)
     final torusPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ;
+      ..strokeWidth = 1.5;
     const List<double> torusAngles = [0, 30, 60, 90, 120, 150];
     for (int i = 0; i < torusAngles.length; i++) {
       final angle = torusAngles[i] * pi / 180 + animValue * 2 * pi * 0.1;
@@ -605,8 +595,7 @@ class AvatarPainter extends CustomPainter {
       canvas.translate(cx, cy);
       canvas.rotate(angle);
       canvas.drawOval(
-        Rect.fromCenter(
-            center: Offset.zero, width: 180, height: 90),
+        Rect.fromCenter(center: Offset.zero, width: 180, height: 90),
         torusPaint,
       );
       canvas.restore();
@@ -625,8 +614,7 @@ class AvatarPainter extends CustomPainter {
       ..color = const Color(0xFF003344)
       ..style = PaintingStyle.fill;
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(cx, cy + 30), width: 80, height: 120),
+      Rect.fromCenter(center: Offset(cx, cy + 30), width: 80, height: 120),
       paint,
     );
     canvas.drawCircle(Offset(cx, cy - 50), 32, paint);
@@ -634,8 +622,7 @@ class AvatarPainter extends CustomPainter {
       ..color = _kUrsprung.withAlpha(80)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, 20);
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(cx, cy + 30), width: 84, height: 124),
+      Rect.fromCenter(center: Offset(cx, cy + 30), width: 84, height: 124),
       paint,
     );
     canvas.drawCircle(Offset(cx, cy - 50), 34, paint);
@@ -646,8 +633,7 @@ class AvatarPainter extends CustomPainter {
       // Verschiedene Orbitradien und Geschwindigkeiten
       final orbitR = 90 + (i % 4) * 12.0;
       final speed = 1.0 + (i % 3) * 0.3;
-      final angle =
-          animValue * 2 * pi * speed + i * (2 * pi / 20);
+      final angle = animValue * 2 * pi * speed + i * (2 * pi / 20);
       final px = cx + orbitR * cos(angle);
       final py = cy + orbitR * sin(angle) * 0.45; // flacher Orbit
       final particleAlpha = 0.4 + 0.6 * sin(animValue * 2 * pi + i);
@@ -690,8 +676,7 @@ class _StageIndicator extends StatelessWidget {
         stage < 5 ? stageBoundaries[stage] : totalXp; // Stufe 5 = max
     final int prevThreshold = stageBoundaries[stage - 1];
     final double stageProgress = stage < 5
-        ? ((totalXp - prevThreshold) /
-                (nextThreshold - prevThreshold))
+        ? ((totalXp - prevThreshold) / (nextThreshold - prevThreshold))
             .clamp(0.0, 1.0)
         : 1.0;
 
@@ -714,8 +699,7 @@ class _StageIndicator extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _stageColor(stage).withAlpha(40),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: _stageColor(stage).withAlpha(120)),
+                  border: Border.all(color: _stageColor(stage).withAlpha(120)),
                 ),
                 child: Text(
                   '$stage',
@@ -757,8 +741,7 @@ class _StageIndicator extends StatelessWidget {
               value: stageProgress,
               minHeight: 6,
               backgroundColor: Colors.white.withAlpha(20),
-              valueColor:
-                  AlwaysStoppedAnimation<Color>(_stageColor(stage)),
+              valueColor: AlwaysStoppedAnimation<Color>(_stageColor(stage)),
             ),
           ),
           const SizedBox(height: 6),
@@ -835,9 +818,7 @@ class _CustomTitleField extends StatelessWidget {
           Text(
             'Persönlicher Titel',
             style: TextStyle(
-                color: _kTextMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w500),
+                color: _kTextMuted, fontSize: 12, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
           if (editing)
@@ -847,12 +828,10 @@ class _CustomTitleField extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     autofocus: true,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 15),
+                    style: const TextStyle(color: Colors.white, fontSize: 15),
                     decoration: InputDecoration(
                       hintText: 'Dein persönlicher Titel…',
-                      hintStyle:
-                          TextStyle(color: _kTextMuted, fontSize: 14),
+                      hintStyle: TextStyle(color: _kTextMuted, fontSize: 14),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 10),
@@ -860,20 +839,19 @@ class _CustomTitleField extends StatelessWidget {
                       fillColor: Colors.white.withAlpha(10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                            color: _kEnergie.withAlpha(120)),
+                        borderSide: BorderSide(color: _kEnergie.withAlpha(120)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide:
-                            const BorderSide(color: _kEnergie),
+                        borderSide: const BorderSide(color: _kEnergie),
                       ),
                     ),
                     onSubmitted: onSave,
                     maxLength: 40,
-                    buildCounter: (_, {required currentLength,
-                                required isFocused,
-                                maxLength}) =>
+                    buildCounter: (_,
+                            {required currentLength,
+                            required isFocused,
+                            maxLength}) =>
                         Text(
                       '$currentLength/$maxLength',
                       style: TextStyle(color: _kTextMuted, fontSize: 11),
@@ -883,14 +861,12 @@ class _CustomTitleField extends StatelessWidget {
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: () => onSave(controller.text.trim()),
-                  icon: const Icon(Icons.check_rounded,
-                      color: _kUrsprung),
+                  icon: const Icon(Icons.check_rounded, color: _kUrsprung),
                   tooltip: 'Speichern',
                 ),
                 IconButton(
                   onPressed: onCancel,
-                  icon: Icon(Icons.close_rounded,
-                      color: _kTextMuted),
+                  icon: Icon(Icons.close_rounded, color: _kTextMuted),
                   tooltip: 'Abbrechen',
                 ),
               ],
@@ -900,13 +876,9 @@ class _CustomTitleField extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    customTitle.isEmpty
-                        ? 'Kein Titel gesetzt'
-                        : customTitle,
+                    customTitle.isEmpty ? 'Kein Titel gesetzt' : customTitle,
                     style: TextStyle(
-                      color: customTitle.isEmpty
-                          ? _kTextMuted
-                          : Colors.white,
+                      color: customTitle.isEmpty ? _kTextMuted : Colors.white,
                       fontSize: 15,
                       fontStyle: customTitle.isEmpty
                           ? FontStyle.italic
@@ -917,13 +889,12 @@ class _CustomTitleField extends StatelessWidget {
                 GestureDetector(
                   onTap: onEdit,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: _kEnergie.withAlpha(30),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: _kEnergie.withAlpha(80)),
+                      border: Border.all(color: _kEnergie.withAlpha(80)),
                     ),
                     child: const Text(
                       'Bearbeiten',
@@ -1009,8 +980,7 @@ class _WorldBalanceBars extends StatelessWidget {
                       ),
                       Text(
                         '${(value * 100).round()}%',
-                        style: TextStyle(
-                            color: _kTextMuted, fontSize: 12),
+                        style: TextStyle(color: _kTextMuted, fontSize: 12),
                       ),
                     ],
                   ),
@@ -1086,8 +1056,7 @@ class _EquippedArtifacts extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: _kVorhang.withAlpha(25),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: _kVorhang.withAlpha(80)),
+                        border: Border.all(color: _kVorhang.withAlpha(80)),
                       ),
                       child: Text(
                         name,

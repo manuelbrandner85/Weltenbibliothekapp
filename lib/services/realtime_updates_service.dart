@@ -70,7 +70,8 @@ class ActivityItem {
 
 /// Realtime Updates Service Singleton
 class RealtimeUpdatesService {
-  static final RealtimeUpdatesService _instance = RealtimeUpdatesService._internal();
+  static final RealtimeUpdatesService _instance =
+      RealtimeUpdatesService._internal();
   factory RealtimeUpdatesService() => _instance;
   RealtimeUpdatesService._internal();
 
@@ -138,7 +139,8 @@ class RealtimeUpdatesService {
         id: 'journal_${entry.id}',
         type: ActivityType.journalEntry,
         title: 'Journal-Eintrag',
-        description: '${SpiritJournalService.getCategoryEmoji(entry.category)} ${entry.content.substring(0, entry.content.length > 50 ? 50 : entry.content.length)}${entry.content.length > 50 ? '...' : ''}',
+        description:
+            '${SpiritJournalService.getCategoryEmoji(entry.category)} ${entry.content.substring(0, entry.content.length > 50 ? 50 : entry.content.length)}${entry.content.length > 50 ? '...' : ''}',
         timestamp: entry.timestamp,
         metadata: {'category': entry.category},
       ));
@@ -158,7 +160,8 @@ class RealtimeUpdatesService {
 
     // Load Streak milestones
     final currentStreak = _streakService.currentStreak;
-    if (currentStreak > 0 && [7, 14, 30, 60, 90, 180, 365].contains(currentStreak)) {
+    if (currentStreak > 0 &&
+        [7, 14, 30, 60, 90, 180, 365].contains(currentStreak)) {
       _activities.add(ActivityItem(
         id: 'streak_${currentStreak}_days',
         type: ActivityType.streakMilestone,
@@ -242,11 +245,12 @@ class RealtimeUpdatesService {
           id: 'journal_${newEntry.id}',
           type: ActivityType.journalEntry,
           title: 'Neuer Journal-Eintrag',
-          description: '${SpiritJournalService.getCategoryEmoji(newEntry.category)} ${newEntry.content.substring(0, newEntry.content.length > 50 ? 50 : newEntry.content.length)}${newEntry.content.length > 50 ? '...' : ''}',
+          description:
+              '${SpiritJournalService.getCategoryEmoji(newEntry.category)} ${newEntry.content.substring(0, newEntry.content.length > 50 ? 50 : newEntry.content.length)}${newEntry.content.length > 50 ? '...' : ''}',
           timestamp: newEntry.timestamp,
           metadata: {'category': newEntry.category},
         );
-        
+
         _addActivity(newActivity);
         _lastJournalCount = _journalService.entries.length;
         hasNewActivity = true;
@@ -263,7 +267,7 @@ class RealtimeUpdatesService {
           timestamp: newSync.timestamp,
           metadata: {'significance': newSync.significance},
         );
-        
+
         _addActivity(newActivity);
         _lastSyncCount = _syncService.entries.length;
         hasNewActivity = true;
@@ -271,7 +275,8 @@ class RealtimeUpdatesService {
 
       // Check for streak milestones
       final currentStreak = _streakService.currentStreak;
-      if (currentStreak > _lastStreakDays && [7, 14, 30, 60, 90, 180, 365].contains(currentStreak)) {
+      if (currentStreak > _lastStreakDays &&
+          [7, 14, 30, 60, 90, 180, 365].contains(currentStreak)) {
         final newActivity = ActivityItem(
           id: 'streak_${currentStreak}_days',
           type: ActivityType.streakMilestone,
@@ -280,7 +285,7 @@ class RealtimeUpdatesService {
           timestamp: DateTime.now(),
           metadata: {'days': currentStreak},
         );
-        
+
         _addActivity(newActivity);
         _lastStreakDays = currentStreak;
         hasNewActivity = true;
@@ -303,7 +308,7 @@ class RealtimeUpdatesService {
   /// Add new activity to feed
   void _addActivity(ActivityItem activity) {
     _activities.insert(0, activity);
-    
+
     // Keep only last 50
     if (_activities.length > 50) {
       _activities.removeLast();

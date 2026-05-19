@@ -104,7 +104,8 @@ class _TimelineNode extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Container(height: 1, color: KbDesign.goldAccent.withValues(alpha: 0.4)),
+              Container(
+                  height: 1, color: KbDesign.goldAccent.withValues(alpha: 0.4)),
               const SizedBox(height: 8),
               Container(
                 width: 12,

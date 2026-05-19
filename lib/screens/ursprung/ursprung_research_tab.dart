@@ -80,13 +80,13 @@ class _UrsprungResearchTabState extends State<UrsprungResearchTab> {
             if (_loading && _topics.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(
-                    child: CircularProgressIndicator(color: _cyan)),
+                child: Center(child: CircularProgressIndicator(color: _cyan)),
               );
             }
             if (_topics.isEmpty) {
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
                 child: Text(
                   'Keine Themen gefunden.',
                   textAlign: TextAlign.center,
@@ -230,8 +230,7 @@ class _UrsprungResearchTabState extends State<UrsprungResearchTab> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(14),
-                border:
-                    const Border(left: BorderSide(color: _cyan, width: 3)),
+                border: const Border(left: BorderSide(color: _cyan, width: 3)),
               ),
               child: Row(
                 children: [
@@ -406,9 +405,7 @@ class _TopicDetailSheetState extends State<_TopicDetailSheet> {
                 child: Text(
                   widget.topic.title,
                   style: const TextStyle(
-                      color: _cyan,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
+                      color: _cyan, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -470,15 +467,14 @@ class _TopicDetailSheetState extends State<_TopicDetailSheet> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                            color: _cyan.withValues(alpha: 0.25)),
+                        border:
+                            Border.all(color: _cyan.withValues(alpha: 0.25)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
                           Icon(t.icon,
-                              color: _cyan.withValues(alpha: 0.8),
-                              size: 18),
+                              color: _cyan.withValues(alpha: 0.8), size: 18),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(t.title,
@@ -486,8 +482,7 @@ class _TopicDetailSheetState extends State<_TopicDetailSheet> {
                                     color: Colors.white, fontSize: 13)),
                           ),
                           Icon(Icons.chevron_right,
-                              color: _cyan.withValues(alpha: 0.5),
-                              size: 16),
+                              color: _cyan.withValues(alpha: 0.5), size: 16),
                         ],
                       ),
                     ),
@@ -522,18 +517,14 @@ class _MarkdownText extends StatelessWidget {
           padding: const EdgeInsets.only(top: 12, bottom: 6),
           child: Text(line.substring(3),
               style: const TextStyle(
-                  color: _cyan,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold)),
+                  color: _cyan, fontSize: 15, fontWeight: FontWeight.bold)),
         ));
       } else if (line.startsWith('# ')) {
         widgets.add(Padding(
           padding: const EdgeInsets.only(top: 12, bottom: 6),
           child: Text(line.substring(2),
               style: const TextStyle(
-                  color: _cyan,
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold)),
+                  color: _cyan, fontSize: 17, fontWeight: FontWeight.bold)),
         ));
       } else if (line.startsWith('- ') || line.startsWith('* ')) {
         widgets.add(Padding(
@@ -581,8 +572,8 @@ class _MarkdownText extends StatelessWidget {
     if (last < s.length) spans.add(TextSpan(text: s.substring(last)));
     return RichText(
       text: TextSpan(
-        style: const TextStyle(
-            color: Colors.white70, fontSize: 14, height: 1.65),
+        style:
+            const TextStyle(color: Colors.white70, fontSize: 14, height: 1.65),
         children: spans,
       ),
     );
@@ -613,8 +604,7 @@ final List<UrsprungTopic> _fallbackTopics = const [
     id: 'fb-remote-viewing',
     title: 'Remote Viewing',
     iconName: 'visibility',
-    summary:
-        'Militärisch erprobtes Protokoll zur Fernwahrnehmung - STAR GATE.',
+    summary: 'Militärisch erprobtes Protokoll zur Fernwahrnehmung - STAR GATE.',
     detailMarkdown:
         'Das US-Militär finanzierte von 1972-1995 ein geheimes Fernwahrnehmungs-Programm. Erst am SRI (Stanford Research Institute) unter Russell Targ und Hal Puthoff, später als "STAR GATE" am Fort Meade.\n\n'
         '**CRV-Protokoll (6 Stufen):**\n'
@@ -632,8 +622,7 @@ final List<UrsprungTopic> _fallbackTopics = const [
     id: 'fb-hemisync',
     title: 'Hemi-Sync & Gehirnwellen',
     iconName: 'graphic_eq',
-    summary:
-        'Binaural Beats synchronisieren Gehirnhälften für tiefe Zustände.',
+    summary: 'Binaural Beats synchronisieren Gehirnhälften für tiefe Zustände.',
     detailMarkdown:
         'Robert Monroe entdeckte zufällig, dass Tonfrequenz-Differenzen zwischen den Ohren reproduzierbare Bewusstseinszustände auslösen.\n\n'
         '**Gehirnwellen:**\n'

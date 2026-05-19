@@ -86,7 +86,8 @@ class KaninchenbauMarkdownExport {
       buf.writeln('## Sanktionen / OpenSanctions (${sanctions.length})');
       buf.writeln('');
       for (final s in sanctions.take(15)) {
-        buf.writeln('- ${s['name'] ?? '?'} — ${s['program'] ?? s['description'] ?? ''}');
+        buf.writeln(
+            '- ${s['name'] ?? '?'} — ${s['program'] ?? s['description'] ?? ''}');
       }
       buf.writeln('');
     }
@@ -109,7 +110,8 @@ class KaninchenbauMarkdownExport {
         final url = item['url'] ?? item['link'] ?? '';
         final source = item['source'] ?? '';
         if (url.toString().isNotEmpty) {
-          buf.writeln('- [$title]($url)${source.isNotEmpty ? " _($source)_" : ""}');
+          buf.writeln(
+              '- [$title]($url)${source.isNotEmpty ? " _($source)_" : ""}');
         } else {
           buf.writeln('- $title');
         }
@@ -124,7 +126,8 @@ class KaninchenbauMarkdownExport {
         buf.writeln('- **${s['title'] ?? '?'}**');
         final body = s['description'] ?? s['summary'] ?? '';
         if (body.toString().isNotEmpty) {
-          buf.writeln('  ${body.toString().substring(0, body.toString().length.clamp(0, 300))}');
+          buf.writeln(
+              '  ${body.toString().substring(0, body.toString().length.clamp(0, 300))}');
         }
       }
       buf.writeln('');
@@ -156,4 +159,3 @@ class KaninchenbauMarkdownExport {
     }
   }
 }
-

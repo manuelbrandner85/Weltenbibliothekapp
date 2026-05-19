@@ -10,7 +10,7 @@ class PollWidget extends StatefulWidget {
   final String currentUsername;
   final Color worldColor;
   final Function(String pollId, int optionIndex)? onVote; // 🔔 Vote Callback
-  
+
   const PollWidget({
     super.key,
     required this.poll,
@@ -48,9 +48,9 @@ class _PollWidgetState extends State<PollWidget> {
 
   Future<void> _vote(int optionIndex) async {
     if (_isVoting) return;
-    
+
     setState(() => _isVoting = true);
-    
+
     try {
       await _api.voteOnPoll(
         pollId: widget.poll['id'],
@@ -58,15 +58,15 @@ class _PollWidgetState extends State<PollWidget> {
         username: widget.currentUsername,
         optionIndex: optionIndex,
       );
-      
+
       if (mounted) {
         setState(() {
           _myVote = optionIndex;
           _isVoting = false;
         });
-        
+
         widget.onVote?.call(widget.poll['id'], optionIndex); // 🔔 Notify parent
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Stimme abgegeben!'),
@@ -94,13 +94,13 @@ class _PollWidgetState extends State<PollWidget> {
     final question = widget.poll['question'] ?? 'Umfrage';
     final options = List<String>.from(widget.poll['options'] ?? []);
     final votes = widget.poll['votes'] as List<dynamic>? ?? [];
-    
+
     // Calculate total votes
     final totalVotes = votes.fold<int>(
       0,
       (sum, vote) => sum + (vote['count'] as int? ?? 0),
     );
-    
+
     // Calculate vote counts per option
     final voteCounts = List<int>.filled(options.length, 0);
     for (var vote in votes) {
@@ -110,14 +110,15 @@ class _PollWidgetState extends State<PollWidget> {
         voteCounts[optionIndex] = count;
       }
     }
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: widget.worldColor.withValues(alpha: 0.5), width: 2),
+        border: Border.all(
+            color: widget.worldColor.withValues(alpha: 0.5), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,33 +153,31 @@ class _PollWidgetState extends State<PollWidget> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Options
           ...options.asMap().entries.map((entry) {
             final index = entry.key;
             final option = entry.value;
             final voteCount = voteCounts[index];
-            final percentage = totalVotes > 0 
-                ? (voteCount / totalVotes * 100).toStringAsFixed(0) 
+            final percentage = totalVotes > 0
+                ? (voteCount / totalVotes * 100).toStringAsFixed(0)
                 : '0';
             final isSelected = _myVote == index;
-            
+
             return GestureDetector(
               onTap: _isVoting ? null : () => _vote(index),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isSelected 
-                      ? widget.worldColor.withValues(alpha: 0.3) 
+                  color: isSelected
+                      ? widget.worldColor.withValues(alpha: 0.3)
                       : Colors.black26,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected 
-                        ? widget.worldColor 
-                        : Colors.grey[700]!,
+                    color: isSelected ? widget.worldColor : Colors.grey[700]!,
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -189,7 +188,8 @@ class _PollWidgetState extends State<PollWidget> {
                       Positioned.fill(
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
-                          widthFactor: totalVotes > 0 ? voteCount / totalVotes : 0,
+                          widthFactor:
+                              totalVotes > 0 ? voteCount / totalVotes : 0,
                           child: Container(
                             decoration: BoxDecoration(
                               color: widget.worldColor.withValues(alpha: 0.2),
@@ -198,29 +198,28 @@ class _PollWidgetState extends State<PollWidget> {
                           ),
                         ),
                       ),
-                    
+
                     // Option content
                     Row(
                       children: [
                         if (isSelected)
-                          Icon(Icons.check_circle, 
-                            color: widget.worldColor, 
+                          Icon(
+                            Icons.check_circle,
+                            color: widget.worldColor,
                             size: 20,
                           ),
                         if (isSelected) const SizedBox(width: 8),
-                        
                         Expanded(
                           child: Text(
                             option,
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight: isSelected 
-                                  ? FontWeight.bold 
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
                                   : FontWeight.normal,
                             ),
                           ),
                         ),
-                        
                         if (_myVote != null)
                           Text(
                             '$voteCount ($percentage%)',
@@ -237,13 +236,13 @@ class _PollWidgetState extends State<PollWidget> {
               ),
             );
           }),
-          
+
           const SizedBox(height: 8),
-          
+
           // Footer
           Text(
-            _myVote != null 
-                ? '$totalVotes ${totalVotes == 1 ? 'Stimme' : 'Stimmen'}' 
+            _myVote != null
+                ? '$totalVotes ${totalVotes == 1 ? 'Stimme' : 'Stimmen'}'
                 : 'Noch keine Stimmen',
             style: const TextStyle(
               color: Colors.white54,
@@ -263,7 +262,7 @@ class CreatePollDialog extends StatefulWidget {
   final String username;
   final Color worldColor;
   final VoidCallback? onPollCreated; // 🔔 CALLBACK
-  
+
   const CreatePollDialog({
     super.key,
     required this.room,
@@ -314,12 +313,12 @@ class _CreatePollDialogState extends State<CreatePollDialog> {
       );
       return;
     }
-    
+
     final options = _optionControllers
         .map((ctrl) => ctrl.text.trim())
         .where((text) => text.isNotEmpty)
         .toList();
-    
+
     if (options.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -329,9 +328,9 @@ class _CreatePollDialogState extends State<CreatePollDialog> {
       );
       return;
     }
-    
+
     setState(() => _isCreating = true);
-    
+
     try {
       final pollId = await _api.createPoll(
         room: widget.room,
@@ -340,7 +339,7 @@ class _CreatePollDialogState extends State<CreatePollDialog> {
         question: question,
         options: options,
       );
-      
+
       if (pollId != null && mounted) {
         widget.onPollCreated?.call(); // 🔔 Notify parent
         Navigator.pop(context, true); // Return true to indicate success
@@ -382,7 +381,8 @@ class _CreatePollDialogState extends State<CreatePollDialog> {
         children: [
           Icon(Icons.poll, color: widget.worldColor),
           const SizedBox(width: 8),
-          const Text('Umfrage erstellen', style: TextStyle(color: Colors.white)),
+          const Text('Umfrage erstellen',
+              style: TextStyle(color: Colors.white)),
         ],
       ),
       content: SingleChildScrollView(
@@ -408,19 +408,17 @@ class _CreatePollDialogState extends State<CreatePollDialog> {
                 ),
               ),
             ),
-            
             const SizedBox(height: 16),
-            
             const Text(
               'Antwort-Optionen:',
-              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+              style:
+                  TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            
             ..._optionControllers.asMap().entries.map((entry) {
               final index = entry.key;
               final ctrl = entry.value;
-              
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
@@ -439,21 +437,22 @@ class _CreatePollDialogState extends State<CreatePollDialog> {
                             borderSide: BorderSide(color: Colors.grey[700]!),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: widget.worldColor, width: 2),
+                            borderSide:
+                                BorderSide(color: widget.worldColor, width: 2),
                           ),
                         ),
                       ),
                     ),
                     if (_optionControllers.length > 2)
                       IconButton(
-                        icon: const Icon(Icons.remove_circle, color: Colors.red),
+                        icon:
+                            const Icon(Icons.remove_circle, color: Colors.red),
                         onPressed: () => _removeOption(index),
                       ),
                   ],
                 ),
               );
             }),
-            
             if (_optionControllers.length < 6)
               TextButton.icon(
                 onPressed: _addOption,
@@ -477,11 +476,12 @@ class _CreatePollDialogState extends State<CreatePollDialog> {
             backgroundColor: widget.worldColor,
             foregroundColor: Colors.white,
           ),
-          child: _isCreating 
+          child: _isCreating
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Erstellen'),
         ),

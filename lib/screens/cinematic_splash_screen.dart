@@ -18,10 +18,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// 4 Welt-Akzentfarben fuer die Konvergenz.
-const _materieColor = Color(0xFFE53935);   // Rot
-const _energieColor = Color(0xFF7C4DFF);   // Lila
-const _vorhangColor = Color(0xFFC9A84C);   // Gold
-const _ursprungColor = Color(0xFF00D4AA);  // Cyan
+const _materieColor = Color(0xFFE53935); // Rot
+const _energieColor = Color(0xFF7C4DFF); // Lila
+const _vorhangColor = Color(0xFFC9A84C); // Gold
+const _ursprungColor = Color(0xFF00D4AA); // Cyan
 const _bgVoid = Color(0xFF02010A);
 const _gold = Color(0xFFFFD700);
 
@@ -94,10 +94,9 @@ class _CinematicSplashScreenState extends State<CinematicSplashScreen>
           builder: (context, _) {
             final ms = _master.value * totalMs;
             // Lokale Phasenwerte (0..1).
-            final particleAlpha =
-                ((ms - 250) / 500).clamp(0.0, 0.4);
-            final orbP =
-                Curves.easeInOutCubic.transform(((ms - 750) / 2500).clamp(0.0, 1.0));
+            final particleAlpha = ((ms - 250) / 500).clamp(0.0, 0.4);
+            final orbP = Curves.easeInOutCubic
+                .transform(((ms - 750) / 2500).clamp(0.0, 1.0));
             final burstP = ((ms - 2000) / 1250).clamp(0.0, 1.0);
             final logoP = ((ms - 2750) / 1150).clamp(0.0, 1.0);
             final subtitleP = ((ms - 3900) / 1000).clamp(0.0, 1.0);
@@ -254,7 +253,8 @@ class _WeltOrbsConverge extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _WeltOrbsConverge old) => old.progress != progress;
+  bool shouldRepaint(covariant _WeltOrbsConverge old) =>
+      old.progress != progress;
 }
 
 class _BurstFlash extends StatelessWidget {
@@ -264,9 +264,8 @@ class _BurstFlash extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = 0.4 + progress * 3.0;
-    final opacity = progress < 0.5
-        ? (progress * 2)
-        : (1.0 - (progress - 0.5) * 2);
+    final opacity =
+        progress < 0.5 ? (progress * 2) : (1.0 - (progress - 0.5) * 2);
     return IgnorePointer(
       child: Transform.scale(
         scale: scale,
@@ -286,7 +285,10 @@ class _BurstFlash extends StatelessWidget {
                 stops: const [0.0, 0.4, 1.0],
               ),
               boxShadow: [
-                BoxShadow(color: _gold.withValues(alpha: 0.6), blurRadius: 80, spreadRadius: 20),
+                BoxShadow(
+                    color: _gold.withValues(alpha: 0.6),
+                    blurRadius: 80,
+                    spreadRadius: 20),
               ],
             ),
           ),
@@ -303,7 +305,8 @@ class _LogoReveal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scale = 0.7 + Curves.easeOutBack.transform(progress.clamp(0.0, 1.0)) * 0.45;
+    final scale =
+        0.7 + Curves.easeOutBack.transform(progress.clamp(0.0, 1.0)) * 0.45;
     final fade = (progress * 1.8).clamp(0.0, 1.0);
     // Responsive logo size: max 220 auf grossen Bildschirmen, sonst 55% Breite.
     final logoSize = math.min(220.0, maxWidth * 0.55);
@@ -457,9 +460,10 @@ class _MiniDot extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
-        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)],
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)
+        ],
       ),
     );
   }
 }
-

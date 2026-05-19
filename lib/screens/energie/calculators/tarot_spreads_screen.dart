@@ -20,28 +20,42 @@ class _TarotSpreadsScreenState extends State<TarotSpreadsScreen> {
   static const _accent = Color(0xFF8E5AE2);
 
   static const List<_TarotCard> _majorArcana = [
-    _TarotCard(0, 'Der Narr', '🃏', 'Neuer Anfang, Vertrauen, Sprung ins Unbekannte'),
-    _TarotCard(1, 'Der Magier', '🪄', 'Willenskraft, Manifestation, alle Werkzeuge da'),
-    _TarotCard(2, 'Die Hohepriesterin', '🌙', 'Intuition, verborgenes Wissen, Stille'),
+    _TarotCard(
+        0, 'Der Narr', '🃏', 'Neuer Anfang, Vertrauen, Sprung ins Unbekannte'),
+    _TarotCard(1, 'Der Magier', '🪄',
+        'Willenskraft, Manifestation, alle Werkzeuge da'),
+    _TarotCard(
+        2, 'Die Hohepriesterin', '🌙', 'Intuition, verborgenes Wissen, Stille'),
     _TarotCard(3, 'Die Herrscherin', '👑', 'Fülle, Mutterprinzip, Schöpfung'),
-    _TarotCard(4, 'Der Herrscher', '🏛️', 'Struktur, Vaterprinzip, Klarheit, Grenzen'),
-    _TarotCard(5, 'Der Hierophant', '🔑', 'Tradition, Lehre, spirituelle Autorität'),
-    _TarotCard(6, 'Die Liebenden', '💞', 'Wahl, Vereinigung, Werte-Entscheidung'),
-    _TarotCard(7, 'Der Wagen', '🏎️', 'Willenstriumph, Vorwärtsbewegung, Beherrschung'),
+    _TarotCard(
+        4, 'Der Herrscher', '🏛️', 'Struktur, Vaterprinzip, Klarheit, Grenzen'),
+    _TarotCard(
+        5, 'Der Hierophant', '🔑', 'Tradition, Lehre, spirituelle Autorität'),
+    _TarotCard(
+        6, 'Die Liebenden', '💞', 'Wahl, Vereinigung, Werte-Entscheidung'),
+    _TarotCard(7, 'Der Wagen', '🏎️',
+        'Willenstriumph, Vorwärtsbewegung, Beherrschung'),
     _TarotCard(8, 'Die Kraft', '🦁', 'Sanfte Beherrschung, innere Stärke, Mut'),
-    _TarotCard(9, 'Der Eremit', '🕯️', 'Rückzug, Selbstreflexion, innere Suche'),
+    _TarotCard(
+        9, 'Der Eremit', '🕯️', 'Rückzug, Selbstreflexion, innere Suche'),
     _TarotCard(10, 'Schicksalsrad', '🎡', 'Zyklen, Wandel, Schicksals-Drehung'),
-    _TarotCard(11, 'Gerechtigkeit', '⚖️', 'Karma, Wahrheit, Konsequenzen werden gewogen'),
+    _TarotCard(11, 'Gerechtigkeit', '⚖️',
+        'Karma, Wahrheit, Konsequenzen werden gewogen'),
     _TarotCard(12, 'Der Gehängte', '🙃', 'Hingabe, Perspektivwechsel, Pause'),
-    _TarotCard(13, 'Der Tod', '💀', 'Transformation, Ende und Anfang, Loslassen'),
+    _TarotCard(
+        13, 'Der Tod', '💀', 'Transformation, Ende und Anfang, Loslassen'),
     _TarotCard(14, 'Die Mäßigung', '🌈', 'Alchemie, Synthese, Mittelweg'),
-    _TarotCard(15, 'Der Teufel', '😈', 'Anhaftung, Sucht, selbstgewählte Ketten'),
-    _TarotCard(16, 'Der Turm', '⚡', 'Plötzlicher Bruch, Erleuchtung durch Krise'),
+    _TarotCard(
+        15, 'Der Teufel', '😈', 'Anhaftung, Sucht, selbstgewählte Ketten'),
+    _TarotCard(
+        16, 'Der Turm', '⚡', 'Plötzlicher Bruch, Erleuchtung durch Krise'),
     _TarotCard(17, 'Der Stern', '⭐', 'Hoffnung, Inspiration, Heilung'),
     _TarotCard(18, 'Der Mond', '🌑', 'Unbewusstes, Illusionen, Träume'),
     _TarotCard(19, 'Die Sonne', '☀️', 'Klarheit, Freude, vitale Lebenskraft'),
-    _TarotCard(20, 'Das Gericht', '📯', 'Erwachen, Neubewertung, Ruf zu höherem Selbst'),
-    _TarotCard(21, 'Die Welt', '🌍', 'Vollendung, Ganzheit, Zyklus abgeschlossen'),
+    _TarotCard(20, 'Das Gericht', '📯',
+        'Erwachen, Neubewertung, Ruf zu höherem Selbst'),
+    _TarotCard(
+        21, 'Die Welt', '🌍', 'Vollendung, Ganzheit, Zyklus abgeschlossen'),
   ];
 
   _Spread? _selected;
@@ -74,7 +88,8 @@ class _TarotSpreadsScreenState extends State<TarotSpreadsScreen> {
               name: 'Tageskarte',
               emoji: '🌅',
               positions: ['Heute'],
-              description: 'Eine Karte für den Tag — schnelle Inspiration für aktuelle Themen.',
+              description:
+                  'Eine Karte für den Tag — schnelle Inspiration für aktuelle Themen.',
             ),
           ),
           _buildSpreadCard(
@@ -82,15 +97,23 @@ class _TarotSpreadsScreenState extends State<TarotSpreadsScreen> {
               name: '3-Karten-Legung',
               emoji: '🃏',
               positions: ['Vergangenheit', 'Gegenwart', 'Zukunft'],
-              description: 'Klassische Linien-Legung. Eignet sich für mittelfristige Fragen.',
+              description:
+                  'Klassische Linien-Legung. Eignet sich für mittelfristige Fragen.',
             ),
           ),
           _buildSpreadCard(
             _Spread(
               name: 'Beziehung',
               emoji: '💞',
-              positions: ['Du', 'Andere/r', 'Verbindung', 'Was du brauchst', 'Was er/sie braucht'],
-              description: '5-Karten-Beziehungslegung. Für Klärung in Beziehungs-Fragen.',
+              positions: [
+                'Du',
+                'Andere/r',
+                'Verbindung',
+                'Was du brauchst',
+                'Was er/sie braucht'
+              ],
+              description:
+                  '5-Karten-Beziehungslegung. Für Klärung in Beziehungs-Fragen.',
             ),
           ),
           _buildSpreadCard(
@@ -109,7 +132,8 @@ class _TarotSpreadsScreenState extends State<TarotSpreadsScreen> {
                 'Hoffnungen/Ängste',
                 'Endgültiges Ergebnis',
               ],
-              description: 'Die klassische 10-Karten-Tiefenlegung für komplexe Lebensfragen.',
+              description:
+                  'Die klassische 10-Karten-Tiefenlegung für komplexe Lebensfragen.',
             ),
           ),
         ],
@@ -140,12 +164,19 @@ class _TarotSpreadsScreenState extends State<TarotSpreadsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(s.name,
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
                     Text('${s.positions.length} Karten',
-                        style: TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.w600)),
+                        style: TextStyle(
+                            color: _accent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
                     const SizedBox(height: 4),
                     Text(s.description,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12, height: 1.4)),
                   ],
                 ),
               ),
@@ -183,7 +214,8 @@ class _SpreadView extends StatefulWidget {
   final _Spread spread;
   final List<_TarotCard> cards;
   final VoidCallback onBack;
-  const _SpreadView({required this.spread, required this.cards, required this.onBack});
+  const _SpreadView(
+      {required this.spread, required this.cards, required this.onBack});
 
   @override
   State<_SpreadView> createState() => _SpreadViewState();
@@ -222,7 +254,8 @@ class _SpreadViewState extends State<_SpreadView> {
           Text(widget.spread.emoji, style: const TextStyle(fontSize: 22)),
           const SizedBox(width: 10),
           Text(widget.spread.name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         ]),
         actions: [
           IconButton(
@@ -272,13 +305,21 @@ class _SpreadViewState extends State<_SpreadView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(pos.toUpperCase(),
-                        style: TextStyle(color: _accent, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            color: _accent,
+                            fontSize: 10,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.bold)),
                     const SizedBox(height: 2),
                     Text('${c.number}. ${c.name}',
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(c.meaning,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.5)),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12, height: 1.5)),
                   ],
                 ),
               ),

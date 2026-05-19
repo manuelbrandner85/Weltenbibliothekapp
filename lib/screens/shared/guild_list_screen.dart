@@ -263,17 +263,14 @@ class _GuildListScreenState extends State<GuildListScreen>
         itemBuilder: (context, i) {
           final f = filters[i];
           final selected = _filterWorld == f;
-          final color = f == 'alle'
-              ? const Color(0xFF607D8B)
-              : _worldColor(f);
+          final color = f == 'alle' ? const Color(0xFF607D8B) : _worldColor(f);
           return FilterChip(
             label: Text(
               labels[f]!,
               style: TextStyle(
                 color: selected ? Colors.white : Colors.white70,
                 fontSize: 13,
-                fontWeight:
-                    selected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
             selected: selected,
@@ -287,8 +284,7 @@ class _GuildListScreenState extends State<GuildListScreen>
             side: BorderSide(
               color: selected ? color : Colors.white24,
             ),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
           );
         },
       ),
@@ -352,8 +348,7 @@ class _GuildListScreenState extends State<GuildListScreen>
             const SizedBox(height: 8),
             Text(
               _error!,
-              style:
-                  const TextStyle(color: Colors.white38, fontSize: 12),
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -381,8 +376,7 @@ class _GuildListScreenState extends State<GuildListScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.shield_outlined,
-                color: Colors.white24, size: 72),
+            const Icon(Icons.shield_outlined, color: Colors.white24, size: 72),
             const SizedBox(height: 16),
             const Text(
               'Keine Gilden gefunden',
@@ -406,8 +400,8 @@ class _GuildListScreenState extends State<GuildListScreen>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF7C4DFF),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -437,8 +431,7 @@ class _GuildCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = guild['name'] as String? ?? 'Unbenannte Gilde';
-    final description =
-        guild['description'] as String? ?? '';
+    final description = guild['description'] as String? ?? '';
     final world = guild['world'] as String?;
     final memberCount = guild['member_count'] as int? ?? 0;
     final maxMembers = guild['max_members'] as int? ?? 20;
@@ -482,8 +475,8 @@ class _GuildCard extends StatelessWidget {
                       emblemColor.withOpacity(0.2),
                     ],
                   ),
-                  border: Border.all(
-                      color: emblemColor.withOpacity(0.7), width: 2),
+                  border:
+                      Border.all(color: emblemColor.withOpacity(0.7), width: 2),
                 ),
                 child: Icon(
                   _emblemIcon(emblemIcon),
@@ -529,8 +522,7 @@ class _GuildCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: wColor.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: wColor.withOpacity(0.4)),
+                            border: Border.all(color: wColor.withOpacity(0.4)),
                           ),
                           child: Text(
                             _worldLabel(world),
@@ -543,8 +535,7 @@ class _GuildCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         // Member count
-                        Icon(Icons.group,
-                            size: 13, color: Colors.white54),
+                        Icon(Icons.group, size: 13, color: Colors.white54),
                         const SizedBox(width: 3),
                         Text(
                           '$memberCount/$maxMembers',
@@ -586,16 +577,14 @@ class _GuildCard extends StatelessWidget {
                                 foregroundColor: wColor,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 14, vertical: 6),
-                                backgroundColor:
-                                    wColor.withOpacity(0.1),
+                                backgroundColor: wColor.withOpacity(0.1),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                   side: BorderSide(
                                       color: wColor.withOpacity(0.4)),
                                 ),
                                 minimumSize: Size.zero,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: const Text(
                                 'Beitreten',
@@ -840,8 +829,7 @@ class _CreateGuildSheetState extends State<_CreateGuildSheet> {
           ),
           // Title
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
                 Icon(Icons.shield, color: wColor, size: 22),
@@ -892,8 +880,8 @@ class _CreateGuildSheetState extends State<_CreateGuildSheet> {
                     TextFormField(
                       controller: _descController,
                       style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration(
-                          'Worum geht es in eurer Gilde?'),
+                      decoration:
+                          _inputDecoration('Worum geht es in eurer Gilde?'),
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
@@ -917,17 +905,13 @@ class _CreateGuildSheetState extends State<_CreateGuildSheet> {
                           style: const TextStyle(color: Colors.white),
                           items: const [
                             DropdownMenuItem(
-                                value: 'materie',
-                                child: Text('Materie')),
+                                value: 'materie', child: Text('Materie')),
                             DropdownMenuItem(
-                                value: 'energie',
-                                child: Text('Energie')),
+                                value: 'energie', child: Text('Energie')),
                             DropdownMenuItem(
-                                value: 'vorhang',
-                                child: Text('Vorhang')),
+                                value: 'vorhang', child: Text('Vorhang')),
                             DropdownMenuItem(
-                                value: 'ursprung',
-                                child: Text('Ursprung')),
+                                value: 'ursprung', child: Text('Ursprung')),
                           ],
                           onChanged: (v) {
                             if (v != null) {
@@ -966,15 +950,18 @@ class _CreateGuildSheetState extends State<_CreateGuildSheet> {
                         min: 6,
                         max: 50,
                         divisions: 44,
-                        onChanged: (v) =>
-                            setState(() => _maxMembers = v),
+                        onChanged: (v) => setState(() => _maxMembers = v),
                       ),
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: const [
-                        Text('6', style: TextStyle(color: Colors.white38, fontSize: 11)),
-                        Text('50', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                        Text('6',
+                            style:
+                                TextStyle(color: Colors.white38, fontSize: 11)),
+                        Text('50',
+                            style:
+                                TextStyle(color: Colors.white38, fontSize: 11)),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -1054,10 +1041,8 @@ class _CreateGuildSheetState extends State<_CreateGuildSheet> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: wColor,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              wColor.withOpacity(0.4),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
+                          disabledBackgroundColor: wColor.withOpacity(0.4),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -1129,8 +1114,7 @@ class _CreateGuildSheetState extends State<_CreateGuildSheet> {
         borderSide: const BorderSide(color: Color(0xFFE53935)),
       ),
       errorStyle: const TextStyle(color: Color(0xFFE53935)),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
   }
 }

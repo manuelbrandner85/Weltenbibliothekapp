@@ -21,9 +21,11 @@ class GroupToolsService {
     int limit = 50,
   }) async {
     try {
-      final response = await http.get(
+      final response = await http
+          .get(
         Uri.parse('$_baseUrl/energie/meditation?room_id=$roomId&limit=$limit'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -61,7 +63,8 @@ class GroupToolsService {
     String notes = '',
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/energie/meditation'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -71,7 +74,8 @@ class GroupToolsService {
           'participants': participants,
           'notes': notes,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -107,9 +111,11 @@ class GroupToolsService {
     int limit = 50,
   }) async {
     try {
-      final response = await http.get(
+      final response = await http
+          .get(
         Uri.parse('$_baseUrl/energie/astral?room_id=$roomId&limit=$limit'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -149,7 +155,8 @@ class GroupToolsService {
     int successLevel = 3,
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/energie/astral'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -161,7 +168,8 @@ class GroupToolsService {
           'techniques_used': techniques,
           'success_level': successLevel,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -244,7 +252,8 @@ class GroupToolsService {
     String recommendations = '',
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/energie/chakra'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -257,7 +266,8 @@ class GroupToolsService {
           'blockages': blockages,
           'recommendations': recommendations,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -340,7 +350,8 @@ class GroupToolsService {
     String imageUrl = '',
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/energie/crystals'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -353,7 +364,8 @@ class GroupToolsService {
           'uses': uses,
           'image_url': imageUrl,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -389,9 +401,11 @@ class GroupToolsService {
     int limit = 50,
   }) async {
     try {
-      final response = await http.get(
+      final response = await http
+          .get(
         Uri.parse('$_baseUrl/energie/frequency?room_id=$roomId&limit=$limit'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -429,7 +443,8 @@ class GroupToolsService {
     List<String> participants = const [],
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/energie/frequency'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -439,7 +454,8 @@ class GroupToolsService {
           'duration_minutes': durationMinutes,
           'participants': participants,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -475,9 +491,11 @@ class GroupToolsService {
     int limit = 50,
   }) async {
     try {
-      final response = await http.get(
+      final response = await http
+          .get(
         Uri.parse('$_baseUrl/energie/dreams?room_id=$roomId&limit=$limit'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -517,7 +535,8 @@ class GroupToolsService {
     bool lucid = false,
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/energie/dreams'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -529,7 +548,8 @@ class GroupToolsService {
           'symbols': symbols,
           'lucid': lucid,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -576,9 +596,11 @@ class GroupToolsService {
     int limit = 50,
   }) async {
     try {
-      final response = await http.get(
+      final response = await http
+          .get(
         Uri.parse('$_baseUrl/materie/ufos?room_id=$roomId&limit=$limit'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -617,7 +639,8 @@ class GroupToolsService {
     int witnesses = 1,
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/materie/ufos'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -629,7 +652,8 @@ class GroupToolsService {
           'object_type': objectType,
           'witnesses': witnesses,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -664,9 +688,11 @@ class GroupToolsService {
     int limit = 100,
   }) async {
     try {
-      final response = await http.get(
+      final response = await http
+          .get(
         Uri.parse('$_baseUrl/materie/history?room_id=$roomId&limit=$limit'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -706,7 +732,8 @@ class GroupToolsService {
     String category = '',
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/materie/history'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -719,7 +746,8 @@ class GroupToolsService {
           'civilization': civilization,
           'category': category,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -754,9 +782,11 @@ class GroupToolsService {
     int limit = 50,
   }) async {
     try {
-      final response = await http.get(
+      final response = await http
+          .get(
         Uri.parse('$_baseUrl/materie/geopolitics?room_id=$roomId&limit=$limit'),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -794,7 +824,8 @@ class GroupToolsService {
     List<String> tags = const [],
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/materie/geopolitics'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -805,7 +836,8 @@ class GroupToolsService {
           'event_description': description,
           'tags': tags,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -833,11 +865,15 @@ class GroupToolsService {
       return null;
     }
   }
-  
+
   /// 🏛️ Geschichte-Zeitleiste - GET
-  Future<List<Map<String, dynamic>>> getHistoryEvents({String roomId = 'geschichte', int limit = 50}) async {
+  Future<List<Map<String, dynamic>>> getHistoryEvents(
+      {String roomId = 'geschichte', int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/materie/history?room_id=$roomId&limit=$limit')).timeout(
+      final response = await http
+          .get(Uri.parse(
+              '$_baseUrl/materie/history?room_id=$roomId&limit=$limit'))
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -865,11 +901,15 @@ class GroupToolsService {
       return [];
     }
   }
-  
+
   /// 👁️ Verschwörungs-Netzwerk - GET
-  Future<List<Map<String, dynamic>>> getConspiracyNetwork({String roomId = 'verschwoerungen', int limit = 50}) async {
+  Future<List<Map<String, dynamic>>> getConspiracyNetwork(
+      {String roomId = 'verschwoerungen', int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/materie/network?room_id=$roomId&limit=$limit')).timeout(
+      final response = await http
+          .get(Uri.parse(
+              '$_baseUrl/materie/network?room_id=$roomId&limit=$limit'))
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -897,7 +937,7 @@ class GroupToolsService {
       return [];
     }
   }
-  
+
   Future<String?> createConspiracyConnection({
     required String roomId,
     required String userId,
@@ -906,7 +946,8 @@ class GroupToolsService {
     required String connectionDescription,
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/materie/network'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -916,7 +957,8 @@ class GroupToolsService {
           'connection_title': connectionTitle,
           'connection_description': connectionDescription,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -944,11 +986,15 @@ class GroupToolsService {
       return null;
     }
   }
-  
+
   /// 🔬 Forschungs-Archiv - GET
-  Future<List<Map<String, dynamic>>> getResearchArchive({String roomId = 'technologie', int limit = 50}) async {
+  Future<List<Map<String, dynamic>>> getResearchArchive(
+      {String roomId = 'technologie', int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/materie/research?room_id=$roomId&limit=$limit')).timeout(
+      final response = await http
+          .get(Uri.parse(
+              '$_baseUrl/materie/research?room_id=$roomId&limit=$limit'))
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -976,7 +1022,7 @@ class GroupToolsService {
       return [];
     }
   }
-  
+
   Future<String?> createResearchDocument({
     required String roomId,
     required String userId,
@@ -986,7 +1032,8 @@ class GroupToolsService {
     String documentType = 'research',
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/materie/research'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -997,7 +1044,8 @@ class GroupToolsService {
           'document_description': documentDescription,
           'document_type': documentType,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -1025,11 +1073,15 @@ class GroupToolsService {
       return null;
     }
   }
-  
+
   /// 💚 Alternative Heilmethoden
-  Future<List<Map<String, dynamic>>> getHealingMethods({String roomId = 'gesundheit', int limit = 50}) async {
+  Future<List<Map<String, dynamic>>> getHealingMethods(
+      {String roomId = 'gesundheit', int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/materie/healing?room_id=$roomId&limit=$limit')).timeout(
+      final response = await http
+          .get(Uri.parse(
+              '$_baseUrl/materie/healing?room_id=$roomId&limit=$limit'))
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');
@@ -1057,7 +1109,7 @@ class GroupToolsService {
       return [];
     }
   }
-  
+
   Future<String?> createHealingMethod({
     required String roomId,
     required String userId,
@@ -1067,7 +1119,8 @@ class GroupToolsService {
     String category = 'alternative',
   }) async {
     try {
-      final response = await http.post(
+      final response = await http
+          .post(
         Uri.parse('$_baseUrl/materie/healing'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -1078,7 +1131,8 @@ class GroupToolsService {
           'method_description': methodDescription,
           'category': category,
         }),
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Request Timeout (15s)');

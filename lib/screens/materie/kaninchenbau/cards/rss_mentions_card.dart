@@ -30,8 +30,7 @@ class RssMentionsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.rss_feed,
-                  color: Color(0xFF90CAF9), size: 18),
+              const Icon(Icons.rss_feed, color: Color(0xFF90CAF9), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'AKTUELLE MEDIEN',
@@ -132,8 +131,8 @@ class RssMentionsCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 5, vertical: 1.5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(3),
                     color: lensColor.withValues(alpha: 0.15),

@@ -22,7 +22,7 @@ class _RvTrainerScreenState extends State<RvTrainerScreen> {
 
   bool _loading = true;
   String? _error;
-  Map<String, dynamic>? _target;   // {id, target_number}
+  Map<String, dynamic>? _target; // {id, target_number}
   Map<String, dynamic>? _revealed; // full target after reveal
   int _stage = 0; // 0=intro, 1=stage1, 2=stage2, 3=stage3, 4=reveal
   final _gestaltCtrl = TextEditingController();
@@ -52,10 +52,8 @@ class _RvTrainerScreenState extends State<RvTrainerScreen> {
     });
     try {
       final client = Supabase.instance.client;
-      final res = await client
-          .from('rv_targets')
-          .select('id,target_number')
-          .limit(200);
+      final res =
+          await client.from('rv_targets').select('id,target_number').limit(200);
       final list = (res as List).cast<Map<String, dynamic>>();
       if (list.isEmpty) throw 'Keine RV-Targets in der Datenbank';
       list.shuffle();
@@ -103,9 +101,8 @@ class _RvTrainerScreenState extends State<RvTrainerScreen> {
       for (final k in all) {
         if (k.length >= 3 && response.contains(k)) hits++;
       }
-      final pct = all.isEmpty
-          ? 0
-          : ((hits / all.length) * 100).clamp(0, 100).round();
+      final pct =
+          all.isEmpty ? 0 : ((hits / all.length) * 100).clamp(0, 100).round();
 
       setState(() {
         _revealed = t;
@@ -445,13 +442,11 @@ class _RvTrainerScreenState extends State<RvTrainerScreen> {
               fillColor: Colors.white.withValues(alpha: 0.04),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    BorderSide(color: _cyan.withValues(alpha: 0.20)),
+                borderSide: BorderSide(color: _cyan.withValues(alpha: 0.20)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    BorderSide(color: _cyan.withValues(alpha: 0.20)),
+                borderSide: BorderSide(color: _cyan.withValues(alpha: 0.20)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),

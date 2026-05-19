@@ -55,7 +55,8 @@ class _LiveWorldBadgeState extends State<LiveWorldBadge>
 
   Future<void> _load() async {
     try {
-      final sessions = await VoiceSessionService.instance.getActiveSessions(widget.world);
+      final sessions =
+          await VoiceSessionService.instance.getActiveSessions(widget.world);
       if (!mounted) return;
       final total = sessions.values.fold<int>(0, (s, list) => s + list.length);
       if (total != _liveCount) setState(() => _liveCount = total);
@@ -65,7 +66,8 @@ class _LiveWorldBadgeState extends State<LiveWorldBadge>
   void _subscribe() {
     try {
       _channel = Supabase.instance.client
-          .channel('world-badge-${widget.world}-${DateTime.now().millisecondsSinceEpoch}')
+          .channel(
+              'world-badge-${widget.world}-${DateTime.now().millisecondsSinceEpoch}')
           .onPostgresChanges(
             event: PostgresChangeEvent.all,
             schema: 'public',

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// In-App Video Player Widget
-/// 
+///
 /// Zeigt YouTube/Rumble Videos direkt in der App (Web: embedded player)
 class InAppVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -34,7 +34,8 @@ class _InAppVideoPlayerState extends State<InAppVideoPlayer> {
     setState(() => _isLoading = true);
 
     // YouTube
-    if (widget.videoUrl.contains('youtube.com') || widget.videoUrl.contains('youtu.be')) {
+    if (widget.videoUrl.contains('youtube.com') ||
+        widget.videoUrl.contains('youtu.be')) {
       final videoId = _extractYouTubeId(widget.videoUrl);
       if (videoId != null) {
         _embedUrl = 'https://www.youtube.com/embed/$videoId';
@@ -88,7 +89,8 @@ class _InAppVideoPlayerState extends State<InAppVideoPlayer> {
           AspectRatio(
             aspectRatio: 16 / 9,
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
               child: _embedUrl != null
                   ? _buildEmbeddedPlayer()
                   : _buildThumbnailWithButton(),
@@ -236,7 +238,8 @@ class _InAppVideoPlayerState extends State<InAppVideoPlayer> {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.black87,
                     borderRadius: BorderRadius.circular(8),
@@ -374,7 +377,8 @@ class FullscreenVideoPlayer extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
             ),
           ],

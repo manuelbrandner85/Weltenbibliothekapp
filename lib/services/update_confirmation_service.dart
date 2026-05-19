@@ -10,7 +10,8 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shorebird_code_push/shorebird_code_push.dart' if (dart.library.html) '../stubs/shorebird_stub.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart'
+    if (dart.library.html) '../stubs/shorebird_stub.dart';
 
 import 'update_service.dart';
 
@@ -31,7 +32,8 @@ class UpdateConfirmationResult {
     this.currentPatch,
   });
 
-  static const none = UpdateConfirmationResult(type: UpdateConfirmationType.none);
+  static const none =
+      UpdateConfirmationResult(type: UpdateConfirmationType.none);
 
   bool get wasUpdated => type != UpdateConfirmationType.none;
 }
@@ -113,7 +115,8 @@ class UpdateConfirmationService {
       await _saveState(prefs, UpdateService.currentAppVersion, currentPatch);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️  [UpdateConfirmationService] saveCurrentState fehlgeschlagen: $e');
+        debugPrint(
+            '⚠️  [UpdateConfirmationService] saveCurrentState fehlgeschlagen: $e');
       }
     }
   }

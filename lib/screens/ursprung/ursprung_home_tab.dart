@@ -42,11 +42,9 @@ class UrsprungHomeTab extends StatelessWidget {
             _buildMentorButton(context),
             const SizedBox(height: 28),
 
-
             // ── Ambient Tagespfad ──
             const DailyPathWidget(),
             const SizedBox(height: 28),
-
 
             // ── 5 Branches ──
             _sectionLabel('5 ZWEIGE · 25 MODULE'),
@@ -56,7 +54,13 @@ class UrsprungHomeTab extends StatelessWidget {
               emoji: '🌀',
               title: 'Gateway Foundation',
               subtitle: '5 Module · CIA Gateway Process · Hemi-Sync',
-              moduleCodes: ['U-QC-01', 'U-QC-02', 'U-QC-03', 'U-QC-04', 'U-QC-05'],
+              moduleCodes: [
+                'U-QC-01',
+                'U-QC-02',
+                'U-QC-03',
+                'U-QC-04',
+                'U-QC-05'
+              ],
               color: const Color(0xFF8A2BE2),
             ),
             const SizedBox(height: 10),
@@ -65,7 +69,13 @@ class UrsprungHomeTab extends StatelessWidget {
               emoji: '🧠',
               title: 'Focus Levels',
               subtitle: '5 Module · F10/F12/F15/F21-27/F34-49',
-              moduleCodes: ['U-QC-06', 'U-QC-07', 'U-QC-08', 'U-QC-09', 'U-QC-10'],
+              moduleCodes: [
+                'U-QC-06',
+                'U-QC-07',
+                'U-QC-08',
+                'U-QC-09',
+                'U-QC-10'
+              ],
               color: _cyan,
             ),
             const SizedBox(height: 10),
@@ -74,7 +84,13 @@ class UrsprungHomeTab extends StatelessWidget {
               emoji: '⚡',
               title: 'Energiewerkzeuge',
               subtitle: '5 Module · Energy Bar, REBAL, Resonant Tuning',
-              moduleCodes: ['U-QC-11', 'U-QC-12', 'U-QC-13', 'U-QC-14', 'U-QC-15'],
+              moduleCodes: [
+                'U-QC-11',
+                'U-QC-12',
+                'U-QC-13',
+                'U-QC-14',
+                'U-QC-15'
+              ],
               color: const Color(0xFFFFD700),
             ),
             const SizedBox(height: 10),
@@ -83,7 +99,13 @@ class UrsprungHomeTab extends StatelessWidget {
               emoji: '✨',
               title: 'Patterning & Manifestation',
               subtitle: '5 Module · Realitätserschaffung nach McDonnell',
-              moduleCodes: ['U-QC-16', 'U-QC-17', 'U-QC-18', 'U-QC-19', 'U-QC-20'],
+              moduleCodes: [
+                'U-QC-16',
+                'U-QC-17',
+                'U-QC-18',
+                'U-QC-19',
+                'U-QC-20'
+              ],
               color: const Color(0xFFFF4081),
             ),
             const SizedBox(height: 10),
@@ -92,7 +114,13 @@ class UrsprungHomeTab extends StatelessWidget {
               emoji: '👁️',
               title: 'Remote Viewing',
               subtitle: '5 Module · CRV 6-Stage · Project Stargate',
-              moduleCodes: ['U-QC-21', 'U-QC-22', 'U-QC-23', 'U-QC-24', 'U-QC-25'],
+              moduleCodes: [
+                'U-QC-21',
+                'U-QC-22',
+                'U-QC-23',
+                'U-QC-24',
+                'U-QC-25'
+              ],
               color: const Color(0xFF00BCD4),
             ),
 
@@ -339,8 +367,8 @@ class UrsprungHomeTab extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: color.withValues(alpha: 0.6),
-                size: 14),
+            Icon(Icons.arrow_forward_ios,
+                color: color.withValues(alpha: 0.6), size: 14),
           ],
         ),
       ),
@@ -401,8 +429,7 @@ class UrsprungHomeTab extends StatelessWidget {
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: _cyan.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),

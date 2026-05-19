@@ -1,9 +1,9 @@
 /// 💀 LOADING SKELETON WIDGETS
 /// Shimmer-Effekt Loading States für bessere UX
-/// 
+///
 /// Features:
 /// - Post Card Skeletons
-/// - List Item Skeletons  
+/// - List Item Skeletons
 /// - Profile Skeletons
 /// - Custom Skeletons
 /// - Smooth Transition zu echtem Content
@@ -25,7 +25,7 @@ class LoadingSkeletons {
       child: child,
     );
   }
-  
+
   /// Skeleton Box (Basis-Element)
   static Widget box({
     double? width,
@@ -41,7 +41,7 @@ class LoadingSkeletons {
       ),
     );
   }
-  
+
   /// Post Card Skeleton (für Community Feed)
   static Widget postCard() {
     return shimmerWrapper(
@@ -70,7 +70,7 @@ class LoadingSkeletons {
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Content: Titel + Text
               box(width: double.infinity, height: 18, borderRadius: 4),
               const SizedBox(height: 8),
@@ -78,7 +78,7 @@ class LoadingSkeletons {
               const SizedBox(height: 6),
               box(width: 200, height: 14, borderRadius: 4),
               const SizedBox(height: 16),
-              
+
               // Image Placeholder
               box(
                 width: double.infinity,
@@ -86,7 +86,7 @@ class LoadingSkeletons {
                 borderRadius: 12,
               ),
               const SizedBox(height: 16),
-              
+
               // Footer: Likes, Comments, Shares
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -102,7 +102,7 @@ class LoadingSkeletons {
       ),
     );
   }
-  
+
   /// List Item Skeleton (für Listen)
   static Widget listItem() {
     return shimmerWrapper(
@@ -129,7 +129,7 @@ class LoadingSkeletons {
       ),
     );
   }
-  
+
   /// Profile Header Skeleton
   static Widget profileHeader() {
     return shimmerWrapper(
@@ -140,15 +140,15 @@ class LoadingSkeletons {
             // Avatar
             box(width: 100, height: 100, borderRadius: 50),
             const SizedBox(height: 16),
-            
+
             // Name
             box(width: 180, height: 20, borderRadius: 4),
             const SizedBox(height: 8),
-            
+
             // Bio
             box(width: 220, height: 14, borderRadius: 4),
             const SizedBox(height: 24),
-            
+
             // Stats Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -181,7 +181,7 @@ class LoadingSkeletons {
       ),
     );
   }
-  
+
   /// Search Result Skeleton
   static Widget searchResult() {
     return shimmerWrapper(
@@ -195,17 +195,17 @@ class LoadingSkeletons {
               // Tag
               box(width: 80, height: 20, borderRadius: 10),
               const SizedBox(height: 12),
-              
+
               // Title
               box(width: double.infinity, height: 18, borderRadius: 4),
               const SizedBox(height: 8),
-              
+
               // Description
               box(width: double.infinity, height: 14, borderRadius: 4),
               const SizedBox(height: 6),
               box(width: 240, height: 14, borderRadius: 4),
               const SizedBox(height: 12),
-              
+
               // Meta
               Row(
                 children: [
@@ -220,7 +220,7 @@ class LoadingSkeletons {
       ),
     );
   }
-  
+
   /// Grid Item Skeleton (für Bildergalerien)
   static Widget gridItem() {
     return shimmerWrapper(
@@ -234,7 +234,7 @@ class LoadingSkeletons {
             borderRadius: 12,
           ),
           const SizedBox(height: 8),
-          
+
           // Title
           box(width: double.infinity, height: 14, borderRadius: 4),
           const SizedBox(height: 6),
@@ -243,7 +243,7 @@ class LoadingSkeletons {
       ),
     );
   }
-  
+
   /// Comment Skeleton
   static Widget comment() {
     return shimmerWrapper(
@@ -271,7 +271,7 @@ class LoadingSkeletons {
       ),
     );
   }
-  
+
   /// Liste von Post Card Skeletons
   static Widget postList({int count = 3}) {
     return ListView.builder(
@@ -281,7 +281,7 @@ class LoadingSkeletons {
       itemBuilder: (context, index) => postCard(),
     );
   }
-  
+
   /// Liste von List Item Skeletons
   static Widget list({int count = 5}) {
     return ListView.builder(
@@ -291,7 +291,7 @@ class LoadingSkeletons {
       itemBuilder: (context, index) => listItem(),
     );
   }
-  
+
   /// Grid von Grid Item Skeletons
   static Widget grid({int count = 6, int crossAxisCount = 2}) {
     return GridView.builder(

@@ -7,7 +7,7 @@ class SlideFadeTransition extends StatelessWidget {
   final Offset beginOffset;
   final Curve curve;
   final bool animate;
-  
+
   const SlideFadeTransition({
     super.key,
     required this.child,
@@ -16,11 +16,11 @@ class SlideFadeTransition extends StatelessWidget {
     this.curve = Curves.easeOutCubic,
     this.animate = true,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     if (!animate) return child;
-    
+
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
       duration: duration,
@@ -49,7 +49,7 @@ class ScaleFadeTransition extends StatelessWidget {
   final double beginScale;
   final Curve curve;
   final bool animate;
-  
+
   const ScaleFadeTransition({
     super.key,
     required this.child,
@@ -58,11 +58,11 @@ class ScaleFadeTransition extends StatelessWidget {
     this.curve = Curves.easeOutCubic,
     this.animate = true,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     if (!animate) return child;
-    
+
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
       duration: duration,
@@ -88,7 +88,7 @@ class StaggeredAnimationList extends StatelessWidget {
   final Duration staggerDelay;
   final Duration itemDuration;
   final Axis direction;
-  
+
   const StaggeredAnimationList({
     super.key,
     required this.children,
@@ -96,7 +96,7 @@ class StaggeredAnimationList extends StatelessWidget {
     this.itemDuration = const Duration(milliseconds: 300),
     this.direction = Axis.vertical,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return direction == Axis.vertical
@@ -106,10 +106,13 @@ class StaggeredAnimationList extends StatelessWidget {
                 duration: itemDuration,
                 beginOffset: Offset(0, 0.2),
                 child: AnimatedBuilder(
-                  animation: AlwaysStoppedAnimation(entry.key * staggerDelay.inMilliseconds / 1000),
+                  animation: AlwaysStoppedAnimation(
+                      entry.key * staggerDelay.inMilliseconds / 1000),
                   builder: (context, child) {
                     return FutureBuilder(
-                      future: Future.delayed(Duration(milliseconds: entry.key * staggerDelay.inMilliseconds)),
+                      future: Future.delayed(Duration(
+                          milliseconds:
+                              entry.key * staggerDelay.inMilliseconds)),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.done) {
                           return entry.value;
@@ -131,10 +134,13 @@ class StaggeredAnimationList extends StatelessWidget {
                 duration: itemDuration,
                 beginOffset: Offset(0.2, 0),
                 child: AnimatedBuilder(
-                  animation: AlwaysStoppedAnimation(entry.key * staggerDelay.inMilliseconds / 1000),
+                  animation: AlwaysStoppedAnimation(
+                      entry.key * staggerDelay.inMilliseconds / 1000),
                   builder: (context, child) {
                     return FutureBuilder(
-                      future: Future.delayed(Duration(milliseconds: entry.key * staggerDelay.inMilliseconds)),
+                      future: Future.delayed(Duration(
+                          milliseconds:
+                              entry.key * staggerDelay.inMilliseconds)),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.done) {
                           return entry.value;
@@ -158,22 +164,23 @@ class BounceScaleButton extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final Duration duration;
-  
+
   const BounceScaleButton({
     super.key,
     required this.child,
     this.onTap,
     this.duration = const Duration(milliseconds: 150),
   });
-  
+
   @override
   State<BounceScaleButton> createState() => _BounceScaleButtonState();
 }
 
-class _BounceScaleButtonState extends State<BounceScaleButton> with SingleTickerProviderStateMixin {
+class _BounceScaleButtonState extends State<BounceScaleButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -181,7 +188,7 @@ class _BounceScaleButtonState extends State<BounceScaleButton> with SingleTicker
       duration: widget.duration,
       vsync: this,
     );
-    
+
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.9), weight: 50),
       TweenSequenceItem(tween: Tween(begin: 0.9, end: 1.05), weight: 30),
@@ -191,13 +198,13 @@ class _BounceScaleButtonState extends State<BounceScaleButton> with SingleTicker
       curve: Curves.easeInOut,
     ));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -219,7 +226,7 @@ class ExpandableSection extends StatefulWidget {
   final Widget child;
   final bool initiallyExpanded;
   final Duration duration;
-  
+
   const ExpandableSection({
     super.key,
     required this.header,
@@ -227,17 +234,18 @@ class ExpandableSection extends StatefulWidget {
     this.initiallyExpanded = false,
     this.duration = const Duration(milliseconds: 300),
   });
-  
+
   @override
   State<ExpandableSection> createState() => _ExpandableSectionState();
 }
 
-class _ExpandableSectionState extends State<ExpandableSection> with SingleTickerProviderStateMixin {
+class _ExpandableSectionState extends State<ExpandableSection>
+    with SingleTickerProviderStateMixin {
   late bool _isExpanded;
   late AnimationController _controller;
   late Animation<double> _animation;
   late Animation<double> _iconAnimation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -246,25 +254,25 @@ class _ExpandableSectionState extends State<ExpandableSection> with SingleTicker
       duration: widget.duration,
       vsync: this,
     );
-    
+
     _animation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOut,
     );
-    
+
     _iconAnimation = Tween<double>(begin: 0, end: 0.5).animate(_animation);
-    
+
     if (_isExpanded) {
       _controller.value = 1.0;
     }
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   void _toggle() {
     setState(() {
       _isExpanded = !_isExpanded;
@@ -275,7 +283,7 @@ class _ExpandableSectionState extends State<ExpandableSection> with SingleTicker
       }
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Column(

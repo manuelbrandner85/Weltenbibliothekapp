@@ -24,7 +24,8 @@ import '../data/ursprung_books_curated.dart';
 /// ============================================
 
 class UnifiedKnowledgeService {
-  static final UnifiedKnowledgeService _instance = UnifiedKnowledgeService._internal();
+  static final UnifiedKnowledgeService _instance =
+      UnifiedKnowledgeService._internal();
   factory UnifiedKnowledgeService() => _instance;
   UnifiedKnowledgeService._internal();
 
@@ -35,7 +36,7 @@ class UnifiedKnowledgeService {
   static const String _progressBox = 'reading_progress';
 
   bool _initialized = false;
-  final StreamController<List<KnowledgeEntry>> _knowledgeStreamController = 
+  final StreamController<List<KnowledgeEntry>> _knowledgeStreamController =
       StreamController<List<KnowledgeEntry>>.broadcast();
 
   /// INITIALIZATION
@@ -99,7 +100,8 @@ class UnifiedKnowledgeService {
   ) async {
     final existing = await db.get(_knowledgeBox, probeId);
     if (existing != null) return;
-    debugPrint('📚 Migrating curated books: $probeId+ (${books.length} entries)');
+    debugPrint(
+        '📚 Migrating curated books: $probeId+ (${books.length} entries)');
     for (final entry in books) {
       await db.put(_knowledgeBox, entry.id, entry.toJson());
     }
@@ -115,8 +117,10 @@ class UnifiedKnowledgeService {
 
     try {
       final db = SqliteStorageService.instance;
-      final entries = db.getAllSync(_knowledgeBox)
-          .map((e) => KnowledgeEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+      final entries = db
+          .getAllSync(_knowledgeBox)
+          .map((e) =>
+              KnowledgeEntry.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
 
       if (world != null) {
@@ -149,7 +153,8 @@ class UnifiedKnowledgeService {
   }
 
   /// Get entries by category
-  Future<List<KnowledgeEntry>> getByCategory(String world, String category) async {
+  Future<List<KnowledgeEntry>> getByCategory(
+      String world, String category) async {
     final entries = await getAllEntries(world: world);
     return entries.where((e) => e.category == category).toList();
   }
@@ -164,12 +169,12 @@ class UnifiedKnowledgeService {
   Future<List<KnowledgeEntry>> search(String query, {String? world}) async {
     final entries = await getAllEntries(world: world);
     final lowerQuery = query.toLowerCase();
-    
+
     return entries.where((entry) {
       return entry.title.toLowerCase().contains(lowerQuery) ||
-             entry.description.toLowerCase().contains(lowerQuery) ||
-             entry.fullContent.toLowerCase().contains(lowerQuery) ||
-             entry.tags.any((tag) => tag.toLowerCase().contains(lowerQuery));
+          entry.description.toLowerCase().contains(lowerQuery) ||
+          entry.fullContent.toLowerCase().contains(lowerQuery) ||
+          entry.tags.any((tag) => tag.toLowerCase().contains(lowerQuery));
     }).toList();
   }
 
@@ -181,7 +186,8 @@ class UnifiedKnowledgeService {
       final entry = await getEntry(id);
       if (entry != null) {
         final updated = entry.copyWith(viewCount: entry.viewCount + 1);
-        await SqliteStorageService.instance.put(_knowledgeBox, id, updated.toJson());
+        await SqliteStorageService.instance
+            .put(_knowledgeBox, id, updated.toJson());
       }
     } catch (e) {
       debugPrint('❌ incrementViewCount error: $e');
@@ -202,7 +208,8 @@ class UnifiedKnowledgeService {
         addedAt: DateTime.now(),
         notes: notes,
       );
-      await SqliteStorageService.instance.put(_favoritesBox, knowledgeId, favorite.toJson());
+      await SqliteStorageService.instance
+          .put(_favoritesBox, knowledgeId, favorite.toJson());
       debugPrint('⭐ Added to favorites: $knowledgeId');
     } catch (e) {
       debugPrint('❌ addFavorite error: $e');
@@ -226,7 +233,8 @@ class UnifiedKnowledgeService {
     await init();
 
     try {
-      return SqliteStorageService.instance.containsKeySync(_favoritesBox, knowledgeId);
+      return SqliteStorageService.instance
+          .containsKeySync(_favoritesBox, knowledgeId);
     } catch (e) {
       debugPrint('❌ isFavorite error: $e');
       return false;
@@ -253,8 +261,10 @@ class UnifiedKnowledgeService {
       favorites.sort((a, b) {
         final favAData = db.getSync(_favoritesBox, a.id);
         final favBData = db.getSync(_favoritesBox, b.id);
-        final favA = FavoriteEntry.fromJson(Map<String, dynamic>.from(favAData as Map));
-        final favB = FavoriteEntry.fromJson(Map<String, dynamic>.from(favBData as Map));
+        final favA =
+            FavoriteEntry.fromJson(Map<String, dynamic>.from(favAData as Map));
+        final favB =
+            FavoriteEntry.fromJson(Map<String, dynamic>.from(favBData as Map));
         return favB.addedAt.compareTo(favA.addedAt);
       });
 
@@ -270,7 +280,8 @@ class UnifiedKnowledgeService {
   // ==========================================
 
   /// Add/Update note
-  Future<void> saveNote(String knowledgeId, String content, {List<String>? tags}) async {
+  Future<void> saveNote(String knowledgeId, String content,
+      {List<String>? tags}) async {
     await init();
 
     try {
@@ -279,7 +290,8 @@ class UnifiedKnowledgeService {
 
       KnowledgeNote note;
       if (existingNoteData != null) {
-        final existingNote = KnowledgeNote.fromJson(Map<String, dynamic>.from(existingNoteData as Map));
+        final existingNote = KnowledgeNote.fromJson(
+            Map<String, dynamic>.from(existingNoteData as Map));
         note = KnowledgeNote(
           id: existingNote.id,
           knowledgeId: knowledgeId,
@@ -297,7 +309,7 @@ class UnifiedKnowledgeService {
           tags: tags ?? [],
         );
       }
-      
+
       await db.put(_notesBox, knowledgeId, note.toJson());
       debugPrint('📝 Note saved for: $knowledgeId');
     } catch (e) {
@@ -310,7 +322,8 @@ class UnifiedKnowledgeService {
     await init();
 
     try {
-      final data = SqliteStorageService.instance.getSync(_notesBox, knowledgeId);
+      final data =
+          SqliteStorageService.instance.getSync(_notesBox, knowledgeId);
 
       if (data != null) {
         return KnowledgeNote.fromJson(Map<String, dynamic>.from(data as Map));
@@ -340,7 +353,8 @@ class UnifiedKnowledgeService {
     await init();
 
     try {
-      final knowledgeIds = await SqliteStorageService.instance.getKeys(_notesBox);
+      final knowledgeIds =
+          await SqliteStorageService.instance.getKeys(_notesBox);
 
       final List<KnowledgeEntry> entries = [];
       for (var id in knowledgeIds) {
@@ -362,7 +376,8 @@ class UnifiedKnowledgeService {
   // ==========================================
 
   /// Update reading progress
-  Future<void> updateProgress(String knowledgeId, {bool? isRead, int? progressPercent}) async {
+  Future<void> updateProgress(String knowledgeId,
+      {bool? isRead, int? progressPercent}) async {
     await init();
 
     try {
@@ -371,11 +386,14 @@ class UnifiedKnowledgeService {
 
       ReadingProgress progress;
       if (existingData != null) {
-        final existing = ReadingProgress.fromJson(Map<String, dynamic>.from(existingData as Map));
+        final existing = ReadingProgress.fromJson(
+            Map<String, dynamic>.from(existingData as Map));
         progress = ReadingProgress(
           knowledgeId: knowledgeId,
           isRead: isRead ?? existing.isRead,
-          readAt: (isRead == true && existing.readAt == null) ? DateTime.now() : existing.readAt,
+          readAt: (isRead == true && existing.readAt == null)
+              ? DateTime.now()
+              : existing.readAt,
           progressPercent: progressPercent ?? existing.progressPercent,
           lastAccessedAt: DateTime.now(),
         );
@@ -400,7 +418,8 @@ class UnifiedKnowledgeService {
     await init();
 
     try {
-      final data = SqliteStorageService.instance.getSync(_progressBox, knowledgeId);
+      final data =
+          SqliteStorageService.instance.getSync(_progressBox, knowledgeId);
 
       if (data != null) {
         return ReadingProgress.fromJson(Map<String, dynamic>.from(data as Map));
@@ -425,7 +444,8 @@ class UnifiedKnowledgeService {
       for (var key in keys) {
         final progressData = db.getSync(_progressBox, key);
         if (progressData == null) continue;
-        final progress = ReadingProgress.fromJson(Map<String, dynamic>.from(progressData as Map));
+        final progress = ReadingProgress.fromJson(
+            Map<String, dynamic>.from(progressData as Map));
 
         if (progress.isRead) {
           final entry = await getEntry(key);
@@ -448,7 +468,7 @@ class UnifiedKnowledgeService {
     final readEntries = await getReadEntries(world: world);
     final favorites = await getFavorites(world: world);
     final entriesWithNotes = await getEntriesWithNotes(world: world);
-    
+
     return {
       'total': allEntries.length,
       'read': readEntries.length,
@@ -463,26 +483,27 @@ class UnifiedKnowledgeService {
   // ==========================================
 
   /// Get recommended entries based on user's reading history
-  Future<List<KnowledgeEntry>> getRecommendations(String world, {int limit = 5}) async {
+  Future<List<KnowledgeEntry>> getRecommendations(String world,
+      {int limit = 5}) async {
     final readEntries = await getReadEntries(world: world);
     final favorites = await getFavorites(world: world);
-    
+
     // Collect tags from read and favorited entries
     final Set<String> userInterestTags = {};
     for (var entry in [...readEntries, ...favorites]) {
       userInterestTags.addAll(entry.tags);
     }
-    
+
     // Get all entries
     final allEntries = await getAllEntries(world: world);
-    
+
     // Score entries based on matching tags
     final Map<KnowledgeEntry, int> scoredEntries = {};
     for (var entry in allEntries) {
       // Skip already read entries
       final isRead = readEntries.any((e) => e.id == entry.id);
       if (isRead) continue;
-      
+
       // Calculate score
       int score = 0;
       for (var tag in entry.tags) {
@@ -490,44 +511,45 @@ class UnifiedKnowledgeService {
           score += 2; // High weight for matching tags
         }
       }
-      
+
       // Bonus for popular entries
       score += (entry.viewCount / 10).floor();
       score += (entry.rating * 2).floor();
-      
+
       if (score > 0) {
         scoredEntries[entry] = score;
       }
     }
-    
+
     // Sort by score and return top N
     final sorted = scoredEntries.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
+
     return sorted.take(limit).map((e) => e.key).toList();
   }
 
   /// Get popular entries (most viewed/rated)
-  Future<List<KnowledgeEntry>> getPopular(String world, {int limit = 10}) async {
+  Future<List<KnowledgeEntry>> getPopular(String world,
+      {int limit = 10}) async {
     final entries = await getAllEntries(world: world);
-    
+
     // Sort by view count and rating
     entries.sort((a, b) {
       final scoreA = a.viewCount + (a.rating * 10).toInt();
       final scoreB = b.viewCount + (b.rating * 10).toInt();
       return scoreB.compareTo(scoreA);
     });
-    
+
     return entries.take(limit).toList();
   }
 
   /// Get recently added entries
   Future<List<KnowledgeEntry>> getRecent(String world, {int limit = 10}) async {
     final entries = await getAllEntries(world: world);
-    
+
     // Sort by creation date
     entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    
+
     return entries.take(limit).toList();
   }
 
@@ -540,7 +562,7 @@ class UnifiedKnowledgeService {
     getAllEntries(world: world).then((entries) {
       _knowledgeStreamController.add(entries);
     });
-    
+
     // Return stream
     return _knowledgeStreamController.stream;
   }

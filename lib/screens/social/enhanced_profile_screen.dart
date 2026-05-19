@@ -16,7 +16,7 @@ import '../../widgets/cinematic/wb_vignette.dart';
 class EnhancedProfileScreen extends StatefulWidget {
   final String userId;
   final bool isOwnProfile;
-  
+
   const EnhancedProfileScreen({
     super.key,
     required this.userId,
@@ -27,54 +27,56 @@ class EnhancedProfileScreen extends StatefulWidget {
   State<EnhancedProfileScreen> createState() => _EnhancedProfileScreenState();
 }
 
-class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with SingleTickerProviderStateMixin {
+class _EnhancedProfileScreenState extends State<EnhancedProfileScreen>
+    with SingleTickerProviderStateMixin {
   final CloudflareApiService _api = CloudflareApiService();
   final UnifiedStorageService _storage = UnifiedStorageService();
-  
+
   late TabController _tabController;
-  
+
   bool _isLoading = true;
   bool _isFollowing = false;
   Map<String, dynamic>? _profileData;
   Map<String, dynamic>? _stats;
   List<Map<String, dynamic>> _activities = [];
   List<Map<String, dynamic>> _collections = [];
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadProfile();
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadProfile() async {
     setState(() => _isLoading = true);
-    
+
     try {
       // Load user profile
       _profileData = await _api.getUserProfile(widget.userId);
-      
+
       // Load user stats
       _stats = await _api.getUserStats(widget.userId);
-      
+
       // Load activity feed
-      _activities = await _api.getUserActivity(userId: widget.userId, limit: 20);
-      
+      _activities =
+          await _api.getUserActivity(userId: widget.userId, limit: 20);
+
       // Load collections
       _collections = await _api.getUserCollections(userId: widget.userId);
-      
+
       // Check follow status
       if (!widget.isOwnProfile) {
         final currentUserId = await _storage.getCurrentUserId();
-        _isFollowing = await _api.isFollowing(currentUserId: currentUserId ?? '', targetUserId: widget.userId);
+        _isFollowing = await _api.isFollowing(
+            currentUserId: currentUserId ?? '', targetUserId: widget.userId);
       }
-      
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Error loading profile: $e');
@@ -83,18 +85,20 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       setState(() => _isLoading = false);
     }
   }
-  
+
   Future<void> _toggleFollow() async {
     final currentUserId = await _storage.getCurrentUserId();
-    
+
     setState(() => _isFollowing = !_isFollowing);
-    
+
     try {
       if (_isFollowing) {
-        await _api.followUser(currentUserId: currentUserId ?? '', targetUserId: widget.userId);
+        await _api.followUser(
+            currentUserId: currentUserId ?? '', targetUserId: widget.userId);
         _showSnackBar('✅ Du folgst jetzt diesem Nutzer', Colors.green);
       } else {
-        await _api.unfollowUser(currentUserId: currentUserId ?? '', targetUserId: widget.userId);
+        await _api.unfollowUser(
+            currentUserId: currentUserId ?? '', targetUserId: widget.userId);
         _showSnackBar('❌ Du folgst diesem Nutzer nicht mehr', Colors.orange);
       }
     } catch (e) {
@@ -102,7 +106,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       _showSnackBar('❌ Fehler beim Aktualisieren', Colors.red);
     }
   }
-  
+
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -112,26 +116,26 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       ),
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
         extendBodyBehindAppBar: true,
-      backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: const Color(0xFF0A0A0A),
         appBar: WBGlassAppBar(
-        world: WBWorld.neutral,
-        title: 'Profil',
-      ),
+          world: WBWorld.neutral,
+          title: 'Profil',
+        ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     final username = _profileData?['username'] ?? 'Unbekannt';
     final bio = _profileData?['bio'] ?? '';
     final avatarUrl = _profileData?['avatar_url'];
     final bannerUrl = _profileData?['banner_url'];
-    
+
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -152,7 +156,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
                       )
                     else
                       _defaultBanner(),
-                    
+
                     // Gradient overlay
                     Container(
                       decoration: BoxDecoration(
@@ -166,7 +170,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
                         ),
                       ),
                     ),
-                    
+
                     // Avatar & basic info
                     Positioned(
                       bottom: 16,
@@ -185,14 +189,15 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
                                       width: 76,
                                       height: 76,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => _defaultAvatar(),
+                                      errorBuilder: (_, __, ___) =>
+                                          _defaultAvatar(),
                                     ),
                                   )
                                 : _defaultAvatar(),
                           ),
-                          
+
                           const SizedBox(width: 16),
-                          
+
                           // Username & stats
                           Expanded(
                             child: Column(
@@ -210,11 +215,14 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    _statChip('${_stats?['posts'] ?? 0}', 'Beiträge'),
+                                    _statChip(
+                                        '${_stats?['posts'] ?? 0}', 'Beiträge'),
                                     const SizedBox(width: 12),
-                                    _statChip('${_stats?['followers'] ?? 0}', 'Follower'),
+                                    _statChip('${_stats?['followers'] ?? 0}',
+                                        'Follower'),
                                     const SizedBox(width: 12),
-                                    _statChip('${_stats?['following'] ?? 0}', 'Folgt'),
+                                    _statChip('${_stats?['following'] ?? 0}',
+                                        'Folgt'),
                                   ],
                                 ),
                               ],
@@ -242,19 +250,23 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
                       bio,
                       style: const TextStyle(fontSize: 16),
                     ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Follow button (if not own profile)
                   if (!widget.isOwnProfile)
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _toggleFollow,
-                        icon: Icon(_isFollowing ? Icons.person_remove : Icons.person_add),
-                        label: Text(_isFollowing ? 'Nicht mehr folgen' : 'Folgen'),
+                        icon: Icon(_isFollowing
+                            ? Icons.person_remove
+                            : Icons.person_add),
+                        label:
+                            Text(_isFollowing ? 'Nicht mehr folgen' : 'Folgen'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _isFollowing ? Colors.grey : Colors.blue,
+                          backgroundColor:
+                              _isFollowing ? Colors.grey : Colors.blue,
                         ),
                       ),
                     )
@@ -273,7 +285,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
                 ],
               ),
             ),
-            
+
             // Tabs
             TabBar(
               controller: _tabController,
@@ -283,7 +295,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
                 Tab(icon: Icon(Icons.collections_bookmark), text: 'Sammlungen'),
               ],
             ),
-            
+
             // Tab views
             Expanded(
               child: TabBarView(
@@ -300,7 +312,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       ),
     );
   }
-  
+
   Widget _defaultBanner() {
     return Container(
       decoration: BoxDecoration(
@@ -312,11 +324,11 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       ),
     );
   }
-  
+
   Widget _defaultAvatar() {
     return Icon(Icons.person, size: 40, color: Colors.grey[400]);
   }
-  
+
   Widget _statChip(String value, String label) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -339,7 +351,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       ],
     );
   }
-  
+
   Widget _buildPostsTab() {
     // Grid of user's posts
     return GridView.builder(
@@ -368,14 +380,14 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       },
     );
   }
-  
+
   Widget _buildActivityTab() {
     if (_activities.isEmpty) {
       return const Center(
         child: Text('Noch keine Aktivitäten'),
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: _activities.length,
@@ -392,14 +404,14 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       },
     );
   }
-  
+
   Widget _buildCollectionsTab() {
     if (_collections.isEmpty) {
       return const Center(
         child: Text('Noch keine Sammlungen'),
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: _collections.length,
@@ -420,7 +432,7 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       },
     );
   }
-  
+
   IconData _getActivityIcon(String? type) {
     switch (type) {
       case 'post':
@@ -435,20 +447,20 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
         return Icons.timeline;
     }
   }
-  
+
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return '';
-    
+
     try {
       final dt = DateTime.parse(timestamp.toString());
       final now = DateTime.now();
       final diff = now.difference(dt);
-      
+
       if (diff.inMinutes < 1) return 'Gerade eben';
       if (diff.inMinutes < 60) return 'vor ${diff.inMinutes}m';
       if (diff.inHours < 24) return 'vor ${diff.inHours}h';
       if (diff.inDays < 7) return 'vor ${diff.inDays}d';
-      
+
       return '${dt.day}.${dt.month}.${dt.year}';
     } catch (e) {
       return '';

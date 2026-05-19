@@ -9,7 +9,7 @@ import '../models/recherche_extended_models.dart';
 /// Features: 16 Analyse-Module inkl. Machtanalyse, Netzwerk, Timeline, Narrativ-Vergleich, Meta-System
 class RechercheService {
   static const String _workerUrl = '${ApiConfig.workerUrl}/recherche';
-  
+
   /// Führt eine Recherche durch
   Future<RechercheResult> recherchieren({
     required String query,
@@ -18,26 +18,29 @@ class RechercheService {
     String language = 'de',
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse(_workerUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'tab_context': 'welt_materie_recherche',
-          'query': query,
-          'depth': depth,
-          'perspectives': perspectives,
-          'language': language,
-        }),
-      ).timeout(
-        const Duration(seconds: 120),
-        onTimeout: () => throw Exception('Recherche-Timeout'),
-      );
-      
+      final response = await http
+          .post(
+            Uri.parse(_workerUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'tab_context': 'welt_materie_recherche',
+              'query': query,
+              'depth': depth,
+              'perspectives': perspectives,
+              'language': language,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 120),
+            onTimeout: () => throw Exception('Recherche-Timeout'),
+          );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return RechercheResult.fromJson(data);
       } else {
-        throw Exception('Recherche fehlgeschlagen: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            'Recherche fehlgeschlagen: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -54,7 +57,7 @@ class RechercheResult {
   final List<RechercheQuelle> quellen;
   final String? faktenZusammenfassung;
   final AlternativeAnalyse? alternativeAnalyse;
-  
+
   // V16.0 Erweiterte Module
   final Machtanalyse? machtanalyse;
   final NetzwerkAnalyse? netzwerk;
@@ -62,7 +65,7 @@ class RechercheResult {
   final NarrativVergleich? narrativVergleich;
   final MetaSystemanalyse? metaSystem;
   final NutzerDisplay? nutzerDisplay;
-  
+
   RechercheResult({
     required this.scraperStatus,
     required this.quellen,
@@ -75,18 +78,19 @@ class RechercheResult {
     this.metaSystem,
     this.nutzerDisplay,
   });
-  
+
   factory RechercheResult.fromJson(Map<String, dynamic> json) {
     return RechercheResult(
       scraperStatus: json['scraper_status'] ?? 'keine_daten',
       quellen: (json['sources'] as List?)
-          ?.map((q) => RechercheQuelle.fromJson(q))
-          .toList() ?? [],
+              ?.map((q) => RechercheQuelle.fromJson(q))
+              .toList() ??
+          [],
       faktenZusammenfassung: json['fakten_zusammenfassung'],
       alternativeAnalyse: json['alternative_analyse'] != null
           ? AlternativeAnalyse.fromJson(json['alternative_analyse'])
           : null,
-      
+
       // V16.0 Module
       machtanalyse: json['machtanalyse'] != null
           ? Machtanalyse.fromJson(json['machtanalyse'])
@@ -108,9 +112,10 @@ class RechercheResult {
           : null,
     );
   }
-  
+
   bool get hatDaten => scraperStatus == 'daten_gefunden' && quellen.isNotEmpty;
-  bool get hatErweiterteAnalyse => machtanalyse != null || netzwerk != null || timeline != null;
+  bool get hatErweiterteAnalyse =>
+      machtanalyse != null || netzwerk != null || timeline != null;
 }
 
 /// Alternative Analyse Model
@@ -119,14 +124,14 @@ class AlternativeAnalyse {
   final List<String> perspektiven;
   final String analyse;
   final String disclaimer;
-  
+
   AlternativeAnalyse({
     required this.kennzeichnung,
     required this.perspektiven,
     required this.analyse,
     required this.disclaimer,
   });
-  
+
   factory AlternativeAnalyse.fromJson(Map<String, dynamic> json) {
     return AlternativeAnalyse(
       kennzeichnung: json['kennzeichnung'] ?? '⚠️ Alternative Analyse',
@@ -145,7 +150,7 @@ class RechercheQuelle {
   final String typ; // "text", "pdf", "video", "audio"
   final String url;
   final String kurzinhalt;
-  
+
   RechercheQuelle({
     required this.titel,
     this.autor,
@@ -154,7 +159,7 @@ class RechercheQuelle {
     required this.url,
     required this.kurzinhalt,
   });
-  
+
   factory RechercheQuelle.fromJson(Map<String, dynamic> json) {
     return RechercheQuelle(
       titel: json['title'] ?? json['titel'] ?? 'Ohne Titel',
@@ -165,7 +170,7 @@ class RechercheQuelle {
       kurzinhalt: json['description'] ?? json['kurzinhalt'] ?? '',
     );
   }
-  
+
   /// Icon basierend auf Typ
   String get typeIcon {
     switch (typ.toLowerCase()) {
@@ -179,7 +184,7 @@ class RechercheQuelle {
         return '📝';
     }
   }
-  
+
   /// Farbe basierend auf Typ
   int get typeColor {
     switch (typ.toLowerCase()) {

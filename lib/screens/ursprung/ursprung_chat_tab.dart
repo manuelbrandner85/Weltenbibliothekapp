@@ -32,7 +32,8 @@ class _UrsprungChatTabState extends State<UrsprungChatTab> {
   RealtimeChannel? _channel;
 
   String get _username =>
-      _client.auth.currentUser?.userMetadata?['username']?.toString() ?? 'Anonym';
+      _client.auth.currentUser?.userMetadata?['username']?.toString() ??
+      'Anonym';
   String? get _userId => _client.auth.currentUser?.id;
 
   @override
@@ -150,7 +151,8 @@ class _UrsprungChatTabState extends State<UrsprungChatTab> {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: selected ? _cyan : _cyan.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -184,12 +186,14 @@ class _UrsprungChatTabState extends State<UrsprungChatTab> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.chat_bubble_outline, size: 48, color: _cyan.withValues(alpha: 0.3)),
+            Icon(Icons.chat_bubble_outline,
+                size: 48, color: _cyan.withValues(alpha: 0.3)),
             const SizedBox(height: 12),
             Text(
               'Noch keine Nachrichten.\nSei der Erste!',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5), fontSize: 14),
             ),
           ],
         ),
@@ -217,7 +221,8 @@ class _UrsprungChatTabState extends State<UrsprungChatTab> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isOwn) ...[
@@ -233,8 +238,8 @@ class _UrsprungChatTabState extends State<UrsprungChatTab> {
           ],
           Flexible(
             child: Container(
-              constraints:
-                  BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+              constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.7),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isOwn ? _cyan : _surfaceCard,
@@ -252,7 +257,9 @@ class _UrsprungChatTabState extends State<UrsprungChatTab> {
                     Text(
                       name,
                       style: const TextStyle(
-                          color: _cyan, fontSize: 11, fontWeight: FontWeight.w700),
+                          color: _cyan,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700),
                     ),
                   Text(
                     content,
@@ -300,7 +307,8 @@ class _UrsprungChatTabState extends State<UrsprungChatTab> {
               onSubmitted: (_) => _sendMessage(),
               decoration: InputDecoration(
                 hintText: 'Nachricht schreiben...',
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                hintStyle:
+                    TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                 filled: true,
                 fillColor: _surfaceCard,
                 border: OutlineInputBorder(

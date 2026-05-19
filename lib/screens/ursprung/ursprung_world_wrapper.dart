@@ -67,13 +67,13 @@ class _UrsprungWorldWrapperState extends State<UrsprungWorldWrapper> {
       return Scaffold(
         backgroundColor: const Color(0xFF050510),
         appBar: WBGlassAppBar(
-        world: WBWorld.ursprung,
-        title: 'URSPRUNG',
-        leading: IconButton(
+          world: WBWorld.ursprung,
+          title: 'URSPRUNG',
+          leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Color(0xFF00D4AA)),
             onPressed: () => Navigator.of(context).pop(),
           ),
-      ),
+        ),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

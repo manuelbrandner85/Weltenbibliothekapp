@@ -10,7 +10,7 @@ class HoverGlowCard extends StatefulWidget {
   final EdgeInsets? padding;
   final BorderRadius? borderRadius;
   final VoidCallback? onTap;
-  
+
   const HoverGlowCard({
     super.key,
     required this.child,
@@ -20,14 +20,14 @@ class HoverGlowCard extends StatefulWidget {
     this.borderRadius,
     this.onTap,
   });
-  
+
   @override
   State<HoverGlowCard> createState() => _HoverGlowCardState();
 }
 
 class _HoverGlowCardState extends State<HoverGlowCard> {
   bool _isHovering = false;
-  
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -70,7 +70,7 @@ class RippleEffectButton extends StatefulWidget {
   final VoidCallback? onTap;
   final Color rippleColor;
   final Duration duration;
-  
+
   const RippleEffectButton({
     super.key,
     required this.child,
@@ -78,15 +78,16 @@ class RippleEffectButton extends StatefulWidget {
     this.rippleColor = Colors.white,
     this.duration = const Duration(milliseconds: 600),
   });
-  
+
   @override
   State<RippleEffectButton> createState() => _RippleEffectButtonState();
 }
 
-class _RippleEffectButtonState extends State<RippleEffectButton> with SingleTickerProviderStateMixin {
+class _RippleEffectButtonState extends State<RippleEffectButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   Offset? _tapPosition;
-  
+
   @override
   void initState() {
     super.initState();
@@ -95,13 +96,13 @@ class _RippleEffectButtonState extends State<RippleEffectButton> with SingleTick
       vsync: this,
     );
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   void _handleTap(TapDownDetails details) {
     setState(() {
       _tapPosition = details.localPosition;
@@ -110,7 +111,7 @@ class _RippleEffectButtonState extends State<RippleEffectButton> with SingleTick
     HapticFeedback.lightImpact();
     widget.onTap?.call();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -131,28 +132,29 @@ class _RipplePainter extends CustomPainter {
   final Animation<double> animation;
   final Offset? tapPosition;
   final Color color;
-  
+
   _RipplePainter({
     required this.animation,
     required this.tapPosition,
     required this.color,
   }) : super(repaint: animation);
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     if (tapPosition == null) return;
-    
-    final maxRadius = math.sqrt(size.width * size.width + size.height * size.height);
+
+    final maxRadius =
+        math.sqrt(size.width * size.width + size.height * size.height);
     final radius = maxRadius * animation.value;
     final opacity = (1 - animation.value).clamp(0.0, 1.0);
-    
+
     final paint = Paint()
       ..color = color.withValues(alpha: opacity * 0.3)
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawCircle(tapPosition!, radius, paint);
   }
-  
+
   @override
   bool shouldRepaint(_RipplePainter oldDelegate) => true;
 }
@@ -163,7 +165,7 @@ class ShimmerEffect extends StatefulWidget {
   final Color baseColor;
   final Color highlightColor;
   final Duration duration;
-  
+
   const ShimmerEffect({
     super.key,
     required this.child,
@@ -171,14 +173,15 @@ class ShimmerEffect extends StatefulWidget {
     this.highlightColor = const Color(0xFF2A2A2A),
     this.duration = const Duration(milliseconds: 1500),
   });
-  
+
   @override
   State<ShimmerEffect> createState() => _ShimmerEffectState();
 }
 
-class _ShimmerEffectState extends State<ShimmerEffect> with SingleTickerProviderStateMixin {
+class _ShimmerEffectState extends State<ShimmerEffect>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  
+
   @override
   void initState() {
     super.initState();
@@ -187,13 +190,13 @@ class _ShimmerEffectState extends State<ShimmerEffect> with SingleTickerProvider
       vsync: this,
     )..repeat();
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -229,21 +232,22 @@ class WaveAnimation extends StatefulWidget {
   final Widget child;
   final Duration duration;
   final double waveHeight;
-  
+
   const WaveAnimation({
     super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 2000),
     this.waveHeight = 10,
   });
-  
+
   @override
   State<WaveAnimation> createState() => _WaveAnimationState();
 }
 
-class _WaveAnimationState extends State<WaveAnimation> with SingleTickerProviderStateMixin {
+class _WaveAnimationState extends State<WaveAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  
+
   @override
   void initState() {
     super.initState();
@@ -252,13 +256,13 @@ class _WaveAnimationState extends State<WaveAnimation> with SingleTickerProvider
       vsync: this,
     )..repeat();
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -283,7 +287,7 @@ class ParticleEffect extends StatefulWidget {
   final Widget child;
   final Color particleColor;
   final int particleCount;
-  
+
   const ParticleEffect({
     super.key,
     required this.trigger,
@@ -291,15 +295,16 @@ class ParticleEffect extends StatefulWidget {
     this.particleColor = Colors.yellow,
     this.particleCount = 20,
   });
-  
+
   @override
   State<ParticleEffect> createState() => _ParticleEffectState();
 }
 
-class _ParticleEffectState extends State<ParticleEffect> with SingleTickerProviderStateMixin {
+class _ParticleEffectState extends State<ParticleEffect>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<Particle> _particles = [];
-  
+
   @override
   void initState() {
     super.initState();
@@ -309,14 +314,14 @@ class _ParticleEffectState extends State<ParticleEffect> with SingleTickerProvid
     );
     _initParticles();
   }
-  
+
   void _initParticles() {
     _particles.clear();
     for (int i = 0; i < widget.particleCount; i++) {
       _particles.add(Particle());
     }
   }
-  
+
   @override
   void didUpdateWidget(ParticleEffect oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -325,13 +330,13 @@ class _ParticleEffectState extends State<ParticleEffect> with SingleTickerProvid
       HapticFeedback.mediumImpact();
     }
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -367,32 +372,32 @@ class _ParticlePainter extends CustomPainter {
   final List<Particle> particles;
   final Animation<double> animation;
   final Color color;
-  
+
   _ParticlePainter({
     required this.particles,
     required this.animation,
     required this.color,
   }) : super(repaint: animation);
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     final centerX = size.width / 2;
     final centerY = size.height / 2;
-    
+
     for (final particle in particles) {
       final distance = particle.speed * animation.value;
       final x = centerX + math.cos(particle.angle) * distance;
       final y = centerY + math.sin(particle.angle) * distance;
       final opacity = (1 - animation.value).clamp(0.0, 1.0);
-      
+
       final paint = Paint()
         ..color = color.withValues(alpha: opacity)
         ..style = PaintingStyle.fill;
-      
+
       canvas.drawCircle(Offset(x, y), particle.size, paint);
     }
   }
-  
+
   @override
   bool shouldRepaint(_ParticlePainter oldDelegate) => true;
 }
@@ -402,22 +407,23 @@ class FlipCardAnimation extends StatefulWidget {
   final Widget front;
   final Widget back;
   final Duration duration;
-  
+
   const FlipCardAnimation({
     super.key,
     required this.front,
     required this.back,
     this.duration = const Duration(milliseconds: 600),
   });
-  
+
   @override
   State<FlipCardAnimation> createState() => _FlipCardAnimationState();
 }
 
-class _FlipCardAnimationState extends State<FlipCardAnimation> with SingleTickerProviderStateMixin {
+class _FlipCardAnimationState extends State<FlipCardAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool _showFront = true;
-  
+
   @override
   void initState() {
     super.initState();
@@ -426,16 +432,16 @@ class _FlipCardAnimationState extends State<FlipCardAnimation> with SingleTicker
       vsync: this,
     );
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   void flip() {
     if (_controller.isAnimating) return;
-    
+
     HapticFeedback.selectionClick();
     if (_showFront) {
       _controller.forward();
@@ -444,7 +450,7 @@ class _FlipCardAnimationState extends State<FlipCardAnimation> with SingleTicker
     }
     setState(() => _showFront = !_showFront);
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -456,15 +462,17 @@ class _FlipCardAnimationState extends State<FlipCardAnimation> with SingleTicker
           final transform = Matrix4.identity()
             ..setEntry(3, 2, 0.001)
             ..rotateY(angle);
-          
+
           return Transform(
             transform: transform,
             alignment: Alignment.center,
-            child: angle < math.pi / 2 ? widget.front : Transform(
-              transform: Matrix4.identity()..rotateY(math.pi),
-              alignment: Alignment.center,
-              child: widget.back,
-            ),
+            child: angle < math.pi / 2
+                ? widget.front
+                : Transform(
+                    transform: Matrix4.identity()..rotateY(math.pi),
+                    alignment: Alignment.center,
+                    child: widget.back,
+                  ),
           );
         },
       ),
@@ -478,7 +486,7 @@ class RainbowBorderAnimation extends StatefulWidget {
   final double borderWidth;
   final Duration duration;
   final BorderRadius? borderRadius;
-  
+
   const RainbowBorderAnimation({
     super.key,
     required this.child,
@@ -486,14 +494,15 @@ class RainbowBorderAnimation extends StatefulWidget {
     this.duration = const Duration(seconds: 3),
     this.borderRadius,
   });
-  
+
   @override
   State<RainbowBorderAnimation> createState() => _RainbowBorderAnimationState();
 }
 
-class _RainbowBorderAnimationState extends State<RainbowBorderAnimation> with SingleTickerProviderStateMixin {
+class _RainbowBorderAnimationState extends State<RainbowBorderAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  
+
   @override
   void initState() {
     super.initState();
@@ -502,13 +511,13 @@ class _RainbowBorderAnimationState extends State<RainbowBorderAnimation> with Si
       vsync: this,
     )..repeat();
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -542,7 +551,7 @@ class ProgressRingAnimation extends StatelessWidget {
   final double strokeWidth;
   final Color color;
   final Color backgroundColor;
-  
+
   const ProgressRingAnimation({
     super.key,
     required this.progress,
@@ -551,7 +560,7 @@ class ProgressRingAnimation extends StatelessWidget {
     this.color = Colors.blue,
     this.backgroundColor = Colors.grey,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
@@ -578,35 +587,35 @@ class _ProgressRingPainter extends CustomPainter {
   final double strokeWidth;
   final Color color;
   final Color backgroundColor;
-  
+
   _ProgressRingPainter({
     required this.progress,
     required this.strokeWidth,
     required this.color,
     required this.backgroundColor,
   });
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
-    
+
     // Background circle
     final bgPaint = Paint()
       ..color = backgroundColor.withValues(alpha: 0.3)
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawCircle(center, radius, bgPaint);
-    
+
     // Progress arc
     final progressPaint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -math.pi / 2,
@@ -615,7 +624,7 @@ class _ProgressRingPainter extends CustomPainter {
       progressPaint,
     );
   }
-  
+
   @override
   bool shouldRepaint(_ProgressRingPainter oldDelegate) {
     return oldDelegate.progress != progress;

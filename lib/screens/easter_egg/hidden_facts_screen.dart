@@ -35,6 +35,7 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFFFFA726); // Hidden-Facts Orange
   static const Color _gold = Color(0xFFFFD700);
 
@@ -262,7 +263,9 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
               color: accent,
               fontSize: 22,
               fontWeight: FontWeight.w900,
-              shadows: [Shadow(color: accent.withValues(alpha: 0.5), blurRadius: 8)],
+              shadows: [
+                Shadow(color: accent.withValues(alpha: 0.5), blurRadius: 8)
+              ],
             )),
         Text(label,
             style: TextStyle(
@@ -275,7 +278,11 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
   }
 
   Widget _buildFilterChips() {
-    final cats = ['Alle', '★ Favoriten', ..._categories.where((c) => c != 'Alle')];
+    final cats = [
+      'Alle',
+      '★ Favoriten',
+      ..._categories.where((c) => c != 'Alle')
+    ];
     return SizedBox(
       height: 36,
       child: ListView.separated(
@@ -297,7 +304,9 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
                     : Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: selected ? _primary : Colors.white.withValues(alpha: 0.12),
+                  color: selected
+                      ? _primary
+                      : Colors.white.withValues(alpha: 0.12),
                 ),
               ),
               child: Text(
@@ -323,7 +332,9 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
           Text('📭',
               style: TextStyle(
                 fontSize: 80,
-                shadows: [Shadow(color: _primary.withValues(alpha: 0.4), blurRadius: 16)],
+                shadows: [
+                  Shadow(color: _primary.withValues(alpha: 0.4), blurRadius: 16)
+                ],
               )),
           const SizedBox(height: 12),
           Text(
@@ -337,7 +348,8 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
             _filter == '★ Favoriten'
                 ? 'Tippe das ★ Icon auf einer Karte um sie zu speichern'
                 : '',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
             textAlign: TextAlign.center,
           ),
         ],
@@ -396,7 +408,8 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: _primary.withValues(alpha: 0.25),
                                 borderRadius: BorderRadius.circular(12),
@@ -427,7 +440,12 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
                                   color: isFav ? _gold : Colors.white70,
                                   size: 24,
                                   shadows: isFav
-                                      ? [Shadow(color: _gold.withValues(alpha: 0.6), blurRadius: 8)]
+                                      ? [
+                                          Shadow(
+                                              color:
+                                                  _gold.withValues(alpha: 0.6),
+                                              blurRadius: 8)
+                                        ]
                                       : null,
                                 ),
                               ),
@@ -510,14 +528,18 @@ class _HfOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas,
+    _draw(
+        canvas,
         Offset(size.width * 0.2,
             size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.04)),
-        110, const Color(0xFFFFA726));
-    _draw(canvas,
+        110,
+        const Color(0xFFFFA726));
+    _draw(
+        canvas,
         Offset(size.width * 0.85,
             size.height * (0.6 + math.cos(t * 2 * math.pi) * 0.04)),
-        100, const Color(0xFFFFD700));
+        100,
+        const Color(0xFFFFD700));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

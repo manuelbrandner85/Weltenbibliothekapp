@@ -275,9 +275,8 @@ class _HealthDiagnosisDialogState extends State<HealthDiagnosisDialog>
 
   Widget _icon(HealthFixAction action) {
     final glyph = _glyphFor(action);
-    final color = action == HealthFixAction.allOk
-        ? const Color(0xFF66BB6A)
-        : _accentSoft;
+    final color =
+        action == HealthFixAction.allOk ? const Color(0xFF66BB6A) : _accentSoft;
     return Container(
       width: 88,
       height: 88,

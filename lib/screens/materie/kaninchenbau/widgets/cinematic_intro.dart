@@ -212,9 +212,8 @@ class _CinematicIntroState extends State<CinematicIntro>
                       ),
                     // 5. Portal-Center: Glow-Ring oder Suchfeld
                     Center(
-                      child: _ready
-                          ? _buildPrompt(portal)
-                          : _buildPortalRing(p),
+                      child:
+                          _ready ? _buildPrompt(portal) : _buildPortalRing(p),
                     ),
                     // Close-Button
                     if (_ready && collapse < 0.05)
@@ -237,8 +236,8 @@ class _CinematicIntroState extends State<CinematicIntro>
                             TextButton.icon(
                               onPressed: () {
                                 HapticFeedback.lightImpact();
-                                Navigator.of(context).pushNamed(
-                                    '/research-hub');
+                                Navigator.of(context)
+                                    .pushNamed('/research-hub');
                               },
                               icon: Icon(Icons.science_outlined,
                                   size: 16, color: KbDesign.goldAccent),
@@ -358,8 +357,7 @@ class _CinematicIntroState extends State<CinematicIntro>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.auto_awesome,
-                  size: 14, color: KbDesign.goldAccent),
+              Icon(Icons.auto_awesome, size: 14, color: KbDesign.goldAccent),
               const SizedBox(width: 6),
               Text(
                 'VIRGIL',
@@ -393,8 +391,8 @@ class _CinematicIntroState extends State<CinematicIntro>
                       TextSpan(
                         text: '▍',
                         style: TextStyle(
-                          color: KbDesign.neonRedSoft.withValues(
-                              alpha: portalT > 0.5 ? 1.0 : 0.2),
+                          color: KbDesign.neonRedSoft
+                              .withValues(alpha: portalT > 0.5 ? 1.0 : 0.2),
                         ),
                       ),
                   ],
@@ -447,8 +445,8 @@ class _CinematicIntroState extends State<CinematicIntro>
                         color: const Color(0xFFFF5060),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFF5060)
-                                .withValues(alpha: 0.7),
+                            color:
+                                const Color(0xFFFF5060).withValues(alpha: 0.7),
                             blurRadius: 8,
                           ),
                         ],
@@ -646,17 +644,19 @@ class _CinematicIntroState extends State<CinematicIntro>
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           childAspectRatio: 2.8,
-          children: _osintTools.map((t) => _OsintToolTile(
-            icon: t.icon,
-            title: t.title,
-            subtitle: t.subtitle,
-            accentColor: t.color,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => t.screenBuilder()));
-            },
-          )).toList(),
+          children: _osintTools
+              .map((t) => _OsintToolTile(
+                    icon: t.icon,
+                    title: t.title,
+                    subtitle: t.subtitle,
+                    accentColor: t.color,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => t.screenBuilder()));
+                    },
+                  ))
+              .toList(),
         ),
       ],
     );
@@ -692,7 +692,10 @@ class _OsintToolTileState extends State<_OsintToolTile> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
@@ -708,7 +711,11 @@ class _OsintToolTileState extends State<_OsintToolTile> {
             width: 1.2,
           ),
           boxShadow: _pressed
-              ? [BoxShadow(color: widget.accentColor.withValues(alpha: 0.2), blurRadius: 12)]
+              ? [
+                  BoxShadow(
+                      color: widget.accentColor.withValues(alpha: 0.2),
+                      blurRadius: 12)
+                ]
               : [],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -775,8 +782,7 @@ class _SuggestionChipState extends State<_SuggestionChip> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: _hover
@@ -962,9 +968,7 @@ class _TunnelPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TunnelPainter old) =>
-      old.progress != progress ||
-      old.time != time ||
-      old.collapse != collapse;
+      old.progress != progress || old.time != time || old.collapse != collapse;
 }
 
 class _SparksPainter extends CustomPainter {
@@ -987,8 +991,7 @@ class _SparksPainter extends CustomPainter {
       final dx = center.dx + math.cos(angle) * dist;
       final dy = center.dy + math.sin(angle) * dist;
       final fade = (1.0 - t) * progress;
-      final color =
-          rng.nextBool() ? KbDesign.neonRedSoft : KbDesign.goldAccent;
+      final color = rng.nextBool() ? KbDesign.neonRedSoft : KbDesign.goldAccent;
       paint.color = color.withValues(alpha: fade * 0.8);
       canvas.drawCircle(Offset(dx, dy), 1.4, paint);
     }

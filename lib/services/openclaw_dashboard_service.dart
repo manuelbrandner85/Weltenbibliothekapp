@@ -17,26 +17,30 @@ import 'cloudflare_api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OpenClawDashboardService {
-  static final OpenClawDashboardService _instance = OpenClawDashboardService._internal();
+  static final OpenClawDashboardService _instance =
+      OpenClawDashboardService._internal();
   factory OpenClawDashboardService() => _instance;
   OpenClawDashboardService._internal();
 
   final CloudflareApiService _cloudflare = CloudflareApiService();
   bool _openClawAvailable = false;
   Timer? _liveUpdateTimer;
-  
+
   final StreamController<Map<String, dynamic>> _dashboardStreamController =
       StreamController<Map<String, dynamic>>.broadcast();
-  
-  Stream<Map<String, dynamic>> get dashboardStream => _dashboardStreamController.stream;
+
+  Stream<Map<String, dynamic>> get dashboardStream =>
+      _dashboardStreamController.stream;
 
   /// Health Check
   Future<bool> checkHealth() async {
     try {
-      final response = await http.get(
-        Uri.parse('${ApiConfig.openClawGatewayUrl}/health'),
-      ).timeout(const Duration(seconds: 3));
-      
+      final response = await http
+          .get(
+            Uri.parse('${ApiConfig.openClawGatewayUrl}/health'),
+          )
+          .timeout(const Duration(seconds: 3));
+
       _openClawAvailable = response.statusCode == 200;
       return _openClawAvailable;
     } catch (e) {
@@ -76,7 +80,8 @@ class OpenClawDashboardService {
           };
         }).toList();
       } catch (e) {
-        if (kDebugMode) debugPrint('⚠️ [Dashboard] Supabase notifications error: $e');
+        if (kDebugMode)
+          debugPrint('⚠️ [Dashboard] Supabase notifications error: $e');
       }
     }
     // Fallback: neueste Artikel als Info-Notifications
@@ -121,18 +126,20 @@ class OpenClawDashboardService {
   }) async {
     try {
       if (_openClawAvailable) {
-        final response = await http.post(
-          Uri.parse('${ApiConfig.openClawGatewayUrl}/api/trending'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${ApiConfig.openClawGatewayToken}',
-          },
-          body: jsonEncode({
-            'realm': realm,
-            'limit': limit,
-            'timeframe': '24h',
-          }),
-        ).timeout(const Duration(seconds: 10));
+        final response = await http
+            .post(
+              Uri.parse('${ApiConfig.openClawGatewayUrl}/api/trending'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${ApiConfig.openClawGatewayToken}',
+              },
+              body: jsonEncode({
+                'realm': realm,
+                'limit': limit,
+                'timeframe': '24h',
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -156,12 +163,15 @@ class OpenClawDashboardService {
       // Echtes Trending: Artikel sortiert nach Engagement (likes + views + comments)
       final supabase = Supabase.instance.client;
       final now = DateTime.now();
-      final since24h = now.subtract(const Duration(hours: 24)).toIso8601String(); // ignore: unused_local_variable
+      final since24h = now
+          .subtract(const Duration(hours: 24))
+          .toIso8601String(); // ignore: unused_local_variable
 
       // Artikel der letzten 7 Tage, sortiert nach Engagement-Score
       final articles = await supabase
           .from('articles')
-          .select('id, title, category, like_count, view_count, comments_count, created_at')
+          .select(
+              'id, title, category, like_count, view_count, comments_count, created_at')
           .eq('world', realm)
           .eq('is_published', true)
           .order('created_at', ascending: false)
@@ -193,7 +203,8 @@ class OpenClawDashboardService {
       }).toList();
 
       // Sortiere nach Score (höchster zuerst)
-      scored.sort((a, b) => (b['mentions'] as int).compareTo(a['mentions'] as int));
+      scored.sort(
+          (a, b) => (b['mentions'] as int).compareTo(a['mentions'] as int));
 
       return scored.take(limit).toList();
     } catch (e) {
@@ -208,7 +219,7 @@ class OpenClawDashboardService {
     Duration interval = const Duration(minutes: 5),
   }) {
     _liveUpdateTimer?.cancel();
-    
+
     _liveUpdateTimer = Timer.periodic(interval, (timer) async {
       try {
         final notifications = await getNotifications(
@@ -239,7 +250,8 @@ class OpenClawDashboardService {
     });
 
     if (kDebugMode) {
-      debugPrint('✅ [Dashboard] Live updates started (every ${interval.inMinutes}min)');
+      debugPrint(
+          '✅ [Dashboard] Live updates started (every ${interval.inMinutes}min)');
     }
   }
 
@@ -257,17 +269,19 @@ class OpenClawDashboardService {
   }) async {
     try {
       if (_openClawAvailable) {
-        final response = await http.post(
-          Uri.parse('${ApiConfig.openClawGatewayUrl}/api/statistics'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${ApiConfig.openClawGatewayToken}',
-          },
-          body: jsonEncode({
-            'userId': userId,
-            'realm': realm,
-          }),
-        ).timeout(const Duration(seconds: 10));
+        final response = await http
+            .post(
+              Uri.parse('${ApiConfig.openClawGatewayUrl}/api/statistics'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${ApiConfig.openClawGatewayToken}',
+              },
+              body: jsonEncode({
+                'userId': userId,
+                'realm': realm,
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -283,11 +297,13 @@ class OpenClawDashboardService {
     }
   }
 
-  Future<Map<String, dynamic>> _getStatisticsFromCloudflare(String realm) async {
+  Future<Map<String, dynamic>> _getStatisticsFromCloudflare(
+      String realm) async {
     try {
       final supabase = Supabase.instance.client;
       final now = DateTime.now();
-      final todayStart = DateTime(now.year, now.month, now.day).toIso8601String();
+      final todayStart =
+          DateTime(now.year, now.month, now.day).toIso8601String();
 
       // Parallel queries für Performance
       final results = await Future.wait([
@@ -298,10 +314,7 @@ class OpenClawDashboardService {
             .eq('world', realm)
             .eq('is_published', true),
         // Chat-Nachrichten (aktive Sitzungen)
-        supabase
-            .from('chat_messages')
-            .select('id')
-            .eq('is_deleted', false),
+        supabase.from('chat_messages').select('id').eq('is_deleted', false),
         // Aktive User (heute eingeloggt via profiles updated_at)
         supabase
             .from('profiles')
@@ -309,15 +322,12 @@ class OpenClawDashboardService {
             .eq('world', realm)
             .gte('updated_at', todayStart),
         // Bookmarks total
-        supabase
-            .from('bookmarks')
-            .select('id'),
+        supabase.from('bookmarks').select('id'),
         // Likes total
-        supabase
-            .from('likes')
-            .select('id'),
+        supabase.from('likes').select('id'),
         // ignore: invalid_return_type_for_catch_error
-      ], eagerError: false).catchError((_) => [[], [], [], [], []]);
+      ], eagerError: false)
+          .catchError((_) => [[], [], [], [], []]);
 
       final articles = (results[0] as List?) ?? [];
       final chatMessages = (results[1] as List?) ?? [];
@@ -342,7 +352,8 @@ class OpenClawDashboardService {
     } catch (e) {
       // Fallback: Artikel via Cloudflare API
       try {
-        final articles = await _cloudflare.getArticles(realm: realm, limit: 100);
+        final articles =
+            await _cloudflare.getArticles(realm: realm, limit: 100);
         return {
           'totalArticles': articles.length,
           'researchSessions': 0,
@@ -370,17 +381,19 @@ class OpenClawDashboardService {
 
     try {
       if (_openClawAvailable) {
-        final response = await http.post(
-          Uri.parse('${ApiConfig.openClawGatewayUrl}/api/admin/check'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${ApiConfig.openClawGatewayToken}',
-          },
-          body: jsonEncode({
-            'userId': userId,
-            'realm': realm,
-          }),
-        ).timeout(const Duration(seconds: 5));
+        final response = await http
+            .post(
+              Uri.parse('${ApiConfig.openClawGatewayUrl}/api/admin/check'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${ApiConfig.openClawGatewayToken}',
+              },
+              body: jsonEncode({
+                'userId': userId,
+                'realm': realm,
+              }),
+            )
+            .timeout(const Duration(seconds: 5));
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);

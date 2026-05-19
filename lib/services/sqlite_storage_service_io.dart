@@ -140,7 +140,8 @@ class SqliteStorageService {
   /// wenn nur ein Bereich (z.B. Profile-Box nach Backend-Sync) refreshed werden soll.
   Future<void> refreshBox(String box) async {
     if (_db == null) return;
-    final rows = await _db!.query('kv_store', where: 'box = ?', whereArgs: [box]);
+    final rows =
+        await _db!.query('kv_store', where: 'box = ?', whereArgs: [box]);
     _cache.removeWhere((k, _) => k.startsWith('$box\x00'));
     for (final r in rows) {
       final raw = r['value'] as String?;

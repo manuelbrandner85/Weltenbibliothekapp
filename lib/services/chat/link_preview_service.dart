@@ -85,7 +85,8 @@ class LinkPreviewService {
           ? res.body.substring(0, _maxBytes)
           : res.body;
 
-      final preview = _parse(url: url, html: body, finalUri: res.request?.url ?? uri);
+      final preview =
+          _parse(url: url, html: body, finalUri: res.request?.url ?? uri);
       _cache[url] = preview;
       return preview;
     } catch (e) {
@@ -165,9 +166,9 @@ class LinkPreviewService {
   }
 
   String? _titleTag(String head) {
-    final m = RegExp(r'<title[^>]*>(.*?)</title>',
-            caseSensitive: false, dotAll: true)
-        .firstMatch(head);
+    final m =
+        RegExp(r'<title[^>]*>(.*?)</title>', caseSensitive: false, dotAll: true)
+            .firstMatch(head);
     return m?.group(1);
   }
 

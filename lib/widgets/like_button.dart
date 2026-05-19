@@ -91,7 +91,7 @@ class _LikeButtonState extends State<LikeButton>
 
   Future<void> _handleLikeTap() async {
     if (_isProcessing) return;
-    
+
     // ✨ Haptic Feedback
     HapticFeedback.lightImpact();
 
@@ -157,8 +157,8 @@ class _LikeButtonState extends State<LikeButton>
               : EnhancedAppThemes.darkSurface.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: _isLiked 
-                ? EnhancedAppThemes.energiePrimary 
+            color: _isLiked
+                ? EnhancedAppThemes.energiePrimary
                 : Colors.grey.shade700,
             width: 1.5,
           ),
@@ -171,26 +171,26 @@ class _LikeButtonState extends State<LikeButton>
               scale: _scaleAnimation,
               child: Icon(
                 _isLiked ? Icons.favorite : Icons.favorite_border,
-                color: _isLiked 
-                    ? EnhancedAppThemes.energiePrimary 
+                color: _isLiked
+                    ? EnhancedAppThemes.energiePrimary
                     : Colors.grey.shade400,
                 size: 20,
               ),
             ),
             const SizedBox(width: 6),
-            
+
             // Like Count
             Text(
               _formatLikeCount(_likeCount),
               style: TextStyle(
-                color: _isLiked 
-                    ? EnhancedAppThemes.energiePrimary 
+                color: _isLiked
+                    ? EnhancedAppThemes.energiePrimary
                     : Colors.grey.shade300,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            
+
             // Processing indicator
             if (_isProcessing) ...[
               const SizedBox(width: 6),

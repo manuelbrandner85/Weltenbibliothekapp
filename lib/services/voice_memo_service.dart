@@ -56,12 +56,14 @@ class VoiceMemoService {
       final streamed = await req.send().timeout(const Duration(seconds: 30));
       final res = await http.Response.fromStream(streamed);
       if (res.statusCode != 200) {
-        return VoiceMemoUploadResult(ok: false, error: 'HTTP ${res.statusCode}');
+        return VoiceMemoUploadResult(
+            ok: false, error: 'HTTP ${res.statusCode}');
       }
       final body = jsonDecode(res.body) as Map<String, dynamic>;
       final url = body['url'] as String?;
       if (url == null) {
-        return const VoiceMemoUploadResult(ok: false, error: 'Keine URL zurück');
+        return const VoiceMemoUploadResult(
+            ok: false, error: 'Keine URL zurück');
       }
       return VoiceMemoUploadResult(ok: true, url: url);
     } catch (e) {

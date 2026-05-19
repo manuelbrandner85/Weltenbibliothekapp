@@ -41,9 +41,11 @@ class _CrystalCombinerScreenState extends State<CrystalCombinerScreen> {
   List<CrystalEntry> get _filtered {
     final q = _search.trim().toLowerCase();
     if (q.isEmpty) return crystalLibrary;
-    return crystalLibrary.where((c) =>
-        c.name.toLowerCase().contains(q) ||
-        c.tags.any((t) => t.toLowerCase().contains(q))).toList();
+    return crystalLibrary
+        .where((c) =>
+            c.name.toLowerCase().contains(q) ||
+            c.tags.any((t) => t.toLowerCase().contains(q)))
+        .toList();
   }
 
   // Analysiert die Synergie zwischen zwei Kristallen.
@@ -278,7 +280,8 @@ class _CrystalCombinerScreenState extends State<CrystalCombinerScreen> {
                         letterSpacing: 1)),
                 const SizedBox(height: 6),
                 Wrap(
-                  spacing: 6, runSpacing: 4,
+                  spacing: 6,
+                  runSpacing: 4,
                   children: [
                     ...sharedTags.map(_pill),
                     ...sharedIntentions.map(_pill),
@@ -374,8 +377,9 @@ class _CrystalCombinerScreenState extends State<CrystalCombinerScreen> {
                     ],
                   ),
                 ),
-                if (selected) const Icon(Icons.check_rounded,
-                    color: Color(0xFFCE93D8), size: 18),
+                if (selected)
+                  const Icon(Icons.check_rounded,
+                      color: Color(0xFFCE93D8), size: 18),
               ]),
             ),
           ),

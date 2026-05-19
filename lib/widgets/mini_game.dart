@@ -29,13 +29,13 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
   Timer? _gameTimer;
   Timer? _spawnTimer;
   final List<InvadingParticle> _invaders = [];
-  
+
   @override
   void initState() {
     super.initState();
     _startCountdown();
   }
-  
+
   void _startCountdown() {
     Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_countdown > 1) {
@@ -48,13 +48,13 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
       }
     });
   }
-  
+
   void _startGame() {
     setState(() {
       _gameStarted = true;
       _countdown = 0;
     });
-    
+
     // Spawn invaders every 1.5 seconds
     _spawnTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
       if (!_gameOver) {
@@ -63,41 +63,42 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
         timer.cancel();
       }
     });
-    
+
     // Update invaders position
     _gameTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       if (!_gameOver) {
         setState(() {
           for (var invader in _invaders) {
             invader.update();
-            
+
             // Check if invader reached center (game over condition)
             if (invader.progress >= 1.0 && !invader.destroyed) {
               invader.destroyed = true;
               _lives--;
               HapticService.heavyImpact();
-              
+
               if (_lives <= 0) {
                 _endGame();
               }
             }
           }
-          
+
           // Remove destroyed invaders
-          _invaders.removeWhere((invader) => invader.destroyed && invader.progress >= 1.2);
+          _invaders.removeWhere(
+              (invader) => invader.destroyed && invader.progress >= 1.2);
         });
       } else {
         timer.cancel();
       }
     });
   }
-  
+
   void _spawnInvader() {
     setState(() {
       _invaders.add(InvadingParticle());
     });
   }
-  
+
   void _tapInvader(InvadingParticle invader) {
     if (!invader.destroyed && invader.progress < 1.0) {
       setState(() {
@@ -108,29 +109,29 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
       SoundService.playGameSound('hit');
     }
   }
-  
+
   void _endGame() {
     setState(() {
       _gameOver = true;
     });
     _gameTimer?.cancel();
     _spawnTimer?.cancel();
-    
+
     // Check for achievement
     if (_score >= 100) {
       // Achievement will be unlocked by parent
     }
-    
+
     widget.onGameOver(_score);
   }
-  
+
   @override
   void dispose() {
     _gameTimer?.cancel();
     _spawnTimer?.cancel();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -148,7 +149,7 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
               ),
             ),
           ),
-          
+
           // Countdown
           if (!_gameStarted && _countdown > 0)
             Center(
@@ -180,17 +181,19 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                 ],
               ),
             ),
-          
+
           // Game Area
           if (_gameStarted && !_gameOver)
             ..._invaders.map((invader) {
               final size = MediaQuery.of(context).size;
               final centerX = size.width / 2;
               final centerY = size.height / 2;
-              
-              final x = centerX + (invader.targetX - centerX) * (1 - invader.progress);
-              final y = centerY + (invader.targetY - centerY) * (1 - invader.progress);
-              
+
+              final x = centerX +
+                  (invader.targetX - centerX) * (1 - invader.progress);
+              final y = centerY +
+                  (invader.targetY - centerY) * (1 - invader.progress);
+
               return Positioned(
                 left: x - 20,
                 top: y - 20,
@@ -208,20 +211,23 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                           ? []
                           : [
                               BoxShadow(
-                                color: const Color(0xFFFF5722).withValues(alpha: 0.6),
+                                color: const Color(0xFFFF5722)
+                                    .withValues(alpha: 0.6),
                                 blurRadius: 20,
                                 spreadRadius: 5,
                               ),
                             ],
                     ),
                     child: invader.destroyed
-                        ? const Icon(Icons.close, color: Color(0xFF4CAF50), size: 30)
-                        : const Icon(Icons.dangerous, color: Colors.white, size: 24),
+                        ? const Icon(Icons.close,
+                            color: Color(0xFF4CAF50), size: 30)
+                        : const Icon(Icons.dangerous,
+                            color: Colors.white, size: 24),
                   ),
                 ),
               );
             }),
-          
+
           // Portal Center (target)
           if (_gameStarted)
             Center(
@@ -246,7 +252,7 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                 ),
               ),
             ),
-          
+
           // HUD (Score & Lives)
           if (_gameStarted && !_gameOver)
             SafeArea(
@@ -259,7 +265,8 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                       children: [
                         // Score
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(20),
@@ -276,7 +283,8 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                         ),
                         // Lives
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(20),
@@ -286,7 +294,8 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                             children: [
                               const Text(
                                 'Leben: ',
-                                style: TextStyle(color: Colors.white70, fontSize: 16),
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 16),
                               ),
                               ...List.generate(
                                 _lives,
@@ -305,7 +314,7 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                 ),
               ),
             ),
-          
+
           // Game Over
           if (_gameOver)
             Center(
@@ -336,14 +345,16 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                     if (_score >= 100)
                       const Text(
                         '🏆 Achievement freigeschaltet!',
-                        style: TextStyle(color: Color(0xFF4CAF50), fontSize: 16),
+                        style:
+                            TextStyle(color: Color(0xFF4CAF50), fontSize: 16),
                       ),
                     const SizedBox(height: 30),
                     ElevatedButton(
                       onPressed: widget.onExit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2196F3),
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
                       ),
                       child: const Text(
                         'Zurück zum Portal',
@@ -354,7 +365,7 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
                 ),
               ),
             ),
-          
+
           // Exit Button
           SafeArea(
             child: Align(
@@ -380,12 +391,12 @@ class InvadingParticle {
   late double targetY;
   double progress = 0.0;
   bool destroyed = false;
-  
+
   InvadingParticle() {
     // Random spawn position on screen edge
     final random = math.Random();
     final edge = random.nextInt(4);
-    
+
     switch (edge) {
       case 0: // Top
         targetX = random.nextDouble() * 400;
@@ -405,7 +416,7 @@ class InvadingParticle {
         break;
     }
   }
-  
+
   void update() {
     if (!destroyed) {
       progress += 0.01; // Move towards center

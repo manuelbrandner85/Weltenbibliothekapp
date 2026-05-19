@@ -12,12 +12,12 @@ class FrequencyPlayerService {
   static bool _isPlaying = false;
   static double _currentFrequency = 440.0;
   static double _volume = 0.3; // Default volume (30%)
-  
+
   // Web Audio API context (only for web platform)
   static dynamic _audioContext;
   static dynamic _oscillator;
   static dynamic _gainNode;
-  
+
   static final StreamController<bool> _playStateCtrl =
       StreamController<bool>.broadcast();
 
@@ -40,11 +40,12 @@ class FrequencyPlayerService {
     _currentFrequency = frequency;
     _isPlaying = true;
     _notifyPlayState();
-    
+
     if (kDebugMode) {
-      debugPrint('🎵 Playing REAL frequency: ${frequency.toStringAsFixed(2)} Hz');
+      debugPrint(
+          '🎵 Playing REAL frequency: ${frequency.toStringAsFixed(2)} Hz');
     }
-    
+
     if (kIsWeb) {
       _playWebAudio(frequency, _volume);
     } else {
@@ -62,7 +63,7 @@ class FrequencyPlayerService {
   /// Set volume (0.0 - 1.0)
   static Future<void> setVolume(double volume) async {
     _volume = volume.clamp(0.0, 1.0);
-    
+
     if (kIsWeb && _gainNode != null) {
       try {
         _gainNode.callMethod('gain').setProperty('value', _volume);
@@ -82,36 +83,39 @@ class FrequencyPlayerService {
     try {
       // Stop any existing oscillator
       _stopWebAudio();
-      
+
       // Initialize audio context if needed
       _initWebAudio();
-      
+
       if (_audioContext == null) {
         if (kDebugMode) {
-          debugPrint('⚠️ AudioContext not available, falling back to simulation');
+          debugPrint(
+              '⚠️ AudioContext not available, falling back to simulation');
         }
         _simulatePlayback();
         return;
       }
-      
+
       // Create oscillator (tone generator)
       _oscillator = _audioContext.callMethod('createOscillator', []);
       _oscillator.setProperty('type', 'sine'); // Pure sine wave
       _oscillator.callMethod('frequency').setProperty('value', frequency);
-      
+
       // Create gain node (volume control)
       _gainNode = _audioContext.callMethod('createGain', []);
       _gainNode.callMethod('gain').setProperty('value', volume);
-      
+
       // Connect: Oscillator -> Gain -> Destination (speakers)
       _oscillator.callMethod('connect', [_gainNode]);
-      _gainNode.callMethod('connect', [_audioContext.getProperty('destination')]);
-      
+      _gainNode
+          .callMethod('connect', [_audioContext.getProperty('destination')]);
+
       // Start playing
       _oscillator.callMethod('start', [0]);
-      
+
       if (kDebugMode) {
-        debugPrint('✅ Web Audio: Playing \${frequency}Hz at \${(volume * 100).toInt()}% volume');
+        debugPrint(
+            '✅ Web Audio: Playing \${frequency}Hz at \${(volume * 100).toInt()}% volume');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -142,14 +146,14 @@ class FrequencyPlayerService {
   static Future<void> stop() async {
     _isPlaying = false;
     _notifyPlayState();
-    
+
     if (kIsWeb) {
       _stopWebAudio();
     } else {
       // Android: Stop real audio playback
       await android_audio.FrequencyPlayerServiceAndroid.stop();
     }
-    
+
     if (kDebugMode) {
       debugPrint('⏸️ Stopped playback');
     }
@@ -160,7 +164,7 @@ class FrequencyPlayerService {
 
   /// Get current frequency
   static double get currentFrequency => _currentFrequency;
-  
+
   /// Get current volume
   static double get volume => _volume;
 
@@ -185,65 +189,69 @@ class FrequencyPlayerService {
   static Future<void> playBinaural(double leftFreq, double rightFreq) async {
     if (kDebugMode) {
       final beat = (rightFreq - leftFreq).abs();
-      debugPrint('🎧 Playing binaural: ${leftFreq}Hz (L) + ${rightFreq}Hz (R) = ${beat}Hz beat');
+      debugPrint(
+          '🎧 Playing binaural: ${leftFreq}Hz (L) + ${rightFreq}Hz (R) = ${beat}Hz beat');
     }
-    
+
     if (kIsWeb) {
       _playBinauralWeb(leftFreq, rightFreq, _volume);
     } else {
       // Android: Use real audio synthesis
-      await android_audio.FrequencyPlayerServiceAndroid.playBinaural(leftFreq, rightFreq);
+      await android_audio.FrequencyPlayerServiceAndroid.playBinaural(
+          leftFreq, rightFreq);
     }
   }
 
   /// Real binaural beat playback (Web Audio API with stereo panning)
-  static void _playBinauralWeb(double leftFreq, double rightFreq, double volume) {
+  static void _playBinauralWeb(
+      double leftFreq, double rightFreq, double volume) {
     try {
       _stopWebAudio();
       _initWebAudio();
-      
+
       if (_audioContext == null) return;
-      
+
       // Create two oscillators (one per ear)
       final leftOsc = _audioContext.callMethod('createOscillator', []);
       leftOsc.setProperty('type', 'sine');
       leftOsc.callMethod('frequency').setProperty('value', leftFreq);
-      
+
       final rightOsc = _audioContext.callMethod('createOscillator', []);
       rightOsc.setProperty('type', 'sine');
       rightOsc.callMethod('frequency').setProperty('value', rightFreq);
-      
+
       // Create stereo panner nodes
       final leftPanner = _audioContext.callMethod('createStereoPanner', []);
       leftPanner.setProperty('pan').setProperty('value', -1.0); // Full left
-      
+
       final rightPanner = _audioContext.callMethod('createStereoPanner', []);
       rightPanner.setProperty('pan').setProperty('value', 1.0); // Full right
-      
+
       // Create gain node
       _gainNode = _audioContext.callMethod('createGain', []);
       _gainNode.callMethod('gain').setProperty('value', volume);
-      
+
       // Connect: Left Oscillator -> Left Panner -> Gain -> Destination
       leftOsc.callMethod('connect', [leftPanner]);
       leftPanner.callMethod('connect', [_gainNode]);
-      
+
       // Connect: Right Oscillator -> Right Panner -> Gain -> Destination
       rightOsc.callMethod('connect', [rightPanner]);
       rightPanner.callMethod('connect', [_gainNode]);
-      
-      _gainNode.callMethod('connect', [_audioContext.getProperty('destination')]);
-      
+
+      _gainNode
+          .callMethod('connect', [_audioContext.getProperty('destination')]);
+
       // Start both oscillators
       leftOsc.callMethod('start', [0]);
       rightOsc.callMethod('start', [0]);
-      
+
       // Store reference to both oscillators
       _oscillator = {'left': leftOsc, 'right': rightOsc};
-      
+
       _isPlaying = true;
       _notifyPlayState();
-      
+
       if (kDebugMode) {
         debugPrint('✅ Binaural Beat: \${leftFreq}Hz (L) + \${rightFreq}Hz (R)');
       }
@@ -277,7 +285,7 @@ class FrequencyPlayerService {
       return 5; // High frequencies: 5+ min
     }
   }
-  
+
   /// Solfeggio frequency names
   static String getFrequencyName(double freq) {
     final solfeggio = {
@@ -291,11 +299,11 @@ class FrequencyPlayerService {
       852.0: '852 Hz - Spirituelle Ordnung',
       963.0: '963 Hz - Göttliche Einheit',
     };
-    
+
     // Find closest frequency
     double closest = solfeggio.keys.first;
     double minDiff = (freq - closest).abs();
-    
+
     for (var key in solfeggio.keys) {
       final diff = (freq - key).abs();
       if (diff < minDiff) {
@@ -303,11 +311,11 @@ class FrequencyPlayerService {
         closest = key;
       }
     }
-    
+
     if (minDiff < 5.0) {
       return solfeggio[closest]!;
     }
-    
+
     return '\${freq.toStringAsFixed(2)} Hz';
   }
 }

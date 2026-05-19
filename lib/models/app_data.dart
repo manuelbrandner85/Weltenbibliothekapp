@@ -40,7 +40,8 @@ class TarotReading {
 
   factory TarotReading.fromJson(Map<String, dynamic> json) => TarotReading(
         id: json['id'] ?? '',
-        timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+        timestamp: DateTime.parse(
+            json['timestamp'] ?? DateTime.now().toIso8601String()),
         cardName: json['cardName'] ?? '',
         cardSymbol: json['cardSymbol'] ?? '',
         cardMeaning: json['cardMeaning'] ?? '',
@@ -79,9 +80,11 @@ class MoonJournalEntry {
         'energyLevel': energyLevel,
       };
 
-  factory MoonJournalEntry.fromJson(Map<String, dynamic> json) => MoonJournalEntry(
+  factory MoonJournalEntry.fromJson(Map<String, dynamic> json) =>
+      MoonJournalEntry(
         id: json['id'] ?? '',
-        timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+        timestamp: DateTime.parse(
+            json['timestamp'] ?? DateTime.now().toIso8601String()),
         moonPhase: json['moonPhase'] ?? '',
         note: json['note'] ?? '',
         emotions: List<String>.from(json['emotions'] ?? []),
@@ -116,9 +119,11 @@ class CrystalCollection {
         'experiencedEffects': experiencedEffects,
       };
 
-  factory CrystalCollection.fromJson(Map<String, dynamic> json) => CrystalCollection(
+  factory CrystalCollection.fromJson(Map<String, dynamic> json) =>
+      CrystalCollection(
         crystalName: json['crystalName'] ?? '',
-        addedDate: DateTime.parse(json['addedDate'] ?? DateTime.now().toIso8601String()),
+        addedDate: DateTime.parse(
+            json['addedDate'] ?? DateTime.now().toIso8601String()),
         note: json['note'],
         purchaseLocation: json['purchaseLocation'],
         experiencedEffects: List<String>.from(json['experiencedEffects'] ?? []),
@@ -159,10 +164,12 @@ class MantraChallenge {
         'completionNote': completionNote,
       };
 
-  factory MantraChallenge.fromJson(Map<String, dynamic> json) => MantraChallenge(
+  factory MantraChallenge.fromJson(Map<String, dynamic> json) =>
+      MantraChallenge(
         id: json['id'] ?? '',
         mantraText: json['mantraText'] ?? '',
-        startDate: DateTime.parse(json['startDate'] ?? DateTime.now().toIso8601String()),
+        startDate: DateTime.parse(
+            json['startDate'] ?? DateTime.now().toIso8601String()),
         completedDays: (json['completedDays'] as List<dynamic>?)
                 ?.map((d) => DateTime.parse(d as String))
                 .toList() ??
@@ -180,7 +187,8 @@ class MeditationSession {
   final String id;
   final DateTime timestamp;
   final int durationMinutes;
-  final String meditationType; // 'breath', 'body_scan', 'mantra', 'visualization', 'chakra'
+  final String
+      meditationType; // 'breath', 'body_scan', 'mantra', 'visualization', 'chakra'
 
   MeditationSession({
     required this.id,
@@ -196,9 +204,11 @@ class MeditationSession {
         'meditationType': meditationType,
       };
 
-  factory MeditationSession.fromJson(Map<String, dynamic> json) => MeditationSession(
+  factory MeditationSession.fromJson(Map<String, dynamic> json) =>
+      MeditationSession(
         id: json['id'] ?? '',
-        timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+        timestamp: DateTime.parse(
+            json['timestamp'] ?? DateTime.now().toIso8601String()),
         durationMinutes: json['durationMinutes'] ?? 0,
         meditationType: json['meditationType'] ?? 'breath',
       );
@@ -247,7 +257,9 @@ class AppAchievement {
         title: json['title'] ?? '',
         description: json['description'] ?? '',
         icon: json['icon'] ?? '🏆',
-        unlockedAt: json['unlockedAt'] != null ? DateTime.parse(json['unlockedAt']) : null,
+        unlockedAt: json['unlockedAt'] != null
+            ? DateTime.parse(json['unlockedAt'])
+            : null,
         isUnlocked: json['isUnlocked'] ?? false,
         requiredCount: json['requiredCount'] ?? 1,
         currentCount: json['currentCount'] ?? 0,
@@ -285,7 +297,8 @@ class ToolStreak {
         toolId: json['toolId'] ?? '',
         currentStreak: json['currentStreak'] ?? 0,
         longestStreak: json['longestStreak'] ?? 0,
-        lastActiveDate: DateTime.parse(json['lastActiveDate'] ?? DateTime.now().toIso8601String()),
+        lastActiveDate: DateTime.parse(
+            json['lastActiveDate'] ?? DateTime.now().toIso8601String()),
         activityDates: (json['activityDates'] as List<dynamic>?)
                 ?.map((d) => DateTime.parse(d as String))
                 .toList() ??

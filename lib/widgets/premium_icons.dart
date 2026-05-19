@@ -7,7 +7,7 @@ class GradientIcon extends StatelessWidget {
   final List<Color> colors;
   final AlignmentGeometry begin;
   final AlignmentGeometry end;
-  
+
   const GradientIcon({
     super.key,
     required this.icon,
@@ -16,7 +16,7 @@ class GradientIcon extends StatelessWidget {
     this.begin = Alignment.topLeft,
     this.end = Alignment.bottomRight,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return ShaderMask(
@@ -40,7 +40,7 @@ class AnimatedGradientIcon extends StatefulWidget {
   final double size;
   final List<Color> colors;
   final Duration duration;
-  
+
   const AnimatedGradientIcon({
     super.key,
     required this.icon,
@@ -48,15 +48,16 @@ class AnimatedGradientIcon extends StatefulWidget {
     required this.colors,
     this.duration = const Duration(seconds: 3),
   });
-  
+
   @override
   State<AnimatedGradientIcon> createState() => _AnimatedGradientIconState();
 }
 
-class _AnimatedGradientIconState extends State<AnimatedGradientIcon> with SingleTickerProviderStateMixin {
+class _AnimatedGradientIconState extends State<AnimatedGradientIcon>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -64,16 +65,16 @@ class _AnimatedGradientIconState extends State<AnimatedGradientIcon> with Single
       duration: widget.duration,
       vsync: this,
     )..repeat();
-    
+
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -103,7 +104,7 @@ class PulsingIcon extends StatefulWidget {
   final double size;
   final Color color;
   final Duration duration;
-  
+
   const PulsingIcon({
     super.key,
     required this.icon,
@@ -111,15 +112,16 @@ class PulsingIcon extends StatefulWidget {
     required this.color,
     this.duration = const Duration(milliseconds: 1000),
   });
-  
+
   @override
   State<PulsingIcon> createState() => _PulsingIconState();
 }
 
-class _PulsingIconState extends State<PulsingIcon> with SingleTickerProviderStateMixin {
+class _PulsingIconState extends State<PulsingIcon>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -127,18 +129,18 @@ class _PulsingIconState extends State<PulsingIcon> with SingleTickerProviderStat
       duration: widget.duration,
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _animation = Tween<double>(begin: 0.8, end: 1.2).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return ScaleTransition(
@@ -158,7 +160,7 @@ class GlowingIcon extends StatelessWidget {
   final double size;
   final Color color;
   final double glowRadius;
-  
+
   const GlowingIcon({
     super.key,
     required this.icon,
@@ -166,7 +168,7 @@ class GlowingIcon extends StatelessWidget {
     required this.color,
     this.glowRadius = 10,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -196,7 +198,7 @@ class FeatureIconButton extends StatelessWidget {
   final VoidCallback onTap;
   final List<Color> gradientColors;
   final bool isActive;
-  
+
   const FeatureIconButton({
     super.key,
     required this.icon,
@@ -205,7 +207,7 @@ class FeatureIconButton extends StatelessWidget {
     required this.gradientColors,
     this.isActive = false,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return InkWell(

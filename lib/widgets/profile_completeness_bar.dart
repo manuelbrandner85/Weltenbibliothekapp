@@ -145,8 +145,7 @@ class ProfileCompletenessBar extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.add_rounded,
-                                size: 12,
-                                color: accent.withValues(alpha: 0.7)),
+                                size: 12, color: accent.withValues(alpha: 0.7)),
                             const SizedBox(width: 3),
                             Text(
                               f.label,

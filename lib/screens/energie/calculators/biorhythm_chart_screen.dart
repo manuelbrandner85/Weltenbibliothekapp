@@ -40,6 +40,7 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFF26C6DA);
   static const Color _accent = Color(0xFFFF6F00);
   static const Color _gold = Color(0xFFFFD54F);
@@ -51,12 +52,12 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
   late final AnimationController _ambientCtrl;
 
   static const List<_Cycle> _cycles = [
-    _Cycle('physical',     'Physisch',     23, Color(0xFFE53935), '💪'),
-    _Cycle('emotional',    'Emotional',    28, Color(0xFFEC407A), '💖'),
-    _Cycle('intellectual', 'Intellektuell',33, Color(0xFF42A5F5), '🧠'),
-    _Cycle('intuitive',    'Intuition',    38, Color(0xFF7C4DFF), '🌌'),
-    _Cycle('aesthetic',    'Ästhetisch',   43, Color(0xFFFFB74D), '🎨'),
-    _Cycle('spiritual',    'Spirituell',   53, Color(0xFF66BB6A), '✨'),
+    _Cycle('physical', 'Physisch', 23, Color(0xFFE53935), '💪'),
+    _Cycle('emotional', 'Emotional', 28, Color(0xFFEC407A), '💖'),
+    _Cycle('intellectual', 'Intellektuell', 33, Color(0xFF42A5F5), '🧠'),
+    _Cycle('intuitive', 'Intuition', 38, Color(0xFF7C4DFF), '🌌'),
+    _Cycle('aesthetic', 'Ästhetisch', 43, Color(0xFFFFB74D), '🎨'),
+    _Cycle('spiritual', 'Spirituell', 53, Color(0xFF66BB6A), '✨'),
   ];
 
   Set<String> _enabled = {'physical', 'emotional', 'intellectual'};
@@ -64,8 +65,11 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
   @override
   void initState() {
     super.initState();
-    _drawCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat();
+    _drawCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500));
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat();
     _drawCtrl.forward();
   }
 
@@ -85,7 +89,8 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
       lastDate: DateTime.now(),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.dark(primary: _primary, onPrimary: Colors.white),
+          colorScheme: const ColorScheme.dark(
+              primary: _primary, onPrimary: Colors.white),
         ),
         child: child!,
       ),
@@ -159,23 +164,29 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(saved != null ? '📊 Biorhythmus gespeichert' : '⚠️ Speichern fehlgeschlagen'),
+      content: Text(saved != null
+          ? '📊 Biorhythmus gespeichert'
+          : '⚠️ Speichern fehlgeschlagen'),
       backgroundColor: _primary,
     ));
   }
 
   String _fmtDate(DateTime d) =>
-      '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')}.${d.year}';
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
   String _energyAdvice() {
     final phys = _cycleValue(23, _focusOffset);
     final emo = _cycleValue(28, _focusOffset);
     final intel = _cycleValue(33, _focusOffset);
     final avg = (phys + emo + intel) / 3;
-    if (avg > 0.6) return '🚀 Hoch-Energie · Großes anpacken, körperlich fordernd, kreative Sprünge.';
-    if (avg > 0.2) return '⚡ Solider Tag · Routinen, Verabredungen, kleinere Schritte.';
-    if (avg > -0.2) return '🌿 Übergang · Geduldig sein, beobachten, nicht überfordern.';
-    if (avg > -0.6) return '🛌 Niedrige Phase · Erholung, lesen, planen, nicht performen.';
+    if (avg > 0.6)
+      return '🚀 Hoch-Energie · Großes anpacken, körperlich fordernd, kreative Sprünge.';
+    if (avg > 0.2)
+      return '⚡ Solider Tag · Routinen, Verabredungen, kleinere Schritte.';
+    if (avg > -0.2)
+      return '🌿 Übergang · Geduldig sein, beobachten, nicht überfordern.';
+    if (avg > -0.6)
+      return '🛌 Niedrige Phase · Erholung, lesen, planen, nicht performen.';
     return '🌑 Tief · Tag der Stille. Was darf integriert werden?';
   }
 
@@ -191,8 +202,11 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
             colors: [_gold, _primary, _accent],
           ).createShader(r),
           child: const Text('BIORHYTHMUS',
-              style: TextStyle(color: Colors.white, fontSize: 14,
-                  fontWeight: FontWeight.w900, letterSpacing: 3)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3)),
         ),
         actions: [
           IconButton(
@@ -221,7 +235,8 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 30)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.energie, count: 30)),
         SafeArea(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 28),
@@ -261,14 +276,25 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
               Icon(Icons.cake_rounded, color: _gold),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('GEBURTSDATUM',
-                      style: TextStyle(color: _gold, fontSize: 9, letterSpacing: 2, fontWeight: FontWeight.w700)),
-                  Text(_fmtDate(_birthDate),
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                  Text('${DateTime.now().difference(_birthDate).inDays} Tage gelebt',
-                      style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('GEBURTSDATUM',
+                          style: TextStyle(
+                              color: _gold,
+                              fontSize: 9,
+                              letterSpacing: 2,
+                              fontWeight: FontWeight.w700)),
+                      Text(_fmtDate(_birthDate),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                      Text(
+                          '${DateTime.now().difference(_birthDate).inDays} Tage gelebt',
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 11)),
+                    ]),
               ),
               Icon(Icons.edit_calendar_rounded, color: _primary, size: 20),
             ]),
@@ -288,18 +314,26 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [_primary.withValues(alpha: 0.2), _accent.withValues(alpha: 0.08)],
+              colors: [
+                _primary.withValues(alpha: 0.2),
+                _accent.withValues(alpha: 0.08)
+              ],
             ),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: _primary.withValues(alpha: 0.3)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Text(
-                offset == 0
-                    ? 'HEUTE'
-                    : (offset > 0 ? '+$offset TAGE' : '${offset} TAGE'),
-                style: const TextStyle(color: _gold, fontSize: 10, letterSpacing: 3, fontWeight: FontWeight.w700)),
+                  offset == 0
+                      ? 'HEUTE'
+                      : (offset > 0 ? '+$offset TAGE' : '${offset} TAGE'),
+                  style: const TextStyle(
+                      color: _gold,
+                      fontSize: 10,
+                      letterSpacing: 3,
+                      fontWeight: FontWeight.w700)),
               const Spacer(),
               Text(_phaseLabel(offset),
                   style: const TextStyle(color: Colors.white70, fontSize: 11)),
@@ -312,9 +346,13 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                 child: Row(children: [
                   Text(c.emoji, style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 6),
-                  SizedBox(width: 90,
+                  SizedBox(
+                      width: 90,
                       child: Text(c.label,
-                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600))),
                   Expanded(
                     child: SizedBox(
                       height: 10,
@@ -327,16 +365,24 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                         ),
                         Align(
                           alignment: Alignment.center,
-                          child: Container(width: 1, height: 10, color: Colors.white24),
+                          child: Container(
+                              width: 1, height: 10, color: Colors.white24),
                         ),
                         // Wert-Balken
                         FractionallySizedBox(
-                          alignment: v > 0 ? Alignment.centerLeft : Alignment.centerRight,
+                          alignment: v > 0
+                              ? Alignment.centerLeft
+                              : Alignment.centerRight,
                           widthFactor: v.abs() * 0.5,
                           child: Align(
-                            alignment: v > 0 ? Alignment.centerLeft : Alignment.centerRight,
+                            alignment: v > 0
+                                ? Alignment.centerLeft
+                                : Alignment.centerRight,
                             child: Container(
-                              margin: EdgeInsets.only(left: v > 0 ? MediaQuery.of(context).size.width * 0.3 : 0),
+                              margin: EdgeInsets.only(
+                                  left: v > 0
+                                      ? MediaQuery.of(context).size.width * 0.3
+                                      : 0),
                             ),
                           ),
                         ),
@@ -348,11 +394,16 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                               left: v > 0 ? mid : mid - w,
                               top: 1,
                               child: Container(
-                                width: w, height: 8,
+                                width: w,
+                                height: 8,
                                 decoration: BoxDecoration(
                                   color: c.color,
                                   borderRadius: BorderRadius.circular(4),
-                                  boxShadow: [BoxShadow(color: c.color.withValues(alpha: 0.5), blurRadius: 6)],
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: c.color.withValues(alpha: 0.5),
+                                        blurRadius: 6)
+                                  ],
                                 ),
                               ),
                             ),
@@ -366,7 +417,10 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                     width: 44,
                     child: Text('${(v * 100).round()}%',
                         textAlign: TextAlign.end,
-                        style: TextStyle(color: c.color, fontSize: 12, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            color: c.color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold)),
                   ),
                 ]),
               );
@@ -379,7 +433,8 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(_energyAdvice(),
-                  style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.5)),
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 12, height: 1.5)),
             ),
           ]),
         ),
@@ -401,9 +456,12 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
             child: GestureDetector(
               onTap: () => _toggleCycle(c.code),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: sel ? c.color.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.04),
+                  color: sel
+                      ? c.color.withValues(alpha: 0.3)
+                      : Colors.white.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: sel ? c.color : Colors.transparent),
                 ),
@@ -411,10 +469,14 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                   Text(c.emoji, style: const TextStyle(fontSize: 14)),
                   const SizedBox(width: 4),
                   Text(c.label,
-                      style: TextStyle(color: sel ? Colors.white : Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                      style: TextStyle(
+                          color: sel ? Colors.white : Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
                   const SizedBox(width: 3),
                   Text('${c.length}d',
-                      style: const TextStyle(color: Colors.white38, fontSize: 9)),
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 9)),
                 ]),
               ),
             ),
@@ -447,14 +509,21 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                   child: GestureDetector(
                     onTap: () => setState(() => _windowDays = w),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: sel ? _primary.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.04),
+                        color: sel
+                            ? _primary.withValues(alpha: 0.3)
+                            : Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: sel ? _primary : Colors.transparent),
+                        border: Border.all(
+                            color: sel ? _primary : Colors.transparent),
                       ),
                       child: Text('${w}d',
-                          style: TextStyle(color: sel ? Colors.white : Colors.white60, fontSize: 10, fontWeight: FontWeight.w700)),
+                          style: TextStyle(
+                              color: sel ? Colors.white : Colors.white60,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700)),
                     ),
                   ),
                 );
@@ -466,7 +535,8 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                 final dx = d.delta.dx;
                 final maxOffset = _windowDays ~/ 2;
                 setState(() {
-                  _focusOffset = (_focusOffset - (dx / 4).round()).clamp(-maxOffset, maxOffset);
+                  _focusOffset = (_focusOffset - (dx / 4).round())
+                      .clamp(-maxOffset, maxOffset);
                 });
               },
               child: AspectRatio(
@@ -476,7 +546,9 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                   builder: (_, __) => CustomPaint(
                     painter: _BiorhythmChartPainter(
                       birthDate: _birthDate,
-                      cycles: _cycles.where((c) => _enabled.contains(c.code)).toList(),
+                      cycles: _cycles
+                          .where((c) => _enabled.contains(c.code))
+                          .toList(),
                       windowDays: _windowDays,
                       focusOffset: _focusOffset,
                       reveal: _drawCtrl.value,
@@ -489,7 +561,10 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
             const SizedBox(height: 4),
             Text(
               'Wisch links/rechts um zu navigieren · Heute = Mitte',
-              style: const TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+              style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic),
             ),
           ]),
         ),
@@ -525,9 +600,14 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('KRITISCHE TAGE · NÄCHSTE 30 TAGE',
-                style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
             const Text(
                 'Null-Durchgänge der Zyklen = volatil. Wichtige Entscheidungen lieber drum-herum.',
@@ -544,15 +624,21 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
                   child: Row(children: [
                     Text(cd.cycle.emoji, style: const TextStyle(fontSize: 14)),
                     const SizedBox(width: 8),
-                    SizedBox(width: 80,
+                    SizedBox(
+                        width: 80,
                         child: Text(cd.cycle.label,
-                            style: TextStyle(color: cd.cycle.color, fontSize: 12, fontWeight: FontWeight.w600))),
+                            style: TextStyle(
+                                color: cd.cycle.color,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600))),
                     Expanded(
                       child: Text('${date.day}.${date.month}.',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
                     ),
                     Text('in ${cd.daysFromNow}d',
-                        style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 11)),
                   ]),
                 );
               }),
@@ -610,12 +696,15 @@ class _BiorhythmChartPainter extends CustomPainter {
     final axisPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.15)
       ..strokeWidth = 1;
-    canvas.drawLine(Offset(padX, centerY), Offset(padX + plotW, centerY), axisPaint);
+    canvas.drawLine(
+        Offset(padX, centerY), Offset(padX + plotW, centerY), axisPaint);
     // 50% lines
-    canvas.drawLine(Offset(padX, padY + plotH * 0.25),
+    canvas.drawLine(
+        Offset(padX, padY + plotH * 0.25),
         Offset(padX + plotW, padY + plotH * 0.25),
         Paint()..color = Colors.white.withValues(alpha: 0.07));
-    canvas.drawLine(Offset(padX, padY + plotH * 0.75),
+    canvas.drawLine(
+        Offset(padX, padY + plotH * 0.75),
         Offset(padX + plotW, padY + plotH * 0.75),
         Paint()..color = Colors.white.withValues(alpha: 0.07));
 
@@ -624,16 +713,22 @@ class _BiorhythmChartPainter extends CustomPainter {
     final halfWindow = windowDays ~/ 2;
     final startOffset = today - halfWindow;
     final endOffset = today + halfWindow;
-    final todayX = padX + ((today - startOffset) / (endOffset - startOffset)) * plotW;
+    final todayX =
+        padX + ((today - startOffset) / (endOffset - startOffset)) * plotW;
     canvas.drawLine(
       Offset(todayX, padY),
       Offset(todayX, padY + plotH),
-      Paint()..color = gold.withValues(alpha: 0.5)..strokeWidth = 1.5,
+      Paint()
+        ..color = gold.withValues(alpha: 0.5)
+        ..strokeWidth = 1.5,
     );
 
     // Heute-Label
     final tp = TextPainter(
-      text: TextSpan(text: 'heute', style: TextStyle(color: gold, fontSize: 9, fontWeight: FontWeight.bold)),
+      text: TextSpan(
+          text: 'heute',
+          style:
+              TextStyle(color: gold, fontSize: 9, fontWeight: FontWeight.bold)),
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(canvas, Offset(todayX - tp.width / 2, padY - 14));
@@ -678,13 +773,29 @@ class _BiorhythmChartPainter extends CustomPainter {
       // Critical-Days (Null-Durchgänge) als kleine Punkte
       for (int i = 1; i < maxVisible && i <= windowDays; i++) {
         final dayOffset = startOffset + i;
-        final v0 = math.sin(2 * math.pi * DateTime.now().add(Duration(days: dayOffset - 1)).difference(birthDate).inDays / c.length);
-        final v1 = math.sin(2 * math.pi * DateTime.now().add(Duration(days: dayOffset)).difference(birthDate).inDays / c.length);
+        final v0 = math.sin(2 *
+            math.pi *
+            DateTime.now()
+                .add(Duration(days: dayOffset - 1))
+                .difference(birthDate)
+                .inDays /
+            c.length);
+        final v1 = math.sin(2 *
+            math.pi *
+            DateTime.now()
+                .add(Duration(days: dayOffset))
+                .difference(birthDate)
+                .inDays /
+            c.length);
         if (v0.sign != v1.sign) {
           final x = padX + (i / windowDays) * plotW;
           canvas.drawCircle(Offset(x, centerY), 3, Paint()..color = gold);
-          canvas.drawCircle(Offset(x, centerY), 6,
-              Paint()..color = gold.withValues(alpha: 0.3)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+          canvas.drawCircle(
+              Offset(x, centerY),
+              6,
+              Paint()
+                ..color = gold.withValues(alpha: 0.3)
+                ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
         }
       }
     }
@@ -697,7 +808,9 @@ class _BiorhythmChartPainter extends CustomPainter {
 
   void _drawScaleLabel(Canvas canvas, String text, double y) {
     final ltp = TextPainter(
-      text: TextSpan(text: text, style: const TextStyle(color: Colors.white38, fontSize: 8)),
+      text: TextSpan(
+          text: text,
+          style: const TextStyle(color: Colors.white38, fontSize: 8)),
       textDirection: TextDirection.ltr,
     )..layout();
     ltp.paint(canvas, Offset(2, y - ltp.height / 2));
@@ -705,8 +818,10 @@ class _BiorhythmChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BiorhythmChartPainter old) =>
-      old.birthDate != birthDate || old.windowDays != windowDays ||
-      old.focusOffset != focusOffset || old.reveal != reveal ||
+      old.birthDate != birthDate ||
+      old.windowDays != windowDays ||
+      old.focusOffset != focusOffset ||
+      old.reveal != reveal ||
       old.cycles.length != cycles.length;
 }
 
@@ -717,12 +832,24 @@ class _BioOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        100, const Color(0xFF26C6DA));
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.6 + math.cos(t * 2 * math.pi) * 0.04)),
-        90, const Color(0xFFFF6F00));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        70, const Color(0xFFFFD54F));
+    _draw(
+        canvas,
+        Offset(size.width * 0.2,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        100,
+        const Color(0xFF26C6DA));
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.6 + math.cos(t * 2 * math.pi) * 0.04)),
+        90,
+        const Color(0xFFFF6F00));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        70,
+        const Color(0xFFFFD54F));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {

@@ -20,10 +20,12 @@ class ArchetypeCalculatorScreen extends StatefulWidget {
   const ArchetypeCalculatorScreen({super.key});
 
   @override
-  State<ArchetypeCalculatorScreen> createState() => _ArchetypeCalculatorScreenState();
+  State<ArchetypeCalculatorScreen> createState() =>
+      _ArchetypeCalculatorScreenState();
 }
 
-class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> with TickerProviderStateMixin {
+class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   EnergieProfile? _profile;
   bool _isLoading = true;
@@ -47,10 +49,12 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     _tabController = TabController(length: 4, vsync: this);
     _loadProfile();
 
-    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))
-      ..repeat(reverse: true);
-    _mandalaCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 20))
-      ..repeat();
+    _bgCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat(reverse: true);
+    _mandalaCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 20))
+          ..repeat();
   }
 
   @override
@@ -81,7 +85,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     if (_profile == null) return;
 
     // Berechne numerologische Basis-Zahlen
-    final lifePathNumber = NumerologyEngine.calculateLifePath(_profile!.birthDate);
+    final lifePathNumber =
+        NumerologyEngine.calculateLifePath(_profile!.birthDate);
     final expressionNumber = NumerologyEngine.calculateExpressionNumber(
       _profile!.firstName,
       _profile!.lastName,
@@ -92,10 +97,13 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     );
 
     // Berechne Archetypen
-    _primaryArchetype = ArchetypeEngine.calculatePrimaryArchetype(lifePathNumber);
-    _secondaryArchetype = ArchetypeEngine.calculateSecondaryArchetype(expressionNumber);
+    _primaryArchetype =
+        ArchetypeEngine.calculatePrimaryArchetype(lifePathNumber);
+    _secondaryArchetype =
+        ArchetypeEngine.calculateSecondaryArchetype(expressionNumber);
     _shadowArchetype = ArchetypeEngine.calculateShadowArchetype(lifePathNumber);
-    _activationArchetype = ArchetypeEngine.calculateActivationArchetype(personalYear);
+    _activationArchetype =
+        ArchetypeEngine.calculateActivationArchetype(personalYear);
 
     // Berechne Integration Score
     _integrationScore = ArchetypeEngine.calculateIntegrationScore(
@@ -174,7 +182,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
               // Main content
               SafeArea(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white))
                     : _profile == null
                         ? _buildNoProfileView()
                         : Column(
@@ -310,7 +319,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                 ),
                 Text(
                   'Geboren: ${_profile!.birthDate.day}.${_profile!.birthDate.month}.${_profile!.birthDate.year}',
-                  style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6)),
+                  style: TextStyle(
+                      fontSize: 13, color: Colors.white.withValues(alpha: 0.6)),
                 ),
               ],
             ),
@@ -351,7 +361,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   Widget _buildPrimaryTab() {
     if (_primaryArchetype == null || _activationArchetype == null) {
-      return const Center(child: Text('Keine Daten', style: TextStyle(color: Colors.white)));
+      return const Center(
+          child: Text('Keine Daten', style: TextStyle(color: Colors.white)));
     }
 
     return SingleChildScrollView(
@@ -359,9 +370,12 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildArchetypeCard(_primaryArchetype!, 'PRIMÄR-ARCHETYP', isPrimary: true),
+          _buildArchetypeCard(_primaryArchetype!, 'PRIMÄR-ARCHETYP',
+              isPrimary: true),
           const SizedBox(height: 20),
-          _buildArchetypeCard(_activationArchetype!, 'AKTIVIERUNGS-ARCHETYP (${DateTime.now().year})', isActivation: true),
+          _buildArchetypeCard(_activationArchetype!,
+              'AKTIVIERUNGS-ARCHETYP (${DateTime.now().year})',
+              isActivation: true),
         ],
       ),
     );
@@ -369,7 +383,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   Widget _buildSecondaryAndShadowTab() {
     if (_secondaryArchetype == null || _shadowArchetype == null) {
-      return const Center(child: Text('Keine Daten', style: TextStyle(color: Colors.white)));
+      return const Center(
+          child: Text('Keine Daten', style: TextStyle(color: Colors.white)));
     }
 
     return SingleChildScrollView(
@@ -379,7 +394,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
         children: [
           _buildArchetypeCard(_secondaryArchetype!, 'SEKUNDÄR-ARCHETYP'),
           const SizedBox(height: 20),
-          _buildArchetypeCard(_shadowArchetype!, 'SCHATTEN-ARCHETYP', isShadow: true),
+          _buildArchetypeCard(_shadowArchetype!, 'SCHATTEN-ARCHETYP',
+              isShadow: true),
         ],
       ),
     );
@@ -481,7 +497,9 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                             ),
                             Text(
                               archetype['englishName'] as String,
-                              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45)),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.45)),
                             ),
                           ],
                         ),
@@ -491,7 +509,9 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                   const SizedBox(height: 8),
                   Text(
                     archetype['description'] as String,
-                    style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.65)),
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.65)),
                   ),
                 ],
               ),
@@ -502,7 +522,10 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     );
   }
 
-  Widget _buildArchetypeCard(Map<String, dynamic> archetype, String label, {bool isPrimary = false, bool isShadow = false, bool isActivation = false}) {
+  Widget _buildArchetypeCard(Map<String, dynamic> archetype, String label,
+      {bool isPrimary = false,
+      bool isShadow = false,
+      bool isActivation = false}) {
     final archetypeColor = archetype['color'] as Color;
     final archetypeName = archetype['name'] as String;
 
@@ -541,7 +564,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                   archetypeColor.withValues(alpha: 0.04),
                 ],
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Column(
               children: [
@@ -558,7 +582,13 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                 const SizedBox(height: 16),
                 // Großes Emoji / Symbol
                 Text(
-                  isPrimary ? '⭐' : isShadow ? '🌑' : isActivation ? '⚡' : '🔮',
+                  isPrimary
+                      ? '⭐'
+                      : isShadow
+                          ? '🌑'
+                          : isActivation
+                              ? '⚡'
+                              : '🔮',
                   style: const TextStyle(fontSize: 56),
                 ),
                 const SizedBox(height: 12),
@@ -587,22 +617,27 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                   spacing: 8,
                   runSpacing: 6,
                   alignment: WrapAlignment.center,
-                  children: chipLabels.map((chip) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: archetypeColor.withValues(alpha: 0.20),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: archetypeColor.withValues(alpha: 0.45)),
-                    ),
-                    child: Text(
-                      chip,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: archetypeColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  )).toList(),
+                  children: chipLabels
+                      .map((chip) => Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: archetypeColor.withValues(alpha: 0.20),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  color:
+                                      archetypeColor.withValues(alpha: 0.45)),
+                            ),
+                            child: Text(
+                              chip,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: archetypeColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ))
+                      .toList(),
                 ),
               ],
             ),
@@ -618,13 +653,15 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.06)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getPersonalizedArchetypeIntro(archetypeName, isPrimary, isShadow, isActivation),
+                        _getPersonalizedArchetypeIntro(
+                            archetypeName, isPrimary, isShadow, isActivation),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.88),
@@ -633,11 +670,26 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildDetailedInfoRow('🎯 Was dich antreibt', strengthText.substring(0, math.min(160, strengthText.length)) + '…'),
-                      _buildDetailedInfoRow('😨 Was du fürchtest', _getPersonalizedFear(archetypeName)),
-                      _buildDetailedInfoRow('💪 Deine Superkraft', _getPersonalizedStrength(archetypeName).substring(0, math.min(140, _getPersonalizedStrength(archetypeName).length)) + '…'),
-                      _buildDetailedInfoRow('⚠️ Deine Falle', _getPersonalizedWeakness(archetypeName)),
-                      _buildDetailedInfoRow('🌍 Dein Element', '${archetype['element']}'),
+                      _buildDetailedInfoRow(
+                          '🎯 Was dich antreibt',
+                          strengthText.substring(
+                                  0, math.min(160, strengthText.length)) +
+                              '…'),
+                      _buildDetailedInfoRow('😨 Was du fürchtest',
+                          _getPersonalizedFear(archetypeName)),
+                      _buildDetailedInfoRow(
+                          '💪 Deine Superkraft',
+                          _getPersonalizedStrength(archetypeName).substring(
+                                  0,
+                                  math.min(
+                                      140,
+                                      _getPersonalizedStrength(archetypeName)
+                                          .length)) +
+                              '…'),
+                      _buildDetailedInfoRow('⚠️ Deine Falle',
+                          _getPersonalizedWeakness(archetypeName)),
+                      _buildDetailedInfoRow(
+                          '🌍 Dein Element', '${archetype['element']}'),
                     ],
                   ),
                 ),
@@ -696,7 +748,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     );
   }
 
-  String _getPersonalizedArchetypeIntro(String archetypeName, bool isPrimary, bool isShadow, bool isActivation) {
+  String _getPersonalizedArchetypeIntro(
+      String archetypeName, bool isPrimary, bool isShadow, bool isActivation) {
     final name = _profile?.firstName ?? 'Du';
 
     if (isPrimary) {
@@ -840,7 +893,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.45)),
+        border:
+            Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.45)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF9C27B0).withValues(alpha: 0.12),
@@ -881,7 +935,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                       child: LinearProgressIndicator(
                         value: _integrationScore / 100,
                         backgroundColor: Colors.white.withValues(alpha: 0.12),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFFFFD700)),
                         minHeight: 8,
                       ),
                     ),
@@ -893,7 +948,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
           const SizedBox(height: 12),
           Text(
             _getIntegrationMessage(_integrationScore),
-            style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.65)),
+            style: TextStyle(
+                fontSize: 14, color: Colors.white.withValues(alpha: 0.65)),
           ),
         ],
       ),
@@ -901,9 +957,11 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
   }
 
   String _getIntegrationMessage(int score) {
-    if (score >= 80) return 'Exzellente Integration! Deine Archetypen arbeiten harmonisch zusammen.';
+    if (score >= 80)
+      return 'Exzellente Integration! Deine Archetypen arbeiten harmonisch zusammen.';
     if (score >= 60) return 'Gute Integration. Es gibt noch Raum für Wachstum.';
-    if (score >= 40) return 'Moderate Integration. Arbeite an der Balance deiner Archetypen.';
+    if (score >= 40)
+      return 'Moderate Integration. Arbeite an der Balance deiner Archetypen.';
     return 'Niedrige Integration. Fokussiere dich auf Schattenarbeit.';
   }
 
@@ -939,11 +997,15 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                     children: [
                       Text(
                         entry.key,
-                        style: const TextStyle(fontSize: 14, color: Colors.white),
+                        style:
+                            const TextStyle(fontSize: 14, color: Colors.white),
                       ),
                       Text(
                         '${entry.value}',
-                        style: const TextStyle(fontSize: 14, color: Color(0xFFFFD700), fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFFFFD700),
+                            fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -953,7 +1015,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                     child: LinearProgressIndicator(
                       value: entry.value / 6,
                       backgroundColor: Colors.white.withValues(alpha: 0.12),
-                      valueColor: AlwaysStoppedAnimation<Color>(_getElementColor(entry.key)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          _getElementColor(entry.key)),
                       minHeight: 6,
                     ),
                   ),
@@ -1010,12 +1073,15 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 20),
+                  const Icon(Icons.check_circle,
+                      color: Color(0xFF4CAF50), size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       rec,
-                      style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.65)),
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.65)),
                     ),
                   ),
                 ],
@@ -1074,7 +1140,8 @@ class _MandalaPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_MandalaPainter old) => old.rotation != rotation || old.color != color;
+  bool shouldRepaint(_MandalaPainter old) =>
+      old.rotation != rotation || old.color != color;
 }
 
 // ─── Cinematic Orb Widget ─────────────────────────────────────────────────────
@@ -1083,7 +1150,8 @@ class _CineOrb extends StatelessWidget {
   final Color color;
   final double size;
   final double opacity;
-  const _CineOrb({required this.color, required this.size, required this.opacity});
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
 
   @override
   Widget build(BuildContext context) => Container(

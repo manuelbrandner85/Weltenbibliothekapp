@@ -230,7 +230,8 @@ class LeakedDocument {
   final String title;
   final String url;
   final String? snippet;
-  final String archive; // 'WikiLeaks', 'Internet Archive', 'FOIA', 'CIA Reading Room'
+  final String
+      archive; // 'WikiLeaks', 'Internet Archive', 'FOIA', 'CIA Reading Room'
   final String? date;
   const LeakedDocument({
     required this.title,
@@ -331,7 +332,8 @@ class Shareholding {
 class PowerRelation {
   final String entity1;
   final String entity2;
-  final String relationType; // 'donation', 'board', 'family', 'employment', 'ownership'
+  final String
+      relationType; // 'donation', 'board', 'family', 'employment', 'ownership'
   final String description;
   final int? amount; // bei donations in USD
   final String? url;
@@ -417,7 +419,6 @@ class SherlockHit {
   });
 }
 
-
 // ─── RSS-Aggregator-Item ───────────────────────────────────────────────────────
 
 /// RSS-Aggregator-Item.
@@ -447,7 +448,15 @@ class AlephDocument {
   final String? date;
   final String? summary;
   final String? url;
-  const AlephDocument({required this.id, required this.name, required this.collection, required this.schema, required this.country, this.date, this.summary, this.url});
+  const AlephDocument(
+      {required this.id,
+      required this.name,
+      required this.collection,
+      required this.schema,
+      required this.country,
+      this.date,
+      this.summary,
+      this.url});
 }
 
 class OffshoreEntity {
@@ -458,7 +467,14 @@ class OffshoreEntity {
   final String status;
   final String leakType;
   final String? url;
-  const OffshoreEntity({required this.name, required this.type, required this.jurisdiction, required this.country, required this.status, required this.leakType, this.url});
+  const OffshoreEntity(
+      {required this.name,
+      required this.type,
+      required this.jurisdiction,
+      required this.country,
+      required this.status,
+      required this.leakType,
+      this.url});
 }
 
 class CompanyEntry {
@@ -472,7 +488,17 @@ class CompanyEntry {
   final String? lei;
   final String? registered;
   final String? url;
-  const CompanyEntry({required this.name, required this.jurisdiction, required this.status, required this.type, required this.source, this.companyNumber, this.country, this.lei, this.registered, this.url});
+  const CompanyEntry(
+      {required this.name,
+      required this.jurisdiction,
+      required this.status,
+      required this.type,
+      required this.source,
+      this.companyNumber,
+      this.country,
+      this.lei,
+      this.registered,
+      this.url});
 }
 
 class SanctionResult {
@@ -484,7 +510,15 @@ class SanctionResult {
   final List<String> datasets;
   final String? birthDate;
   final String? url;
-  const SanctionResult({required this.id, required this.name, required this.schema, required this.topics, required this.countries, required this.datasets, this.birthDate, this.url});
+  const SanctionResult(
+      {required this.id,
+      required this.name,
+      required this.schema,
+      required this.topics,
+      required this.countries,
+      required this.datasets,
+      this.birthDate,
+      this.url});
 }
 
 class PubMedPaper {
@@ -495,7 +529,14 @@ class PubMedPaper {
   final String year;
   final String? doi;
   final String url;
-  const PubMedPaper({required this.pmid, required this.title, required this.authors, required this.journal, required this.year, this.doi, required this.url});
+  const PubMedPaper(
+      {required this.pmid,
+      required this.title,
+      required this.authors,
+      required this.journal,
+      required this.year,
+      this.doi,
+      required this.url});
 }
 
 class SemanticPaper {
@@ -506,10 +547,21 @@ class SemanticPaper {
   final int citations;
   final int influential;
   final String? doi;
-  final String? openAccess; // nullable String from API (e.g. 'gold', 'green', null)
+  final String?
+      openAccess; // nullable String from API (e.g. 'gold', 'green', null)
   final String? abstract_;
   final String url;
-  const SemanticPaper({required this.paperId, required this.title, required this.authors, this.year, required this.citations, required this.influential, this.doi, this.openAccess, this.abstract_, required this.url});
+  const SemanticPaper(
+      {required this.paperId,
+      required this.title,
+      required this.authors,
+      this.year,
+      required this.citations,
+      required this.influential,
+      this.doi,
+      this.openAccess,
+      this.abstract_,
+      required this.url});
   String? get abstract => abstract_;
 }
 
@@ -521,7 +573,14 @@ class ArchiveDoc {
   final String date;
   final String description;
   final String url;
-  const ArchiveDoc({required this.id, required this.title, required this.mediatype, required this.creator, required this.date, required this.description, required this.url});
+  const ArchiveDoc(
+      {required this.id,
+      required this.title,
+      required this.mediatype,
+      required this.creator,
+      required this.date,
+      required this.description,
+      required this.url});
 }
 
 class EuVote {
@@ -533,7 +592,15 @@ class EuVote {
   final int abstainCount;
   final String result;
   final String url;
-  const EuVote({required this.id, required this.title, required this.date, required this.forCount, required this.againstCount, required this.abstainCount, required this.result, required this.url});
+  const EuVote(
+      {required this.id,
+      required this.title,
+      required this.date,
+      required this.forCount,
+      required this.againstCount,
+      required this.abstainCount,
+      required this.result,
+      required this.url});
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -612,7 +679,8 @@ class OpenOwnershipEntity {
     required this.controlChain,
     required this.url,
   });
-  factory OpenOwnershipEntity.fromJson(Map<String, dynamic> j) => OpenOwnershipEntity(
+  factory OpenOwnershipEntity.fromJson(Map<String, dynamic> j) =>
+      OpenOwnershipEntity(
         name: (j['name'] ?? '').toString(),
         jurisdiction: (j['jurisdiction'] ?? '').toString(),
         type: (j['type'] ?? '').toString(),
@@ -638,7 +706,8 @@ class OpenSpendingEntry {
     required this.source,
     required this.url,
   });
-  factory OpenSpendingEntry.fromJson(Map<String, dynamic> j) => OpenSpendingEntry(
+  factory OpenSpendingEntry.fromJson(Map<String, dynamic> j) =>
+      OpenSpendingEntry(
         title: (j['title'] ?? '').toString(),
         country: (j['country'] ?? '').toString(),
         year: (j['year'] ?? '').toString(),
@@ -666,7 +735,8 @@ class CourtListenerCase {
     required this.status,
     required this.url,
   });
-  factory CourtListenerCase.fromJson(Map<String, dynamic> j) => CourtListenerCase(
+  factory CourtListenerCase.fromJson(Map<String, dynamic> j) =>
+      CourtListenerCase(
         caseName: (j['caseName'] ?? '').toString(),
         court: (j['court'] ?? '').toString(),
         dateFiled: (j['dateFiled'] ?? '').toString(),

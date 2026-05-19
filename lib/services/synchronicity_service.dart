@@ -11,7 +11,8 @@ import 'sqlite_storage_service.dart';
 
 class SynchronicityService extends ChangeNotifier {
   // Singleton Pattern
-  static final SynchronicityService _instance = SynchronicityService._internal();
+  static final SynchronicityService _instance =
+      SynchronicityService._internal();
   factory SynchronicityService() => _instance;
   SynchronicityService._internal();
 
@@ -19,8 +20,10 @@ class SynchronicityService extends ChangeNotifier {
   List<SynchronicityEntry> _entries = [];
 
   // Stream für Live-Updates
-  final _entriesController = StreamController<List<SynchronicityEntry>>.broadcast();
-  Stream<List<SynchronicityEntry>> get entriesStream => _entriesController.stream;
+  final _entriesController =
+      StreamController<List<SynchronicityEntry>>.broadcast();
+  Stream<List<SynchronicityEntry>> get entriesStream =>
+      _entriesController.stream;
 
   // Hive Box Name
   static const String _boxName = 'synchronicity_entries';
@@ -29,7 +32,8 @@ class SynchronicityService extends ChangeNotifier {
   Future<void> init() async {
     await _loadEntries();
     if (kDebugMode) {
-      debugPrint('🌟 SynchronicityService initialisiert: ${_entries.length} Einträge');
+      debugPrint(
+          '🌟 SynchronicityService initialisiert: ${_entries.length} Einträge');
     }
   }
 
@@ -87,20 +91,20 @@ class SynchronicityService extends ChangeNotifier {
         numbers: numbers ?? [],
         significance: significance,
       );
-      
+
       _entries.insert(0, entry); // Am Anfang einfügen (neueste zuerst)
-      
+
       await _saveEntries();
-      
+
       // Punkte hinzufügen (+5 pro Synchronizität)
       await StorageService().addPoints(5, 'synchronicity_logged');
-      
+
       // Achievement-Check
       // await AchievementService().checkAchievements();
-      
+
       _entriesController.add(_entries);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('✨ Synchronizität erstellt: $event (+5 Punkte)');
       }
@@ -123,9 +127,9 @@ class SynchronicityService extends ChangeNotifier {
     try {
       final index = _entries.indexWhere((e) => e.id == id);
       if (index == -1) return;
-      
+
       final old = _entries[index];
-      
+
       final updated = SynchronicityEntry(
         id: old.id,
         timestamp: old.timestamp,
@@ -135,14 +139,14 @@ class SynchronicityService extends ChangeNotifier {
         numbers: numbers ?? old.numbers,
         significance: significance ?? old.significance,
       );
-      
+
       _entries[index] = updated;
-      
+
       await _saveEntries();
-      
+
       _entriesController.add(_entries);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('✅ Synchronizität aktualisiert: $id');
       }
@@ -157,12 +161,12 @@ class SynchronicityService extends ChangeNotifier {
   Future<void> deleteEntry(String id) async {
     try {
       _entries.removeWhere((e) => e.id == id);
-      
+
       await _saveEntries();
-      
+
       _entriesController.add(_entries);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('🗑️ Synchronizität gelöscht: $id');
       }
@@ -197,34 +201,34 @@ class SynchronicityService extends ChangeNotifier {
   /// Häufigste Zahlen
   Map<int, int> get mostFrequentNumbers {
     final numberCounts = <int, int>{};
-    
+
     for (final entry in _entries) {
       for (final number in entry.numbers) {
         numberCounts[number] = (numberCounts[number] ?? 0) + 1;
       }
     }
-    
+
     // Sortiere nach Häufigkeit
     final sorted = numberCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
+
     return Map.fromEntries(sorted.take(10)); // Top 10
   }
 
   /// Häufigste Tags
   Map<String, int> get mostFrequentTags {
     final tagCounts = <String, int>{};
-    
+
     for (final entry in _entries) {
       for (final tag in entry.tags) {
         tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
       }
     }
-    
+
     // Sortiere nach Häufigkeit
     final sorted = tagCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
+
     return Map.fromEntries(sorted);
   }
 
@@ -244,13 +248,14 @@ class SynchronicityService extends ChangeNotifier {
   /// Einträge nach Monat gruppiert
   Map<String, List<SynchronicityEntry>> get entriesByMonth {
     final grouped = <String, List<SynchronicityEntry>>{};
-    
+
     for (final entry in _entries) {
-      final monthKey = '${entry.timestamp.year}-${entry.timestamp.month.toString().padLeft(2, '0')}';
+      final monthKey =
+          '${entry.timestamp.year}-${entry.timestamp.month.toString().padLeft(2, '0')}';
       grouped.putIfAbsent(monthKey, () => []);
       grouped[monthKey]!.add(entry);
     }
-    
+
     return grouped;
   }
 
@@ -268,10 +273,10 @@ class SynchronicityService extends ChangeNotifier {
       'Vorahnung',
       'Déjà-vu',
     ];
-    
+
     // Kombiniere mit benutzerdefinierten häufigen Tags
     final userTags = mostFrequentTags.keys.take(5).toList();
-    
+
     return [...commonTags, ...userTags]..toSet().toList();
   }
 

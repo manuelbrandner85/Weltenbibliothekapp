@@ -121,8 +121,8 @@ class _ToastViewState extends State<_ToastView>
               child: Material(
                 color: Colors.transparent,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   constraints: const BoxConstraints(maxWidth: 320),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D0D1A).withValues(alpha: 0.96),

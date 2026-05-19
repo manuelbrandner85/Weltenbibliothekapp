@@ -203,8 +203,7 @@ class _ScanTabState extends State<_ScanTab> {
                               fontSize: 12)),
                       selected: sel,
                       selectedColor: _kPink.withValues(alpha: 0.3),
-                      backgroundColor:
-                          Colors.white.withValues(alpha: 0.07),
+                      backgroundColor: Colors.white.withValues(alpha: 0.07),
                       side: BorderSide(
                           color: sel
                               ? _kPink.withValues(alpha: 0.7)
@@ -222,8 +221,8 @@ class _ScanTabState extends State<_ScanTab> {
               child: Row(
                 children: [
                   Text('${_selected.length} Symptom(e) ausgewählt',
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 12)),
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 12)),
                   const Spacer(),
                   if (_selected.isNotEmpty)
                     TextButton(
@@ -243,15 +242,15 @@ class _ScanTabState extends State<_ScanTab> {
                   final chakra = chakraKeys[i];
                   final items = byChakra[chakra]!;
                   final first = items.first;
-                  final chakraColor = _parseColor(
-                      first['chakra_color'] as String?);
+                  final chakraColor =
+                      _parseColor(first['chakra_color'] as String?);
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: chakraColor.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: chakraColor.withValues(alpha: 0.3)),
                     ),
                     child: Theme(
                       data: Theme.of(context)
@@ -265,8 +264,7 @@ class _ScanTabState extends State<_ScanTab> {
                               style: const TextStyle(fontSize: 20)),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                                first['chakra_name'] as String? ?? '',
+                            child: Text(first['chakra_name'] as String? ?? '',
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600)),
@@ -293,8 +291,7 @@ class _ScanTabState extends State<_ScanTab> {
                             title: Text(s['symptom_text'] as String,
                                 style: const TextStyle(
                                     color: Colors.white70, fontSize: 13)),
-                            subtitle: Text(
-                                s['symptom_category'] as String,
+                            subtitle: Text(s['symptom_category'] as String,
                                 style: const TextStyle(
                                     color: Colors.white38, fontSize: 10)),
                           );
@@ -323,8 +320,7 @@ class _ScanTabState extends State<_ScanTab> {
               style: ElevatedButton.styleFrom(
                   backgroundColor: _kPink,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                      Colors.white.withValues(alpha: 0.1),
+                  disabledBackgroundColor: Colors.white.withValues(alpha: 0.1),
                   disabledForegroundColor: Colors.white38,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -424,10 +420,8 @@ class _ScanTabState extends State<_ScanTab> {
         builder: (sheetCtx2, setSheet) => Container(
           decoration: BoxDecoration(
             color: const Color(0xFF0D0A1A),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(20)),
-            border: Border.all(
-                color: _kPink.withValues(alpha: 0.3), width: 1),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(color: _kPink.withValues(alpha: 0.3), width: 1),
           ),
           child: DraggableScrollableSheet(
             initialChildSize: 0.7,
@@ -455,14 +449,13 @@ class _ScanTabState extends State<_ScanTab> {
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text('Basierend auf ${_selected.length} Symptom(en)',
-                    style: const TextStyle(
-                        color: Colors.white54, fontSize: 13)),
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 13)),
                 const SizedBox(height: 20),
                 if (primary != null) ...[
                   _PrimaryChakraCard(
                     chakra: _chakraInfoRows()
-                        .firstWhere(
-                            (c) => c['chakra_number'] == primary),
+                        .firstWhere((c) => c['chakra_number'] == primary),
                     score: scores[primary]!,
                   ),
                   const SizedBox(height: 20),
@@ -477,8 +470,7 @@ class _ScanTabState extends State<_ScanTab> {
                   final n = c['chakra_number'] as int;
                   final score = scores[n] ?? 0;
                   final pct = maxScore > 0 ? score / maxScore : 0.0;
-                  final color =
-                      _parseColor(c['chakra_color'] as String?);
+                  final color = _parseColor(c['chakra_color'] as String?);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Column(
@@ -489,17 +481,13 @@ class _ScanTabState extends State<_ScanTab> {
                               style: const TextStyle(fontSize: 18)),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                                c['chakra_name'] as String? ?? '',
+                            child: Text(c['chakra_name'] as String? ?? '',
                                 style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13)),
+                                    color: Colors.white70, fontSize: 13)),
                           ),
                           Text(score > 0 ? '$score' : '–',
                               style: TextStyle(
-                                  color: score > 0
-                                      ? color
-                                      : Colors.white38,
+                                  color: score > 0 ? color : Colors.white38,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13)),
                         ]),
@@ -510,8 +498,7 @@ class _ScanTabState extends State<_ScanTab> {
                             value: pct,
                             backgroundColor:
                                 Colors.white.withValues(alpha: 0.1),
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(color),
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
                             minHeight: 6,
                           ),
                         ),
@@ -525,12 +512,11 @@ class _ScanTabState extends State<_ScanTab> {
                   enabled: !saving && !saved,
                   maxLines: 3,
                   minLines: 2,
-                  style:
-                      const TextStyle(color: Colors.white, fontSize: 13),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'Optionale Notiz zu diesem Scan …',
-                    hintStyle: const TextStyle(
-                        color: Colors.white38, fontSize: 13),
+                    hintStyle:
+                        const TextStyle(color: Colors.white38, fontSize: 13),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.06),
                     border: OutlineInputBorder(
@@ -545,8 +531,7 @@ class _ScanTabState extends State<_ScanTab> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: _kPink),
+                      borderSide: const BorderSide(color: _kPink),
                     ),
                   ),
                 ),
@@ -569,17 +554,16 @@ class _ScanTabState extends State<_ScanTab> {
                                 saving = false;
                                 saved = true;
                               });
-                              ScaffoldMessenger.of(sheetCtx2)
-                                  .showSnackBar(const SnackBar(
-                                      content:
-                                          Text('✅ Scan gespeichert')));
+                              ScaffoldMessenger.of(sheetCtx2).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('✅ Scan gespeichert')));
                             } catch (e) {
                               if (!sheetCtx2.mounted) return;
                               setSheet(() => saving = false);
-                              ScaffoldMessenger.of(sheetCtx2)
-                                  .showSnackBar(SnackBar(
-                                      content: Text(
-                                          'Fehler beim Speichern: $e')));
+                              ScaffoldMessenger.of(sheetCtx2).showSnackBar(
+                                  SnackBar(
+                                      content:
+                                          Text('Fehler beim Speichern: $e')));
                             }
                           },
                     icon: saving
@@ -587,11 +571,8 @@ class _ScanTabState extends State<_ScanTab> {
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white))
-                        : Icon(saved
-                            ? Icons.check_circle
-                            : Icons.save),
+                                strokeWidth: 2, color: Colors.white))
+                        : Icon(saved ? Icons.check_circle : Icons.save),
                     label: Text(saving
                         ? 'Speichern …'
                         : (saved ? 'Gespeichert' : 'Scan speichern')),
@@ -602,8 +583,7 @@ class _ScanTabState extends State<_ScanTab> {
                             ? Colors.green
                             : Colors.white.withValues(alpha: 0.1),
                         disabledForegroundColor: Colors.white70,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12))),
                   ),
@@ -661,8 +641,7 @@ class _PrimaryChakraCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Hauptblockade',
-                    style:
-                        TextStyle(color: Colors.white70, fontSize: 12)),
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 2),
                 Text(chakra['chakra_name'] as String? ?? '',
                     style: const TextStyle(
@@ -751,8 +730,8 @@ class _HistoryTabState extends State<_HistoryTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0D0A1A),
-        title: const Text('Scan löschen?',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Scan löschen?', style: TextStyle(color: Colors.white)),
         content: const Text('Dieser Scan wird unwiderruflich gelöscht.',
             style: TextStyle(color: Colors.white70)),
         actions: [
@@ -762,8 +741,7 @@ class _HistoryTabState extends State<_HistoryTab> {
                   style: TextStyle(color: Colors.white54))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child:
-                  const Text('Löschen', style: TextStyle(color: _kPink))),
+              child: const Text('Löschen', style: TextStyle(color: _kPink))),
         ],
       ),
     );
@@ -772,12 +750,12 @@ class _HistoryTabState extends State<_HistoryTab> {
       await _db.from('body_scan_results').delete().eq('id', id);
       if (!mounted) return;
       setState(() => _rows.removeWhere((r) => r['id'] == id));
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Scan gelöscht')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Scan gelöscht')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -844,8 +822,7 @@ class _HistoryTabState extends State<_HistoryTab> {
             for (final e in (scoresRaw ?? const {}).entries)
               int.parse(e.key.toString()): (e.value as num).toInt(),
           };
-          final count =
-              (r['selected_symptom_ids'] as List?)?.length ?? 0;
+          final count = (r['selected_symptom_ids'] as List?)?.length ?? 0;
           final notes = r['notes'] as String?;
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -887,8 +864,8 @@ class _HistoryTabState extends State<_HistoryTab> {
                 const SizedBox(height: 8),
                 Text(
                     '$count Symptom(e) • Scores: ${scores.entries.map((e) => '${e.key}:${e.value}').join(' ')}',
-                    style: const TextStyle(
-                        color: Colors.white54, fontSize: 11)),
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 11)),
                 if (notes != null && notes.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Container(
@@ -897,8 +874,7 @@ class _HistoryTabState extends State<_HistoryTab> {
                         color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color:
-                                Colors.white.withValues(alpha: 0.15))),
+                            color: Colors.white.withValues(alpha: 0.15))),
                     child: Text(notes,
                         style: const TextStyle(
                             color: Colors.white70, fontSize: 12)),
@@ -1055,15 +1031,12 @@ class _InfoTab extends StatelessWidget {
             border: Border.all(color: color.withValues(alpha: 0.4)),
           ),
           child: Theme(
-            data:
-                Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
               iconColor: Colors.white70,
               collapsedIconColor: Colors.white54,
-              tilePadding:
-                  const EdgeInsets.symmetric(horizontal: 16),
-              childrenPadding:
-                  const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               title: Row(children: [
                 Container(
                   width: 44,
@@ -1099,17 +1072,13 @@ class _InfoTab extends StatelessWidget {
               ]),
               children: [
                 _InfoRow(
-                    label: 'Ort',
-                    value: c['location'] as String,
-                    color: color),
+                    label: 'Ort', value: c['location'] as String, color: color),
                 _InfoRow(
                     label: 'Element',
                     value: c['element'] as String,
                     color: color),
                 _InfoRow(
-                    label: 'Thema',
-                    value: c['theme'] as String,
-                    color: color),
+                    label: 'Thema', value: c['theme'] as String, color: color),
                 const SizedBox(height: 8),
                 _InfoBlock(
                     title: '✨ Im Gleichgewicht',
@@ -1150,13 +1119,11 @@ class _InfoRow extends StatelessWidget {
           SizedBox(
             width: 72,
             child: Text(label,
-                style:
-                    const TextStyle(color: Colors.white54, fontSize: 12)),
+                style: const TextStyle(color: Colors.white54, fontSize: 12)),
           ),
           Expanded(
             child: Text(value,
-                style:
-                    const TextStyle(color: Colors.white, fontSize: 13)),
+                style: const TextStyle(color: Colors.white, fontSize: 13)),
           ),
         ],
       ),
@@ -1183,9 +1150,7 @@ class _InfoBlock extends StatelessWidget {
         children: [
           Text(title,
               style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
+                  color: color, fontSize: 12, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
           Text(text,
               style: const TextStyle(

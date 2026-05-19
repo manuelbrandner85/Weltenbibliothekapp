@@ -32,8 +32,7 @@ class _SourcesCardState extends State<SourcesCard> {
         children: [
           Row(
             children: [
-              Icon(Icons.menu_book,
-                  color: KbDesign.lensOfficial, size: 18),
+              Icon(Icons.menu_book, color: KbDesign.lensOfficial, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'QUELLEN',
@@ -142,7 +141,8 @@ class _SourceTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(KbDesign.radiusSm),
         onTap: () async {
           final uri = Uri.tryParse(item.url);
-          if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (uri != null)
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
         },
         child: Container(
           padding: const EdgeInsets.all(12),
@@ -159,8 +159,8 @@ class _SourceTile extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(4),

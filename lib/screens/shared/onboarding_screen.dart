@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
 import '../../widgets/cinematic/wb_glow_button.dart';
 
 /// 🎓 ONBOARDING FLOW
-/// 
+///
 /// 4-Screen Tutorial mit Features:
 /// - Swipe-Gestures (PageView)
 /// - Skip-Button
@@ -29,28 +29,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       title: 'Willkommen in der\nWeltenbibliothek',
-      description: 'Entdecke verborgenes Wissen aus zwei Welten:\nMaterie & Energie',
+      description:
+          'Entdecke verborgenes Wissen aus zwei Welten:\nMaterie & Energie',
       icon: Icons.auto_stories,
       gradient: const [Color(0xFF050310), Color(0xFF0D0A1A)],
       world: WBWorld.neutral,
     ),
     OnboardingPage(
       title: 'Materie — Fakten\n& Recherche',
-      description: '50 Materie-Themen: Geopolitik, Verschwörungen,\nOSINT-Tools und investigative Recherche',
+      description:
+          '50 Materie-Themen: Geopolitik, Verschwörungen,\nOSINT-Tools und investigative Recherche',
       icon: Icons.search,
       gradient: const [Color(0xFF050310), Color(0xFF0A2452)],
       world: WBWorld.materie,
     ),
     OnboardingPage(
       title: 'Energie — Spirit\n& Bewusstsein',
-      description: '50 Energie-Themen: Meditation, Astrologie,\nChakren, Numerologie und Healing',
+      description:
+          '50 Energie-Themen: Meditation, Astrologie,\nChakren, Numerologie und Healing',
       icon: Icons.self_improvement,
       gradient: const [Color(0xFF050310), Color(0xFF3B0D6E)],
       world: WBWorld.energie,
     ),
     OnboardingPage(
       title: 'Community &\nLive-Features',
-      description: 'Echtzeit-Chat, Lesezeichen, Statistiken\nund gemeinsames Erforschen',
+      description:
+          'Echtzeit-Chat, Lesezeichen, Statistiken\nund gemeinsames Erforschen',
       icon: Icons.people,
       gradient: const [Color(0xFF050310), Color(0xFF1A1A2E)],
       world: WBWorld.neutral,
@@ -65,10 +69,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Always mark as completed (respect "don't show again" is implicit)
     await prefs.setBool('new_onboarding_completed', true);
-    
+
     if (mounted) {
       // Navigate to main app (pop to previous route or restart)
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
@@ -313,14 +317,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   /// Check if onboarding should be shown
-    // final prefs = await SharedPreferences.getInstance();
-    // final completed = prefs.getBool('new_onboarding_completed') ?? false;
-    // return !completed;
+  // final prefs = await SharedPreferences.getInstance();
+  // final completed = prefs.getBool('new_onboarding_completed') ?? false;
+  // return !completed;
   // }
 
   /// Reset onboarding (for testing)
-    // final prefs = await SharedPreferences.getInstance();
-    // await prefs.remove('new_onboarding_completed');
+  // final prefs = await SharedPreferences.getInstance();
+  // await prefs.remove('new_onboarding_completed');
   // }
 }
 

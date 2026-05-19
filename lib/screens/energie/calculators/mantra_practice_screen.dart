@@ -40,6 +40,7 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFFFFB300); // amber
   static const Color _secondary = Color(0xFFFF6F00); // deep orange
   static const Color _accent = Color(0xFFD500F9); // magenta
@@ -58,7 +59,8 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
       id: 'om',
       sanskrit: 'ॐ',
       translit: 'OM',
-      meaning: 'Urklang des Universums · Brahman · Schöpfung-Erhaltung-Auflösung',
+      meaning:
+          'Urklang des Universums · Brahman · Schöpfung-Erhaltung-Auflösung',
       day: 'Alle Tage',
       element: 'Äther',
       ttsText: 'Aaa-Uuu-Mmm',
@@ -97,13 +99,15 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
       meaning: 'Erleuchte unseren Geist · Sonnen-Hymnus (Rigveda)',
       day: 'Sonntag (Sonne)',
       element: 'Feuer',
-      ttsText: 'Om Bhuur Bhuu-vah Sva-ha. Tat Sa-vee-tur Va-rein-yam. Bhar-go De-vas-ya Dhee-ma-hi. Dhee-yo Yo Nah Pra-cho-da-yaat',
+      ttsText:
+          'Om Bhuur Bhuu-vah Sva-ha. Tat Sa-vee-tur Va-rein-yam. Bhar-go De-vas-ya Dhee-ma-hi. Dhee-yo Yo Nah Pra-cho-da-yaat',
     ),
     _Mantra(
       id: 'ganapati',
       sanskrit: 'ॐ गं गणपतये नमः',
       translit: 'Om Gam Ganapataye Namaha',
-      meaning: 'Anrufung Ganeshas · Beseitiger der Hindernisse · vor jedem Beginnen',
+      meaning:
+          'Anrufung Ganeshas · Beseitiger der Hindernisse · vor jedem Beginnen',
       day: 'Mittwoch (Merkur · neue Anfänge)',
       element: 'Erde',
       ttsText: 'Om Gam Ga-na-pa-tai-eh Na-ma-ha',
@@ -144,18 +148,22 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
     super.initState();
     _tts = FlutterTts();
     _setupTts();
-    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))
-      ..repeat(reverse: true);
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
-      ..repeat(reverse: true);
+    _bgCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat(reverse: true);
+    _pulseCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat(reverse: true);
     _loadCounter();
     // Auto-Select Tagesmantra
     final id = _dayMantraId[DateTime.now().weekday] ?? 'om';
-    _selected = _mantras.firstWhere((m) => m.id == id, orElse: () => _mantras.first);
+    _selected =
+        _mantras.firstWhere((m) => m.id == id, orElse: () => _mantras.first);
   }
 
   Future<void> _setupTts() async {
-    await _tts.setLanguage('en-IN'); // Indian English bessere Sanskrit-Annäherung
+    await _tts
+        .setLanguage('en-IN'); // Indian English bessere Sanskrit-Annäherung
     await _tts.setSpeechRate(0.35);
     await _tts.setPitch(0.95);
     await _tts.setVolume(0.95);
@@ -190,8 +198,10 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
   Future<void> _tapBead() async {
     setState(() => _beadCount++);
     // Haptik alle 9 (Mala-Sub-Cycle)
-    if (_beadCount % 9 == 0) await HapticFeedback.mediumImpact();
-    else await HapticFeedback.selectionClick();
+    if (_beadCount % 9 == 0)
+      await HapticFeedback.mediumImpact();
+    else
+      await HapticFeedback.selectionClick();
     // Bei 108: vollständige Runde — kräftiges Feedback + Reset-Option
     if (_beadCount >= 108) {
       await HapticFeedback.heavyImpact();
@@ -243,7 +253,8 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    center: Alignment(0.3 - _bgCtrl.value * 0.4, -0.5 + _bgCtrl.value * 0.3),
+                    center: Alignment(
+                        0.3 - _bgCtrl.value * 0.4, -0.5 + _bgCtrl.value * 0.3),
                     radius: 1.5,
                     colors: [
                       _primary.withValues(alpha: 0.18),
@@ -259,7 +270,10 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
             Positioned(
               top: -120 + _bgCtrl.value * 60,
               right: -80,
-              child: _CineOrb(color: _primary, size: 380, opacity: 0.16 + _bgCtrl.value * 0.06),
+              child: _CineOrb(
+                  color: _primary,
+                  size: 380,
+                  opacity: 0.16 + _bgCtrl.value * 0.06),
             ),
             Positioned(
               bottom: -130 + _bgCtrl.value * 50,
@@ -269,7 +283,10 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
             Positioned(
               top: MediaQuery.of(context).size.height * 0.5,
               left: MediaQuery.of(context).size.width * 0.3,
-              child: _CineOrb(color: _accent, size: 240, opacity: 0.10 + _bgCtrl.value * 0.04),
+              child: _CineOrb(
+                  color: _accent,
+                  size: 240,
+                  opacity: 0.10 + _bgCtrl.value * 0.04),
             ),
             // Layer 3: Particles
             const Positioned.fill(
@@ -333,7 +350,10 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [_primary.withValues(alpha: 0.35), _accent.withValues(alpha: 0.15)]),
+        gradient: LinearGradient(colors: [
+          _primary.withValues(alpha: 0.35),
+          _accent.withValues(alpha: 0.15)
+        ]),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _primary.withValues(alpha: 0.4)),
       ),
@@ -346,9 +366,16 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('TAGESMANTRA · ${_weekdayName(day)}',
-                    style: TextStyle(color: Colors.white70, fontSize: 9, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold)),
                 Text(dayMantra.translit,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -359,7 +386,8 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               minimumSize: const Size(60, 32),
             ),
-            child: const Text('Wählen', style: TextStyle(color: _primary, fontSize: 11)),
+            child: const Text('Wählen',
+                style: TextStyle(color: _primary, fontSize: 11)),
           ),
         ],
       ),
@@ -385,7 +413,8 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
               ],
               stops: const [0, 0.6, 1],
             ),
-            border: Border.all(color: _primary.withValues(alpha: 0.45), width: 1.2),
+            border:
+                Border.all(color: _primary.withValues(alpha: 0.45), width: 1.2),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -416,18 +445,26 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
                     fontWeight: FontWeight.bold,
                     letterSpacing: 2,
                     shadows: [
-                      Shadow(color: Colors.black87, blurRadius: 18, offset: Offset(0, 4)),
+                      Shadow(
+                          color: Colors.black87,
+                          blurRadius: 18,
+                          offset: Offset(0, 4)),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 8),
               Text(m.translit,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600, letterSpacing: 1.5)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.5)),
               const SizedBox(height: 8),
               Text(m.meaning,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.5)),
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 12.5, height: 1.5)),
               const SizedBox(height: 12),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 _chip('🌗 ${m.day}'),
@@ -441,12 +478,14 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
                   onPressed: _speak,
                   icon: Icon(_speaking ? Icons.stop : Icons.volume_up),
                   label: Text(_speaking ? 'Stopp' : 'AUSSPRACHE HÖREN',
-                      style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _primary,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
               ),
@@ -472,7 +511,11 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
             border: Border.all(color: _accent.withValues(alpha: 0.3)),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: _accent.withValues(alpha: 0.2), blurRadius: 22, spreadRadius: -6, offset: const Offset(0, 6)),
+              BoxShadow(
+                  color: _accent.withValues(alpha: 0.2),
+                  blurRadius: 22,
+                  spreadRadius: -6,
+                  offset: const Offset(0, 6)),
             ],
           ),
           child: Column(
@@ -481,11 +524,16 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('108-MALA-COUNTER',
-                      style: TextStyle(color: _accent, fontSize: 10, letterSpacing: 2.5, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          color: _accent,
+                          fontSize: 10,
+                          letterSpacing: 2.5,
+                          fontWeight: FontWeight.bold)),
                   if (_beadCount > 0)
                     GestureDetector(
                       onTap: _resetCounter,
-                      child: Icon(Icons.refresh, color: Colors.white.withValues(alpha: 0.6), size: 18),
+                      child: Icon(Icons.refresh,
+                          color: Colors.white.withValues(alpha: 0.6), size: 18),
                     ),
                 ],
               ),
@@ -501,14 +549,16 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(colors: [
-                        _primary.withValues(alpha: 0.55 + _pulseCtrl.value * 0.15),
+                        _primary.withValues(
+                            alpha: 0.55 + _pulseCtrl.value * 0.15),
                         _accent.withValues(alpha: 0.25),
                         Colors.transparent,
                       ]),
                       border: Border.all(color: _primary, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: _primary.withValues(alpha: 0.45 + _pulseCtrl.value * 0.2),
+                          color: _primary.withValues(
+                              alpha: 0.45 + _pulseCtrl.value * 0.2),
                           blurRadius: 28 + _pulseCtrl.value * 8,
                           spreadRadius: 2,
                         ),
@@ -522,12 +572,21 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
                               color: Colors.white,
                               fontSize: 48,
                               fontWeight: FontWeight.bold,
-                              shadows: [Shadow(color: Colors.black87, blurRadius: 16)],
+                              shadows: [
+                                Shadow(color: Colors.black87, blurRadius: 16)
+                              ],
                             )),
                         const Text('/108',
-                            style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
+                            style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
-                        const Text('TAP', style: TextStyle(color: Colors.white60, fontSize: 9, letterSpacing: 3)),
+                        const Text('TAP',
+                            style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 9,
+                                letterSpacing: 3)),
                       ],
                     ),
                   ),
@@ -562,7 +621,11 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('ALLE 8 MANTRAS',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 10, letterSpacing: 2.5, fontWeight: FontWeight.bold)),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 10,
+                letterSpacing: 2.5,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
@@ -572,7 +635,8 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
               GestureDetector(
                 onTap: () => setState(() => _selected = m),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: _selected?.id == m.id
                         ? _primary.withValues(alpha: 0.3)
@@ -587,7 +651,9 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
                   ),
                   child: Text(m.translit,
                       style: TextStyle(
-                        color: _selected?.id == m.id ? Colors.white : Colors.white70,
+                        color: _selected?.id == m.id
+                            ? Colors.white
+                            : Colors.white70,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       )),
@@ -607,7 +673,8 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
-      child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 10)),
+      child: Text(text,
+          style: const TextStyle(color: Colors.white70, fontSize: 10)),
     );
   }
 
@@ -654,7 +721,8 @@ class _CineOrb extends StatelessWidget {
   final Color color;
   final double size;
   final double opacity;
-  const _CineOrb({required this.color, required this.size, required this.opacity});
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(

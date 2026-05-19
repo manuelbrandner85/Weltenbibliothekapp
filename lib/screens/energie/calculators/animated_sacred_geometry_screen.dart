@@ -103,7 +103,8 @@ class _AnimatedSacredGeometryScreenState
                     painter: _GeometryPainter(
                       pattern: _current,
                       progress: _draw.value,
-                      rotation: _userRotation + (_autoRotate ? _rotate.value * 2 * math.pi : 0),
+                      rotation: _userRotation +
+                          (_autoRotate ? _rotate.value * 2 * math.pi : 0),
                       color: _accent,
                     ),
                   );
@@ -121,11 +122,16 @@ class _AnimatedSacredGeometryScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(_current.title,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
                 Text(_current.meaning,
-                    style: const TextStyle(color: Colors.white70, fontSize: 11.5, height: 1.4),
-                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 11.5, height: 1.4),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -144,10 +150,13 @@ class _AnimatedSacredGeometryScreenState
                     width: 70,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
-                      color: selected ? _accent.withValues(alpha: 0.3) : const Color(0xFF1A1A2E),
+                      color: selected
+                          ? _accent.withValues(alpha: 0.3)
+                          : const Color(0xFF1A1A2E),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: selected ? _accent : _accent.withValues(alpha: 0.2),
+                        color:
+                            selected ? _accent : _accent.withValues(alpha: 0.2),
                         width: selected ? 2 : 1,
                       ),
                     ),
@@ -199,14 +208,22 @@ enum _Pattern {
       };
 
   String get meaning => switch (this) {
-        _Pattern.flowerOfLife => '19 verschränkte Kreise · enthält alle Platonischen Körper. Symbol der Schöpfung.',
-        _Pattern.vesicaPiscis => 'Zwei sich überlappende Kreise · die Mandorla, das Tor zwischen Welten.',
-        _Pattern.metatronCube => '13 Kreise aus der Blume des Lebens · alle 5 Platonischen Körper enthalten.',
-        _Pattern.sriYantra => '9 verschränkte Dreiecke · Tantra-Diagramm der Schöpfung.',
-        _Pattern.merkaba => 'Zwei verschränkte Tetraeder · Lichtkörper-Fahrzeug.',
-        _Pattern.torus => 'Selbst-zirkulierende Energie · Magnetfeld, Herzfeld, Apfelform.',
-        _Pattern.goldenSpiral => 'Fibonacci-Spirale nach Phi (1.618) · universelles Wachstumsprinzip.',
-        _Pattern.hexagram => 'Zwei ineinander verflochtene Dreiecke · Vereinigung Himmel/Erde, männlich/weiblich.',
+        _Pattern.flowerOfLife =>
+          '19 verschränkte Kreise · enthält alle Platonischen Körper. Symbol der Schöpfung.',
+        _Pattern.vesicaPiscis =>
+          'Zwei sich überlappende Kreise · die Mandorla, das Tor zwischen Welten.',
+        _Pattern.metatronCube =>
+          '13 Kreise aus der Blume des Lebens · alle 5 Platonischen Körper enthalten.',
+        _Pattern.sriYantra =>
+          '9 verschränkte Dreiecke · Tantra-Diagramm der Schöpfung.',
+        _Pattern.merkaba =>
+          'Zwei verschränkte Tetraeder · Lichtkörper-Fahrzeug.',
+        _Pattern.torus =>
+          'Selbst-zirkulierende Energie · Magnetfeld, Herzfeld, Apfelform.',
+        _Pattern.goldenSpiral =>
+          'Fibonacci-Spirale nach Phi (1.618) · universelles Wachstumsprinzip.',
+        _Pattern.hexagram =>
+          'Zwei ineinander verflochtene Dreiecke · Vereinigung Himmel/Erde, männlich/weiblich.',
       };
 
   String get emoji => switch (this) {
@@ -295,7 +312,8 @@ class _GeometryPainter extends CustomPainter {
     canvas.restore();
   }
 
-  void _drawArcPart(Canvas canvas, Offset c, double r, Paint p, Paint g, double startAngle, double sweepAngle, double prog) {
+  void _drawArcPart(Canvas canvas, Offset c, double r, Paint p, Paint g,
+      double startAngle, double sweepAngle, double prog) {
     final actualSweep = sweepAngle * prog.clamp(0.0, 1.0);
     if (actualSweep <= 0) return;
     final rect = Rect.fromCircle(center: c, radius: r);
@@ -303,7 +321,8 @@ class _GeometryPainter extends CustomPainter {
     canvas.drawArc(rect, startAngle, actualSweep, false, p);
   }
 
-  void _drawCircle(Canvas canvas, Offset c, double r, Paint p, Paint g, double prog) {
+  void _drawCircle(
+      Canvas canvas, Offset c, double r, Paint p, Paint g, double prog) {
     _drawArcPart(canvas, c, r, p, g, -math.pi / 2, 2 * math.pi, prog);
   }
 
@@ -312,11 +331,13 @@ class _GeometryPainter extends CustomPainter {
     final circles = <Offset>[c];
     for (var i = 0; i < 6; i++) {
       final angle = i * math.pi / 3;
-      circles.add(Offset(c.dx + r * math.cos(angle), c.dy + r * math.sin(angle)));
+      circles
+          .add(Offset(c.dx + r * math.cos(angle), c.dy + r * math.sin(angle)));
     }
     final perCircleProgress = 1.0 / circles.length;
     for (var i = 0; i < circles.length; i++) {
-      final localProg = ((progress - i * perCircleProgress) / perCircleProgress).clamp(0.0, 1.0);
+      final localProg = ((progress - i * perCircleProgress) / perCircleProgress)
+          .clamp(0.0, 1.0);
       _drawCircle(canvas, circles[i], r, p, g, localProg);
     }
   }
@@ -325,7 +346,8 @@ class _GeometryPainter extends CustomPainter {
     final left = Offset(c.dx - r / 2, c.dy);
     final right = Offset(c.dx + r / 2, c.dy);
     _drawCircle(canvas, left, r, p, g, math.min(1.0, progress * 2));
-    _drawCircle(canvas, right, r, p, g, math.max(0, math.min(1.0, (progress - 0.5) * 2)));
+    _drawCircle(canvas, right, r, p, g,
+        math.max(0, math.min(1.0, (progress - 0.5) * 2)));
   }
 
   void _drawMetatronCube(Canvas canvas, Offset c, double r, Paint p, Paint g) {
@@ -333,7 +355,8 @@ class _GeometryPainter extends CustomPainter {
     points.add(c);
     for (var i = 0; i < 6; i++) {
       final a = i * math.pi / 3;
-      points.add(Offset(c.dx + r * 0.6 * math.cos(a), c.dy + r * 0.6 * math.sin(a)));
+      points.add(
+          Offset(c.dx + r * 0.6 * math.cos(a), c.dy + r * 0.6 * math.sin(a)));
     }
     for (var i = 0; i < 6; i++) {
       final a = i * math.pi / 3 - math.pi / 6;

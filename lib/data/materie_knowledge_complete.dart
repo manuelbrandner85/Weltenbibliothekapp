@@ -8,12 +8,13 @@ import '../models/knowledge_extended_models.dart';
 
 final List<KnowledgeEntry> materieKnowledgeComplete = [
   // EINTRÄGE 16-50 (35 weitere)
-  
+
   KnowledgeEntry(
     id: 'mat_016',
     world: 'materie',
     title: 'JFK Assassination - Wer tötete Präsident Kennedy?',
-    description: '22. November 1963 in Dallas - Oswald als Sündenbock oder Teil einer größeren Verschwörung?',
+    description:
+        '22. November 1963 in Dallas - Oswald als Sündenbock oder Teil einer größeren Verschwörung?',
     fullContent: '''
 # JFK Assassination - Der Mord, der Amerika veränderte
 
@@ -108,7 +109,8 @@ JFK's Ermordung war ein Wendepunkt:
     id: 'mat_017',
     world: 'materie',
     title: '9/11 Truth Movement - Inside Job oder Terroranschlag?',
-    description: 'World Trade Center Einsturz durch Flugzeuge oder kontrollierte Sprengung? Die Beweise sprechen...',
+    description:
+        'World Trade Center Einsturz durch Flugzeuge oder kontrollierte Sprengung? Die Beweise sprechen...',
     fullContent: '''
 # 9/11 - Die unbequemen Fragen
 
@@ -303,7 +305,14 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
 ''',
     category: 'conspiracy',
     type: 'research',
-    tags: ['9/11', 'WTC', 'Twin Towers', 'Pentagon', 'Inside Job', 'Truth Movement'],
+    tags: [
+      '9/11',
+      'WTC',
+      'Twin Towers',
+      'Pentagon',
+      'Inside Job',
+      'Truth Movement'
+    ],
     createdAt: DateTime(2024, 1, 31),
     readingTimeMinutes: 25,
   ),
@@ -319,8 +328,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_027',
     world: 'materie',
     title: 'Council on Foreign Relations (CFR) - US-Außenpolitik-Kontrolle',
-    description: 'Private Organisation kontrolliert US-Außenpolitik seit 1921 - fast jeder Präsident war Mitglied',
-    fullContent: 'CFR wurde 1921 gegründet nach WW1. Fast alle US-Außenminister, CIA-Direktoren und Präsidenten waren/sind Mitglieder. Über 5.000 Mitglieder aus Politik, Medien, Banking. Magazin: Foreign Affairs (setzt globale Agenda). Kritiker: Undemokratische Kontrolle über US-Politik. Verbindung zu Bilderberg und Trilateral Commission.',
+    description:
+        'Private Organisation kontrolliert US-Außenpolitik seit 1921 - fast jeder Präsident war Mitglied',
+    fullContent:
+        'CFR wurde 1921 gegründet nach WW1. Fast alle US-Außenminister, CIA-Direktoren und Präsidenten waren/sind Mitglieder. Über 5.000 Mitglieder aus Politik, Medien, Banking. Magazin: Foreign Affairs (setzt globale Agenda). Kritiker: Undemokratische Kontrolle über US-Politik. Verbindung zu Bilderberg und Trilateral Commission.',
     category: 'conspiracy',
     type: 'research',
     tags: ['CFR', 'Elite', 'Foreign Policy', 'Rockefeller'],
@@ -332,8 +343,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_028',
     world: 'materie',
     title: 'Skull & Bones - Yale Secret Society',
-    description: 'George W. Bush, John Kerry, CIA-Gründer - alle Mitglieder dieser okkulten Bruderschaft',
-    fullContent: 'Gegründet 1832 an Yale University. 15 neue Mitglieder pro Jahr ("Bonesmen"). Initiation in "The Tomb" (gruseliges Ritual). Berühmte Mitglieder: Prescott Bush, George H.W. Bush, George W. Bush, John Kerry. 2004: Bush vs. Kerry (beide Skull & Bones!) - "Different Party, same Brotherhood". Symbol: Totenkopf mit gekreuzten Knochen. Geronimo\'s Schädel angeblich in "The Tomb".',
+    description:
+        'George W. Bush, John Kerry, CIA-Gründer - alle Mitglieder dieser okkulten Bruderschaft',
+    fullContent:
+        'Gegründet 1832 an Yale University. 15 neue Mitglieder pro Jahr ("Bonesmen"). Initiation in "The Tomb" (gruseliges Ritual). Berühmte Mitglieder: Prescott Bush, George H.W. Bush, George W. Bush, John Kerry. 2004: Bush vs. Kerry (beide Skull & Bones!) - "Different Party, same Brotherhood". Symbol: Totenkopf mit gekreuzten Knochen. Geronimo\'s Schädel angeblich in "The Tomb".',
     category: 'conspiracy',
     type: 'research',
     tags: ['Skull and Bones', 'Yale', 'Bush', 'Secret Society'],
@@ -346,8 +359,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_029',
     world: 'materie',
     title: 'Gulf of Tonkin - Die Lüge die Vietnam-Krieg startete',
-    description: 'LBJ log über Angriff auf US-Schiff - 58.000 US-Soldaten starben für eine Lüge',
-    fullContent: '4. August 1964: US-Zerstörer USS Maddox angeblich von nordvietnamesischen Booten angegriffen. LBJ ging vor Kongress: "Unprovozierter Angriff!". Gulf of Tonkin Resolution: Kriegsermächtigung ohne Kriegserklärung. 1971: Pentagon Papers enthüllten - zweiter "Angriff" fand NIE statt! Robert McNamara (Verteidigungsminister) gab 1995 zu: "Es war ein Fehler". 58.000 US-Soldaten tot. 2-3 Millionen Vietnamesen tot. Alles basierend auf Lüge.',
+    description:
+        'LBJ log über Angriff auf US-Schiff - 58.000 US-Soldaten starben für eine Lüge',
+    fullContent:
+        '4. August 1964: US-Zerstörer USS Maddox angeblich von nordvietnamesischen Booten angegriffen. LBJ ging vor Kongress: "Unprovozierter Angriff!". Gulf of Tonkin Resolution: Kriegsermächtigung ohne Kriegserklärung. 1971: Pentagon Papers enthüllten - zweiter "Angriff" fand NIE statt! Robert McNamara (Verteidigungsminister) gab 1995 zu: "Es war ein Fehler". 58.000 US-Soldaten tot. 2-3 Millionen Vietnamesen tot. Alles basierend auf Lüge.',
     category: 'conspiracy',
     type: 'research',
     tags: ['Gulf of Tonkin', 'Vietnam War', 'False Flag', 'LBJ'],
@@ -359,8 +374,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_030',
     world: 'materie',
     title: 'USS Liberty Attack - Israel griff US-Schiff an',
-    description: '8. Juni 1967: Israel bombardierte US-Schiff 90 Minuten lang - 34 Tote, 174 Verwundete',
-    fullContent: 'Während Sechs-Tage-Krieg griff Israel USS Liberty (US Navy Schiff) an. Flugzeuge und Torpedo-Boote - 90 Minuten lang. 34 US-Soldaten tot, 174 verwundet. Israel: "Unfall, dachten es war ägyptisch". ABER: US-Flagge war klar sichtbar, perfektes Wetter. Überlebende: "Absichtlicher Angriff". LBJ ordnete Cover-Up an. Warum? Israel wollte nicht, dass USA ihre Kriegsverbrechen mithört (Liberty war Spionageschiff).',
+    description:
+        '8. Juni 1967: Israel bombardierte US-Schiff 90 Minuten lang - 34 Tote, 174 Verwundete',
+    fullContent:
+        'Während Sechs-Tage-Krieg griff Israel USS Liberty (US Navy Schiff) an. Flugzeuge und Torpedo-Boote - 90 Minuten lang. 34 US-Soldaten tot, 174 verwundet. Israel: "Unfall, dachten es war ägyptisch". ABER: US-Flagge war klar sichtbar, perfektes Wetter. Überlebende: "Absichtlicher Angriff". LBJ ordnete Cover-Up an. Warum? Israel wollte nicht, dass USA ihre Kriegsverbrechen mithört (Liberty war Spionageschiff).',
     category: 'conspiracy',
     type: 'research',
     tags: ['USS Liberty', 'Israel', 'False Flag', 'Six Day War'],
@@ -372,8 +389,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_031',
     world: 'materie',
     title: 'Oklahoma City Bombing - Timothy McVeigh oder FBI?',
-    description: '19. April 1995: 168 Tote - aber zusätzliche Bomben im Gebäude gefunden',
-    fullContent: 'Alfred P. Murrah Federal Building gesprengt. Offiziell: Timothy McVeigh (Einzeltäter) mit Dünger-Bombe im Truck. ABER: Lokale News berichteten über mehrere NICHT-explodierte Bomben IM Gebäude (Video existiert). Seismographen zeigen ZWEI Explosionen. General Partin (Bomb-Expert): "Truck-Bombe alleine unmöglich, strukturelle Schäden erfordern Sprengstoff IN Säulen". McVeigh hatte FBI-Kontakte. Viele glauben: FBI-Sting-Operation ging schief.',
+    description:
+        '19. April 1995: 168 Tote - aber zusätzliche Bomben im Gebäude gefunden',
+    fullContent:
+        'Alfred P. Murrah Federal Building gesprengt. Offiziell: Timothy McVeigh (Einzeltäter) mit Dünger-Bombe im Truck. ABER: Lokale News berichteten über mehrere NICHT-explodierte Bomben IM Gebäude (Video existiert). Seismographen zeigen ZWEI Explosionen. General Partin (Bomb-Expert): "Truck-Bombe alleine unmöglich, strukturelle Schäden erfordern Sprengstoff IN Säulen". McVeigh hatte FBI-Kontakte. Viele glauben: FBI-Sting-Operation ging schief.',
     category: 'conspiracy',
     type: 'research',
     tags: ['Oklahoma City', 'McVeigh', 'FBI', 'False Flag'],
@@ -386,8 +405,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_032',
     world: 'materie',
     title: 'Polio-Impfstoff & SV40 - Krebs-Virus injiziert',
-    description: '1955-1963: Millionen bekamen Polio-Impfung mit Krebs-verursachendem Virus kontaminiert',
-    fullContent: 'Salk Polio-Impfstoff (1955-1963) war kontaminiert mit Simian Virus 40 (SV40) von Affen-Nieren. SV40 verursacht Krebs (Gehirn, Knochen, Lunge). 98 Millionen Amerikaner bekamen kontaminierten Impfstoff. CDC gab 1999 zu, entfernte später Admission von Website. Dr. Maurice Hilleman (Merck) gab in Interview zu: "Wir importierten das AIDS-Virus". Verbindung zwischen Polio-Kampagne in Afrika und HIV-Ursprung?',
+    description:
+        '1955-1963: Millionen bekamen Polio-Impfung mit Krebs-verursachendem Virus kontaminiert',
+    fullContent:
+        'Salk Polio-Impfstoff (1955-1963) war kontaminiert mit Simian Virus 40 (SV40) von Affen-Nieren. SV40 verursacht Krebs (Gehirn, Knochen, Lunge). 98 Millionen Amerikaner bekamen kontaminierten Impfstoff. CDC gab 1999 zu, entfernte später Admission von Website. Dr. Maurice Hilleman (Merck) gab in Interview zu: "Wir importierten das AIDS-Virus". Verbindung zwischen Polio-Kampagne in Afrika und HIV-Ursprung?',
     category: 'conspiracy',
     type: 'research',
     tags: ['Polio', 'Vaccine', 'SV40', 'Cancer', 'Big Pharma'],
@@ -399,8 +420,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_033',
     world: 'materie',
     title: 'Rockefeller Medicine - Wie Big Pharma Naturmedizin zerstörte',
-    description: 'John D. Rockefeller kaufte Medizin-Schulen und verbot pflanzliche Heilkunde',
-    fullContent: 'Frühe 1900s: Homöopathie, Kräuter-Medizin, Chiropraktik waren mainstream. Rockefeller (Standard Oil) wollte Petro-Chemie-Medikamente verkaufen. 1910: Flexner Report (finanziert von Rockefeller) diskreditierte Naturmedizin als "Quacksalber". Rockefeller kaufte/finanzierte Medizin-Schulen - nur Allopathie (Pharma-Medizin) gelehrt. Resultat: Natürliche Heilmethoden unterdrückt, Pharma-Monopol etabliert. "Gesundheits-System" wurde "Krankheits-Management-System".',
+    description:
+        'John D. Rockefeller kaufte Medizin-Schulen und verbot pflanzliche Heilkunde',
+    fullContent:
+        'Frühe 1900s: Homöopathie, Kräuter-Medizin, Chiropraktik waren mainstream. Rockefeller (Standard Oil) wollte Petro-Chemie-Medikamente verkaufen. 1910: Flexner Report (finanziert von Rockefeller) diskreditierte Naturmedizin als "Quacksalber". Rockefeller kaufte/finanzierte Medizin-Schulen - nur Allopathie (Pharma-Medizin) gelehrt. Resultat: Natürliche Heilmethoden unterdrückt, Pharma-Monopol etabliert. "Gesundheits-System" wurde "Krankheits-Management-System".',
     category: 'conspiracy',
     type: 'research',
     tags: ['Rockefeller', 'Big Pharma', 'Naturmedizin', 'Flexner Report'],
@@ -412,8 +435,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_034',
     world: 'materie',
     title: 'Royal Raymond Rife - Frequenz-Heilung unterdrückt',
-    description: 'Heilte Krebs mit Frequenzen 1934 - AMA zerstörte ihn und seine Maschinen',
-    fullContent: 'Dr. Royal Rife entwickelte "Universal Microscope" (60.000x Vergrößerung) und Frequenz-Generator. 1934: Heilte 16/16 Krebs-Patienten mit Frequenzen (resonante Frequenz tötet Pathogene). AMA (American Medical Association) und Pharma sahen Bedrohung. Morris Fishbein (AMA) wollte Rife kaufen - Rife lehnte ab. Daraufhin: Laboratorium zerstört, Dokumente gestohlen, Rufmord-Kampagne. Rife starb 1971 in Armut. Seine Technologie existiert heute als "Rife Machines" (alternative Medizin).',
+    description:
+        'Heilte Krebs mit Frequenzen 1934 - AMA zerstörte ihn und seine Maschinen',
+    fullContent:
+        'Dr. Royal Rife entwickelte "Universal Microscope" (60.000x Vergrößerung) und Frequenz-Generator. 1934: Heilte 16/16 Krebs-Patienten mit Frequenzen (resonante Frequenz tötet Pathogene). AMA (American Medical Association) und Pharma sahen Bedrohung. Morris Fishbein (AMA) wollte Rife kaufen - Rife lehnte ab. Daraufhin: Laboratorium zerstört, Dokumente gestohlen, Rufmord-Kampagne. Rife starb 1971 in Armut. Seine Technologie existiert heute als "Rife Machines" (alternative Medizin).',
     category: 'forbidden_knowledge',
     type: 'research',
     tags: ['Royal Rife', 'Frequenz', 'Krebs', 'Heilung', 'Big Pharma'],
@@ -426,8 +451,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_035',
     world: 'materie',
     title: 'Water Fuel Cell - Stanley Meyer fuhr Auto mit Wasser',
-    description: 'Erfinder starb plötzlich nach "Vergiftung" - Patent wurde unterdrückt',
-    fullContent: 'Stanley Meyer entwickelte "Water Fuel Cell" - Elektrolyse-Methode um Wasser in HHO-Gas zu spalten (Wasserstoff). Auto fuhr 100+ Meilen mit 1 Gallone Wasser. 1996: Pentagon bot Meyer 1 Milliarde Dollar - lehnte ab. März 1998: Starb plötzlich nach Essen mit Investoren. Letzte Worte: "Sie haben mich vergiftet". Autopsie: "Gehirn-Aneurysma" (aber Familie glaubt es nicht). Patent existiert noch, aber niemand konnte es replizieren (wichtige Details fehlen).',
+    description:
+        'Erfinder starb plötzlich nach "Vergiftung" - Patent wurde unterdrückt',
+    fullContent:
+        'Stanley Meyer entwickelte "Water Fuel Cell" - Elektrolyse-Methode um Wasser in HHO-Gas zu spalten (Wasserstoff). Auto fuhr 100+ Meilen mit 1 Gallone Wasser. 1996: Pentagon bot Meyer 1 Milliarde Dollar - lehnte ab. März 1998: Starb plötzlich nach Essen mit Investoren. Letzte Worte: "Sie haben mich vergiftet". Autopsie: "Gehirn-Aneurysma" (aber Familie glaubt es nicht). Patent existiert noch, aber niemand konnte es replizieren (wichtige Details fehlen).',
     category: 'forbidden_knowledge',
     type: 'research',
     tags: ['Stanley Meyer', 'Water Fuel', 'Free Energy', 'Wasserstoff'],
@@ -439,8 +466,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_036',
     world: 'materie',
     title: 'Eugene Mallove - Cold Fusion Forscher ermordet',
-    description: 'Kalte Fusion würde Energie-Krise lösen - Erfinder tot aufgefunden 2004',
-    fullContent: 'Dr. Eugene Mallove (MIT) erforschte Cold Fusion / LENR (Low Energy Nuclear Reactions). 1989: Pons & Fleischmann präsentierten Cold Fusion - wissenschaftliche Community diskreditierte sie. Mallove verteidigte die Forschung, schrieb Buch "Fire from Ice". 14. Mai 2004: Ermordet bei seinem Elternhaus (angeblich Raubüberfall). Nichts gestohlen. Täter gefasst 2012 - aber Motiv unklar. Cold Fusion könnte unbegrenzte saubere Energie liefern - Bedrohung für Öl/Gas/Kohle-Industrie.',
+    description:
+        'Kalte Fusion würde Energie-Krise lösen - Erfinder tot aufgefunden 2004',
+    fullContent:
+        'Dr. Eugene Mallove (MIT) erforschte Cold Fusion / LENR (Low Energy Nuclear Reactions). 1989: Pons & Fleischmann präsentierten Cold Fusion - wissenschaftliche Community diskreditierte sie. Mallove verteidigte die Forschung, schrieb Buch "Fire from Ice". 14. Mai 2004: Ermordet bei seinem Elternhaus (angeblich Raubüberfall). Nichts gestohlen. Täter gefasst 2012 - aber Motiv unklar. Cold Fusion könnte unbegrenzte saubere Energie liefern - Bedrohung für Öl/Gas/Kohle-Industrie.',
     category: 'forbidden_knowledge',
     type: 'research',
     tags: ['Cold Fusion', 'Eugene Mallove', 'Free Energy', 'Mord'],
@@ -453,8 +482,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_037',
     world: 'materie',
     title: 'Federal Reserve - Private Zentralbank kontrolliert Dollar',
-    description: 'Federal Reserve ist NICHT staatlich - 1913 heimlich gegründet auf Jekyll Island',
-    fullContent: 'Federal Reserve (1913) ist eine PRIVATE Bank (nicht Teil der US-Regierung). Gegründet heimlich auf Jekyll Island (Georgia) von Bankern: J.P. Morgan, Rockefeller, Rothschild-Vertreter. Federal Reserve Act wurde am 23. Dezember 1913 verabschiedet (meiste Kongressmitglieder waren zu Weihnachten weg). FED druckt Dollar aus dem Nichts und leiht sie an US-Regierung mit ZINSEN. US-Regierung schuldet FED über 30 Billionen Dollar. Zitat: "Gib mir Kontrolle über Geld, und es ist egal wer Gesetze macht" - Rothschild.',
+    description:
+        'Federal Reserve ist NICHT staatlich - 1913 heimlich gegründet auf Jekyll Island',
+    fullContent:
+        'Federal Reserve (1913) ist eine PRIVATE Bank (nicht Teil der US-Regierung). Gegründet heimlich auf Jekyll Island (Georgia) von Bankern: J.P. Morgan, Rockefeller, Rothschild-Vertreter. Federal Reserve Act wurde am 23. Dezember 1913 verabschiedet (meiste Kongressmitglieder waren zu Weihnachten weg). FED druckt Dollar aus dem Nichts und leiht sie an US-Regierung mit ZINSEN. US-Regierung schuldet FED über 30 Billionen Dollar. Zitat: "Gib mir Kontrolle über Geld, und es ist egal wer Gesetze macht" - Rothschild.',
     category: 'conspiracy',
     type: 'research',
     tags: ['Federal Reserve', 'Banking', 'Rothschild', 'Jekyll Island'],
@@ -466,8 +497,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_039',
     world: 'materie',
     title: 'Titanic Sinking - JP Morgan\'s Insurance Scam',
-    description: 'Reichste Männer gegen Federal Reserve starben auf Titanic - JP Morgan stornierte Last-Minute',
-    fullContent: '15. April 1912: Titanic sank (1.500 Tote). An Bord: John Jacob Astor, Benjamin Guggenheim, Isidor Straus (alle gegen Federal Reserve-Plan). JP Morgan sollte mitfahren - stornierte Last-Minute ("krank"). Federal Reserve Act wurde 1913 verabschiedet (Opposition tot). Versicherungs-Betrug? Titanic und Olympic (Schwester-Schiff) wurden angeblich vertauscht - Olympic war beschädigt, Versicherung wollte nicht zahlen. Lösung: Schiffe vertauschen, Olympic als "Titanic" versenken, Versicherung kassieren.',
+    description:
+        'Reichste Männer gegen Federal Reserve starben auf Titanic - JP Morgan stornierte Last-Minute',
+    fullContent:
+        '15. April 1912: Titanic sank (1.500 Tote). An Bord: John Jacob Astor, Benjamin Guggenheim, Isidor Straus (alle gegen Federal Reserve-Plan). JP Morgan sollte mitfahren - stornierte Last-Minute ("krank"). Federal Reserve Act wurde 1913 verabschiedet (Opposition tot). Versicherungs-Betrug? Titanic und Olympic (Schwester-Schiff) wurden angeblich vertauscht - Olympic war beschädigt, Versicherung wollte nicht zahlen. Lösung: Schiffe vertauschen, Olympic als "Titanic" versenken, Versicherung kassieren.',
     category: 'conspiracy',
     type: 'research',
     tags: ['Titanic', 'JP Morgan', 'Federal Reserve', 'Insurance Scam'],
@@ -480,8 +513,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_038',
     world: 'materie',
     title: 'Unit 731 - Japan\'s Biological Warfare Horror',
-    description: 'Japan führte grausamste Experimente an Chinesen - USA gab Amnestie für Daten',
-    fullContent: 'Unit 731 (Japan, WW2): Biologische Kriegsführung-Programm unter Shirō Ishii. Experimente an lebenden Menschen (Chinesen, Koreaner, Russen): Vivisektion ohne Anästhesie, Pest-Infektion, Erfrierungen, Druckkammern (bis Augen raussprangen). Geschätzte 300.000 Tote. Nach WW2: USA gab Ishii und Wissenschaftlern Amnestie im Austausch für Daten (ähnlich wie Operation Paperclip). Niemand wurde für Kriegsverbrechen verfolgt.',
+    description:
+        'Japan führte grausamste Experimente an Chinesen - USA gab Amnestie für Daten',
+    fullContent:
+        'Unit 731 (Japan, WW2): Biologische Kriegsführung-Programm unter Shirō Ishii. Experimente an lebenden Menschen (Chinesen, Koreaner, Russen): Vivisektion ohne Anästhesie, Pest-Infektion, Erfrierungen, Druckkammern (bis Augen raussprangen). Geschätzte 300.000 Tote. Nach WW2: USA gab Ishii und Wissenschaftlern Amnestie im Austausch für Daten (ähnlich wie Operation Paperclip). Niemand wurde für Kriegsverbrechen verfolgt.',
     category: 'conspiracy',
     type: 'research',
     tags: ['Unit 731', 'Japan', 'Bio Warfare', 'War Crimes'],
@@ -493,8 +528,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_040',
     world: 'materie',
     title: 'Project Sunshine - Tote Babys für Strahlen-Forschung',
-    description: '1950s: US-Regierung stahl Körperteile toter Babys weltweit für Atom-Tests',
-    fullContent: 'Project Sunshine (1953-1957): Atomic Energy Commission sammelte Gewebe von toten Babys und Kindern (über 1.500 Proben) aus USA, Australien, Europa, UK. Ziel: Strontium-90 (radioaktiv) in Knochen messen nach Atomtests. Eltern wussten nichts - Körper heimlich bei Autopsien entnommen. 1995: Advisory Committee on Human Radiation Experiments deckte es auf. Regierung entschuldigte sich.',
+    description:
+        '1950s: US-Regierung stahl Körperteile toter Babys weltweit für Atom-Tests',
+    fullContent:
+        'Project Sunshine (1953-1957): Atomic Energy Commission sammelte Gewebe von toten Babys und Kindern (über 1.500 Proben) aus USA, Australien, Europa, UK. Ziel: Strontium-90 (radioaktiv) in Knochen messen nach Atomtests. Eltern wussten nichts - Körper heimlich bei Autopsien entnommen. 1995: Advisory Committee on Human Radiation Experiments deckte es auf. Regierung entschuldigte sich.',
     category: 'conspiracy',
     type: 'research',
     tags: ['Project Sunshine', 'Radiation', 'Dead Babies', 'Ethics'],
@@ -506,8 +543,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_041',
     world: 'materie',
     title: 'Operation Midnight Climax - CIA\'s LSD Brothel',
-    description: 'CIA betrieb Bordelle in San Francisco und drogierte Kunden mit LSD',
-    fullContent: 'Teil von MK-Ultra: CIA betrieb Safe-Houses (Bordelle) in San Francisco und New York. Prostituierte lockten Männer, CIA gab ihnen LSD ohne Wissen, beobachtete durch Einweg-Spiegel. Ziel: Erpressungs-Techniken und Verhör-Methoden testen. George Hunter White (CIA-Agent) leitete Operation. Lief 1950s-1960s. Erst 1977 aufgedeckt (Church Committee). Männer wurden nie informiert, dass sie gedrogiert wurden.',
+    description:
+        'CIA betrieb Bordelle in San Francisco und drogierte Kunden mit LSD',
+    fullContent:
+        'Teil von MK-Ultra: CIA betrieb Safe-Houses (Bordelle) in San Francisco und New York. Prostituierte lockten Männer, CIA gab ihnen LSD ohne Wissen, beobachtete durch Einweg-Spiegel. Ziel: Erpressungs-Techniken und Verhör-Methoden testen. George Hunter White (CIA-Agent) leitete Operation. Lief 1950s-1960s. Erst 1977 aufgedeckt (Church Committee). Männer wurden nie informiert, dass sie gedrogiert wurden.',
     category: 'conspiracy',
     type: 'research',
     tags: ['MK-Ultra', 'CIA', 'LSD', 'Midnight Climax'],
@@ -520,8 +559,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_042',
     world: 'materie',
     title: 'General Motors Streetcar Conspiracy - Züge absichtlich zerstört',
-    description: 'GM kaufte alle Straßenbahnen in USA und zerstörte sie - um Autos zu verkaufen',
-    fullContent: '1920s-1950s: GM, Firestone (Reifen), Standard Oil kauften über 100 elektrische Straßenbahn-Systeme in USA. Dann: Zerstörten sie und ersetzten mit Bussen (die oft brachen). Ziel: Menschen zwingen Autos zu kaufen. 1949: Verurteilt wegen Antitrust (aber nur 5.000 Dollar Strafe). Resultat: USA wurde Auto-abhängig, öffentlicher Verkehr zerstört. Dokumentiert in "Who Framed Roger Rabbit" (indirekt).',
+    description:
+        'GM kaufte alle Straßenbahnen in USA und zerstörte sie - um Autos zu verkaufen',
+    fullContent:
+        '1920s-1950s: GM, Firestone (Reifen), Standard Oil kauften über 100 elektrische Straßenbahn-Systeme in USA. Dann: Zerstörten sie und ersetzten mit Bussen (die oft brachen). Ziel: Menschen zwingen Autos zu kaufen. 1949: Verurteilt wegen Antitrust (aber nur 5.000 Dollar Strafe). Resultat: USA wurde Auto-abhängig, öffentlicher Verkehr zerstört. Dokumentiert in "Who Framed Roger Rabbit" (indirekt).',
     category: 'conspiracy',
     type: 'research',
     tags: ['GM', 'Big Oil', 'Streetcars', 'Public Transport'],
@@ -533,8 +574,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_043',
     world: 'materie',
     title: 'Abiotic Oil Theory - Öl ist NICHT von Dinosauriern',
-    description: 'Öl regeneriert sich selbst - "Peak Oil" ist eine Lüge um Preise hoch zu halten',
-    fullContent: 'Standard-Theorie: Öl entstand aus toten Dinosauriern/Pflanzen (Fossil Fuel). ABER: Abiotic Oil Theory (Russische Wissenschaftler): Öl entsteht tief in Erdmantel durch Druck/Hitze (anorganisch). Beweise: Ölfelder die "leer" waren füllen sich wieder (Gulf of Mexico, Middle East). Titan (Saturn-Mond) hat Seen aus Methan (keine Dinosaurier dort!). "Peak Oil" (1970s) sagte: Öl geht 2000 aus → Nicht passiert. Öl-Industrie nutzt Knappheits-Narrativ für hohe Preise.',
+    description:
+        'Öl regeneriert sich selbst - "Peak Oil" ist eine Lüge um Preise hoch zu halten',
+    fullContent:
+        'Standard-Theorie: Öl entstand aus toten Dinosauriern/Pflanzen (Fossil Fuel). ABER: Abiotic Oil Theory (Russische Wissenschaftler): Öl entsteht tief in Erdmantel durch Druck/Hitze (anorganisch). Beweise: Ölfelder die "leer" waren füllen sich wieder (Gulf of Mexico, Middle East). Titan (Saturn-Mond) hat Seen aus Methan (keine Dinosaurier dort!). "Peak Oil" (1970s) sagte: Öl geht 2000 aus → Nicht passiert. Öl-Industrie nutzt Knappheits-Narrativ für hohe Preise.',
     category: 'forbidden_knowledge',
     type: 'research',
     tags: ['Oil', 'Abiotic Theory', 'Peak Oil', 'Fossil Fuel Lie'],
@@ -547,8 +590,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_044',
     world: 'materie',
     title: 'Room 641A - NSA Backbone Tap in AT&T Building',
-    description: 'NSA kopiert ALLE Internet-Daten durch geheimen Raum in San Francisco',
-    fullContent: '2003: NSA installierte geheime Abhör-Anlage in AT&T\'s Folsom Street Gebäude (San Francisco). Mark Klein (AT&T Techniker) entdeckte Room 641A: NSA hatte direkten Zugriff auf gesamten Internet-Verkehr. Beam-Splitter kopierten ALLE Daten (E-Mails, Webseiten, Chats). Whistleblower Klein ging 2006 an Öffentlichkeit. EFF (Electronic Frontier Foundation) verklagte AT&T. Regierung: "State Secrets Privilege" (Klage abgewiesen). Snowden bestätigte später: PRISM-Programm.',
+    description:
+        'NSA kopiert ALLE Internet-Daten durch geheimen Raum in San Francisco',
+    fullContent:
+        '2003: NSA installierte geheime Abhör-Anlage in AT&T\'s Folsom Street Gebäude (San Francisco). Mark Klein (AT&T Techniker) entdeckte Room 641A: NSA hatte direkten Zugriff auf gesamten Internet-Verkehr. Beam-Splitter kopierten ALLE Daten (E-Mails, Webseiten, Chats). Whistleblower Klein ging 2006 an Öffentlichkeit. EFF (Electronic Frontier Foundation) verklagte AT&T. Regierung: "State Secrets Privilege" (Klage abgewiesen). Snowden bestätigte später: PRISM-Programm.',
     category: 'conspiracy',
     type: 'research',
     tags: ['NSA', 'Surveillance', 'Room 641A', 'Privacy'],
@@ -560,8 +605,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_045',
     world: 'materie',
     title: 'Prism Program - Tech Giants geben alle Daten an NSA',
-    description: 'Google, Facebook, Apple, Microsoft - alle kooperieren mit NSA-Überwachung',
-    fullContent: 'Edward Snowden enthüllte 2013: PRISM-Programm (seit 2007). NSA hat DIREKTEN Zugriff auf Server von: Google, Facebook, Apple, Microsoft, Yahoo, Skype, YouTube, AOL. Alle E-Mails, Chats, Fotos, Videos, Suchanfragen werden kopiert. Tech-Firmen leugneten erst, gaben dann zu ("aber nur mit Court Order"). FISA Court (Foreign Intelligence Surveillance Court) genehmigt 99,97% aller NSA-Anfragen. Resultat: Totale Überwachung.',
+    description:
+        'Google, Facebook, Apple, Microsoft - alle kooperieren mit NSA-Überwachung',
+    fullContent:
+        'Edward Snowden enthüllte 2013: PRISM-Programm (seit 2007). NSA hat DIREKTEN Zugriff auf Server von: Google, Facebook, Apple, Microsoft, Yahoo, Skype, YouTube, AOL. Alle E-Mails, Chats, Fotos, Videos, Suchanfragen werden kopiert. Tech-Firmen leugneten erst, gaben dann zu ("aber nur mit Court Order"). FISA Court (Foreign Intelligence Surveillance Court) genehmigt 99,97% aller NSA-Anfragen. Resultat: Totale Überwachung.',
     category: 'conspiracy',
     type: 'research',
     tags: ['PRISM', 'NSA', 'Snowden', 'Google', 'Facebook'],
@@ -574,8 +621,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_046',
     world: 'materie',
     title: 'Tartaria - Die gelöschte Zivilisation',
-    description: 'Fortgeschrittene Architektur weltweit - aber aus unserer Geschichte entfernt',
-    fullContent: 'Tartaria (alte Karten zeigen es): Riesiges Reich in Asien/Europa (1600s-1800s). Theorie: Fortgeschrittene Zivilisation mit Free-Energy (Türme, Kuppeln). Weltweit ähnliche Architektur (Chicago, Paris, St. Petersburg) - gebaut zu schnell für damalige Technologie. "World Fairs" (1800s-1900s) zeigten angeblich "temporäre" Gebäude - aber aus Marmor/Stein (später abgerissen). "Mud Flood": Alte Gebäude haben Fenster unter Erde (erste Stock begraben). Offizielle Geschichte: "Neo-Klassizismus" - aber warum dann aus Geschichte entfernt?',
+    description:
+        'Fortgeschrittene Architektur weltweit - aber aus unserer Geschichte entfernt',
+    fullContent:
+        'Tartaria (alte Karten zeigen es): Riesiges Reich in Asien/Europa (1600s-1800s). Theorie: Fortgeschrittene Zivilisation mit Free-Energy (Türme, Kuppeln). Weltweit ähnliche Architektur (Chicago, Paris, St. Petersburg) - gebaut zu schnell für damalige Technologie. "World Fairs" (1800s-1900s) zeigten angeblich "temporäre" Gebäude - aber aus Marmor/Stein (später abgerissen). "Mud Flood": Alte Gebäude haben Fenster unter Erde (erste Stock begraben). Offizielle Geschichte: "Neo-Klassizismus" - aber warum dann aus Geschichte entfernt?',
     category: 'conspiracy',
     type: 'research',
     tags: ['Tartaria', 'Alternative History', 'Mud Flood', 'Free Energy'],
@@ -587,8 +636,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_047',
     world: 'materie',
     title: 'Library of Alexandria - Absichtlich zerstört?',
-    description: 'Größte Bibliothek der Antike verbrannt - Wissen verloren für immer',
-    fullContent: 'Bibliothek von Alexandria (Ägypten, 300 BC): Größte Sammlung antiken Wissens (400.000+ Schriftrollen). Zerstört in mehreren Bränden (48 BC Caesar, 391 AD Christen, 640 AD Muslime). Verlorenes Wissen: Mathematik, Astronomie, Medizin, Philosophie, Technologie. Theorie: Absichtlich zerstört um Menschheit "dumm zu halten". Was wussten die Alten? Free Energy? Anti-Gravitation? Lebensverlängerung? Wir werden es nie wissen.',
+    description:
+        'Größte Bibliothek der Antike verbrannt - Wissen verloren für immer',
+    fullContent:
+        'Bibliothek von Alexandria (Ägypten, 300 BC): Größte Sammlung antiken Wissens (400.000+ Schriftrollen). Zerstört in mehreren Bränden (48 BC Caesar, 391 AD Christen, 640 AD Muslime). Verlorenes Wissen: Mathematik, Astronomie, Medizin, Philosophie, Technologie. Theorie: Absichtlich zerstört um Menschheit "dumm zu halten". Was wussten die Alten? Free Energy? Anti-Gravitation? Lebensverlängerung? Wir werden es nie wissen.',
     category: 'forbidden_knowledge',
     type: 'research',
     tags: ['Alexandria', 'Library', 'Ancient Knowledge', 'Lost Technology'],
@@ -601,8 +652,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_048',
     world: 'materie',
     title: 'Social Credit System - Chinas totale Kontrolle',
-    description: 'Gesichtserkennung, KI-Überwachung, Punkte-System - Dystopie wird real',
-    fullContent: 'China\'s Social Credit System (seit 2014): Jeder Bürger bekommt "Score" (Punkte). Überwacht durch: 600+ Millionen Kameras (Gesichtserkennung), Online-Aktivität, Einkäufe, Freunde. Gutes Verhalten: +Punkte (pünktlich zahlen, Regierung loben). Schlechtes Verhalten: -Punkte (Regierung kritisieren, falsche Freunde). Niedriger Score: Kann nicht fliegen, Zug fahren, gute Jobs bekommen, Kinder in gute Schulen. Black Mirror wird real. Kommt bald in den Westen? (ESG, Digital ID, CBDCs)',
+    description:
+        'Gesichtserkennung, KI-Überwachung, Punkte-System - Dystopie wird real',
+    fullContent:
+        'China\'s Social Credit System (seit 2014): Jeder Bürger bekommt "Score" (Punkte). Überwacht durch: 600+ Millionen Kameras (Gesichtserkennung), Online-Aktivität, Einkäufe, Freunde. Gutes Verhalten: +Punkte (pünktlich zahlen, Regierung loben). Schlechtes Verhalten: -Punkte (Regierung kritisieren, falsche Freunde). Niedriger Score: Kann nicht fliegen, Zug fahren, gute Jobs bekommen, Kinder in gute Schulen. Black Mirror wird real. Kommt bald in den Westen? (ESG, Digital ID, CBDCs)',
     category: 'conspiracy',
     type: 'research',
     tags: ['Social Credit', 'China', 'Surveillance', 'Dystopia'],
@@ -618,8 +671,10 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_049',
     world: 'materie',
     title: 'The Great Reset - Klaus Schwab & WEF Agenda',
-    description: '"You will own nothing and be happy" - Plan für Neo-Feudalismus',
-    fullContent: 'World Economic Forum (Klaus Schwab) präsentierte 2020: "The Great Reset". Agenda: 1) Zentral-Bank Digital Währungen (CBDCs) - totale Finanzkontrolle; 2) Universal Basic Income - abhängig vom Staat; 3) "Sharing Economy" - kein Privateigentum; 4) Carbon Credits - Überwachung deines CO2-Fußabdrucks; 5) Transhumanismus - Mensch-Maschine-Verschmelzung. COVID als "Opportunity" für Reset. Zitat: "You will own nothing, have no privacy, and be happy". Verbindung zu Agenda 2030 (UN). Opposition: Wachsende Freiheits-Bewegung weltweit.',
+    description:
+        '"You will own nothing and be happy" - Plan für Neo-Feudalismus',
+    fullContent:
+        'World Economic Forum (Klaus Schwab) präsentierte 2020: "The Great Reset". Agenda: 1) Zentral-Bank Digital Währungen (CBDCs) - totale Finanzkontrolle; 2) Universal Basic Income - abhängig vom Staat; 3) "Sharing Economy" - kein Privateigentum; 4) Carbon Credits - Überwachung deines CO2-Fußabdrucks; 5) Transhumanismus - Mensch-Maschine-Verschmelzung. COVID als "Opportunity" für Reset. Zitat: "You will own nothing, have no privacy, and be happy". Verbindung zu Agenda 2030 (UN). Opposition: Wachsende Freiheits-Bewegung weltweit.',
     category: 'conspiracy',
     type: 'research',
     tags: ['Great Reset', 'WEF', 'Klaus Schwab', 'NWO', 'Agenda 2030'],
@@ -631,7 +686,8 @@ Jeder muss selbst entscheiden, aber: **Fragen stellen ist nicht unpatriotisch.**
     id: 'mat_050',
     world: 'materie',
     title: 'Die Wahrheit ist da draußen - Ein Guide zum Aufwachen',
-    description: 'Zusammenfassung: Wie man die Matrix verlässt und Wahrheit findet',
+    description:
+        'Zusammenfassung: Wie man die Matrix verlässt und Wahrheit findet',
     fullContent: '''# Die Matrix verlassen - Ein praktischer Guide
 
 Du hast jetzt 50 Einträge gelesen über Verschwörungen, unterdrücktes Wissen, und versteckte Geschichte. Was nun?
@@ -734,7 +790,8 @@ Willkommen in der Weltenbibliothek - wo altes Wissen nie stirbt. 📚✨
     id: 'mat_018',
     world: 'materie',
     title: 'Bohemian Grove - Elite Rituale im Redwood Forest',
-    description: 'Geheimes 2-Wochen Treffen der mächtigsten Männer - Nixon, Reagan, Bush - mit okkulten Zeremonien',
+    description:
+        'Geheimes 2-Wochen Treffen der mächtigsten Männer - Nixon, Reagan, Bush - mit okkulten Zeremonien',
     fullContent: '''
 # Bohemian Grove - Das Elite-Ritual
 
@@ -776,7 +833,8 @@ Nixon (1971): "It's the most faggy goddamned thing you could ever imagine... I w
     id: 'mat_019',
     world: 'materie',
     title: 'Project Paperclip - 1600 Nazi-Wissenschaftler in USA',
-    description: 'CIA holte nach WW2 Nazis nach Amerika - Wernher von Braun (SS) wurde NASA-Direktor',
+    description:
+        'CIA holte nach WW2 Nazis nach Amerika - Wernher von Braun (SS) wurde NASA-Direktor',
     fullContent: '''
 # Operation Paperclip - Nazis bauten NASA
 
@@ -821,7 +879,8 @@ Viele Paperclip-Ärzte arbeiteten später an CIA Mind-Control-Programmen.
     id: 'mat_020',
     world: 'materie',
     title: 'Tuskegee Syphilis Study - 40 Jahre medizinisches Grauen',
-    description: 'US-Regierung ließ 400 schwarze Männer an Syphilis sterben - ohne Behandlung (1932-1972)',
+    description:
+        'US-Regierung ließ 400 schwarze Männer an Syphilis sterben - ohne Behandlung (1932-1972)',
     fullContent: '''
 # Tuskegee - Das dunkle Kapitel der US-Medizin
 
@@ -862,7 +921,8 @@ Zeigt: Regierung experimentiert an eigenen Bürgern. Medizinische Ethik = null.
     id: 'mat_021',
     world: 'materie',
     title: 'HAARP - Wetterkontrolle & Gedankenmanipulation',
-    description: 'Ionosphären-Forschung in Alaska oder Militärwaffe für Mind Control?',
+    description:
+        'Ionosphären-Forschung in Alaska oder Militärwaffe für Mind Control?',
     fullContent: '''
 # HAARP - High Frequency Active Auroral Research Program
 
@@ -901,7 +961,8 @@ Wissenschaftliche Forschung, Kommunikations-Verbesserung
     id: 'mat_022',
     world: 'materie',
     title: 'Area 51 & Bob Lazar - Alien Tech Reverse Engineering',
-    description: 'Physiker behauptet: 9 außerirdische Raumschiffe in S-4, Element 115 Antrieb',
+    description:
+        'Physiker behauptet: 9 außerirdische Raumschiffe in S-4, Element 115 Antrieb',
     fullContent: '''
 # Bob Lazar - Der Mann der zu viel wusste
 
@@ -950,7 +1011,8 @@ US-Regierung gab zu: UFOs (UAPs) sind real.
     id: 'mat_023',
     world: 'materie',
     title: 'Pearl Harbor - Roosevelt wusste es vorher',
-    description: 'Neue Dokumente zeigen: FDR hatte Vorwissen vom japanischen Angriff',
+    description:
+        'Neue Dokumente zeigen: FDR hatte Vorwissen vom japanischen Angriff',
     fullContent: '''
 # Pearl Harbor - Der inszenierte Kriegseintritt?
 
@@ -1087,7 +1149,8 @@ Zu viele "Zufälle":
     id: 'mat_024',
     world: 'materie',
     title: 'Fluorid im Trinkwasser - Nazi-Ursprünge & Pineal Gland',
-    description: 'Warum pumpen sie Gift in unser Wasser? Kalzifizierung des Dritten Auges',
+    description:
+        'Warum pumpen sie Gift in unser Wasser? Kalzifizierung des Dritten Auges',
     fullContent: '''
 # Fluorid - Das schleichende Gift
 
@@ -1237,7 +1300,14 @@ Fluorid im Wasser ist:
 ''',
     category: 'conspiracy',
     type: 'research',
-    tags: ['Fluorid', 'Water', 'Nazis', 'Pineal Gland', 'Third Eye', 'Mind Control'],
+    tags: [
+      'Fluorid',
+      'Water',
+      'Nazis',
+      'Pineal Gland',
+      'Third Eye',
+      'Mind Control'
+    ],
     createdAt: DateTime(2024, 2, 7),
     readingTimeMinutes: 24,
   ),
@@ -1246,7 +1316,8 @@ Fluorid im Wasser ist:
     id: 'mat_025',
     world: 'materie',
     title: 'Chemtrails - Geoengineering oder Verschwörung?',
-    description: 'Stratosphärische Aerosol-Injektion: Was wird da am Himmel versprüht?',
+    description:
+        'Stratosphärische Aerosol-Injektion: Was wird da am Himmel versprüht?',
     fullContent: '''
 # Chemtrails - Was sprühen sie über uns?
 
@@ -1432,7 +1503,14 @@ Schaue zum Himmel: Normale Kondensstreifen verschwinden in Minuten. Aber manche 
 ''',
     category: 'conspiracy',
     type: 'research',
-    tags: ['Chemtrails', 'Geoengineering', 'HAARP', 'Bill Gates', 'Aluminium', 'Weather Control'],
+    tags: [
+      'Chemtrails',
+      'Geoengineering',
+      'HAARP',
+      'Bill Gates',
+      'Aluminium',
+      'Weather Control'
+    ],
     createdAt: DateTime(2024, 2, 8),
     readingTimeMinutes: 26,
   ),
@@ -1441,7 +1519,8 @@ Schaue zum Himmel: Normale Kondensstreifen verschwinden in Minuten. Aber manche 
     id: 'mat_026',
     world: 'materie',
     title: 'Bilderberg Group - Die Schattenregierung',
-    description: '150 mächtigste Menschen treffen sich jährlich geheim - keine Presse, keine Protokolle',
+    description:
+        '150 mächtigste Menschen treffen sich jährlich geheim - keine Presse, keine Protokolle',
     fullContent: '''
 # Bilderberg Group - Wer regiert wirklich die Welt?
 
@@ -1643,7 +1722,14 @@ Globale Politik koordinieren, bevor sie öffentlich wird.
 ''',
     category: 'conspiracy',
     type: 'research',
-    tags: ['Bilderberg', 'Elite', 'NWO', 'Rockefeller', 'Secret Society', 'Globalism'],
+    tags: [
+      'Bilderberg',
+      'Elite',
+      'NWO',
+      'Rockefeller',
+      'Secret Society',
+      'Globalism'
+    ],
     createdAt: DateTime(2024, 2, 9),
     readingTimeMinutes: 28,
   ),

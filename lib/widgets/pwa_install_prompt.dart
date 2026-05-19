@@ -14,7 +14,7 @@ class PWAInstallPrompt extends StatefulWidget {
   State<PWAInstallPrompt> createState() => _PWAInstallPromptState();
 }
 
-class _PWAInstallPromptState extends State<PWAInstallPrompt> 
+class _PWAInstallPromptState extends State<PWAInstallPrompt>
     with SingleTickerProviderStateMixin {
   bool _isVisible = false;
   bool _isDismissed = false;
@@ -26,12 +26,12 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 1),
       end: Offset.zero,
@@ -39,7 +39,7 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
       parent: _animationController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     // Check if should show prompt
     _checkShouldShow();
   }
@@ -53,15 +53,15 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
   Future<void> _checkShouldShow() async {
     // Only show on web
     if (!kIsWeb) return;
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final dismissed = prefs.getBool(_dismissedKey) ?? false;
-      
+
       if (!dismissed) {
         // Delay showing prompt by 3 seconds
         await Future.delayed(const Duration(seconds: 3));
-        
+
         if (mounted && !_isDismissed) {
           setState(() => _isVisible = true);
           _animationController.forward();
@@ -74,11 +74,11 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
 
   Future<void> _dismissPrompt() async {
     await HapticFeedbackService().light();
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_dismissedKey, true);
-      
+
       _animationController.reverse().then((_) {
         if (mounted) {
           setState(() {
@@ -94,7 +94,7 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
 
   Future<void> _installPWA() async {
     await HapticFeedbackService().success();
-    
+
     // Show installation instructions
     if (mounted) {
       showDialog(
@@ -126,7 +126,7 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Chrome/Android
               _buildInstructionItem(
                 icon: Icons.android,
@@ -137,9 +137,9 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
                   'Bestätige die Installation',
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Safari/iOS
               _buildInstructionItem(
                 icon: Icons.apple,
@@ -192,26 +192,26 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
         ),
         const SizedBox(height: 8),
         ...steps.map((step) => Padding(
-          padding: const EdgeInsets.only(left: 28, bottom: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '• ',
-                style: TextStyle(color: Colors.white60),
-              ),
-              Expanded(
-                child: Text(
-                  step,
-                  style: const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 14,
+              padding: const EdgeInsets.only(left: 28, bottom: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '• ',
+                    style: TextStyle(color: Colors.white60),
                   ),
-                ),
+                  Expanded(
+                    child: Text(
+                      step,
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        )),
+            )),
       ],
     );
   }
@@ -291,7 +291,8 @@ class _PWAInstallPromptState extends State<PWAInstallPrompt>
                     ),
                     IconButton(
                       onPressed: _dismissPrompt,
-                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      icon: const Icon(Icons.close,
+                          color: Colors.white70, size: 20),
                       tooltip: 'Schließen',
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),

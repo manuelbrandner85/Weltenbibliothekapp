@@ -3,7 +3,7 @@ import '../core/exceptions/specialized_exceptions.dart';
 
 /// 🔐 AUTHENTICATION SERVICE
 /// Manages user authentication tokens and state
-/// 
+///
 /// Features:
 /// - Secure token management
 /// - AuthException for authentication errors
@@ -14,7 +14,7 @@ class AuthService {
   DateTime? _tokenExpiry;
 
   /// Get current authentication token
-  /// 
+  ///
   /// Throws [AuthException] if not authenticated or token expired
   String get token {
     if (_token == null) {
@@ -54,7 +54,7 @@ class AuthService {
   }
 
   /// Set authentication token with optional expiry
-  /// 
+  ///
   /// [token] - The authentication token
   /// [expiresIn] - Token lifetime in seconds (default: 1 hour)
   void setToken(String token, {int expiresIn = 3600}) {

@@ -11,7 +11,7 @@ class ArticleLikeButton extends StatefulWidget {
   final String articleId;
   final int initialLikes;
   final bool initiallyLiked;
-  
+
   const ArticleLikeButton({
     super.key,
     required this.articleId,
@@ -23,31 +23,35 @@ class ArticleLikeButton extends StatefulWidget {
   State<ArticleLikeButton> createState() => _ArticleLikeButtonState();
 }
 
-class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTickerProviderStateMixin {
-  final CloudflareApiService _api = CloudflareApiService(); // ignore: unused_field
-  final CommunityInteractionService _interactionService = CommunityInteractionService();
-  
+class _ArticleLikeButtonState extends State<ArticleLikeButton>
+    with SingleTickerProviderStateMixin {
+  final CloudflareApiService _api =
+      CloudflareApiService(); // ignore: unused_field
+  final CommunityInteractionService _interactionService =
+      CommunityInteractionService();
+
   late bool _isLiked;
   late int _likeCount;
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late String _realUserId;
-  
+
   @override
   void initState() {
     super.initState();
     _likeCount = widget.initialLikes;
     // Echte User-ID: Supabase Auth > UserService
-    _realUserId = Supabase.instance.client.auth.currentUser?.id
-        ?? UserService.getCurrentUserId();
+    _realUserId = Supabase.instance.client.auth.currentUser?.id ??
+        UserService.getCurrentUserId();
 
     // Initial-State: erst Memory-Cache prüfen (sofortige korrekte Anzeige),
     // sonst widget.initiallyLiked als Fallback. Vermeidet Flash zu "nicht-geliked".
     _isLiked = _interactionService.isLiked(
-      postId: widget.articleId,
-      userId: _realUserId,
-    ) || widget.initiallyLiked;
+          postId: widget.articleId,
+          userId: _realUserId,
+        ) ||
+        widget.initiallyLiked;
 
     // Animation setup
     _animationController = AnimationController(
@@ -62,7 +66,7 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
     // Async: echten Like-Status aus Supabase nachladen falls Cache leer war
     _loadLikeStatus();
   }
-  
+
   Future<void> _loadLikeStatus() async {
     final liked = await _interactionService.fetchIsLiked(
       postId: widget.articleId,
@@ -70,32 +74,34 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
     );
     if (mounted) setState(() => _isLiked = liked);
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _toggleLike() async {
     if (_isLoading) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       if (_isLiked) {
         await HapticFeedbackService().medium();
       } else {
         await HapticFeedbackService().success();
-        _animationController.forward().then((_) => _animationController.reverse());
+        _animationController
+            .forward()
+            .then((_) => _animationController.reverse());
       }
-      
+
       // Toggle via Supabase (mit Optimistic UI)
       final newState = await _interactionService.toggleLikeSupabase(
         postId: widget.articleId,
         userId: _realUserId,
       );
-        
+
       if (mounted) {
         setState(() {
           _isLiked = newState;
@@ -106,11 +112,11 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
     } catch (e) {
       // 📳 Haptic Feedback - Error
       await HapticFeedbackService().error();
-      
+
       if (kDebugMode) {
         debugPrint('❌ Error toggling like: $e');
       }
-      
+
       // Show error snackbar if context available
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -127,7 +133,7 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -142,7 +148,8 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
               scale: _scaleAnimation,
               child: Icon(
                 _isLiked ? Icons.favorite : Icons.favorite_border,
-                color: _isLiked ? Colors.red : Colors.white.withValues(alpha: 0.7),
+                color:
+                    _isLiked ? Colors.red : Colors.white.withValues(alpha: 0.7),
                 size: 20,
               ),
             ),
@@ -175,7 +182,7 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
       ),
     );
   }
-  
+
   String _formatCount(int count) {
     if (count >= 1000) {
       return '${(count / 1000).toStringAsFixed(1)}k';

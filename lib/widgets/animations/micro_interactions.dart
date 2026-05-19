@@ -433,8 +433,8 @@ class _RippleEffectButtonState extends State<RippleEffectButton>
                   height: widget.size * _animation.value,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: widget.rippleColor.withValues(alpha:
-                      0.3 * (1 - _animation.value),
+                    color: widget.rippleColor.withValues(
+                      alpha: 0.3 * (1 - _animation.value),
                     ),
                   ),
                 );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// In-App PDF Viewer für themen-relevante Dokumente
-/// 
+///
 /// Zeigt PDFs direkt in der App via embedded viewer (Web) oder native viewer (Mobile)
 class InAppPdfViewer extends StatelessWidget {
   final String pdfUrl;
@@ -165,7 +165,8 @@ class InAppPdfViewer extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.black87,
                       borderRadius: BorderRadius.circular(8),
@@ -212,9 +213,10 @@ class InAppPdfViewer extends StatelessWidget {
 
   void _openInBrowser() async {
     // Google Docs Viewer für bessere Kompatibilität
-    final viewerUrl = 'https://docs.google.com/viewer?url=${Uri.encodeComponent(pdfUrl)}&embedded=true';
+    final viewerUrl =
+        'https://docs.google.com/viewer?url=${Uri.encodeComponent(pdfUrl)}&embedded=true';
     final uri = Uri.parse(viewerUrl);
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -235,7 +237,8 @@ class PdfFullscreenViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Google Docs Viewer URL
-    final viewerUrl = 'https://docs.google.com/viewer?url=${Uri.encodeComponent(pdfUrl)}&embedded=true';
+    final viewerUrl =
+        'https://docs.google.com/viewer?url=${Uri.encodeComponent(pdfUrl)}&embedded=true';
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -306,7 +309,8 @@ class PdfFullscreenViewer extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 textStyle: const TextStyle(fontSize: 16),
               ),
             ),

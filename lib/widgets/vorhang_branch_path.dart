@@ -140,7 +140,9 @@ class _PathRow extends StatelessWidget {
                                   ? Icons.workspace_premium_rounded
                                   : Icons.lock_open_rounded)
                               : Icons.lock_rounded,
-                      color: isUnlocked || isCompleted ? Colors.black : Colors.white24,
+                      color: isUnlocked || isCompleted
+                          ? Colors.black
+                          : Colors.white24,
                       size: isBoss ? 16 : 10,
                     ),
                   ),

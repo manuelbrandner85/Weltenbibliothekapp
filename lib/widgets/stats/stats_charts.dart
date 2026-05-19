@@ -79,10 +79,9 @@ class _SimplePieChartState extends State<SimplePieChart>
           spacing: 16,
           runSpacing: 12,
           children: widget.data.entries.map((entry) {
-            final percentage = (entry.value /
-                    widget.data.values.reduce((a, b) => a + b) *
-                    100)
-                .toStringAsFixed(1);
+            final percentage =
+                (entry.value / widget.data.values.reduce((a, b) => a + b) * 100)
+                    .toStringAsFixed(1);
 
             return Row(
               mainAxisSize: MainAxisSize.min,
@@ -239,7 +238,8 @@ class _SimpleLineChartState extends State<SimpleLineChart>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.6),
+              color: (isDark ? Colors.white : Colors.black87)
+                  .withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 8),
@@ -318,8 +318,10 @@ class LineChartPainter extends CustomPainter {
 
     for (int i = 0; i < dataPoints.length; i++) {
       final x = i * spacing;
-      final normalizedValue = range > 0 ? (dataPoints[i] - minValue) / range : 0.5;
-      final y = size.height - (normalizedValue * size.height * 0.8 + size.height * 0.1);
+      final normalizedValue =
+          range > 0 ? (dataPoints[i] - minValue) / range : 0.5;
+      final y = size.height -
+          (normalizedValue * size.height * 0.8 + size.height * 0.1);
       points.add(Offset(x, y));
     }
 
@@ -433,7 +435,8 @@ class ActivityHeatmap extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.8),
+            color:
+                (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 12),
@@ -472,8 +475,8 @@ class ActivityHeatmap extends StatelessWidget {
               'Weniger',
               style: TextStyle(
                 fontSize: 11,
-                color:
-                    (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.5),
+                color: (isDark ? Colors.white : Colors.black87)
+                    .withValues(alpha: 0.5),
               ),
             ),
             const SizedBox(width: 8),
@@ -493,8 +496,8 @@ class ActivityHeatmap extends StatelessWidget {
               'Mehr',
               style: TextStyle(
                 fontSize: 11,
-                color:
-                    (isDark ? Colors.white : Colors.black87).withValues(alpha: 0.5),
+                color: (isDark ? Colors.white : Colors.black87)
+                    .withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -724,12 +727,12 @@ class ReadingProgressChart extends StatelessWidget {
       return _buildEmptyState(context);
     }
 
-    final worldColor = world == 'materie'
-        ? const Color(0xFF1E88E5)
-        : const Color(0xFF7E57C2);
+    final worldColor =
+        world == 'materie' ? const Color(0xFF1E88E5) : const Color(0xFF7E57C2);
 
     // Konvertiere für SimpleLineChart
-    final dataPoints = data.map((e) => (e['progress'] as int).toDouble()).toList();
+    final dataPoints =
+        data.map((e) => (e['progress'] as int).toDouble()).toList();
     final labels = <String>[];
 
     // Zeige nur jeden 5. Tag als Label
@@ -802,9 +805,8 @@ class StreakHeatmap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final worldColor = world == 'materie'
-        ? const Color(0xFF1E88E5)
-        : const Color(0xFF7E57C2);
+    final worldColor =
+        world == 'materie' ? const Color(0xFF1E88E5) : const Color(0xFF7E57C2);
 
     // Sortiere Daten nach Datum
     final sortedEntries = data.entries.toList()

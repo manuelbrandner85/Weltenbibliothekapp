@@ -19,8 +19,7 @@ class DreamInterpretationToolScreen extends StatefulWidget {
 }
 
 class _DreamInterpretationToolScreenState
-    extends State<DreamInterpretationToolScreen>
-    with TickerProviderStateMixin {
+    extends State<DreamInterpretationToolScreen> with TickerProviderStateMixin {
   late final TabController _tabs;
   late AnimationController _bgCtrl;
 
@@ -180,8 +179,7 @@ class _NewDreamTabState extends State<_NewDreamTab> {
     try {
       await _db.from('dream_journal_v2').insert({
         'user_id': uid,
-        'title':
-            _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
+        'title': _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
         'symbol_tags': _detectedTags,
         'mood': _mood,
@@ -245,8 +243,7 @@ class _NewDreamTabState extends State<_NewDreamTab> {
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: _kPurple.withValues(alpha: 0.4)),
+              border: Border.all(color: _kPurple.withValues(alpha: 0.4)),
               boxShadow: [
                 BoxShadow(
                     color: _kPurple.withValues(alpha: 0.15),
@@ -270,8 +267,8 @@ class _NewDreamTabState extends State<_NewDreamTab> {
                       SizedBox(height: 4),
                       Text(
                           'Beschreibe deinen Traum – Symbole werden automatisch erkannt.',
-                          style: TextStyle(
-                              color: Colors.white54, fontSize: 12)),
+                          style:
+                              TextStyle(color: Colors.white54, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -315,8 +312,8 @@ class _NewDreamTabState extends State<_NewDreamTab> {
               return GestureDetector(
                 onTap: () => setState(() => _mood = m.$1),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: selected
                         ? _kPurple.withValues(alpha: 0.3)
@@ -332,8 +329,7 @@ class _NewDreamTabState extends State<_NewDreamTab> {
                     const SizedBox(width: 4),
                     Text(m.$3,
                         style: TextStyle(
-                            color:
-                                selected ? Colors.white : Colors.white54,
+                            color: selected ? Colors.white : Colors.white54,
                             fontSize: 12)),
                   ]),
                 ),
@@ -347,8 +343,7 @@ class _NewDreamTabState extends State<_NewDreamTab> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             ),
             child: Column(
               children: [
@@ -356,21 +351,17 @@ class _NewDreamTabState extends State<_NewDreamTab> {
                   title: const Text('Luzider Traum',
                       style: TextStyle(color: Colors.white)),
                   subtitle: const Text('Du wusstest, dass du träumst',
-                      style:
-                          TextStyle(color: Colors.white54, fontSize: 12)),
+                      style: TextStyle(color: Colors.white54, fontSize: 12)),
                   value: _lucid,
                   activeThumbColor: _kPurple,
                   onChanged: (v) => setState(() => _lucid = v),
                 ),
-                Divider(
-                    color: Colors.white.withValues(alpha: 0.1), height: 1),
+                Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
                 SwitchListTile(
                   title: const Text('Wiederkehrender Traum',
                       style: TextStyle(color: Colors.white)),
-                  subtitle: const Text(
-                      'Dieser Traum kehrt regelmäßig wieder',
-                      style:
-                          TextStyle(color: Colors.white54, fontSize: 12)),
+                  subtitle: const Text('Dieser Traum kehrt regelmäßig wieder',
+                      style: TextStyle(color: Colors.white54, fontSize: 12)),
                   value: _recurring,
                   activeThumbColor: _kPurple,
                   onChanged: (v) => setState(() => _recurring = v),
@@ -392,19 +383,17 @@ class _NewDreamTabState extends State<_NewDreamTab> {
               final meanings =
                   Map<String, dynamic>.from(sym['meanings'] as Map? ?? {});
               final preview = (meanings['jungian'] ??
-                      meanings['spiritual'] ??
-                      '') as String;
+                  meanings['spiritual'] ??
+                  '') as String;
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: _kTeal.withValues(alpha: 0.35)),
+                  border: Border.all(color: _kTeal.withValues(alpha: 0.35)),
                   boxShadow: [
                     BoxShadow(
-                        color: _kPurple.withValues(alpha: 0.08),
-                        blurRadius: 8),
+                        color: _kPurple.withValues(alpha: 0.08), blurRadius: 8),
                   ],
                 ),
                 child: ListTile(
@@ -472,12 +461,10 @@ class _NewDreamTabState extends State<_NewDreamTab> {
       fillColor: Colors.white.withValues(alpha: 0.06),
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: Colors.white.withValues(alpha: 0.2))),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: Colors.white.withValues(alpha: 0.2))),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _kPurple)),
@@ -538,11 +525,11 @@ class _LexiconTabState extends State<_LexiconTab> {
 
   void _applyFilter() {
     _filtered = _symbols.where((s) {
-      final catOk = _selectedCategory == 'alle' ||
-          s['category'] == _selectedCategory;
+      final catOk =
+          _selectedCategory == 'alle' || s['category'] == _selectedCategory;
       final q = _search.toLowerCase();
-      final nameOk = q.isEmpty ||
-          (s['symbol_name'] as String).toLowerCase().contains(q);
+      final nameOk =
+          q.isEmpty || (s['symbol_name'] as String).toLowerCase().contains(q);
       return catOk && nameOk;
     }).toList();
   }
@@ -563,8 +550,7 @@ class _LexiconTabState extends State<_LexiconTab> {
             decoration: InputDecoration(
               hintText: 'Symbol suchen…',
               hintStyle: const TextStyle(color: Colors.white38),
-              prefixIcon:
-                  const Icon(Icons.search, color: Colors.white38),
+              prefixIcon: const Icon(Icons.search, color: Colors.white38),
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.07),
               border: OutlineInputBorder(
@@ -592,8 +578,7 @@ class _LexiconTabState extends State<_LexiconTab> {
                           fontSize: 12)),
                   selected: sel,
                   selectedColor: _kPurple.withValues(alpha: 0.35),
-                  backgroundColor:
-                      Colors.white.withValues(alpha: 0.06),
+                  backgroundColor: Colors.white.withValues(alpha: 0.06),
                   side: BorderSide(
                       color: sel
                           ? _kPurple.withValues(alpha: 0.7)
@@ -616,8 +601,7 @@ class _LexiconTabState extends State<_LexiconTab> {
                       child: Text('Keine Symbole gefunden',
                           style: TextStyle(color: Colors.white38)))
                   : ListView.builder(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       itemCount: _filtered.length,
                       itemBuilder: (_, i) =>
                           _SymbolListTile(symbol: _filtered[i]),
@@ -642,15 +626,14 @@ class _SymbolListTile extends StatelessWidget {
         border: Border.all(color: _kTeal.withValues(alpha: 0.25)),
       ),
       child: ListTile(
-        leading: Text(symbol['emoji'] ?? '🔮',
-            style: const TextStyle(fontSize: 28)),
+        leading:
+            Text(symbol['emoji'] ?? '🔮', style: const TextStyle(fontSize: 28)),
         title: Text(symbol['symbol_name'] ?? '',
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.w600)),
         subtitle: Text(symbol['category'] ?? '',
             style: const TextStyle(color: Colors.white38, fontSize: 12)),
-        trailing:
-            const Icon(Icons.chevron_right, color: Colors.white38),
+        trailing: const Icon(Icons.chevron_right, color: Colors.white38),
         onTap: () => showDetailFrom(context),
       ),
     );
@@ -677,10 +660,8 @@ class _SymbolListTile extends StatelessWidget {
       builder: (_) => Container(
         decoration: BoxDecoration(
           color: const Color(0xFF0D0A1A),
-          borderRadius:
-              const BorderRadius.vertical(top: Radius.circular(20)),
-          border: Border.all(
-              color: _kPurple.withValues(alpha: 0.3), width: 1),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: _kPurple.withValues(alpha: 0.3), width: 1),
         ),
         child: DraggableScrollableSheet(
           initialChildSize: 0.7,
@@ -797,8 +778,8 @@ class _JournalTabState extends State<_JournalTab> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF0D0A1A),
-        title: const Text('Traum löschen?',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Traum löschen?', style: TextStyle(color: Colors.white)),
         content: const Text('Dieser Eintrag wird dauerhaft gelöscht.',
             style: TextStyle(color: Colors.white70)),
         actions: [
@@ -836,8 +817,7 @@ class _JournalTabState extends State<_JournalTab> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text(
-              'Bitte einloggen um dein Traumtagebuch zu sehen.',
+          child: Text('Bitte einloggen um dein Traumtagebuch zu sehen.',
               style: TextStyle(color: Colors.white54),
               textAlign: TextAlign.center),
         ),
@@ -877,8 +857,7 @@ class _JournalTabState extends State<_JournalTab> {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                  color: _kPurple.withValues(alpha: 0.25)),
+              border: Border.all(color: _kPurple.withValues(alpha: 0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -908,8 +887,8 @@ class _JournalTabState extends State<_JournalTab> {
                     (e['description'] as String? ?? '').length > 120
                         ? '${(e['description'] as String).substring(0, 120)}…'
                         : (e['description'] as String? ?? ''),
-                    style: const TextStyle(
-                        color: Colors.white60, fontSize: 13)),
+                    style:
+                        const TextStyle(color: Colors.white60, fontSize: 13)),
                 const SizedBox(height: 8),
                 Row(children: [
                   if (lucid) ...[
@@ -917,12 +896,11 @@ class _JournalTabState extends State<_JournalTab> {
                         border: _kPurple),
                     const SizedBox(width: 6),
                   ],
-                  _pill(_moodEmoji(mood),
-                      Colors.white.withValues(alpha: 0.07)),
+                  _pill(_moodEmoji(mood), Colors.white.withValues(alpha: 0.07)),
                   const Spacer(),
                   Text(e['dream_date'] as String? ?? '',
-                      style: const TextStyle(
-                          color: Colors.white38, fontSize: 11)),
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 11)),
                 ]),
                 if (tags.isNotEmpty) ...[
                   const SizedBox(height: 6),
@@ -954,8 +932,7 @@ class _JournalTabState extends State<_JournalTab> {
                   Colors.white.withValues(alpha: 0.15)),
         ),
         child: Text(label,
-            style:
-                const TextStyle(color: Colors.white70, fontSize: 11)),
+            style: const TextStyle(color: Colors.white70, fontSize: 11)),
       );
 
   String _moodEmoji(String mood) {
@@ -1040,8 +1017,7 @@ class _PatternsTabState extends State<_PatternsTab> {
     }
     if (_total == 0) {
       return const Center(
-        child: Text(
-            'Noch keine Daten.\nZeichne Träume auf um Muster zu sehen.',
+        child: Text('Noch keine Daten.\nZeichne Träume auf um Muster zu sehen.',
             style: TextStyle(color: Colors.white54),
             textAlign: TextAlign.center),
       );
@@ -1056,8 +1032,7 @@ class _PatternsTabState extends State<_PatternsTab> {
           if (_topTags.isNotEmpty) ...[
             _sectionHeader('🔁 Häufigste Symbole'),
             const SizedBox(height: 8),
-            ..._topTags
-                .map((t) => _TagBar(tag: t, max: _topTags.first.count)),
+            ..._topTags.map((t) => _TagBar(tag: t, max: _topTags.first.count)),
             const SizedBox(height: 20),
           ],
           if (_moodCounts.isNotEmpty) ...[
@@ -1067,8 +1042,7 @@ class _PatternsTabState extends State<_PatternsTab> {
               spacing: 8,
               runSpacing: 8,
               children: _moodCounts.entries
-                  .map((e) =>
-                      _MoodBubble(mood: e.key, count: e.value))
+                  .map((e) => _MoodBubble(mood: e.key, count: e.value))
                   .toList(),
             ),
           ],
@@ -1104,11 +1078,10 @@ class _TagBar extends StatelessWidget {
           Row(children: [
             Expanded(
                 child: Text(tag.tag,
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 13))),
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 13))),
             Text('${tag.count}×',
-                style: const TextStyle(
-                    color: Colors.white38, fontSize: 12)),
+                style: const TextStyle(color: Colors.white38, fontSize: 12)),
           ]),
           const SizedBox(height: 4),
           ClipRRect(
@@ -1116,8 +1089,7 @@ class _TagBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: pct,
               backgroundColor: Colors.white.withValues(alpha: 0.1),
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(_kPurple),
+              valueColor: const AlwaysStoppedAnimation<Color>(_kPurple),
               minHeight: 6,
             ),
           ),
@@ -1152,12 +1124,10 @@ class _MoodBubble extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(_emojis[mood] ?? '😐',
-              style: const TextStyle(fontSize: 24)),
+          Text(_emojis[mood] ?? '😐', style: const TextStyle(fontSize: 24)),
           const SizedBox(height: 4),
           Text('$count×',
-              style:
-                  const TextStyle(color: Colors.white70, fontSize: 13)),
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
         ],
       ),
     );

@@ -98,7 +98,8 @@ class WebStorageBackend implements StorageBackend {
     _cache.removeWhere((k, _) => k.startsWith(prefix));
     final prefs = _prefs!;
     final spPrefix = 'wb__${box}__';
-    final keysToRemove = prefs.getKeys().where((k) => k.startsWith(spPrefix)).toList();
+    final keysToRemove =
+        prefs.getKeys().where((k) => k.startsWith(spPrefix)).toList();
     for (final k in keysToRemove) {
       await prefs.remove(k);
     }

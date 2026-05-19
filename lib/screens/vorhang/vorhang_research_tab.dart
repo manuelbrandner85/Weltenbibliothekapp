@@ -14,7 +14,8 @@ class VorhangResearchTab extends StatelessWidget {
       concepts: [
         _Concept(
           name: '48 Gesetze der Macht',
-          summary: 'Robert Greenes Standardwerk über Machtdynamiken in Gesellschaft und Politik.',
+          summary:
+              'Robert Greenes Standardwerk über Machtdynamiken in Gesellschaft und Politik.',
           detail:
               'Robert Greene analysiert in seinen 48 Gesetzen historische Machtkämpfe von Ludwigs XIV. bis zu modernen CEOs. '
               'Kernprinzipien: Niemals den Chef überstrahlen (Gesetz 1), Handlungen durch Stellvertreter ausführen lassen (Gesetz 26), '
@@ -23,7 +24,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Dunkle Triade',
-          summary: 'Narzissmus, Machiavellismus und Psychopathie als Machtprofil.',
+          summary:
+              'Narzissmus, Machiavellismus und Psychopathie als Machtprofil.',
           detail:
               'Psychologische Forschung zeigt: Personen mit hohen Werten in der Dunklen Triade steigen überproportional in Führungspositionen auf. '
               'Narzissmus liefert Selbstpräsentation und Charisma. Machiavellismus ermöglicht strategische Manipulation ohne emotionale Hemmung. '
@@ -32,7 +34,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Soziale Dominanzhierarchien',
-          summary: 'Wie Statusspiele in Gruppen funktionieren (Jordan Peterson, Lorenz).',
+          summary:
+              'Wie Statusspiele in Gruppen funktionieren (Jordan Peterson, Lorenz).',
           detail:
               'Status in sozialen Gruppen wird nonverbal kommuniziert und unbewusst registriert. Körperhaltung, Tonlage, Raumnahme – '
               'alle signalisieren Rang. Wer den Raum betritt und sich setzt, bevor andere sitzen, signalisiert automatisch Dominanz. '
@@ -56,7 +59,8 @@ class VorhangResearchTab extends StatelessWidget {
       concepts: [
         _Concept(
           name: 'Gaslighting',
-          summary: 'Systematische Realitätsverdrehung zur psychologischen Kontrolle.',
+          summary:
+              'Systematische Realitätsverdrehung zur psychologischen Kontrolle.',
           detail:
               'Gaslighting (nach dem Film "Gaslight", 1944) beschreibt die gezielte Manipulation, bei der das Opfer '
               'seine eigene Wahrnehmung in Frage stellt. Typische Aussagen: "Das hast du dir eingebildet", "Du bist zu sensibel", '
@@ -85,7 +89,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Sekten-Taktiken',
-          summary: 'Love Bombing, Isolation, Loaded Language, Demand for Purity.',
+          summary:
+              'Love Bombing, Isolation, Loaded Language, Demand for Purity.',
           detail:
               'Robert Liftons "Thought Reform and the Psychology of Totalism" (1961) identifiziert 8 Kriterien für Gedankenkontrolle: '
               'Milieu Control (Kontrolle der Umgebung), Mystical Manipulation, Demand for Purity, Confession, Sacred Science, '
@@ -110,7 +115,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Chris Voss Taktiken',
-          summary: 'FBI-Verhandlungsführer: Taktisches Einfühlungsvermögen & "No"-Orientierung.',
+          summary:
+              'FBI-Verhandlungsführer: Taktisches Einfühlungsvermögen & "No"-Orientierung.',
           detail:
               'Chris Voss ("Never Split the Difference") lehrt FBI-Verhandlungstaktiken für den Alltag: '
               'Tactical Empathy (den emotionalen Zustand benennen ohne zu bewerten), Calibrated Questions ("Wie soll ich das schaffen?"), '
@@ -120,7 +126,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Cialdini: 6 Prinzipien',
-          summary: 'Reziprozität, Knappheit, Autorität, Konsistenz, Sympathie, Konsens.',
+          summary:
+              'Reziprozität, Knappheit, Autorität, Konsistenz, Sympathie, Konsens.',
           detail:
               'Robert Cialdinis "Influence" (1984) ist das meistzitierte Werk der Überzeugungspsychologie. '
               'Reziprozität: Wer gibt, bekommt zurück – immer. Knappheit: Was selten ist, wirkt wertvoller. '
@@ -130,7 +137,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Reframing',
-          summary: 'Bedeutung durch neuen Rahmen verändern ohne Fakten zu ändern.',
+          summary:
+              'Bedeutung durch neuen Rahmen verändern ohne Fakten zu ändern.',
           detail:
               'Reframing verändert nicht die Realität, sondern die Perspektive auf sie. "Das Glas ist halb leer" vs. "halb voll" '
               'ist banal – aber: "Wir haben 40% Kundenverlust" vs. "60% unserer Kunden sind noch bei uns" aktiviert '
@@ -155,7 +163,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Power Poses',
-          summary: 'Körperhaltung beeinflusst Hormonspiegel und Risikobereitschaft.',
+          summary:
+              'Körperhaltung beeinflusst Hormonspiegel und Risikobereitschaft.',
           detail:
               'Amy Cuddys Forschung (Harvard, 2010) zeigte: 2 Minuten in einer "Power Pose" erhöhen Testosteron und senken Cortisol. '
               'Kontroverse: Direkte Replikationen waren gemischt, aber subjektives Selbstvertrauen steigt konsistent. '
@@ -164,7 +173,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Lügenerkennung',
-          summary: 'Kein einzelnes Signal – Verhaltensbaselines und Abweichungen.',
+          summary:
+              'Kein einzelnes Signal – Verhaltensbaselines und Abweichungen.',
           detail:
               'Lügen erkennen ist keine Frage einzelner Signale sondern von Baseline-Abweichungen. '
               'Jeder Mensch hat individuelle Verhaltensmuster wenn er entspannt ist. Stress-Indikatoren (Blickabwenden, Berühren des Gesichts, '
@@ -190,7 +200,8 @@ class VorhangResearchTab extends StatelessWidget {
       concepts: [
         _Concept(
           name: 'Sun Tzus Kunst des Krieges',
-          summary: '2.500 Jahre alte Strategielehre – heute in Wirtschaft und Politik.',
+          summary:
+              '2.500 Jahre alte Strategielehre – heute in Wirtschaft und Politik.',
           detail:
               '"Die höchste Kunst des Krieges ist es, den Feind zu besiegen ohne zu kämpfen." Sun Tzu, ca. 500 v.Chr. '
               'Kernprinzipien: Kenne deinen Feind und dich selbst. Nutze Täuschung als primäres Werkzeug. '
@@ -200,7 +211,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'OODA-Loop',
-          summary: 'Observe-Orient-Decide-Act: Schneller entscheiden als der Gegner.',
+          summary:
+              'Observe-Orient-Decide-Act: Schneller entscheiden als der Gegner.',
           detail:
               'John Boyd (US Air Force) entwickelte den OODA-Loop aus Luftkampf-Analysen. '
               'Wer den OODA-Zyklus schneller durchläuft als der Gegner, gewinnt – nicht wer stärker ist. '
@@ -211,7 +223,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Spieltheorie',
-          summary: 'Nash-Gleichgewicht, Prisoners Dilemma und strategische Entscheidungen.',
+          summary:
+              'Nash-Gleichgewicht, Prisoners Dilemma und strategische Entscheidungen.',
           detail:
               'Spieltheorie (von Neumann/Morgenstern, Nash) modelliert Entscheidungen bei denen das Ergebnis von '
               'den Entscheidungen anderer abhängt. Gefangenendilemma: Individuell rationale Entscheidungen führen zu '
@@ -221,7 +234,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Systemisches Denken',
-          summary: 'Feedbackschleifen, Hebelwirkung und unbeabsichtigte Konsequenzen.',
+          summary:
+              'Feedbackschleifen, Hebelwirkung und unbeabsichtigte Konsequenzen.',
           detail:
               'Peter Senges "Die fünfte Disziplin" (1990) und Donella Meadows "Thinking in Systems": '
               'Komplexe Systeme haben Feedback-Schleifen (verstärkend und ausgleichend), Verzögerungen und '
@@ -237,7 +251,8 @@ class VorhangResearchTab extends StatelessWidget {
       concepts: [
         _Concept(
           name: 'Jungs Schatten',
-          summary: 'Die verdrängte Seite der Persönlichkeit als Quelle verborgener Macht.',
+          summary:
+              'Die verdrängte Seite der Persönlichkeit als Quelle verborgener Macht.',
           detail:
               'Carl Gustav Jung: Der "Schatten" enthält alles was wir an uns selbst verleugnen – Aggression, Neid, '
               'Lust, Schwäche, Größenphantasien. Was wir verdrängen, projizieren wir auf andere. '
@@ -248,7 +263,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Projektion erkennen',
-          summary: 'Eigene verdrängte Inhalte im Spiegel anderer Menschen sehen.',
+          summary:
+              'Eigene verdrängte Inhalte im Spiegel anderer Menschen sehen.',
           detail:
               'Projektion ist der unbewusste Mechanismus, eigene unangenehme Eigenschaften in anderen zu sehen. '
               'Wenn du jemanden als "lügnerisch" wahrnimmst – prüfe wann du selbst unehrlich bist. '
@@ -258,7 +274,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Goldener Schatten',
-          summary: 'Positive Fähigkeiten die wir in anderen bewundern aber uns selbst absprechen.',
+          summary:
+              'Positive Fähigkeiten die wir in anderen bewundern aber uns selbst absprechen.',
           detail:
               'Der goldene Schatten (Debbie Ford) enthält unsere positiven, aber verdrängten Anteile. '
               'Wenn du jemanden stark bewunderst – was genau bewunderst du? Oft sind es Eigenschaften die du dir '
@@ -268,7 +285,8 @@ class VorhangResearchTab extends StatelessWidget {
         ),
         _Concept(
           name: 'Innerer Kritiker',
-          summary: 'Die internalisierte Stimme der Unterdrückung und ihre Neutralisierung.',
+          summary:
+              'Die internalisierte Stimme der Unterdrückung und ihre Neutralisierung.',
           detail:
               'Der innere Kritiker ist die Stimme die sagt: "Du bist nicht gut genug", "Wer bist du dass du..." '
               'Er entsteht durch frühe Prägungen und dient ursprünglich dem Schutz vor sozialer Ablehnung. '
@@ -315,7 +333,8 @@ class VorhangResearchTab extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '6 Kategorien · ${_categories.fold(0, (s, c) => s + c.concepts.length)} Konzepte',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
           ),
         ],
       ),
@@ -327,12 +346,14 @@ class _Category {
   final String title;
   final IconData icon;
   final List<_Concept> concepts;
-  const _Category({required this.title, required this.icon, required this.concepts});
+  const _Category(
+      {required this.title, required this.icon, required this.concepts});
 }
 
 class _Concept {
   final String name, summary, detail;
-  const _Concept({required this.name, required this.summary, required this.detail});
+  const _Concept(
+      {required this.name, required this.summary, required this.detail});
 }
 
 class _CategoryCard extends StatefulWidget {
@@ -383,7 +404,8 @@ class _CategoryCardState extends State<_CategoryCard> {
                         Text(
                           '${widget.category.concepts.length} Konzepte',
                           style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                              color: Colors.white.withValues(alpha: 0.4),
+                              fontSize: 12),
                         ),
                       ],
                     ),
@@ -400,8 +422,9 @@ class _CategoryCardState extends State<_CategoryCard> {
           ),
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 200),
-            crossFadeState:
-                _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             firstChild: const SizedBox.shrink(),
             secondChild: Column(
               children: [
@@ -492,7 +515,8 @@ class _ConceptTile extends StatelessWidget {
             Container(
               width: 6,
               height: 6,
-              decoration: const BoxDecoration(color: _gold, shape: BoxShape.circle),
+              decoration:
+                  const BoxDecoration(color: _gold, shape: BoxShape.circle),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -502,20 +526,24 @@ class _ConceptTile extends StatelessWidget {
                   Text(
                     concept.name,
                     style: const TextStyle(
-                        color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     concept.summary,
                     style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45), fontSize: 12),
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: _gold.withValues(alpha: 0.5), size: 18),
+            Icon(Icons.chevron_right,
+                color: _gold.withValues(alpha: 0.5), size: 18),
           ],
         ),
       ),

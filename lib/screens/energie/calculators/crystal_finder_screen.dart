@@ -71,9 +71,13 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
   List<CrystalEntry> _results() {
     var list = crystalLibrary.toList();
     if (_intention != null) {
-      list = list.where((c) =>
-          c.intentions.any((i) => i.toLowerCase().contains(_intention!.toLowerCase())) ||
-          c.tags.any((t) => t.toLowerCase().contains(_intention!.toLowerCase()))).toList();
+      list = list
+          .where((c) =>
+              c.intentions.any(
+                  (i) => i.toLowerCase().contains(_intention!.toLowerCase())) ||
+              c.tags.any(
+                  (t) => t.toLowerCase().contains(_intention!.toLowerCase())))
+          .toList();
     }
     if (_chakra != null) {
       final pref = list.where((c) => c.chakra == _chakra).toList();
@@ -174,7 +178,8 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
                         : Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? _accent : Colors.white.withValues(alpha: 0.1),
+                      color:
+                          sel ? _accent : Colors.white.withValues(alpha: 0.1),
                       width: sel ? 1.6 : 1,
                     ),
                   ),
@@ -255,13 +260,15 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
                           : Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: sel ? color : Colors.white.withValues(alpha: 0.1),
+                        color:
+                            sel ? color : Colors.white.withValues(alpha: 0.1),
                         width: sel ? 1.6 : 1,
                       ),
                     ),
                     child: Row(children: [
                       Container(
-                        width: 22, height: 22,
+                        width: 22,
+                        height: 22,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: color,
@@ -274,8 +281,7 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
                               fontSize: 15,
                               fontWeight: FontWeight.w700)),
                       const Spacer(),
-                      if (sel)
-                        Icon(Icons.check_circle, color: color, size: 18),
+                      if (sel) Icon(Icons.check_circle, color: color, size: 18),
                     ]),
                   ),
                 ),
@@ -287,7 +293,10 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
         Row(children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () { _chakra = null; _next(); },
+              onPressed: () {
+                _chakra = null;
+                _next();
+              },
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white70,
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
@@ -353,7 +362,8 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
                         : Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: sel ? _accent : Colors.white.withValues(alpha: 0.1),
+                      color:
+                          sel ? _accent : Colors.white.withValues(alpha: 0.1),
                       width: sel ? 1.6 : 1,
                     ),
                   ),
@@ -378,7 +388,10 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () { _step++; setState(() {}); },
+            onPressed: () {
+              _step++;
+              setState(() {});
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.white,
@@ -420,7 +433,8 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
         Expanded(
           child: results.isEmpty
               ? const Center(
-                  child: Text('Keine perfekte Uebereinstimmung.\n'
+                  child: Text(
+                      'Keine perfekte Uebereinstimmung.\n'
                       'Versuche andere Kriterien.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white60)),
@@ -458,104 +472,104 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
         MaterialPageRoute(builder: (_) => CrystalRitualScreen(crystal: c)),
       ),
       child: ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                c.displayColor.withValues(alpha: 0.22),
-                Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  c.displayColor.withValues(alpha: 0.22),
+                  Colors.white.withValues(alpha: 0.04),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: c.displayColor.withValues(alpha: 0.5)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: c.displayColor.withValues(alpha: 0.4),
+                    ),
+                    child: Text('$rank',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900)),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(c.emoji, style: const TextStyle(fontSize: 24)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(c.name,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800)),
+                        Text(
+                          [c.chakra, c.element]
+                              .where((e) => e != null)
+                              .join(' · '),
+                          style: TextStyle(
+                              color: c.displayColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 10),
+                Text(c.spiritualEffect,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 13, height: 1.5)),
+                if (c.howToUse.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.lightbulb_outline_rounded,
+                            color: Color(0xFFFFD54F), size: 14),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(c.howToUse,
+                              style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  height: 1.4)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: c.displayColor.withValues(alpha: 0.5)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                Container(
-                  width: 28, height: 28,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: c.displayColor.withValues(alpha: 0.4),
-                  ),
-                  child: Text('$rank',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900)),
-                ),
-                const SizedBox(width: 10),
-                Text(c.emoji, style: const TextStyle(fontSize: 24)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(c.name,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800)),
-                      Text(
-                        [c.chakra, c.element]
-                            .where((e) => e != null)
-                            .join(' · '),
-                        style: TextStyle(
-                            color: c.displayColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ],
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 10),
-              Text(c.spiritualEffect,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      height: 1.5)),
-              if (c.howToUse.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.lightbulb_outline_rounded,
-                          color: Color(0xFFFFD54F), size: 14),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(c.howToUse,
-                            style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                height: 1.4)),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
           ),
         ),
-      ),
       ),
     );
   }
 
   Widget _progress(int current) {
-    return Row(children: List.generate(3, (i) {
+    return Row(
+        children: List.generate(3, (i) {
       final active = i <= current;
       return Expanded(
         child: Padding(

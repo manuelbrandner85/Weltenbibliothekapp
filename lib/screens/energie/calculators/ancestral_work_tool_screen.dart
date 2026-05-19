@@ -67,8 +67,7 @@ class _AncestralWorkToolScreenState extends State<AncestralWorkToolScreen>
           ),
         ),
         title: const Text('🕯️ Ahnenarbeit',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
@@ -90,7 +89,10 @@ class _AncestralWorkToolScreenState extends State<AncestralWorkToolScreen>
             Positioned(
               top: -80 + _bgCtrl.value * 50,
               right: -60,
-              child: _CineOrb(color: _kPrimary, size: 280, opacity: 0.10 + _bgCtrl.value * 0.05),
+              child: _CineOrb(
+                  color: _kPrimary,
+                  size: 280,
+                  opacity: 0.10 + _bgCtrl.value * 0.05),
             ),
             Positioned(
               bottom: -80,
@@ -100,7 +102,10 @@ class _AncestralWorkToolScreenState extends State<AncestralWorkToolScreen>
             Positioned(
               top: MediaQuery.of(context).size.height * 0.45,
               left: MediaQuery.of(context).size.width * 0.2,
-              child: _CineOrb(color: _kAmber, size: 160, opacity: 0.04 + _bgCtrl.value * 0.03),
+              child: _CineOrb(
+                  color: _kAmber,
+                  size: 160,
+                  opacity: 0.04 + _bgCtrl.value * 0.03),
             ),
             child!,
           ],
@@ -122,19 +127,20 @@ class _CineOrb extends StatelessWidget {
   final Color color;
   final double size;
   final double opacity;
-  const _CineOrb({required this.color, required this.size, required this.opacity});
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
   @override
   Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: RadialGradient(colors: [
-        color.withValues(alpha: opacity),
-        color.withValues(alpha: 0),
-      ]),
-    ),
-  );
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -214,8 +220,7 @@ class _AncestorsTabState extends State<_AncestorsTab> {
         backgroundColor: _kCardBg,
         title: const Text('Ahn_in löschen?',
             style: TextStyle(color: Colors.white)),
-        content: const Text(
-            'Dieser Eintrag wird unwiderruflich gelöscht.',
+        content: const Text('Dieser Eintrag wird unwiderruflich gelöscht.',
             style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
@@ -224,8 +229,7 @@ class _AncestorsTabState extends State<_AncestorsTab> {
                   style: TextStyle(color: Colors.white54))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Löschen',
-                  style: TextStyle(color: _kAmber))),
+              child: const Text('Löschen', style: TextStyle(color: _kAmber))),
         ],
       ),
     );
@@ -234,12 +238,12 @@ class _AncestorsTabState extends State<_AncestorsTab> {
       await _db.from('ancestors').delete().eq('id', id);
       if (!mounted) return;
       setState(() => _rows.removeWhere((r) => r['id'] == id));
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ahn_in gelöscht')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Ahn_in gelöscht')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -341,8 +345,8 @@ class _AncestorsTabState extends State<_AncestorsTab> {
                       const CircleAvatar(
                         radius: 18,
                         backgroundColor: _kAmber,
-                        child: Icon(Icons.person,
-                            color: Colors.black, size: 20),
+                        child:
+                            Icon(Icons.person, color: Colors.black, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -377,8 +381,7 @@ class _AncestorsTabState extends State<_AncestorsTab> {
                             .map((t) => Chip(
                                   label: Text(t,
                                       style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 11)),
+                                          color: Colors.white70, fontSize: 11)),
                                   backgroundColor: _kBorder,
                                   materialTapTargetSize:
                                       MaterialTapTargetSize.shrinkWrap,
@@ -466,8 +469,8 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
     }
     final user = _db.auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bitte zuerst anmelden')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Bitte zuerst anmelden')));
       return;
     }
     setState(() => _saving = true);
@@ -483,15 +486,10 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
         'birth_year': int.tryParse(_birthCtrl.text.trim()),
         'death_year': int.tryParse(_deathCtrl.text.trim()),
         'known_traits': traits,
-        'story': _storyCtrl.text.trim().isEmpty
-            ? null
-            : _storyCtrl.text.trim(),
-        'gifts': _giftsCtrl.text.trim().isEmpty
-            ? null
-            : _giftsCtrl.text.trim(),
-        'healing_needed': _healingCtrl.text.trim().isEmpty
-            ? null
-            : _healingCtrl.text.trim(),
+        'story': _storyCtrl.text.trim().isEmpty ? null : _storyCtrl.text.trim(),
+        'gifts': _giftsCtrl.text.trim().isEmpty ? null : _giftsCtrl.text.trim(),
+        'healing_needed':
+            _healingCtrl.text.trim().isEmpty ? null : _healingCtrl.text.trim(),
         'intention': _intentionCtrl.text.trim().isEmpty
             ? null
             : _intentionCtrl.text.trim(),
@@ -513,8 +511,8 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -576,8 +574,8 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
                     const SizedBox(height: 12),
                     Row(children: [
                       Expanded(
-                          child: _field(_birthCtrl, 'Geburtsjahr',
-                              Icons.cake_outlined,
+                          child: _field(
+                              _birthCtrl, 'Geburtsjahr', Icons.cake_outlined,
                               keyboard: TextInputType.number)),
                       const SizedBox(width: 10),
                       Expanded(
@@ -586,7 +584,8 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
                               keyboard: TextInputType.number)),
                     ]),
                     const SizedBox(height: 12),
-                    _field(_traitsCtrl,
+                    _field(
+                        _traitsCtrl,
                         'Bekannte Eigenschaften (kommagetrennt)',
                         Icons.label_outline),
                     const SizedBox(height: 12),
@@ -615,8 +614,7 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.black))
+                                    strokeWidth: 2, color: Colors.black))
                             : const Icon(Icons.save_outlined),
                         label: Text(widget.existing == null
                             ? 'Speichern'
@@ -690,8 +688,8 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
       items: _kRelations.entries
           .map((e) => DropdownMenuItem(
                 value: e.key,
-                child: Text(e.value,
-                    style: const TextStyle(color: Colors.white)),
+                child:
+                    Text(e.value, style: const TextStyle(color: Colors.white)),
               ))
           .toList(),
       onChanged: (v) {
@@ -785,8 +783,7 @@ class _PatternsTabState extends State<_PatternsTab> {
         backgroundColor: _kCardBg,
         title: const Text('Muster löschen?',
             style: TextStyle(color: Colors.white)),
-        content: const Text(
-            'Dieser Eintrag wird unwiderruflich gelöscht.',
+        content: const Text('Dieser Eintrag wird unwiderruflich gelöscht.',
             style: TextStyle(color: Colors.white70)),
         actions: [
           TextButton(
@@ -795,8 +792,7 @@ class _PatternsTabState extends State<_PatternsTab> {
                   style: TextStyle(color: Colors.white54))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Löschen',
-                  style: TextStyle(color: _kAmber))),
+              child: const Text('Löschen', style: TextStyle(color: _kAmber))),
         ],
       ),
     );
@@ -805,12 +801,12 @@ class _PatternsTabState extends State<_PatternsTab> {
       await _db.from('ancestor_patterns').delete().eq('id', id);
       if (!mounted) return;
       setState(() => _rows.removeWhere((r) => r['id'] == id));
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Muster gelöscht')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Muster gelöscht')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -891,8 +887,7 @@ class _PatternsTabState extends State<_PatternsTab> {
           final r = _rows[i];
           final pType = r['pattern_type'] as String? ?? 'other';
           final status = r['status'] as String? ?? 'recognized';
-          final statusColor =
-              _kPatternStatusColor[status] ?? Colors.white54;
+          final statusColor = _kPatternStatusColor[status] ?? Colors.white54;
           return Card(
             color: _kCardBg,
             margin: const EdgeInsets.only(bottom: 10),
@@ -924,10 +919,8 @@ class _PatternsTabState extends State<_PatternsTab> {
                                     horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                     color: _kBorder,
-                                    borderRadius:
-                                        BorderRadius.circular(10)),
-                                child: Text(
-                                    _kPatternTypes[pType] ?? pType,
+                                    borderRadius: BorderRadius.circular(10)),
+                                child: Text(_kPatternTypes[pType] ?? pType,
                                     style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 10,
@@ -938,15 +931,12 @@ class _PatternsTabState extends State<_PatternsTab> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                    color:
-                                        statusColor.withValues(alpha: 0.2),
-                                    borderRadius:
-                                        BorderRadius.circular(10),
+                                    color: statusColor.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                        color: statusColor
-                                            .withValues(alpha: 0.5))),
-                                child: Text(
-                                    _kPatternStatus[status] ?? status,
+                                        color: statusColor.withValues(
+                                            alpha: 0.5))),
+                                child: Text(_kPatternStatus[status] ?? status,
                                     style: TextStyle(
                                         color: statusColor,
                                         fontSize: 10,
@@ -1036,14 +1026,14 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
     final title = _titleCtrl.text.trim();
     final desc = _descCtrl.text.trim();
     if (title.isEmpty || desc.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Titel und Beschreibung sind Pflicht')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Titel und Beschreibung sind Pflicht')));
       return;
     }
     final user = _db.auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bitte zuerst anmelden')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Bitte zuerst anmelden')));
       return;
     }
     setState(() => _saving = true);
@@ -1075,8 +1065,8 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
     }
   }
 
@@ -1136,16 +1126,15 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
                     const SizedBox(height: 12),
                     _typeDropdown(),
                     const SizedBox(height: 12),
-                    _field(_descCtrl, 'Beschreibung*',
-                        Icons.description_outlined,
+                    _field(
+                        _descCtrl, 'Beschreibung*', Icons.description_outlined,
                         maxLines: 4),
                     const SizedBox(height: 12),
                     _field(_genCtrl, 'Betroffene Generationen',
                         Icons.people_outline,
                         maxLines: 2),
                     const SizedBox(height: 12),
-                    _field(_healCtrl, 'Heil-Intention',
-                        Icons.healing_outlined,
+                    _field(_healCtrl, 'Heil-Intention', Icons.healing_outlined,
                         maxLines: 3),
                     const SizedBox(height: 12),
                     _statusDropdown(),
@@ -1159,8 +1148,7 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.black))
+                                    strokeWidth: 2, color: Colors.black))
                             : const Icon(Icons.save_outlined),
                         label: Text(widget.existing == null
                             ? 'Speichern'
@@ -1233,8 +1221,8 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
       items: _kPatternTypes.entries
           .map((e) => DropdownMenuItem(
                 value: e.key,
-                child: Text(e.value,
-                    style: const TextStyle(color: Colors.white)),
+                child:
+                    Text(e.value, style: const TextStyle(color: Colors.white)),
               ))
           .toList(),
       onChanged: (v) {
@@ -1268,8 +1256,8 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
       items: _kPatternStatus.entries
           .map((e) => DropdownMenuItem(
                 value: e.key,
-                child: Text(e.value,
-                    style: const TextStyle(color: Colors.white)),
+                child:
+                    Text(e.value, style: const TextStyle(color: Colors.white)),
               ))
           .toList(),
       onChanged: (v) {
@@ -1391,8 +1379,8 @@ class _RitualsTabState extends State<_RitualsTab> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 children: [
                   _chip('all', 'Alle'),
-                  ..._traditions.map((t) =>
-                      _chip(t, _kTraditionLabels[t] ?? t)),
+                  ..._traditions
+                      .map((t) => _chip(t, _kTraditionLabels[t] ?? t)),
                 ],
               ),
             ),
@@ -1424,16 +1412,13 @@ class _RitualsTabState extends State<_RitualsTab> {
             style: TextStyle(
                 color: selected ? Colors.black : Colors.white70,
                 fontSize: 12,
-                fontWeight:
-                    selected ? FontWeight.w700 : FontWeight.w500)),
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
         selected: selected,
         backgroundColor: _kCardBg,
         selectedColor: _kAmber,
         checkmarkColor: Colors.black,
-        side: BorderSide(
-            color: selected ? _kAmber : _kBorder, width: 1),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+        side: BorderSide(color: selected ? _kAmber : _kBorder, width: 1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         onSelected: (_) => setState(() => _filter = key),
       ),
     );
@@ -1485,8 +1470,7 @@ class _RitualCard extends StatelessWidget {
                           decoration: BoxDecoration(
                               color: _kAmber.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(10)),
-                          child: Text(
-                              _kTraditionLabels[tradition] ?? tradition,
+                          child: Text(_kTraditionLabels[tradition] ?? tradition,
                               style: const TextStyle(
                                   color: _kAmber,
                                   fontSize: 10,
@@ -1597,9 +1581,7 @@ class _RitualDetailSheet extends StatelessWidget {
                 children: [
                   Text(ritual['description'] as String? ?? '',
                       style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          height: 1.5)),
+                          color: Colors.white70, fontSize: 14, height: 1.5)),
                   if (bestTime != null && bestTime.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Container(
@@ -1614,8 +1596,7 @@ class _RitualDetailSheet extends StatelessWidget {
                             color: _kAmber, size: 18),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
-                              'Bester Zeitpunkt: $bestTime',
+                          child: Text('Bester Zeitpunkt: $bestTime',
                               style: const TextStyle(
                                   color: Colors.white, fontSize: 13)),
                         ),
@@ -1637,8 +1618,7 @@ class _RitualDetailSheet extends StatelessWidget {
                           .map((m) => Chip(
                                 label: Text(m,
                                     style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12)),
+                                        color: Colors.white70, fontSize: 12)),
                                 backgroundColor: _kCardBg,
                                 side: const BorderSide(color: _kBorder),
                                 materialTapTargetSize:
@@ -1665,8 +1645,7 @@ class _RitualDetailSheet extends StatelessWidget {
                               width: 26,
                               height: 26,
                               decoration: const BoxDecoration(
-                                  color: _kAmber,
-                                  shape: BoxShape.circle),
+                                  color: _kAmber, shape: BoxShape.circle),
                               alignment: Alignment.center,
                               child: Text('${i + 1}',
                                   style: const TextStyle(

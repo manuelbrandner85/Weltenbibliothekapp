@@ -69,10 +69,13 @@ class RelatedPathsCard extends StatelessWidget {
               spacing: 10,
               runSpacing: 10,
               children: [
-                for (final t in topics) _ChipTile(label: t, onTap: () {
-                  HapticFeedback.mediumImpact();
-                  onTap(t);
-                }),
+                for (final t in topics)
+                  _ChipTile(
+                      label: t,
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        onTap(t);
+                      }),
               ],
             ),
         ],

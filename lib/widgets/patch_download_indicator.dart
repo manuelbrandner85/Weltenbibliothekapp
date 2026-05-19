@@ -109,7 +109,8 @@ class _PatchDownloadIndicatorState extends State<PatchDownloadIndicator>
               ClipRRect(
                 borderRadius: BorderRadius.circular(2),
                 child: LinearProgressIndicator(
-                  backgroundColor: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+                  backgroundColor:
+                      const Color(0xFF00E5FF).withValues(alpha: 0.15),
                   valueColor: const AlwaysStoppedAnimation<Color>(
                     Color(0xFF00E5FF),
                   ),

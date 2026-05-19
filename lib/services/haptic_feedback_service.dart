@@ -7,14 +7,15 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Haptic Feedback Service für taktiles Feedback
-/// 
+///
 /// Features:
 /// - Light, Medium, Heavy Feedback Intensitäten
 /// - Erfolgs/Fehler/Warnung Feedback-Patterns
 /// - Settings Toggle (An/Aus in Einstellungen)
 /// - Button, Swipe, Notification Feedback
 class HapticFeedbackService {
-  static final HapticFeedbackService _instance = HapticFeedbackService._internal();
+  static final HapticFeedbackService _instance =
+      HapticFeedbackService._internal();
   factory HapticFeedbackService() => _instance;
   HapticFeedbackService._internal();
 

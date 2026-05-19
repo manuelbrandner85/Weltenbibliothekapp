@@ -62,7 +62,7 @@ import 'calculators/shamanic_journey_tool_screen.dart'; // 🥁 v24 Schamanische
 import 'calculators/shamanic_guided_journey_screen.dart'; // 🥁 AI-Guided cinematic
 import 'calculators/natal_chart_tool_screen.dart'; // ♓ v25 Geburtshoroskop
 import 'calculators/human_design_tool_screen.dart'; // 🌀 v26 Human Design
-import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
+import 'frequency_generator_screen.dart'; // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
 import 'planetary_transit_screen.dart'; // 🪐 Planeten & Transite
 import 'energie_recherche_screen.dart'; // 🔮 Spirituelle Recherche
@@ -77,7 +77,6 @@ class SpiritTabModern extends StatefulWidget {
 
 class _SpiritTabModernState extends State<SpiritTabModern>
     with TickerProviderStateMixin {
-
   // ── Animations ─────────────────────────────────────────────────────────
   late AnimationController _auraCtrl;
   late AnimationController _entryCtrl;
@@ -85,16 +84,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
   late Animation<double> _entryAnim;
 
   // ── Colors (identical to home dashboard) ───────────────────────────────
-  static const _bg      = Color(0xFF06040F);
-  static const _card    = Color(0xFF100B1E);
-  static const _cardB   = Color(0xFF150E25);
-  static const _purple  = Color(0xFFAB47BC);
+  static const _bg = Color(0xFF06040F);
+  static const _card = Color(0xFF100B1E);
+  static const _cardB = Color(0xFF150E25);
+  static const _purple = Color(0xFFAB47BC);
   static const _purpleD = Color(0xFF4A148C);
   static const _purpleL = Color(0xFFCE93D8);
-  static const _gold    = Color(0xFFFFD54F);
-  static const _teal    = Color(0xFF26C6DA);
-  static const _pink    = Color(0xFFEC407A);
-  static const _green   = Color(0xFF66BB6A);
+  static const _gold = Color(0xFFFFD54F);
+  static const _teal = Color(0xFF26C6DA);
+  static const _pink = Color(0xFFEC407A);
+  static const _green = Color(0xFF66BB6A);
 
   // ── State ──────────────────────────────────────────────────────────────
   final _storage = StorageService();
@@ -108,13 +107,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
   @override
   void initState() {
     super.initState();
-    _auraCtrl = AnimationController(vsync: this,
-        duration: const Duration(seconds: 3))..repeat(reverse: true);
-    _entryCtrl = AnimationController(vsync: this,
-        duration: const Duration(milliseconds: 900));
-    _orbitCtrl = AnimationController(vsync: this,
-        duration: const Duration(seconds: 12))..repeat();
-    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _auraCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..repeat(reverse: true);
+    _entryCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900));
+    _orbitCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12))
+          ..repeat();
+    _entryAnim =
+        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
     _entryCtrl.forward();
     _initializeTools();
     _loadProfile();
@@ -236,7 +238,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'core',
         'screen': const GematriaCalculatorScreen(),
       },
-      
+
       // 📚 LERNREIHEN — Zentraler Einstieg in 17 tagesweise Lernpfade
       // (Chakren 7d, Hermetik 7d, Schamanen 7d, Ahnen 7d, Numerologie 9d,
       //  Earthing 10d, Archetypen 12d, Olymp 12d, Geometrie 12d, Kabbala 22d
@@ -268,7 +270,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       // ═══════════════════════════════════════════════════════════
       // 🆕 15 NEUE SPIRIT-TOOLS (v44) - IM GRID WIE ORIGINAL-TOOLS
       // ═══════════════════════════════════════════════════════════
-      
+
       // 🌕 Mondkalender (v19 – echte Ephemeriden + Rituale + Tagebuch)
       {
         'icon': Icons.nightlight_round,
@@ -279,7 +281,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const MoonCalendarToolScreen(),
       },
-      
+
       // 🔮 Tarot-Tagesziehung
       {
         'icon': Icons.auto_awesome,
@@ -290,7 +292,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const TarotDailyDrawScreen(),
       },
-      
+
       // 💎 Kristall-Datenbank
       {
         'icon': Icons.diamond,
@@ -311,7 +313,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const CrystalPhotoIdScreen(),
       },
-      
+
       // 📿 Meditation-Timer
       {
         'icon': Icons.timer,
@@ -327,12 +329,13 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'icon': Icons.headphones,
         'iconEmoji': '🎧',
         'title': 'Audio-Meditation',
-        'subtitle': '5 geführte Sessions (Atem · Metta · Berg · Vergebung · Dank)',
+        'subtitle':
+            '5 geführte Sessions (Atem · Metta · Berg · Vergebung · Dank)',
         'color': const Color(0xFF4527A0),
         'category': 'new',
         'screen': const AudioMeditationScreen(),
       },
-      
+
       // 🌈 Aura-Quiz (12 Fragen → dominante Aura-Farbe via Farbpsychologie)
       {
         'icon': Icons.color_lens,
@@ -343,7 +346,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const AuraQuizScreen(),
       },
-      
+
       // 🧬 Epigenetik & Gen-Expression (ersetzt 12-Strang-DNA, evidenzbasiert)
       {
         'icon': Icons.biotech,
@@ -354,7 +357,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const EpigenetikCoachScreen(),
       },
-      
+
       // 🎵 Frequenz-Generator
       {
         'icon': Icons.graphic_eq,
@@ -363,10 +366,10 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'subtitle': 'Solfeggio & Binaural',
         'color': const Color(0xFFD32F2F),
         'category': 'new',
-        'screen': null,  // Create on tap (not const-constructable)
+        'screen': null, // Create on tap (not const-constructable)
         'screenBuilder': () => const FrequencyGeneratorScreen(),
       },
-      
+
       // 🌌 Akasha-Chronik cinematic — Journal + AI-Reflexion + Mood-Tracker
       {
         'icon': Icons.menu_book,
@@ -377,7 +380,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const AkashaChronicleScreen(),
       },
-      
+
       // 🕉️ Mantra-Bibliothek (Original)
       {
         'icon': Icons.record_voice_over,
@@ -408,7 +411,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const MantraPracticeScreen(),
       },
-      
+
       // 🔯 Heilige Geometrie · Interaktiver Konstruktor (cinematic)
       {
         'icon': Icons.hexagon_outlined,
@@ -429,7 +432,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const AnimatedSacredGeometryScreen(),
       },
-      
+
       // 🌍 Erdung-Übungen
       {
         'icon': Icons.nature_people,
@@ -440,7 +443,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const GroundingExercisesScreen(),
       },
-      
+
       // 🦋 Transformation-Journey cinematic — 5-Dim + Streak + Korrelationen
       {
         'icon': Icons.trending_up,
@@ -461,7 +464,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const PhotoProgressScreen(),
       },
-      
+
       // 🔱 Heilige Symbole multikulturell (ersetzt esoterische Lichtsprache,
       // mit echten etymologischen/historischen Bedeutungen via Wikipedia-API)
       {
@@ -473,7 +476,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const SacredSymbolsScreen(),
       },
-      
+
       // 🧘‍♀️ Yoga Asana
       {
         'icon': Icons.self_improvement,
@@ -484,7 +487,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const YogaAsanaGuideScreen(),
       },
-      
+
       // 🌺 Göttinnen & Götter Orakel
       {
         'icon': Icons.auto_awesome,
@@ -505,11 +508,11 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const GodOracleChatScreen(),
       },
-      
+
       // ═══════════════════════════════════════════════════════════
       // 🆕 V115 MEGA UPDATE - NEUE SPIRIT-TOOLS
       // ═══════════════════════════════════════════════════════════
-      
+
       // 💭 Traumdeutung (v20 – Symbol-Lexikon + Auto-Tagging)
       {
         'icon': Icons.bedtime,
@@ -761,7 +764,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const VoiceAffirmationScreen(),
       },
-      
+
       // 📊 Biorhythmus cinematic — 6 Zyklen, 90-Tage-Chart, Critical Days
       {
         'icon': Icons.show_chart,
@@ -782,7 +785,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const BiorhythmCompatibilityScreen(),
       },
-      
+
       // ☯ I-Ging Münzwurf-Orakel (cinematic) · Wandlung + AI + Verlauf
       // (Simple I-Ging entfernt v5.43.1 - Muenzwurf ist die bessere Variante)
       {
@@ -848,7 +851,9 @@ class _SpiritTabModernState extends State<SpiritTabModern>
 
   List<Map<String, dynamic>> get _filteredTools {
     if (_selectedCategory == 'all') return _allTools;
-    return _allTools.where((tool) => tool['category'] == _selectedCategory).toList();
+    return _allTools
+        .where((tool) => tool['category'] == _selectedCategory)
+        .toList();
   }
 
   int _getCategoryCount(String category) {
@@ -885,7 +890,8 @@ class _SpiritTabModernState extends State<SpiritTabModern>
                         _buildCategoryFilterSliver(),
                         _buildDailyInspirationSliver(),
                         _buildToolsGrid(),
-                        const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+                        const SliverPadding(
+                            padding: EdgeInsets.only(bottom: 120)),
                       ],
                     ),
                   ),
@@ -956,7 +962,8 @@ class _SpiritTabModernState extends State<SpiritTabModern>
     return AnimatedBuilder(
       animation: _auraCtrl,
       builder: (_, __) => Container(
-        width: 54, height: 54,
+        width: 54,
+        height: 54,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
@@ -971,7 +978,8 @@ class _SpiritTabModernState extends State<SpiritTabModern>
           boxShadow: [
             BoxShadow(
               color: _purple.withValues(alpha: 0.25 + _auraCtrl.value * 0.2),
-              blurRadius: 18, spreadRadius: 3,
+              blurRadius: 18,
+              spreadRadius: 3,
             ),
           ],
         ),
@@ -993,23 +1001,32 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('✨ Spirit Tools',
-            style: TextStyle(color: Colors.white54, fontSize: 12,
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
                 fontWeight: FontWeight.w500)),
         const SizedBox(height: 2),
         Text(name,
-            style: const TextStyle(color: Colors.white, fontSize: 20,
-                fontWeight: FontWeight.bold, letterSpacing: -0.3),
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.3),
             overflow: TextOverflow.ellipsis),
         const SizedBox(height: 3),
         Row(children: [
           AnimatedBuilder(
             animation: _auraCtrl,
             builder: (_, __) => Container(
-              width: 6, height: 6,
+              width: 6,
+              height: 6,
               decoration: BoxDecoration(
                 color: _purple.withValues(alpha: 0.5 + _auraCtrl.value * 0.5),
                 shape: BoxShape.circle,
-                boxShadow: [BoxShadow(color: _purple.withValues(alpha: 0.5), blurRadius: 4)],
+                boxShadow: [
+                  BoxShadow(
+                      color: _purple.withValues(alpha: 0.5), blurRadius: 4)
+                ],
               ),
             ),
           ),
@@ -1031,10 +1048,12 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Text('${_allTools.length}',
-            style: const TextStyle(color: _purpleL, fontSize: 18,
-                fontWeight: FontWeight.bold)),
+            style: const TextStyle(
+                color: _purpleL, fontSize: 18, fontWeight: FontWeight.bold)),
         const Text('Tools',
-            style: TextStyle(color: Colors.white38, fontSize: 9,
+            style: TextStyle(
+                color: Colors.white38,
+                fontSize: 9,
                 fontWeight: FontWeight.w500)),
       ]),
     );
@@ -1062,8 +1081,8 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.error_outline, size: 56,
-                color: _pink.withValues(alpha: 0.7)),
+            Icon(Icons.error_outline,
+                size: 56, color: _pink.withValues(alpha: 0.7)),
             const SizedBox(height: 16),
             Text(_error!,
                 textAlign: TextAlign.center,
@@ -1072,15 +1091,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
             GestureDetector(
               onTap: _loadProfile,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                       colors: [Color(0xFF6A1B9A), _purple]),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Text('Erneut versuchen',
-                    style: TextStyle(color: Colors.white,
-                        fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ),
           ]),
@@ -1088,7 +1108,6 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       ),
     );
   }
-
 
   Widget _buildCategoryFilterSliver() {
     return SliverToBoxAdapter(
@@ -1104,15 +1123,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
               physics: const BouncingScrollPhysics(),
               child: Row(children: [
                 for (final cat in const [
-                  ['all',      '✨ Alle'],
-                  ['core',     '⭐ Kern'],
+                  ['all', '✨ Alle'],
+                  ['core', '⭐ Kern'],
                   ['advanced', '🚀 Erweitert'],
-                  ['meta',     '🌌 Meta'],
-                  ['new',      '🆕 Neu'],
-                  ['cosmos',   '🌌 Kosmos'],
+                  ['meta', '🌌 Meta'],
+                  ['new', '🆕 Neu'],
+                  ['cosmos', '🌌 Kosmos'],
                 ])
                   if (_getCategoryCount(cat[0]) > 0) ...[
-                    _buildCategoryChip(cat[0], cat[1], _chipColor(cat[0]), _getCategoryCount(cat[0])),
+                    _buildCategoryChip(cat[0], cat[1], _chipColor(cat[0]),
+                        _getCategoryCount(cat[0])),
                     const SizedBox(width: 10),
                   ],
               ]),
@@ -1124,16 +1144,17 @@ class _SpiritTabModernState extends State<SpiritTabModern>
   }
 
   Color _chipColor(String cat) => switch (cat) {
-        'all'      => _purple,
-        'core'     => _teal,
+        'all' => _purple,
+        'core' => _teal,
         'advanced' => _pink,
-        'meta'     => _gold,
-        'new'      => _green,
-        'cosmos'   => const Color(0xFF1A237E),
-        _          => _purple,
+        'meta' => _gold,
+        'new' => _green,
+        'cosmos' => const Color(0xFF1A237E),
+        _ => _purple,
       };
 
-  Widget _buildCategoryChip(String category, String label, Color color, int count) {
+  Widget _buildCategoryChip(
+      String category, String label, Color color, int count) {
     final isSelected = _selectedCategory == category;
     return GestureDetector(
       onTap: () => setState(() => _selectedCategory = category),
@@ -1154,14 +1175,21 @@ class _SpiritTabModernState extends State<SpiritTabModern>
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [BoxShadow(color: color.withValues(alpha: 0.3),
-                  blurRadius: 12, offset: const Offset(0, 4))]
+              ? [
+                  BoxShadow(
+                      color: color.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4))
+                ]
               : null,
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(label,
-              style: TextStyle(color: Colors.white, fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight:
+                      isSelected ? FontWeight.bold : FontWeight.normal)),
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1172,8 +1200,10 @@ class _SpiritTabModernState extends State<SpiritTabModern>
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text('$count',
-                style: TextStyle(color: isSelected ? Colors.white : Colors.white54,
-                    fontSize: 10, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white54,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold)),
           ),
         ]),
       ),
@@ -1209,11 +1239,14 @@ class _SpiritTabModernState extends State<SpiritTabModern>
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: _purpleL.withValues(alpha: 0.2 + _auraCtrl.value * 0.1)),
+                  color:
+                      _purpleL.withValues(alpha: 0.2 + _auraCtrl.value * 0.1)),
               boxShadow: [
                 BoxShadow(
-                  color: _purple.withValues(alpha: 0.12 + _auraCtrl.value * 0.08),
-                  blurRadius: 20, offset: const Offset(0, 6),
+                  color:
+                      _purple.withValues(alpha: 0.12 + _auraCtrl.value * 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -1228,15 +1261,22 @@ class _SpiritTabModernState extends State<SpiritTabModern>
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Tägliche Inspiration',
-                      style: TextStyle(color: Colors.white, fontSize: 13,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(quote,
-                      style: TextStyle(color: _purpleL.withValues(alpha: 0.85),
-                          fontSize: 11, fontStyle: FontStyle.italic, height: 1.4)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Tägliche Inspiration',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(quote,
+                          style: TextStyle(
+                              color: _purpleL.withValues(alpha: 0.85),
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                              height: 1.4)),
+                    ]),
               ),
             ]),
           ),
@@ -1290,8 +1330,10 @@ class _SpiritTabModernState extends State<SpiritTabModern>
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: color.withValues(alpha: 0.3)),
           boxShadow: [
-            BoxShadow(color: color.withValues(alpha: 0.15),
-                blurRadius: 16, offset: const Offset(0, 6)),
+            BoxShadow(
+                color: color.withValues(alpha: 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 6)),
           ],
         ),
         child: ClipRRect(
@@ -1299,9 +1341,11 @@ class _SpiritTabModernState extends State<SpiritTabModern>
           child: Stack(children: [
             // Decorative circle (like home action tiles)
             Positioned(
-              right: -18, bottom: -18,
+              right: -18,
+              bottom: -18,
               child: Container(
-                width: 70, height: 70,
+                width: 70,
+                height: 70,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: color.withValues(alpha: 0.08),
@@ -1318,14 +1362,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        width: 52, height: 52,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(colors: [
                             color.withValues(alpha: 0.45),
                             color.withValues(alpha: 0.1),
                           ]),
-                          border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
+                          border: Border.all(
+                              color: color.withValues(alpha: 0.5), width: 1.5),
                         ),
                         child: Center(
                           child: Text(tool['iconEmoji'] as String,
@@ -1344,30 +1390,38 @@ class _SpiritTabModernState extends State<SpiritTabModern>
                   const Spacer(),
                   // Title
                   Text(tool['title'] as String,
-                      style: const TextStyle(color: Colors.white, fontSize: 15,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
                   // Subtitle
                   Text(tool['subtitle'] as String,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6),
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
                           fontSize: 11),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 10),
                   // Open button (matching home tile style)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                          colors: [color.withValues(alpha: 0.55),
-                                   color.withValues(alpha: 0.25)]),
+                      gradient: LinearGradient(colors: [
+                        color.withValues(alpha: 0.55),
+                        color.withValues(alpha: 0.25)
+                      ]),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: color.withValues(alpha: 0.5)),
                     ),
                     child: const Center(
                       child: Text('Öffnen',
-                          style: TextStyle(color: Colors.white, fontSize: 12,
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold)),
                     ),
                   ),

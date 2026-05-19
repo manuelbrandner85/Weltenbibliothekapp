@@ -44,19 +44,22 @@ class StorageService {
   static const String _numerologyJournalBox = 'numerology_journal';
   static const String _numerologyMilestonesBox = 'numerology_milestones';
   static const String _chakraDailyScoresBox = 'chakra_daily_scores';
-  static const String _chakraMeditationSessionsBox = 'chakra_meditation_sessions';
+  static const String _chakraMeditationSessionsBox =
+      'chakra_meditation_sessions';
   static const String _chakraAffirmationsBox = 'chakra_affirmations';
-  static const String _meditationSessionsEnhancedBox = 'meditation_sessions_enhanced';
+  static const String _meditationSessionsEnhancedBox =
+      'meditation_sessions_enhanced';
   static const String _meditationPresetsBox = 'meditation_presets';
   static const String _tarotDailyCardsBox = 'tarot_daily_cards';
   static const String _tarotSpreadsBox = 'tarot_spreads';
   static const String _postDraftsBox = 'post_drafts'; // ignore: unused_field
-  static const String _scheduledPostsBox = 'scheduled_posts'; // ignore: unused_field
+  static const String _scheduledPostsBox =
+      'scheduled_posts'; // ignore: unused_field
 
   // ─── SharedPreferences keys (Profile-Speicher) ──────────────────────────────
   static const String _kMaterieProfile = 'sp_materie_profile';
   static const String _kEnergieProfile = 'sp_energie_profile';
-  static const String _kSpiritProfile  = 'sp_spirit_profile';
+  static const String _kSpiritProfile = 'sp_spirit_profile';
 
   // Singleton Pattern
   static final StorageService _instance = StorageService._internal();
@@ -74,7 +77,9 @@ class StorageService {
   Future<void> init() async {
     if (kDebugMode) debugPrint('📦 Storage: Initialisierung starten...');
     _prefs = await SharedPreferences.getInstance();
-    if (kDebugMode) debugPrint('✅ Storage: Bereit (Profile via SharedPreferences, Daten via SQLite)');
+    if (kDebugMode)
+      debugPrint(
+          '✅ Storage: Bereit (Profile via SharedPreferences, Daten via SQLite)');
   }
 
   /// Hive-kompatibler Box-Shim (Hive→sqflite Migration).
@@ -148,7 +153,9 @@ class StorageService {
     if (raw == null) return null;
     try {
       return MaterieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<MaterieProfile?> loadMaterieProfile() async {
@@ -157,7 +164,9 @@ class StorageService {
     if (raw == null) return null;
     try {
       return MaterieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> deleteMaterieProfile() async {
@@ -208,9 +217,8 @@ class StorageService {
     final e = getEnergieProfile();
     if (m == null && e == null) return null;
     return UserProfile(
-      username: m?.username.isNotEmpty == true
-          ? m!.username
-          : (e?.username ?? ''),
+      username:
+          m?.username.isNotEmpty == true ? m!.username : (e?.username ?? ''),
       displayName: m?.name?.isNotEmpty == true
           ? m!.name
           : (e?.fullName.isNotEmpty == true ? e!.fullName : null),
@@ -227,7 +235,9 @@ class StorageService {
     if (raw == null) return null;
     try {
       return EnergieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<EnergieProfile?> loadEnergieProfile() async {
@@ -236,7 +246,9 @@ class StorageService {
     if (raw == null) return null;
     try {
       return EnergieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> deleteEnergieProfile() async {
@@ -249,11 +261,14 @@ class StorageService {
   // ============================================
 
   SpiritProfile? getSpiritProfile() {
-    final raw = _prefs?.getString(_kSpiritProfile) ?? _prefs?.getString(_kEnergieProfile);
+    final raw = _prefs?.getString(_kSpiritProfile) ??
+        _prefs?.getString(_kEnergieProfile);
     if (raw == null) return null;
     try {
       return SpiritProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> saveSpiritProfile(SpiritProfile profile) async {
@@ -266,11 +281,14 @@ class StorageService {
 
   Future<SpiritProfile?> loadSpiritProfile() async {
     final prefs = await _ensurePrefs();
-    final raw = prefs.getString(_kSpiritProfile) ?? prefs.getString(_kEnergieProfile);
+    final raw =
+        prefs.getString(_kSpiritProfile) ?? prefs.getString(_kEnergieProfile);
     if (raw == null) return null;
     try {
       return SpiritProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   // ============================================
@@ -282,7 +300,8 @@ class StorageService {
   }
 
   List<ResearchTopic> getResearchTopics() {
-    return _db.getAllSync(_researchTopicsBox)
+    return _db
+        .getAllSync(_researchTopicsBox)
         .map((e) => ResearchTopic.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
@@ -301,7 +320,8 @@ class StorageService {
   }
 
   List<SpiritEntry> getSpiritEntries() {
-    return _db.getAllSync(_spiritEntriesBox)
+    return _db
+        .getAllSync(_spiritEntriesBox)
         .map((e) => SpiritEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
@@ -319,7 +339,8 @@ class StorageService {
   }
 
   List<CommunityPost> getCommunityPosts(WorldType worldType) {
-    return _db.getAllSync(_communityPostsBox)
+    return _db
+        .getAllSync(_communityPostsBox)
         .map((e) => CommunityPost.fromJson(Map<String, dynamic>.from(e as Map)))
         .where((post) => post.worldType == worldType)
         .toList();
@@ -346,15 +367,18 @@ class StorageService {
   }
 
   List<DailySpiritPractice> getDailyPractices({DateTime? forDate}) {
-    final practices = _db.getAllSync(_dailyPracticesBox)
-        .map((e) => DailySpiritPractice.fromJson(Map<String, dynamic>.from(e as Map)))
+    final practices = _db
+        .getAllSync(_dailyPracticesBox)
+        .map((e) =>
+            DailySpiritPractice.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
     if (forDate != null) {
-      return practices.where((p) =>
-        p.recommendedDate.year == forDate.year &&
-        p.recommendedDate.month == forDate.month &&
-        p.recommendedDate.day == forDate.day
-      ).toList();
+      return practices
+          .where((p) =>
+              p.recommendedDate.year == forDate.year &&
+              p.recommendedDate.month == forDate.month &&
+              p.recommendedDate.day == forDate.day)
+          .toList();
     }
     return practices;
   }
@@ -369,8 +393,10 @@ class StorageService {
   }
 
   List<SynchronicityEntry> getSynchronicities({int? lastDays}) {
-    final entries = _db.getAllSync(_synchronicityBox)
-        .map((e) => SynchronicityEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+    final entries = _db
+        .getAllSync(_synchronicityBox)
+        .map((e) =>
+            SynchronicityEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
     if (lastDays != null) {
       final cutoffDate = DateTime.now().subtract(Duration(days: lastDays));
@@ -399,9 +425,12 @@ class StorageService {
     _cloudSync(_journalEntriesBox, entry.id, entry.toJson());
   }
 
-  List<SpiritJournalEntry> getJournalEntries({String? category, int? lastDays}) {
-    var entries = _db.getAllSync(_journalEntriesBox)
-        .map((e) => SpiritJournalEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+  List<SpiritJournalEntry> getJournalEntries(
+      {String? category, int? lastDays}) {
+    var entries = _db
+        .getAllSync(_journalEntriesBox)
+        .map((e) =>
+            SpiritJournalEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
     if (category != null) {
       entries = entries.where((e) => e.category == category).toList();
@@ -423,8 +452,10 @@ class StorageService {
   }
 
   List<PartnerProfile> getPartnerProfiles() {
-    return _db.getAllSync(_partnerProfilesBox)
-        .map((e) => PartnerProfile.fromJson(Map<String, dynamic>.from(e as Map)))
+    return _db
+        .getAllSync(_partnerProfilesBox)
+        .map(
+            (e) => PartnerProfile.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
@@ -434,7 +465,8 @@ class StorageService {
     _cloudSync(_compatibilityBox, key, analysis.toJson());
   }
 
-  CompatibilityAnalysis? getCompatibilityAnalysis(String userId, String partnerId) {
+  CompatibilityAnalysis? getCompatibilityAnalysis(
+      String userId, String partnerId) {
     final key = '${userId}_$partnerId';
     final data = _db.getSync(_compatibilityBox, key) as Map?;
     if (data == null) return null;
@@ -453,7 +485,8 @@ class StorageService {
   WeeklyHoroscope? getCurrentWeekHoroscope() {
     final now = DateTime.now();
     for (var entry in _db.getAllSync(_weeklyHoroscopeBox)) {
-      final horoscope = WeeklyHoroscope.fromJson(Map<String, dynamic>.from(entry as Map));
+      final horoscope =
+          WeeklyHoroscope.fromJson(Map<String, dynamic>.from(entry as Map));
       if (now.isAfter(horoscope.weekStart) && now.isBefore(horoscope.weekEnd)) {
         return horoscope;
       }
@@ -492,9 +525,8 @@ class StorageService {
     } else if (daysSinceLastActivity > 1) {
       newStreak = 1;
     }
-    final newLongestStreak = newStreak > progress.longestStreak
-        ? newStreak
-        : progress.longestStreak;
+    final newLongestStreak =
+        newStreak > progress.longestStreak ? newStreak : progress.longestStreak;
     await saveSpiritProgress(SpiritProgress(
       totalPoints: newTotalPoints,
       currentLevel: newLevel,
@@ -516,7 +548,8 @@ class StorageService {
   }
 
   List<TarotReading> getAllTarotReadings() {
-    return _db.getAllSync(_tarotReadingsBox)
+    return _db
+        .getAllSync(_tarotReadingsBox)
         .map((e) => TarotReading.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -535,8 +568,10 @@ class StorageService {
   }
 
   List<MoonJournalEntry> getAllMoonJournalEntries() {
-    return _db.getAllSync(_moonJournalBox)
-        .map((e) => MoonJournalEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+    return _db
+        .getAllSync(_moonJournalBox)
+        .map((e) =>
+            MoonJournalEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
@@ -557,8 +592,10 @@ class StorageService {
   }
 
   List<CrystalCollection> getMyCrystalCollection() {
-    return _db.getAllSync(_crystalCollectionBox)
-        .map((e) => CrystalCollection.fromJson(Map<String, dynamic>.from(e as Map)))
+    return _db
+        .getAllSync(_crystalCollectionBox)
+        .map((e) =>
+            CrystalCollection.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList()
       ..sort((a, b) => b.addedDate.compareTo(a.addedDate));
   }
@@ -582,8 +619,10 @@ class StorageService {
   }
 
   List<MantraChallenge> getAllMantraChallenges() {
-    return _db.getAllSync(_mantraChallengesBox)
-        .map((e) => MantraChallenge.fromJson(Map<String, dynamic>.from(e as Map)))
+    return _db
+        .getAllSync(_mantraChallengesBox)
+        .map((e) =>
+            MantraChallenge.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
@@ -600,8 +639,10 @@ class StorageService {
   }
 
   List<MeditationSession> getAllMeditationSessions() {
-    return _db.getAllSync(_meditationSessionsBox)
-        .map((e) => MeditationSession.fromJson(Map<String, dynamic>.from(e as Map)))
+    return _db
+        .getAllSync(_meditationSessionsBox)
+        .map((e) =>
+            MeditationSession.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
@@ -620,15 +661,15 @@ class StorageService {
   }
 
   List<AppAchievement> getAllAppAchievements() {
-    return _db.getAllSync(_achievementsBox)
-        .map((e) => AppAchievement.fromJson(Map<String, dynamic>.from(e as Map)))
+    return _db
+        .getAllSync(_achievementsBox)
+        .map(
+            (e) => AppAchievement.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
   List<AppAchievement> getUnlockedAppAchievements() {
-    return getAllAppAchievements()
-        .where((a) => a.isUnlocked)
-        .toList()
+    return getAllAppAchievements().where((a) => a.isUnlocked).toList()
       ..sort((a, b) => b.unlockedAt!.compareTo(a.unlockedAt!));
   }
 
@@ -648,7 +689,8 @@ class StorageService {
   }
 
   List<ToolStreak> getAllToolStreaks() {
-    return _db.getAllSync(_toolStreaksBox)
+    return _db
+        .getAllSync(_toolStreaksBox)
         .map((e) => ToolStreak.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
@@ -686,9 +728,8 @@ class StorageService {
 
   Future<void> incrementAchievementProgress(String id, int increment) async {
     final existing = _db.getSync('achievement_progress', id) as Map?;
-    final current = existing != null
-        ? (existing['currentProgress'] as int? ?? 0)
-        : 0;
+    final current =
+        existing != null ? (existing['currentProgress'] as int? ?? 0) : 0;
     await _db.put('achievement_progress', id, {
       'achievementId': id,
       'currentProgress': current + increment,
@@ -702,7 +743,8 @@ class StorageService {
   }
 
   Future<int> getUnlockedAchievementsCount() async {
-    return _db.getAllSync('achievement_progress')
+    return _db
+        .getAllSync('achievement_progress')
         .where((v) => (v as Map)['isUnlocked'] == true)
         .length;
   }
@@ -836,13 +878,15 @@ class StorageService {
   }
 
   Future<void> saveNumerologyJournalEntry(Map<String, dynamic> entry) async {
-    final id = (entry['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
+    final id =
+        (entry['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
     await _db.put(_numerologyJournalBox, id, entry);
     _cloudSync(_numerologyJournalBox, id, entry);
   }
 
   List<Map<String, dynamic>> getNumerologyJournalEntries() {
-    return _db.getAllSync(_numerologyJournalBox)
+    return _db
+        .getAllSync(_numerologyJournalBox)
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
       ..sort((a, b) =>
@@ -850,17 +894,18 @@ class StorageService {
   }
 
   Future<void> saveNumerologyMilestone(Map<String, dynamic> milestone) async {
-    final id = (milestone['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
+    final id =
+        (milestone['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
     await _db.put(_numerologyMilestonesBox, id, milestone);
     _cloudSync(_numerologyMilestonesBox, id, milestone);
   }
 
   List<Map<String, dynamic>> getNumerologyMilestones() {
-    return _db.getAllSync(_numerologyMilestonesBox)
+    return _db
+        .getAllSync(_numerologyMilestonesBox)
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
-      ..sort((a, b) =>
-          (a['date'] as String).compareTo(b['date'] as String));
+      ..sort((a, b) => (a['date'] as String).compareTo(b['date'] as String));
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -881,21 +926,25 @@ class StorageService {
 
   List<Map<String, dynamic>> getChakraHistory(int days) {
     final cutoff = DateTime.now().subtract(Duration(days: days));
-    return _db.getAllSync(_chakraDailyScoresBox)
+    return _db
+        .getAllSync(_chakraDailyScoresBox)
         .map((e) => Map<String, dynamic>.from(e as Map))
-        .where((entry) => DateTime.parse(entry['date'] as String).isAfter(cutoff))
+        .where(
+            (entry) => DateTime.parse(entry['date'] as String).isAfter(cutoff))
         .toList()
       ..sort((a, b) => (a['date'] as String).compareTo(b['date'] as String));
   }
 
   Future<void> saveChakraMeditationSession(Map<String, dynamic> session) async {
-    final id = (session['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
+    final id =
+        (session['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
     await _db.put(_chakraMeditationSessionsBox, id, session);
     _cloudSync(_chakraMeditationSessionsBox, id, session);
   }
 
   List<Map<String, dynamic>> getChakraMeditationSessions() {
-    return _db.getAllSync(_chakraMeditationSessionsBox)
+    return _db
+        .getAllSync(_chakraMeditationSessionsBox)
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
       ..sort((a, b) =>
@@ -903,13 +952,15 @@ class StorageService {
   }
 
   Future<void> saveChakraAffirmation(Map<String, dynamic> affirmation) async {
-    final id = (affirmation['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
+    final id =
+        (affirmation['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
     await _db.put(_chakraAffirmationsBox, id, affirmation);
     _cloudSync(_chakraAffirmationsBox, id, affirmation);
   }
 
   List<Map<String, dynamic>> getChakraAffirmations() {
-    return _db.getAllSync(_chakraAffirmationsBox)
+    return _db
+        .getAllSync(_chakraAffirmationsBox)
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
   }
@@ -918,14 +969,17 @@ class StorageService {
   // MEDITATION-TIMER: ENHANCED
   // ═══════════════════════════════════════════════════════════
 
-  Future<void> saveEnhancedMeditationSession(Map<String, dynamic> session) async {
-    final id = (session['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
+  Future<void> saveEnhancedMeditationSession(
+      Map<String, dynamic> session) async {
+    final id =
+        (session['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
     await _db.put(_meditationSessionsEnhancedBox, id, session);
     _cloudSync(_meditationSessionsEnhancedBox, id, session);
   }
 
   List<Map<String, dynamic>> getEnhancedMeditationSessions() {
-    return _db.getAllSync(_meditationSessionsEnhancedBox)
+    return _db
+        .getAllSync(_meditationSessionsEnhancedBox)
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
       ..sort((a, b) =>
@@ -939,7 +993,8 @@ class StorageService {
   }
 
   List<Map<String, dynamic>> getMeditationPresets() {
-    return _db.getAllSync(_meditationPresetsBox)
+    return _db
+        .getAllSync(_meditationPresetsBox)
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
   }
@@ -985,13 +1040,15 @@ class StorageService {
   }
 
   Future<void> saveTarotSpread(Map<String, dynamic> spread) async {
-    final id = (spread['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
+    final id =
+        (spread['id'] ?? DateTime.now().millisecondsSinceEpoch).toString();
     await _db.put(_tarotSpreadsBox, id, spread);
     _cloudSync(_tarotSpreadsBox, id, spread);
   }
 
   List<Map<String, dynamic>> getTarotSpreads() {
-    return _db.getAllSync(_tarotSpreadsBox)
+    return _db
+        .getAllSync(_tarotSpreadsBox)
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
       ..sort((a, b) =>
@@ -1029,19 +1086,25 @@ class StorageService {
   Future<bool> isAdmin(String world) async {
     if (world == 'materie') return getMaterieProfile()?.isAdmin() ?? false;
     if (world == 'energie') return getEnergieProfile()?.isAdmin() ?? false;
-    return getEnergieProfile()?.isAdmin() ?? getMaterieProfile()?.isAdmin() ?? false;
+    return getEnergieProfile()?.isAdmin() ??
+        getMaterieProfile()?.isAdmin() ??
+        false;
   }
 
   Future<bool> isRootAdmin(String world) async {
     if (world == 'materie') return getMaterieProfile()?.isRootAdmin() ?? false;
     if (world == 'energie') return getEnergieProfile()?.isRootAdmin() ?? false;
-    return getEnergieProfile()?.isRootAdmin() ?? getMaterieProfile()?.isRootAdmin() ?? false;
+    return getEnergieProfile()?.isRootAdmin() ??
+        getMaterieProfile()?.isRootAdmin() ??
+        false;
   }
 
   Future<String> getEffectiveRole(String world) async {
     if (world == 'materie') return getMaterieProfile()?.effectiveRole ?? 'user';
     if (world == 'energie') return getEnergieProfile()?.effectiveRole ?? 'user';
-    return getEnergieProfile()?.effectiveRole ?? getMaterieProfile()?.effectiveRole ?? 'user';
+    return getEnergieProfile()?.effectiveRole ??
+        getMaterieProfile()?.effectiveRole ??
+        'user';
   }
 
   // ═══════════════════════════════════════════════════════════

@@ -29,8 +29,7 @@ class PowerRelationsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.diversity_3,
-                  color: Color(0xFFFF8A65), size: 18),
+              const Icon(Icons.diversity_3, color: Color(0xFFFF8A65), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'MACHTBEZIEHUNGEN',
@@ -130,8 +129,8 @@ class PowerRelationsCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
                     color: const Color(0xFFFF8A65).withValues(alpha: 0.18),

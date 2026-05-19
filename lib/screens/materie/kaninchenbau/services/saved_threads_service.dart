@@ -41,10 +41,10 @@ class SavedThread {
         notes: j['notes']?.toString(),
         isPublic: j['is_public'] == true,
         shareToken: j['share_token']?.toString(),
-        createdAt:
-            DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
-        updatedAt:
-            DateTime.tryParse(j['updated_at']?.toString() ?? '') ?? DateTime.now(),
+        createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ??
+            DateTime.now(),
+        updatedAt: DateTime.tryParse(j['updated_at']?.toString() ?? '') ??
+            DateTime.now(),
       );
 }
 
@@ -79,8 +79,8 @@ class ThreadAnnotation {
         sourceUrl: j['source_url']?.toString(),
         upvotes: (j['upvotes'] as int?) ?? 0,
         downvotes: (j['downvotes'] as int?) ?? 0,
-        createdAt:
-            DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
+        createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ??
+            DateTime.now(),
       );
 }
 

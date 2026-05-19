@@ -25,6 +25,7 @@ class GeocodedPlace {
   final String? country;
   final String? region;
   final String? city;
+
   /// Inferred IANA timezone name (best-effort, nullable).
   final String? timezone;
 
@@ -63,7 +64,8 @@ class GeocodingService {
   GeocodingService._();
   static final GeocodingService instance = GeocodingService._();
 
-  static const String _userAgent = 'weltenbibliothek-app/5.x (https://github.com/manuelbrandner85/Weltenbibliothekapp)';
+  static const String _userAgent =
+      'weltenbibliothek-app/5.x (https://github.com/manuelbrandner85/Weltenbibliothekapp)';
   static const String _baseUrl = 'https://nominatim.openstreetmap.org';
   static const Duration _cacheTtl = Duration(days: 30);
   static const String _cachePrefix = 'geocache_v1:';
@@ -101,7 +103,8 @@ class GeocodingService {
 
       if (res.statusCode != 200) {
         if (kDebugMode) {
-          debugPrint('[GeocodingService] HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length.clamp(0, 200))}');
+          debugPrint(
+              '[GeocodingService] HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length.clamp(0, 200))}');
         }
         return const [];
       }
@@ -158,8 +161,7 @@ class GeocodingService {
       if (raw == null) return null;
       final parsed = jsonDecode(raw) as Map<String, dynamic>;
       final savedAt = DateTime.tryParse(parsed['saved_at'] as String? ?? '');
-      if (savedAt == null ||
-          DateTime.now().difference(savedAt) > _cacheTtl) {
+      if (savedAt == null || DateTime.now().difference(savedAt) > _cacheTtl) {
         await prefs.remove(key);
         return null;
       }

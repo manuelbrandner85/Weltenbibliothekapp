@@ -14,14 +14,16 @@ class ChakraCalculatorScreen extends StatefulWidget {
   State<ChakraCalculatorScreen> createState() => _ChakraCalculatorScreenState();
 }
 
-class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with TickerProviderStateMixin {
+class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   EnergieProfile? _profile;
   bool _isLoading = true;
 
   Map<int, int> _chakraScores = {};
   // ignore: unused_field
-  Map<String, dynamic>? _dominantChakra; // ⚠️ UNUSED - For future UI enhancement
+  Map<String, dynamic>?
+      _dominantChakra; // ⚠️ UNUSED - For future UI enhancement
   // ignore: unused_field
   Map<String, dynamic>? _blockedChakra; // ⚠️ UNUSED - For future UI enhancement
   int _overallBalance = 0;
@@ -44,17 +46,21 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this); // 🚀 5 Tabs jetzt (inkl. Balance Tracker)
+    _tabController = TabController(
+        length: 5, vsync: this); // 🚀 5 Tabs jetzt (inkl. Balance Tracker)
     _loadProfile();
     _loadJournalEntries();
     _loadBalanceTracker();
 
-    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))
-      ..repeat(reverse: true);
-    _chakraSpinCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 6))
-      ..repeat();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
-      ..repeat(reverse: true);
+    _bgCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat(reverse: true);
+    _chakraSpinCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 6))
+          ..repeat();
+    _pulseCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 2))
+          ..repeat(reverse: true);
   }
 
   @override
@@ -87,7 +93,9 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
   void _calculateChakras() {
     if (_profile == null) return;
 
-    final lifePathNumber = _profile!.birthDate.day + _profile!.birthDate.month + _profile!.birthDate.year;
+    final lifePathNumber = _profile!.birthDate.day +
+        _profile!.birthDate.month +
+        _profile!.birthDate.year;
     final reducedLifePath = _reduceToSingleDigit(lifePathNumber);
 
     _chakraScores = ChakraEngine.calculateChakraScores(
@@ -110,7 +118,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
 
   int _reduceToSingleDigit(int number) {
     while (number > 9) {
-      number = number.toString().split('').map(int.parse).reduce((a, b) => a + b);
+      number =
+          number.toString().split('').map(int.parse).reduce((a, b) => a + b);
     }
     return number;
   }
@@ -129,7 +138,10 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
         ),
         title: const Text(
           'CHAKRA-ANALYSE',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+          style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5),
         ),
       ),
       body: AnimatedBuilder(
@@ -174,7 +186,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               // Main content
               SafeArea(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white))
                     : _profile == null
                         ? ProfileRequiredWidget(
                             worldType: 'energie',
@@ -244,7 +257,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  Colors.white.withValues(alpha: 0.25 + _pulseCtrl.value * 0.15),
+                  Colors.white
+                      .withValues(alpha: 0.25 + _pulseCtrl.value * 0.15),
                   Colors.white.withValues(alpha: 0.0),
                 ],
               ),
@@ -294,11 +308,15 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               children: [
                 Text(
                   '${_profile!.firstName} ${_profile!.lastName}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
                 Text(
                   'Balance: $_overallBalance/100',
-                  style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6)),
+                  style: TextStyle(
+                      fontSize: 13, color: Colors.white.withValues(alpha: 0.6)),
                 ),
               ],
             ),
@@ -319,7 +337,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF9C27B0), Color(0xFFE91E63)]),
+          gradient: const LinearGradient(
+              colors: [Color(0xFF9C27B0), Color(0xFFE91E63)]),
           borderRadius: BorderRadius.circular(12),
         ),
         labelColor: Colors.white,
@@ -406,11 +425,16 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                         children: [
                           Text(
                             chakra['name'] as String,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white),
                           ),
                           Text(
                             chakra['sanskritName'] as String,
-                            style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45)),
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.45)),
                           ),
                         ],
                       ),
@@ -488,12 +512,14 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                 const SizedBox(height: 12),
                 Text(
                   '🎯 ${chakra['theme']}',
-                  style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.7)),
+                  style: TextStyle(
+                      fontSize: 13, color: Colors.white.withValues(alpha: 0.7)),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '🔊 Mantra: ${chakra['mantra']} · ${chakra['frequency']} Hz',
-                  style: TextStyle(fontSize: 12, color: chakraColor.withValues(alpha: 0.85)),
+                  style: TextStyle(
+                      fontSize: 12, color: chakraColor.withValues(alpha: 0.85)),
                 ),
               ],
             ),
@@ -513,7 +539,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.45)),
+              border: Border.all(
+                  color: const Color(0xFF9C27B0).withValues(alpha: 0.45)),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF9C27B0).withValues(alpha: 0.12),
@@ -526,12 +553,19 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               children: [
                 const Text(
                   'GESAMT-BALANCE',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFFFD700), letterSpacing: 1.5),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFFD700),
+                      letterSpacing: 1.5),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   '$_overallBalance / 100',
-                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(
@@ -539,7 +573,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                   child: LinearProgressIndicator(
                     value: _overallBalance / 100,
                     backgroundColor: Colors.white.withValues(alpha: 0.10),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
                     minHeight: 8,
                   ),
                 ),
@@ -559,7 +594,11 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               children: [
                 const Text(
                   'EMPFEHLUNGEN',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFFFFD700), letterSpacing: 1.5),
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFFD700),
+                      letterSpacing: 1.5),
                 ),
                 const SizedBox(height: 16),
                 ..._recommendations.map((rec) => Padding(
@@ -567,12 +606,15 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 20),
+                          const Icon(Icons.check_circle,
+                              color: Color(0xFF4CAF50), size: 20),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               rec,
-                              style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.65)),
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.65)),
                             ),
                           ),
                         ],
@@ -596,7 +638,11 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
         children: [
           const Text(
             'ALLE 7 CHAKREN',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFFD700), letterSpacing: 1.5),
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFFFD700),
+                letterSpacing: 1.5),
           ),
           const SizedBox(height: 16),
           ...allChakras.entries.map((entry) {
@@ -608,7 +654,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: chakraColor.withValues(alpha: 0.45), width: 1.5),
+                border: Border.all(
+                    color: chakraColor.withValues(alpha: 0.45), width: 1.5),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,7 +683,9 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                         child: Center(
                           child: Text(
                             '${entry.key}',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -647,11 +696,16 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                           children: [
                             Text(
                               chakra['name'] as String,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
                             ),
                             Text(
                               chakra['sanskritName'] as String,
-                              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45)),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.45)),
                             ),
                           ],
                         ),
@@ -659,10 +713,19 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('📍 ${chakra['location']}', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.65))),
-                  Text('🎯 ${chakra['theme']}', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.65))),
+                  Text('📍 ${chakra['location']}',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.65))),
+                  Text('🎯 ${chakra['theme']}',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.65))),
                   Text('💚 ${chakra['affirmation']}',
-                      style: TextStyle(fontSize: 13, color: chakraColor.withValues(alpha: 0.85), fontStyle: FontStyle.italic)),
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: chakraColor.withValues(alpha: 0.85),
+                          fontStyle: FontStyle.italic)),
                 ],
               ),
             );
@@ -840,14 +903,17 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
   Widget _buildChakraQuickRating(int chakraIndex, Map<String, dynamic> chakra) {
     final chakraColor = chakra['color'] as Color;
     // Aktueller Wert: erst gewählter Wert, sonst Quiz-Score, sonst 0
-    final current = _tempRatings[chakraIndex] ?? _chakraScores[chakraIndex] ?? 0;
+    final current =
+        _tempRatings[chakraIndex] ?? _chakraScores[chakraIndex] ?? 0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           Container(
-            width: 12, height: 12,
-            decoration: BoxDecoration(color: chakraColor, shape: BoxShape.circle),
+            width: 12,
+            height: 12,
+            decoration:
+                BoxDecoration(color: chakraColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -874,10 +940,16 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Icon(
                   filled ? Icons.star : Icons.star_border,
-                  color: filled ? chakraColor : chakraColor.withValues(alpha: 0.35),
+                  color: filled
+                      ? chakraColor
+                      : chakraColor.withValues(alpha: 0.35),
                   size: 22,
                   shadows: filled
-                      ? [Shadow(color: chakraColor.withValues(alpha: 0.6), blurRadius: 6)]
+                      ? [
+                          Shadow(
+                              color: chakraColor.withValues(alpha: 0.6),
+                              blurRadius: 6)
+                        ]
                       : null,
                 ),
               ),
@@ -915,7 +987,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
           const SizedBox(height: 8),
           Text(
             'Beginne dein Chakra-Tracking mit deinem ersten Eintrag',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 14),
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.45), fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -932,7 +1005,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.35)),
+        border:
+            Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -986,7 +1060,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFE91E63).withValues(alpha: 0.3),
+                            color:
+                                const Color(0xFFE91E63).withValues(alpha: 0.3),
                             blurRadius: 8,
                           ),
                         ],
@@ -1029,7 +1104,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF9C27B0), Color(0xFFE91E63)],
@@ -1047,11 +1123,13 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: _getBalanceColor(balance).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: _getBalanceColor(balance).withValues(alpha: 0.6)),
+                  border: Border.all(
+                      color: _getBalanceColor(balance).withValues(alpha: 0.6)),
                 ),
                 child: Text(
                   '$balance% Balance',
@@ -1131,7 +1209,20 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
   }
 
   String _formatFullDate(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mär',
+      'Apr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Dez'
+    ];
     return '${date.day}. ${months[date.month - 1]} ${date.year}';
   }
 
@@ -1280,7 +1371,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                         style: TextStyle(
                           fontSize: 48,
                           fontWeight: FontWeight.bold,
-                          color: _getBalanceColor(_todayScores!['overallBalance'] as int),
+                          color: _getBalanceColor(
+                              _todayScores!['overallBalance'] as int),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -1290,7 +1382,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                             : (_todayScores!['overallBalance'] as int) >= 60
                                 ? Icons.warning_amber
                                 : Icons.error,
-                        color: _getBalanceColor(_todayScores!['overallBalance'] as int),
+                        color: _getBalanceColor(
+                            _todayScores!['overallBalance'] as int),
                         size: 32,
                       ),
                     ],
@@ -1313,7 +1406,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Bitte berechne zuerst deine Chakra-Scores im SCORES Tab'),
+                            content: Text(
+                                'Bitte berechne zuerst deine Chakra-Scores im SCORES Tab'),
                           ),
                         );
                       }
@@ -1419,9 +1513,11 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _getBalanceColor(overallBalance).withValues(alpha: 0.15),
+                  color:
+                      _getBalanceColor(overallBalance).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: _getBalanceColor(overallBalance),
@@ -1501,9 +1597,11 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
     if (_scoreHistory.isEmpty) return const SizedBox();
 
     // Berechne Stats
-    final allBalances = _scoreHistory.map((e) => e['overallBalance'] as int).toList();
+    final allBalances =
+        _scoreHistory.map((e) => e['overallBalance'] as int).toList();
 
-    final avgBalance = allBalances.reduce((a, b) => a + b) ~/ allBalances.length;
+    final avgBalance =
+        allBalances.reduce((a, b) => a + b) ~/ allBalances.length;
     final maxBalance = allBalances.reduce((a, b) => a > b ? a : b);
     final minBalance = allBalances.reduce((a, b) => a < b ? a : b);
     final totalDays = _scoreHistory.length;
@@ -1513,7 +1611,8 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -1623,7 +1722,8 @@ class _ChakraWheelPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ChakraWheelPainter old) => old.rotation != rotation || old.pulse != pulse;
+  bool shouldRepaint(_ChakraWheelPainter old) =>
+      old.rotation != rotation || old.pulse != pulse;
 }
 
 // ─── Cinematic Orb Widget ─────────────────────────────────────────────────────
@@ -1632,7 +1732,8 @@ class _CineOrb extends StatelessWidget {
   final Color color;
   final double size;
   final double opacity;
-  const _CineOrb({required this.color, required this.size, required this.opacity});
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
 
   @override
   Widget build(BuildContext context) => Container(

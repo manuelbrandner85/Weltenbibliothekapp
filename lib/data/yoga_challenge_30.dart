@@ -7,17 +7,18 @@ import '../widgets/lesson_series_screen.dart';
 const List<LessonSeriesEntry> yogaChallenge30 = [
   // WOCHE 1: GRUNDHALTUNGEN (5-15 Min)
   LessonSeriesEntry(
-    code: 'y01', symbol: '🧘',
+    code: 'y01',
+    symbol: '🧘',
     title: 'Tag 1 — Sukhasana',
     subtitle: 'Einfacher Sitz · 5 Min',
     meaning:
         'Schneidersitz mit aufgerichteter Wirbelsäule. Beobachte deine Atmung. '
         'Hier beginnt jede Praxis.',
-    reflection:
-        'Wo im Körper hast du heute am stärksten Spannung gespürt?',
+    reflection: 'Wo im Körper hast du heute am stärksten Spannung gespürt?',
   ),
   LessonSeriesEntry(
-    code: 'y02', symbol: '🧘',
+    code: 'y02',
+    symbol: '🧘',
     title: 'Tag 2 — Tadasana',
     subtitle: 'Berghaltung · 5 Min',
     meaning:
@@ -27,7 +28,8 @@ const List<LessonSeriesEntry> yogaChallenge30 = [
         'Wann hast du heute zuletzt einfach nur gestanden, ohne sofort weiterzugehen?',
   ),
   LessonSeriesEntry(
-    code: 'y03', symbol: '🐈',
+    code: 'y03',
+    symbol: '🐈',
     title: 'Tag 3 — Marjaryasana/Bitilasana',
     subtitle: 'Katze-Kuh · 10× · 5 Min',
     meaning:
@@ -37,27 +39,26 @@ const List<LessonSeriesEntry> yogaChallenge30 = [
         'Welche Wirbelsäulen-Region war heute am beweglichsten — welche am steifsten?',
   ),
   LessonSeriesEntry(
-    code: 'y04', symbol: '🐕',
+    code: 'y04',
+    symbol: '🐕',
     title: 'Tag 4 — Adho Mukha Svanasana',
     subtitle: 'Herabschauender Hund · 1 Min × 3',
-    meaning:
-        'Hände und Füße auf der Matte, Gesäß nach oben, V-Form. Die '
+    meaning: 'Hände und Füße auf der Matte, Gesäß nach oben, V-Form. Die '
         'klassische Yoga-Pose schlechthin.',
-    reflection:
-        'Was war heute schwerer — die Schultern oder die Hamstrings?',
+    reflection: 'Was war heute schwerer — die Schultern oder die Hamstrings?',
   ),
   LessonSeriesEntry(
-    code: 'y05', symbol: '🧘',
+    code: 'y05',
+    symbol: '🧘',
     title: 'Tag 5 — Balasana',
     subtitle: 'Kindeshaltung · 3 Min',
-    meaning:
-        'Knie breit, Großzehen zusammen, Stirn auf der Matte, Arme nach '
+    meaning: 'Knie breit, Großzehen zusammen, Stirn auf der Matte, Arme nach '
         'vorne oder zurück. Die Heim-Pose nach jeder Anstrengung.',
-    reflection:
-        'Wo darfst du heute weicher werden statt härter zu kämpfen?',
+    reflection: 'Wo darfst du heute weicher werden statt härter zu kämpfen?',
   ),
   LessonSeriesEntry(
-    code: 'y06', symbol: '🦋',
+    code: 'y06',
+    symbol: '🦋',
     title: 'Tag 6 — Baddha Konasana',
     subtitle: 'Schmetterling · 5 Min',
     meaning:
@@ -67,7 +68,8 @@ const List<LessonSeriesEntry> yogaChallenge30 = [
         'Wo speicherst du Stress in deinen Hüften — und was möchtest du loslassen?',
   ),
   LessonSeriesEntry(
-    code: 'y07', symbol: '🪷',
+    code: 'y07',
+    symbol: '🪷',
     title: 'Tag 7 — Savasana + Integration W1',
     subtitle: 'Totenstellung · 10 Min',
     meaning:
@@ -78,98 +80,94 @@ const List<LessonSeriesEntry> yogaChallenge30 = [
   ),
   // WOCHE 2: SONNENGRUSS (10-20 Min)
   LessonSeriesEntry(
-    code: 'y08', symbol: '☀️',
+    code: 'y08',
+    symbol: '☀️',
     title: 'Tag 8 — Surya Namaskar A',
     subtitle: 'Sonnengruß A · 3 Runden',
-    meaning:
-        '12-Posen-Sequenz fließend mit Atem. Tadasana → Uttanasana → '
+    meaning: '12-Posen-Sequenz fließend mit Atem. Tadasana → Uttanasana → '
         'Plank → Chaturanga → Cobra → Down Dog → zurück.',
     reflection:
         'In welcher Übergangs-Phase war dein Atem heute am wackeligsten?',
   ),
   LessonSeriesEntry(
-    code: 'y09', symbol: '☀️',
+    code: 'y09',
+    symbol: '☀️',
     title: 'Tag 9 — Surya Namaskar A · 5 Runden',
     subtitle: '20 Min',
-    meaning:
-        'Mehr Wiederholungen, gleicher Rhythmus. Atem führt die Bewegung, '
+    meaning: 'Mehr Wiederholungen, gleicher Rhythmus. Atem führt die Bewegung, '
         'nicht umgekehrt.',
-    reflection:
-        'Bei welcher Runde kam Müdigkeit — bei welcher zweite Luft?',
+    reflection: 'Bei welcher Runde kam Müdigkeit — bei welcher zweite Luft?',
   ),
   LessonSeriesEntry(
-    code: 'y10', symbol: '☀️',
+    code: 'y10',
+    symbol: '☀️',
     title: 'Tag 10 — Surya Namaskar B',
     subtitle: 'Sonnengruß B · 3 Runden',
     meaning:
         'Erweiterte Version mit Krieger 1. Mehr Beinkraft, mehr Hüftöffnung. '
         'Die Ashtanga-Klassik.',
-    reflection:
-        'Wo hat Krieger-1 deine Beine zum Reden gebracht?',
+    reflection: 'Wo hat Krieger-1 deine Beine zum Reden gebracht?',
   ),
   LessonSeriesEntry(
-    code: 'y11', symbol: '☀️',
+    code: 'y11',
+    symbol: '☀️',
     title: 'Tag 11 — Sonnengruß A+B kombiniert',
     subtitle: '3+3 Runden',
-    meaning:
-        'Erst 3× A, dann 3× B. Komplette Aufwärm- und Energiesequenz '
+    meaning: 'Erst 3× A, dann 3× B. Komplette Aufwärm- und Energiesequenz '
         'in 20-30 Min.',
-    reflection:
-        'Welche Variante (A oder B) liegt dir mehr — und warum?',
+    reflection: 'Welche Variante (A oder B) liegt dir mehr — und warum?',
   ),
   LessonSeriesEntry(
-    code: 'y12', symbol: '🐍',
+    code: 'y12',
+    symbol: '🐍',
     title: 'Tag 12 — Cobra & Upward Dog',
     subtitle: 'Rückbeugen aus dem Sonnengruß isolieren',
-    meaning:
-        'Cobra (Bhujangasana) mit weichen Ellbogen, Upward Dog '
+    meaning: 'Cobra (Bhujangasana) mit weichen Ellbogen, Upward Dog '
         '(Urdhva Mukha) mit gestreckten Armen. Brust öffnet sich.',
-    reflection:
-        'Wie offen ist dein Brustkorb heute — auf einer Skala 1-10?',
+    reflection: 'Wie offen ist dein Brustkorb heute — auf einer Skala 1-10?',
   ),
   LessonSeriesEntry(
-    code: 'y13', symbol: '⏬',
+    code: 'y13',
+    symbol: '⏬',
     title: 'Tag 13 — Forward-Folds-Day',
     subtitle: 'Stehende und sitzende Vorbeugen',
-    meaning:
-        'Uttanasana (steh), Paschimottanasana (sitz), Padangusthasana '
+    meaning: 'Uttanasana (steh), Paschimottanasana (sitz), Padangusthasana '
         '(Zehengriff). Dehnt Rücken, beruhigt den Geist.',
     reflection:
         'Welcher Gedanke ist beim Vorbeugen aufgekommen — und losgelassen?',
   ),
   LessonSeriesEntry(
-    code: 'y14', symbol: '🌅',
+    code: 'y14',
+    symbol: '🌅',
     title: 'Tag 14 — Integration W2 · Eigene Mini-Flow',
     subtitle: '20 Min eigene Sequenz',
-    meaning:
-        'Stelle deine eigene 20-Min-Flow aus dem Bekannten zusammen. '
+    meaning: 'Stelle deine eigene 20-Min-Flow aus dem Bekannten zusammen. '
         'Atem führt, kein Plan zwingt.',
     reflection:
         'Welche unerwartete Reihenfolge hat sich heute aus dir ergeben?',
   ),
   // WOCHE 3: STANDASANAS (20-30 Min)
   LessonSeriesEntry(
-    code: 'y15', symbol: '⚔️',
+    code: 'y15',
+    symbol: '⚔️',
     title: 'Tag 15 — Virabhadrasana I',
     subtitle: 'Krieger 1 · beide Seiten · 1 Min',
-    meaning:
-        'Vorderes Bein 90°, hinteres Bein gestreckt 45°, Becken vorwärts, '
+    meaning: 'Vorderes Bein 90°, hinteres Bein gestreckt 45°, Becken vorwärts, '
         'Arme nach oben. Kraft und Würde des Kriegers.',
-    reflection:
-        'Welcher innere "Krieger" in dir wartet auf Aktivierung?',
+    reflection: 'Welcher innere "Krieger" in dir wartet auf Aktivierung?',
   ),
   LessonSeriesEntry(
-    code: 'y16', symbol: '⚔️',
+    code: 'y16',
+    symbol: '⚔️',
     title: 'Tag 16 — Virabhadrasana II',
     subtitle: 'Krieger 2 · beide Seiten · 1 Min',
-    meaning:
-        'Vorderes Bein 90°, hinteres Bein gestreckt, Arme parallel zum '
+    meaning: 'Vorderes Bein 90°, hinteres Bein gestreckt, Arme parallel zum '
         'Boden ausgestreckt. Standhaftigkeit.',
-    reflection:
-        'Wo darfst du heute klar deine Position halten?',
+    reflection: 'Wo darfst du heute klar deine Position halten?',
   ),
   LessonSeriesEntry(
-    code: 'y17', symbol: '🛡️',
+    code: 'y17',
+    symbol: '🛡️',
     title: 'Tag 17 — Trikonasana',
     subtitle: 'Dreieck · beide Seiten · 1 Min',
     meaning:
@@ -179,27 +177,28 @@ const List<LessonSeriesEntry> yogaChallenge30 = [
         'Welche Polarität (oben/unten, vorn/hinten) erfährst du gerade?',
   ),
   LessonSeriesEntry(
-    code: 'y18', symbol: '🌳',
+    code: 'y18',
+    symbol: '🌳',
     title: 'Tag 18 — Vrksasana',
     subtitle: 'Baum · beide Seiten · 1 Min',
-    meaning:
-        'Standbein fest, anderes Bein an Innenschenkel (nicht am Knie), '
+    meaning: 'Standbein fest, anderes Bein an Innenschenkel (nicht am Knie), '
         'Hände vor Herz oder zum Himmel. Gleichgewicht.',
     reflection:
         'Wo wackelst du heute innerlich — und wo findest du deinen Stand?',
   ),
   LessonSeriesEntry(
-    code: 'y19', symbol: '🦅',
+    code: 'y19',
+    symbol: '🦅',
     title: 'Tag 19 — Garudasana',
     subtitle: 'Adler · beide Seiten · 1 Min',
-    meaning:
-        'Beine verschränkt, Arme verschränkt, ineinander gewickelt. '
+    meaning: 'Beine verschränkt, Arme verschränkt, ineinander gewickelt. '
         'Konzentration auf einen Punkt.',
     reflection:
         'Welche "Verstrickung" in deinem Leben kannst du heute klar sehen?',
   ),
   LessonSeriesEntry(
-    code: 'y20', symbol: '🪑',
+    code: 'y20',
+    symbol: '🪑',
     title: 'Tag 20 — Utkatasana',
     subtitle: 'Stuhl · 3 × 30 Sek',
     meaning:
@@ -209,88 +208,82 @@ const List<LessonSeriesEntry> yogaChallenge30 = [
         'Wie reagiert dein Geist auf körperliche Anstrengung — Widerstand oder Akzeptanz?',
   ),
   LessonSeriesEntry(
-    code: 'y21', symbol: '🌊',
+    code: 'y21',
+    symbol: '🌊',
     title: 'Tag 21 — Integration W3 · Standing-Flow',
     subtitle: '20 Min Standasanas-Sequenz',
-    meaning:
-        'Krieger 1 → 2 → Dreieck → Baum → Adler → Stuhl, jede Seite. '
+    meaning: 'Krieger 1 → 2 → Dreieck → Baum → Adler → Stuhl, jede Seite. '
         'Atem führt durch.',
-    reflection:
-        'Welche Standasana ist deine "Stärke", welche dein "Wachstum"?',
+    reflection: 'Welche Standasana ist deine "Stärke", welche dein "Wachstum"?',
   ),
   // WOCHE 4: TIEFE & INVERSIONEN (30-45 Min)
   LessonSeriesEntry(
-    code: 'y22', symbol: '🏹',
+    code: 'y22',
+    symbol: '🏹',
     title: 'Tag 22 — Dhanurasana',
     subtitle: 'Bogen · 3 × 30 Sek',
-    meaning:
-        'Auf dem Bauch, Knöchel greifen, Brust hochziehen. Rückbeuge, '
+    meaning: 'Auf dem Bauch, Knöchel greifen, Brust hochziehen. Rückbeuge, '
         'aktiviert ganze Hinterkette.',
     reflection:
         'Welche Energie ist beim "Spannen" des Körper-Bogens freigeworden?',
   ),
   LessonSeriesEntry(
-    code: 'y23', symbol: '🐪',
+    code: 'y23',
+    symbol: '🐪',
     title: 'Tag 23 — Ustrasana',
     subtitle: 'Kamel · 30 Sek × 3',
-    meaning:
-        'Kniend, Hände zu den Fersen, Brust nach oben, Becken vorne. '
+    meaning: 'Kniend, Hände zu den Fersen, Brust nach oben, Becken vorne. '
         'Tiefe Brustkorb-Öffnung.',
-    reflection:
-        'Welche Emotion stieg beim Brustkorb-Öffnen auf?',
+    reflection: 'Welche Emotion stieg beim Brustkorb-Öffnen auf?',
   ),
   LessonSeriesEntry(
-    code: 'y24', symbol: '🌉',
+    code: 'y24',
+    symbol: '🌉',
     title: 'Tag 24 — Setu Bandha Sarvangasana',
     subtitle: 'Brücke · 1 Min × 3',
-    meaning:
-        'Auf dem Rücken, Knie gebeugt, Hüften hoch. Sanfte Inversion, '
+    meaning: 'Auf dem Rücken, Knie gebeugt, Hüften hoch. Sanfte Inversion, '
         'aktiviert Gesäß und stärkt unteren Rücken.',
-    reflection:
-        'Welche "Brücke" baust du gerade in deinem Leben?',
+    reflection: 'Welche "Brücke" baust du gerade in deinem Leben?',
   ),
   LessonSeriesEntry(
-    code: 'y25', symbol: '🦂',
+    code: 'y25',
+    symbol: '🦂',
     title: 'Tag 25 — Sarvangasana',
     subtitle: 'Schulterstand · 2-5 Min',
-    meaning:
-        '"Mutter aller Asanas". Auf den Schultern, Beine senkrecht. '
+    meaning: '"Mutter aller Asanas". Auf den Schultern, Beine senkrecht. '
         'Reguliert Schilddrüse, wirkt jugend-erhaltend laut Tradition.',
-    reflection:
-        'Wie fühlt sich Welt von "kopfüber" an?',
+    reflection: 'Wie fühlt sich Welt von "kopfüber" an?',
   ),
   LessonSeriesEntry(
-    code: 'y26', symbol: '🌊',
+    code: 'y26',
+    symbol: '🌊',
     title: 'Tag 26 — Halasana',
     subtitle: 'Pflug · 1-3 Min',
-    meaning:
-        'Vom Schulterstand: Beine über den Kopf zum Boden. Tiefe '
+    meaning: 'Vom Schulterstand: Beine über den Kopf zum Boden. Tiefe '
         'Rücken-Dehnung. Sehr therapeutisch.',
-    reflection:
-        'Was hast du beim "Umpflügen" der Wirbelsäule wahrgenommen?',
+    reflection: 'Was hast du beim "Umpflügen" der Wirbelsäule wahrgenommen?',
   ),
   LessonSeriesEntry(
-    code: 'y27', symbol: '🦅',
+    code: 'y27',
+    symbol: '🦅',
     title: 'Tag 27 — Sirsasana',
     subtitle: 'Kopfstand · 30 Sek - 2 Min (an Wand)',
-    meaning:
-        '"König der Asanas". Anfangs an der Wand. Geist wird klar, '
+    meaning: '"König der Asanas". Anfangs an der Wand. Geist wird klar, '
         'Wahrnehmung kehrt um. Vorsichtig.',
-    reflection:
-        'Welche Wahrnehmung dreht sich gerade in deinem Leben um 180°?',
+    reflection: 'Welche Wahrnehmung dreht sich gerade in deinem Leben um 180°?',
   ),
   LessonSeriesEntry(
-    code: 'y28', symbol: '🪷',
+    code: 'y28',
+    symbol: '🪷',
     title: 'Tag 28 — Padmasana',
     subtitle: 'Lotussitz · 5-10 Min',
-    meaning:
-        'Klassischer Meditationssitz. Wenn unbequem, halber Lotus oder '
+    meaning: 'Klassischer Meditationssitz. Wenn unbequem, halber Lotus oder '
         'Sukhasana. Stabile Basis für Pranayama.',
-    reflection:
-        'In welcher Sitzhaltung bleibt dein Geist am ruhigsten?',
+    reflection: 'In welcher Sitzhaltung bleibt dein Geist am ruhigsten?',
   ),
   LessonSeriesEntry(
-    code: 'y29', symbol: '🌬️',
+    code: 'y29',
+    symbol: '🌬️',
     title: 'Tag 29 — Pranayama-Tag',
     subtitle: 'Nadi Shodhana + Kapalabhati + Bhastrika',
     meaning:
@@ -300,11 +293,11 @@ const List<LessonSeriesEntry> yogaChallenge30 = [
         'Welche Energie spürst du nach 7 Min Pranayama, die du sonst nicht hattest?',
   ),
   LessonSeriesEntry(
-    code: 'y30', symbol: '✨',
+    code: 'y30',
+    symbol: '✨',
     title: 'Tag 30 — Volle Praxis',
     subtitle: '60 Min · alle Komponenten',
-    meaning:
-        'Sonnengruß A 3× + B 3× → 5 Krieger-Variationen → 3 Rückbeugen → '
+    meaning: 'Sonnengruß A 3× + B 3× → 5 Krieger-Variationen → 3 Rückbeugen → '
         '1 Inversion → Savasana 10 Min. Du hast eine vollständige Yoga-Praxis.',
     reflection:
         'Was hat sich in 30 Tagen am stärksten verändert — Körper, Geist oder Atem?',

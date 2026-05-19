@@ -27,6 +27,7 @@ import '../services/update_service.dart';
 import '../utils/changelog_translator.dart';
 
 import '../theme/wb_cinematic_tokens.dart';
+
 enum _UpdateStage { idle, downloading, downloaded, installing, error }
 
 class ReleaseUpdateScreen extends StatefulWidget {
@@ -47,6 +48,7 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _card = Color(0xFF0A1020);
   static const Color _blue = Color(0xFF2979FF);
   static const Color _cyan = Color(0xFF00E5FF);
@@ -85,7 +87,10 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
     _retryTimer?.cancel();
     setState(() => _retryCountdown = 60);
     _retryTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) { t.cancel(); return; }
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
       setState(() {
         _retryCountdown = (_retryCountdown ?? 1) - 1;
         if (_retryCountdown! <= 0) {
@@ -340,9 +345,8 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(14),
-        border: highlight
-            ? Border.all(color: _blue.withValues(alpha: 0.6))
-            : null,
+        border:
+            highlight ? Border.all(color: _blue.withValues(alpha: 0.6)) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,9 +357,7 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
           const SizedBox(height: 4),
           Text(value,
               style: TextStyle(
-                  color: textColor,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700)),
+                  color: textColor, fontSize: 17, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -425,8 +427,7 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
             icon: const Icon(Icons.download_rounded, size: 24),
             label: Text(
               'Herunterladen & installieren$sizeLabel',
-              style: const TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: _blue,
@@ -445,9 +446,8 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
     final p = _progress;
     final percent = p?.percent ?? 0;
     final received = _formatBytes(p?.receivedBytes ?? 0);
-    final total = p != null && p.totalBytes > 0
-        ? _formatBytes(p.totalBytes)
-        : '…';
+    final total =
+        p != null && p.totalBytes > 0 ? _formatBytes(p.totalBytes) : '…';
     final speed = p != null && p.speedBytesPerSec > 0
         ? '${_formatBytes(p.speedBytesPerSec.toInt())}/s'
         : '';
@@ -472,9 +472,7 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
                       fontWeight: FontWeight.w600)),
               Text('${percent.toStringAsFixed(0)} %',
                   style: const TextStyle(
-                      color: _cyan,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700)),
+                      color: _cyan, fontSize: 14, fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 12),

@@ -99,8 +99,7 @@ class _BindRuneScreenState extends State<BindRuneScreen> {
     final names = runes.map((r) => r.name).join(' · ');
     final intention = _intentionCtrl.text.trim();
     final username = UnifiedStorageService().getUsername('energie');
-    final userId =
-        await UnifiedStorageService().getCurrentUserId() ?? 'anonym';
+    final userId = await UnifiedStorageService().getCurrentUserId() ?? 'anonym';
     final saved = await SpiritReadingService.instance.save(
       userId: userId,
       username: username,
@@ -245,7 +244,8 @@ class _BindRuneScreenState extends State<BindRuneScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         counterStyle: const TextStyle(color: Colors.white38, fontSize: 10),
       ),
     );
@@ -375,10 +375,8 @@ class _BindRunePainter extends CustomPainter {
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawLine(
-        Offset(centerX, topY), Offset(centerX, bottomY), stavGlow);
-    canvas.drawLine(
-        Offset(centerX, topY), Offset(centerX, bottomY), stavPaint);
+    canvas.drawLine(Offset(centerX, topY), Offset(centerX, bottomY), stavGlow);
+    canvas.drawLine(Offset(centerX, topY), Offset(centerX, bottomY), stavPaint);
 
     // Runen ueberlagert auf dem Stav -- groesster TextPainter, semi-trans.
     for (int i = 0; i < selected.length; i++) {

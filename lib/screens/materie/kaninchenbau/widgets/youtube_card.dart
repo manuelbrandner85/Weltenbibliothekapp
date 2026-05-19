@@ -83,7 +83,8 @@ class _YoutubeCardState extends State<YoutubeCard> {
                     color: Colors.red.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.play_circle_fill, color: Colors.red, size: 18),
+                  child: const Icon(Icons.play_circle_fill,
+                      color: Colors.red, size: 18),
                 ),
                 const SizedBox(width: 10),
                 const Expanded(
@@ -96,7 +97,8 @@ class _YoutubeCardState extends State<YoutubeCard> {
                               fontSize: 14,
                               fontWeight: FontWeight.w700)),
                       Text('Deutsche Quellen zum Thema',
-                          style: TextStyle(color: Colors.white38, fontSize: 11)),
+                          style:
+                              TextStyle(color: Colors.white38, fontSize: 11)),
                     ],
                   ),
                 ),
@@ -173,8 +175,8 @@ class _VideoTile extends StatelessWidget {
   final bool playing;
   final VoidCallback onTap;
 
-  const _VideoTile({
-      required this.video, required this.playing, required this.onTap});
+  const _VideoTile(
+      {required this.video, required this.playing, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -185,9 +187,7 @@ class _VideoTile extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: playing
-                ? Colors.red
-                : Colors.white.withValues(alpha: 0.1),
+            color: playing ? Colors.red : Colors.white.withValues(alpha: 0.1),
             width: playing ? 2 : 1,
           ),
           color: const Color(0xFF1A1A1A),
@@ -199,7 +199,9 @@ class _VideoTile extends StatelessWidget {
             Stack(
               children: [
                 Image.network(
-                  video.thumbnail.isNotEmpty ? video.thumbnail : video.fallbackThumbnail,
+                  video.thumbnail.isNotEmpty
+                      ? video.thumbnail
+                      : video.fallbackThumbnail,
                   height: 90,
                   width: 160,
                   fit: BoxFit.cover,
@@ -216,8 +218,8 @@ class _VideoTile extends StatelessWidget {
                     width: 160,
                     color: Colors.black54,
                     child: const Center(
-                      child: Icon(Icons.stop_circle,
-                          color: Colors.red, size: 36),
+                      child:
+                          Icon(Icons.stop_circle, color: Colors.red, size: 36),
                     ),
                   )
                 else

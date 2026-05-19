@@ -45,37 +45,58 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
   bool get _isMaterie => widget.world == 'materie';
   Color get _primary {
     switch (widget.world) {
-      case 'materie': return const Color(0xFF3B82F6);
-      case 'energie': return const Color(0xFFA855F7);
-      case 'vorhang': return const Color(0xFFC9A84C);
-      case 'ursprung': return const Color(0xFF00D4AA);
-      default:        return const Color(0xFFA855F7);
+      case 'materie':
+        return const Color(0xFF3B82F6);
+      case 'energie':
+        return const Color(0xFFA855F7);
+      case 'vorhang':
+        return const Color(0xFFC9A84C);
+      case 'ursprung':
+        return const Color(0xFF00D4AA);
+      default:
+        return const Color(0xFFA855F7);
     }
   }
+
   Color get _primarySoft {
     switch (widget.world) {
-      case 'materie': return const Color(0xFF60A5FA);
-      case 'energie': return const Color(0xFFC084FC);
-      case 'vorhang': return const Color(0xFFE0C872);
-      case 'ursprung': return const Color(0xFF40E8C0);
-      default:        return const Color(0xFFC084FC);
+      case 'materie':
+        return const Color(0xFF60A5FA);
+      case 'energie':
+        return const Color(0xFFC084FC);
+      case 'vorhang':
+        return const Color(0xFFE0C872);
+      case 'ursprung':
+        return const Color(0xFF40E8C0);
+      default:
+        return const Color(0xFFC084FC);
     }
   }
+
   Color get _deep {
     switch (widget.world) {
-      case 'materie': return const Color(0xFF020A1C);
-      case 'energie': return const Color(0xFF0A0118);
-      case 'vorhang': return const Color(0xFF050300);
-      case 'ursprung': return const Color(0xFF020F0C);
-      default:        return const Color(0xFF0A0118);
+      case 'materie':
+        return const Color(0xFF020A1C);
+      case 'energie':
+        return const Color(0xFF0A0118);
+      case 'vorhang':
+        return const Color(0xFF050300);
+      case 'ursprung':
+        return const Color(0xFF020F0C);
+      default:
+        return const Color(0xFF0A0118);
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _ambient = AnimationController(vsync: this, duration: const Duration(seconds: 20))..repeat();
-    _pulse = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
+    _ambient =
+        AnimationController(vsync: this, duration: const Duration(seconds: 20))
+          ..repeat();
+    _pulse =
+        AnimationController(vsync: this, duration: const Duration(seconds: 4))
+          ..repeat(reverse: true);
     _load();
   }
 
@@ -106,7 +127,8 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
 
   void _applyFilter() {
     setState(() {
-      _filtered = _all.where((e) => _cat == 'all' || e.category == _cat).toList();
+      _filtered =
+          _all.where((e) => _cat == 'all' || e.category == _cat).toList();
     });
   }
 
@@ -208,7 +230,8 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
                   // Eyebrow
                   Row(children: [
                     Container(
-                      width: 3, height: 12,
+                      width: 3,
+                      height: 12,
                       decoration: BoxDecoration(
                         color: _primary,
                         borderRadius: BorderRadius.circular(2),
@@ -219,16 +242,23 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
                     Text(
                       () {
                         switch (widget.world) {
-                          case 'materie': return 'MATERIE · BIBLIOTHEK';
-                          case 'energie': return 'ENERGIE · BIBLIOTHEK';
-                          case 'vorhang': return 'VORHANG · BIBLIOTHEK';
-                          case 'ursprung': return 'URSPRUNG · BIBLIOTHEK';
-                          default: return 'BIBLIOTHEK';
+                          case 'materie':
+                            return 'MATERIE · BIBLIOTHEK';
+                          case 'energie':
+                            return 'ENERGIE · BIBLIOTHEK';
+                          case 'vorhang':
+                            return 'VORHANG · BIBLIOTHEK';
+                          case 'ursprung':
+                            return 'URSPRUNG · BIBLIOTHEK';
+                          default:
+                            return 'BIBLIOTHEK';
                         }
                       }(),
                       style: TextStyle(
-                        fontSize: 10, letterSpacing: 3.5,
-                        color: _primary, fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        letterSpacing: 3.5,
+                        color: _primary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ]),
@@ -237,19 +267,35 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
                   Text(
                     'Wissen',
                     style: TextStyle(
-                      fontSize: 40, fontWeight: FontWeight.w200,
-                      letterSpacing: 3, color: Colors.white, height: 1,
-                      shadows: [Shadow(color: _primary.withValues(alpha: 0.4), blurRadius: 30)],
+                      fontSize: 40,
+                      fontWeight: FontWeight.w200,
+                      letterSpacing: 3,
+                      color: Colors.white,
+                      height: 1,
+                      shadows: [
+                        Shadow(
+                            color: _primary.withValues(alpha: 0.4),
+                            blurRadius: 30)
+                      ],
                     ),
                   ),
                   const Spacer(),
                   // Stats row
                   Row(children: [
-                    _StatPill(icon: Icons.library_books, label: '$total Einträge', color: _primary),
+                    _StatPill(
+                        icon: Icons.library_books,
+                        label: '$total Einträge',
+                        color: _primary),
                     const SizedBox(width: 10),
-                    _StatPill(icon: Icons.check_circle, label: '$read gelesen', color: const Color(0xFF34D399)),
+                    _StatPill(
+                        icon: Icons.check_circle,
+                        label: '$read gelesen',
+                        color: const Color(0xFF34D399)),
                     const SizedBox(width: 10),
-                    _StatPill(icon: Icons.bookmark, label: '$favs gespeichert', color: const Color(0xFFFBBF24)),
+                    _StatPill(
+                        icon: Icons.bookmark,
+                        label: '$favs gespeichert',
+                        color: const Color(0xFFFBBF24)),
                   ]),
                   const SizedBox(height: 10),
                   // Progress bar
@@ -298,24 +344,39 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: active ? _primary.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.05),
+                  color: active
+                      ? _primary.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.05),
                   border: Border.all(
-                    color: active ? _primary.withValues(alpha: 0.55) : Colors.white.withValues(alpha: 0.10),
+                    color: active
+                        ? _primary.withValues(alpha: 0.55)
+                        : Colors.white.withValues(alpha: 0.10),
                     width: active ? 1.4 : 1,
                   ),
                   boxShadow: active
-                      ? [BoxShadow(color: _primary.withValues(alpha: 0.28), blurRadius: 12)]
+                      ? [
+                          BoxShadow(
+                              color: _primary.withValues(alpha: 0.28),
+                              blurRadius: 12)
+                        ]
                       : null,
                 ),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(tabs[i].$1, size: 15, color: active ? _primary : Colors.white.withValues(alpha: 0.45)),
+                  Icon(tabs[i].$1,
+                      size: 15,
+                      color: active
+                          ? _primary
+                          : Colors.white.withValues(alpha: 0.45)),
                   const SizedBox(height: 3),
-                  Text(tabs[i].$2, style: TextStyle(
-                    fontSize: 9,
-                    color: active ? _primary : Colors.white.withValues(alpha: 0.40),
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-                    letterSpacing: 0.3,
-                  )),
+                  Text(tabs[i].$2,
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: active
+                            ? _primary
+                            : Colors.white.withValues(alpha: 0.40),
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                        letterSpacing: 0.3,
+                      )),
                 ]),
               ),
             ),
@@ -391,20 +452,38 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
-                color: active ? _primary.withValues(alpha: 0.20) : Colors.white.withValues(alpha: 0.06),
+                color: active
+                    ? _primary.withValues(alpha: 0.20)
+                    : Colors.white.withValues(alpha: 0.06),
                 border: Border.all(
-                  color: active ? _primary.withValues(alpha: 0.60) : Colors.white.withValues(alpha: 0.14),
+                  color: active
+                      ? _primary.withValues(alpha: 0.60)
+                      : Colors.white.withValues(alpha: 0.14),
                   width: active ? 1.5 : 1,
                 ),
-                boxShadow: active ? [BoxShadow(color: _primary.withValues(alpha: 0.32), blurRadius: 10)] : null,
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                            color: _primary.withValues(alpha: 0.32),
+                            blurRadius: 10)
+                      ]
+                    : null,
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(icon, size: 12, color: active ? _primary : Colors.white.withValues(alpha: 0.55)),
+                Icon(icon,
+                    size: 12,
+                    color: active
+                        ? _primary
+                        : Colors.white.withValues(alpha: 0.55)),
                 const SizedBox(width: 5),
-                Text(label, style: TextStyle(
-                  fontSize: 11, fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-                  color: active ? _primary : Colors.white.withValues(alpha: 0.65),
-                )),
+                Text(label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                      color: active
+                          ? _primary
+                          : Colors.white.withValues(alpha: 0.65),
+                    )),
               ]),
             ),
           );
@@ -453,9 +532,11 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
           SliverToBoxAdapter(child: _buildViewModeBar()),
           // Featured horizontal row
           if (featured.isNotEmpty) ...[
-            SliverToBoxAdapter(child: _sectionHeader('EMPFOHLEN', Icons.auto_awesome)),
+            SliverToBoxAdapter(
+                child: _sectionHeader('EMPFOHLEN', Icons.auto_awesome)),
             SliverToBoxAdapter(child: _buildFeaturedRow(featured)),
-            SliverToBoxAdapter(child: _sectionHeader('ALLE EINTRÄGE', Icons.grid_view)),
+            SliverToBoxAdapter(
+                child: _sectionHeader('ALLE EINTRÄGE', Icons.grid_view)),
           ],
           // Grid
           SliverPadding(
@@ -618,7 +699,8 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
       child: Row(children: [
         Container(
-          width: 3, height: 14,
+          width: 3,
+          height: 14,
           decoration: BoxDecoration(
             color: _primary,
             borderRadius: BorderRadius.circular(2),
@@ -626,10 +708,13 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
           ),
         ),
         const SizedBox(width: 8),
-        Text(label, style: TextStyle(
-          fontSize: 10, letterSpacing: 3,
-          color: _primarySoft, fontWeight: FontWeight.w700,
-        )),
+        Text(label,
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 3,
+              color: _primarySoft,
+              fontWeight: FontWeight.w700,
+            )),
         const Spacer(),
         Icon(icon, size: 14, color: _primary.withValues(alpha: 0.5)),
       ]),
@@ -640,33 +725,45 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
     return Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Container(
-          width: 72, height: 72,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: _primary.withValues(alpha: 0.08),
             border: Border.all(color: _primary.withValues(alpha: 0.25)),
           ),
-          child: Icon(icon ?? Icons.search_off, size: 32, color: _primary.withValues(alpha: 0.55)),
+          child: Icon(icon ?? Icons.search_off,
+              size: 32, color: _primary.withValues(alpha: 0.55)),
         ),
         const SizedBox(height: 16),
-        Text(title ?? 'Keine Einträge', style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500)),
+        Text(title ?? 'Keine Einträge',
+            style: const TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+                fontWeight: FontWeight.w500)),
         if (hint != null) ...[
           const SizedBox(height: 6),
-          Text(hint, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45)), textAlign: TextAlign.center),
+          Text(hint,
+              style: TextStyle(
+                  fontSize: 12, color: Colors.white.withValues(alpha: 0.45)),
+              textAlign: TextAlign.center),
         ],
       ]),
     );
   }
 
   Widget _buildSpinner() {
-    return Center(child: CircularProgressIndicator(color: _primary, strokeWidth: 2));
+    return Center(
+        child: CircularProgressIndicator(color: _primary, strokeWidth: 2));
   }
 
   Widget _buildSkeleton() {
     return Scaffold(
       backgroundColor: _deep,
       body: Column(children: [
-        SizedBox(height: 210, child: Container(color: _primary.withValues(alpha: 0.06))),
+        SizedBox(
+            height: 210,
+            child: Container(color: _primary.withValues(alpha: 0.06))),
         const SizedBox(height: 56),
         Expanded(
           child: ListView.builder(
@@ -696,7 +793,11 @@ class _FeaturedCard extends StatelessWidget {
   final Color deep;
   final VoidCallback onTap;
 
-  const _FeaturedCard({required this.entry, required this.primary, required this.deep, required this.onTap});
+  const _FeaturedCard(
+      {required this.entry,
+      required this.primary,
+      required this.deep,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -712,27 +813,38 @@ class _FeaturedCard extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [deep, Color.lerp(deep, catColor, 0.22)!],
           ),
-          border: Border.all(color: catColor.withValues(alpha: 0.35), width: 1.2),
+          border:
+              Border.all(color: catColor.withValues(alpha: 0.35), width: 1.2),
           boxShadow: [
-            BoxShadow(color: catColor.withValues(alpha: 0.22), blurRadius: 22, offset: const Offset(0, 8)),
-            BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 12),
+            BoxShadow(
+                color: catColor.withValues(alpha: 0.22),
+                blurRadius: 22,
+                offset: const Offset(0, 8)),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5), blurRadius: 12),
           ],
         ),
         child: Stack(children: [
           // Background orb
           Positioned(
-            right: -15, bottom: -15,
+            right: -15,
+            bottom: -15,
             child: Container(
-              width: 110, height: 110,
+              width: 110,
+              height: 110,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [catColor.withValues(alpha: 0.22), Colors.transparent]),
+                gradient: RadialGradient(colors: [
+                  catColor.withValues(alpha: 0.22),
+                  Colors.transparent
+                ]),
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(14),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               // Category chip
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
@@ -741,18 +853,32 @@ class _FeaturedCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: catColor.withValues(alpha: 0.45)),
                 ),
-                child: Text(_catLabel(entry.category), style: TextStyle(
-                  fontSize: 8.5, color: catColor, fontWeight: FontWeight.w700, letterSpacing: 0.6,
-                )),
+                child: Text(_catLabel(entry.category),
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      color: catColor,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                    )),
               ),
               const SizedBox(height: 9),
-              Text(entry.title, maxLines: 3, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3)),
+              Text(entry.title,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      height: 1.3)),
               const Spacer(),
               Row(children: [
-                Icon(Icons.timer_outlined, size: 11, color: Colors.white.withValues(alpha: 0.45)),
+                Icon(Icons.timer_outlined,
+                    size: 11, color: Colors.white.withValues(alpha: 0.45)),
                 const SizedBox(width: 4),
-                Text('${entry.readingTimeMinutes} Min', style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.45))),
+                Text('${entry.readingTimeMinutes} Min',
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.white.withValues(alpha: 0.45))),
                 const Spacer(),
                 _StarRow(rating: entry.rating),
               ]),
@@ -773,7 +899,11 @@ class _CinematicCard extends StatelessWidget {
   final UnifiedKnowledgeService svc;
   final VoidCallback onTap;
 
-  const _CinematicCard({required this.entry, required this.primary, required this.svc, required this.onTap});
+  const _CinematicCard(
+      {required this.entry,
+      required this.primary,
+      required this.svc,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -786,29 +916,39 @@ class _CinematicCard extends StatelessWidget {
           color: const Color(0xFF0B0D1A),
           border: Border(left: BorderSide(color: catColor, width: 3)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.42), blurRadius: 14, offset: const Offset(0, 5)),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.42),
+                blurRadius: 14,
+                offset: const Offset(0, 5)),
             BoxShadow(color: catColor.withValues(alpha: 0.07), blurRadius: 20),
           ],
         ),
         child: Stack(children: [
           // Atmospheric orb
           Positioned(
-            right: -12, top: -12,
+            right: -12,
+            top: -12,
             child: Container(
-              width: 80, height: 80,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(colors: [catColor.withValues(alpha: 0.14), Colors.transparent]),
+                gradient: RadialGradient(colors: [
+                  catColor.withValues(alpha: 0.14),
+                  Colors.transparent
+                ]),
               ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               // Type badge + bookmark
               Row(children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
                     color: catColor.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(7),
@@ -817,9 +957,13 @@ class _CinematicCard extends StatelessWidget {
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Icon(_typeIcon(entry.type), size: 9, color: catColor),
                     const SizedBox(width: 3),
-                    Text(_typeLabel(entry.type), style: TextStyle(
-                      fontSize: 8, color: catColor, fontWeight: FontWeight.w700, letterSpacing: 0.4,
-                    )),
+                    Text(_typeLabel(entry.type),
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: catColor,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                        )),
                   ]),
                 ),
                 const Spacer(),
@@ -830,14 +974,18 @@ class _CinematicCard extends StatelessWidget {
                     return GestureDetector(
                       onTap: () async {
                         HapticFeedback.selectionClick();
-                        if (isFav) await svc.removeFavorite(entry.id);
-                        else await svc.addFavorite(entry.id);
+                        if (isFav)
+                          await svc.removeFavorite(entry.id);
+                        else
+                          await svc.addFavorite(entry.id);
                         (ctx as Element).markNeedsBuild();
                       },
                       child: Icon(
                         isFav ? Icons.bookmark : Icons.bookmark_border,
                         size: 17,
-                        color: isFav ? const Color(0xFFFBBF24) : Colors.white.withValues(alpha: 0.35),
+                        color: isFav
+                            ? const Color(0xFFFBBF24)
+                            : Colors.white.withValues(alpha: 0.35),
                       ),
                     );
                   },
@@ -845,30 +993,49 @@ class _CinematicCard extends StatelessWidget {
               ]),
               const SizedBox(height: 10),
               // Title
-              Text(entry.title, maxLines: 4, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3)),
+              Text(entry.title,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      height: 1.3)),
               const Spacer(),
               // Bottom: time + rating
               Row(children: [
-                Icon(Icons.timer_outlined, size: 10, color: Colors.white.withValues(alpha: 0.38)),
+                Icon(Icons.timer_outlined,
+                    size: 10, color: Colors.white.withValues(alpha: 0.38)),
                 const SizedBox(width: 3),
-                Text('${entry.readingTimeMinutes}m', style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.38))),
+                Text('${entry.readingTimeMinutes}m',
+                    style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.white.withValues(alpha: 0.38))),
                 const Spacer(),
                 _StarRow(rating: entry.rating, size: 9),
               ]),
               const SizedBox(height: 7),
               // Tags
               Wrap(
-                spacing: 3, runSpacing: 3,
-                children: entry.tags.take(2).map((t) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(5),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
-                  ),
-                  child: Text('#$t', style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.40))),
-                )).toList(),
+                spacing: 3,
+                runSpacing: 3,
+                children: entry.tags
+                    .take(2)
+                    .map((t) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(5),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.09)),
+                          ),
+                          child: Text('#$t',
+                              style: TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.white.withValues(alpha: 0.40))),
+                        ))
+                    .toList(),
               ),
             ]),
           ),
@@ -887,7 +1054,11 @@ class _ListCard extends StatelessWidget {
   final UnifiedKnowledgeService svc;
   final VoidCallback onTap;
 
-  const _ListCard({required this.entry, required this.primary, required this.svc, required this.onTap});
+  const _ListCard(
+      {required this.entry,
+      required this.primary,
+      required this.svc,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -905,13 +1076,16 @@ class _ListCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border(left: BorderSide(color: catColor, width: 3)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12),
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 12),
               ],
             ),
             child: Row(children: [
               // Icon circle
               Container(
-                width: 42, height: 42,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: catColor.withValues(alpha: 0.14),
@@ -921,21 +1095,39 @@ class _ListCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               // Text
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(entry.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3)),
-                const SizedBox(height: 4),
-                Row(children: [
-                  Icon(Icons.timer_outlined, size: 10, color: Colors.white.withValues(alpha: 0.38)),
-                  const SizedBox(width: 3),
-                  Text('${entry.readingTimeMinutes} Min', style: TextStyle(fontSize: 9.5, color: Colors.white.withValues(alpha: 0.45))),
-                  const SizedBox(width: 10),
-                  Text(_catLabel(entry.category), style: TextStyle(fontSize: 9.5, color: catColor.withValues(alpha: 0.8))),
-                ]),
-              ])),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(entry.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            height: 1.3)),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      Icon(Icons.timer_outlined,
+                          size: 10,
+                          color: Colors.white.withValues(alpha: 0.38)),
+                      const SizedBox(width: 3),
+                      Text('${entry.readingTimeMinutes} Min',
+                          style: TextStyle(
+                              fontSize: 9.5,
+                              color: Colors.white.withValues(alpha: 0.45))),
+                      const SizedBox(width: 10),
+                      Text(_catLabel(entry.category),
+                          style: TextStyle(
+                              fontSize: 9.5,
+                              color: catColor.withValues(alpha: 0.8))),
+                    ]),
+                  ])),
               const SizedBox(width: 8),
               // Arrow
-              Icon(Icons.chevron_right, size: 18, color: Colors.white.withValues(alpha: 0.25)),
+              Icon(Icons.chevron_right,
+                  size: 18, color: Colors.white.withValues(alpha: 0.25)),
             ]),
           ),
         ),
@@ -952,7 +1144,8 @@ class _StatPill extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatPill({required this.icon, required this.label, required this.color});
+  const _StatPill(
+      {required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -966,7 +1159,9 @@ class _StatPill extends StatelessWidget {
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 11, color: color),
         const SizedBox(width: 5),
-        Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+        Text(label,
+            style: TextStyle(
+                fontSize: 10, color: color, fontWeight: FontWeight.w600)),
       ]),
     );
   }
@@ -984,11 +1179,15 @@ class _StarRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (rating <= 0) return const SizedBox.shrink();
-    return Row(mainAxisSize: MainAxisSize.min, children: List.generate(5, (i) => Icon(
-      i < rating.round() ? Icons.star : Icons.star_border,
-      size: size,
-      color: const Color(0xFFFBBF24).withValues(alpha: 0.75),
-    )));
+    return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(
+            5,
+            (i) => Icon(
+                  i < rating.round() ? Icons.star : Icons.star_border,
+                  size: size,
+                  color: const Color(0xFFFBBF24).withValues(alpha: 0.75),
+                )));
   }
 }
 
@@ -1006,15 +1205,22 @@ class _SearchFAB extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 54, height: 54,
+        width: 54,
+        height: 54,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: RadialGradient(
             colors: [primary, Color.lerp(primary, Colors.black, 0.3)!],
           ),
           boxShadow: [
-            BoxShadow(color: primary.withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 2),
-            BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4)),
+            BoxShadow(
+                color: primary.withValues(alpha: 0.5),
+                blurRadius: 20,
+                spreadRadius: 2),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 8,
+                offset: const Offset(0, 4)),
           ],
         ),
         child: const Icon(Icons.search, color: Colors.white, size: 22),
@@ -1032,26 +1238,39 @@ class _AmbientPainter extends CustomPainter {
   final Color primary;
   final bool isMaterie;
 
-  const _AmbientPainter({required this.progress, required this.pulse, required this.primary, required this.isMaterie});
+  const _AmbientPainter(
+      {required this.progress,
+      required this.pulse,
+      required this.primary,
+      required this.isMaterie});
 
   @override
   void paint(Canvas canvas, Size size) {
     // Animated nebula clouds
     for (int i = 0; i < 3; i++) {
-      final x = size.width * (0.15 + i * 0.35 + math.sin(progress * math.pi * 2 + i * 1.2) * 0.08);
-      final y = size.height * (0.35 + math.cos(progress * math.pi * 2 + i * 0.8) * 0.22);
+      final x = size.width *
+          (0.15 + i * 0.35 + math.sin(progress * math.pi * 2 + i * 1.2) * 0.08);
+      final y = size.height *
+          (0.35 + math.cos(progress * math.pi * 2 + i * 0.8) * 0.22);
       final r = 120.0 + i * 30.0 + pulse * 20;
       canvas.drawCircle(
-        Offset(x, y), r,
-        Paint()..shader = RadialGradient(
-          colors: [primary.withValues(alpha: 0.22 + pulse * 0.08), Colors.transparent],
-        ).createShader(Rect.fromCircle(center: Offset(x, y), radius: r)),
+        Offset(x, y),
+        r,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              primary.withValues(alpha: 0.22 + pulse * 0.08),
+              Colors.transparent
+            ],
+          ).createShader(Rect.fromCircle(center: Offset(x, y), radius: r)),
       );
     }
 
     // Grid lines (Materie: tight grid, Energie: wider)
     final step = isMaterie ? 32.0 : 48.0;
-    final gridPaint = Paint()..color = primary.withValues(alpha: 0.045)..strokeWidth = 0.5;
+    final gridPaint = Paint()
+      ..color = primary.withValues(alpha: 0.045)
+      ..strokeWidth = 0.5;
     for (double x = 0; x < size.width; x += step) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
     }
@@ -1075,7 +1294,8 @@ class _AmbientPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_AmbientPainter old) => old.progress != progress || old.pulse != pulse;
+  bool shouldRepaint(_AmbientPainter old) =>
+      old.progress != progress || old.pulse != pulse;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1083,53 +1303,85 @@ class _AmbientPainter extends CustomPainter {
 // ─────────────────────────────────────────────────────────────────────────────
 Color _catColor(String cat) {
   switch (cat) {
-    case 'conspiracy':       return const Color(0xFFFF4757);
-    case 'ancientWisdom':    return const Color(0xFFFFB347);
-    case 'forbiddenKnowledge': return const Color(0xFFFF6B9D);
-    case 'books':            return const Color(0xFF4ECDC4);
-    case 'meditation':       return const Color(0xFFA78BFA);
-    case 'astrology':        return const Color(0xFF60A5FA);
-    case 'crystals':         return const Color(0xFF34D399);
-    case 'consciousness':    return const Color(0xFFF472B6);
-    case 'energyWork':       return const Color(0xFFFBBF24);
-    default:                 return const Color(0xFF94A3B8);
+    case 'conspiracy':
+      return const Color(0xFFFF4757);
+    case 'ancientWisdom':
+      return const Color(0xFFFFB347);
+    case 'forbiddenKnowledge':
+      return const Color(0xFFFF6B9D);
+    case 'books':
+      return const Color(0xFF4ECDC4);
+    case 'meditation':
+      return const Color(0xFFA78BFA);
+    case 'astrology':
+      return const Color(0xFF60A5FA);
+    case 'crystals':
+      return const Color(0xFF34D399);
+    case 'consciousness':
+      return const Color(0xFFF472B6);
+    case 'energyWork':
+      return const Color(0xFFFBBF24);
+    default:
+      return const Color(0xFF94A3B8);
   }
 }
 
 String _catLabel(String cat) {
   switch (cat) {
-    case 'conspiracy':         return 'Verschwörung';
-    case 'ancientWisdom':      return 'Alte Weisheit';
-    case 'forbiddenKnowledge': return 'Verboten';
-    case 'books':              return 'Bücher';
-    case 'meditation':         return 'Meditation';
-    case 'astrology':          return 'Astrologie';
-    case 'crystals':           return 'Kristalle';
-    case 'consciousness':      return 'Bewusstsein';
-    case 'energyWork':         return 'Energiearbeit';
-    default:                   return cat;
+    case 'conspiracy':
+      return 'Verschwörung';
+    case 'ancientWisdom':
+      return 'Alte Weisheit';
+    case 'forbiddenKnowledge':
+      return 'Verboten';
+    case 'books':
+      return 'Bücher';
+    case 'meditation':
+      return 'Meditation';
+    case 'astrology':
+      return 'Astrologie';
+    case 'crystals':
+      return 'Kristalle';
+    case 'consciousness':
+      return 'Bewusstsein';
+    case 'energyWork':
+      return 'Energiearbeit';
+    default:
+      return cat;
   }
 }
 
 IconData _typeIcon(String type) {
   switch (type) {
-    case 'book':     return Icons.menu_book;
-    case 'article':  return Icons.article;
-    case 'video':    return Icons.play_circle;
-    case 'practice': return Icons.self_improvement;
-    case 'research': return Icons.science;
-    default:         return Icons.library_books;
+    case 'book':
+      return Icons.menu_book;
+    case 'article':
+      return Icons.article;
+    case 'video':
+      return Icons.play_circle;
+    case 'practice':
+      return Icons.self_improvement;
+    case 'research':
+      return Icons.science;
+    default:
+      return Icons.library_books;
   }
 }
 
 String _typeLabel(String type) {
   switch (type) {
-    case 'book':     return 'BUCH';
-    case 'article':  return 'ARTIKEL';
-    case 'video':    return 'VIDEO';
-    case 'practice': return 'PRAXIS';
-    case 'research': return 'FORSCHUNG';
-    default:         return 'WISSEN';
+    case 'book':
+      return 'BUCH';
+    case 'article':
+      return 'ARTIKEL';
+    case 'video':
+      return 'VIDEO';
+    case 'practice':
+      return 'PRAXIS';
+    case 'research':
+      return 'FORSCHUNG';
+    default:
+      return 'WISSEN';
   }
 }
 
@@ -1182,11 +1434,13 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
         titleWidget: Text(widget.entry.title,
-            maxLines: 1, overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 16, color: Colors.white)),
         actions: [
           IconButton(
-            icon: Icon(_isFavorite ? Icons.star : Icons.star_border, color: Colors.amber),
+            icon: Icon(_isFavorite ? Icons.star : Icons.star_border,
+                color: Colors.amber),
             onPressed: () async {
               if (_isFavorite) {
                 await _knowledgeService.removeFavorite(widget.entry.id);
@@ -1198,7 +1452,8 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.share, color: Colors.white),
-            onPressed: () => Share.share('${widget.entry.title}\n\n${widget.entry.description}'),
+            onPressed: () => Share.share(
+                '${widget.entry.title}\n\n${widget.entry.description}'),
           ),
         ],
       ),
@@ -1206,10 +1461,14 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(widget.entry.title,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+              style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white)),
           const SizedBox(height: 8),
           Text(widget.entry.fullContent,
-              style: const TextStyle(fontSize: 15, color: Colors.white70, height: 1.6)),
+              style: const TextStyle(
+                  fontSize: 15, color: Colors.white70, height: 1.6)),
         ]),
       ),
     );
@@ -1258,13 +1517,19 @@ class _ViewModeChip extends StatelessWidget {
             ),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 14,
-                color: selected ? primary : Colors.white.withValues(alpha: 0.6)),
+            Icon(icon,
+                size: 14,
+                color:
+                    selected ? primary : Colors.white.withValues(alpha: 0.6)),
             const SizedBox(width: 6),
-            Text(label, style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w700,
-              color: selected ? Colors.white : Colors.white.withValues(alpha: 0.7),
-            )),
+            Text(label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: selected
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.7),
+                )),
           ]),
         ),
       ),

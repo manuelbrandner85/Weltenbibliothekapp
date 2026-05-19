@@ -141,9 +141,11 @@ class SearchHistoryService {
         'newestSearch': null,
       };
     }
-    final uniqueQueries = _entries.map((e) => e.query.toLowerCase()).toSet().length;
+    final uniqueQueries =
+        _entries.map((e) => e.query.toLowerCase()).toSet().length;
     final totalResults = _entries.fold<int>(0, (sum, e) => sum + e.resultCount);
-    final sorted = List.of(_entries)..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final sorted = List.of(_entries)
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return {
       'totalSearches': _entries.length,
       'uniqueQueries': uniqueQueries,

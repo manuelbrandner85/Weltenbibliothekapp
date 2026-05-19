@@ -2,7 +2,7 @@
 /// Vollständige Geburtsdaten für spirituelle Berechnungen
 /// ✅ FAIL-SAFE: Erweitert mit userId und role (nullable, rückwärtskompatibel)
 class EnergieProfile {
-  final String username;       // Benutzername (Pflicht)
+  final String username; // Benutzername (Pflicht)
   final String firstName;
   final String lastName;
   final DateTime birthDate;
@@ -11,22 +11,22 @@ class EnergieProfile {
   final String? avatarUrl; // 🆕 Profilbild URL
   final String? bio; // 🆕 Bio/Beschreibung
   final String? avatarEmoji; // 🆕 Emoji-Avatar als Fallback
-  
+
   // ✅ NEU: Admin-System Felder (nullable, rückwärtskompatibel)
-  final String? userId;  // User ID vom Backend
-  final String? role;    // Rolle: 'user', 'admin', 'root_admin'
+  final String? userId; // User ID vom Backend
+  final String? role; // Rolle: 'user', 'admin', 'root_admin'
 
   // ✨ v93: Spirit-Tools Extras (alle nullable - werden vom User optional gepflegt)
-  final double? birthLatitude;          // -90 .. 90 (Aszendent-Berechnung)
-  final double? birthLongitude;         // -180 .. 180
-  final double? timezoneOffsetHours;    // z.B. 1.0=MEZ, 2.0=MESZ, 5.5=IST
-  final bool birthTimeUnknown;          // Wenn true: Tools nehmen 12:00 an
-  final String? gender;                 // male|female|diverse|prefer_not_say
+  final double? birthLatitude; // -90 .. 90 (Aszendent-Berechnung)
+  final double? birthLongitude; // -180 .. 180
+  final double? timezoneOffsetHours; // z.B. 1.0=MEZ, 2.0=MESZ, 5.5=IST
+  final bool birthTimeUnknown; // Wenn true: Tools nehmen 12:00 an
+  final String? gender; // male|female|diverse|prefer_not_say
 
   // ✨ v94: Geburtsname-Felder (Heirat/Adoption -- fuer Numerologie-Vergleich)
-  final String? birthFirstName;         // Vorname bei Geburt, falls abweichend
-  final String? birthMiddleNames;       // Alle Zweitnamen bei Geburt
-  final String? birthLastName;          // Nachname bei Geburt (vor Heirat)
+  final String? birthFirstName; // Vorname bei Geburt, falls abweichend
+  final String? birthMiddleNames; // Alle Zweitnamen bei Geburt
+  final String? birthLastName; // Nachname bei Geburt (vor Heirat)
 
   EnergieProfile({
     required this.username,
@@ -38,8 +38,8 @@ class EnergieProfile {
     this.avatarUrl,
     this.bio,
     this.avatarEmoji,
-    this.userId,   // ✅ NEU: Optional
-    this.role,     // ✅ NEU: Optional
+    this.userId, // ✅ NEU: Optional
+    this.role, // ✅ NEU: Optional
     this.birthLatitude,
     this.birthLongitude,
     this.timezoneOffsetHours,
@@ -59,23 +59,23 @@ class EnergieProfile {
     return (bf.isNotEmpty && bf != firstName) ||
         (bl.isNotEmpty && bl != lastName);
   }
-  
+
   // Display-Name: Vollständiger Name
   String get displayName => fullName;
-  
+
   // Vollständiger Name
   String get fullName => '$firstName $lastName';
-  
+
   // Formatiertes Geburtsdatum
   String get formattedBirthDate {
     return '${birthDate.day.toString().padLeft(2, '0')}.${birthDate.month.toString().padLeft(2, '0')}.${birthDate.year}';
   }
-  
+
   // ✅ NEU: Admin-Prüfungen (Fail-Safe mit Null-Checks)
   bool isAdmin() => role == 'admin' || role == 'root_admin';
   bool isRootAdmin() => role == 'root_admin';
-  String get effectiveRole => role ?? 'user';  // Default: 'user'
-  
+  String get effectiveRole => role ?? 'user'; // Default: 'user'
+
   // Für Hive Storage (✅ erweitert mit Admin-Feldern)
   Map<String, dynamic> toJson() {
     return {
@@ -88,8 +88,8 @@ class EnergieProfile {
       'avatar_url': avatarUrl,
       'bio': bio,
       'avatar_emoji': avatarEmoji,
-      'user_id': userId,     // ✅ NEU
-      'role': role,          // ✅ NEU
+      'user_id': userId, // ✅ NEU
+      'role': role, // ✅ NEU
       // v93 Spirit-Extras
       'birth_latitude': birthLatitude,
       'birth_longitude': birthLongitude,
@@ -116,8 +116,8 @@ class EnergieProfile {
       avatarUrl: json['avatar_url'] as String?,
       bio: json['bio'] as String?,
       avatarEmoji: json['avatar_emoji'] as String?,
-      userId: json['user_id'] as String?,      // ✅ NEU: Safe null handling
-      role: json['role'] as String?,           // ✅ NEU: Safe null handling
+      userId: json['user_id'] as String?, // ✅ NEU: Safe null handling
+      role: json['role'] as String?, // ✅ NEU: Safe null handling
       // v93 Spirit-Extras
       birthLatitude: (json['birth_latitude'] as num?)?.toDouble(),
       birthLongitude: (json['birth_longitude'] as num?)?.toDouble(),
@@ -151,7 +151,8 @@ class EnergieProfile {
     String? birthFirstName,
     String? birthMiddleNames,
     String? birthLastName,
-  }) => EnergieProfile(
+  }) =>
+      EnergieProfile(
         username: username ?? this.username,
         firstName: firstName ?? this.firstName,
         lastName: lastName ?? this.lastName,
@@ -172,7 +173,7 @@ class EnergieProfile {
         birthMiddleNames: birthMiddleNames ?? this.birthMiddleNames,
         birthLastName: birthLastName ?? this.birthLastName,
       );
-  
+
   // Leeres Profil erstellen
   factory EnergieProfile.empty() {
     return EnergieProfile(
@@ -183,12 +184,12 @@ class EnergieProfile {
       birthPlace: '',
     );
   }
-  
+
   // Validierung
   bool get isValid {
     return username.isNotEmpty &&
-           firstName.isNotEmpty && 
-           lastName.isNotEmpty && 
-           birthPlace.isNotEmpty;
+        firstName.isNotEmpty &&
+        lastName.isNotEmpty &&
+        birthPlace.isNotEmpty;
   }
 }

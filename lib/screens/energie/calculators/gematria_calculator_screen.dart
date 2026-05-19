@@ -13,10 +13,12 @@ class GematriaCalculatorScreen extends StatefulWidget {
   const GematriaCalculatorScreen({super.key});
 
   @override
-  State<GematriaCalculatorScreen> createState() => _GematriaCalculatorScreenState();
+  State<GematriaCalculatorScreen> createState() =>
+      _GematriaCalculatorScreenState();
 }
 
-class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> with TickerProviderStateMixin {
+class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   EnergieProfile? _profile;
   bool _isLoading = true;
@@ -29,27 +31,27 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   int _hebrewFullName = 0;
   int _latinFullName = 0;
   // ignore: unused_field
-  int _hebrewFirstName = 0;  // ⚠️ UNUSED - Reserved for detailed name analysis
+  int _hebrewFirstName = 0; // ⚠️ UNUSED - Reserved for detailed name analysis
   // ignore: unused_field
-  int _hebrewLastName = 0;   // ⚠️ UNUSED - Reserved for detailed name analysis
+  int _hebrewLastName = 0; // ⚠️ UNUSED - Reserved for detailed name analysis
   // ignore: unused_field
-  int _latinFirstName = 0;   // ⚠️ UNUSED - Reserved for detailed name analysis
+  int _latinFirstName = 0; // ⚠️ UNUSED - Reserved for detailed name analysis
   // ignore: unused_field
-  int _latinLastName = 0;    // ⚠️ UNUSED - Reserved for detailed name analysis
+  int _latinLastName = 0; // ⚠️ UNUSED - Reserved for detailed name analysis
   int _soulNumber = 0;
   int _destinyNumber = 0;
-  
+
   // Numerologie Berechnungen
   int _lifePathNumber = 0;
   int _expressionNumber = 0;
   int _personalityNumber = 0;
   int _personalYear = 0;
-  
+
   // 🆕 JOURNAL DATA
   List<Map<String, dynamic>> _journalEntries = [];
   final TextEditingController _journalController = TextEditingController();
   String _journalMood = 'Neutral';
-  
+
   // 🆕 COMMUNITY DATA
   Map<String, int> _globalStats = {};
   List<Map<String, dynamic>> _recentShares = [];
@@ -57,10 +59,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 14, vsync: this); // 5 Original + 9 Neue Features
+    _tabController =
+        TabController(length: 14, vsync: this); // 5 Original + 9 Neue Features
     _loadProfile();
-    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat(reverse: true);
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat(reverse: true);
+    _bgCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat(reverse: true);
+    _pulseCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..repeat(reverse: true);
   }
 
   @override
@@ -94,29 +101,36 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
 
   void _calculateGematria() {
     if (_profile == null) return;
-    
+
     final fullName = '${_profile!.firstName} ${_profile!.lastName}';
-    
+
     // Gematria Berechnungen
     _hebrewFullName = GematriaEngine.calculateHebrewGematria(fullName);
     _latinFullName = GematriaEngine.calculateLatinGematria(fullName);
-    _hebrewFirstName = GematriaEngine.calculateHebrewGematria(_profile!.firstName);
-    _hebrewLastName = GematriaEngine.calculateHebrewGematria(_profile!.lastName);
-    _latinFirstName = GematriaEngine.calculateLatinGematria(_profile!.firstName);
+    _hebrewFirstName =
+        GematriaEngine.calculateHebrewGematria(_profile!.firstName);
+    _hebrewLastName =
+        GematriaEngine.calculateHebrewGematria(_profile!.lastName);
+    _latinFirstName =
+        GematriaEngine.calculateLatinGematria(_profile!.firstName);
     _latinLastName = GematriaEngine.calculateLatinGematria(_profile!.lastName);
     _soulNumber = _reduceToSingleDigit(_hebrewFullName);
     _destinyNumber = _reduceToSingleDigit(_latinFullName);
-    
+
     // Numerologie Berechnungen
     _lifePathNumber = NumerologyEngine.calculateLifePath(_profile!.birthDate);
-    _expressionNumber = NumerologyEngine.calculateExpressionNumber(_profile!.firstName, _profile!.lastName);
-    _personalityNumber = NumerologyEngine.calculatePersonalityNumber(_profile!.firstName, _profile!.lastName);
-    _personalYear = NumerologyEngine.calculatePersonalYear(_profile!.birthDate, DateTime.now());
+    _expressionNumber = NumerologyEngine.calculateExpressionNumber(
+        _profile!.firstName, _profile!.lastName);
+    _personalityNumber = NumerologyEngine.calculatePersonalityNumber(
+        _profile!.firstName, _profile!.lastName);
+    _personalYear = NumerologyEngine.calculatePersonalYear(
+        _profile!.birthDate, DateTime.now());
   }
 
   int _reduceToSingleDigit(int number) {
     while (number > 9 && number != 11 && number != 22 && number != 33) {
-      number = number.toString().split('').map(int.parse).reduce((a, b) => a + b);
+      number =
+          number.toString().split('').map(int.parse).reduce((a, b) => a + b);
     }
     return number;
   }
@@ -135,7 +149,10 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [primaryColor.withValues(alpha: 0.8), const Color(0xFF06040F)],
+              colors: [
+                primaryColor.withValues(alpha: 0.8),
+                const Color(0xFF06040F)
+              ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -163,7 +180,10 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
             Positioned(
               top: -80 + _bgCtrl.value * 50,
               right: -60,
-              child: _CineOrb(color: primaryColor, size: 300, opacity: 0.10 + _bgCtrl.value * 0.05),
+              child: _CineOrb(
+                  color: primaryColor,
+                  size: 300,
+                  opacity: 0.10 + _bgCtrl.value * 0.05),
             ),
             Positioned(
               bottom: -100 + _bgCtrl.value * 40,
@@ -173,14 +193,18 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
             Positioned(
               top: MediaQuery.of(context).size.height * 0.5,
               left: MediaQuery.of(context).size.width * 0.3,
-              child: _CineOrb(color: primaryColor, size: 180, opacity: 0.05 + _bgCtrl.value * 0.04),
+              child: _CineOrb(
+                  color: primaryColor,
+                  size: 180,
+                  opacity: 0.05 + _bgCtrl.value * 0.04),
             ),
             child!,
           ],
         ),
         child: SafeArea(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.white))
               : _profile == null
                   ? ProfileRequiredWidget(
                       worldType: 'energie',
@@ -243,7 +267,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_stories, color: Color(0xFFFFD700), size: 22),
+              const Icon(Icons.auto_stories,
+                  color: Color(0xFFFFD700), size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -335,12 +360,14 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   'Katan = reduzierter Wert (1-9).\n\n'
                   'Siduri = Ordinalwert (1-22).\n\n'
                   'Greek (Isopsephie) und Arabic (Abjad) erfordern Eingabe im jeweiligen Alphabet.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                  style: TextStyle(
+                      color: Colors.white70, fontSize: 13, height: 1.5),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('OK', style: TextStyle(color: Color(0xFFFFD700))),
+                    child: const Text('OK',
+                        style: TextStyle(color: Color(0xFFFFD700))),
                   ),
                 ],
               ),
@@ -351,7 +378,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                 color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.info_outline, size: 14, color: Colors.white70),
+              child: const Icon(Icons.info_outline,
+                  size: 14, color: Colors.white70),
             ),
           ),
         ],
@@ -438,7 +466,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           Tab(text: 'GEGENWART'),
           Tab(text: 'ZUKUNFT'),
           Tab(text: 'LEBENSABSCHNITTE'),
-          
+
           // 🆕 NEUE 9 FEATURES
           Tab(icon: Icon(Icons.calculate, size: 18), text: 'RECHNER'),
           Tab(icon: Icon(Icons.favorite, size: 18), text: 'KOMPATIBILITÄT'),
@@ -482,7 +510,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,11 +574,14 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
             ],
           ),
           const SizedBox(height: 16),
-          _buildVibrationRow('Vorname (ICH-Essenz)', _profile!.firstName, GematriaEngine.calculateHebrewGematria(_profile!.firstName)),
+          _buildVibrationRow('Vorname (ICH-Essenz)', _profile!.firstName,
+              GematriaEngine.calculateHebrewGematria(_profile!.firstName)),
           const SizedBox(height: 12),
-          _buildVibrationRow('Nachname (Erbe)', _profile!.lastName, GematriaEngine.calculateHebrewGematria(_profile!.lastName)),
+          _buildVibrationRow('Nachname (Erbe)', _profile!.lastName,
+              GematriaEngine.calculateHebrewGematria(_profile!.lastName)),
           const SizedBox(height: 12),
-          _buildVibrationRow('Voller Name (Lebensauftrag)', '${_profile!.firstName} ${_profile!.lastName}', _hebrewFullName),
+          _buildVibrationRow('Voller Name (Lebensauftrag)',
+              '${_profile!.firstName} ${_profile!.lastName}', _hebrewFullName),
         ],
       ),
     );
@@ -642,11 +674,13 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           Row(
             children: [
               Expanded(
-                child: _buildNumberCircle('SEELE', _soulNumber, const Color(0xFF9C27B0)),
+                child: _buildNumberCircle(
+                    'SEELE', _soulNumber, const Color(0xFF9C27B0)),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: _buildNumberCircle('SCHICKSAL', _destinyNumber, const Color(0xFFE91E63)),
+                child: _buildNumberCircle(
+                    'SCHICKSAL', _destinyNumber, const Color(0xFFE91E63)),
               ),
             ],
           ),
@@ -746,7 +780,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   Widget _buildPresentTab() {
     final name = _profile!.firstName;
     final currentAge = DateTime.now().year - _profile!.birthDate.year;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -776,7 +810,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
 
   Widget _buildFutureTab() {
     final name = _profile!.firstName;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -815,7 +849,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     final birthYear = _profile!.birthDate.year;
     final currentAge = DateTime.now().year - birthYear;
     final currentYear = DateTime.now().year;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -824,7 +858,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           // Jugend-Phase (immer anzeigen)
           _buildPhaseCard(
             'JUGEND-PHASE',
-            currentAge < 28 ? '$birthYear-$currentYear' : '$birthYear-${birthYear+28}',
+            currentAge < 28
+                ? '$birthYear-$currentYear'
+                : '$birthYear-${birthYear + 28}',
             currentAge < 28 ? '0-$currentAge Jahre' : '0-28 Jahre',
             _getYouthPhaseText(name, _soulNumber, currentAge),
             const Color(0xFFE91E63),
@@ -835,8 +871,14 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           // Reife-Phase
           _buildPhaseCard(
             'REIFE-PHASE',
-            currentAge < 28 ? '${birthYear+28}-${birthYear+56}' : (currentAge < 56 ? '${birthYear+28}-$currentYear' : '${birthYear+28}-${birthYear+56}'),
-            currentAge < 28 ? '28-56 Jahre' : (currentAge < 56 ? '28-$currentAge Jahre' : '28-56 Jahre'),
+            currentAge < 28
+                ? '${birthYear + 28}-${birthYear + 56}'
+                : (currentAge < 56
+                    ? '${birthYear + 28}-$currentYear'
+                    : '${birthYear + 28}-${birthYear + 56}'),
+            currentAge < 28
+                ? '28-56 Jahre'
+                : (currentAge < 56 ? '28-$currentAge Jahre' : '28-56 Jahre'),
             _getMaturityPhaseText(name, _destinyNumber, currentAge),
             const Color(0xFF9C27B0),
             isActive: currentAge >= 28 && currentAge < 56,
@@ -847,7 +889,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           // Weisheits-Phase
           _buildPhaseCard(
             'WEISHEITS-PHASE',
-            currentAge < 56 ? '${birthYear+56}+' : '${birthYear+56}-$currentYear',
+            currentAge < 56
+                ? '${birthYear + 56}+'
+                : '${birthYear + 56}-$currentYear',
             currentAge < 56 ? '56+ Jahre' : '$currentAge+ Jahre',
             _getWisdomPhaseText(name, _hebrewFullName, currentAge),
             const Color(0xFFFFD700),
@@ -919,7 +963,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     );
   }
 
-  Widget _buildPhaseCard(String phase, String years, String age, String description, Color color, {bool isActive = false, bool isPast = false, bool isFuture = false}) {
+  Widget _buildPhaseCard(
+      String phase, String years, String age, String description, Color color,
+      {bool isActive = false, bool isPast = false, bool isFuture = false}) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -934,13 +980,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           color: color,
           width: isActive ? 3 : 2,
         ),
-        boxShadow: isActive ? [
-          BoxShadow(
-            color: color.withValues(alpha: 0.5),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ] : null,
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -953,7 +1001,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   if (isActive)
                     Container(
                       margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [color, color.withValues(alpha: 0.7)],
@@ -982,7 +1031,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: isActive ? 0.5 : 0.3),
                   borderRadius: BorderRadius.circular(8),
@@ -1003,9 +1053,11 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           Row(
             children: [
               if (isPast)
-                const Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 16),
+                const Icon(Icons.check_circle,
+                    color: Color(0xFF4CAF50), size: 16),
               if (isFuture)
-                const Icon(Icons.access_time, color: Color(0xFFFFD700), size: 16),
+                const Icon(Icons.access_time,
+                    color: Color(0xFFFFD700), size: 16),
               if (isPast || isFuture) const SizedBox(width: 6),
               Text(
                 years,
@@ -1037,7 +1089,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     String karmaInsight = _getKarmaInsight(_lifePathNumber);
     String soulOrigin = _getSoulOrigin(_soulNumber);
     String pastLifePattern = _getPastLifePattern(vibration, _destinyNumber);
-    
+
     return '$name, dein Name trägt die Schwingung $vibration – ${_getVibrationQuality(vibration)}. Diese Frequenz ist dein kosmischer Fingerabdruck, eingeprägt seit Äonen.\n\n$soulOrigin\n\n$pastLifePattern\n\n$karmaInsight\n\nAls Kind spürtest du wahrscheinlich manchmal, dass du "anders" bist. ${_getChildhoodMemoryPattern(_personalityNumber)} Das ist die Erinnerung deiner Seele. Dein Name ruft diese alte Weisheit wach.';
   }
 
@@ -1045,55 +1097,63 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     String soulLessons = _getSoulNumberChildhoodLessons(number);
     String earlyTraits = _getEarlyPersonalityTraits(_personalityNumber);
     String familyDynamics = _getFamilyKarmaPattern(_lifePathNumber, number);
-    
+
     return '$name, deine Kindheit wurde von der Seelen-Zahl $number geprägt – ${_getNumberQuality(number)}. Diese Phase war fundamental.\n\n$soulLessons\n\n$earlyTraits\n\n$familyDynamics\n\nSchau zurück: Erkennst du das Muster? Jede Freude, jeder Schmerz formte dich genau so, wie du sein solltest.';
   }
 
   String _getYoungAdultText(String name, int number) {
-    String destinyUnfolding = _getDestinyUnfoldingPattern(number, _expressionNumber);
-    String relationshipKarma = _getRelationshipKarmaPattern(_soulNumber, _destinyNumber);
+    String destinyUnfolding =
+        _getDestinyUnfoldingPattern(number, _expressionNumber);
+    String relationshipKarma =
+        _getRelationshipKarmaPattern(_soulNumber, _destinyNumber);
     String careerSeeds = _getCareerSeedsPattern(_lifePathNumber, _personalYear);
-    
+
     return '$name, zwischen 21 und 35 Jahren begann deine Schicksals-Zahl $number sich zu manifestieren – ${_getNumberQuality(number)}. Dies war deine Experimentier-Phase.\n\n$destinyUnfolding\n\n$relationshipKarma\n\n$careerSeeds\n\nALLES war Teil des Plans. Jeder "Fehler" war ein notwendiger Schritt.';
   }
 
   String _getPresentStoryText(String name, int age, int vibration) {
     String currentPhaseEnergy = _getCurrentPhaseEnergy(age, _personalYear);
-    String activationCode = _getActivationCode(_soulNumber, _destinyNumber, _lifePathNumber);
-    String nowMoment = _getNowMomentGuidance(_expressionNumber, _personalityNumber);
-    
+    String activationCode =
+        _getActivationCode(_soulNumber, _destinyNumber, _lifePathNumber);
+    String nowMoment =
+        _getNowMomentGuidance(_expressionNumber, _personalityNumber);
+
     return '$name, JETZT – mit $age Jahren stehst du an einem kraftvollen Punkt. ${_getAgeWisdomInsight(age)} Du trägst die Weisheit deiner Vergangenheit in dir.\n\n$currentPhaseEnergy\n\n$activationCode\n\n$nowMoment\n\nDie Gegenwart ist der einzige Moment mit Macht. JETZT ist ein Geschenk. Das Universum bereitet dich auf etwas Größeres vor.';
   }
 
   String _getCurrentMissionText(String name, int soul, int destiny) {
-    String missionBlueprint = _getMissionBluedebugPrint(soul, destiny, _lifePathNumber);
+    String missionBlueprint =
+        _getMissionBluedebugPrint(soul, destiny, _lifePathNumber);
     String uniqueGift = _getUniqueGiftPattern(_expressionNumber, _personalYear);
     String worldImpact = _getWorldImpactVision(soul, destiny);
-    
+
     return '$name, deine Lebensaufgabe ist in den Zahlen kodiert: Seelen-Zahl $soul (${_getNumberQuality(soul)}) + Schicksals-Zahl $destiny (${_getNumberQuality(destiny)}) = deine Mission.\n\n$missionBlueprint\n\n$uniqueGift\n\n$worldImpact\n\nHöre auf, dich klein zu machen – es ist Zeit, zu strahlen!';
   }
 
   String _getHiddenTalentsText(String name, int vibration) {
-    String dormantAbilities = _getDormantAbilities(_expressionNumber, _personalityNumber);
+    String dormantAbilities =
+        _getDormantAbilities(_expressionNumber, _personalityNumber);
     String intuitiveGifts = _getIntuitiveGifts(_soulNumber, _lifePathNumber);
     String creativeChannels = _getCreativeChannels(vibration, _personalYear);
-    
+
     return '$name, tief in dir schlummern Fähigkeiten. Die Gematria-Zahl $vibration (${_getVibrationQuality(vibration)}) ist dein Tresorschlüssel.\n\n$dormantAbilities\n\n$intuitiveGifts\n\n$creativeChannels\n\nHör auf deine Intuition – sie wird dich zu deinen verborgenen Talenten führen.';
   }
 
   String _getFutureStoryText(String name, int vibration) {
     String timelineVision = _getTimelineVision(_personalYear, _lifePathNumber);
     String upcomingLessons = _getUpcomingLessons(_destinyNumber, _soulNumber);
-    String manifestationPath = _getManifestationPath(vibration, _expressionNumber);
-    
+    String manifestationPath =
+        _getManifestationPath(vibration, _expressionNumber);
+
     return '$name, die Zukunft ist ein Feld unendlicher Möglichkeiten. Dein Name (Schwingung $vibration) ist dein Kompass.\n\n$timelineVision\n\n$upcomingLessons\n\n$manifestationPath\n\nDeine größte Zeit liegt noch vor dir. Was kommt, ist die Erfüllung. Das Beste ist noch nicht geschehen!';
   }
 
   String _getHighestPotentialText(String name, int soul) {
     String peakExpression = _getPeakExpression(soul, _expressionNumber);
-    String fulfilledVision = _getFulfilledVision(_destinyNumber, _lifePathNumber);
+    String fulfilledVision =
+        _getFulfilledVision(_destinyNumber, _lifePathNumber);
     String evolutionPath = _getEvolutionPath(soul, _personalYear);
-    
+
     return '$name, wenn du dein volles Potenzial lebst – die Essenz der Seelen-Zahl $soul (${_getNumberQuality(soul)}) verkörperst – wirst du unstoppbar sein.\n\n$peakExpression\n\n$fulfilledVision\n\n$evolutionPath\n\nDu KANNST werden, wer du sein sollst. Jeder mutige Moment bringt dich näher.';
   }
 
@@ -1131,20 +1191,21 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   String _getCyclicPatternText(String name, int vibration, int currentAge) {
     final nextCycleAge = ((currentAge ~/ 7) + 1) * 7;
     final previousCycleAge = (currentAge ~/ 7) * 7;
-    
+
     return '$name, die Gematria zeigt: Dein Leben ist kein linearer Weg – es ist eine Spirale! Die Zahl $vibration offenbart wiederkehrende Muster.\n\nDu bist jetzt $currentAge Jahre alt. Dein letzter 7-Jahres-Zyklus begann mit $previousCycleAge Jahren. Dein nächster großer Zyklus beginnt mit $nextCycleAge Jahren.\n\nSchau zurück: Was geschah mit 7, 14, 21, 28, 35 Jahren? Erkennst du das Muster? Ähnliche Themen kehren zurück – aber jedes Mal auf einer höheren Spirale.\n\nWenn ein altes Thema wiederkommt, frag dich: Was habe ich beim letzten Mal gelernt? Was soll ich JETZT tiefer verstehen? Die Spirale führt immer nach oben – vertraue dem Prozess!';
   }
 
   // ===== INTELLIGENTE DYNAMISCHE TEXT-GENERATOREN =====
   // Diese Funktionen erstellen völlig unterschiedliche Texte basierend auf Numerologie + Gematria
-  
+
   String _getVibrationQuality(int vibration) {
     // Reduziere zu Einzelziffer lokal
     int reduced = vibration;
     while (reduced > 9 && reduced != 11 && reduced != 22 && reduced != 33) {
-      reduced = reduced.toString().split('').map(int.parse).reduce((a, b) => a + b);
+      reduced =
+          reduced.toString().split('').map(int.parse).reduce((a, b) => a + b);
     }
-    
+
     final qualities = {
       1: 'eine Frequenz der Führung und des Neuanfangs',
       2: 'eine Frequenz der Harmonie und Diplomatie',
@@ -1161,110 +1222,172 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     };
     return qualities[reduced] ?? 'eine transformative Frequenz';
   }
-  
+
   String _getKarmaInsight(int lifePathNumber) {
     switch (lifePathNumber) {
-      case 1: return 'Deine Seele wählte den Pfad 1 – du warst in vergangenen Leben oft ein Pionier, der neue Wege ebnete. Manchmal auch einsam, aber immer vorne.';
-      case 2: return 'Deine Seele wählte den Pfad 2 – du warst in früheren Leben oft ein Diplomat, ein Vermittler. Du hast gelernt, zwischen Welten zu wandeln.';
-      case 3: return 'Deine Seele wählte den Pfad 3 – du warst einst ein Künstler, ein Geschichtenerzähler. Deine Kreativität ist uralt.';
-      case 4: return 'Deine Seele wählte den Pfad 4 – du warst in vergangenen Existenzen oft ein Baumeister. Tempel, Städte, Systeme – du hast gebaut.';
-      case 5: return 'Deine Seele wählte den Pfad 5 – du warst früher ein Reisender, ein Abenteurer. Deine Seele kennt viele Länder und Zeiten.';
-      case 6: return 'Deine Seele wählte den Pfad 6 – du warst oft ein Heiler, eine Mutter/Vater-Figur. Für sorgen liegt in deiner DNA.';
-      case 7: return 'Deine Seele wählte den Pfad 7 – du warst in früheren Leben ein Mystiker, ein Suchender. Tempel und Klöster kennen deinen Namen.';
-      case 8: return 'Deine Seele wählte den Pfad 8 – du warst oft ein Herrscher, ein Machtinhaber. Du kennst beide Seiten von Macht.';
-      case 9: return 'Deine Seele wählte den Pfad 9 – du bist eine alte Seele. Viele, viele Leben liegen hinter dir. Du bist fast am Ende des Zyklus.';
-      case 11: return 'Deine Seele wählte den Meisterpfad 11 – du warst oft ein Lehrer, ein Erleuchteter. Diese Inkarnation ist eine besondere Mission.';
-      case 22: return 'Deine Seele wählte den Meisterpfad 22 – du warst in vergangenen Leben oft ein Großer Baumeister. Pyramiden, Kathedralen – du kennst die Geheimnisse.';
-      case 33: return 'Deine Seele wählte den Meisterpfad 33 – du bist ein Meisterlehrer. In vielen Leben hast du Weisheit gesammelt, um sie JETZT zu teilen.';
-      default: return 'Deine Seele hat einen einzigartigen Pfad gewählt – voller Lektionen und Wachstum.';
+      case 1:
+        return 'Deine Seele wählte den Pfad 1 – du warst in vergangenen Leben oft ein Pionier, der neue Wege ebnete. Manchmal auch einsam, aber immer vorne.';
+      case 2:
+        return 'Deine Seele wählte den Pfad 2 – du warst in früheren Leben oft ein Diplomat, ein Vermittler. Du hast gelernt, zwischen Welten zu wandeln.';
+      case 3:
+        return 'Deine Seele wählte den Pfad 3 – du warst einst ein Künstler, ein Geschichtenerzähler. Deine Kreativität ist uralt.';
+      case 4:
+        return 'Deine Seele wählte den Pfad 4 – du warst in vergangenen Existenzen oft ein Baumeister. Tempel, Städte, Systeme – du hast gebaut.';
+      case 5:
+        return 'Deine Seele wählte den Pfad 5 – du warst früher ein Reisender, ein Abenteurer. Deine Seele kennt viele Länder und Zeiten.';
+      case 6:
+        return 'Deine Seele wählte den Pfad 6 – du warst oft ein Heiler, eine Mutter/Vater-Figur. Für sorgen liegt in deiner DNA.';
+      case 7:
+        return 'Deine Seele wählte den Pfad 7 – du warst in früheren Leben ein Mystiker, ein Suchender. Tempel und Klöster kennen deinen Namen.';
+      case 8:
+        return 'Deine Seele wählte den Pfad 8 – du warst oft ein Herrscher, ein Machtinhaber. Du kennst beide Seiten von Macht.';
+      case 9:
+        return 'Deine Seele wählte den Pfad 9 – du bist eine alte Seele. Viele, viele Leben liegen hinter dir. Du bist fast am Ende des Zyklus.';
+      case 11:
+        return 'Deine Seele wählte den Meisterpfad 11 – du warst oft ein Lehrer, ein Erleuchteter. Diese Inkarnation ist eine besondere Mission.';
+      case 22:
+        return 'Deine Seele wählte den Meisterpfad 22 – du warst in vergangenen Leben oft ein Großer Baumeister. Pyramiden, Kathedralen – du kennst die Geheimnisse.';
+      case 33:
+        return 'Deine Seele wählte den Meisterpfad 33 – du bist ein Meisterlehrer. In vielen Leben hast du Weisheit gesammelt, um sie JETZT zu teilen.';
+      default:
+        return 'Deine Seele hat einen einzigartigen Pfad gewählt – voller Lektionen und Wachstum.';
     }
   }
-  
+
   String _getSoulOrigin(int soulNumber) {
     switch (soulNumber) {
-      case 1: return 'Deine Seelen-Zahl 1 deutet darauf hin, dass du aus dem Feuer-Element stammst – ursprünglich, urwüchsig, initiierend.';
-      case 2: return 'Deine Seelen-Zahl 2 zeigt eine Wasser-Herkunft – fließend, anpassungsfähig, tiefgründig.';
-      case 3: return 'Deine Seelen-Zahl 3 offenbart eine Luft-Herkunft – leicht, kommunikativ, kreativ schwingend.';
-      case 4: return 'Deine Seelen-Zahl 4 weist auf eine Erd-Herkunft hin – fest verwurzelt, stabil, manifestierend.';
-      case 5: return 'Deine Seelen-Zahl 5 zeigt eine Äther-Herkunft – zwischen allen Elementen tanzend, frei, wandelbar.';
-      case 6: return 'Deine Seelen-Zahl 6 deutet auf eine Venus-Herkunft hin – voller Liebe, Schönheit, Harmonie.';
-      case 7: return 'Deine Seelen-Zahl 7 offenbart eine kosmische Herkunft – direkt vom Universum, mystisch, weise.';
-      case 8: return 'Deine Seelen-Zahl 8 zeigt eine Saturn-Herkunft – strukturiert, mächtig, karma-verstehend.';
-      case 9: return 'Deine Seelen-Zahl 9 deutet auf eine universelle Herkunft hin – alle Erfahrungen, alle Leben, alle Weisheit.';
-      case 11: return 'Deine Meister-Seelenzahl 11 zeigt eine Stern-Herkunft – nicht von dieser Erde, ein Sternensaat-Wesen.';
-      case 22: return 'Deine Meister-Seelenzahl 22 offenbart eine Meister-Dimension als Herkunft – du kommst von weit, weit her.';
-      case 33: return 'Deine Meister-Seelenzahl 33 deutet auf die höchste Quelle hin – du bist ein direkter Abgesandter des Lichts.';
-      default: return 'Deine Seele stammt aus einer einzigartigen Quelle – unbekannt, aber kraftvoll.';
+      case 1:
+        return 'Deine Seelen-Zahl 1 deutet darauf hin, dass du aus dem Feuer-Element stammst – ursprünglich, urwüchsig, initiierend.';
+      case 2:
+        return 'Deine Seelen-Zahl 2 zeigt eine Wasser-Herkunft – fließend, anpassungsfähig, tiefgründig.';
+      case 3:
+        return 'Deine Seelen-Zahl 3 offenbart eine Luft-Herkunft – leicht, kommunikativ, kreativ schwingend.';
+      case 4:
+        return 'Deine Seelen-Zahl 4 weist auf eine Erd-Herkunft hin – fest verwurzelt, stabil, manifestierend.';
+      case 5:
+        return 'Deine Seelen-Zahl 5 zeigt eine Äther-Herkunft – zwischen allen Elementen tanzend, frei, wandelbar.';
+      case 6:
+        return 'Deine Seelen-Zahl 6 deutet auf eine Venus-Herkunft hin – voller Liebe, Schönheit, Harmonie.';
+      case 7:
+        return 'Deine Seelen-Zahl 7 offenbart eine kosmische Herkunft – direkt vom Universum, mystisch, weise.';
+      case 8:
+        return 'Deine Seelen-Zahl 8 zeigt eine Saturn-Herkunft – strukturiert, mächtig, karma-verstehend.';
+      case 9:
+        return 'Deine Seelen-Zahl 9 deutet auf eine universelle Herkunft hin – alle Erfahrungen, alle Leben, alle Weisheit.';
+      case 11:
+        return 'Deine Meister-Seelenzahl 11 zeigt eine Stern-Herkunft – nicht von dieser Erde, ein Sternensaat-Wesen.';
+      case 22:
+        return 'Deine Meister-Seelenzahl 22 offenbart eine Meister-Dimension als Herkunft – du kommst von weit, weit her.';
+      case 33:
+        return 'Deine Meister-Seelenzahl 33 deutet auf die höchste Quelle hin – du bist ein direkter Abgesandter des Lichts.';
+      default:
+        return 'Deine Seele stammt aus einer einzigartigen Quelle – unbekannt, aber kraftvoll.';
     }
   }
-  
+
   String _getPastLifePattern(int vibration, int destiny) {
     final combo = (vibration % 7) + (destiny % 3);
-    if (combo <= 2) return 'Die Kombination deiner Zahlen zeigt: In früheren Leben warst du oft allein – ein Einsiedler, ein Pionier. Du musstest lernen, dein eigenes Licht zu sein.';
-    if (combo <= 5) return 'Deine Zahlenmuster deuten an: Du warst oft Teil von Gemeinschaften – Orden, Gilden, Stämme. Du kennst die Kraft des Kollektivs.';
-    if (combo <= 8) return 'Die Gematria enthüllt: Du hattest viele Leben als Lehrender – Weisen, Professoren, Guides. Wissen weiterzugeben ist dir vertraut.';
+    if (combo <= 2)
+      return 'Die Kombination deiner Zahlen zeigt: In früheren Leben warst du oft allein – ein Einsiedler, ein Pionier. Du musstest lernen, dein eigenes Licht zu sein.';
+    if (combo <= 5)
+      return 'Deine Zahlenmuster deuten an: Du warst oft Teil von Gemeinschaften – Orden, Gilden, Stämme. Du kennst die Kraft des Kollektivs.';
+    if (combo <= 8)
+      return 'Die Gematria enthüllt: Du hattest viele Leben als Lehrender – Weisen, Professoren, Guides. Wissen weiterzugeben ist dir vertraut.';
     return 'Deine Zahlen zeigen: Du warst oft ein Krieger – nicht im Krieg, sondern ein Kämpfer für Wahrheit und Gerechtigkeit.';
   }
-  
+
   String _getChildhoodMemoryPattern(int personalityNumber) {
     switch (personalityNumber) {
-      case 1: return 'Du erinnerst dich wahrscheinlich, dass du als Kind schon sehr eigenständig warst – anders als die anderen.';
-      case 2: return 'Vermutlich warst du als Kind sehr sensibel – du spürtest Dinge, die andere nicht bemerkten.';
-      case 3: return 'Als Kind warst du wahrscheinlich der Kreative – immer voller Ideen, Geschichten, Fantasie.';
-      case 4: return 'Du warst als Kind vermutlich sehr ordentlich – du brauchtest Struktur, um dich sicher zu fühlen.';
-      case 5: return 'Als Kind warst du wahrscheinlich rastlos – immer in Bewegung, immer neugierig, nie still.';
-      case 6: return 'Vermutlich warst du als Kind der Kümmerer – du hast dich um andere gesorgt, schon früh.';
-      case 7: return 'Als Kind warst du wahrscheinlich der Beobachter – still, nachdenklich, in deiner eigenen Welt.';
-      case 8: return 'Du warst als Kind vermutlich schon willensstark – du wusstest, was du wolltest.';
-      case 9: return 'Als Kind spürtest du wahrscheinlich schon die Ungerechtigkeit der Welt – du wolltest helfen.';
-      default: return 'Du hattest eine einzigartige Kindheit, die dich geformt hat.';
+      case 1:
+        return 'Du erinnerst dich wahrscheinlich, dass du als Kind schon sehr eigenständig warst – anders als die anderen.';
+      case 2:
+        return 'Vermutlich warst du als Kind sehr sensibel – du spürtest Dinge, die andere nicht bemerkten.';
+      case 3:
+        return 'Als Kind warst du wahrscheinlich der Kreative – immer voller Ideen, Geschichten, Fantasie.';
+      case 4:
+        return 'Du warst als Kind vermutlich sehr ordentlich – du brauchtest Struktur, um dich sicher zu fühlen.';
+      case 5:
+        return 'Als Kind warst du wahrscheinlich rastlos – immer in Bewegung, immer neugierig, nie still.';
+      case 6:
+        return 'Vermutlich warst du als Kind der Kümmerer – du hast dich um andere gesorgt, schon früh.';
+      case 7:
+        return 'Als Kind warst du wahrscheinlich der Beobachter – still, nachdenklich, in deiner eigenen Welt.';
+      case 8:
+        return 'Du warst als Kind vermutlich schon willensstark – du wusstest, was du wolltest.';
+      case 9:
+        return 'Als Kind spürtest du wahrscheinlich schon die Ungerechtigkeit der Welt – du wolltest helfen.';
+      default:
+        return 'Du hattest eine einzigartige Kindheit, die dich geformt hat.';
     }
   }
-  
+
   String _getSoulNumberChildhoodLessons(int soulNumber) {
     switch (soulNumber) {
-      case 1: return 'Die Seelen-Zahl 1 brachte dir bei: Sei du selbst, auch wenn du allein stehst. Diese Lektion begann früh.';
-      case 2: return 'Die Seelen-Zahl 2 lehrte dich: Andere zu verstehen ist wichtiger als verstanden zu werden. Das lerntest du schon jung.';
-      case 3: return 'Die Seelen-Zahl 3 zeigte dir: Deine Kreativität ist dein Geschenk. Als Kind hast du das gespürt.';
-      case 4: return 'Die Seelen-Zahl 4 lehrte: Stabilität kommt von innen, nicht von außen. Diese Lektion kam früh.';
-      case 5: return 'Die Seelen-Zahl 5 zeigte dir: Freiheit ist kostbar. Als Kind wolltest du schon frei sein.';
-      case 6: return 'Die Seelen-Zahl 6 lehrte: Liebe heilt alles. Das war deine erste große Lektion.';
-      case 7: return 'Die Seelen-Zahl 7 zeigte: Die Wahrheit liegt im Inneren. Du suchtest schon als Kind.';
-      case 8: return 'Die Seelen-Zahl 8 lehrte: Wahre Macht dient. Diese Lektion begann in der Kindheit.';
-      case 9: return 'Die Seelen-Zahl 9 zeigte: Wir sind alle eins. Als Kind spürtest du diese Verbundenheit.';
-      default: return 'Deine Seelenzahl brachte dir wichtige frühe Lektionen.';
+      case 1:
+        return 'Die Seelen-Zahl 1 brachte dir bei: Sei du selbst, auch wenn du allein stehst. Diese Lektion begann früh.';
+      case 2:
+        return 'Die Seelen-Zahl 2 lehrte dich: Andere zu verstehen ist wichtiger als verstanden zu werden. Das lerntest du schon jung.';
+      case 3:
+        return 'Die Seelen-Zahl 3 zeigte dir: Deine Kreativität ist dein Geschenk. Als Kind hast du das gespürt.';
+      case 4:
+        return 'Die Seelen-Zahl 4 lehrte: Stabilität kommt von innen, nicht von außen. Diese Lektion kam früh.';
+      case 5:
+        return 'Die Seelen-Zahl 5 zeigte dir: Freiheit ist kostbar. Als Kind wolltest du schon frei sein.';
+      case 6:
+        return 'Die Seelen-Zahl 6 lehrte: Liebe heilt alles. Das war deine erste große Lektion.';
+      case 7:
+        return 'Die Seelen-Zahl 7 zeigte: Die Wahrheit liegt im Inneren. Du suchtest schon als Kind.';
+      case 8:
+        return 'Die Seelen-Zahl 8 lehrte: Wahre Macht dient. Diese Lektion begann in der Kindheit.';
+      case 9:
+        return 'Die Seelen-Zahl 9 zeigte: Wir sind alle eins. Als Kind spürtest du diese Verbundenheit.';
+      default:
+        return 'Deine Seelenzahl brachte dir wichtige frühe Lektionen.';
     }
   }
-  
+
   String _getEarlyPersonalityTraits(int personalityNumber) {
     switch (personalityNumber) {
-      case 1: return 'Nach außen wirktest du vermutlich selbstbewusst und unabhängig – auch wenn du innerlich manchmal anders fühltest.';
-      case 2: return 'Du wirktest auf andere wahrscheinlich freundlich und zugänglich – Menschen fühlten sich bei dir wohl.';
-      case 3: return 'Nach außen strahltest du vermutlich Lebensfreude aus – Menschen wurden von deiner Energie angezogen.';
-      case 4: return 'Du wirktest auf andere wahrscheinlich zuverlässig und stabil – ein Fels in der Brandung.';
-      case 5: return 'Nach außen schienst du abenteuerlustig und spontan – Menschen fanden dich aufregend.';
-      case 6: return 'Du wirktest vermutlich fürsorglich und warm – Menschen kamen zu dir mit ihren Problemen.';
-      case 7: return 'Nach außen schienst du geheimnisvoll und weise – Menschen spürten deine Tiefe.';
-      case 8: return 'Du wirktest wahrscheinlich stark und kompetent – Menschen respektierten dich.';
-      case 9: return 'Nach außen strahltest du vermutlich Mitgefühl aus – Menschen fühlten sich verstanden.';
-      default: return 'Deine frühe Persönlichkeit war einzigartig und prägte, wie andere dich sahen.';
+      case 1:
+        return 'Nach außen wirktest du vermutlich selbstbewusst und unabhängig – auch wenn du innerlich manchmal anders fühltest.';
+      case 2:
+        return 'Du wirktest auf andere wahrscheinlich freundlich und zugänglich – Menschen fühlten sich bei dir wohl.';
+      case 3:
+        return 'Nach außen strahltest du vermutlich Lebensfreude aus – Menschen wurden von deiner Energie angezogen.';
+      case 4:
+        return 'Du wirktest auf andere wahrscheinlich zuverlässig und stabil – ein Fels in der Brandung.';
+      case 5:
+        return 'Nach außen schienst du abenteuerlustig und spontan – Menschen fanden dich aufregend.';
+      case 6:
+        return 'Du wirktest vermutlich fürsorglich und warm – Menschen kamen zu dir mit ihren Problemen.';
+      case 7:
+        return 'Nach außen schienst du geheimnisvoll und weise – Menschen spürten deine Tiefe.';
+      case 8:
+        return 'Du wirktest wahrscheinlich stark und kompetent – Menschen respektierten dich.';
+      case 9:
+        return 'Nach außen strahltest du vermutlich Mitgefühl aus – Menschen fühlten sich verstanden.';
+      default:
+        return 'Deine frühe Persönlichkeit war einzigartig und prägte, wie andere dich sahen.';
     }
   }
-  
+
   String _getFamilyKarmaPattern(int lifePath, int soul) {
     final combined = lifePath + soul;
-    if (combined <= 5) return 'Deine Familie war vermutlich Teil deiner Karma-Lektionen – nicht immer einfach, aber notwendig für dein Wachstum.';
-    if (combined <= 10) return 'Deine Familie war wahrscheinlich dein erstes Übungsfeld – hier lerntest du, wer du NICHT sein willst.';
-    if (combined <= 15) return 'Deine Familie brachte dir vermutlich wichtige Spiegel – in ihnen sahst du deine eigenen Themen.';
+    if (combined <= 5)
+      return 'Deine Familie war vermutlich Teil deiner Karma-Lektionen – nicht immer einfach, aber notwendig für dein Wachstum.';
+    if (combined <= 10)
+      return 'Deine Familie war wahrscheinlich dein erstes Übungsfeld – hier lerntest du, wer du NICHT sein willst.';
+    if (combined <= 15)
+      return 'Deine Familie brachte dir vermutlich wichtige Spiegel – in ihnen sahst du deine eigenen Themen.';
     return 'Deine Familie war wahrscheinlich ein Geschenk – sie unterstützte deine Seelen-Mission von Anfang an.';
   }
-  
+
   // ===== DYNAMISCHE TEXT-GENERATOREN BASIEREND AUF BERECHNUNGEN =====
-  
+
   String _getNumberQuality(int number) {
     final qualities = {
       1: 'Führung und Neuanfang',
-      2: 'Harmonie und Partnerschaft', 
+      2: 'Harmonie und Partnerschaft',
       3: 'Kreativität und Ausdruck',
       4: 'Stabilität und Fundament',
       5: 'Freiheit und Abenteuer',
@@ -1278,253 +1401,338 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     };
     return qualities[number] ?? 'Transformation';
   }
-  
-    // switch (lifePathNumber) {
-      // case 1: return 'Als geborener Pionier wagst du, was andere nicht trauen.';
-      // case 2: return 'Deine Diplomatie bringt Menschen zusammen.';
-      // case 3: return 'Deine kreative Energie ist ansteckend.';
-      // case 4: return 'Du baust solide Fundamente für die Zukunft.';
-      // case 5: return 'Freiheit ist dir heilig - du lebst authentisch.';
-      // case 6: return 'Dein Herz für andere macht dich besonders.';
-      // case 7: return 'Du suchst Wahrheit hinter den Illusionen.';
-      // case 8: return 'Erfolg und Fülle sind dein Geburtsrecht.';
-      // case 9: return 'Du dienst einem größeren Ganzen.';
-      // case 11: return 'Deine spirituelle Intuition ist außergewöhnlich.';
-      // case 22: return 'Du kannst Träume in Realität manifestieren.';
-      // case 33: return 'Bedingungslose Liebe ist deine Essenz.';
-      // default: return 'Du trägst eine einzigartige Energie.';
-    // }
+
+  // switch (lifePathNumber) {
+  // case 1: return 'Als geborener Pionier wagst du, was andere nicht trauen.';
+  // case 2: return 'Deine Diplomatie bringt Menschen zusammen.';
+  // case 3: return 'Deine kreative Energie ist ansteckend.';
+  // case 4: return 'Du baust solide Fundamente für die Zukunft.';
+  // case 5: return 'Freiheit ist dir heilig - du lebst authentisch.';
+  // case 6: return 'Dein Herz für andere macht dich besonders.';
+  // case 7: return 'Du suchst Wahrheit hinter den Illusionen.';
+  // case 8: return 'Erfolg und Fülle sind dein Geburtsrecht.';
+  // case 9: return 'Du dienst einem größeren Ganzen.';
+  // case 11: return 'Deine spirituelle Intuition ist außergewöhnlich.';
+  // case 22: return 'Du kannst Träume in Realität manifestieren.';
+  // case 33: return 'Bedingungslose Liebe ist deine Essenz.';
+  // default: return 'Du trägst eine einzigartige Energie.';
   // }
-  
-    // switch (soulNumber) {
-      // case 1: return 'Tief in dir brennt Unabhängigkeit.';
-      // case 2: return 'Du sehnst dich nach tiefer Verbundenheit.';
-      // case 3: return 'Freude und Selbstausdruck nähren deine Seele.';
-      // case 4: return 'Sicherheit und Ordnung geben dir Frieden.';
-      // case 5: return 'Abenteuer und Vielfalt begeistern dich.';
-      // case 6: return 'Liebe und Harmonie sind dir heilig.';
-      // case 7: return 'Wahrheit zu verstehen ist deine Sehnsucht.';
-      // case 8: return 'Erfolg und Anerkennung motivieren dich.';
-      // case 9: return 'Ein höheres Ideal leitet dein Herz.';
-      // default: return 'Deine Seele trägt besondere Wünsche.';
-    // }
   // }
-  
-    // final ratio = hebrewValue / (latinValue > 0 ? latinValue : 1);
-    // if (ratio > 2) {
-      // return 'Deine hebräische Schwingung ist VIEL stärker - du trägst alte Weisheit in dir.';
-    // } else if (ratio < 0.5) {
-      // return 'Deine lateinische Schwingung dominiert - du bist ein moderner Wegbereiter.';
-    // } else {
-      // return 'Deine hebräische und lateinische Schwingung sind ausgeglichen - du vereinst Alt und Neu.';
-    // }
+
+  // switch (soulNumber) {
+  // case 1: return 'Tief in dir brennt Unabhängigkeit.';
+  // case 2: return 'Du sehnst dich nach tiefer Verbundenheit.';
+  // case 3: return 'Freude und Selbstausdruck nähren deine Seele.';
+  // case 4: return 'Sicherheit und Ordnung geben dir Frieden.';
+  // case 5: return 'Abenteuer und Vielfalt begeistern dich.';
+  // case 6: return 'Liebe und Harmonie sind dir heilig.';
+  // case 7: return 'Wahrheit zu verstehen ist deine Sehnsucht.';
+  // case 8: return 'Erfolg und Anerkennung motivieren dich.';
+  // case 9: return 'Ein höheres Ideal leitet dein Herz.';
+  // default: return 'Deine Seele trägt besondere Wünsche.';
   // }
-  
-    // if (age < 7) return 'In diesen frühen Jahren bist du wie ein Schwamm - du absorbierst alles.';
-    // if (age < 14) return 'Diese Jahre formen deine Grundpersönlichkeit.';
-    // if (age < 21) return 'Jetzt entdeckst du, wer du WIRKLICH bist.';
-    // if (age < 28) return 'Du experimentierst und findest deinen Weg.';
-    // if (age < 35) return 'Jetzt legst du die Fundamente für dein Leben.';
-    // if (age < 42) return 'Dies sind deine kraftvollsten Jahre.';
-    // if (age < 56) return 'Du stehst in voller Meisterschaft.';
-    // if (age < 63) return 'Weisheit reift in dir.';
-    // return 'Du bist ein lebendiger Schatz an Erfahrung.';
   // }
-  
+
+  // final ratio = hebrewValue / (latinValue > 0 ? latinValue : 1);
+  // if (ratio > 2) {
+  // return 'Deine hebräische Schwingung ist VIEL stärker - du trägst alte Weisheit in dir.';
+  // } else if (ratio < 0.5) {
+  // return 'Deine lateinische Schwingung dominiert - du bist ein moderner Wegbereiter.';
+  // } else {
+  // return 'Deine hebräische und lateinische Schwingung sind ausgeglichen - du vereinst Alt und Neu.';
+  // }
+  // }
+
+  // if (age < 7) return 'In diesen frühen Jahren bist du wie ein Schwamm - du absorbierst alles.';
+  // if (age < 14) return 'Diese Jahre formen deine Grundpersönlichkeit.';
+  // if (age < 21) return 'Jetzt entdeckst du, wer du WIRKLICH bist.';
+  // if (age < 28) return 'Du experimentierst und findest deinen Weg.';
+  // if (age < 35) return 'Jetzt legst du die Fundamente für dein Leben.';
+  // if (age < 42) return 'Dies sind deine kraftvollsten Jahre.';
+  // if (age < 56) return 'Du stehst in voller Meisterschaft.';
+  // if (age < 63) return 'Weisheit reift in dir.';
+  // return 'Du bist ein lebendiger Schatz an Erfahrung.';
+  // }
+
   // ===== NOCH MEHR INTELLIGENTE HELFER FÜR STORYTELLING =====
-  
+
   String _getDestinyUnfoldingPattern(int destiny, int expression) {
     final combined = destiny + expression;
-    if (combined <= 5) return 'Zwischen 21 und 35 begann sich dein Schicksal zu entfalten – langsam, aber sicher. Du musstest Geduld lernen.';
-    if (combined <= 10) return 'In dieser Phase zeigte sich dein Schicksal deutlich – durch Menschen, Orte, Ereignisse. Alles fügte sich.';
-    if (combined <= 15) return 'Dein Schicksal kam plötzlich – wie ein Blitz. Große Veränderungen in kurzer Zeit.';
+    if (combined <= 5)
+      return 'Zwischen 21 und 35 begann sich dein Schicksal zu entfalten – langsam, aber sicher. Du musstest Geduld lernen.';
+    if (combined <= 10)
+      return 'In dieser Phase zeigte sich dein Schicksal deutlich – durch Menschen, Orte, Ereignisse. Alles fügte sich.';
+    if (combined <= 15)
+      return 'Dein Schicksal kam plötzlich – wie ein Blitz. Große Veränderungen in kurzer Zeit.';
     return 'Diese Phase war turbulent – dein Schicksal forderte dich heraus, dich zu transformieren.';
   }
-  
+
   String _getRelationshipKarmaPattern(int soul, int destiny) {
     final pattern = (soul * 3 + destiny * 2) % 9;
     switch (pattern) {
-      case 0: return 'Deine Beziehungen in dieser Zeit waren Spiegel – jede Person zeigte dir Teile von dir selbst.';
-      case 1: return 'Du musstest lernen, dass nicht jeder bleiben sollte. Loslassen war deine Lektion.';
-      case 2: return 'Deine Beziehungen lehrten dich Kompromiss und Balance – nicht immer einfach.';
-      case 3: return 'Du begegnetest Seelenverwandten – Menschen, die dich auf tiefster Ebene verstanden.';
-      case 4: return 'Beziehungen forderten dich heraus, stabil zu bleiben – auch in Stürmen.';
-      case 5: return 'Du lerntest, dass Freiheit in Beziehungen wichtig ist – Nähe ohne Besitz.';
-      case 6: return 'Deine Beziehungen waren Heilungsräume – du hast geheilt und wurdest geheilt.';
-      case 7: return 'Du brauchtest Zeit allein – um dich selbst zu finden, bevor du ganz geben konntest.';
-      default: return 'Jede Beziehung war ein Lehrer – manche sanft, andere hart, alle notwendig.';
+      case 0:
+        return 'Deine Beziehungen in dieser Zeit waren Spiegel – jede Person zeigte dir Teile von dir selbst.';
+      case 1:
+        return 'Du musstest lernen, dass nicht jeder bleiben sollte. Loslassen war deine Lektion.';
+      case 2:
+        return 'Deine Beziehungen lehrten dich Kompromiss und Balance – nicht immer einfach.';
+      case 3:
+        return 'Du begegnetest Seelenverwandten – Menschen, die dich auf tiefster Ebene verstanden.';
+      case 4:
+        return 'Beziehungen forderten dich heraus, stabil zu bleiben – auch in Stürmen.';
+      case 5:
+        return 'Du lerntest, dass Freiheit in Beziehungen wichtig ist – Nähe ohne Besitz.';
+      case 6:
+        return 'Deine Beziehungen waren Heilungsräume – du hast geheilt und wurdest geheilt.';
+      case 7:
+        return 'Du brauchtest Zeit allein – um dich selbst zu finden, bevor du ganz geben konntest.';
+      default:
+        return 'Jede Beziehung war ein Lehrer – manche sanft, andere hart, alle notwendig.';
     }
   }
-  
+
   String _getCareerSeedsPattern(int lifePath, int year) {
     final seed = (lifePath + year) % 7;
     switch (seed) {
-      case 0: return 'Die ersten Karriere-Samen wurden gesät – oft unbewusst, durch Hobbys oder Interessen.';
-      case 1: return 'Du fandest früh deine Berufung – vielleicht noch nicht den Job, aber die Richtung.';
-      case 2: return 'Deine Karriere entwickelte sich durch Menschen – Mentoren, die an dich glaubten.';
-      case 3: return 'Du musstest viele "falsche" Jobs machen – um zu lernen, was du NICHT willst.';
-      case 4: return 'Dein Weg war gradlinig – du wusstest früh, was du werden wolltest.';
-      case 5: return 'Deine Karriere war ein Abenteuer – viele Richtungswechsel, alle richtig.';
-      default: return 'Du baust noch – die Ernte deiner Karriere kommt später.';
+      case 0:
+        return 'Die ersten Karriere-Samen wurden gesät – oft unbewusst, durch Hobbys oder Interessen.';
+      case 1:
+        return 'Du fandest früh deine Berufung – vielleicht noch nicht den Job, aber die Richtung.';
+      case 2:
+        return 'Deine Karriere entwickelte sich durch Menschen – Mentoren, die an dich glaubten.';
+      case 3:
+        return 'Du musstest viele "falsche" Jobs machen – um zu lernen, was du NICHT willst.';
+      case 4:
+        return 'Dein Weg war gradlinig – du wusstest früh, was du werden wolltest.';
+      case 5:
+        return 'Deine Karriere war ein Abenteuer – viele Richtungswechsel, alle richtig.';
+      default:
+        return 'Du baust noch – die Ernte deiner Karriere kommt später.';
     }
   }
-  
+
   String _getCurrentPhaseEnergy(int age, int year) {
     final energy = (age + year) % 9 + 1;
     switch (energy) {
-      case 1: return 'Die Energie JETZT ist: Neuanfang. Ein neues Kapitel beginnt. Initiere!';
-      case 2: return 'Die Energie JETZT ist: Zusammenarbeit. Suche Partner, baue Brücken.';
-      case 3: return 'Die Energie JETZT ist: Ausdruck. Zeig der Welt, wer du bist. Kreiere!';
-      case 4: return 'Die Energie JETZT ist: Fundament. Baue stabile Strukturen. Sichere ab!';
-      case 5: return 'Die Energie JETZT ist: Veränderung. Lass los, was nicht mehr dient. Transformiere!';
-      case 6: return 'Die Energie JETZT ist: Harmonie. Heile Beziehungen. Schenke Liebe.';
-      case 7: return 'Die Energie JETZT ist: Innenschau. Geh nach innen. Finde Antworten in der Stille.';
-      case 8: return 'Die Energie JETZT ist: Manifestation. Nutze deine Macht. Erschaffe Großes!';
-      default: return 'Die Energie JETZT ist: Vollendung. Schließe Kreise. Bereite dich auf Neues vor.';
+      case 1:
+        return 'Die Energie JETZT ist: Neuanfang. Ein neues Kapitel beginnt. Initiere!';
+      case 2:
+        return 'Die Energie JETZT ist: Zusammenarbeit. Suche Partner, baue Brücken.';
+      case 3:
+        return 'Die Energie JETZT ist: Ausdruck. Zeig der Welt, wer du bist. Kreiere!';
+      case 4:
+        return 'Die Energie JETZT ist: Fundament. Baue stabile Strukturen. Sichere ab!';
+      case 5:
+        return 'Die Energie JETZT ist: Veränderung. Lass los, was nicht mehr dient. Transformiere!';
+      case 6:
+        return 'Die Energie JETZT ist: Harmonie. Heile Beziehungen. Schenke Liebe.';
+      case 7:
+        return 'Die Energie JETZT ist: Innenschau. Geh nach innen. Finde Antworten in der Stille.';
+      case 8:
+        return 'Die Energie JETZT ist: Manifestation. Nutze deine Macht. Erschaffe Großes!';
+      default:
+        return 'Die Energie JETZT ist: Vollendung. Schließe Kreise. Bereite dich auf Neues vor.';
     }
   }
-  
+
   String _getActivationCode(int soul, int destiny, int lifePath) {
     return 'Dein Aktivierungs-Code ist ${soul + destiny + lifePath} – die Summe deiner Kern-Zahlen. Wenn du fühlst, dass Türen sich öffnen, wenn Synchronizitäten häufen, dann ist dieser Code aktiv. Du bist in Alignment mit deinem höheren Pfad.';
   }
-  
+
   String _getNowMomentGuidance(int expression, int personality) {
     final combined = expression + personality;
-    if (combined <= 6) return 'JETZT ist deine Zeit, leise zu sein – beobachte, lerne, sammle Information.';
-    if (combined <= 12) return 'JETZT ist deine Zeit zu handeln – setze um, was du lange geplant hast.';
+    if (combined <= 6)
+      return 'JETZT ist deine Zeit, leise zu sein – beobachte, lerne, sammle Information.';
+    if (combined <= 12)
+      return 'JETZT ist deine Zeit zu handeln – setze um, was du lange geplant hast.';
     return 'JETZT ist deine Zeit zu lehren – teile, was du weißt. Andere brauchen deine Weisheit.';
   }
-  
+
   String _getAgeWisdomInsight(int age) {
-    if (age < 25) return 'Mit $age Jahren bist du jung, aber nicht unerfahren – deine Seele ist älter als dein Körper.';
-    if (age < 40) return 'Mit $age Jahren bist du in deiner Kraft – nutze sie weise.';
-    if (age < 60) return 'Mit $age Jahren hast du viel gesehen – und verstehst, dass es noch viel zu entdecken gibt.';
+    if (age < 25)
+      return 'Mit $age Jahren bist du jung, aber nicht unerfahren – deine Seele ist älter als dein Körper.';
+    if (age < 40)
+      return 'Mit $age Jahren bist du in deiner Kraft – nutze sie weise.';
+    if (age < 60)
+      return 'Mit $age Jahren hast du viel gesehen – und verstehst, dass es noch viel zu entdecken gibt.';
     return 'Mit $age Jahren bist du ein Weiser – deine Erfahrung ist Gold wert.';
   }
-  
+
   String _getMissionBluedebugPrint(int soul, int destiny, int lifePath) {
     return 'Deine Mission ist kodiert in der Formel: Seele ($soul) + Schicksal ($destiny) + Lebensweg ($lifePath) = ${soul + destiny + lifePath}. Diese Zahl ist dein Blueprint. Sie zeigt: ${_getNumberQuality(soul)} trifft ${_getNumberQuality(destiny)} auf dem Pfad von ${_getNumberQuality(lifePath)}. Das ist deine einzigartige Aufgabe.';
   }
-  
+
   String _getUniqueGiftPattern(int expression, int year) {
     final gift = (expression + year) % 9 + 1;
     switch (gift) {
-      case 1: return 'Dein einzigartiges Geschenk ist: Mut. Du inspirierst andere, ihren eigenen Weg zu gehen.';
-      case 2: return 'Dein einzigartiges Geschenk ist: Frieden. Du bringst Harmonie in Chaos.';
-      case 3: return 'Dein einzigartiges Geschenk ist: Freude. Du erinnerst Menschen daran, dass Leben schön ist.';
-      case 4: return 'Dein einzigartiges Geschenk ist: Zuverlässigkeit. Du bist der Fels, an dem andere sich festhalten.';
-      case 5: return 'Dein einzigartiges Geschenk ist: Freiheit. Du zeigst anderen, dass Grenzen nur Illusion sind.';
-      case 6: return 'Dein einzigartiges Geschenk ist: Liebe. Du heilst Herzen, wo immer du hingehst.';
-      case 7: return 'Dein einzigartiges Geschenk ist: Weisheit. Du siehst, was andere übersehen.';
-      case 8: return 'Dein einzigartiges Geschenk ist: Ermächtigung. Du gibst anderen ihre Macht zurück.';
-      default: return 'Dein einzigartiges Geschenk ist: Mitgefühl. Du verstehst die menschliche Erfahrung.';
+      case 1:
+        return 'Dein einzigartiges Geschenk ist: Mut. Du inspirierst andere, ihren eigenen Weg zu gehen.';
+      case 2:
+        return 'Dein einzigartiges Geschenk ist: Frieden. Du bringst Harmonie in Chaos.';
+      case 3:
+        return 'Dein einzigartiges Geschenk ist: Freude. Du erinnerst Menschen daran, dass Leben schön ist.';
+      case 4:
+        return 'Dein einzigartiges Geschenk ist: Zuverlässigkeit. Du bist der Fels, an dem andere sich festhalten.';
+      case 5:
+        return 'Dein einzigartiges Geschenk ist: Freiheit. Du zeigst anderen, dass Grenzen nur Illusion sind.';
+      case 6:
+        return 'Dein einzigartiges Geschenk ist: Liebe. Du heilst Herzen, wo immer du hingehst.';
+      case 7:
+        return 'Dein einzigartiges Geschenk ist: Weisheit. Du siehst, was andere übersehen.';
+      case 8:
+        return 'Dein einzigartiges Geschenk ist: Ermächtigung. Du gibst anderen ihre Macht zurück.';
+      default:
+        return 'Dein einzigartiges Geschenk ist: Mitgefühl. Du verstehst die menschliche Erfahrung.';
     }
   }
-  
+
   String _getWorldImpactVision(int soul, int destiny) {
     final impact = (soul * 7 + destiny * 3) % 9;
     switch (impact) {
-      case 0: return 'Dein Weltimpact: Du veränderst das System von innen. Strukturen transformieren sich durch dich.';
-      case 1: return 'Dein Weltimpact: Du bist ein Pionier. Neue Wege werden durch dich geebnet.';
-      case 2: return 'Dein Weltimpact: Du bringst Menschen zusammen. Brücken entstehen durch dich.';
-      case 3: return 'Dein Weltimpact: Du inspirierst durch Kreativität. Kunst und Schönheit verbreiten sich durch dich.';
-      case 4: return 'Dein Weltimpact: Du baust nachhaltige Systeme. Was du erschaffst, bleibt.';
-      case 5: return 'Dein Weltimpact: Du befreist Menschen. Ketten werden durch dich gesprengt.';
-      case 6: return 'Dein Weltimpact: Du heilst die Welt. Liebe strömt durch dich in alle Richtungen.';
-      case 7: return 'Dein Weltimpact: Du erhebst das Bewusstsein. Erleuchtung verbreitet sich durch dich.';
-      default: return 'Dein Weltimpact: Du dienst der Menschheit. Selbstlosigkeit ist dein Weg.';
+      case 0:
+        return 'Dein Weltimpact: Du veränderst das System von innen. Strukturen transformieren sich durch dich.';
+      case 1:
+        return 'Dein Weltimpact: Du bist ein Pionier. Neue Wege werden durch dich geebnet.';
+      case 2:
+        return 'Dein Weltimpact: Du bringst Menschen zusammen. Brücken entstehen durch dich.';
+      case 3:
+        return 'Dein Weltimpact: Du inspirierst durch Kreativität. Kunst und Schönheit verbreiten sich durch dich.';
+      case 4:
+        return 'Dein Weltimpact: Du baust nachhaltige Systeme. Was du erschaffst, bleibt.';
+      case 5:
+        return 'Dein Weltimpact: Du befreist Menschen. Ketten werden durch dich gesprengt.';
+      case 6:
+        return 'Dein Weltimpact: Du heilst die Welt. Liebe strömt durch dich in alle Richtungen.';
+      case 7:
+        return 'Dein Weltimpact: Du erhebst das Bewusstsein. Erleuchtung verbreitet sich durch dich.';
+      default:
+        return 'Dein Weltimpact: Du dienst der Menschheit. Selbstlosigkeit ist dein Weg.';
     }
   }
-  
+
   String _getDormantAbilities(int expression, int personality) {
     final abilities = (expression * 2 + personality) % 7;
     switch (abilities) {
-      case 0: return 'In dir schlummert: Die Fähigkeit zu führen. Du könntest Massen bewegen, wenn du es wählst.';
-      case 1: return 'In dir schlummert: Die Gabe der Heilung. Deine Hände, deine Worte, deine Energie heilen.';
-      case 2: return 'In dir schlummert: Hellsichtigkeit. Du könntest sehen, was andere nicht sehen.';
-      case 3: return 'In dir schlummert: Künstlerisches Genie. Deine Kreativität ist grenzenlos.';
-      case 4: return 'In dir schlummert: Architektonisches Verständnis. Du könntest Großes bauen.';
-      case 5: return 'In dir schlummert: Schamanische Kräfte. Du könntest zwischen Welten wandeln.';
-      default: return 'In dir schlummert: Prophetische Vision. Du könntest Zukünfte sehen.';
+      case 0:
+        return 'In dir schlummert: Die Fähigkeit zu führen. Du könntest Massen bewegen, wenn du es wählst.';
+      case 1:
+        return 'In dir schlummert: Die Gabe der Heilung. Deine Hände, deine Worte, deine Energie heilen.';
+      case 2:
+        return 'In dir schlummert: Hellsichtigkeit. Du könntest sehen, was andere nicht sehen.';
+      case 3:
+        return 'In dir schlummert: Künstlerisches Genie. Deine Kreativität ist grenzenlos.';
+      case 4:
+        return 'In dir schlummert: Architektonisches Verständnis. Du könntest Großes bauen.';
+      case 5:
+        return 'In dir schlummert: Schamanische Kräfte. Du könntest zwischen Welten wandeln.';
+      default:
+        return 'In dir schlummert: Prophetische Vision. Du könntest Zukünfte sehen.';
     }
   }
-  
+
   String _getIntuitiveGifts(int soul, int lifePath) {
     final gift = (soul + lifePath) % 6;
     switch (gift) {
-      case 0: return 'Deine Intuition spricht durch: Träume. Achte auf nächtliche Botschaften.';
-      case 1: return 'Deine Intuition spricht durch: Körperempfindungen. Dein Bauchgefühl ist weise.';
-      case 2: return 'Deine Intuition spricht durch: Synchronizitäten. "Zufälle" sind Zeichen.';
-      case 3: return 'Deine Intuition spricht durch: Plötzliche Eingebungen. Flash-Momente der Klarheit.';
-      case 4: return 'Deine Intuition spricht durch: Natur. Tiere, Pflanzen, Elemente senden Botschaften.';
-      default: return 'Deine Intuition spricht durch: Andere Menschen. Du hörst Wahrheit zwischen den Worten.';
+      case 0:
+        return 'Deine Intuition spricht durch: Träume. Achte auf nächtliche Botschaften.';
+      case 1:
+        return 'Deine Intuition spricht durch: Körperempfindungen. Dein Bauchgefühl ist weise.';
+      case 2:
+        return 'Deine Intuition spricht durch: Synchronizitäten. "Zufälle" sind Zeichen.';
+      case 3:
+        return 'Deine Intuition spricht durch: Plötzliche Eingebungen. Flash-Momente der Klarheit.';
+      case 4:
+        return 'Deine Intuition spricht durch: Natur. Tiere, Pflanzen, Elemente senden Botschaften.';
+      default:
+        return 'Deine Intuition spricht durch: Andere Menschen. Du hörst Wahrheit zwischen den Worten.';
     }
   }
-  
+
   String _getCreativeChannels(int vibration, int year) {
     final channel = (vibration + year) % 8;
     switch (channel) {
-      case 0: return 'Dein kreativer Kanal: Schreiben. Worte fließen durch dich – nutze sie!';
-      case 1: return 'Dein kreativer Kanal: Musik. Klänge sind deine Sprache – sing, spiele!';
-      case 2: return 'Dein kreativer Kanal: Bildende Kunst. Farben und Formen warten auf dich.';
-      case 3: return 'Dein kreativer Kanal: Tanz/Bewegung. Dein Körper ist dein Ausdruck.';
-      case 4: return 'Dein kreativer Kanal: Handwerk. Deine Hände erschaffen Schönheit.';
-      case 5: return 'Dein kreativer Kanal: Lehren. Wissen weitergeben ist deine Kunst.';
-      case 6: return 'Dein kreativer Kanal: Kochen/Alchemie. Du transformierst Zutaten in Magie.';
-      default: return 'Dein kreativer Kanal: Gärtnern/Erschaffen. Du lässt Dinge wachsen.';
+      case 0:
+        return 'Dein kreativer Kanal: Schreiben. Worte fließen durch dich – nutze sie!';
+      case 1:
+        return 'Dein kreativer Kanal: Musik. Klänge sind deine Sprache – sing, spiele!';
+      case 2:
+        return 'Dein kreativer Kanal: Bildende Kunst. Farben und Formen warten auf dich.';
+      case 3:
+        return 'Dein kreativer Kanal: Tanz/Bewegung. Dein Körper ist dein Ausdruck.';
+      case 4:
+        return 'Dein kreativer Kanal: Handwerk. Deine Hände erschaffen Schönheit.';
+      case 5:
+        return 'Dein kreativer Kanal: Lehren. Wissen weitergeben ist deine Kunst.';
+      case 6:
+        return 'Dein kreativer Kanal: Kochen/Alchemie. Du transformierst Zutaten in Magie.';
+      default:
+        return 'Dein kreativer Kanal: Gärtnern/Erschaffen. Du lässt Dinge wachsen.';
     }
   }
-  
+
   String _getTimelineVision(int year, int lifePath) {
     return 'Dein persönliches Jahr ist $year, dein Lebensweg $lifePath – zusammen zeigen sie: Die kommenden 1-3 Jahre werden ${_getTimelinePrediction(year, lifePath)}. Bereite dich vor!';
   }
-  
+
   String _getTimelinePrediction(int year, int lifePath) {
     final combined = year + lifePath;
-    if (combined <= 5) return 'eine Zeit der Konsolidierung – sammle Kraft, bereite vor';
-    if (combined <= 10) return 'eine Zeit des Aufbruchs – große Veränderungen kommen';
-    if (combined <= 15) return 'eine Zeit der Ernte – du wirst ernten, was du gesät hast';
+    if (combined <= 5)
+      return 'eine Zeit der Konsolidierung – sammle Kraft, bereite vor';
+    if (combined <= 10)
+      return 'eine Zeit des Aufbruchs – große Veränderungen kommen';
+    if (combined <= 15)
+      return 'eine Zeit der Ernte – du wirst ernten, was du gesät hast';
     return 'eine Zeit der Transformation – nichts wird so bleiben wie es ist';
   }
-  
+
   String _getUpcomingLessons(int destiny, int soul) {
     final lesson = (destiny * 2 + soul * 3) % 7;
     switch (lesson) {
-      case 0: return 'Die kommende Lektion: Vertrauen. Das Universum wird dich lehren, loszulassen und zu vertrauen.';
-      case 1: return 'Die kommende Lektion: Selbstliebe. Du wirst lernen, dich selbst so zu lieben wie andere.';
-      case 2: return 'Die kommende Lektion: Grenzen. Du wirst lernen, Nein zu sagen ohne Schuld.';
-      case 3: return 'Die kommende Lektion: Authentizität. Die Maske fällt – du wirst DU sein.';
-      case 4: return 'Die kommende Lektion: Geduld. Nicht alles kommt sofort – der Weg IST das Ziel.';
-      case 5: return 'Die kommende Lektion: Mut. Du wirst aufgefordert, über deinen Schatten zu springen.';
-      default: return 'Die kommende Lektion: Loslassen. Was nicht mehr dient, muss gehen.';
+      case 0:
+        return 'Die kommende Lektion: Vertrauen. Das Universum wird dich lehren, loszulassen und zu vertrauen.';
+      case 1:
+        return 'Die kommende Lektion: Selbstliebe. Du wirst lernen, dich selbst so zu lieben wie andere.';
+      case 2:
+        return 'Die kommende Lektion: Grenzen. Du wirst lernen, Nein zu sagen ohne Schuld.';
+      case 3:
+        return 'Die kommende Lektion: Authentizität. Die Maske fällt – du wirst DU sein.';
+      case 4:
+        return 'Die kommende Lektion: Geduld. Nicht alles kommt sofort – der Weg IST das Ziel.';
+      case 5:
+        return 'Die kommende Lektion: Mut. Du wirst aufgefordert, über deinen Schatten zu springen.';
+      default:
+        return 'Die kommende Lektion: Loslassen. Was nicht mehr dient, muss gehen.';
     }
   }
-  
+
   String _getManifestationPath(int vibration, int expression) {
     final path = (vibration % 9) + (expression % 3);
-    if (path <= 3) return 'Dein Manifestations-Weg: Durch Taten. Was du erschaffen willst, musst du MACHEN.';
-    if (path <= 6) return 'Dein Manifestations-Weg: Durch Gedanken. Visualisiere, und es wird Realität.';
-    if (path <= 9) return 'Dein Manifestations-Weg: Durch Gefühle. Fühle es bereits, und es kommt.';
+    if (path <= 3)
+      return 'Dein Manifestations-Weg: Durch Taten. Was du erschaffen willst, musst du MACHEN.';
+    if (path <= 6)
+      return 'Dein Manifestations-Weg: Durch Gedanken. Visualisiere, und es wird Realität.';
+    if (path <= 9)
+      return 'Dein Manifestations-Weg: Durch Gefühle. Fühle es bereits, und es kommt.';
     return 'Dein Manifestations-Weg: Durch Hingabe. Lass das Universum arbeiten, vertraue.';
   }
-  
+
   String _getPeakExpression(int soul, int expression) {
     return 'Wenn du deine Seelen-Zahl $soul (${_getNumberQuality(soul)}) vollständig durch deine Ausdrucks-Zahl $expression (${_getNumberQuality(expression)}) lebst, entsteht Magie. Du wirst zu einem Kanal für höhere Kräfte.';
   }
-  
+
   String _getFulfilledVision(int destiny, int lifePath) {
     return 'Deine erfüllte Vision: Schicksals-Zahl $destiny (${_getNumberQuality(destiny)}) trifft auf Lebensweg $lifePath (${_getNumberQuality(lifePath)}) – das ist deine höchste Manifestation. In dieser Version von dir ist alles möglich.';
   }
-  
+
   String _getEvolutionPath(int soul, int year) {
     final next = (soul + year) % 9 + 1;
     return 'Dein Evolutions-Pfad führt dich von Seelen-Zahl $soul zu ${_getNumberQuality(next)} – das ist deine nächste Stufe. Jedes Jahr, jede Erfahrung bringt dich dieser Version näher.';
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 1: INTERAKTIVER NAME-RECHNER
   // ═══════════════════════════════════════════════════════════
-  
+
   final TextEditingController _calculatorController = TextEditingController();
   String _calcName = '';
   int _calcHebrew = 0;
@@ -1532,16 +1740,17 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   int _calcEnglish = 0;
   int _calcPythagorean = 0;
   List<Map<String, dynamic>> _calculationHistory = [];
-  
+
   Widget _buildInteractiveCalculatorTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('🔢 INTERAKTIVER NAME-RECHNER', 'Berechne Gematria für beliebige Namen'),
+          _buildSectionTitle('🔢 INTERAKTIVER NAME-RECHNER',
+              'Berechne Gematria für beliebige Namen'),
           const SizedBox(height: 20),
-          
+
           // Input Field
           TextField(
             controller: _calculatorController,
@@ -1561,7 +1770,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE91E63), width: 2),
+                borderSide:
+                    const BorderSide(color: Color(0xFFE91E63), width: 2),
               ),
             ),
             onChanged: (value) {
@@ -1574,51 +1784,57 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               });
             },
           ),
-          
+
           if (_calcName.isNotEmpty) ...[
             const SizedBox(height: 24),
             _buildCalculatorResults(),
-            
+
             // Save Button
             const SizedBox(height: 16),
             Center(
               child: ElevatedButton.icon(
-                onPressed: () => _saveCalculationToHistory(_calcName, _calcHebrew),
+                onPressed: () =>
+                    _saveCalculationToHistory(_calcName, _calcHebrew),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4CAF50),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 icon: const Icon(Icons.save, size: 20),
-                label: const Text('BERECHNUNG SPEICHERN', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                label: const Text('BERECHNUNG SPEICHERN',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
               ),
             ),
           ],
-          
+
           // History Section
           if (_calculationHistory.isNotEmpty) ...[
             const SizedBox(height: 32),
-            _buildSectionTitle('📜 LETZTE BERECHNUNGEN', 'Deine gespeicherten Gematria-Werte'),
+            _buildSectionTitle(
+                '📜 LETZTE BERECHNUNGEN', 'Deine gespeicherten Gematria-Werte'),
             const SizedBox(height: 16),
             ..._calculationHistory.map((calc) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildHistoryCard(calc),
-            )),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildHistoryCard(calc),
+                )),
           ],
         ],
       ),
     );
   }
-  
+
   Widget _buildHistoryCard(Map<String, dynamic> calc) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1638,7 +1854,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ),
               IconButton(
                 onPressed: () => _deleteCalculation(calc['id']),
-                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                icon: const Icon(Icons.delete_outline,
+                    color: Colors.red, size: 20),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
@@ -1652,7 +1869,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               _buildValueChip('🔯 ${calc['hebrew']}', const Color(0xFFFFD700)),
               _buildValueChip('📝 ${calc['latin']}', const Color(0xFF9C27B0)),
               _buildValueChip('🔤 ${calc['english']}', const Color(0xFF00BCD4)),
-              _buildValueChip('🔢 ${calc['pythagorean']}', const Color(0xFFE91E63)),
+              _buildValueChip(
+                  '🔢 ${calc['pythagorean']}', const Color(0xFFE91E63)),
             ],
           ),
           const SizedBox(height: 8),
@@ -1664,7 +1882,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   Widget _buildValueChip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1683,21 +1901,25 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   Widget _buildCalculatorResults() {
     return Column(
       children: [
-        _buildResultCard('HEBRÄISCH (Standard)', _calcHebrew, const Color(0xFFFFD700), '🔯'),
+        _buildResultCard(
+            'HEBRÄISCH (Standard)', _calcHebrew, const Color(0xFFFFD700), '🔯'),
         const SizedBox(height: 12),
-        _buildResultCard('LATEINISCH (Simple)', _calcLatin, const Color(0xFF9C27B0), '📝'),
+        _buildResultCard(
+            'LATEINISCH (Simple)', _calcLatin, const Color(0xFF9C27B0), '📝'),
         const SizedBox(height: 12),
-        _buildResultCard('ENGLISCH (Gematria)', _calcEnglish, const Color(0xFF00BCD4), '🔤'),
+        _buildResultCard(
+            'ENGLISCH (Gematria)', _calcEnglish, const Color(0xFF00BCD4), '🔤'),
         const SizedBox(height: 12),
-        _buildResultCard('PYTHAGORÄISCH', _calcPythagorean, const Color(0xFFE91E63), '🔢'),
+        _buildResultCard(
+            'PYTHAGORÄISCH', _calcPythagorean, const Color(0xFFE91E63), '🔢'),
       ],
     );
   }
-  
+
   Widget _buildResultCard(String label, int value, Color color, String icon) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1744,27 +1966,27 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 2: NAMENS-KOMPATIBILITÄT
   // ═══════════════════════════════════════════════════════════
-  
+
   final TextEditingController _name1Controller = TextEditingController();
   final TextEditingController _name2Controller = TextEditingController();
   int _compatibilityScore = 0;
   Map<String, dynamic>? _compatibilityDetails;
   // ignore: unused_field
   List<Map<String, dynamic>> _compatibilityHistory = [];
-  
+
   Widget _buildCompatibilityTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('💕 NAMENS-KOMPATIBILITÄT', 'Berechne die Harmonie zwischen zwei Namen'),
+          _buildSectionTitle('💕 NAMENS-KOMPATIBILITÄT',
+              'Berechne die Harmonie zwischen zwei Namen'),
           const SizedBox(height: 20),
-          
           TextField(
             controller: _name1Controller,
             style: const TextStyle(color: Colors.white, fontSize: 16),
@@ -1779,9 +2001,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ),
             ),
           ),
-          
           const SizedBox(height: 16),
-          
           TextField(
             controller: _name2Controller,
             style: const TextStyle(color: Colors.white, fontSize: 16),
@@ -1796,15 +2016,14 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ),
             ),
           ),
-          
           const SizedBox(height: 20),
-          
           Center(
             child: ElevatedButton(
               onPressed: _calculateCompatibility,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE91E63),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1815,11 +2034,10 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ),
             ),
           ),
-          
           if (_compatibilityScore > 0 && _compatibilityDetails != null) ...[
             const SizedBox(height: 24),
             _buildCompatibilityResult(),
-            
+
             // Details anzeigen
             const SizedBox(height: 16),
             Container(
@@ -1827,7 +2045,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               decoration: BoxDecoration(
                 color: const Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE91E63).withValues(alpha: 0.3)),
+                border: Border.all(
+                    color: const Color(0xFFE91E63).withValues(alpha: 0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1841,13 +2060,20 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Gematria-Wert 1:', '${_compatibilityDetails!['name1Value']}'),
-                  _buildDetailRow('Gematria-Wert 2:', '${_compatibilityDetails!['name2Value']}'),
-                  _buildDetailRow('Seelenzahl 1:', '${_compatibilityDetails!['soul1']}'),
-                  _buildDetailRow('Seelenzahl 2:', '${_compatibilityDetails!['soul2']}'),
-                  _buildDetailRow('Resonanz:', '${_compatibilityDetails!['resonance']}/10'),
-                  _buildDetailRow('Gemeinsame Buchstaben:', '${_compatibilityDetails!['commonLetters']}'),
-                  _buildDetailRow('Harmonie-Bonus:', '+${_compatibilityDetails!['harmonyBonus']}%'),
+                  _buildDetailRow('Gematria-Wert 1:',
+                      '${_compatibilityDetails!['name1Value']}'),
+                  _buildDetailRow('Gematria-Wert 2:',
+                      '${_compatibilityDetails!['name2Value']}'),
+                  _buildDetailRow(
+                      'Seelenzahl 1:', '${_compatibilityDetails!['soul1']}'),
+                  _buildDetailRow(
+                      'Seelenzahl 2:', '${_compatibilityDetails!['soul2']}'),
+                  _buildDetailRow(
+                      'Resonanz:', '${_compatibilityDetails!['resonance']}/10'),
+                  _buildDetailRow('Gemeinsame Buchstaben:',
+                      '${_compatibilityDetails!['commonLetters']}'),
+                  _buildDetailRow('Harmonie-Bonus:',
+                      '+${_compatibilityDetails!['harmonyBonus']}%'),
                 ],
               ),
             ),
@@ -1856,7 +2082,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1879,12 +2105,12 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   Widget _buildCompatibilityResult() {
     Color scoreColor;
     String scoreLabel;
     String scoreIcon;
-    
+
     if (_compatibilityScore >= 80) {
       scoreColor = const Color(0xFF4CAF50);
       scoreLabel = 'PERFEKTE HARMONIE';
@@ -1902,7 +2128,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       scoreLabel = 'HERAUSFORDERND';
       scoreIcon = '❤️';
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -1941,19 +2167,22 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 4: NAMENS-ALTERNATIVE EXPLORER
   // ═══════════════════════════════════════════════════════════
-  
+
   Widget _buildNameVariantsTab() {
-    if (_profile == null) return const Center(child: Text('Profil erforderlich', style: TextStyle(color: Colors.white)));
-    
+    if (_profile == null)
+      return const Center(
+          child: Text('Profil erforderlich',
+              style: TextStyle(color: Colors.white)));
+
     // 🔥 ECHTE VARIANTEN mit echten Gematria-Berechnungen
     final firstName = _profile!.firstName;
     final lastName = _profile!.lastName;
     final fullName = '$firstName $lastName';
-    
+
     final variants = [
       {
         'label': 'Voller Name',
@@ -1982,7 +2211,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       {
         'label': 'Umgekehrte Reihenfolge',
         'name': '$lastName $firstName',
-        'hebrew': GematriaEngine.calculateHebrewGematria('$lastName $firstName'),
+        'hebrew':
+            GematriaEngine.calculateHebrewGematria('$lastName $firstName'),
         'latin': GematriaEngine.calculateLatinGematria('$lastName $firstName'),
         'soul': GematriaEngine.calculateReducedGematria('$lastName $firstName'),
         'icon': '🔄',
@@ -1990,35 +2220,41 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       {
         'label': 'Initialen',
         'name': '${firstName[0]}.${lastName[0]}.',
-        'hebrew': GematriaEngine.calculateHebrewGematria('${firstName[0]}${lastName[0]}'),
-        'latin': GematriaEngine.calculateLatinGematria('${firstName[0]}${lastName[0]}'),
-        'soul': GematriaEngine.calculateReducedGematria('${firstName[0]}${lastName[0]}'),
+        'hebrew': GematriaEngine.calculateHebrewGematria(
+            '${firstName[0]}${lastName[0]}'),
+        'latin': GematriaEngine.calculateLatinGematria(
+            '${firstName[0]}${lastName[0]}'),
+        'soul': GematriaEngine.calculateReducedGematria(
+            '${firstName[0]}${lastName[0]}'),
         'icon': '🔤',
       },
       {
         'label': 'Ohne Vokale',
         'name': _removeVowels(fullName),
-        'hebrew': GematriaEngine.calculateHebrewGematria(_removeVowels(fullName)),
+        'hebrew':
+            GematriaEngine.calculateHebrewGematria(_removeVowels(fullName)),
         'latin': GematriaEngine.calculateLatinGematria(_removeVowels(fullName)),
-        'soul': GematriaEngine.calculateReducedGematria(_removeVowels(fullName)),
+        'soul':
+            GematriaEngine.calculateReducedGematria(_removeVowels(fullName)),
         'icon': '🔇',
       },
     ];
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('🔤 NAMENS-VARIANTEN', 'Verschiedene Schreibweisen & ihre Energie'),
+          _buildSectionTitle('🔤 NAMENS-VARIANTEN',
+              'Verschiedene Schreibweisen & ihre Energie'),
           const SizedBox(height: 16),
-          
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: const Color(0xFF1E1E1E).withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
+              border: Border.all(
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
             ),
             child: const Text(
               '💡 TIPP: Verschiedene Namens-Varianten tragen verschiedene Energien. Finde heraus, welche Schreibweise am besten zu deiner aktuellen Lebensphase passt!',
@@ -2029,36 +2265,36 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ),
             ),
           ),
-          
           const SizedBox(height: 20),
-          
           ...variants.map((variant) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildVariantCard(
-              variant['icon'] as String,
-              variant['label'] as String,
-              variant['name'] as String,
-              variant['hebrew'] as int,
-              variant['latin'] as int,
-              variant['soul'] as int,
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildVariantCard(
+                  variant['icon'] as String,
+                  variant['label'] as String,
+                  variant['name'] as String,
+                  variant['hebrew'] as int,
+                  variant['latin'] as int,
+                  variant['soul'] as int,
+                ),
+              )),
         ],
       ),
     );
   }
-  
+
   String _removeVowels(String text) {
     return text.replaceAll(RegExp(r'[AEIOUaeiou]'), '');
   }
-  
-  Widget _buildVariantCard(String icon, String label, String name, int hebrew, int latin, int soul) {
+
+  Widget _buildVariantCard(
+      String icon, String label, String name, int hebrew, int latin, int soul) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2103,27 +2339,27 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 5: ZEITBASIERTE GEMATRIA
   // ═══════════════════════════════════════════════════════════
-  
+
   DateTime _selectedDate = DateTime.now();
-  
+
   Widget _buildTimeCyclesTab() {
     // 🔥 ECHTE BERECHNUNG: Tag + Monat + Jahr
     final day = _selectedDate.day;
     final month = _selectedDate.month;
     final year = _selectedDate.year;
-    
+
     // Berechne Tages-Gematria (Summe aller Ziffern)
     final todayValue = _reduceToSingleDigit(day + month + year);
     final monthValue = _reduceToSingleDigit(month + year);
-    
+
     // Jahr als Quersumme
     final yearDigits = year.toString().split('').map(int.parse).toList();
     final yearValue = _reduceToSingleDigit(yearDigits.reduce((a, b) => a + b));
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -2131,7 +2367,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         children: [
           _buildSectionTitle('⏰ ZEIT-ZYKLEN', 'Gematria von Datum & Zeit'),
           const SizedBox(height: 20),
-          
+
           // Date Picker Card
           Container(
             padding: const EdgeInsets.all(16),
@@ -2154,7 +2390,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.calendar_today, color: Color(0xFFE91E63), size: 20),
+                    const Icon(Icons.calendar_today,
+                        color: Color(0xFFE91E63), size: 20),
                     const SizedBox(width: 12),
                     Text(
                       '${_selectedDate.day}.${_selectedDate.month}.${_selectedDate.year}',
@@ -2196,7 +2433,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF673AB7),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -2207,23 +2445,28 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
-          _buildTimeCard('TAGES-SCHWINGUNG', '$day.$month.$year', todayValue, '📅', 
-            'Summe: $day + $month + $year = ${day + month + year} → $todayValue'),
+
+          _buildTimeCard(
+              'TAGES-SCHWINGUNG',
+              '$day.$month.$year',
+              todayValue,
+              '📅',
+              'Summe: $day + $month + $year = ${day + month + year} → $todayValue'),
           const SizedBox(height: 12),
-          _buildTimeCard('MONATS-ENERGIE', 'Monat $month / $year', monthValue, '🌙',
-            'Summe: $month + $year = ${month + year} → $monthValue'),
+          _buildTimeCard('MONATS-ENERGIE', 'Monat $month / $year', monthValue,
+              '🌙', 'Summe: $month + $year = ${month + year} → $monthValue'),
           const SizedBox(height: 12),
           _buildTimeCard('JAHRES-KRAFT', '$year', yearValue, '🌟',
-            'Quersumme: ${yearDigits.join(' + ')} = ${yearDigits.reduce((a, b) => a + b)} → $yearValue'),
+              'Quersumme: ${yearDigits.join(' + ')} = ${yearDigits.reduce((a, b) => a + b)} → $yearValue'),
         ],
       ),
     );
   }
-  
-  Widget _buildTimeCard(String label, String dateStr, int value, String icon, String calculation) {
+
+  Widget _buildTimeCard(String label, String dateStr, int value, String icon,
+      String calculation) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -2283,7 +2526,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE91E63),
                   borderRadius: BorderRadius.circular(8),
@@ -2303,23 +2547,23 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 6: GEHEIME BOTSCHAFTEN ENCODER
   // ═══════════════════════════════════════════════════════════
-  
+
   final TextEditingController _encoderController = TextEditingController();
   String _encodedMessage = '';
-  
+
   Widget _buildEncoderTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('🔐 GEMATRIA ENCODER', 'Verschlüssle Nachrichten mit Zahlen'),
+          _buildSectionTitle(
+              '🔐 GEMATRIA ENCODER', 'Verschlüssle Nachrichten mit Zahlen'),
           const SizedBox(height: 20),
-          
           TextField(
             controller: _encoderController,
             maxLines: 3,
@@ -2334,9 +2578,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ),
             ),
           ),
-          
           const SizedBox(height: 16),
-          
           Center(
             child: ElevatedButton(
               onPressed: () {
@@ -2346,7 +2588,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE91E63),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -2357,7 +2600,6 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ),
             ),
           ),
-          
           if (_encodedMessage.isNotEmpty) ...[
             const SizedBox(height: 24),
             Container(
@@ -2395,66 +2637,99 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   String _encodeMessage(String message) {
     if (message.isEmpty) return '';
-    
+
     final words = message.split(' ');
     final encoded = words.map((word) {
       return GematriaEngine.calculateLatinGematria(word).toString();
     }).join('-');
-    
+
     return encoded;
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 7: ZAHLEN-BEDEUTUNGS-LEXIKON
   // ═══════════════════════════════════════════════════════════
-  
+
   Widget _buildLexiconTab() {
     final importantNumbers = [
-      {'number': 1, 'meaning': 'Anfang, Führung, Unabhängigkeit', 'icon': '1️⃣'},
-      {'number': 2, 'meaning': 'Balance, Partnerschaft, Diplomatie', 'icon': '2️⃣'},
+      {
+        'number': 1,
+        'meaning': 'Anfang, Führung, Unabhängigkeit',
+        'icon': '1️⃣'
+      },
+      {
+        'number': 2,
+        'meaning': 'Balance, Partnerschaft, Diplomatie',
+        'icon': '2️⃣'
+      },
       {'number': 3, 'meaning': 'Kreativität, Ausdruck, Freude', 'icon': '3️⃣'},
       {'number': 4, 'meaning': 'Stabilität, Ordnung, Struktur', 'icon': '4️⃣'},
-      {'number': 5, 'meaning': 'Freiheit, Abenteuer, Veränderung', 'icon': '5️⃣'},
-      {'number': 6, 'meaning': 'Harmonie, Familie, Verantwortung', 'icon': '6️⃣'},
-      {'number': 7, 'meaning': 'Spiritualität, Weisheit, Innenschau', 'icon': '7️⃣'},
+      {
+        'number': 5,
+        'meaning': 'Freiheit, Abenteuer, Veränderung',
+        'icon': '5️⃣'
+      },
+      {
+        'number': 6,
+        'meaning': 'Harmonie, Familie, Verantwortung',
+        'icon': '6️⃣'
+      },
+      {
+        'number': 7,
+        'meaning': 'Spiritualität, Weisheit, Innenschau',
+        'icon': '7️⃣'
+      },
       {'number': 8, 'meaning': 'Macht, Erfolg, Manifestation', 'icon': '8️⃣'},
-      {'number': 9, 'meaning': 'Vollendung, Humanität, Erleuchtung', 'icon': '9️⃣'},
-      {'number': 11, 'meaning': 'Meisterzahl: Intuition, Erleuchtung', 'icon': '🔯'},
-      {'number': 22, 'meaning': 'Meisterzahl: Meister-Baumeister', 'icon': '🏗️'},
+      {
+        'number': 9,
+        'meaning': 'Vollendung, Humanität, Erleuchtung',
+        'icon': '9️⃣'
+      },
+      {
+        'number': 11,
+        'meaning': 'Meisterzahl: Intuition, Erleuchtung',
+        'icon': '🔯'
+      },
+      {
+        'number': 22,
+        'meaning': 'Meisterzahl: Meister-Baumeister',
+        'icon': '🏗️'
+      },
       {'number': 33, 'meaning': 'Meisterzahl: Meister-Lehrer', 'icon': '📚'},
     ];
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('📖 ZAHLEN-LEXIKON', 'Bedeutungen wichtiger Zahlen'),
+          _buildSectionTitle(
+              '📖 ZAHLEN-LEXIKON', 'Bedeutungen wichtiger Zahlen'),
           const SizedBox(height: 20),
-          
           ...importantNumbers.map((numItem) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildLexiconCard(
-              numItem['number'] as int,
-              numItem['meaning'] as String,
-              numItem['icon'] as String,
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildLexiconCard(
+                  numItem['number'] as int,
+                  numItem['meaning'] as String,
+                  numItem['icon'] as String,
+                ),
+              )),
         ],
       ),
     );
   }
-  
+
   Widget _buildLexiconCard(int number, String meaning, String icon) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -2502,27 +2777,30 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 8: NAMENS-CHARTS & STATISTIKEN
   // ═══════════════════════════════════════════════════════════
-  
+
   Widget _buildChartsTab() {
-    if (_profile == null) return const Center(child: Text('Profil erforderlich', style: TextStyle(color: Colors.white)));
-    
+    if (_profile == null)
+      return const Center(
+          child: Text('Profil erforderlich',
+              style: TextStyle(color: Colors.white)));
+
     final fullName = '${_profile!.firstName} ${_profile!.lastName}';
     final letterFreq = GematriaEngine.calculateLetterFrequency(fullName);
     final sortedLetters = letterFreq.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('📊 NAMENS-STATISTIK', 'Analyse deiner Buchstaben'),
+          _buildSectionTitle(
+              '📊 NAMENS-STATISTIK', 'Analyse deiner Buchstaben'),
           const SizedBox(height: 20),
-          
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -2542,67 +2820,72 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   ),
                 ),
                 const SizedBox(height: 16),
-                
                 ...sortedLetters.map((entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF673AB7), Color(0xFFE91E63)],
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF673AB7), Color(0xFFE91E63)],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text(
+                                entry.key,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: Text(
-                            entry.key,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                Container(
+                                  height: 30,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white10,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                Container(
+                                  height: 30,
+                                  width: (entry.value /
+                                          sortedLetters.first.value *
+                                          200)
+                                      .clamp(0, 200),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF673AB7),
+                                        Color(0xFFE91E63)
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${entry.value}x',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 18,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: Colors.white10,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            Container(
-                              height: 30,
-                              width: (entry.value / sortedLetters.first.value * 200).clamp(0, 200),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFF673AB7), Color(0xFFE91E63)],
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${entry.value}x',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                )),
+                    )),
               ],
             ),
           ),
@@ -2610,16 +2893,18 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 9: GEMATRIA TAGEBUCH (VOLLSTÄNDIG)
   // ═══════════════════════════════════════════════════════════
-  
+
   void _loadJournalEntries() {
     try {
       final box = StorageService().getBoxSync('gematria_journal');
-      final entries = box.values.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-      entries.sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
+      final entries =
+          box.values.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      entries.sort((a, b) =>
+          (b['timestamp'] as String).compareTo(a['timestamp'] as String));
       setState(() {
         _journalEntries = entries;
       });
@@ -2627,16 +2912,17 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       // Box doesn't exist yet - will be created on first save
     }
   }
-  
+
   Future<void> _saveJournalEntry() async {
     if (_journalController.text.isEmpty) return;
-    
+
     final now = DateTime.now();
     final dateValue = now.day + now.month + now.year;
     final moodValue = GematriaEngine.calculateLatinGematria(_journalMood);
-    final textValue = GematriaEngine.calculateLatinGematria(_journalController.text);
+    final textValue =
+        GematriaEngine.calculateLatinGematria(_journalController.text);
     final totalVibration = dateValue + moodValue + textValue;
-    
+
     final entry = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'timestamp': now.toIso8601String(),
@@ -2648,13 +2934,13 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       'textValue': textValue,
       'totalVibration': totalVibration,
     };
-    
+
     final box = await StorageService().getBox('gematria_journal');
     await box.put(entry['id'], entry);
-    
+
     _journalController.clear();
     _loadJournalEntries();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -2665,12 +2951,12 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       );
     }
   }
-  
+
   Future<void> _deleteJournalEntry(String id) async {
     final box = await StorageService().getBox('gematria_journal');
     await box.delete(id);
     _loadJournalEntries();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -2681,16 +2967,17 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       );
     }
   }
-  
+
   Widget _buildJournalTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('📔 GEMATRIA TAGEBUCH', 'Tracke deine täglichen Schwingungen'),
+          _buildSectionTitle(
+              '📔 GEMATRIA TAGEBUCH', 'Tracke deine täglichen Schwingungen'),
           const SizedBox(height: 12),
-          
+
           Text(
             'Dokumentiere deine Tage und entdecke Muster in deiner Lebensschwingung. Jeder Eintrag wird automatisch mit Gematria-Werten analysiert.',
             style: TextStyle(
@@ -2699,9 +2986,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               height: 1.6,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Journal Input Form
           Container(
             padding: const EdgeInsets.all(20),
@@ -2724,7 +3011,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Mood Selector
                 const Text(
                   'Heutige Stimmung:',
@@ -2733,7 +3020,14 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  children: ['😊 Glücklich', '😌 Neutral', '😔 Traurig', '😠 Wütend', '😰 Ängstlich', '🥰 Liebevoll']
+                  children: [
+                    '😊 Glücklich',
+                    '😌 Neutral',
+                    '😔 Traurig',
+                    '😠 Wütend',
+                    '😰 Ängstlich',
+                    '🥰 Liebevoll'
+                  ]
                       .map((mood) => ChoiceChip(
                             label: Text(mood),
                             selected: _journalMood == mood.split(' ')[1],
@@ -2743,15 +3037,17 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                             selectedColor: const Color(0xFFE91E63),
                             backgroundColor: Colors.white10,
                             labelStyle: TextStyle(
-                              color: _journalMood == mood.split(' ')[1] ? Colors.white : Colors.white70,
+                              color: _journalMood == mood.split(' ')[1]
+                                  ? Colors.white
+                                  : Colors.white70,
                               fontSize: 11,
                             ),
                           ))
                       .toList(),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Text Input
                 TextField(
                   controller: _journalController,
@@ -2759,7 +3055,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
                     hintText: 'Was ist heute passiert? Wie fühlst du dich?',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+                    hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 13),
                     filled: true,
                     fillColor: const Color(0xFF0D0D0D).withValues(alpha: 0.5),
                     border: OutlineInputBorder(
@@ -2768,9 +3066,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -2789,9 +3087,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Journal Entries List
           if (_journalEntries.isEmpty)
             Container(
@@ -2799,7 +3097,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               decoration: BoxDecoration(
                 color: const Color(0xFF1E1E1E),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
+                border: Border.all(
+                    color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
               ),
               child: const Column(
                 children: [
@@ -2837,113 +3136,129 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   ),
                 ),
                 const SizedBox(height: 12),
-                
                 ...(_journalEntries.map((entry) => Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF673AB7).withValues(alpha: 0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color:
+                                const Color(0xFF673AB7).withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF673AB7).withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  entry['date'],
-                                  style: const TextStyle(
-                                    color: Color(0xFFFFD700),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF673AB7)
+                                          .withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      entry['date'],
+                                      style: const TextStyle(
+                                        color: Color(0xFFFFD700),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _getMoodEmoji(entry['mood']),
+                                    style: const TextStyle(fontSize: 18),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _getMoodEmoji(entry['mood']),
-                                style: const TextStyle(fontSize: 18),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF673AB7),
+                                          Color(0xFFE91E63)
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '${entry['totalVibration']}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline,
+                                        size: 18),
+                                    color: Colors.white30,
+                                    onPressed: () =>
+                                        _deleteJournalEntry(entry['id']),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          Row(
+                          const SizedBox(height: 12),
+                          Text(
+                            entry['text'],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF673AB7), Color(0xFFE91E63)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  '${entry['totalVibration']}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 18),
-                                color: Colors.white30,
-                                onPressed: () => _deleteJournalEntry(entry['id']),
-                              ),
+                              _buildVibeChip('Datum', entry['dateValue']),
+                              _buildVibeChip('Stimmung', entry['moodValue']),
+                              _buildVibeChip('Text', entry['textValue']),
                             ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        entry['text'],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          _buildVibeChip('Datum', entry['dateValue']),
-                          _buildVibeChip('Stimmung', entry['moodValue']),
-                          _buildVibeChip('Text', entry['textValue']),
-                        ],
-                      ),
-                    ],
-                  ),
-                ))),
+                    ))),
               ],
             ),
         ],
       ),
     );
   }
-  
+
   String _getMoodEmoji(String mood) {
     switch (mood) {
-      case 'Glücklich': return '😊';
-      case 'Neutral': return '😌';
-      case 'Traurig': return '😔';
-      case 'Wütend': return '😠';
-      case 'Ängstlich': return '😰';
-      case 'Liebevoll': return '🥰';
-      default: return '😌';
+      case 'Glücklich':
+        return '😊';
+      case 'Neutral':
+        return '😌';
+      case 'Traurig':
+        return '😔';
+      case 'Wütend':
+        return '😠';
+      case 'Ängstlich':
+        return '😰';
+      case 'Liebevoll':
+        return '🥰';
+      default:
+        return '😌';
     }
   }
-  
+
   Widget _buildVibeChip(String label, int value) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2973,15 +3288,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🆕 FEATURE 10: COMMUNITY-FEATURES (VOLLSTÄNDIG - ECHTE DATEN)
   // ═══════════════════════════════════════════════════════════
-  
+
   void _loadCommunityData() async {
     try {
       // 🔥 ECHTE DATEN: Lade Community-Statistiken aus Hive
-      
+
       // 1. Gesamte Nutzer aus allen Profilen
       int totalUsers = 0;
       try {
@@ -2991,39 +3306,42 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       } catch (e) {
         totalUsers = 1; // Mindestens der aktuelle Nutzer
       }
-      
+
       // 2. Gesamte Berechnungen aus Journal + Calculator History
       int totalCalculations = 0;
       try {
         final journalBox = await StorageService().getBox('gematria_journal');
         totalCalculations += journalBox.length;
-        
+
         // Zähle auch gespeicherte Berechnungen
-        final calculatorBox = await StorageService().getBox('gematria_calculations');
+        final calculatorBox =
+            await StorageService().getBox('gematria_calculations');
         totalCalculations += calculatorBox.length;
       } catch (e) {
         totalCalculations = _journalEntries.length;
       }
-      
+
       // 3. Beliebteste Zahl aus allen Berechnungen
       int mostPopularNumber = 7; // Default
       try {
         final journalBox = await StorageService().getBox('gematria_journal');
         final numberFrequency = <int, int>{};
-        
+
         for (var entry in journalBox.values) {
           final vibration = entry['totalVibration'] as int? ?? 0;
           final reduced = _reduceToSingleDigit(vibration);
           numberFrequency[reduced] = (numberFrequency[reduced] ?? 0) + 1;
         }
-        
+
         if (numberFrequency.isNotEmpty) {
-          mostPopularNumber = numberFrequency.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+          mostPopularNumber = numberFrequency.entries
+              .reduce((a, b) => a.value > b.value ? a : b)
+              .key;
         }
       } catch (e) {
         // Keep default
       }
-      
+
       // 4. Durchschnitts-Schwingung aus allen Einträgen
       int averageVibration = 0;
       try {
@@ -3038,7 +3356,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       } catch (e) {
         averageVibration = _latinFullName; // Fallback auf eigenen Wert
       }
-      
+
       // 5. Lade echte Shares aus Cloudflare API
       List<Map<String, dynamic>> realShares = [];
       try {
@@ -3048,7 +3366,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           type: 'gematria',
           limit: 10,
         );
-        
+
         for (var content in userContent) {
           realShares.add({
             'user': content['username'] ?? 'Anonym',
@@ -3062,7 +3380,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         // API nicht verfügbar - verwende lokale Demo-Daten
         if (kDebugMode) debugPrint('⚠️ API nicht verfügbar, nutze Demo-Daten');
       }
-      
+
       // Fallback: Wenn API keine Daten liefert, zeige lokale Beispiele
       if (realShares.isEmpty) {
         realShares = [
@@ -3075,7 +3393,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           },
         ];
       }
-      
+
       setState(() {
         _globalStats = {
           'totalUsers': totalUsers,
@@ -3085,7 +3403,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         };
         _recentShares = realShares;
       });
-      
+
       if (kDebugMode) {
         debugPrint('📊 ECHTE COMMUNITY STATS:');
         debugPrint('   Total Users: $totalUsers');
@@ -3094,10 +3412,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         debugPrint('   Average Vibration: $averageVibration');
         debugPrint('   Shares: ${realShares.length}');
       }
-      
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error loading community data: $e');
-      
+
       // Minimaler Fallback mit eigenen Daten
       setState(() {
         _globalStats = {
@@ -3110,15 +3427,17 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       });
     }
   }
-  
+
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return 'Kürzlich';
-    
+
     try {
-      final date = timestamp is String ? DateTime.parse(timestamp) : timestamp as DateTime;
+      final date = timestamp is String
+          ? DateTime.parse(timestamp)
+          : timestamp as DateTime;
       final now = DateTime.now();
       final diff = now.difference(date);
-      
+
       if (diff.inMinutes < 60) return '${diff.inMinutes} Min. ago';
       if (diff.inHours < 24) return '${diff.inHours} Std. ago';
       if (diff.inDays < 7) return '${diff.inDays} Tage ago';
@@ -3127,7 +3446,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       return 'Kürzlich';
     }
   }
-  
+
   Future<void> _saveCalculationToHistory(String name, int value) async {
     try {
       final calculation = {
@@ -3139,10 +3458,10 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         'english': GematriaEngine.calculateEnglishGematria(name),
         'pythagorean': GematriaEngine.calculatePythagorean(name),
       };
-      
+
       final box = await StorageService().getBox('gematria_calculations');
       await box.put(calculation['id'], calculation);
-      
+
       // Reload stats and history
       _loadCommunityData();
       _loadCalculationHistory();
@@ -3150,37 +3469,38 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       if (kDebugMode) debugPrint('⚠️ Could not save calculation: $e');
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🔧 HELPER: CALCULATION HISTORY MANAGEMENT
   // ═══════════════════════════════════════════════════════════
-  
+
   Future<void> _loadCalculationHistory() async {
     try {
       final box = await StorageService().getBox('gematria_calculations');
       final entries = box.values.toList();
-      
+
       // Sort by timestamp descending and take last 10
       entries.sort((a, b) {
         final timeA = a['timestamp'] as String? ?? '';
         final timeB = b['timestamp'] as String? ?? '';
         return timeB.compareTo(timeA);
       });
-      
+
       setState(() {
-        _calculationHistory = entries.take(10).toList().cast<Map<String, dynamic>>();
+        _calculationHistory =
+            entries.take(10).toList().cast<Map<String, dynamic>>();
       });
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error loading calculation history: $e');
     }
   }
-  
+
   Future<void> _deleteCalculation(String id) async {
     try {
       final box = await StorageService().getBox('gematria_calculations');
       await box.delete(id);
       await _loadCalculationHistory();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -3193,60 +3513,62 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       if (kDebugMode) debugPrint('❌ Error deleting calculation: $e');
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // 🔧 HELPER: COMPATIBILITY MANAGEMENT (REAL DATA)
   // ═══════════════════════════════════════════════════════════
-  
+
   Future<void> _loadCompatibilityHistory() async {
     try {
       final box = await StorageService().getBox('compatibility_analyses');
       final entries = box.values.toList();
-      
+
       entries.sort((a, b) {
         final timeA = a['timestamp'] as int? ?? 0;
         final timeB = b['timestamp'] as int? ?? 0;
         return timeB.compareTo(timeA);
       });
-      
+
       setState(() {
-        _compatibilityHistory = entries.take(10).toList().cast<Map<String, dynamic>>();
+        _compatibilityHistory =
+            entries.take(10).toList().cast<Map<String, dynamic>>();
       });
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error loading compatibility history: $e');
     }
   }
-  
+
   void _calculateCompatibility() {
     final name1 = _name1Controller.text.trim();
     final name2 = _name2Controller.text.trim();
-    
+
     if (name1.isEmpty || name2.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('⚠️ Bitte beide Namen eingeben')),
       );
       return;
     }
-    
+
     // 🔥 ECHTE KOMPATIBILITÄTS-FORMEL
     final value1 = GematriaEngine.calculateHebrewGematria(name1);
     final value2 = GematriaEngine.calculateHebrewGematria(name2);
     final soul1 = GematriaEngine.calculateReducedGematria(name1);
     final soul2 = GematriaEngine.calculateReducedGematria(name2);
-    
+
     // Real compatibility calculation
     final valueDiff = (value1 - value2).abs();
     final baseScore = 100 - (valueDiff % 100);
     final resonance = (soul1 + soul2) % 10;
-    
+
     // Letter frequency harmony
     final freq1 = GematriaEngine.calculateLetterFrequency(name1);
     final freq2 = GematriaEngine.calculateLetterFrequency(name2);
-    final commonLetters = freq1.keys.toSet().intersection(freq2.keys.toSet()).length;
+    final commonLetters =
+        freq1.keys.toSet().intersection(freq2.keys.toSet()).length;
     final harmonyBonus = (commonLetters * 5).clamp(0, 20);
-    
+
     final finalScore = ((baseScore + harmonyBonus) / 1.2).round().clamp(0, 100);
-    
+
     setState(() {
       _compatibilityScore = finalScore;
       _compatibilityDetails = {
@@ -3261,10 +3583,10 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         'harmonyBonus': harmonyBonus,
       };
     });
-    
+
     _saveCompatibility(name1, name2, finalScore);
   }
-  
+
   Future<void> _saveCompatibility(String name1, String name2, int score) async {
     try {
       final box = await StorageService().getBox('compatibility_analyses');
@@ -3275,10 +3597,10 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         'details': _compatibilityDetails,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
-      
+
       await box.put(analysis['timestamp'], analysis);
       await _loadCompatibilityHistory();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -3292,10 +3614,10 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       if (kDebugMode) debugPrint('❌ Error saving compatibility: $e');
     }
   }
-  
+
   Future<void> _shareMyGematria() async {
     if (_profile == null) return;
-    
+
     // Simuliert das Teilen (würde normalerweise an API senden)
     final myShare = {
       'user': '${_profile!.firstName} ${_profile!.lastName[0]}.',
@@ -3304,11 +3626,11 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       'timestamp': 'Gerade eben',
       'insight': 'Mein Gematria-Wert: $_latinFullName',
     };
-    
+
     setState(() {
       _recentShares.insert(0, myShare);
     });
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -3319,7 +3641,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       );
     }
   }
-  
+
   Widget _buildCommunityTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -3328,7 +3650,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
         children: [
           _buildSectionTitle('👥 COMMUNITY', 'Teile deine Gematria-Insights'),
           const SizedBox(height: 12),
-          
+
           Text(
             'Verbinde dich mit anderen Gematria-Enthusiasten und entdecke interessante Namens-Matches!',
             style: TextStyle(
@@ -3337,9 +3659,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               height: 1.6,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Global Stats
           Container(
             padding: const EdgeInsets.all(20),
@@ -3368,7 +3690,6 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   ],
                 ),
                 const SizedBox(height: 16),
-                
                 Row(
                   children: [
                     Expanded(
@@ -3411,9 +3732,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Share Button
           if (_profile != null)
             SizedBox(
@@ -3431,9 +3752,9 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                 ),
               ),
             ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Recent Shares
           const Text(
             '💬 NEUESTE SHARES',
@@ -3444,131 +3765,144 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
             ),
           ),
           const SizedBox(height: 12),
-          
+
           ...(_recentShares.map((share) => Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE91E63).withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: const Color(0xFFE91E63).withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF673AB7), Color(0xFFE91E63)],
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              share['user'].toString()[0],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            Text(
-                              share['user'],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF673AB7),
+                                    Color(0xFFE91E63)
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  share['user'].toString()[0],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
-                            Text(
-                              share['timestamp'],
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 11,
-                              ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  share['user'],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  share['timestamp'],
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFFE91E63).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${share['nameValue']}',
+                            style: const TextStyle(
+                              color: Color(0xFFE91E63),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE91E63).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${share['nameValue']}',
-                        style: const TextStyle(
-                          color: Color(0xFFE91E63),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                const Color(0xFF673AB7).withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Seele: ${share['soulNumber']}',
+                            style: const TextStyle(
+                              color: Color(0xFFFFD700),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      share['insight'],
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF673AB7).withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Seele: ${share['soulNumber']}',
-                        style: const TextStyle(
-                          color: Color(0xFFFFD700),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  share['insight'],
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ))),
-          
+              ))),
+
           const SizedBox(height: 24),
-          
+
           // Export Card
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [const Color(0xFF9C27B0).withValues(alpha: 0.2), const Color(0xFF1E1E1E)],
+                colors: [
+                  const Color(0xFF9C27B0).withValues(alpha: 0.2),
+                  const Color(0xFF1E1E1E)
+                ],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.5)),
+              border: Border.all(
+                  color: const Color(0xFF9C27B0).withValues(alpha: 0.5)),
             ),
             child: Column(
               children: [
-                const Icon(Icons.file_download, size: 40, color: Color(0xFF9C27B0)),
+                const Icon(Icons.file_download,
+                    size: 40, color: Color(0xFF9C27B0)),
                 const SizedBox(height: 12),
                 const Text(
                   'GEMATRIA-KARTE EXPORTIEREN',
@@ -3604,7 +3938,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF9C27B0),
                     side: const BorderSide(color: Color(0xFF9C27B0)),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -3617,7 +3952,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   Widget _buildStatCard(String icon, String value, String label) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -3653,11 +3988,11 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ),
     );
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   // HELPER WIDGETS
   // ═══════════════════════════════════════════════════════════
-  
+
   Widget _buildSectionTitle(String title, String subtitle) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3688,16 +4023,18 @@ class _CineOrb extends StatelessWidget {
   final Color color;
   final double size;
   final double opacity;
-  const _CineOrb({required this.color, required this.size, required this.opacity});
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
   @override
   Widget build(BuildContext context) => Container(
-    width: size, height: size,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: RadialGradient(colors: [
-        color.withValues(alpha: opacity),
-        color.withValues(alpha: 0),
-      ]),
-    ),
-  );
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }

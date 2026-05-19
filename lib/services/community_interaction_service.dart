@@ -11,11 +11,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class CommunityInteractionService {
   // Backend URLs
   static const String _backendUrl = ApiConfig.workerUrl;
-  
+
   // SharedPreferences key prefixes
-  static const String _pfxLike     = 'ci_like_';       // ci_like_{userId}_{postId} → bool
-  static const String _pfxCount    = 'ci_count_';      // ci_count_{postId} → int
-  static const String _pfxComments = 'ci_comments_';   // ci_comments_{postId} → JSON
+  static const String _pfxLike = 'ci_like_'; // ci_like_{userId}_{postId} → bool
+  static const String _pfxCount = 'ci_count_'; // ci_count_{postId} → int
+  static const String _pfxComments =
+      'ci_comments_'; // ci_comments_{postId} → JSON
 
   // Singleton
   static final CommunityInteractionService _instance =
@@ -41,16 +42,18 @@ class CommunityInteractionService {
           _likeCache[key] = prefs.getBool(key) ?? false;
         }
       }
-      if (kDebugMode) debugPrint('✅ CommunityInteraction cache hydriert: ${_likeCache.length} likes');
+      if (kDebugMode)
+        debugPrint(
+            '✅ CommunityInteraction cache hydriert: ${_likeCache.length} likes');
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Cache-Hydration failed: $e');
     }
   }
-  
+
   // ============================================
   // LIKE SYSTEM
   // ============================================
-  
+
   /// Toggle like on a post (Like/Unlike)
   Future<bool> toggleLike({
     required String postId,
@@ -64,14 +67,16 @@ class CommunityInteractionService {
       await prefs.setBool(likeKey, !isLiked);
 
       final endpoint = isLiked ? 'unlike' : 'like';
-      final response = await http.post(
-        Uri.parse('$_backendUrl/api/community/$endpoint'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'post_id': postId, 'user_id': userId}),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Like toggle timeout'),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$_backendUrl/api/community/$endpoint'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'post_id': postId, 'user_id': userId}),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('Like toggle timeout'),
+          );
 
       if (response.statusCode == 200) {
         if (kDebugMode) debugPrint('✅ Like toggled: $postId (${!isLiked})');
@@ -79,7 +84,8 @@ class CommunityInteractionService {
         return !isLiked;
       } else {
         await prefs.setBool(likeKey, isLiked);
-        if (kDebugMode) debugPrint('⚠️ Like toggle failed: ${response.statusCode}');
+        if (kDebugMode)
+          debugPrint('⚠️ Like toggle failed: ${response.statusCode}');
         return isLiked;
       }
     } catch (e) {
@@ -88,7 +94,7 @@ class CommunityInteractionService {
       return isLiked;
     }
   }
-  
+
   /// Check if user has liked a post — synchronously aus Memory-Cache.
   /// Cache wird via init() (App-Start) und fetchIsLiked() (Lazy) befüllt.
   /// Liefert sofort den letzten bekannten Stand statt immer false.
@@ -141,10 +147,15 @@ class CommunityInteractionService {
     try {
       final supabase = Supabase.instance.client;
       if (currentlyLiked) {
-        await supabase.from('likes').delete()
-            .eq('article_id', postId).eq('user_id', userId);
+        await supabase
+            .from('likes')
+            .delete()
+            .eq('article_id', postId)
+            .eq('user_id', userId);
       } else {
-        await supabase.from('likes').insert({'article_id': postId, 'user_id': userId});
+        await supabase
+            .from('likes')
+            .insert({'article_id': postId, 'user_id': userId});
       }
       return !currentlyLiked;
     } catch (e) {
@@ -154,7 +165,7 @@ class CommunityInteractionService {
       return currentlyLiked;
     }
   }
-  
+
   /// Get like count for a post (Supabase preferred, then cache)
   Future<int> getLikeCount(String postId) async {
     if (postId.isEmpty) return 0;
@@ -175,17 +186,21 @@ class CommunityInteractionService {
       await prefs.setInt(countKey, count);
       return count;
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ getLikeCount Supabase failed, trying cache: $e');
+      if (kDebugMode)
+        debugPrint('⚠️ getLikeCount Supabase failed, trying cache: $e');
     }
 
     final cached = prefs.getInt(countKey);
     if (cached != null) return cached;
 
     try {
-      final response = await http.get(
-        Uri.parse('$_backendUrl/api/community/likes/$postId'),
-      ).timeout(const Duration(seconds: 5),
-          onTimeout: () => throw TimeoutException('Get like count timeout'));
+      final response = await http
+          .get(
+            Uri.parse('$_backendUrl/api/community/likes/$postId'),
+          )
+          .timeout(const Duration(seconds: 5),
+              onTimeout: () =>
+                  throw TimeoutException('Get like count timeout'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final count = data['count'] as int? ?? 0;
@@ -206,11 +221,11 @@ class CommunityInteractionService {
     final newCount = increment ? current + 1 : current - 1;
     await prefs.setInt(countKey, newCount > 0 ? newCount : 0);
   }
-  
+
   // ============================================
   // COMMENT SYSTEM
   // ============================================
-  
+
   /// Add comment to a post
   Future<bool> addComment({
     required String postId,
@@ -219,26 +234,28 @@ class CommunityInteractionService {
     required String text,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_backendUrl/api/community/comment'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'post_id': postId,
-          'user_id': userId,
-          'username': username,
-          'text': text,
-          'timestamp': DateTime.now().toIso8601String(),
-        }),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Add comment timeout'),
-      );
-      
+      final response = await http
+          .post(
+            Uri.parse('$_backendUrl/api/community/comment'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'post_id': postId,
+              'user_id': userId,
+              'username': username,
+              'text': text,
+              'timestamp': DateTime.now().toIso8601String(),
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('Add comment timeout'),
+          );
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
           debugPrint('✅ Comment added: $postId');
         }
-        
+
         // Cache comment locally
         await _cacheComment(postId, {
           'user_id': userId,
@@ -246,7 +263,7 @@ class CommunityInteractionService {
           'text': text,
           'timestamp': DateTime.now().toIso8601String(),
         });
-        
+
         return true;
       } else {
         if (kDebugMode) {
@@ -261,23 +278,26 @@ class CommunityInteractionService {
       return false;
     }
   }
-  
+
   /// Get comments for a post
   Future<List<Map<String, dynamic>>> getComments(String postId) async {
     try {
-      final response = await http.get(
-        Uri.parse('$_backendUrl/api/community/comments/$postId'),
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw TimeoutException('Get comments timeout'),
-      );
-      
+      final response = await http
+          .get(
+            Uri.parse('$_backendUrl/api/community/comments/$postId'),
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException('Get comments timeout'),
+          );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final comments = (data['comments'] as List?)
-            ?.map((c) => c as Map<String, dynamic>)
-            .toList() ?? [];
-        
+                ?.map((c) => c as Map<String, dynamic>)
+                .toList() ??
+            [];
+
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('$_pfxComments$postId', jsonEncode(comments));
         return comments;
@@ -294,7 +314,8 @@ class CommunityInteractionService {
     return [];
   }
 
-  Future<void> _cacheComment(String postId, Map<String, dynamic> comment) async {
+  Future<void> _cacheComment(
+      String postId, Map<String, dynamic> comment) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('$_pfxComments$postId');
     final comments = raw != null
@@ -303,17 +324,17 @@ class CommunityInteractionService {
     comments.add(comment);
     await prefs.setString('$_pfxComments$postId', jsonEncode(comments));
   }
-  
+
   /// Get comment count for a post
   Future<int> getCommentCount(String postId) async {
     final comments = await getComments(postId);
     return comments.length;
   }
-  
+
   // ============================================
   // SHARE SYSTEM
   // ============================================
-  
+
   /// Track share action (analytics)
   Future<void> trackShare({
     required String postId,
@@ -321,20 +342,22 @@ class CommunityInteractionService {
     required String platform,
   }) async {
     try {
-      await http.post(
-        Uri.parse('$_backendUrl/api/community/share'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'post_id': postId,
-          'user_id': userId,
-          'platform': platform,
-          'timestamp': DateTime.now().toIso8601String(),
-        }),
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw TimeoutException('Track share timeout'),
-      );
-      
+      await http
+          .post(
+            Uri.parse('$_backendUrl/api/community/share'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'post_id': postId,
+              'user_id': userId,
+              'platform': platform,
+              'timestamp': DateTime.now().toIso8601String(),
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException('Track share timeout'),
+          );
+
       if (kDebugMode) {
         debugPrint('✅ Share tracked: $postId on $platform');
       }
@@ -344,25 +367,27 @@ class CommunityInteractionService {
       }
     }
   }
-  
+
   // ============================================
   // BATCH OPERATIONS
   // ============================================
-  
+
   /// Preload likes for multiple posts (batch optimization)
   Future<void> preloadLikes(List<String> postIds, String userId) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_backendUrl/api/community/likes/batch'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'post_ids': postIds, 'user_id': userId}),
-      ).timeout(const Duration(seconds: 10),
-          onTimeout: () => throw TimeoutException('Preload likes timeout'));
+      final response = await http
+          .post(
+            Uri.parse('$_backendUrl/api/community/likes/batch'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'post_ids': postIds, 'user_id': userId}),
+          )
+          .timeout(const Duration(seconds: 10),
+              onTimeout: () => throw TimeoutException('Preload likes timeout'));
 
       if (response.statusCode == 200) {
         final prefs = await SharedPreferences.getInstance();
         final data = jsonDecode(response.body);
-        final likes  = data['likes']  as Map<String, dynamic>?;
+        final likes = data['likes'] as Map<String, dynamic>?;
         final counts = data['counts'] as Map<String, dynamic>?;
         if (likes != null) {
           for (final e in likes.entries) {
@@ -380,11 +405,11 @@ class CommunityInteractionService {
       if (kDebugMode) debugPrint('⚠️ Batch preload failed: $e');
     }
   }
-  
+
   // ============================================
   // UTILITIES
   // ============================================
-  
+
   /// Clear all caches (for logout/reset)
   Future<void> clearCache() async {
     final prefs = await SharedPreferences.getInstance();
@@ -397,17 +422,19 @@ class CommunityInteractionService {
     }
     if (kDebugMode) debugPrint('✅ Community cache cleared');
   }
-  
+
   /// Get user statistics
   Future<Map<String, int>> getUserStats(String userId) async {
     try {
-      final response = await http.get(
-        Uri.parse('$_backendUrl/api/community/user/$userId/stats'),
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw TimeoutException('Get user stats timeout'),
-      );
-      
+      final response = await http
+          .get(
+            Uri.parse('$_backendUrl/api/community/user/$userId/stats'),
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException('Get user stats timeout'),
+          );
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
@@ -421,7 +448,7 @@ class CommunityInteractionService {
         debugPrint('⚠️ Stats fetch failed: $e');
       }
     }
-    
+
     return {
       'total_likes_given': 0,
       'total_comments': 0,

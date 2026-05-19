@@ -74,8 +74,7 @@ class _LiveCaptionOverlayState extends State<LiveCaptionOverlay> {
             // Vergangene finalisierte Captions
             ...visibleCaptions.map((e) => _CaptionLine(event: e)),
             // Partial-Text (Echtzeit, lokaler User)
-            if (partial.isNotEmpty)
-              _CaptionLine.partial(text: partial),
+            if (partial.isNotEmpty) _CaptionLine.partial(text: partial),
           ],
         ),
       ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../services/stats_service.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
@@ -43,7 +43,8 @@ class StatsDashboardScreen extends StatelessWidget {
                   const SizedBox(height: WBSpace.xxl),
                   Text('Erfolge', style: WBType.title.copyWith(fontSize: 18)),
                   const SizedBox(height: WBSpace.sm),
-                  ...achievements.map((a) => _buildAchievementCard(context, a, stats)),
+                  ...achievements
+                      .map((a) => _buildAchievementCard(context, a, stats)),
                 ],
               ),
             ),
@@ -67,10 +68,16 @@ class StatsDashboardScreen extends StatelessWidget {
           Row(
             children: [
               Text(statsService.levelName,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
               const Spacer(),
               Text('Level $level',
-                  style: TextStyle(fontSize: 20, color: palette.primary, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      fontSize: 20,
+                      color: palette.primary,
+                      fontWeight: FontWeight.bold)),
             ],
           ),
           const SizedBox(height: WBSpace.md),
@@ -85,8 +92,11 @@ class StatsDashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: WBSpace.sm),
           Text(
-            level >= 5 ? 'Maximales Level erreicht!' : '$xp / $nextLevelXp XP zum nächsten Level',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+            level >= 5
+                ? 'Maximales Level erreicht!'
+                : '$xp / $nextLevelXp XP zum nächsten Level',
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
           ),
         ],
       ),
@@ -102,10 +112,26 @@ class StatsDashboardScreen extends StatelessWidget {
       crossAxisSpacing: WBSpace.md,
       childAspectRatio: 1.5,
       children: [
-        _buildStatCard(icon: Icons.search, label: 'Recherchen', value: stats.totalSearches.toString(), color: const Color(0xFF3B82F6)),
-        _buildStatCard(icon: Icons.bookmark_outline, label: 'Lesezeichen', value: stats.bookmarksCount.toString(), color: const Color(0xFFFF9800)),
-        _buildStatCard(icon: Icons.category_outlined, label: 'Kategorien', value: '${stats.categoriesExplored}/7', color: const Color(0xFF4CAF50)),
-        _buildStatCard(icon: Icons.auto_stories_outlined, label: 'Narrative', value: stats.narrativesViewed.toString(), color: const Color(0xFFA855F7)),
+        _buildStatCard(
+            icon: Icons.search,
+            label: 'Recherchen',
+            value: stats.totalSearches.toString(),
+            color: const Color(0xFF3B82F6)),
+        _buildStatCard(
+            icon: Icons.bookmark_outline,
+            label: 'Lesezeichen',
+            value: stats.bookmarksCount.toString(),
+            color: const Color(0xFFFF9800)),
+        _buildStatCard(
+            icon: Icons.category_outlined,
+            label: 'Kategorien',
+            value: '${stats.categoriesExplored}/7',
+            color: const Color(0xFF4CAF50)),
+        _buildStatCard(
+            icon: Icons.auto_stories_outlined,
+            label: 'Narrative',
+            value: stats.narrativesViewed.toString(),
+            color: const Color(0xFFA855F7)),
       ],
     );
   }
@@ -125,9 +151,11 @@ class StatsDashboardScreen extends StatelessWidget {
           Icon(icon, size: 28, color: color),
           const SizedBox(height: WBSpace.sm),
           Text(value,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+              style: TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.bold, color: color)),
           Text(label,
-              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.5))),
+              style: TextStyle(
+                  fontSize: 11, color: Colors.white.withValues(alpha: 0.5))),
         ],
       ),
     );
@@ -158,12 +186,16 @@ class StatsDashboardScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: WBSpace.sm),
       child: WBGlassCard(
         world: WBWorld.neutral,
-        padding: const EdgeInsets.symmetric(horizontal: WBSpace.lg, vertical: WBSpace.md),
+        padding: const EdgeInsets.symmetric(
+            horizontal: WBSpace.lg, vertical: WBSpace.md),
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: isUnlocked ? Colors.amber.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.06),
-              child: Text(achievement.icon, style: const TextStyle(fontSize: 22)),
+              backgroundColor: isUnlocked
+                  ? Colors.amber.withValues(alpha: 0.2)
+                  : Colors.white.withValues(alpha: 0.06),
+              child:
+                  Text(achievement.icon, style: const TextStyle(fontSize: 22)),
             ),
             const SizedBox(width: WBSpace.md),
             Expanded(
@@ -172,13 +204,16 @@ class StatsDashboardScreen extends StatelessWidget {
                 children: [
                   Text(achievement.title,
                       style: TextStyle(
-                        fontWeight: isUnlocked ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isUnlocked ? FontWeight.bold : FontWeight.normal,
                         color: Colors.white,
                         fontSize: 14,
                       )),
                   const SizedBox(height: 2),
                   Text(achievement.description,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12)),
                   if (!isUnlocked) ...[
                     const SizedBox(height: WBSpace.xs),
                     ClipRRect(
@@ -187,21 +222,28 @@ class StatsDashboardScreen extends StatelessWidget {
                         value: progress.clamp(0.0, 1.0),
                         minHeight: 4,
                         backgroundColor: Colors.white.withValues(alpha: 0.06),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+                        valueColor:
+                            const AlwaysStoppedAnimation<Color>(Colors.amber),
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text('$currentCount / ${achievement.requiredCount}',
-                        style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.35))),
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white.withValues(alpha: 0.35))),
                   ] else
                     Text('Freigeschaltet!',
-                        style: TextStyle(color: palette.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                        style: TextStyle(
+                            color: palette.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12)),
                 ],
               ),
             ),
             isUnlocked
                 ? const Icon(Icons.check_circle, color: Colors.amber, size: 20)
-                : Icon(Icons.lock_outline, color: Colors.white.withValues(alpha: 0.2), size: 20),
+                : Icon(Icons.lock_outline,
+                    color: Colors.white.withValues(alpha: 0.2), size: 20),
           ],
         ),
       ),

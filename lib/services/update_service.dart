@@ -15,7 +15,8 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shorebird_code_push/shorebird_code_push.dart' if (dart.library.html) '../stubs/shorebird_stub.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart'
+    if (dart.library.html) '../stubs/shorebird_stub.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Ergebnis des Release-Update-Checks (Supabase app_config vs. APP_VERSION).
@@ -118,7 +119,8 @@ class UpdateService {
     // Debug-Build-Schutz: nie Force-Update in lokalen Builds zeigen.
     if (isVersionUnknown) {
       if (kDebugMode) {
-        debugPrint('ℹ️  [UpdateService] APP_VERSION=0.0.0 → Release-Check übersprungen');
+        debugPrint(
+            'ℹ️  [UpdateService] APP_VERSION=0.0.0 → Release-Check übersprungen');
       }
       return UpdateCheckResult.empty;
     }
@@ -126,7 +128,8 @@ class UpdateService {
     // Offline-Schutz: kein Timeout-Hänger wenn kein Netz vorhanden.
     if (!await _hasConnectivity()) {
       if (kDebugMode) {
-        debugPrint('ℹ️  [UpdateService] Kein Netz → Release-Check übersprungen');
+        debugPrint(
+            'ℹ️  [UpdateService] Kein Netz → Release-Check übersprungen');
       }
       return UpdateCheckResult.empty;
     }
@@ -231,7 +234,8 @@ class UpdateService {
       // Offline-Schutz: ohne Netz kein Patch-Check.
       if (!await _hasConnectivity()) {
         if (kDebugMode) {
-          debugPrint('ℹ️  [UpdateService] Kein Netz → Patch-Check übersprungen');
+          debugPrint(
+              'ℹ️  [UpdateService] Kein Netz → Patch-Check übersprungen');
         }
         return;
       }
@@ -272,7 +276,8 @@ class UpdateService {
       return (cl == null || cl.isEmpty) ? null : cl;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️  [UpdateService] patch_changelog fetch fehlgeschlagen: $e');
+        debugPrint(
+            '⚠️  [UpdateService] patch_changelog fetch fehlgeschlagen: $e');
       }
       return null;
     }

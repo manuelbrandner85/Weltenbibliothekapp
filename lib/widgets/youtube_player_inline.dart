@@ -37,7 +37,11 @@ class _YoutubePlayerInlineState extends State<YoutubePlayerInline> {
       ..addJavaScriptChannel(
         'YtError',
         onMessageReceived: (_) {
-          if (mounted) setState(() { _hasError = true; _loading = false; });
+          if (mounted)
+            setState(() {
+              _hasError = true;
+              _loading = false;
+            });
         },
       )
       ..setNavigationDelegate(NavigationDelegate(
@@ -45,7 +49,11 @@ class _YoutubePlayerInlineState extends State<YoutubePlayerInline> {
           if (mounted) setState(() => _loading = false);
         },
         onWebResourceError: (_) {
-          if (mounted) setState(() { _hasError = true; _loading = false; });
+          if (mounted)
+            setState(() {
+              _hasError = true;
+              _loading = false;
+            });
         },
         onNavigationRequest: (request) {
           final u = request.url;
@@ -53,7 +61,8 @@ class _YoutubePlayerInlineState extends State<YoutubePlayerInline> {
           if (u.contains('youtube.com') || u.contains('youtu.be/')) {
             return NavigationDecision.navigate;
           }
-          if (u.startsWith('about:') || u.startsWith('data:') ||
+          if (u.startsWith('about:') ||
+              u.startsWith('data:') ||
               u.contains('googleapis.com')) {
             return NavigationDecision.navigate;
           }
@@ -115,7 +124,10 @@ function onYouTubeIframeAPIReady() {
         borderRadius: BorderRadius.circular(14),
         color: Colors.black,
         boxShadow: [
-          BoxShadow(color: Colors.red.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2),
+          BoxShadow(
+              color: Colors.red.withValues(alpha: 0.3),
+              blurRadius: 20,
+              spreadRadius: 2),
         ],
       ),
       clipBehavior: Clip.antiAlias,
@@ -131,8 +143,13 @@ function onYouTubeIframeAPIReady() {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    widget.video.title.isNotEmpty ? widget.video.title : 'Video',
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                    widget.video.title.isNotEmpty
+                        ? widget.video.title
+                        : 'Video',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -140,7 +157,8 @@ function onYouTubeIframeAPIReady() {
                 if (widget.onClose != null)
                   GestureDetector(
                     onTap: widget.onClose,
-                    child: const Icon(Icons.close, color: Colors.white54, size: 18),
+                    child: const Icon(Icons.close,
+                        color: Colors.white54, size: 18),
                   ),
               ],
             ),
@@ -166,11 +184,14 @@ function onYouTubeIframeAPIReady() {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               children: [
-                const Icon(Icons.person_outline, color: Colors.white38, size: 13),
+                const Icon(Icons.person_outline,
+                    color: Colors.white38, size: 13),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    widget.video.channel.isNotEmpty ? widget.video.channel : 'YouTube',
+                    widget.video.channel.isNotEmpty
+                        ? widget.video.channel
+                        : 'YouTube',
                     style: const TextStyle(color: Colors.white38, fontSize: 11),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

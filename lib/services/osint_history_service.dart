@@ -49,7 +49,8 @@ class OsintHistoryService {
       if (raw == null || raw.isEmpty) return const [];
       final list = jsonDecode(raw) as List;
       return list
-          .map((e) => OsintHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) =>
+              OsintHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList()
         ..sort((a, b) {
           // Starred zuerst, dann neueste
@@ -62,7 +63,9 @@ class OsintHistoryService {
     }
   }
 
-  Future<void> add(String tool, String query, {
+  Future<void> add(
+    String tool,
+    String query, {
     Map<String, dynamic>? resultPreview,
   }) async {
     try {

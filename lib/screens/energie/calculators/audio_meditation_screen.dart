@@ -22,9 +22,18 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
   static const _bg = Color(0xFF06040F);
   static const _accent = Color(0xFF4527A0);
 
-  static final List<({String emoji, String title, String duration, int stepDurationSec, List<String> script})> _meditations = [
+  static final List<
+      ({
+        String emoji,
+        String title,
+        String duration,
+        int stepDurationSec,
+        List<String> script
+      })> _meditations = [
     (
-      emoji: '🌬️', title: 'Atem-Bewusstheit', duration: '7 Min',
+      emoji: '🌬️',
+      title: 'Atem-Bewusstheit',
+      duration: '7 Min',
       stepDurationSec: 60,
       script: [
         'Setze dich aufrecht hin. Schließe sanft die Augen. Bringe deine Aufmerksamkeit zum natürlichen Atem.',
@@ -37,7 +46,9 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
       ],
     ),
     (
-      emoji: '💞', title: 'Loving-Kindness (Metta)', duration: '8 Min',
+      emoji: '💞',
+      title: 'Loving-Kindness (Metta)',
+      duration: '8 Min',
       stepDurationSec: 90,
       script: [
         'Bring eine Hand auf dein Herz. Spüre die Wärme. Wiederhole innerlich: Möge ich glücklich sein. Möge ich gesund sein. Möge ich in Frieden sein.',
@@ -49,7 +60,9 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
       ],
     ),
     (
-      emoji: '⛰️', title: 'Berg-Meditation', duration: '6 Min',
+      emoji: '⛰️',
+      title: 'Berg-Meditation',
+      duration: '6 Min',
       stepDurationSec: 60,
       script: [
         'Setze dich aufrecht. Stell dir vor, du bist ein Berg. Massiv, alt, stabil.',
@@ -60,7 +73,9 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
       ],
     ),
     (
-      emoji: '🕊️', title: 'Vergebung', duration: '10 Min',
+      emoji: '🕊️',
+      title: 'Vergebung',
+      duration: '10 Min',
       stepDurationSec: 90,
       script: [
         'Atme tief ein und aus. Bring eine Person ins Bewusstsein, der du dich gerade nicht öffnen kannst.',
@@ -73,7 +88,9 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
       ],
     ),
     (
-      emoji: '🙏', title: 'Dankbarkeit', duration: '5 Min',
+      emoji: '🙏',
+      title: 'Dankbarkeit',
+      duration: '5 Min',
       stepDurationSec: 60,
       script: [
         'Bring eine Hand auf dein Herz. Spüre den Schlag.',
@@ -200,13 +217,15 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
               margin: const EdgeInsets.only(bottom: 14),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [_accent, _accent.withValues(alpha: 0.4)]),
+                gradient: LinearGradient(
+                    colors: [_accent, _accent.withValues(alpha: 0.4)]),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Text(
                 'Geleitete Meditationen mit deutscher Stimme (TTS). Setz Kopfhörer auf, '
                 'finde eine ruhige Sitzhaltung. Tippe auf eine Meditation um zu starten.',
-                style: TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
+                style:
+                    TextStyle(color: Colors.white, fontSize: 13, height: 1.5),
               ),
             );
           }
@@ -233,9 +252,14 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(m.title,
-                              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold)),
                           Text('${m.duration} · ${m.script.length} Schritte',
-                              style: TextStyle(color: _accent.withValues(alpha: 0.9), fontSize: 12)),
+                              style: TextStyle(
+                                  color: _accent.withValues(alpha: 0.9),
+                                  fontSize: 12)),
                         ],
                       ),
                     ),
@@ -261,7 +285,8 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
           icon: const Icon(Icons.close),
           onPressed: _stop,
         ),
-        title: Text(m.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            Text(m.title, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: Padding(
@@ -277,13 +302,19 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                       Text(m.emoji, style: const TextStyle(fontSize: 80)),
                       const SizedBox(height: 18),
                       Text('Schritt ${_stepIdx + 1} / ${m.script.length}',
-                          style: TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.w600)),
+                          style: TextStyle(
+                              color: _accent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
                       const SizedBox(height: 14),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(m.script[_stepIdx],
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.7)),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                height: 1.7)),
                       ),
                     ],
                   ),
@@ -319,9 +350,11 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _stop,
                       icon: const Icon(Icons.stop, color: Colors.white),
-                      label: const Text('Beenden', style: TextStyle(color: Colors.white)),
+                      label: const Text('Beenden',
+                          style: TextStyle(color: Colors.white)),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                        side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.3)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -330,7 +363,8 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                   Expanded(
                     flex: 2,
                     child: ElevatedButton.icon(
-                      onPressed: _stepIdx < m.script.length - 1 ? _advance : _stop,
+                      onPressed:
+                          _stepIdx < m.script.length - 1 ? _advance : _stop,
                       icon: Icon(_stepIdx < m.script.length - 1
                           ? Icons.arrow_forward
                           : Icons.check),

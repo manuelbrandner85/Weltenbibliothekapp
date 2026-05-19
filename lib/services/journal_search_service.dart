@@ -40,12 +40,14 @@ class JournalSearchService {
     try {
       final raw = await SqliteStorageService.instance.getAll(box);
       return raw.map((r) {
-        final m = (r is Map) ? Map<String, dynamic>.from(r) : <String, dynamic>{};
+        final m =
+            (r is Map) ? Map<String, dynamic>.from(r) : <String, dynamic>{};
         return JournalEntry(
           id: (m['id'] ?? '').toString(),
           kind: kind,
-          date: DateTime.tryParse(m['date']?.toString() ?? m['created_at']?.toString() ?? '')
-              ?? DateTime.now(),
+          date: DateTime.tryParse(
+                  m['date']?.toString() ?? m['created_at']?.toString() ?? '') ??
+              DateTime.now(),
           title: m['title']?.toString() ?? '',
           body: m['body']?.toString() ?? m['content']?.toString() ?? '',
           tags: (m['tags'] as List?)?.cast<String>() ?? const [],

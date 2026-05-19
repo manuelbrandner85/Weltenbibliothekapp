@@ -61,22 +61,23 @@ class AchievementData {
       'rarity': 'rare',
     },
   };
-  
+
   /// Get achievement by ID
   static Map<String, dynamic>? getAchievement(String id) {
     return achievements[id];
   }
-  
+
   /// Get all achievements
   static List<Map<String, dynamic>> getAllAchievements() {
     return achievements.values.toList();
   }
-  
+
   /// Get total possible points
   static int getTotalPoints() {
-    return achievements.values.fold(0, (sum, achievement) => sum + (achievement['points'] as int));
+    return achievements.values
+        .fold(0, (sum, achievement) => sum + (achievement['points'] as int));
   }
-  
+
   /// Get rarity color
   static Color getRarityColor(String rarity) {
     switch (rarity) {

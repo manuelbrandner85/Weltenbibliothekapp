@@ -53,6 +53,7 @@ class _SacredGeometryConstructorScreenState
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _primary = Color(0xFF00BCD4); // cyan
   static const Color _accent = Color(0xFFAB47BC); // magenta-violet
   static const Color _gold = Color(0xFFFFD54F);
@@ -199,8 +200,7 @@ class _SacredGeometryConstructorScreenState
             ),
             const SizedBox(height: 18),
             Center(
-              child: Text(info.symbol,
-                  style: const TextStyle(fontSize: 70)),
+              child: Text(info.symbol, style: const TextStyle(fontSize: 70)),
             ),
             const SizedBox(height: 8),
             Center(
@@ -237,9 +237,7 @@ class _SacredGeometryConstructorScreenState
             const SizedBox(height: 8),
             SelectableText(info.mythos,
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    height: 1.6)),
+                    color: Colors.white, fontSize: 14, height: 1.6)),
             const SizedBox(height: 22),
             _sectionLabel('🧘 MEDITATION'),
             const SizedBox(height: 8),
@@ -269,7 +267,8 @@ class _SacredGeometryConstructorScreenState
         alignment: WrapAlignment.center,
         children: chips
             .map((c) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
@@ -286,13 +285,15 @@ class _SacredGeometryConstructorScreenState
 
   Widget _sectionLabel(String t) => Text(t,
       style: const TextStyle(
-          color: _gold, fontSize: 11, letterSpacing: 3, fontWeight: FontWeight.w700));
+          color: _gold,
+          fontSize: 11,
+          letterSpacing: 3,
+          fontWeight: FontWeight.w700));
 
   Future<void> _saveSnapshot() async {
     final info = _stages[_stage];
     final username = UnifiedStorageService().getUsername('energie');
-    final userId =
-        await UnifiedStorageService().getCurrentUserId() ?? 'anonym';
+    final userId = await UnifiedStorageService().getCurrentUserId() ?? 'anonym';
     final saved = await SpiritReadingService.instance.save(
       userId: userId,
       username: username,
@@ -378,9 +379,13 @@ class _SacredGeometryConstructorScreenState
             onPressed: _showInfo,
           ),
           IconButton(
-            icon: Icon(_isMeditation ? Icons.self_improvement_rounded : Icons.brightness_4_rounded,
+            icon: Icon(
+                _isMeditation
+                    ? Icons.self_improvement_rounded
+                    : Icons.brightness_4_rounded,
                 color: _gold),
-            tooltip: _isMeditation ? 'Konstruktion zeigen' : 'Meditations-Modus',
+            tooltip:
+                _isMeditation ? 'Konstruktion zeigen' : 'Meditations-Modus',
             onPressed: _toggleMeditation,
           ),
         ],
@@ -416,7 +421,8 @@ class _SacredGeometryConstructorScreenState
           ),
 
           // Layer 3: Ambient particles
-          const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 36)),
+          const IgnorePointer(
+              child: WBAmbientParticles(world: WBWorld.energie, count: 36)),
 
           // Layer 4: Interaktiver Canvas
           SafeArea(
@@ -435,7 +441,8 @@ class _SacredGeometryConstructorScreenState
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.1)),
                         ),
                         child: Row(
                           children: [
@@ -454,18 +461,21 @@ class _SacredGeometryConstructorScreenState
                                           letterSpacing: 0.5)),
                                   Text(info.tagline,
                                       style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.65),
+                                          color: Colors.white
+                                              .withValues(alpha: 0.65),
                                           fontSize: 11,
                                           fontStyle: FontStyle.italic)),
                                 ],
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: _gold.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: _gold.withValues(alpha: 0.4)),
+                                border: Border.all(
+                                    color: _gold.withValues(alpha: 0.4)),
                               ),
                               child: Text('${_stage + 1}/6',
                                   style: const TextStyle(
@@ -490,7 +500,8 @@ class _SacredGeometryConstructorScreenState
                         aspectRatio: 1,
                         child: LayoutBuilder(
                           builder: (_, constraints) {
-                            final size = Size(constraints.maxWidth, constraints.maxHeight);
+                            final size = Size(
+                                constraints.maxWidth, constraints.maxHeight);
                             return GestureDetector(
                               onTapDown: (d) => _handleCanvasTap(d, size),
                               onPanUpdate: (d) => _handleCanvasPan(d, size),
@@ -502,7 +513,8 @@ class _SacredGeometryConstructorScreenState
                                     color: Colors.black.withValues(alpha: 0.35),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                        color: _primary.withValues(alpha: 0.3), width: 1.5),
+                                        color: _primary.withValues(alpha: 0.3),
+                                        width: 1.5),
                                     boxShadow: [
                                       BoxShadow(
                                         color: _accent.withValues(alpha: 0.18),
@@ -514,7 +526,8 @@ class _SacredGeometryConstructorScreenState
                                 ),
                                 // Geometrie selbst
                                 AnimatedBuilder(
-                                  animation: Listenable.merge([_glowCtrl, _revealCtrl]),
+                                  animation: Listenable.merge(
+                                      [_glowCtrl, _revealCtrl]),
                                   builder: (_, __) => CustomPaint(
                                     painter: _SacredGeometryPainter(
                                       stage: _stage,
@@ -552,7 +565,8 @@ class _SacredGeometryConstructorScreenState
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08)),
                         ),
                         child: Column(
                           children: [
@@ -565,19 +579,26 @@ class _SacredGeometryConstructorScreenState
                                 itemBuilder: (_, i) {
                                   final sel = i == _stage;
                                   return Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
                                     child: GestureDetector(
                                       onTap: () => _setStage(i),
                                       child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 250),
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        duration:
+                                            const Duration(milliseconds: 250),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
                                         decoration: BoxDecoration(
                                           gradient: sel
                                               ? LinearGradient(
                                                   colors: [_primary, _accent])
                                               : null,
-                                          color: sel ? null : Colors.white.withValues(alpha: 0.05),
-                                          borderRadius: BorderRadius.circular(20),
+                                          color: sel
+                                              ? null
+                                              : Colors.white
+                                                  .withValues(alpha: 0.05),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
                                           border: Border.all(
                                               color: sel
                                                   ? Colors.transparent
@@ -585,11 +606,14 @@ class _SacredGeometryConstructorScreenState
                                         ),
                                         child: Row(children: [
                                           Text(_stages[i].symbol,
-                                              style: const TextStyle(fontSize: 14)),
+                                              style: const TextStyle(
+                                                  fontSize: 14)),
                                           const SizedBox(width: 6),
                                           Text(_stages[i].name,
                                               style: TextStyle(
-                                                  color: sel ? Colors.white : Colors.white60,
+                                                  color: sel
+                                                      ? Colors.white
+                                                      : Colors.white60,
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w700,
                                                   letterSpacing: 0.5)),
@@ -614,12 +638,16 @@ class _SacredGeometryConstructorScreenState
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: _replayReveal,
-                                    icon: const Icon(Icons.replay_rounded, size: 16),
+                                    icon: const Icon(Icons.replay_rounded,
+                                        size: 16),
                                     label: const Text('Animation'),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: Colors.white70,
-                                      side: BorderSide(color: _primary.withValues(alpha: 0.5)),
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      side: BorderSide(
+                                          color:
+                                              _primary.withValues(alpha: 0.5)),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
                                     ),
                                   ),
                                 ),
@@ -627,12 +655,15 @@ class _SacredGeometryConstructorScreenState
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: _saveSnapshot,
-                                    icon: const Icon(Icons.bookmark_added_rounded, size: 16),
+                                    icon: const Icon(
+                                        Icons.bookmark_added_rounded,
+                                        size: 16),
                                     label: const Text('Speichern'),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: _accent,
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
                                     ),
                                   ),
                                 ),
@@ -847,15 +878,24 @@ class _CineOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _drawOrb(canvas,
-        Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        90, const Color(0xFF00BCD4));
-    _drawOrb(canvas,
-        Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.05)),
-        110, const Color(0xFFAB47BC));
-    _drawOrb(canvas,
-        Offset(size.width * 0.5, size.height * (0.9 + math.sin(t * math.pi) * 0.04)),
-        70, const Color(0xFFFFD54F));
+    _drawOrb(
+        canvas,
+        Offset(size.width * 0.2,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        90,
+        const Color(0xFF00BCD4));
+    _drawOrb(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.05)),
+        110,
+        const Color(0xFFAB47BC));
+    _drawOrb(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.9 + math.sin(t * math.pi) * 0.04)),
+        70,
+        const Color(0xFFFFD54F));
   }
 
   void _drawOrb(Canvas canvas, Offset pos, double r, Color color) {

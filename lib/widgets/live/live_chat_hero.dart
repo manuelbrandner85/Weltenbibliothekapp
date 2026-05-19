@@ -682,9 +682,8 @@ class _AvatarStack extends StatelessWidget {
     const size = 28.0;
     const overlap = 10.0;
 
-    final width = visible.isEmpty
-        ? size
-        : size + (visible.length - 1) * (size - overlap);
+    final width =
+        visible.isEmpty ? size : size + (visible.length - 1) * (size - overlap);
 
     return SizedBox(
       height: size,

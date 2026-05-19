@@ -73,9 +73,14 @@ class SharedInvestigationService {
           .maybeSingle();
       if (res == null) return null;
       // View-Count atomic-ish erhöhen (best-effort, racy ist hier okay).
-      _s.from('shared_investigations').update({
-        'view_count': ((res as Map)['view_count'] as int? ?? 0) + 1,
-      }).eq('share_token', token).then((_) {}).onError((_, __) => null);
+      _s
+          .from('shared_investigations')
+          .update({
+            'view_count': ((res as Map)['view_count'] as int? ?? 0) + 1,
+          })
+          .eq('share_token', token)
+          .then((_) {})
+          .onError((_, __) => null);
       return Map<String, dynamic>.from(res as Map);
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Fetch shared investigation: $e');

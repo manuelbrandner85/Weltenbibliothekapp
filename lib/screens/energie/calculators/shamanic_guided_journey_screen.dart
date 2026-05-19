@@ -37,11 +37,12 @@ class ShamanicGuidedJourneyScreen extends StatefulWidget {
   const ShamanicGuidedJourneyScreen({super.key});
 
   @override
-  State<ShamanicGuidedJourneyScreen> createState() => _ShamanicGuidedJourneyScreenState();
+  State<ShamanicGuidedJourneyScreen> createState() =>
+      _ShamanicGuidedJourneyScreenState();
 }
 
-class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScreen>
-    with TickerProviderStateMixin {
+class _ShamanicGuidedJourneyScreenState
+    extends State<ShamanicGuidedJourneyScreen> with TickerProviderStateMixin {
   static const Color _bgDark = Color(0xFF080308);
 
   /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
@@ -50,6 +51,7 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
     final wb = Theme.of(context).extension<WBCinematic>();
     return wb?.bgVoid ?? _bgDark;
   }
+
   static const Color _gold = Color(0xFFFFB74D);
   static const String _kvKey = 'shamanic_journeys_v1';
 
@@ -79,9 +81,14 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
   void initState() {
     super.initState();
     // Theta-Drum-Beat ~4 Hz → 250ms cycle. Etwas langsamer für Visual: 280ms.
-    _drumCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 280))..repeat(reverse: true);
-    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 12))..repeat();
-    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+    _drumCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 280))
+      ..repeat(reverse: true);
+    _ambientCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 12))
+          ..repeat();
+    _fadeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500));
     _loadHistory();
   }
 
@@ -98,7 +105,10 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
     final raw = prefs.getStringList(_kvKey) ?? const [];
     final out = <_JourneyHistory>[];
     for (final s in raw) {
-      try { out.add(_JourneyHistory.fromJson(jsonDecode(s) as Map<String, dynamic>)); } catch (_) {}
+      try {
+        out.add(
+            _JourneyHistory.fromJson(jsonDecode(s) as Map<String, dynamic>));
+      } catch (_) {}
     }
     if (mounted) setState(() => _history = out);
   }
@@ -121,20 +131,26 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
     try {
       final prompt = StringBuffer()
         ..writeln('Führe eine schamanische ${_world.label}-Reise in 5 Phasen.')
-        ..writeln('Frage: "${_question.isEmpty ? "Was darf ich heute wissen?" : _question}"')
+        ..writeln(
+            'Frage: "${_question.isEmpty ? "Was darf ich heute wissen?" : _question}"')
         ..writeln('Welt: ${_world.label} — ${_world.description}')
         ..writeln('')
-        ..writeln('Schreibe genau 5 Absätze, JEDER GENAU MIT EINER ÜBERSCHRIFT:')
-        ..writeln('1. EINGANG: Beschreibe wie sich das Tor zur ${_world.label} öffnet (60-90 Wörter)')
+        ..writeln(
+            'Schreibe genau 5 Absätze, JEDER GENAU MIT EINER ÜBERSCHRIFT:')
+        ..writeln(
+            '1. EINGANG: Beschreibe wie sich das Tor zur ${_world.label} öffnet (60-90 Wörter)')
         ..writeln('2. REISE: Was sieht/hört/spürt der Reisende? (60-90 Wörter)')
-        ..writeln('3. BEGEGNUNG: ${_world.beingType} erscheint — beschreibe es lebendig (60-90 Wörter)')
-        ..writeln('4. BOTSCHAFT: Die direkte Antwort auf die Frage durch das Wesen (60-90 Wörter)')
+        ..writeln(
+            '3. BEGEGNUNG: ${_world.beingType} erscheint — beschreibe es lebendig (60-90 Wörter)')
+        ..writeln(
+            '4. BOTSCHAFT: Die direkte Antwort auf die Frage durch das Wesen (60-90 Wörter)')
         ..writeln('5. RÜCKKEHR: Sanfter Weg zurück, Integration (40-60 Wörter)')
         ..writeln('')
         ..writeln('Format pro Phase: "## PHASEN-TITEL\\n\\n[Text...]"')
         ..writeln('Du-Form. Lebendig, bildreich, mythologisch geerdet. '
             'Keine Disclaimer, keine Esoterik-Klischees. Keine Liste, sondern fließende Prosa.');
-      final token = Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      final token =
+          Supabase.instance.client.auth.currentSession?.accessToken ?? '';
       final res = await http
           .post(
             Uri.parse('${ApiConfig.workerUrl}/api/mentor/chat'),
@@ -152,7 +168,12 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
           .timeout(const Duration(seconds: 50));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final answer = ((data['reply'] ?? data['answer'] ?? data['response'] ?? data['message'] ?? '') as String).trim();
+        final answer = ((data['reply'] ??
+                data['answer'] ??
+                data['response'] ??
+                data['message'] ??
+                '') as String)
+            .trim();
         final phases = _parsePhases(answer);
         if (phases.length >= 3 && mounted) {
           setState(() {
@@ -166,7 +187,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
       }
       if (mounted) {
         setState(() {
-          _error = 'AI-Reise gerade nicht verfügbar (HTTP ${res.statusCode}). Versuch\'s nochmal.';
+          _error =
+              'AI-Reise gerade nicht verfügbar (HTTP ${res.statusCode}). Versuch\'s nochmal.';
           _loadingNarration = false;
           _phase = _Phase.pickWorld;
         });
@@ -192,8 +214,10 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
       final isHeader = tr.startsWith('##') ||
           RegExp(r'^[1-5][\.\)]\s').hasMatch(tr) ||
           (tr.toUpperCase() == tr &&
-              tr.length > 4 && tr.length < 50 &&
-              !tr.contains(',') && tr.contains(':'));
+              tr.length > 4 &&
+              tr.length < 50 &&
+              !tr.contains(',') &&
+              tr.contains(':'));
       if (isHeader) {
         if (buf.isNotEmpty) {
           out.add(buf.toString().trim());
@@ -240,7 +264,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
       userId: userId,
       username: username,
       tool: 'shamanic_journey',
-      summary: '🥁 ${_world.label} · ${_question.isEmpty ? "Reise" : _question.substring(0, math.min(50, _question.length))}',
+      summary:
+          '🥁 ${_world.label} · ${_question.isEmpty ? "Reise" : _question.substring(0, math.min(50, _question.length))}',
       result: {
         'world': _world.code,
         'question': _question,
@@ -278,8 +303,11 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
             colors: [_gold, _world.color],
           ).createShader(r),
           child: const Text('SCHAMANISCHE REISE',
-              style: TextStyle(color: Colors.white, fontSize: 13,
-                  fontWeight: FontWeight.w900, letterSpacing: 2.5)),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.5)),
         ),
         actions: [
           if (_phase == _Phase.complete)
@@ -340,7 +368,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
             ),
           ),
         ),
-        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 32)),
+        const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.energie, count: 32)),
         SafeArea(child: _content()),
         const IgnorePointer(child: WBVignette()),
       ]),
@@ -349,10 +378,14 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
 
   Widget _content() {
     switch (_phase) {
-      case _Phase.pickWorld: return _pickWorldPhase();
-      case _Phase.generating: return _generatingPhase();
-      case _Phase.journeying: return _journeyingPhase();
-      case _Phase.complete: return _completePhase();
+      case _Phase.pickWorld:
+        return _pickWorldPhase();
+      case _Phase.generating:
+        return _generatingPhase();
+      case _Phase.journeying:
+        return _journeyingPhase();
+      case _Phase.complete:
+        return _completePhase();
     }
   }
 
@@ -371,30 +404,46 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('FRAGE AN DEN GEIST',
-                    style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 3, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                TextField(
-                  maxLines: 3, maxLength: 200,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'Optional — was möchtest du auf der Reise erfahren?',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.05),
-                    counterStyle: const TextStyle(color: Colors.white24, fontSize: 9),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  ),
-                  onChanged: (v) => _question = v.trim(),
-                ),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('FRAGE AN DEN GEIST',
+                        style: TextStyle(
+                            color: _gold,
+                            fontSize: 10,
+                            letterSpacing: 3,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      maxLines: 3,
+                      maxLength: 200,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText:
+                            'Optional — was möchtest du auf der Reise erfahren?',
+                        hintStyle: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.4)),
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.05),
+                        counterStyle:
+                            const TextStyle(color: Colors.white24, fontSize: 9),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none),
+                      ),
+                      onChanged: (v) => _question = v.trim(),
+                    ),
+                  ]),
             ),
           ),
         ),
         const SizedBox(height: 20),
         const Text('WÄHLE DEINE WELT',
-            style: TextStyle(color: _gold, fontSize: 11, letterSpacing: 3, fontWeight: FontWeight.w700),
+            style: TextStyle(
+                color: _gold,
+                fontSize: 11,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w700),
             textAlign: TextAlign.center),
         const SizedBox(height: 14),
         ..._worlds.map(_worldCard),
@@ -412,7 +461,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
             const Expanded(
               child: Text(
                 'Safety · Der "Zurück ins Hier"-Button bringt dich jederzeit zurück. Verlasse eine Reise, wenn sie unangenehm wird.',
-                style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.4),
+                style:
+                    TextStyle(color: Colors.white70, fontSize: 11, height: 1.4),
               ),
             ),
           ]),
@@ -445,25 +495,41 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               gradient: sel
-                  ? LinearGradient(colors: [w.color.withValues(alpha: 0.35), w.color.withValues(alpha: 0.12)])
+                  ? LinearGradient(colors: [
+                      w.color.withValues(alpha: 0.35),
+                      w.color.withValues(alpha: 0.12)
+                    ])
                   : null,
               color: sel ? null : Colors.white.withValues(alpha: 0.04),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: sel ? w.color : Colors.white12),
-              boxShadow: sel ? [BoxShadow(color: w.color.withValues(alpha: 0.4), blurRadius: 14, spreadRadius: 1)] : null,
+              boxShadow: sel
+                  ? [
+                      BoxShadow(
+                          color: w.color.withValues(alpha: 0.4),
+                          blurRadius: 14,
+                          spreadRadius: 1)
+                    ]
+                  : null,
             ),
             child: Row(children: [
               Text(w.emoji, style: const TextStyle(fontSize: 36)),
               const SizedBox(width: 14),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(w.label,
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 3),
-                  Text(w.description,
-                      style: const TextStyle(color: Colors.white60, fontSize: 11, height: 1.3),
-                      maxLines: 3),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(w.label,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 3),
+                      Text(w.description,
+                          style: const TextStyle(
+                              color: Colors.white60, fontSize: 11, height: 1.3),
+                          maxLines: 3),
+                    ]),
               ),
               Icon(Icons.arrow_forward_rounded, color: w.color),
             ]),
@@ -483,7 +549,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
             return Transform.scale(
               scale: pulse,
               child: Container(
-                width: 120, height: 120,
+                width: 120,
+                height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
@@ -495,7 +562,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
                   ),
                 ),
                 child: Center(
-                  child: Text(_world.emoji, style: const TextStyle(fontSize: 56)),
+                  child:
+                      Text(_world.emoji, style: const TextStyle(fontSize: 56)),
                 ),
               ),
             );
@@ -503,10 +571,16 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
         ),
         const SizedBox(height: 24),
         Text('Trommel ruft die ${_world.label}…',
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         const Text('Der Pfad öffnet sich',
-            style: TextStyle(color: Colors.white54, fontSize: 12, fontStyle: FontStyle.italic)),
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                fontStyle: FontStyle.italic)),
       ]),
     );
   }
@@ -515,7 +589,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
     if (_narration.isEmpty) return const SizedBox.shrink();
     final idx = _currentNarrationIndex.clamp(0, _narration.length - 1);
     final text = _narration[idx];
-    final label = idx < _phaseLabels.length ? _phaseLabels[idx] : '✨ PHASE ${idx + 1}';
+    final label =
+        idx < _phaseLabels.length ? _phaseLabels[idx] : '✨ PHASE ${idx + 1}';
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       child: Column(children: [
@@ -537,7 +612,11 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
         ),
         const SizedBox(height: 14),
         Text(label,
-            style: TextStyle(color: _gold, fontSize: 11, letterSpacing: 3, fontWeight: FontWeight.w800)),
+            style: TextStyle(
+                color: _gold,
+                fontSize: 11,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w800)),
         const SizedBox(height: 16),
         FadeTransition(
           opacity: _fadeCtrl,
@@ -557,7 +636,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
                     ],
                   ),
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: _world.color.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: _world.color.withValues(alpha: 0.3)),
                 ),
                 child: SelectableText(
                   text,
@@ -577,8 +657,12 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
           child: ElevatedButton.icon(
             onPressed: _nextPhase,
             icon: const Icon(Icons.arrow_forward_rounded),
-            label: Text(idx < _narration.length - 1 ? 'WEITER · NÄCHSTE PHASE' : 'REISE BEENDEN',
-                style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+            label: Text(
+                idx < _narration.length - 1
+                    ? 'WEITER · NÄCHSTE PHASE'
+                    : 'REISE BEENDEN',
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, letterSpacing: 1.5)),
             style: ElevatedButton.styleFrom(
               backgroundColor: _world.color,
               foregroundColor: Colors.white,
@@ -598,27 +682,38 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
           AnimatedBuilder(
             animation: _ambientCtrl,
             builder: (_, __) => Container(
-              width: 100, height: 100,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  _gold.withValues(alpha: 0.4 + 0.2 * math.sin(_ambientCtrl.value * 2 * math.pi)),
+                  _gold.withValues(
+                      alpha: 0.4 +
+                          0.2 * math.sin(_ambientCtrl.value * 2 * math.pi)),
                   Colors.transparent,
                 ]),
               ),
-              child: const Center(child: Text('🌅', style: TextStyle(fontSize: 50))),
+              child: const Center(
+                  child: Text('🌅', style: TextStyle(fontSize: 50))),
             ),
           ),
           const SizedBox(height: 18),
           ShaderMask(
-            shaderCallback: (r) => LinearGradient(colors: [_gold, _world.color]).createShader(r),
+            shaderCallback: (r) =>
+                LinearGradient(colors: [_gold, _world.color]).createShader(r),
             child: const Text('REISE VOLLENDET',
-                style: TextStyle(color: Colors.white, fontSize: 22,
-                    fontWeight: FontWeight.w900, letterSpacing: 3)),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 3)),
           ),
           const SizedBox(height: 8),
           const Text('Du bist zurück. Atme tief, fühle den Boden unter dir.',
-              style: TextStyle(color: Colors.white70, fontSize: 13, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic),
               textAlign: TextAlign.center),
           const SizedBox(height: 24),
           SizedBox(
@@ -627,7 +722,8 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
               onPressed: _save,
               icon: const Icon(Icons.bookmark_added_rounded, size: 18),
               label: const Text('IN AKASHA SPEICHERN',
-                  style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, letterSpacing: 1.5)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _gold,
                 foregroundColor: Colors.black,
@@ -666,7 +762,9 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.7, minChildSize: 0.4, maxChildSize: 0.95,
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
         expand: false,
         builder: (_, scroll) => ListView(
           controller: scroll,
@@ -674,24 +772,33 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
           children: [
             Center(
               child: Container(
-                width: 42, height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 16),
             const Text('REISE-VERLAUF',
-                style: TextStyle(color: _gold, fontSize: 12, letterSpacing: 3, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: _gold,
+                    fontSize: 12,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center),
             const SizedBox(height: 14),
             if (_history.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 40),
                 child: Text('Noch keine Reisen.',
-                    style: TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+                    style: TextStyle(color: Colors.white54),
+                    textAlign: TextAlign.center),
               )
             else
               ..._history.map((h) {
-                final w = _worlds.firstWhere((w) => w.code == h.world, orElse: () => _worlds[0]);
+                final w = _worlds.firstWhere((w) => w.code == h.world,
+                    orElse: () => _worlds[0]);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
@@ -700,25 +807,33 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: w.color.withValues(alpha: 0.2)),
                   ),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Text(w.emoji, style: const TextStyle(fontSize: 18)),
-                      const SizedBox(width: 6),
-                      Text(w.label,
-                          style: TextStyle(color: w.color, fontSize: 12, fontWeight: FontWeight.w700)),
-                      const Spacer(),
-                      Text(_fmt(h.createdAt),
-                          style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                    ]),
-                    if (h.question.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text('"${h.question}"',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis),
-                    ],
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Text(w.emoji, style: const TextStyle(fontSize: 18)),
+                          const SizedBox(width: 6),
+                          Text(w.label,
+                              style: TextStyle(
+                                  color: w.color,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700)),
+                          const Spacer(),
+                          Text(_fmt(h.createdAt),
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 10)),
+                        ]),
+                        if (h.question.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text('"${h.question}"',
+                              style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis),
+                        ],
+                      ]),
                 );
               }),
           ],
@@ -730,8 +845,10 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
   String _fmt(String iso) {
     try {
       final dt = DateTime.parse(iso).toLocal();
-      return '${dt.day.toString().padLeft(2,'0')}.${dt.month.toString().padLeft(2,'0')}.';
-    } catch (_) { return ''; }
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.';
+    } catch (_) {
+      return '';
+    }
   }
 }
 
@@ -744,19 +861,32 @@ class _World {
   final String description;
   final Color color;
   final String beingType;
-  const _World(this.code, this.label, this.emoji, this.description, this.color, this.beingType);
+  const _World(this.code, this.label, this.emoji, this.description, this.color,
+      this.beingType);
 }
 
 const List<_World> _worlds = [
-  _World('lower', 'Untere Welt', '🌳',
+  _World(
+      'lower',
+      'Untere Welt',
+      '🌳',
       'Erde, Wurzeln, Krafttiere. Hier triffst du verkörperte Weisheit der Natur — Tiere, Pflanzen, Steine sprechen zu dir.',
-      Color(0xFF6D4C41), 'Ein Krafttier'),
-  _World('middle', 'Mittlere Welt', '🌅',
+      Color(0xFF6D4C41),
+      'Ein Krafttier'),
+  _World(
+      'middle',
+      'Mittlere Welt',
+      '🌅',
       'Alltägliche Realität, Menschen, konkrete Lösungen. Hier suchst du Hilfe für hier-und-jetzt Fragen.',
-      Color(0xFFFFB300), 'Ein weiser Mensch oder Berater'),
-  _World('upper', 'Obere Welt', '✨',
+      Color(0xFFFFB300),
+      'Ein weiser Mensch oder Berater'),
+  _World(
+      'upper',
+      'Obere Welt',
+      '✨',
       'Himmel, Sterne, Spirit-Guides, Ahnen. Hier empfängst du transpersonelle Botschaften und kosmische Perspektiven.',
-      Color(0xFF7E57C2), 'Ein Spirit-Guide oder Ahn'),
+      Color(0xFF7E57C2),
+      'Ein Spirit-Guide oder Ahn'),
 ];
 
 class _JourneyHistory {
@@ -769,7 +899,9 @@ class _JourneyHistory {
     required this.createdAt,
   });
   Map<String, dynamic> toJson() => {
-        'world': world, 'question': question, 'createdAt': createdAt,
+        'world': world,
+        'question': question,
+        'createdAt': createdAt,
       };
   factory _JourneyHistory.fromJson(Map<String, dynamic> j) => _JourneyHistory(
         world: j['world'] as String? ?? 'lower',
@@ -812,12 +944,24 @@ class _ShamanicOrbsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    _draw(canvas, Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
-        100, worldColor);
-    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
-        90, const Color(0xFFFFB74D));
-    _draw(canvas, Offset(size.width * 0.5, size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
-        70, worldColor.withRed(150));
+    _draw(
+        canvas,
+        Offset(size.width * 0.2,
+            size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        100,
+        worldColor);
+    _draw(
+        canvas,
+        Offset(size.width * 0.85,
+            size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        90,
+        const Color(0xFFFFB74D));
+    _draw(
+        canvas,
+        Offset(size.width * 0.5,
+            size.height * (0.92 + math.sin(t * math.pi) * 0.03)),
+        70,
+        worldColor.withRed(150));
   }
 
   void _draw(Canvas canvas, Offset c, double r, Color color) {
@@ -828,5 +972,6 @@ class _ShamanicOrbsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ShamanicOrbsPainter old) => old.t != t || old.worldColor != worldColor;
+  bool shouldRepaint(_ShamanicOrbsPainter old) =>
+      old.t != t || old.worldColor != worldColor;
 }

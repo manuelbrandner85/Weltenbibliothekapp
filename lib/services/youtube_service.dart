@@ -31,9 +31,11 @@ class YoutubeVideo {
         isSubtitled: j['isSubtitled'] as bool? ?? false,
       );
 
-  String get embedUrl => 'https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&hl=de&rel=0';
+  String get embedUrl =>
+      'https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&hl=de&rel=0';
   String get watchUrl => 'https://www.youtube.com/watch?v=$videoId';
-  String get fallbackThumbnail => 'https://img.youtube.com/vi/$videoId/mqdefault.jpg';
+  String get fallbackThumbnail =>
+      'https://img.youtube.com/vi/$videoId/mqdefault.jpg';
 }
 
 class YoutubeService {
@@ -44,7 +46,9 @@ class YoutubeService {
 
   Future<List<YoutubeVideo>> searchVideos(String query, {int max = 6}) async {
     // Suffix "deutsch" entfernen — Worker kümmert sich selbst darum
-    final cleanQuery = query.replaceAll(RegExp(r'\s+deutsch$', caseSensitive: false), '').trim();
+    final cleanQuery = query
+        .replaceAll(RegExp(r'\s+deutsch$', caseSensitive: false), '')
+        .trim();
     final key = '$cleanQuery|$max';
     if (_cache.containsKey(key)) return _cache[key]!;
 

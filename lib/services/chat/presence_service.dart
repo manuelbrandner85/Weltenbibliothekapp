@@ -98,9 +98,8 @@ class PresenceService extends ChangeNotifier {
           userId: id,
           username: payload['username']?.toString() ?? 'Anonym',
           avatar: payload['avatar']?.toString() ?? '',
-          joinedAt:
-              DateTime.tryParse(payload['joined_at']?.toString() ?? '') ??
-                  DateTime.now().toUtc(),
+          joinedAt: DateTime.tryParse(payload['joined_at']?.toString() ?? '') ??
+              DateTime.now().toUtc(),
         ));
       }
     }

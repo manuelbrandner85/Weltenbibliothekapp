@@ -28,7 +28,8 @@ class NumerologyCalculatorScreen extends StatefulWidget {
   const NumerologyCalculatorScreen({super.key});
 
   @override
-  State<NumerologyCalculatorScreen> createState() => _NumerologyCalculatorScreenState();
+  State<NumerologyCalculatorScreen> createState() =>
+      _NumerologyCalculatorScreenState();
 }
 
 class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
@@ -43,7 +44,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   // Cinema background
   late AnimationController _bgCtrl;
   late AnimationController _pulseCtrl;
-  
+
   // Berechnete Werte
   int? _lifePath;
   int? _soul;
@@ -58,7 +59,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   List<Map<String, dynamic>>? _challenges;
   List<int>? _masterNumbers;
   List<int>? _karmaNumbers;
-  
+
   // 🆕 Partner-Kompatibilität
   int? _partnerLifePath;
   int? _partnerSoul;
@@ -76,11 +77,16 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this); // 🚀 7 Tabs inkl. KOSMOS
+    _tabController =
+        TabController(length: 7, vsync: this); // 🚀 7 Tabs inkl. KOSMOS
     _loadProfileAndCalculate();
     _loadPersonalYearJourney();
-    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat(reverse: true);
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat(reverse: true);
+    _bgCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat(reverse: true);
+    _pulseCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..repeat(reverse: true);
   }
 
   @override
@@ -115,21 +121,27 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     if (_profile == null) return;
 
     final now = DateTime.now();
-    
+
     // Tool-Nutzung tracken (+5 Punkte)
     StreakTrackingService().trackToolUsage('numerology');
 
     setState(() {
       // Kern-Zahlen
       _lifePath = NumerologyEngine.calculateLifePath(_profile!.birthDate);
-      _soul = NumerologyEngine.calculateSoulNumber(_profile!.firstName, _profile!.lastName);
-      _expression = NumerologyEngine.calculateExpressionNumber(_profile!.firstName, _profile!.lastName);
-      _personality = NumerologyEngine.calculatePersonalityNumber(_profile!.firstName, _profile!.lastName);
+      _soul = NumerologyEngine.calculateSoulNumber(
+          _profile!.firstName, _profile!.lastName);
+      _expression = NumerologyEngine.calculateExpressionNumber(
+          _profile!.firstName, _profile!.lastName);
+      _personality = NumerologyEngine.calculatePersonalityNumber(
+          _profile!.firstName, _profile!.lastName);
 
       // Zeit-Zahlen
-      _personalYear = NumerologyEngine.calculatePersonalYear(_profile!.birthDate, now);
-      _personalMonth = NumerologyEngine.calculatePersonalMonth(_profile!.birthDate, now);
-      _personalDay = NumerologyEngine.calculatePersonalDay(_profile!.birthDate, now);
+      _personalYear =
+          NumerologyEngine.calculatePersonalYear(_profile!.birthDate, now);
+      _personalMonth =
+          NumerologyEngine.calculatePersonalMonth(_profile!.birthDate, now);
+      _personalDay =
+          NumerologyEngine.calculatePersonalDay(_profile!.birthDate, now);
 
       // Kernfrequenz
       _coreFrequency = NumerologyEngine.calculateCoreFrequency(
@@ -141,7 +153,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
       // Zyklen
       _lifeCycles = NumerologyEngine.calculateLifeCycles(_profile!.birthDate);
-      _pinnacles = NumerologyEngine.calculatePinnacleCycles(_profile!.birthDate);
+      _pinnacles =
+          NumerologyEngine.calculatePinnacleCycles(_profile!.birthDate);
       _challenges = NumerologyEngine.calculateChallenges(_profile!.birthDate);
 
       // Spezielle Zahlen
@@ -386,8 +399,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           const SizedBox(height: 14),
           _buildSystemToggle(),
           const SizedBox(height: 16),
-          _buildSectionTitle(
-              _chaldeanMode ? 'CHALDAEISCH (ca. 4000 v. Chr.)' : 'PYTHAGORAEISCH'),
+          _buildSectionTitle(_chaldeanMode
+              ? 'CHALDAEISCH (ca. 4000 v. Chr.)'
+              : 'PYTHAGORAEISCH'),
           const SizedBox(height: 16),
           _buildNumberCard(
             'Lebenszahl',
@@ -456,9 +470,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                     child: Text(
                       NumerologyEngine.chaldeanSystemInfo,
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11.5,
-                          height: 1.45),
+                          color: Colors.white, fontSize: 11.5, height: 1.45),
                     ),
                   ),
                 ],
@@ -503,8 +515,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: const Color(0xFFCE93D8).withValues(alpha: 0.45),
-            width: 1.2),
+            color: const Color(0xFFCE93D8).withValues(alpha: 0.45), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF7C4DFF).withValues(alpha: 0.18),
@@ -592,9 +603,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     required String kind,
     required int number,
   }) {
-    final firstName = _profile?.firstName.isNotEmpty == true
-        ? _profile!.firstName
-        : 'Du';
+    final firstName =
+        _profile?.firstName.isNotEmpty == true ? _profile!.firstName : 'Du';
     if (_chaldeanMode) {
       final lens = _chaldeanLens(kind, number, firstName);
       return 'CHALDAEISCHE AUSLEGUNG (Klangschwingung, ca. 4000 v. Chr.)\n'
@@ -679,8 +689,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-            color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -780,7 +790,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               Row(
                 children: [
                   Expanded(
-                      child: _comparisonColumn('Geburt',
+                      child: _comparisonColumn(
+                          'Geburt',
                           cmp['birthExpression'] as int,
                           cmp['birthSoul'] as int)),
                   Container(
@@ -789,7 +800,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                     color: Colors.white.withValues(alpha: 0.15),
                   ),
                   Expanded(
-                      child: _comparisonColumn('Aktuell',
+                      child: _comparisonColumn(
+                          'Aktuell',
                           cmp['currentExpression'] as int,
                           cmp['currentSoul'] as int)),
                 ],
@@ -833,7 +845,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         const SizedBox(height: 6),
         Text('Ausdruck $expression  ·  Seele $soul',
             style: const TextStyle(
-                color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -886,24 +900,27 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         children: [
           _buildSectionTitle('LEBENSZYKLEN'),
           const SizedBox(height: 16),
-          if (_lifeCycles != null) ..._lifeCycles!.map((cycle) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildCycleCard(cycle),
-          )),
+          if (_lifeCycles != null)
+            ..._lifeCycles!.map((cycle) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildCycleCard(cycle),
+                )),
           const SizedBox(height: 24),
           _buildSectionTitle('PINNACLE-ZYKLEN (Höhepunkte)'),
           const SizedBox(height: 16),
-          if (_pinnacles != null) ..._pinnacles!.map((pinnacle) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildPinnacleCard(pinnacle),
-          )),
+          if (_pinnacles != null)
+            ..._pinnacles!.map((pinnacle) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildPinnacleCard(pinnacle),
+                )),
           const SizedBox(height: 24),
           _buildSectionTitle('HERAUSFORDERUNGEN'),
           const SizedBox(height: 16),
-          if (_challenges != null) ..._challenges!.map((challenge) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _buildChallengeCard(challenge),
-          )),
+          if (_challenges != null)
+            ..._challenges!.map((challenge) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildChallengeCard(challenge),
+                )),
         ],
       ),
     );
@@ -913,7 +930,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   Widget _buildKosmosTab() {
     final lp = _lifePath ?? 0;
     if (lp == 0) {
-      return _buildEmptyCard('Kosmische Verbindungen erscheinen nach Profil-Load.',
+      return _buildEmptyCard(
+          'Kosmische Verbindungen erscheinen nach Profil-Load.',
           Icons.public_rounded);
     }
     final kab = CrossSystemEngine.getKabbalisticCorrespondence(lp);
@@ -948,8 +966,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             icon: Icons.translate_rounded,
             iconLabel: hebrew['symbol'] as String,
             title: 'Hebraeischer Buchstabe · ${hebrew['letter']}',
-            subtitle:
-                'Element: ${hebrew['element']} · ${hebrew['tarot']}',
+            subtitle: 'Element: ${hebrew['element']} · ${hebrew['tarot']}',
             body: hebrew['description'] as String,
             accent: const Color(0xFF7C4DFF),
           ),
@@ -1068,9 +1085,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                     const SizedBox(height: 6),
                     Text(body,
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12.5,
-                            height: 1.45)),
+                            color: Colors.white, fontSize: 12.5, height: 1.45)),
                   ],
                 ),
               ),
@@ -1091,9 +1106,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           const SizedBox(height: 16),
           if (_masterNumbers != null && _masterNumbers!.isNotEmpty)
             ..._masterNumbers!.map((numItem) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildMasterNumberCard(numItem),
-            ))
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildMasterNumberCard(numItem),
+                ))
           else
             _buildEmptyCard('Keine Meisterzahlen gefunden', Icons.info_outline),
           const SizedBox(height: 24),
@@ -1101,11 +1116,12 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           const SizedBox(height: 16),
           if (_karmaNumbers != null && _karmaNumbers!.isNotEmpty)
             ..._karmaNumbers!.map((numItem) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildKarmaNumberCard(numItem),
-            ))
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildKarmaNumberCard(numItem),
+                ))
           else
-            _buildEmptyCard('Keine Karma-Zahlen gefunden', Icons.check_circle_outline),
+            _buildEmptyCard(
+                'Keine Karma-Zahlen gefunden', Icons.check_circle_outline),
           const SizedBox(height: 24),
           _buildSectionTitle('BRUECKENZAHLEN'),
           const SizedBox(height: 8),
@@ -1163,17 +1179,20 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         // Web-Fallback: nur Vorschau-Snackbar (kein direkter Share).
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PDF (${0} kB) im Web nur als Vorschau.')),
+          const SnackBar(
+              content: Text('PDF (${0} kB) im Web nur als Vorschau.')),
         );
         return;
       }
       final dir = await getTemporaryDirectory();
-      final safeName = _profile!.firstName.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_');
+      final safeName =
+          _profile!.firstName.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_');
       final file = File('${dir.path}/seelenportraet_$safeName.pdf');
       await file.writeAsBytes(bytes);
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'application/pdf')],
-        text: 'Mein numerologisches Seelenportraet - erstellt mit Weltenbibliothek.',
+        text:
+            'Mein numerologisches Seelenportraet - erstellt mit Weltenbibliothek.',
       );
     } catch (e) {
       if (!mounted) return;
@@ -1185,7 +1204,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   // ── BRUECKENZAHLEN (Verbesserung 3) ──────────────────────────────────
   Widget _buildBridgeNumbersSection() {
-    if (_lifePath == null || _expression == null || _soul == null || _personality == null) {
+    if (_lifePath == null ||
+        _expression == null ||
+        _soul == null ||
+        _personality == null) {
       return _buildEmptyCard('Brueckenzahlen erscheinen nach Profil-Load.',
           Icons.hourglass_empty_rounded);
     }
@@ -1210,15 +1232,16 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                       color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                          color: const Color(0xFFCE93D8).withValues(alpha: 0.35)),
+                          color:
+                              const Color(0xFFCE93D8).withValues(alpha: 0.35)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            _miniNumber(b['numberA'] as int,
-                                const Color(0xFF7C4DFF)),
+                            _miniNumber(
+                                b['numberA'] as int, const Color(0xFF7C4DFF)),
                             const SizedBox(width: 8),
                             Container(
                               width: 36,
@@ -1238,8 +1261,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                               color: Colors.white.withValues(alpha: 0.3),
                             ),
                             const SizedBox(width: 8),
-                            _miniNumber(b['numberB'] as int,
-                                const Color(0xFF7C4DFF)),
+                            _miniNumber(
+                                b['numberB'] as int, const Color(0xFF7C4DFF)),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -1282,10 +1305,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       alignment: Alignment.center,
       child: Text(
         '$n',
-        style: TextStyle(
-            color: c,
-            fontWeight: FontWeight.w900,
-            fontSize: 14),
+        style: TextStyle(color: c, fontWeight: FontWeight.w900, fontSize: 14),
       ),
     );
   }
@@ -1331,7 +1351,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withValues(alpha: 0.6), width: 1.2),
+                border:
+                    Border.all(color: color.withValues(alpha: 0.6), width: 1.2),
                 boxShadow: c >= 3
                     ? [
                         BoxShadow(
@@ -1475,7 +1496,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     );
   }
 
-  Widget _buildNumberCard(String title, int number, String description, Color color, IconData icon) {
+  Widget _buildNumberCard(String title, int number, String description,
+      Color color, IconData icon) {
     return HoverGlowCard(
       glowColor: color,
       child: ClipRRect(
@@ -1634,7 +1656,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   String _getPersonalizedNumberText(String type, int number) {
     final firstName = _profile?.firstName ?? 'Du';
-    
+
     if (type.contains('Lebenszahl')) {
       return _getLifePathText(firstName, number);
     } else if (type.contains('Seelenzahl')) {
@@ -1901,7 +1923,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                       yearNum.toString(),
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                        fontWeight:
+                            isActive ? FontWeight.bold : FontWeight.w600,
                         color: isActive ? Colors.white : Colors.white60,
                       ),
                     ),
@@ -1966,7 +1989,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
@@ -2041,10 +2065,14 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   IconData _getCycleIcon(int cycle) {
     switch (cycle) {
-      case 1: return Icons.child_care;
-      case 2: return Icons.psychology;
-      case 3: return Icons.auto_stories;
-      default: return Icons.timeline;
+      case 1:
+        return Icons.child_care;
+      case 2:
+        return Icons.psychology;
+      case 3:
+        return Icons.auto_stories;
+      default:
+        return Icons.timeline;
     }
   }
 
@@ -2181,7 +2209,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(12),
@@ -2206,7 +2235,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.1)],
+                      colors: [
+                        color.withValues(alpha: 0.3),
+                        color.withValues(alpha: 0.1)
+                      ],
                     ),
                     shape: BoxShape.circle,
                   ),
@@ -2357,17 +2389,22 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   String _challengeStageLabel(int challenge) {
     switch (challenge) {
-      case 1: return 'JUGEND';
-      case 2: return 'MITTLERE PHASE';
-      case 3: return 'HAUPT-LEKTION';
-      case 4: return 'SPÄTE PHASE';
-      default: return '';
+      case 1:
+        return 'JUGEND';
+      case 2:
+        return 'MITTLERE PHASE';
+      case 3:
+        return 'HAUPT-LEKTION';
+      case 4:
+        return 'SPÄTE PHASE';
+      default:
+        return '';
     }
   }
 
   Widget _buildMasterNumberCard(int number) {
     final name = _profile?.firstName ?? 'Du';
-    
+
     return HoverGlowCard(
       glowColor: const Color(0xFFFFD700),
       child: Container(
@@ -2396,7 +2433,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           children: [
             Row(
               children: [
-                const Icon(Icons.auto_awesome, color: Color(0xFFFFD700), size: 32),
+                const Icon(Icons.auto_awesome,
+                    color: Color(0xFFFFD700), size: 32),
                 const SizedBox(width: 12),
                 const Text(
                   'MEISTERZAHL ENTDECKT!',
@@ -2468,10 +2506,14 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   String _getMasterNumberTitle(int number) {
     switch (number) {
-      case 11: return '✨ DER ERLEUCHTETE';
-      case 22: return '🏛️ DER MEISTERBAUMEISTER';
-      case 33: return '❤️ DER MEISTERLEHRER';
-      default: return 'MEISTERZAHL';
+      case 11:
+        return '✨ DER ERLEUCHTETE';
+      case 22:
+        return '🏛️ DER MEISTERBAUMEISTER';
+      case 33:
+        return '❤️ DER MEISTERLEHRER';
+      default:
+        return 'MEISTERZAHL';
     }
   }
 
@@ -2532,7 +2574,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   }
 
   // v95 Pinnacle-Texte: pro Pinnacle-Phase (1..4) + pro Zahl 1..9 detailliert.
-  String _getPinnaclePersonalText(int pinnacle, int number, int startAge, String name) {
+  String _getPinnaclePersonalText(
+      int pinnacle, int number, int startAge, String name) {
     final n = number == 0 ? 9 : (number > 9 ? number % 10 : number);
     final pinnacleLabel = switch (pinnacle) {
       1 => 'ERSTER GIPFEL',
@@ -2541,7 +2584,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       4 => 'VIERTER GIPFEL',
       _ => 'GIPFEL',
     };
-    final framing = '$name, dein $pinnacleLabel beginnt ab dem Alter $startAge und '
+    final framing =
+        '$name, dein $pinnacleLabel beginnt ab dem Alter $startAge und '
         'traegt die Schwingung $number. Pinnacles sind nicht das Hintergrund-'
         'Rauschen deines Lebens, sondern die HAUPT-AUFTRAEGE einzelner Lebens-'
         'Abschnitte -- klare Lernfelder, die in dieser Zeit besonders druecken '
@@ -2681,7 +2725,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   Widget _buildKarmaNumberCard(int number) {
     final name = _profile?.firstName ?? 'Du';
-    
+
     return HoverGlowCard(
       glowColor: const Color(0xFFE91E63),
       child: Container(
@@ -2872,16 +2916,16 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     );
   }
 
-    // switch (number) {
-      // case 11:
-        // return 'Der Erleuchtete - Intuition, Inspiration, spirituelle Einsicht';
-      // case 22:
-        // return 'Der Meisterbaumeister - Manifestation großer Visionen';
-      // case 33:
-        // return 'Der Meisterlehrer - Bedingungslose Liebe und Dienst';
-      // default:
-        // return 'Spirituelle Meisterzahl';
-    // }
+  // switch (number) {
+  // case 11:
+  // return 'Der Erleuchtete - Intuition, Inspiration, spirituelle Einsicht';
+  // case 22:
+  // return 'Der Meisterbaumeister - Manifestation großer Visionen';
+  // case 33:
+  // return 'Der Meisterlehrer - Bedingungslose Liebe und Dienst';
+  // default:
+  // return 'Spirituelle Meisterzahl';
+  // }
   // }
 
   String _getKarmaNumberMeaning(int number) {
@@ -2903,7 +2947,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   Widget _buildYearForecastTimeline() {
     final currentYear = DateTime.now().year;
     final currentMonth = DateTime.now().month;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -2967,7 +3011,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Timeline für 12 Monate
           ...List.generate(12, (index) {
             final month = index + 1;
@@ -2975,7 +3019,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             final personalMonth = _calculatePersonalMonthForYear(month);
             final isCurrentMonth = month == currentMonth;
             final isPastMonth = month < currentMonth;
-            
+
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: _buildMonthTimelineItem(
@@ -3057,7 +3101,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             ],
           ),
           const SizedBox(width: 16),
-          
+
           // Monats-Details
           Expanded(
             child: Column(
@@ -3117,7 +3161,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               ],
             ),
           ),
-          
+
           // Energie-Level-Indikator
           _buildEnergyLevelIndicator(personalMonth, textColor),
         ],
@@ -3128,7 +3172,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   Widget _buildEnergyLevelIndicator(int personalMonth, Color textColor) {
     final energyLevel = _getEnergyLevel(personalMonth);
     final bars = (energyLevel * 5).round();
-    
+
     return Column(
       children: [
         Row(
@@ -3167,7 +3211,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   int _reduceToSingleDigit(int number) {
     while (number > 9) {
-      number = number.toString().split('').map(int.parse).reduce((a, b) => a + b);
+      number =
+          number.toString().split('').map(int.parse).reduce((a, b) => a + b);
     }
     return number;
   }
@@ -3294,6 +3339,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         return Colors.grey;
     }
   }
+
   // 🆕 PARTNER-KOMPATIBILITÄTS-TAB
   Widget _buildPartnerCompatibilityTab() {
     return SingleChildScrollView(
@@ -3303,33 +3349,35 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         children: [
           _buildSectionTitle('PARTNER-KOMPATIBILITÄT'),
           const SizedBox(height: 16),
-          
+
           // Partner auswählen/laden Button
           if (_partnerProfile == null)
             _buildLoadPartnerButton()
           else
             _buildPartnerInfoCard(),
-          
+
           const SizedBox(height: 24),
-          
+
           // Kompatibilitäts-Score
           if (_compatibilityScore != null) ...[
             _buildCompatibilityScoreCard(),
             const SizedBox(height: 24),
-            
+
             // Harmonische Aspekte
             _buildSectionTitle('HARMONISCHE ASPEKTE ✨'),
             const SizedBox(height: 12),
             if (_harmonicAspects != null)
-              ..._harmonicAspects!.map((aspect) => _buildAspectCard(aspect, true)),
-            
+              ..._harmonicAspects!
+                  .map((aspect) => _buildAspectCard(aspect, true)),
+
             const SizedBox(height: 24),
-            
+
             // Herausfordernde Aspekte
             _buildSectionTitle('HERAUSFORDERNDE ASPEKTE ⚠️'),
             const SizedBox(height: 12),
             if (_challengingAspects != null)
-              ..._challengingAspects!.map((aspect) => _buildAspectCard(aspect, false)),
+              ..._challengingAspects!
+                  .map((aspect) => _buildAspectCard(aspect, false)),
           ],
         ],
       ),
@@ -3427,13 +3475,20 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   Widget _buildCompatibilityScoreCard() {
     final score = _compatibilityScore ?? 0;
     final percentage = (score / 10 * 100).round();
-    final scoreColor = score >= 8 ? Colors.green : score >= 6 ? Colors.orange : Colors.red;
-    
+    final scoreColor = score >= 8
+        ? Colors.green
+        : score >= 6
+            ? Colors.orange
+            : Colors.red;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [scoreColor.withValues(alpha: 0.3), scoreColor.withValues(alpha: 0.1)],
+          colors: [
+            scoreColor.withValues(alpha: 0.3),
+            scoreColor.withValues(alpha: 0.1)
+          ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: scoreColor, width: 2),
@@ -3502,8 +3557,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isHarmonic 
-            ? Colors.green.withValues(alpha: 0.1) 
+        color: isHarmonic
+            ? Colors.green.withValues(alpha: 0.1)
             : Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -3564,7 +3619,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     if (_partnerProfile == null || _profile == null) return;
 
     // Partner-Zahlen berechnen
-    _partnerLifePath = NumerologyEngine.calculateLifePath(_partnerProfile!.birthDate);
+    _partnerLifePath =
+        NumerologyEngine.calculateLifePath(_partnerProfile!.birthDate);
     _partnerSoul = NumerologyEngine.calculateSoulNumber(
       _partnerProfile!.firstName,
       _partnerProfile!.lastName,
@@ -3583,13 +3639,17 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     final lifePathDiff = (_lifePath! - _partnerLifePath!).abs();
     if (lifePathDiff == 0) {
       score += 4;
-      _harmonicAspects!.add('Identische Lebenszahlen (${{_lifePath}}) - Tiefes gegenseitiges Verständnis');
+      _harmonicAspects!.add('Identische Lebenszahlen (${{
+        _lifePath
+      }}) - Tiefes gegenseitiges Verständnis');
     } else if (lifePathDiff <= 2) {
       score += 3;
-      _harmonicAspects!.add('Ähnliche Lebenswege ($_lifePath & $_partnerLifePath) - Gute Harmonie');
+      _harmonicAspects!.add(
+          'Ähnliche Lebenswege ($_lifePath & $_partnerLifePath) - Gute Harmonie');
     } else if (lifePathDiff >= 5) {
       score += 1;
-      _challengingAspects!.add('Unterschiedliche Lebenszahlen - Ergänzung durch Gegensätze');
+      _challengingAspects!
+          .add('Unterschiedliche Lebenszahlen - Ergänzung durch Gegensätze');
     } else {
       score += 2;
     }
@@ -3601,23 +3661,27 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       _harmonicAspects!.add('Gleiche Seelenzahlen - Emotionale Verbindung');
     } else if (soulDiff <= 2) {
       score += 2;
-      _harmonicAspects!.add('Harmonische Seelenzahlen - Emotionales Verständnis');
+      _harmonicAspects!
+          .add('Harmonische Seelenzahlen - Emotionales Verständnis');
     } else {
       score += 1;
-      _challengingAspects!.add('Unterschiedliche emotionale Bedürfnisse - Kommunikation wichtig');
+      _challengingAspects!.add(
+          'Unterschiedliche emotionale Bedürfnisse - Kommunikation wichtig');
     }
 
     // Ausdruckszahl-Kompatibilität (30% Gewichtung)
     final expressionDiff = (_expression! - _partnerExpression!).abs();
     if (expressionDiff == 0) {
       score += 3;
-      _harmonicAspects!.add('Identische Ausdruckszahlen - Gleiche Kommunikationsweise');
+      _harmonicAspects!
+          .add('Identische Ausdruckszahlen - Gleiche Kommunikationsweise');
     } else if (expressionDiff <= 2) {
       score += 2;
       _harmonicAspects!.add('Ähnlicher Ausdruck - Gute Verständigung');
     } else {
       score += 1;
-      _challengingAspects!.add('Unterschiedliche Kommunikationsstile - Toleranz fördern');
+      _challengingAspects!
+          .add('Unterschiedliche Kommunikationsstile - Toleranz fördern');
     }
 
     setState(() {
@@ -3633,7 +3697,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     if (score >= 5) return 'Herausfordernde Dynamik - Wachstumspotenzial';
     return 'Gegensätze ziehen sich an - Viel Geduld nötig';
   }
-  
+
   /// 🆕 Helper-Methoden für ausführliche Beschreibungen
   String _getLifePathDescription(int number) {
     final descriptions = {
@@ -3647,7 +3711,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       8: 'Manifestation und materieller Erfolg sind deine Domäne. Du verstehst die Gesetze von Ursache und Wirkung auf materieller Ebene.\n\nMit der Lebenszahl 8 hast du die Fähigkeit, große Dinge zu manifestieren. Du verbindest spirituelle Prinzipien mit materiellem Erfolg. Macht und Autorität fließen dir natürlich zu.\n\nHerausforderungen: Materialismus, Kontrollsucht, Machtmissbrauch.\nGeschenke: Manifestationskraft, Führungsqualität, finanzielles Geschick, Durchsetzungsvermögen.',
       9: 'Vollendung und Humanität definieren deinen Weg. Du bist hier, um zu heilen, zu dienen und die Welt zu einem besseren Ort zu machen.\n\nDie 9 ist die Zahl der Vollendung und des universellen Bewusstseins. Du fühlst mit der gesamten Menschheit. Dein Mitgefühl und deine Weisheit dienen dem höchsten Wohl aller.\n\nHerausforderungen: Über-Idealismus, Schwierigkeit loszulassen, Märtyrertum.\nGeschenke: Weisheit, Mitgefühl, Humanität, Transformation.',
     };
-    return descriptions[number % 10] ?? 'Deine Lebenszahl $number trägt einzigartige Qualitäten. Erforshe ihre tiefe Bedeutung für dein Leben.';
+    return descriptions[number % 10] ??
+        'Deine Lebenszahl $number trägt einzigartige Qualitäten. Erforshe ihre tiefe Bedeutung für dein Leben.';
   }
 
   String _getSoulDescription(int number) {
@@ -3664,51 +3729,60 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   String _getCycleTheme(int number) {
     switch (number) {
-      case 1: return 'Unabhängigkeit, Führung, Neuanfang';
-      case 2: return 'Partnerschaft, Diplomatie, Balance';
-      case 3: return 'Kreativität, Ausdruck, Freude';
-      case 4: return 'Stabilität, Ordnung, Arbeit';
-      case 5: return 'Freiheit, Veränderung, Abenteuer';
-      case 6: return 'Verantwortung, Familie, Dienst';
-      case 7: return 'Spiritualität, Analyse, Weisheit';
-      case 8: return 'Macht, Erfolg, Manifestation';
-      case 9: return 'Vollendung, Humanität, Loslassen';
-      default: return 'besondere Qualitäten';
+      case 1:
+        return 'Unabhängigkeit, Führung, Neuanfang';
+      case 2:
+        return 'Partnerschaft, Diplomatie, Balance';
+      case 3:
+        return 'Kreativität, Ausdruck, Freude';
+      case 4:
+        return 'Stabilität, Ordnung, Arbeit';
+      case 5:
+        return 'Freiheit, Veränderung, Abenteuer';
+      case 6:
+        return 'Verantwortung, Familie, Dienst';
+      case 7:
+        return 'Spiritualität, Analyse, Weisheit';
+      case 8:
+        return 'Macht, Erfolg, Manifestation';
+      case 9:
+        return 'Vollendung, Humanität, Loslassen';
+      default:
+        return 'besondere Qualitäten';
     }
   }
-  
+
   // ════════════════════════════════════════════════════════════════
   // 🚀 PERSONAL YEAR JOURNEY MAP METHODS (v44.1.0)
   // ════════════════════════════════════════════════════════════════
-  
+
   /// Personal Year Journey von Hive laden
   Future<void> _loadPersonalYearJourney() async {
     if (_profile == null) return;
-    
+
     setState(() => _isLoadingJourney = true);
-    
+
     try {
       final now = DateTime.now();
       final currentYear = now.year;
-      
+
       // Lade Year Journey aus Hive
       final journey = StorageService().getPersonalYearJourney(currentYear);
-      
+
       if (journey != null) {
         setState(() => _currentYearJourney = journey);
       } else {
         // Erstelle neue Journey für dieses Jahr
         await _createPersonalYearJourney();
       }
-      
+
       // Lade Journal Entries
       final entries = StorageService().getNumerologyJournalEntries();
       setState(() => _journalEntries = entries);
-      
+
       // Lade Milestones
       final milestones = StorageService().getNumerologyMilestones();
       setState(() => _milestones = milestones);
-      
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -3722,11 +3796,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       setState(() => _isLoadingJourney = false);
     }
   }
-  
+
   /// Neue Personal Year Journey erstellen
   Future<void> _createPersonalYearJourney() async {
     if (_profile == null || _personalYear == null) return;
-    
+
     final now = DateTime.now();
     final journey = {
       'year': now.year,
@@ -3734,22 +3808,23 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       'createdAt': now.toIso8601String(),
       'monthlyEnergies': _calculateMonthlyEnergies(),
     };
-    
+
     await StorageService().savePersonalYearJourney(journey);
     setState(() => _currentYearJourney = journey);
   }
-  
+
   /// Monatliche Energien berechnen
   List<Map<String, dynamic>> _calculateMonthlyEnergies() {
     if (_profile == null) return [];
-    
+
     final now = DateTime.now();
     final List<Map<String, dynamic>> months = [];
-    
+
     for (int month = 1; month <= 12; month++) {
       final date = DateTime(now.year, month, 1);
-      final monthEnergy = NumerologyEngine.calculatePersonalMonth(_profile!.birthDate, date);
-      
+      final monthEnergy =
+          NumerologyEngine.calculatePersonalMonth(_profile!.birthDate, date);
+
       months.add({
         'month': month,
         'monthName': _getMonthName(month),
@@ -3758,19 +3833,29 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         'isCurrent': month == now.month,
       });
     }
-    
+
     return months;
   }
-  
+
   /// Monatsname zurückgeben
   String _getMonthName(int month) {
     const months = [
-      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember'
     ];
     return months[month - 1];
   }
-  
+
   /// Monats-Thema basierend auf Energie-Nummer
   String _getMonthTheme(int energy) {
     const themes = {
@@ -3788,7 +3873,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     };
     return themes[energy] ?? 'Transformation';
   }
-  
+
   /// Personal Year Journey Tab bauen
   Widget _buildPersonalYearJourneyTab() {
     if (_isLoadingJourney) {
@@ -3796,13 +3881,14 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         child: CircularProgressIndicator(color: Color(0xFFFFD700)),
       );
     }
-    
+
     if (_currentYearJourney == null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.calendar_month, size: 64, color: Color(0xFFFFD700)),
+            const Icon(Icons.calendar_month,
+                size: 64, color: Color(0xFFFFD700)),
             const SizedBox(height: 16),
             const Text(
               'Personal Year Journey wird geladen...',
@@ -3821,11 +3907,12 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         ),
       );
     }
-    
+
     final year = _currentYearJourney!['year'] as int;
     final personalYear = _currentYearJourney!['personalYear'] as int;
-    final monthlyEnergies = _currentYearJourney!['monthlyEnergies'] as List<dynamic>;
-    
+    final monthlyEnergies =
+        _currentYearJourney!['monthlyEnergies'] as List<dynamic>;
+
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20, _topInset(context), 20, _bottomInset()),
       child: Column(
@@ -3854,7 +3941,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today, color: Color(0xFFFFD700), size: 32),
+                    const Icon(Icons.calendar_today,
+                        color: Color(0xFFFFD700), size: 32),
                     const SizedBox(width: 12),
                     Text(
                       'DEINE REISE $year',
@@ -3886,21 +3974,22 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Monatliche Energien
           _buildSectionTitle('MONATLICHE ENERGIEN'),
           const SizedBox(height: 16),
-          
-          ...monthlyEnergies.map((monthData) => _buildMonthEnergyCard(monthData)),
-          
+
+          ...monthlyEnergies
+              .map((monthData) => _buildMonthEnergyCard(monthData)),
+
           const SizedBox(height: 24),
-          
+
           // Meilensteine
           _buildSectionTitle('MEILENSTEINE'),
           const SizedBox(height: 16),
-          
+
           if (_milestones.isEmpty)
             Container(
               padding: const EdgeInsets.all(24),
@@ -3917,13 +4006,13 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             )
           else
             ..._milestones.map((milestone) => _buildMilestoneCard(milestone)),
-          
+
           const SizedBox(height: 24),
-          
+
           // Journal Einträge
           _buildSectionTitle('JOURNAL'),
           const SizedBox(height: 16),
-          
+
           if (_journalEntries.isEmpty)
             Container(
               padding: const EdgeInsets.all(24),
@@ -3939,10 +4028,12 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               ),
             )
           else
-            ..._journalEntries.take(5).map((entry) => _buildJournalEntryCard(entry)),
-          
+            ..._journalEntries
+                .take(5)
+                .map((entry) => _buildJournalEntryCard(entry)),
+
           const SizedBox(height: 24),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -3977,7 +4068,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       ),
     );
   }
-  
+
   /// Year Theme Description
   String _getYearThemeDescription(int year) {
     const descriptions = {
@@ -3995,7 +4086,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     };
     return descriptions[year] ?? 'Jahr der Transformation und des Wachstums';
   }
-  
+
   /// Monats-Energie Card
   Widget _buildMonthEnergyCard(Map<String, dynamic> monthData) {
     final month = monthData['month'] as int;
@@ -4003,7 +4094,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     final energy = monthData['energy'] as int;
     final theme = monthData['theme'] as String;
     final isCurrent = monthData['isCurrent'] as bool;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -4049,7 +4140,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             ),
           ),
           const SizedBox(width: 16),
-          
+
           // Month Info
           Expanded(
             child: Column(
@@ -4068,7 +4159,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                     if (isCurrent) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFD700),
                           borderRadius: BorderRadius.circular(12),
@@ -4096,7 +4188,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               ],
             ),
           ),
-          
+
           // Energy Number Badge
           Container(
             width: 40,
@@ -4124,7 +4216,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       ),
     );
   }
-  
+
   /// Energie-Farbe basierend auf Nummer
   Color _getEnergyColor(int energy) {
     const colors = {
@@ -4142,13 +4234,13 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     };
     return colors[energy] ?? const Color(0xFFFFD700);
   }
-  
+
   /// Meilenstein Card
   Widget _buildMilestoneCard(Map<String, dynamic> milestone) {
     final title = milestone['title'] as String;
     final date = milestone['date'] as String;
     final description = milestone['description'] as String?;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -4200,16 +4292,16 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       ),
     );
   }
-  
+
   /// Journal Entry Card
   Widget _buildJournalEntryCard(Map<String, dynamic> entry) {
     final timestamp = entry['timestamp'] as String;
     final content = entry['content'] as String;
     final mood = entry['mood'] as String?;
-    
+
     final date = DateTime.parse(timestamp);
     final dateStr = '${date.day}.${date.month}.${date.year}';
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -4255,7 +4347,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       ),
     );
   }
-  
+
   /// Mood Emoji
   String _getMoodEmoji(String mood) {
     const emojis = {
@@ -4268,12 +4360,12 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     };
     return emojis[mood] ?? '😐';
   }
-  
+
   /// Show Add Milestone Dialog
   void _showAddMilestoneDialog() {
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -4314,21 +4406,22 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white60)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white60)),
           ),
           ElevatedButton(
             onPressed: () async {
               if (titleController.text.trim().isEmpty) return;
-              
+
               final milestone = {
                 'id': DateTime.now().millisecondsSinceEpoch.toString(),
                 'title': titleController.text.trim(),
-                'description': descriptionController.text.trim().isEmpty 
-                    ? null 
+                'description': descriptionController.text.trim().isEmpty
+                    ? null
                     : descriptionController.text.trim(),
                 'date': DateTime.now().toIso8601String(),
               };
-              
+
               // FIX v5.28.0: Navigator aus dem Dialog-Context nutzen
               final nav = Navigator.of(context);
               await StorageService().saveNumerologyMilestone(milestone);
@@ -4345,12 +4438,12 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       ),
     );
   }
-  
+
   /// Show Add Journal Dialog
   void _showAddJournalDialog() {
     final contentController = TextEditingController();
     String selectedMood = 'neutral';
-    
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -4371,14 +4464,23 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: ['happy', 'neutral', 'sad', 'excited', 'anxious', 'peaceful']
+                children: [
+                  'happy',
+                  'neutral',
+                  'sad',
+                  'excited',
+                  'anxious',
+                  'peaceful'
+                ]
                     .map((mood) => GestureDetector(
-                          onTap: () => setDialogState(() => selectedMood = mood),
+                          onTap: () =>
+                              setDialogState(() => selectedMood = mood),
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: selectedMood == mood
-                                  ? const Color(0xFF9C27B0).withValues(alpha: 0.3)
+                                  ? const Color(0xFF9C27B0)
+                                      .withValues(alpha: 0.3)
                                   : Colors.transparent,
                               border: Border.all(
                                 color: selectedMood == mood
@@ -4413,19 +4515,20 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen', style: TextStyle(color: Colors.white60)),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white60)),
             ),
             ElevatedButton(
               onPressed: () async {
                 if (contentController.text.trim().isEmpty) return;
-                
+
                 final entry = {
                   'id': DateTime.now().millisecondsSinceEpoch.toString(),
                   'content': contentController.text.trim(),
                   'mood': selectedMood,
                   'timestamp': DateTime.now().toIso8601String(),
                 };
-                
+
                 // FIX v5.28.0: Navigator aus dem Dialog-Context nutzen
                 final nav = Navigator.of(context);
                 await StorageService().saveNumerologyJournalEntry(entry);
@@ -4443,25 +4546,26 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       ),
     );
   }
-  
 }
 
 class _CineOrb extends StatelessWidget {
   final Color color;
   final double size;
   final double opacity;
-  const _CineOrb({required this.color, required this.size, required this.opacity});
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
   @override
   Widget build(BuildContext context) => Container(
-    width: size, height: size,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: RadialGradient(colors: [
-        color.withValues(alpha: opacity),
-        color.withValues(alpha: 0),
-      ]),
-    ),
-  );
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }
 
 // 🆕 PARTNER-EINGABE-DIALOG
@@ -4581,14 +4685,14 @@ class _PartnerInputDialogState extends State<_PartnerInputDialog> {
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() => _birthDate = picked);
     }
   }
 
   void _savePartner() {
-    if (_firstNameController.text.trim().isEmpty || 
+    if (_firstNameController.text.trim().isEmpty ||
         _lastNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -4612,8 +4716,6 @@ class _PartnerInputDialogState extends State<_PartnerInputDialog> {
     Navigator.pop(context);
   }
 }
-
-
 
 // ══════════════════════════════════════════════════════════════════════
 // v95: FormattedNumerologyText -- Markdown-Lite-Parser fuer schoene
@@ -4676,33 +4778,35 @@ class _FormattedNumerologyText extends StatelessWidget {
         padding: const EdgeInsets.only(top: 6, bottom: 6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: items.map((item) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 5,
-                  height: 5,
-                  margin: const EdgeInsets.only(top: 8, right: 10),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: accent.withValues(alpha: 0.85),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.95),
-                      fontSize: baseFontSize - 0.5,
-                      height: 1.55,
+          children: items
+              .map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 5,
+                          height: 5,
+                          margin: const EdgeInsets.only(top: 8, right: 10),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: accent.withValues(alpha: 0.85),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            item,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.95),
+                              fontSize: baseFontSize - 0.5,
+                              height: 1.55,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-          )).toList(),
+                  ))
+              .toList(),
         ),
       ));
     }

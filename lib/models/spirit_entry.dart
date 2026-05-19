@@ -8,7 +8,7 @@ class SpiritEntry {
   final DateTime createdAt;
   final String? mood; // Optional: Mood-Tracker
   final int? rating; // Optional: 1-5 Bewertung
-  
+
   SpiritEntry({
     required this.id,
     required this.title,
@@ -19,7 +19,7 @@ class SpiritEntry {
     this.mood,
     this.rating,
   });
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -32,7 +32,7 @@ class SpiritEntry {
       'rating': rating,
     };
   }
-  
+
   factory SpiritEntry.fromJson(Map<String, dynamic> json) {
     return SpiritEntry(
       id: json['id'] as String,
@@ -52,10 +52,10 @@ class SpiritEntry {
 
 /// Spirit-Entry Typen
 enum SpiritType {
-  journal,        // Inneres Journal
-  symbol,         // Symbol-Explorer
-  synchronicity,  // Synchronizitäts-Log
-  mood,          // Mood-Tracker
-  archetype,     // Archetypen-Muster
-  dream,         // Traum-Log
+  journal, // Inneres Journal
+  symbol, // Symbol-Explorer
+  synchronicity, // Synchronizitäts-Log
+  mood, // Mood-Tracker
+  archetype, // Archetypen-Muster
+  dream, // Traum-Log
 }

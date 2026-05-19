@@ -4,49 +4,49 @@ import 'dart:async';
 
 // Service imports (static imports required in Dart)
 import 'theme_service.dart';
-import 'local_chat_storage_service.dart';  // 💬 Local Chat Storage
-import 'invisible_auth_service.dart';  // 🔐 PHASE 1: AUTHENTICATION
-import 'sound_service.dart';  // ✅ PRODUCTION-READY: Real audio system
+import 'local_chat_storage_service.dart'; // 💬 Local Chat Storage
+import 'invisible_auth_service.dart'; // 🔐 PHASE 1: AUTHENTICATION
+import 'sound_service.dart'; // ✅ PRODUCTION-READY: Real audio system
 import 'unified_knowledge_service.dart';
 import 'cloudflare_api_service.dart';
 import 'cloudflare_push_service.dart';
 import '../services/offline_storage_service.dart';
 import 'checkin_service.dart';
 import 'favorites_service.dart';
-import 'search_history_service.dart';  // 🆕 Search History Service
-import 'community_interaction_service.dart';  // 🆕 Community Interaction Service
-import 'daily_knowledge_service.dart';  // 🆕 Daily Knowledge Service
-import 'ai_search_suggestion_service.dart';  // 🆕 AI Search Suggestion Service
+import 'search_history_service.dart'; // 🆕 Search History Service
+import 'community_interaction_service.dart'; // 🆕 Community Interaction Service
+import 'daily_knowledge_service.dart'; // 🆕 Daily Knowledge Service
+import 'ai_search_suggestion_service.dart'; // 🆕 AI Search Suggestion Service
 import 'daily_spirit_practice_service.dart';
 import 'synchronicity_service.dart';
 import 'streak_tracking_service.dart';
 import 'anonymous_cloud_sync_service.dart';
 import 'realtime_updates_service.dart';
 // import 'notification_service.dart'; // ❌ Web-only - Disabled for Android
-import 'achievement_service.dart';  // 🏆 Achievement System
-import 'unified_profile_service.dart';  // 🪪 v95 Unified Profile
-import 'realtime_notification_service.dart';  // 🔔 v95 Realtime Notifications
-import 'daily_challenges_service.dart';  // 🎯 Daily Challenges
-import 'leaderboard_service.dart';  // 🏆 Leaderboard
-import 'reward_service.dart';  // 🎁 Reward System
-import 'social_sharing_service.dart';  // 📤 Social Sharing
-import 'user_content_service.dart';  // ✍️ User Content
+import 'achievement_service.dart'; // 🏆 Achievement System
+import 'unified_profile_service.dart'; // 🪪 v95 Unified Profile
+import 'realtime_notification_service.dart'; // 🔔 v95 Realtime Notifications
+import 'daily_challenges_service.dart'; // 🎯 Daily Challenges
+import 'leaderboard_service.dart'; // 🏆 Leaderboard
+import 'reward_service.dart'; // 🎁 Reward System
+import 'social_sharing_service.dart'; // 📤 Social Sharing
+import 'user_content_service.dart'; // ✍️ User Content
 // 📊 Analytics
 
 /// Service Initialization Manager
-/// 
+///
 /// Manages app-wide service initialization with:
 /// - Priority-based loading (Critical → High → Medium → Low)
 /// - Dependency tracking
 /// - Proper error handling & timeouts
 /// - Initialization state monitoring
 /// - No arbitrary delays - event-driven initialization
-/// 
+///
 /// Usage:
 /// ```dart
 /// // In main.dart, BEFORE runApp():
 /// await ServiceManager().initializeCriticalServices();
-/// 
+///
 /// // After runApp() (non-blocking):
 /// ServiceManager().initializeBackgroundServices();
 /// ```
@@ -59,13 +59,13 @@ class ServiceManager {
   bool _criticalServicesInitialized = false;
   bool _backgroundServicesInitializing = false;
   final Map<String, ServiceInitState> _serviceStates = {};
-  final StreamController<ServiceInitEvent> _eventController = 
+  final StreamController<ServiceInitEvent> _eventController =
       StreamController<ServiceInitEvent>.broadcast();
 
   /// Get service initialization state
   bool get criticalServicesReady => _criticalServicesInitialized;
   bool get backgroundServicesInitializing => _backgroundServicesInitializing;
-  
+
   /// Stream of service initialization events (for UI feedback)
   Stream<ServiceInitEvent> get events => _eventController.stream;
 
@@ -97,7 +97,8 @@ class ServiceManager {
           await StorageService().init();
         },
         critical: true,
-        timeout: const Duration(seconds: 5), // ✅ Erhöht von 2s auf 5s für Android
+        timeout:
+            const Duration(seconds: 5), // ✅ Erhöht von 2s auf 5s für Android
       );
 
       // ThemeService - Required for app theming
@@ -109,7 +110,7 @@ class ServiceManager {
         critical: true,
         timeout: const Duration(seconds: 1),
       );
-      
+
       // 💬 LocalChatStorageService - Offline-First Chat (NEW)
       await _initializeService(
         'LocalChatStorageService',
@@ -139,7 +140,7 @@ class ServiceManager {
         critical: false,
         timeout: const Duration(seconds: 2),
       );
-      
+
       // 🔐 CRITICAL FIX: InvisibleAuthService OPTIONAL (kann offline funktionieren)
       // ✅ WICHTIG: Auth-Init läuft NICHT mehr blockierend!
       // Auth wird im Hintergrund nachgeladen, App startet sofort
@@ -153,7 +154,7 @@ class ServiceManager {
         debugPrint('⚠️ InvisibleAuthService: Init skipped (non-critical): $e');
         // ✅ App kann OHNE Auth-Service starten!
       }
-      
+
       // ✅ SoundService - Audio feedback system (non-blocking)
       // Note: SoundService has its own initialization in constructor
       // Just instantiate to trigger lazy loading
@@ -170,8 +171,8 @@ class ServiceManager {
 
       _criticalServicesInitialized = true;
       final duration = DateTime.now().difference(startTime);
-      debugPrint('✅ Critical services initialized in ${duration.inMilliseconds}ms');
-
+      debugPrint(
+          '✅ Critical services initialized in ${duration.inMilliseconds}ms');
     } catch (e, stackTrace) {
       debugPrint('❌ CRITICAL FAILURE: Critical services initialization failed');
       debugPrint('Error: $e');
@@ -207,7 +208,7 @@ class ServiceManager {
       // TIER 1: HIGH PRIORITY (Portal/Knowledge System - User sees immediately)
       // Load sequentially to respect dependencies
       // ════════════════════════════════════════════════════════════
-      
+
       // Cloudflare API Service (Singleton - instant)
       // ⚡ CRITICAL FIX: Make optional to prevent app hang if Worker offline
       try {
@@ -401,14 +402,13 @@ class ServiceManager {
         () async => await StreakTrackingService().trackDailyLogin(),
         timeout: const Duration(seconds: 10),
       );
-      
+
       // 🏆 Time-based Achievement Check
       _checkTimeBasedAchievements();
 
       final duration = DateTime.now().difference(startTime);
       debugPrint('✅ Background services initialized in ${duration.inSeconds}s');
       _printServiceSummary();
-
     } catch (e, stackTrace) {
       debugPrint('⚠️ Background service initialization had errors (non-fatal)');
       debugPrint('Error: $e');
@@ -431,27 +431,30 @@ class ServiceManager {
     bool critical = false,
   }) async {
     _serviceStates[serviceName] = ServiceInitState.initializing;
-    _eventController.add(ServiceInitEvent(serviceName, ServiceInitState.initializing));
+    _eventController
+        .add(ServiceInitEvent(serviceName, ServiceInitState.initializing));
 
     try {
       await initializer().timeout(
         timeout,
         onTimeout: () {
-          throw TimeoutException('$serviceName timed out after ${timeout.inSeconds}s');
+          throw TimeoutException(
+              '$serviceName timed out after ${timeout.inSeconds}s');
         },
       );
 
       _serviceStates[serviceName] = ServiceInitState.ready;
-      _eventController.add(ServiceInitEvent(serviceName, ServiceInitState.ready));
-      
+      _eventController
+          .add(ServiceInitEvent(serviceName, ServiceInitState.ready));
+
       if (kDebugMode) {
         debugPrint('  ✅ $serviceName');
       }
-
     } catch (e) {
       _serviceStates[serviceName] = ServiceInitState.failed;
-      _eventController.add(ServiceInitEvent(serviceName, ServiceInitState.failed, error: e));
-      
+      _eventController.add(
+          ServiceInitEvent(serviceName, ServiceInitState.failed, error: e));
+
       if (critical) {
         debugPrint('  ❌ CRITICAL: $serviceName failed - $e');
         rethrow; // Critical services must succeed
@@ -464,12 +467,14 @@ class ServiceManager {
 
   /// Print service initialization summary
   void _printServiceSummary() {
-    final ready = _serviceStates.values.where((s) => s == ServiceInitState.ready).length;
-    final failed = _serviceStates.values.where((s) => s == ServiceInitState.failed).length;
+    final ready =
+        _serviceStates.values.where((s) => s == ServiceInitState.ready).length;
+    final failed =
+        _serviceStates.values.where((s) => s == ServiceInitState.failed).length;
     final total = _serviceStates.length;
 
     debugPrint('📊 Service Summary: $ready/$total ready');
-    
+
     if (failed > 0) {
       debugPrint('  ⚠️ $failed services failed:');
       _serviceStates.forEach((name, state) {
@@ -484,18 +489,18 @@ class ServiceManager {
   void dispose() {
     _eventController.close();
   }
-  
+
   /// 🏆 Check Time-based Achievements (Early Bird, Night Owl)
   void _checkTimeBasedAchievements() {
     try {
       final hour = DateTime.now().hour;
-      
+
       // Early Bird: Before 6 AM
       if (hour < 6) {
         AchievementService().incrementProgress('early_bird');
         if (kDebugMode) debugPrint('🌅 Early Bird achievement triggered!');
       }
-      
+
       // Night Owl: After 11 PM
       if (hour >= 23) {
         AchievementService().incrementProgress('night_owl');
@@ -528,7 +533,7 @@ class ServiceInitEvent {
 class TimeoutException implements Exception {
   final String message;
   TimeoutException(this.message);
-  
+
   @override
   String toString() => 'TimeoutException: $message';
 }

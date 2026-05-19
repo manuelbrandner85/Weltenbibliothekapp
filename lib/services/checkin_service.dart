@@ -10,13 +10,13 @@ class CheckInService {
   CheckInService._internal();
 
   static const String _keyCheckIns = 'location_checkins';
-  
+
   final List<CheckIn> _checkIns = [];
-  
+
   // Stream für UI-Updates
-  final StreamController<List<CheckIn>> _checkInsController = 
+  final StreamController<List<CheckIn>> _checkInsController =
       StreamController<List<CheckIn>>.broadcast();
-  
+
   Stream<List<CheckIn>> get checkInsStream => _checkInsController.stream;
 
   /// Initialisierung
@@ -28,7 +28,7 @@ class CheckInService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final checkInsJson = prefs.getStringList(_keyCheckIns) ?? [];
-      
+
       _checkIns.clear();
       for (final json in checkInsJson) {
         try {
@@ -50,7 +50,7 @@ class CheckInService {
           }
         }
       }
-      
+
       if (kDebugMode) {
         debugPrint('📍 Check-Ins geladen: ${_checkIns.length}');
       }
@@ -90,7 +90,7 @@ class CheckInService {
     _checkIns.add(checkIn);
     await _saveCheckIns();
     _checkInsController.add(_checkIns);
-    
+
     if (kDebugMode) {
       debugPrint('✅ Check-In erstellt: $locationName');
     }
@@ -99,18 +99,18 @@ class CheckInService {
   /// Alle Check-Ins abrufen
   List<CheckIn> getCheckIns({String? worldType, String? category}) {
     var filtered = _checkIns;
-    
+
     if (worldType != null) {
       filtered = filtered.where((c) => c.worldType == worldType).toList();
     }
-    
+
     if (category != null) {
       filtered = filtered.where((c) => c.category == category).toList();
     }
-    
+
     // Sortieren nach neuesten
     filtered.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    
+
     return filtered;
   }
 
@@ -128,11 +128,11 @@ class CheckInService {
   Map<String, int> getCategoryCounts({String? worldType}) {
     final checkIns = getCheckIns(worldType: worldType);
     final counts = <String, int>{};
-    
+
     for (final checkIn in checkIns) {
       counts[checkIn.category] = (counts[checkIn.category] ?? 0) + 1;
     }
-    
+
     return counts;
   }
 
@@ -150,7 +150,7 @@ class CheckInService {
     _checkIns.removeWhere((c) => c.locationId == locationId);
     await _saveCheckIns();
     _checkInsController.add(_checkIns);
-    
+
     if (kDebugMode) {
       debugPrint('🗑️ Check-In gelöscht: $locationId');
     }
@@ -162,9 +162,9 @@ class CheckInService {
       final prefs = await SharedPreferences.getInstance();
       final checkInsJson = _checkIns.map((c) {
         return '${c.id}|${c.locationId}|${c.locationName}|${c.category}|'
-               '${c.timestamp.toIso8601String()}|${c.notes ?? ''}|${c.worldType}';
+            '${c.timestamp.toIso8601String()}|${c.notes ?? ''}|${c.worldType}';
       }).toList();
-      
+
       await prefs.setStringList(_keyCheckIns, checkInsJson);
     } catch (e) {
       if (kDebugMode) {

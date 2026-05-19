@@ -1,6 +1,6 @@
 /// **WELTENBIBLIOTHEK - STEP 2+3 VISUALISIERUNGEN**
 /// Export-Datei für alle Visualisierungs-Widgets
-/// 
+///
 /// Beinhaltet:
 /// - Netzwerk-Graph (STEP 2: Akteurs-Verbindungen)
 /// - Timeline (STEP 3: Historische Ereignisse)

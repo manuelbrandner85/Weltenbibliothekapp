@@ -88,8 +88,7 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
           // Header
           Row(
             children: [
-              const Icon(Icons.travel_explore,
-                  color: _accent, size: 18),
+              const Icon(Icons.travel_explore, color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'TIEFEN-RECHERCHE',
@@ -180,8 +179,8 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: active
                       ? _accent.withValues(alpha: 0.2)
@@ -200,8 +199,7 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
                       style: TextStyle(
                         color: active ? Colors.white : Colors.white60,
                         fontSize: 11,
-                        fontWeight:
-                            active ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -303,8 +301,7 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
                 ],
               ),
             ),
-            const Icon(Icons.open_in_new,
-                color: _accent, size: 16),
+            const Icon(Icons.open_in_new, color: _accent, size: 16),
           ],
         ),
       ),
@@ -329,14 +326,13 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
                       color: _accent.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
@@ -387,8 +383,7 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,8 +436,7 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.06)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
               ),
               child: Row(
                 children: [
@@ -529,8 +523,7 @@ class _SkeletonBlockState extends State<_SkeletonBlock>
             margin: const EdgeInsets.only(bottom: 10),
             height: 56,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(
-                  alpha: 0.04 + 0.04 * _ctrl.value),
+              color: Colors.white.withValues(alpha: 0.04 + 0.04 * _ctrl.value),
               borderRadius: BorderRadius.circular(KbDesign.radiusSm),
             ),
           ),

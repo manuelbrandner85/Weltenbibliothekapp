@@ -64,8 +64,7 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.forum,
-                  color: Color(0xFFCE93D8), size: 18),
+              const Icon(Icons.forum, color: Color(0xFFCE93D8), size: 18),
               const SizedBox(width: 8),
               const Text(
                 'COMMUNITY-HINWEISE',
@@ -149,9 +148,7 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
           Row(
             children: [
               Icon(
-                a.isAnonymous
-                    ? Icons.shield
-                    : Icons.person,
+                a.isAnonymous ? Icons.shield : Icons.person,
                 size: 13,
                 color: a.isAnonymous
                     ? KbDesign.goldAccent
@@ -297,8 +294,7 @@ class _AddResult {
   final String body;
   final String? sourceUrl;
   final bool anonymous;
-  _AddResult(
-      {required this.body, required this.anonymous, this.sourceUrl});
+  _AddResult({required this.body, required this.anonymous, this.sourceUrl});
 }
 
 class _AddAnnotationDialog extends StatefulWidget {

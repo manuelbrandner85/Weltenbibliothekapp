@@ -14,7 +14,7 @@ import '../models/spirit_practices_database.dart';
 
 class DailySpiritPracticeService extends ChangeNotifier {
   // Singleton Pattern
-  static final DailySpiritPracticeService _instance = 
+  static final DailySpiritPracticeService _instance =
       DailySpiritPracticeService._internal();
   factory DailySpiritPracticeService() => _instance;
   DailySpiritPracticeService._internal();
@@ -23,8 +23,10 @@ class DailySpiritPracticeService extends ChangeNotifier {
   List<DailySpiritPractice> _todaysPractices = [];
 
   // Stream für Live-Updates
-  final _practicesController = StreamController<List<DailySpiritPractice>>.broadcast();
-  Stream<List<DailySpiritPractice>> get practicesStream => _practicesController.stream;
+  final _practicesController =
+      StreamController<List<DailySpiritPractice>>.broadcast();
+  Stream<List<DailySpiritPractice>> get practicesStream =>
+      _practicesController.stream;
 
   // Random-Generator mit Seed für Konsistenz
   final Random _random = Random();
@@ -42,20 +44,20 @@ class DailySpiritPracticeService extends ChangeNotifier {
     try {
       final today = DateTime.now();
       final todayKey = '${today.year}-${today.month}-${today.day}';
-      
+
       // Prüfen ob bereits generiert
       final storedPractices = await _loadStoredPractices(todayKey);
-      
+
       if (storedPractices.isNotEmpty) {
         _todaysPractices = storedPractices;
       } else {
         // Neu generieren
         await generateTodaysPractices();
       }
-      
+
       _practicesController.add(_todaysPractices);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('✅ ${_todaysPractices.length} Übungen geladen');
       }
@@ -71,23 +73,23 @@ class DailySpiritPracticeService extends ChangeNotifier {
     try {
       final profile = StorageService().getEnergieProfile();
       final today = DateTime.now();
-      
+
       // 3-4 Übungen pro Tag
       final practiceCount = 3 + _random.nextInt(2); // 3 oder 4
-      
+
       _todaysPractices.clear();
-      
+
       for (int i = 0; i < practiceCount; i++) {
         final practice = _generatePractice(profile, today, i);
         _todaysPractices.add(practice);
       }
-      
+
       // Speichern
       await _saveTodaysPractices();
-      
+
       _practicesController.add(_todaysPractices);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('✨ ${_todaysPractices.length} neue Übungen generiert');
       }
@@ -106,16 +108,16 @@ class DailySpiritPracticeService extends ChangeNotifier {
   ) {
     // Kategorie basierend auf Wochentag und Index
     final category = _selectCategory(date, index);
-    
+
     // Chakra des Tages
     final chakra = _getChakraForDay(date.weekday);
-    
+
     // Numerologie-Basierung (falls Profil vorhanden)
     final basedOn = profile != null ? _getBasedOn(profile, category) : 'cycle';
-    
+
     // Übungs-Template aus Datenbank
     final template = _getPracticeTemplate(category, chakra, basedOn);
-    
+
     return DailySpiritPractice(
       id: 'practice_${date.millisecondsSinceEpoch}_$index',
       title: template['title'] as String,
@@ -132,14 +134,14 @@ class DailySpiritPracticeService extends ChangeNotifier {
   String _selectCategory(DateTime date, int index) {
     // Wochentags-Mapping für primäre Kategorie
     final primaryCategory = _getCategoryForDay(date.weekday);
-    
+
     // Bei Index 0: Primäre Kategorie
     if (index == 0) return primaryCategory;
-    
+
     // Sonst: Rotation durch andere Kategorien
     final categories = ['meditation', 'breathing', 'chakra', 'journal'];
     categories.remove(primaryCategory);
-    
+
     return categories[index % categories.length];
   }
 
@@ -191,7 +193,7 @@ class DailySpiritPracticeService extends ChangeNotifier {
   String _getBasedOn(EnergieProfile profile, String category) {
     if (category == 'chakra') return 'chakra';
     if (category == 'journal') return 'cycle';
-    
+
     // Numerologie für Meditation/Breathing
     return 'archetype';
   }
@@ -211,27 +213,27 @@ class DailySpiritPracticeService extends ChangeNotifier {
     try {
       final index = _todaysPractices.indexWhere((p) => p.id == practiceId);
       if (index == -1) return;
-      
+
       final practice = _todaysPractices[index];
       final completed = practice.copyWith(
         completed: true,
         completedAt: DateTime.now(),
       );
-      
+
       _todaysPractices[index] = completed;
-      
+
       // Speichern
       await _saveTodaysPractices();
-      
+
       // Punkte hinzufügen (+10 pro Übung)
       await StorageService().addPoints(10, 'practice_${practice.category}');
-      
+
       // Achievement-Check
       // await AchievementService().checkAchievements();
-      
+
       _practicesController.add(_todaysPractices);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('✅ Übung abgeschlossen: ${practice.title} (+10 Punkte)');
       }
@@ -260,7 +262,8 @@ class DailySpiritPracticeService extends ChangeNotifier {
   /// Gespeicherte Übungen laden
   Future<List<DailySpiritPractice>> _loadStoredPractices(String dateKey) async {
     try {
-      final data = SqliteStorageService.instance.getSync('daily_practices', dateKey);
+      final data =
+          SqliteStorageService.instance.getSync('daily_practices', dateKey);
 
       if (data != null && data is List) {
         return data
@@ -284,7 +287,8 @@ class DailySpiritPracticeService extends ChangeNotifier {
       final today = DateTime.now();
       final todayKey = '${today.year}-${today.month}-${today.day}';
       final data = _todaysPractices.map((p) => p.toJson()).toList();
-      await SqliteStorageService.instance.put('daily_practices', todayKey, data);
+      await SqliteStorageService.instance
+          .put('daily_practices', todayKey, data);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️ Fehler beim Speichern: $e');

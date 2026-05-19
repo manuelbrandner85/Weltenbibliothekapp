@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Native Share Helper v8.0
-/// 
+///
 /// Nutzt das native System Share Sheet optimal
 class NativeShareHelper {
   /// Share Text with native dialog
@@ -17,7 +17,7 @@ class NativeShareHelper {
       sharePositionOrigin: sharePositionOrigin,
     );
   }
-  
+
   /// Share with Files (for PDFs, Images, etc.)
   static Future<void> shareFiles({
     required List<XFile> files,
@@ -32,7 +32,7 @@ class NativeShareHelper {
       sharePositionOrigin: sharePositionOrigin,
     );
   }
-  
+
   /// Quick Share Research Result
   static Future<void> shareResearch({
     required String query,
@@ -43,7 +43,7 @@ class NativeShareHelper {
     final sourcesText = sources != null && sources.isNotEmpty
         ? '\n\n📚 Quellen:\n${sources.take(5).map((s) => '• $s').join('\n')}'
         : '';
-    
+
     final text = '''
 🔍 Weltenbibliothek Recherche
 
@@ -53,8 +53,9 @@ class NativeShareHelper {
 $summary$sourcesText
 
 🌐 Mehr auf: https://weltenbibliothek.app
-    '''.trim();
-    
+    '''
+        .trim();
+
     // Get share position for iPad
     Rect? sharePositionOrigin;
     if (context != null) {
@@ -63,7 +64,7 @@ $summary$sourcesText
         sharePositionOrigin = box.localToGlobal(Offset.zero) & box.size;
       }
     }
-    
+
     await Share.share(
       text,
       subject: 'Recherche: $query',
@@ -73,7 +74,7 @@ $summary$sourcesText
 }
 
 /// Quick Share FAB Widget v8.0
-/// 
+///
 /// Floating Action Button für schnelles Teilen
 class QuickShareFAB extends StatelessWidget {
   final String query;
@@ -113,7 +114,7 @@ class QuickShareFAB extends StatelessWidget {
 }
 
 /// Enhanced Share Button Widget v8.0
-/// 
+///
 /// Button mit nativer Share-Integration
 class EnhancedShareButton extends StatelessWidget {
   final String query;
@@ -138,7 +139,7 @@ class EnhancedShareButton extends StatelessWidget {
         onPressed: () => _share(context),
       );
     }
-    
+
     return ElevatedButton.icon(
       onPressed: () => _share(context),
       icon: const Icon(Icons.ios_share, size: 18),
@@ -150,7 +151,7 @@ class EnhancedShareButton extends StatelessWidget {
       ),
     );
   }
-  
+
   Future<void> _share(BuildContext context) async {
     await NativeShareHelper.shareResearch(
       query: query,

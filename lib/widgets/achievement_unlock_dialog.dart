@@ -17,7 +17,8 @@ class AchievementUnlockDialog extends StatefulWidget {
   });
 
   @override
-  State<AchievementUnlockDialog> createState() => _AchievementUnlockDialogState();
+  State<AchievementUnlockDialog> createState() =>
+      _AchievementUnlockDialogState();
 
   /// Show dialog helper
   static Future<void> show(
@@ -26,7 +27,7 @@ class AchievementUnlockDialog extends StatefulWidget {
     AchievementProgress progress,
   ) async {
     HapticService.heavyImpact();
-    
+
     return showDialog(
       context: context,
       barrierDismissible: false,
@@ -48,7 +49,7 @@ class _AchievementUnlockDialogState extends State<AchievementUnlockDialog>
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,

@@ -5,7 +5,7 @@ import 'video_player_widget.dart';
 import 'telegram_channels_widget.dart';
 
 /// Enhanced Multimedia Section Widget v7.3
-/// 
+///
 /// Zeigt Videos, Bilder, Dokumente DIREKT IN DER APP
 class EnhancedMultimediaSection extends StatelessWidget {
   final Map<String, dynamic>? multimedia;
@@ -45,7 +45,8 @@ class EnhancedMultimediaSection extends StatelessWidget {
         ),
 
         // TELEGRAM KANÄLE - 🆕 v7.3
-        if (multimedia!['telegram'] != null && (multimedia!['telegram'] as List).isNotEmpty)
+        if (multimedia!['telegram'] != null &&
+            (multimedia!['telegram'] as List).isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TelegramChannelsWidget(
@@ -55,17 +56,17 @@ class EnhancedMultimediaSection extends StatelessWidget {
           ),
 
         // DOKUMENTE (PDFs) - In-App Viewer
-        if (multimedia!['documents'] != null && 
+        if (multimedia!['documents'] != null &&
             (multimedia!['documents'] as List).isNotEmpty)
           _buildDocumentsSection(context, multimedia!['documents'] as List),
 
         // BILDER - In-App Gallery
-        if (multimedia!['images'] != null && 
+        if (multimedia!['images'] != null &&
             (multimedia!['images'] as List).isNotEmpty)
           _buildImagesSection(context, multimedia!['images'] as List),
 
         // VIDEOS - In-App Player
-        if (multimedia!['videos'] != null && 
+        if (multimedia!['videos'] != null &&
             (multimedia!['videos'] as List).isNotEmpty)
           _buildVideosSection(context, multimedia!['videos'] as List),
       ],

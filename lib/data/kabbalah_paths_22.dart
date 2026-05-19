@@ -12,8 +12,7 @@ const List<LessonSeriesEntry> kabbalahPaths22 = [
     symbol: 'א',
     title: 'Pfad 11 — Aleph',
     subtitle: 'Der Narr · Kether → Chokmah · Luft',
-    meaning:
-        'Reine Möglichkeit, der erste Atemzug aus dem Unmanifestierten. '
+    meaning: 'Reine Möglichkeit, der erste Atemzug aus dem Unmanifestierten. '
         'Aleph (1) verbindet die Krone mit der Weisheit — uranfänglicher Impuls, '
         'bevor Form entsteht.',
     reflection:
@@ -80,8 +79,7 @@ const List<LessonSeriesEntry> kabbalahPaths22 = [
     symbol: 'ז',
     title: 'Pfad 17 — Zayin',
     subtitle: 'Die Liebenden · Binah → Tipheret · Zwillinge',
-    meaning:
-        'Zayin = Schwert der Unterscheidung. Wahl zwischen Wegen, '
+    meaning: 'Zayin = Schwert der Unterscheidung. Wahl zwischen Wegen, '
         'Erkenntnis durch Polarität. Die Liebenden müssen wählen — und wachsen.',
     reflection:
         'Welche Entscheidung schiebst du auf, die deine Seele längst getroffen hat?',
@@ -116,16 +114,14 @@ const List<LessonSeriesEntry> kabbalahPaths22 = [
     meaning:
         'Yod = Hand, kleinster Buchstabe, Same aller anderen. Der Eremit trägt '
         'die Laterne der Weisheit — Rückzug zum inneren Licht.',
-    reflection:
-        'Welcher Rückzug würde deiner Seele gerade gut tun?',
+    reflection: 'Welcher Rückzug würde deiner Seele gerade gut tun?',
   ),
   LessonSeriesEntry(
     code: 'p21',
     symbol: 'כ',
     title: 'Pfad 21 — Kaph',
     subtitle: 'Schicksalsrad · Chesed → Netzach · Jupiter',
-    meaning:
-        'Kaph = offene Hand. Jupiter expandiert. Rad symbolisiert die '
+    meaning: 'Kaph = offene Hand. Jupiter expandiert. Rad symbolisiert die '
         'Wiederkehr, das große Spiel von Aufstieg und Fall.',
     reflection:
         'Wo erkennst du gerade ein wiederkehrendes Muster — Chance oder Karma?',
@@ -146,22 +142,18 @@ const List<LessonSeriesEntry> kabbalahPaths22 = [
     symbol: 'מ',
     title: 'Pfad 23 — Mem',
     subtitle: 'Der Gehängte · Geburah → Hod · Wasser',
-    meaning:
-        'Mem = Wasser. Der Gehängte hängt verkehrt am Lebensbaum — '
+    meaning: 'Mem = Wasser. Der Gehängte hängt verkehrt am Lebensbaum — '
         'Hingabe, Perspektivenwechsel, freiwilliges Opfer.',
-    reflection:
-        'Was darfst du gerade loslassen, ohne zu kämpfen?',
+    reflection: 'Was darfst du gerade loslassen, ohne zu kämpfen?',
   ),
   LessonSeriesEntry(
     code: 'p24',
     symbol: 'נ',
     title: 'Pfad 24 — Nun',
     subtitle: 'Der Tod · Tipheret → Netzach · Skorpion',
-    meaning:
-        'Nun = Fisch, ständige Verwandlung. Tod-Karte = Transformation, '
+    meaning: 'Nun = Fisch, ständige Verwandlung. Tod-Karte = Transformation, '
         'nicht Ende. Was sterben muss, damit Neues wachsen kann.',
-    reflection:
-        'Welche Identität, Rolle oder Gewohnheit darf gerade sterben?',
+    reflection: 'Welche Identität, Rolle oder Gewohnheit darf gerade sterben?',
   ),
   LessonSeriesEntry(
     code: 'p25',
@@ -171,16 +163,14 @@ const List<LessonSeriesEntry> kabbalahPaths22 = [
     meaning:
         'Samech = Stütze, Kreis. Engel mischt Wasser zwischen zwei Kelchen — '
         'Alchemie der Gegensätze, Mittelweg.',
-    reflection:
-        'Wo überdosierst du eine Energie — und wo läuft sie unter?',
+    reflection: 'Wo überdosierst du eine Energie — und wo läuft sie unter?',
   ),
   LessonSeriesEntry(
     code: 'p26',
     symbol: 'ע',
     title: 'Pfad 26 — Ayin',
     subtitle: 'Der Teufel · Tipheret → Hod · Steinbock',
-    meaning:
-        'Ayin = Auge. Der "Teufel" zeigt selbstgewählte Ketten — '
+    meaning: 'Ayin = Auge. Der "Teufel" zeigt selbstgewählte Ketten — '
         'das materielle Sehen, das die Freiheit vergisst. Schatten anerkennen.',
     reflection:
         'An welche selbstgemachte Kette hast du dich gewöhnt, dass du sie nicht mehr siehst?',
@@ -212,8 +202,7 @@ const List<LessonSeriesEntry> kabbalahPaths22 = [
     symbol: 'ק',
     title: 'Pfad 29 — Qoph',
     subtitle: 'Der Mond · Netzach → Malkuth · Fische',
-    meaning:
-        'Qoph = Hinterkopf, Reptilienhirn. Mond zeigt das Unbewusste — '
+    meaning: 'Qoph = Hinterkopf, Reptilienhirn. Mond zeigt das Unbewusste — '
         'Träume, Ängste, alte Programme aus den Tiefen.',
     reflection:
         'Welcher wiederkehrende Traum oder Angst will dir gerade etwas zeigen?',
@@ -223,8 +212,7 @@ const List<LessonSeriesEntry> kabbalahPaths22 = [
     symbol: 'ר',
     title: 'Pfad 30 — Resh',
     subtitle: 'Die Sonne · Hod → Yesod · Sonne',
-    meaning:
-        'Resh = Kopf, Erkenntnis. Die Sonne strahlt — Klarheit, Freude, '
+    meaning: 'Resh = Kopf, Erkenntnis. Die Sonne strahlt — Klarheit, Freude, '
         'das innere Kind tanzt im Licht der bewussten Wahrheit.',
     reflection:
         'Was bringt heute Klarheit in deine Tage — wo strahlt deine Sonne?',
@@ -234,8 +222,7 @@ const List<LessonSeriesEntry> kabbalahPaths22 = [
     symbol: 'ש',
     title: 'Pfad 31 — Shin',
     subtitle: 'Gericht/Äon · Hod → Malkuth · Feuer',
-    meaning:
-        'Shin = Zahn/Feuer, drei Flammen. Auferstehung — '
+    meaning: 'Shin = Zahn/Feuer, drei Flammen. Auferstehung — '
         'Erwachen zu einem höheren Selbst, Lebensphase endet, neue beginnt.',
     reflection:
         'Welcher Lebensabschnitt schließt sich gerade — wie willst du ihn würdigen?',

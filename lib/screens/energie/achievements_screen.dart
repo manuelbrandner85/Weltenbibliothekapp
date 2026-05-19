@@ -3,7 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import '../../services/storage_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -18,25 +18,25 @@ class AchievementsScreen extends StatefulWidget {
 
 class _AchievementsScreenState extends State<AchievementsScreen> {
   final _storageService = StorageService();
-  
+
   List<AchievementData> _achievements = [];
   int _unlockedCount = 0;
-  
+
   @override
   void initState() {
     super.initState();
     _loadAchievements();
   }
-  
+
   Future<void> _loadAchievements() async {
     final allAchievements = _storageService.getAllAppAchievements();
-    
+
     setState(() {
       _achievements = _getAchievementsList(allAchievements);
       _unlockedCount = _achievements.where((a) => a.isUnlocked).length;
     });
   }
-  
+
   List<AchievementData> _getAchievementsList(List achievements) {
     // Definiere alle 12 Achievements
     return [
@@ -45,70 +45,80 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
         emoji: '🌱',
         title: 'Erste Schritte',
         description: 'Erste Meditation abgeschlossen',
-        isUnlocked: achievements.any((a) => a.id == 'first_steps' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'first_steps' && a.isUnlocked),
       ),
       AchievementData(
         id: 'meditation_10',
         emoji: '🧘',
         title: 'Anfänger',
         description: '10 Meditationen abgeschlossen',
-        isUnlocked: achievements.any((a) => a.id == 'meditation_10' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'meditation_10' && a.isUnlocked),
       ),
       AchievementData(
         id: 'meditation_100',
         emoji: '🧘‍♂️',
         title: 'Meister',
         description: '100 Meditationen abgeschlossen',
-        isUnlocked: achievements.any((a) => a.id == 'meditation_100' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'meditation_100' && a.isUnlocked),
       ),
       AchievementData(
         id: 'mantra_21_days',
         emoji: '🕉️',
         title: 'Mantra-Meister',
         description: '21-Tage-Challenge abgeschlossen',
-        isUnlocked: achievements.any((a) => a.id == 'mantra_21_days' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'mantra_21_days' && a.isUnlocked),
       ),
       AchievementData(
         id: 'tarot_reader',
         emoji: '🔮',
         title: 'Kartenleger',
         description: '10 Tarot-Ziehungen',
-        isUnlocked: achievements.any((a) => a.id == 'tarot_reader' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'tarot_reader' && a.isUnlocked),
       ),
       AchievementData(
         id: 'tarot_master',
         emoji: '🃏',
         title: 'Tarot-Experte',
         description: '50 Tarot-Ziehungen',
-        isUnlocked: achievements.any((a) => a.id == 'tarot_master' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'tarot_master' && a.isUnlocked),
       ),
       AchievementData(
         id: 'crystal_collector',
         emoji: '💎',
         title: 'Kristall-Sammler',
         description: '5 Kristalle in Sammlung',
-        isUnlocked: achievements.any((a) => a.id == 'crystal_collector' && a.isUnlocked),
+        isUnlocked: achievements
+            .any((a) => a.id == 'crystal_collector' && a.isUnlocked),
       ),
       AchievementData(
         id: 'crystal_master',
         emoji: '💠',
         title: 'Kristall-Meister',
         description: '10 Kristalle in Sammlung',
-        isUnlocked: achievements.any((a) => a.id == 'crystal_master' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'crystal_master' && a.isUnlocked),
       ),
       AchievementData(
         id: 'week_streak',
         emoji: '🔥',
         title: 'Woche der Praxis',
         description: '7 Tage Streak',
-        isUnlocked: achievements.any((a) => a.id == 'week_streak' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'week_streak' && a.isUnlocked),
       ),
       AchievementData(
         id: 'month_streak',
         emoji: '🌟',
         title: 'Monat der Hingabe',
         description: '30 Tage Streak',
-        isUnlocked: achievements.any((a) => a.id == 'month_streak' && a.isUnlocked),
+        isUnlocked:
+            achievements.any((a) => a.id == 'month_streak' && a.isUnlocked),
       ),
       AchievementData(
         id: 'explorer',
@@ -126,11 +136,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       ),
     ];
   }
-  
+
   @override
   Widget build(BuildContext context) {
-    final progress = _achievements.isEmpty ? 0.0 : _unlockedCount / _achievements.length;
-    
+    final progress =
+        _achievements.isEmpty ? 0.0 : _unlockedCount / _achievements.length;
+
     return Scaffold(
       backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
@@ -142,7 +153,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFFD700).withValues(alpha: 0.3), Color(0xFF000000)],
+            colors: [
+              Color(0xFFFFD700).withValues(alpha: 0.3),
+              Color(0xFF000000)
+            ],
           ),
         ),
         child: RefreshIndicator(
@@ -161,7 +175,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Color(0xFFFFD700).withValues(alpha: 0.5)),
+                  border: Border.all(
+                      color: Color(0xFFFFD700).withValues(alpha: 0.5)),
                 ),
                 child: Column(
                   children: [
@@ -174,7 +189,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                       ),
                     ),
                     SizedBox(height: 16),
-                    
+
                     // Circular Progress
                     SizedBox(
                       width: 120,
@@ -185,8 +200,10 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                           CircularProgressIndicator(
                             value: progress,
                             strokeWidth: 12,
-                            backgroundColor: Colors.white.withValues(alpha: 0.1),
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.1),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFFFFD700)),
                           ),
                           Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -211,9 +228,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         ],
                       ),
                     ),
-                    
+
                     SizedBox(height: 16),
-                    
+
                     // Progress Bar
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
@@ -221,15 +238,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                         value: progress,
                         minHeight: 8,
                         backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
               SizedBox(height: 24),
-              
+
               // Achievements Grid
               GridView.builder(
                 shrinkWrap: true,
@@ -246,7 +264,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   return _buildAchievementCard(achievement);
                 },
               ),
-              
+
               SizedBox(height: 80),
             ],
           ),
@@ -254,7 +272,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       ),
     );
   }
-  
+
   Widget _buildAchievementCard(AchievementData achievement) {
     return Container(
       decoration: BoxDecoration(
@@ -293,7 +311,8 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: achievement.isUnlocked ? Colors.white : Colors.white54,
+                    color:
+                        achievement.isUnlocked ? Colors.white : Colors.white54,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -302,7 +321,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                   achievement.description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: achievement.isUnlocked ? Colors.white70 : Colors.white38,
+                    color: achievement.isUnlocked
+                        ? Colors.white70
+                        : Colors.white38,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
@@ -311,7 +332,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
               ],
             ),
           ),
-          
+
           // Lock Overlay
           if (!achievement.isUnlocked)
             Positioned.fill(
@@ -341,7 +362,7 @@ class AchievementData {
   final String title;
   final String description;
   final bool isUnlocked;
-  
+
   AchievementData({
     required this.id,
     required this.emoji,

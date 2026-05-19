@@ -14,7 +14,7 @@ class FileUploadService extends ChangeNotifier {
   FileUploadService._internal();
 
   final String _baseUrl = CloudflareApiService.chatFeaturesApiUrl;
-  
+
   bool _isUploading = false;
   double _uploadProgress = 0.0;
   String? _lastUploadedUrl;
@@ -78,7 +78,7 @@ class FileUploadService extends ChangeNotifier {
       // Prepare multipart request
       final uri = Uri.parse('$_baseUrl/upload');
       final request = http.MultipartRequest('POST', uri);
-      
+
       request.files.add(
         http.MultipartFile.fromBytes(
           'file',
@@ -91,7 +91,8 @@ class FileUploadService extends ChangeNotifier {
       request.fields['size'] = fileBytes.length.toString();
 
       if (kDebugMode) {
-        debugPrint('📤 [FileUpload] Uploading: ${file.name} (${fileBytes.length} bytes)');
+        debugPrint(
+            '📤 [FileUpload] Uploading: ${file.name} (${fileBytes.length} bytes)');
       }
 
       // Send request

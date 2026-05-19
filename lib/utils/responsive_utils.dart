@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 class ResponsiveUtils {
   /// Bildschirmbreite
   final double screenWidth;
-  
+
   /// Bildschirmhöhe
   final double screenHeight;
-  
+
   /// Gerätegröße-Kategorie
   final DeviceSize deviceSize;
 
@@ -28,13 +28,13 @@ class ResponsiveUtils {
 
   /// Bestimme Gerätegröße basierend auf Breite
   static DeviceSize _getDeviceSize(double width) {
-    if (width < 600) return DeviceSize.small;  // Smartphones
+    if (width < 600) return DeviceSize.small; // Smartphones
     if (width < 1024) return DeviceSize.medium; // Tablets
-    return DeviceSize.large;                    // Desktop/Web
+    return DeviceSize.large; // Desktop/Web
   }
 
   // ==================== RESPONSIVE SCHRIFTGROSSEN ====================
-  
+
   /// Titel-Schriftgröße (Hauptüberschriften)
   double get titleFontSize {
     switch (deviceSize) {
@@ -182,19 +182,19 @@ class ResponsiveUtils {
   }
 
   // ==================== RESPONSIVE ELEVATIONS ====================
-  
+
   /// Extra kleine Elevation (Subtle)
   double get elevationXs => 1.0;
-  
+
   /// Kleine Elevation (Cards, Buttons)
   double get elevationSm => 2.0;
-  
+
   /// Mittlere Elevation (Modal, Floating)
   double get elevationMd => 4.0;
-  
+
   /// Große Elevation (Dialogs, Drawers)
   double get elevationLg => 8.0;
-  
+
   /// Extra große Elevation (Special)
   double get elevationXl => 12.0;
 
@@ -278,7 +278,7 @@ class ResponsiveUtils {
   double get buttonHeight {
     switch (deviceSize) {
       case DeviceSize.small:
-        return 44.0;  // Apple Human Interface Guidelines: min 44px
+        return 44.0; // Apple Human Interface Guidelines: min 44px
       case DeviceSize.medium:
         return 48.0;
       case DeviceSize.large:
@@ -422,27 +422,27 @@ class ResponsiveUtils {
 
 /// Gerätegröße-Kategorien
 enum DeviceSize {
-  small,  // < 600px (Smartphones)
+  small, // < 600px (Smartphones)
   medium, // 600-1023px (Tablets)
-  large,  // >= 1024px (Desktop/Web)
+  large, // >= 1024px (Desktop/Web)
 }
 
 /// Extension für einfachen Zugriff auf ResponsiveUtils
 extension ResponsiveExtension on BuildContext {
   ResponsiveUtils get responsive => ResponsiveUtils.of(this);
-  
+
   /// Schnellzugriff: Bildschirmbreite
   double get screenWidth => MediaQuery.of(this).size.width;
-  
+
   /// Schnellzugriff: Bildschirmhöhe
   double get screenHeight => MediaQuery.of(this).size.height;
-  
+
   /// Schnellzugriff: Ist kleines Gerät?
   bool get isSmallDevice => ResponsiveUtils.of(this).isSmallDevice;
-  
+
   /// Schnellzugriff: Ist mittleres Gerät?
   bool get isMediumDevice => ResponsiveUtils.of(this).isMediumDevice;
-  
+
   /// Schnellzugriff: Ist großes Gerät?
   bool get isLargeDevice => ResponsiveUtils.of(this).isLargeDevice;
 }

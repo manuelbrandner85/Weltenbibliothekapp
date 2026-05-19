@@ -158,16 +158,13 @@ class CoWatchService {
   /// Extrahiert YouTube-Video-ID aus verschiedenen URL-Formaten.
   String? _extractVideoId(String url) {
     // youtu.be/ID
-    final shortMatch =
-        RegExp(r'youtu\.be/([A-Za-z0-9_-]{11})').firstMatch(url);
+    final shortMatch = RegExp(r'youtu\.be/([A-Za-z0-9_-]{11})').firstMatch(url);
     if (shortMatch != null) return shortMatch.group(1);
     // youtube.com/watch?v=ID
-    final longMatch =
-        RegExp(r'[?&]v=([A-Za-z0-9_-]{11})').firstMatch(url);
+    final longMatch = RegExp(r'[?&]v=([A-Za-z0-9_-]{11})').firstMatch(url);
     if (longMatch != null) return longMatch.group(1);
     // youtube.com/embed/ID
-    final embedMatch =
-        RegExp(r'embed/([A-Za-z0-9_-]{11})').firstMatch(url);
+    final embedMatch = RegExp(r'embed/([A-Za-z0-9_-]{11})').firstMatch(url);
     if (embedMatch != null) return embedMatch.group(1);
     // Nur ID angegeben (11 Zeichen)
     if (RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(url.trim())) {

@@ -58,9 +58,9 @@ class BiometricService {
   Future<bool> requestPermissions() async {
     try {
       await _ensureConfigured();
-      final already = await health.hasPermissions(_types,
-              permissions: _permissions) ??
-          false;
+      final already =
+          await health.hasPermissions(_types, permissions: _permissions) ??
+              false;
       if (already) return true;
       return await health.requestAuthorization(
         _types,
@@ -128,8 +128,7 @@ class BiometricService {
         hasAnyDataSource: false,
         detectedDataSources: <String>[],
         latestSampleAt: null,
-        summary:
-            'Apple HealthKit erfordert einen iOS-Build — bald verfügbar.',
+        summary: 'Apple HealthKit erfordert einen iOS-Build — bald verfügbar.',
         recommendedAction: HealthFixAction.iosBuildMissing,
       );
     }
@@ -326,8 +325,7 @@ class BiometricService {
       debugPrint('BiometricService.openInstallHealthConnect market: $e');
     }
     try {
-      return launchUrl(Uri.parse(webUri),
-          mode: LaunchMode.externalApplication);
+      return launchUrl(Uri.parse(webUri), mode: LaunchMode.externalApplication);
     } catch (e) {
       debugPrint('BiometricService.openInstallHealthConnect web: $e');
       return false;
@@ -358,8 +356,7 @@ class BiometricService {
           return launchUrl(parsed, mode: LaunchMode.externalApplication);
         }
       } catch (e) {
-        debugPrint(
-            'BiometricService.openHealthConnectSettings $u failed: $e');
+        debugPrint('BiometricService.openHealthConnectSettings $u failed: $e');
       }
     }
     return false;

@@ -46,9 +46,18 @@ class PlanetCalculator {
 
   static String getZodiacSign(double degree) {
     const signs = [
-      'Widder ♈', 'Stier ♉', 'Zwillinge ♊', 'Krebs ♋',
-      'Löwe ♌', 'Jungfrau ♍', 'Waage ♎', 'Skorpion ♏',
-      'Schütze ♐', 'Steinbock ♑', 'Wassermann ♒', 'Fische ♓'
+      'Widder ♈',
+      'Stier ♉',
+      'Zwillinge ♊',
+      'Krebs ♋',
+      'Löwe ♌',
+      'Jungfrau ♍',
+      'Waage ♎',
+      'Skorpion ♏',
+      'Schütze ♐',
+      'Steinbock ♑',
+      'Wassermann ♒',
+      'Fische ♓'
     ];
     return signs[(degree ~/ 30).clamp(0, 11)];
   }
@@ -64,7 +73,8 @@ class PlanetCalculator {
   /// Retrograd-Erkennung (vereinfacht: rückläufige Bewegung über 3 Tage)
   static bool isRetrograde(String planet, DateTime date) {
     final today = getPlanetDegree(planet, date);
-    final before = getPlanetDegree(planet, date.subtract(const Duration(days: 3)));
+    final before =
+        getPlanetDegree(planet, date.subtract(const Duration(days: 3)));
     var diff = today - before;
     if (diff > 180) diff -= 360;
     if (diff < -180) diff += 360;
@@ -187,9 +197,16 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
   static const _retroRed = Color(0xFFEF5350);
 
   static const Map<String, String> _planetEmojis = {
-    'Sonne': '☀️', 'Mond': '🌙', 'Merkur': '☿', 'Venus': '♀',
-    'Mars': '♂', 'Jupiter': '♃', 'Saturn': '♄', 'Uranus': '♅',
-    'Neptun': '♆', 'Pluto': '♇',
+    'Sonne': '☀️',
+    'Mond': '🌙',
+    'Merkur': '☿',
+    'Venus': '♀',
+    'Mars': '♂',
+    'Jupiter': '♃',
+    'Saturn': '♄',
+    'Uranus': '♅',
+    'Neptun': '♆',
+    'Pluto': '♇',
   };
 
   static const Map<String, Color> _planetColors = {
@@ -221,12 +238,16 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
   @override
   void initState() {
     super.initState();
-    _orbitCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 20))
-      ..repeat();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))
-      ..repeat(reverse: true);
-    _entryCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _orbitCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 20))
+          ..repeat();
+    _pulseCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 3))
+          ..repeat(reverse: true);
+    _entryCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _entryAnim =
+        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
     _entryCtrl.forward();
   }
 
@@ -338,11 +359,13 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
-                      width: 36, height: 36,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.white.withValues(alpha: 0.08),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.15)),
                       ),
                       child: const Icon(Icons.arrow_back_ios_new,
                           color: Colors.white70, size: 16),
@@ -350,7 +373,9 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
                   ),
                   const SizedBox(width: 12),
                   const Text('🪐 Planeten & Transite',
-                      style: TextStyle(color: Colors.white, fontSize: 18,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold)),
                 ]),
                 const SizedBox(height: 12),
@@ -370,12 +395,31 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
 
   Widget _buildDateBadge() {
     final months = [
-      'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+      'Januar',
+      'Februar',
+      'März',
+      'April',
+      'Mai',
+      'Juni',
+      'Juli',
+      'August',
+      'September',
+      'Oktober',
+      'November',
+      'Dezember',
     ];
-    final days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+    final days = [
+      'Montag',
+      'Dienstag',
+      'Mittwoch',
+      'Donnerstag',
+      'Freitag',
+      'Samstag',
+      'Sonntag'
+    ];
     final weekday = days[_today.weekday - 1];
-    final label = '$weekday, ${_today.day}. ${months[_today.month - 1]} ${_today.year}';
+    final label =
+        '$weekday, ${_today.day}. ${months[_today.month - 1]} ${_today.year}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
@@ -384,7 +428,9 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
         border: Border.all(color: _purple.withValues(alpha: 0.4)),
       ),
       child: Text(label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12,
+          style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
               fontWeight: FontWeight.w500)),
     );
   }
@@ -414,7 +460,9 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
                   color: selected ? null : Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: selected ? _purple : Colors.white.withValues(alpha: 0.12),
+                    color: selected
+                        ? _purple
+                        : Colors.white.withValues(alpha: 0.12),
                     width: selected ? 1.5 : 1,
                   ),
                 ),
@@ -423,7 +471,8 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
                       style: TextStyle(
                         color: selected ? Colors.white : Colors.white54,
                         fontSize: 12,
-                        fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            selected ? FontWeight.bold : FontWeight.normal,
                       )),
                 ),
               ),
@@ -451,33 +500,132 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
   // Daten aus NASA GSFC Eclipse Catalog (Solar: eclipse.gsfc.nasa.gov/solar.html
   // Lunar: eclipse.gsfc.nasa.gov/lunar.html). UTC-Maxima, manuell kuratiert.
   // Hinweis: kein `const` möglich — DateTime.utc() hat keinen const-Konstruktor.
-  static final List<({DateTime date, String type, String name, String region, String meaning})> _eclipses = [
+  static final List<
+      ({
+        DateTime date,
+        String type,
+        String name,
+        String region,
+        String meaning
+      })> _eclipses = [
     // 2026
-    (date: _d(2026, 2, 17), type: 'Sonne (ringförmig)', name: 'Antarktis-Sonnenfinsternis', region: 'Antarktis, Südspitze Afrikas', meaning: 'Wassermann-Energie · Loslassen kollektiver Strukturen'),
-    (date: _d(2026, 3, 3),  type: 'Mond (Total)', name: 'Totale Mondfinsternis', region: 'Pazifik, Amerika, Asien', meaning: 'Jungfrau · klare Erkenntnis durch Schatten'),
-    (date: _d(2026, 8, 12), type: 'Sonne (Total)', name: 'Spanien-Total-Sonnenfinsternis', region: 'Grönland, Island, Spanien', meaning: 'Löwe · neue Identität sichtbar machen'),
-    (date: _d(2026, 8, 28), type: 'Mond (partiell)', name: 'Partielle Mondfinsternis', region: 'Amerika, Europa, Afrika', meaning: 'Fische · Auflösen alter Träume'),
+    (
+      date: _d(2026, 2, 17),
+      type: 'Sonne (ringförmig)',
+      name: 'Antarktis-Sonnenfinsternis',
+      region: 'Antarktis, Südspitze Afrikas',
+      meaning: 'Wassermann-Energie · Loslassen kollektiver Strukturen'
+    ),
+    (
+      date: _d(2026, 3, 3),
+      type: 'Mond (Total)',
+      name: 'Totale Mondfinsternis',
+      region: 'Pazifik, Amerika, Asien',
+      meaning: 'Jungfrau · klare Erkenntnis durch Schatten'
+    ),
+    (
+      date: _d(2026, 8, 12),
+      type: 'Sonne (Total)',
+      name: 'Spanien-Total-Sonnenfinsternis',
+      region: 'Grönland, Island, Spanien',
+      meaning: 'Löwe · neue Identität sichtbar machen'
+    ),
+    (
+      date: _d(2026, 8, 28),
+      type: 'Mond (partiell)',
+      name: 'Partielle Mondfinsternis',
+      region: 'Amerika, Europa, Afrika',
+      meaning: 'Fische · Auflösen alter Träume'
+    ),
     // 2027
-    (date: _d(2027, 2, 6),  type: 'Sonne (ringförmig)', name: 'Süd-Atlantik-Ringförmige', region: 'Chile, Argentinien, Atlantik', meaning: 'Wassermann · Innovation jenseits Konvention'),
-    (date: _d(2027, 8, 2),  type: 'Sonne (Total)', name: 'Sahara-Total-Sonnenfinsternis', region: 'Marokko, Spanien, Ägypten, Saudi', meaning: 'Löwe · seltene 6:23 Min Totalität'),
+    (
+      date: _d(2027, 2, 6),
+      type: 'Sonne (ringförmig)',
+      name: 'Süd-Atlantik-Ringförmige',
+      region: 'Chile, Argentinien, Atlantik',
+      meaning: 'Wassermann · Innovation jenseits Konvention'
+    ),
+    (
+      date: _d(2027, 8, 2),
+      type: 'Sonne (Total)',
+      name: 'Sahara-Total-Sonnenfinsternis',
+      region: 'Marokko, Spanien, Ägypten, Saudi',
+      meaning: 'Löwe · seltene 6:23 Min Totalität'
+    ),
     // 2028
-    (date: _d(2028, 1, 12), type: 'Mond (partiell)', name: 'Partielle Mondfinsternis', region: 'Europa, Afrika, Asien', meaning: 'Krebs · familiäre Wurzeln klären'),
-    (date: _d(2028, 1, 26), type: 'Sonne (ringförmig)', name: 'Ringförmige über Spanien', region: 'Ecuador, Brasilien, Spanien', meaning: 'Wassermann · kollektives Erwachen'),
-    (date: _d(2028, 7, 22), type: 'Sonne (Total)', name: 'Australien-Total', region: 'Australien, Neuseeland', meaning: 'Krebs · emotionale Heimkehr'),
+    (
+      date: _d(2028, 1, 12),
+      type: 'Mond (partiell)',
+      name: 'Partielle Mondfinsternis',
+      region: 'Europa, Afrika, Asien',
+      meaning: 'Krebs · familiäre Wurzeln klären'
+    ),
+    (
+      date: _d(2028, 1, 26),
+      type: 'Sonne (ringförmig)',
+      name: 'Ringförmige über Spanien',
+      region: 'Ecuador, Brasilien, Spanien',
+      meaning: 'Wassermann · kollektives Erwachen'
+    ),
+    (
+      date: _d(2028, 7, 22),
+      type: 'Sonne (Total)',
+      name: 'Australien-Total',
+      region: 'Australien, Neuseeland',
+      meaning: 'Krebs · emotionale Heimkehr'
+    ),
     // 2029
-    (date: _d(2029, 1, 14), type: 'Sonne (partiell)', name: 'Partielle Sonnenfinsternis', region: 'Arktis, Nord-Europa', meaning: 'Steinbock · Strukturbruch'),
-    (date: _d(2029, 6, 12), type: 'Sonne (partiell)', name: 'Partielle Sonnenfinsternis', region: 'Arktis', meaning: 'Zwillinge · Wahrheit aus mehreren Perspektiven'),
-    (date: _d(2029, 6, 26), type: 'Mond (Total)', name: 'Totale Mondfinsternis', region: 'Amerika, Europa, Afrika', meaning: 'Steinbock · Karriere/Lebensaufgabe-Wendepunkt'),
-    (date: _d(2029, 12, 20), type: 'Mond (Total)', name: 'Totale Mondfinsternis', region: 'Pazifik, Asien', meaning: 'Zwillinge · Kommunikations-Klärung'),
+    (
+      date: _d(2029, 1, 14),
+      type: 'Sonne (partiell)',
+      name: 'Partielle Sonnenfinsternis',
+      region: 'Arktis, Nord-Europa',
+      meaning: 'Steinbock · Strukturbruch'
+    ),
+    (
+      date: _d(2029, 6, 12),
+      type: 'Sonne (partiell)',
+      name: 'Partielle Sonnenfinsternis',
+      region: 'Arktis',
+      meaning: 'Zwillinge · Wahrheit aus mehreren Perspektiven'
+    ),
+    (
+      date: _d(2029, 6, 26),
+      type: 'Mond (Total)',
+      name: 'Totale Mondfinsternis',
+      region: 'Amerika, Europa, Afrika',
+      meaning: 'Steinbock · Karriere/Lebensaufgabe-Wendepunkt'
+    ),
+    (
+      date: _d(2029, 12, 20),
+      type: 'Mond (Total)',
+      name: 'Totale Mondfinsternis',
+      region: 'Pazifik, Asien',
+      meaning: 'Zwillinge · Kommunikations-Klärung'
+    ),
     // 2030
-    (date: _d(2030, 6, 1),  type: 'Sonne (ringförmig)', name: 'Sahara-Ringförmige', region: 'Algerien, Tunesien, Griechenland, Russland', meaning: 'Zwillinge · neue Lernfelder'),
-    (date: _d(2030, 11, 25), type: 'Sonne (Total)', name: 'Süd-Afrika-Total', region: 'Botswana, Südafrika, Australien', meaning: 'Schütze · Sinnsuche und Expansion'),
+    (
+      date: _d(2030, 6, 1),
+      type: 'Sonne (ringförmig)',
+      name: 'Sahara-Ringförmige',
+      region: 'Algerien, Tunesien, Griechenland, Russland',
+      meaning: 'Zwillinge · neue Lernfelder'
+    ),
+    (
+      date: _d(2030, 11, 25),
+      type: 'Sonne (Total)',
+      name: 'Süd-Afrika-Total',
+      region: 'Botswana, Südafrika, Australien',
+      meaning: 'Schütze · Sinnsuche und Expansion'
+    ),
   ];
 
   static DateTime _d(int y, int m, int d) => DateTime.utc(y, m, d);
 
   Widget _buildEclipses() {
-    final upcoming = _eclipses.where((e) => e.date.isAfter(_today.subtract(const Duration(days: 1)))).toList();
+    final upcoming = _eclipses
+        .where((e) => e.date.isAfter(_today.subtract(const Duration(days: 1))))
+        .toList();
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       physics: const BouncingScrollPhysics(),
@@ -499,12 +647,16 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('🌒 Finsternisse 2026-2030',
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
                 SizedBox(height: 6),
                 Text(
                   'Sonnen- und Mondfinsternisse markieren astrologische Wendepunkte. '
                   'Daten aus NASA GSFC Eclipse Catalog. Wirkung ±6 Monate.',
-                  style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+                  style: TextStyle(
+                      color: Colors.white70, fontSize: 12, height: 1.5),
                 ),
               ],
             ),
@@ -527,16 +679,23 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
             children: [
               Row(
                 children: [
-                  Text(isSolar ? '☀️' : '🌑', style: const TextStyle(fontSize: 28)),
+                  Text(isSolar ? '☀️' : '🌑',
+                      style: const TextStyle(fontSize: 28)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(e.name,
-                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold)),
                         Text(e.type,
-                            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+                            style: TextStyle(
+                                color: color,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -544,7 +703,10 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text('${e.date.day}.${e.date.month}.${e.date.year}',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600)),
                       Text(daysUntil == 0 ? 'heute' : 'in $daysUntil Tagen',
                           style: TextStyle(color: color, fontSize: 10)),
                     ],
@@ -552,9 +714,14 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
                 ],
               ),
               const SizedBox(height: 8),
-              Text('📍 ${e.region}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+              Text('📍 ${e.region}',
+                  style: const TextStyle(color: Colors.white60, fontSize: 11)),
               const SizedBox(height: 4),
-              Text(e.meaning, style: TextStyle(color: color.withValues(alpha: 0.9), fontSize: 12, fontStyle: FontStyle.italic)),
+              Text(e.meaning,
+                  style: TextStyle(
+                      color: color.withValues(alpha: 0.9),
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic)),
             ],
           ),
         );
@@ -587,21 +754,32 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
               color: _card,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: retro ? _retroRed.withValues(alpha: 0.5) : color.withValues(alpha: 0.25),
+                color: retro
+                    ? _retroRed.withValues(alpha: 0.5)
+                    : color.withValues(alpha: 0.25),
                 width: retro ? 1.5 : 1,
               ),
               boxShadow: retro
-                  ? [BoxShadow(color: _retroRed.withValues(alpha: 0.15),
-                      blurRadius: 12, offset: const Offset(0, 4))]
-                  : [BoxShadow(color: color.withValues(alpha: 0.10),
-                      blurRadius: 10, offset: const Offset(0, 4))],
+                  ? [
+                      BoxShadow(
+                          color: _retroRed.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4))
+                    ]
+                  : [
+                      BoxShadow(
+                          color: color.withValues(alpha: 0.10),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4))
+                    ],
             ),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Row(children: [
                 // Planet-Orb
                 Container(
-                  width: 48, height: 48,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(colors: [
@@ -617,23 +795,31 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
                 const SizedBox(width: 14),
                 // Info
                 Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      Text(name,
-                          style: const TextStyle(color: Colors.white, fontSize: 15,
-                              fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 8),
-                      if (retro) _buildRetroGrade(),
-                    ]),
-                    const SizedBox(height: 3),
-                    Text('im $sign  ·  $degStr',
-                        style: TextStyle(color: color.withValues(alpha: 0.9),
-                            fontSize: 12, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 4),
-                    Text(meaning,
-                        style: const TextStyle(color: Colors.white38, fontSize: 11),
-                        maxLines: 2, overflow: TextOverflow.ellipsis),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Text(name,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 8),
+                          if (retro) _buildRetroGrade(),
+                        ]),
+                        const SizedBox(height: 3),
+                        Text('im $sign  ·  $degStr',
+                            style: TextStyle(
+                                color: color.withValues(alpha: 0.9),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 4),
+                        Text(meaning,
+                            style: const TextStyle(
+                                color: Colors.white38, fontSize: 11),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis),
+                      ]),
                 ),
               ]),
             ),
@@ -652,7 +838,9 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
         border: Border.all(color: _retroRed.withValues(alpha: 0.5)),
       ),
       child: const Text('℞ Rückläufig',
-          style: TextStyle(color: Color(0xFFEF9A9A), fontSize: 10,
+          style: TextStyle(
+              color: Color(0xFFEF9A9A),
+              fontSize: 10,
               fontWeight: FontWeight.bold)),
     );
   }
@@ -699,8 +887,11 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(title,
-          style: const TextStyle(color: Colors.white70, fontSize: 13,
-              fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5)),
     );
   }
 
@@ -716,23 +907,29 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
           ],
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE0E0E0).withValues(alpha: 0.2)),
+        border:
+            Border.all(color: const Color(0xFFE0E0E0).withValues(alpha: 0.2)),
       ),
       child: Row(children: [
         AnimatedBuilder(
           animation: _pulseCtrl,
           builder: (_, __) => Container(
-            width: 60, height: 60,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(colors: [
-                const Color(0xFFE0E0E0).withValues(alpha: 0.4 + _pulseCtrl.value * 0.15),
+                const Color(0xFFE0E0E0)
+                    .withValues(alpha: 0.4 + _pulseCtrl.value * 0.15),
                 const Color(0xFFE0E0E0).withValues(alpha: 0.05),
               ]),
-              boxShadow: [BoxShadow(
-                color: const Color(0xFFE0E0E0).withValues(alpha: 0.2 + _pulseCtrl.value * 0.1),
-                blurRadius: 16,
-              )],
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFE0E0E0)
+                      .withValues(alpha: 0.2 + _pulseCtrl.value * 0.1),
+                  blurRadius: 16,
+                )
+              ],
             ),
             child: Center(
               child: Text(
@@ -748,9 +945,12 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(phaseName,
-                style: const TextStyle(color: Colors.white, fontSize: 16,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text('Beleuchtung: ${illumination.toStringAsFixed(0)}%',
@@ -761,7 +961,8 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
               child: LinearProgressIndicator(
                 value: illumination / 100,
                 backgroundColor: Colors.white.withValues(alpha: 0.1),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE0E0E0)),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFFE0E0E0)),
                 minHeight: 6,
               ),
             ),
@@ -782,7 +983,8 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
       ),
       child: Row(children: [
         Container(
-          width: 36, height: 36,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: aspect.color.withValues(alpha: 0.18),
@@ -790,27 +992,35 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
           ),
           child: Center(
             child: Text(aspect.symbol,
-                style: TextStyle(color: aspect.color, fontSize: 16,
+                style: TextStyle(
+                    color: aspect.color,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold)),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${aspect.planet1} ${aspect.symbol} ${aspect.planet2}',
-                style: const TextStyle(color: Colors.white, fontSize: 13,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold)),
             Text(aspect.type,
-                style: TextStyle(color: aspect.color.withValues(alpha: 0.8),
-                    fontSize: 11)),
+                style: TextStyle(
+                    color: aspect.color.withValues(alpha: 0.8), fontSize: 11)),
           ]),
         ),
         // Exaktheits-Indikator
         Column(children: [
           Text('${(aspect.exactness * 100).toStringAsFixed(0)}%',
-              style: TextStyle(color: aspect.color, fontSize: 12,
+              style: TextStyle(
+                  color: aspect.color,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold)),
-          const Text('exakt', style: TextStyle(color: Colors.white38, fontSize: 9)),
+          const Text('exakt',
+              style: TextStyle(color: Colors.white38, fontSize: 9)),
         ]),
       ]),
     );
@@ -837,9 +1047,12 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
         Text(emoji, style: const TextStyle(fontSize: 24)),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('$planet rückläufig',
-                style: const TextStyle(color: Colors.white, fontSize: 13,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold)),
             Text('im $sign — Rückblick & Revision',
                 style: const TextStyle(color: Colors.white54, fontSize: 11)),
@@ -852,8 +1065,11 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: _retroRed.withValues(alpha: 0.5)),
           ),
-          child: const Text('℞', style: TextStyle(color: Color(0xFFEF9A9A),
-              fontSize: 14, fontWeight: FontWeight.bold)),
+          child: const Text('℞',
+              style: TextStyle(
+                  color: Color(0xFFEF9A9A),
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
         ),
       ]),
     );
@@ -871,7 +1087,8 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
       child: Row(children: [
         Icon(Icons.check_circle_outline, color: Colors.white30, size: 20),
         const SizedBox(width: 10),
-        Text(message, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+        Text(message,
+            style: const TextStyle(color: Colors.white38, fontSize: 12)),
       ]),
     );
   }
@@ -901,30 +1118,46 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
     );
   }
 
-  Map<String, String> _generateForecast(double phase, String moonSign, String sunSign) {
+  Map<String, String> _generateForecast(
+      double phase, String moonSign, String sunSign) {
     // Matrix: Mondphase × Mondzeichen → Botschaft
-    final phaseKey = phase < 0.25 ? 'new' : phase < 0.5 ? 'waxing' : phase < 0.75 ? 'full' : 'waning';
+    final phaseKey = phase < 0.25
+        ? 'new'
+        : phase < 0.5
+            ? 'waxing'
+            : phase < 0.75
+                ? 'full'
+                : 'waning';
     final Map<String, Map<String, String>> matrix = {
       'new': {
-        'default': 'Neuanfänge liegen in der Luft. Pflanze heute die Samen deiner Wünsche.',
-        'Widder ♈': 'Mutige Impulse erwachen. Beginne etwas Neues mit Entschlossenheit.',
+        'default':
+            'Neuanfänge liegen in der Luft. Pflanze heute die Samen deiner Wünsche.',
+        'Widder ♈':
+            'Mutige Impulse erwachen. Beginne etwas Neues mit Entschlossenheit.',
         'Stier ♉': 'Manifestiere materiellen Wohlstand. Setze konkrete Ziele.',
-        'Zwillinge ♊': 'Neue Gedanken strömen ein. Schreibe deine Visionen auf.',
-        'Krebs ♋': 'Emotionale Reinigung — lass Altes los und öffne dich für Neues.',
+        'Zwillinge ♊':
+            'Neue Gedanken strömen ein. Schreibe deine Visionen auf.',
+        'Krebs ♋':
+            'Emotionale Reinigung — lass Altes los und öffne dich für Neues.',
       },
       'waxing': {
-        'default': 'Deine Energie wächst. Nimm aktiv Schritte in Richtung deiner Träume.',
+        'default':
+            'Deine Energie wächst. Nimm aktiv Schritte in Richtung deiner Träume.',
         'Löwe ♌': 'Strahlende Schöpferkraft. Zeige dich der Welt.',
         'Jungfrau ♍': 'Verfeinere deine Pläne mit Präzision und Hingabe.',
         'Waage ♎': 'Suche Harmonie und Balance in allen Beziehungen.',
-        'Skorpion ♏': 'Tiefe Transformation ist möglich. Tauche in dein Inneres.',
+        'Skorpion ♏':
+            'Tiefe Transformation ist möglich. Tauche in dein Inneres.',
       },
       'full': {
-        'default': 'Vollmond — Höchste Energie. Ernte die Früchte deiner Arbeit.',
+        'default':
+            'Vollmond — Höchste Energie. Ernte die Früchte deiner Arbeit.',
         'Schütze ♐': 'Expansion und Abenteuer. Folge deiner höheren Wahrheit.',
-        'Steinbock ♑': 'Struktur und Verantwortung — deine Ausdauer zahlt sich aus.',
+        'Steinbock ♑':
+            'Struktur und Verantwortung — deine Ausdauer zahlt sich aus.',
         'Wassermann ♒': 'Revolutionäre Einsichten. Denke außerhalb der Box.',
-        'Fische ♓': 'Mystische Verbindung zum Universum. Meditation ist jetzt besonders kraftvoll.',
+        'Fische ♓':
+            'Mystische Verbindung zum Universum. Meditation ist jetzt besonders kraftvoll.',
       },
       'waning': {
         'default': 'Loslassen und Reinigen. Räume auf was nicht mehr dient.',
@@ -964,29 +1197,36 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
               color: _purple.withValues(alpha: 0.35 + _pulseCtrl.value * 0.1)),
-          boxShadow: [BoxShadow(
-            color: _purple.withValues(alpha: 0.2 + _pulseCtrl.value * 0.1),
-            blurRadius: 20,
-          )],
+          boxShadow: [
+            BoxShadow(
+              color: _purple.withValues(alpha: 0.2 + _pulseCtrl.value * 0.1),
+              blurRadius: 20,
+            )
+          ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Text('✨', style: TextStyle(fontSize: 28 + _pulseCtrl.value * 4)),
             const SizedBox(width: 10),
             const Text('Energie-Prognose heute',
-                style: TextStyle(color: Colors.white, fontSize: 15,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold)),
           ]),
           const SizedBox(height: 12),
           Text(forecast['message']!,
-              style: const TextStyle(color: Colors.white70, fontSize: 13,
-                  height: 1.5, fontStyle: FontStyle.italic)),
+              style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.5,
+                  fontStyle: FontStyle.italic)),
           const SizedBox(height: 14),
           Row(children: [
             _buildForecastBadge('☀️ ${forecast['sun_sign']}', _gold),
             const SizedBox(width: 8),
-            _buildForecastBadge('🌙 ${forecast['moon_sign']}',
-                const Color(0xFFE0E0E0)),
+            _buildForecastBadge(
+                '🌙 ${forecast['moon_sign']}', const Color(0xFFE0E0E0)),
             const SizedBox(width: 8),
             _buildForecastBadge(forecast['phase']!, _purple),
           ]),
@@ -1004,8 +1244,8 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(label,
-          style: TextStyle(color: color, fontSize: 10,
-              fontWeight: FontWeight.bold)),
+          style: TextStyle(
+              color: color, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -1016,41 +1256,51 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
       {'icon': '🌿', 'title': 'Heilpflanzen', 'desc': _getHerbTip(moonSign)},
       {'icon': '🎨', 'title': 'Kreativität', 'desc': _getCreativityTip(phase)},
     ];
-    return energies.map((e) => Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _purple.withValues(alpha: 0.18)),
-      ),
-      child: Row(children: [
-        Text(e['icon']!, style: const TextStyle(fontSize: 26)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(e['title']!,
-                style: const TextStyle(color: Colors.white, fontSize: 13,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 3),
-            Text(e['desc']!,
-                style: const TextStyle(color: Colors.white54, fontSize: 11,
-                    height: 1.4)),
-          ]),
-        ),
-      ]),
-    )).toList();
+    return energies
+        .map((e) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _purple.withValues(alpha: 0.18)),
+              ),
+              child: Row(children: [
+                Text(e['icon']!, style: const TextStyle(fontSize: 26)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(e['title']!,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 3),
+                        Text(e['desc']!,
+                            style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11,
+                                height: 1.4)),
+                      ]),
+                ),
+              ]),
+            ))
+        .toList();
   }
 
   String _getMeditationTip(double phase) {
     if (phase < 0.25) return 'Stille Meditation zum Setzen von Absichten';
-    if (phase < 0.5) return 'Dynamische Meditation — Energie in Bewegung bringen';
+    if (phase < 0.5)
+      return 'Dynamische Meditation — Energie in Bewegung bringen';
     if (phase < 0.75) return 'Dankbarkeitsmeditation im Vollmond-Licht';
     return 'Loslassmeditation — was darf gehen?';
   }
 
   String _getManifestTip(double phase) {
-    if (phase < 0.25) return 'Schreibe deine Wünsche auf — Neumond lädt zum Säen ein';
+    if (phase < 0.25)
+      return 'Schreibe deine Wünsche auf — Neumond lädt zum Säen ein';
     if (phase < 0.5) return 'Handle aktiv — die Energie unterstützt Wachstum';
     if (phase < 0.75) return 'Vollende Projekte und ernte deine Arbeit';
     return 'Räume auf und mache Platz für Neues';
@@ -1091,18 +1341,23 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
             '📖 Reflexion und innere Einkehr',
           ];
     return Column(
-      children: recs.map((r) => Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: _card,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _teal.withValues(alpha: 0.2)),
-        ),
-        child: Row(children: [
-          Text(r, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-        ]),
-      )).toList(),
+      children: recs
+          .map((r) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: _card,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _teal.withValues(alpha: 0.2)),
+                ),
+                child: Row(children: [
+                  Text(r,
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13)),
+                ]),
+              ))
+          .toList(),
     );
   }
 }
@@ -1122,10 +1377,14 @@ class _OrbitalPainter extends CustomPainter {
     final cy = size.height * 0.5;
 
     final orbits = [
-      _OrbitConfig(radius: 55, speed: 1.0, color: const Color(0xFFFFD54F), size: 6),
-      _OrbitConfig(radius: 80, speed: 0.6, color: const Color(0xFFAB47BC), size: 5),
-      _OrbitConfig(radius: 108, speed: 0.35, color: const Color(0xFF26C6DA), size: 4.5),
-      _OrbitConfig(radius: 140, speed: 0.2, color: const Color(0xFFEC407A), size: 4),
+      _OrbitConfig(
+          radius: 55, speed: 1.0, color: const Color(0xFFFFD54F), size: 6),
+      _OrbitConfig(
+          radius: 80, speed: 0.6, color: const Color(0xFFAB47BC), size: 5),
+      _OrbitConfig(
+          radius: 108, speed: 0.35, color: const Color(0xFF26C6DA), size: 4.5),
+      _OrbitConfig(
+          radius: 140, speed: 0.2, color: const Color(0xFFEC407A), size: 4),
     ];
 
     // Orbitlinien
@@ -1146,13 +1405,13 @@ class _OrbitalPainter extends CustomPainter {
       Offset(cx, cy),
       sunPulse + 6,
       Paint()
-        ..color = const Color(0xFFFFD54F).withValues(alpha: 0.12 + pulseProgress * 0.06),
+        ..color = const Color(0xFFFFD54F)
+            .withValues(alpha: 0.12 + pulseProgress * 0.06),
     );
     canvas.drawCircle(
       Offset(cx, cy),
       sunPulse,
-      Paint()
-        ..color = const Color(0xFFFFD54F).withValues(alpha: 0.35),
+      Paint()..color = const Color(0xFFFFD54F).withValues(alpha: 0.35),
     );
     canvas.drawCircle(
       Offset(cx, cy),

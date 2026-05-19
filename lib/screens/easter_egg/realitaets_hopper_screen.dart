@@ -228,7 +228,8 @@ const List<QuizQuestion> _kQuestions = <QuizQuestion>[
         world: QuizWorld.quanten,
       ),
       QuizOption(
-        label: 'Ein Gefühl, das jeden Moment zerbrechen könnte — und schön ist.',
+        label:
+            'Ein Gefühl, das jeden Moment zerbrechen könnte — und schön ist.',
         world: QuizWorld.glitch,
       ),
     ],
@@ -287,7 +288,8 @@ const List<QuizQuestion> _kQuestions = <QuizQuestion>[
         world: QuizWorld.mars,
       ),
       QuizOption(
-        label: '"Jede Person, die mich nervt, kennt mich besser als ich denke."',
+        label:
+            '"Jede Person, die mich nervt, kennt mich besser als ich denke."',
         world: QuizWorld.spiegel,
       ),
       QuizOption(
@@ -653,7 +655,8 @@ class _OrbsLayer extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _IntroView extends StatelessWidget {
-  const _IntroView({super.key, required this.lastResult, required this.onStart});
+  const _IntroView(
+      {super.key, required this.lastResult, required this.onStart});
 
   final QuizResult? lastResult;
   final VoidCallback onStart;

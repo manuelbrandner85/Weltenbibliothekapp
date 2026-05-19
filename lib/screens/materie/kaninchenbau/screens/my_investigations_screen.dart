@@ -135,8 +135,8 @@ class _MyInvestigationsScreenState extends State<MyInvestigationsScreen> {
                 ),
                 if (t.isPublic)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       color: KbDesign.goldAccent.withValues(alpha: 0.18),

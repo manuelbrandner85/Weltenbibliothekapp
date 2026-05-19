@@ -712,9 +712,8 @@ class _FilterChip extends StatelessWidget {
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             fontSize: 12,
             letterSpacing: 0.4,
-            color: selected
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.72),
+            color:
+                selected ? Colors.white : Colors.white.withValues(alpha: 0.72),
           ),
         ),
       ),
@@ -895,9 +894,8 @@ class _ReplayCard extends StatelessWidget {
           background: theme.primary.withValues(alpha: 0.9),
           enabled: recording.hasRecording,
           onTap: onPlay,
-          tooltip: recording.hasRecording
-              ? 'Abspielen'
-              : 'Kein Video verfuegbar',
+          tooltip:
+              recording.hasRecording ? 'Abspielen' : 'Kein Video verfuegbar',
         ),
         const SizedBox(height: 8),
         _RoundIconButton(
@@ -974,8 +972,7 @@ class _Thumbnail extends StatelessWidget {
               left: 4,
               bottom: 4,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(6),
@@ -1265,8 +1262,8 @@ class _EmptyState extends StatelessWidget {
             if (errorMessage != null && errorMessage!.isNotEmpty) ...[
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(8),
@@ -1508,9 +1505,8 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
       _transcriptError = null;
     });
     try {
-      final res = await http
-          .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 15));
+      final res =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
       if (!mounted) return;
       if (res.statusCode >= 200 && res.statusCode < 300) {
         setState(() {
@@ -1858,11 +1854,10 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                 onTap: () => _seekTo(h.timestampSec),
                 behavior: HitTestBehavior.opaque,
                 child: _GlassPanel(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   radius: WBRadius.md,
-                  borderColor:
-                      widget.theme.primary.withValues(alpha: 0.45),
+                  borderColor: widget.theme.primary.withValues(alpha: 0.45),
                   fill: widget.theme.primary.withValues(alpha: 0.10),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -2033,8 +2028,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
             behavior: HitTestBehavior.opaque,
             child: _GlassPanel(
               radius: WBRadius.md,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               borderColor: widget.theme.primary.withValues(alpha: 0.45),
               fill: widget.theme.primary.withValues(alpha: 0.10),
               child: Row(
@@ -2061,8 +2055,8 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                            widget.theme.primary),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(widget.theme.primary),
                       ),
                     )
                   else

@@ -11,7 +11,8 @@ import 'sqlite_storage_service.dart';
 
 class SpiritJournalService extends ChangeNotifier {
   // Singleton Pattern
-  static final SpiritJournalService _instance = SpiritJournalService._internal();
+  static final SpiritJournalService _instance =
+      SpiritJournalService._internal();
   factory SpiritJournalService() => _instance;
   SpiritJournalService._internal();
 
@@ -19,8 +20,10 @@ class SpiritJournalService extends ChangeNotifier {
   List<SpiritJournalEntry> _entries = [];
 
   // Stream für Live-Updates
-  final _entriesController = StreamController<List<SpiritJournalEntry>>.broadcast();
-  Stream<List<SpiritJournalEntry>> get entriesStream => _entriesController.stream;
+  final _entriesController =
+      StreamController<List<SpiritJournalEntry>>.broadcast();
+  Stream<List<SpiritJournalEntry>> get entriesStream =>
+      _entriesController.stream;
 
   // Hive Box Name
   static const String _boxName = 'spirit_journal_entries';
@@ -49,7 +52,8 @@ class SpiritJournalService extends ChangeNotifier {
   Future<void> init() async {
     await _loadEntries();
     if (kDebugMode) {
-      debugPrint('📖 SpiritJournalService initialisiert: ${_entries.length} Einträge');
+      debugPrint(
+          '📖 SpiritJournalService initialisiert: ${_entries.length} Einträge');
     }
   }
 
@@ -107,20 +111,20 @@ class SpiritJournalService extends ChangeNotifier {
         tags: tags ?? [],
         rating: rating,
       );
-      
+
       _entries.insert(0, entry); // Am Anfang einfügen (neueste zuerst)
-      
+
       await _saveEntries();
-      
+
       // Punkte hinzufügen (+8 pro Journal-Eintrag)
       await StorageService().addPoints(8, 'journal_entry');
-      
+
       // Achievement-Check
       // await AchievementService().checkAchievements();
-      
+
       _entriesController.add(_entries);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('📝 Journal-Eintrag erstellt: $category (+8 Punkte)');
       }
@@ -143,9 +147,9 @@ class SpiritJournalService extends ChangeNotifier {
     try {
       final index = _entries.indexWhere((e) => e.id == id);
       if (index == -1) return;
-      
+
       final old = _entries[index];
-      
+
       final updated = SpiritJournalEntry(
         id: old.id,
         timestamp: old.timestamp,
@@ -155,14 +159,14 @@ class SpiritJournalService extends ChangeNotifier {
         tags: tags ?? old.tags,
         rating: rating ?? old.rating,
       );
-      
+
       _entries[index] = updated;
-      
+
       await _saveEntries();
-      
+
       _entriesController.add(_entries);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('✅ Journal-Eintrag aktualisiert: $id');
       }
@@ -177,12 +181,12 @@ class SpiritJournalService extends ChangeNotifier {
   Future<void> deleteEntry(String id) async {
     try {
       _entries.removeWhere((e) => e.id == id);
-      
+
       await _saveEntries();
-      
+
       _entriesController.add(_entries);
       notifyListeners();
-      
+
       if (kDebugMode) {
         debugPrint('🗑️ Journal-Eintrag gelöscht: $id');
       }
@@ -223,32 +227,32 @@ class SpiritJournalService extends ChangeNotifier {
   /// Mood-Verteilung (Statistik)
   Map<String, int> get moodDistribution {
     final distribution = <String, int>{};
-    
+
     for (final mood in moods) {
       distribution[mood] = 0;
     }
-    
+
     for (final entry in _entries) {
       distribution[entry.mood] = (distribution[entry.mood] ?? 0) + 1;
     }
-    
+
     return distribution;
   }
 
   /// Häufigste Tags
   Map<String, int> get mostFrequentTags {
     final tagCounts = <String, int>{};
-    
+
     for (final entry in _entries) {
       for (final tag in entry.tags) {
         tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
       }
     }
-    
+
     // Sortiere nach Häufigkeit
     final sorted = tagCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
+
     return Map.fromEntries(sorted);
   }
 
@@ -256,7 +260,7 @@ class SpiritJournalService extends ChangeNotifier {
   double get averageRating {
     final rated = _entries.where((e) => e.rating != null).toList();
     if (rated.isEmpty) return 0.0;
-    
+
     final sum = rated.fold<int>(0, (sum, e) => sum + e.rating!);
     return sum / rated.length;
   }
@@ -264,53 +268,53 @@ class SpiritJournalService extends ChangeNotifier {
   /// Kategorie-Verteilung
   Map<String, int> get categoryDistribution {
     final distribution = <String, int>{};
-    
+
     for (final category in categories) {
       distribution[category] = 0;
     }
-    
+
     for (final entry in _entries) {
       distribution[entry.category] = (distribution[entry.category] ?? 0) + 1;
     }
-    
+
     return distribution;
   }
 
   /// Einträge nach Monat gruppiert
   Map<String, List<SpiritJournalEntry>> get entriesByMonth {
     final grouped = <String, List<SpiritJournalEntry>>{};
-    
+
     for (final entry in _entries) {
-      final monthKey = '${entry.timestamp.year}-${entry.timestamp.month.toString().padLeft(2, '0')}';
+      final monthKey =
+          '${entry.timestamp.year}-${entry.timestamp.month.toString().padLeft(2, '0')}';
       grouped.putIfAbsent(monthKey, () => []);
       grouped[monthKey]!.add(entry);
     }
-    
+
     return grouped;
   }
 
   /// Aktueller Mood-Streak (Tage hintereinander gejournal)
   int get journalStreak {
     if (_entries.isEmpty) return 0;
-    
+
     int streak = 0;
     final today = DateTime.now();
-    
+
     for (int i = 0; i < 365; i++) {
       final checkDate = today.subtract(Duration(days: i));
-      final hasEntry = _entries.any((e) => 
-        e.timestamp.year == checkDate.year &&
-        e.timestamp.month == checkDate.month &&
-        e.timestamp.day == checkDate.day
-      );
-      
+      final hasEntry = _entries.any((e) =>
+          e.timestamp.year == checkDate.year &&
+          e.timestamp.month == checkDate.month &&
+          e.timestamp.day == checkDate.day);
+
       if (hasEntry) {
         streak++;
       } else {
         break;
       }
     }
-    
+
     return streak;
   }
 
@@ -328,10 +332,10 @@ class SpiritJournalService extends ChangeNotifier {
       'Erkenntnis',
       'Wachstum',
     ];
-    
+
     // Kombiniere mit benutzerdefinierten häufigen Tags
     final userTags = mostFrequentTags.keys.take(5).toList();
-    
+
     return [...commonTags, ...userTags]..toSet().toList();
   }
 

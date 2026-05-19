@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+// OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import '../../models/frequency_preset.dart';
 import '../../services/frequency_player_service.dart';
@@ -14,17 +14,19 @@ class FrequencyGeneratorScreen extends StatefulWidget {
   const FrequencyGeneratorScreen({super.key, this.initialHz});
 
   @override
-  State<FrequencyGeneratorScreen> createState() => _FrequencyGeneratorScreenState();
+  State<FrequencyGeneratorScreen> createState() =>
+      _FrequencyGeneratorScreenState();
 }
 
-class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> with SingleTickerProviderStateMixin {
+class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen>
+    with SingleTickerProviderStateMixin {
   String _selectedCategory = 'solfeggio';
   FrequencyPreset? _activePreset;
   bool _isPlaying = false;
   late AnimationController _pulseController;
   final TextEditingController _searchController = TextEditingController();
   List<FrequencyPreset> _filteredPresets = [];
-  
+
   // Real audio player for Solfeggio frequencies
   final AudioPlayer _audioPlayer = AudioPlayer();
   final double _volume = 0.7;
@@ -104,19 +106,22 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
       await _pausePlayback();
       return;
     }
-    
+
     // If different preset, stop current and play new
     if (_activePreset != null) {
       await _stopPlayback();
     }
-    
+
     setState(() {
       _activePreset = preset;
-      _isPlaying = false;  // Will be set to true after successful load
+      _isPlaying = false; // Will be set to true after successful load
     });
-    
+
     // Check if we have real audio file for Solfeggio or Chakra or Planetary frequencies
-    if ((preset.category == 'solfeggio' || preset.category == 'chakra' || preset.category == 'planetary') && _hasAudioFile(preset)) {
+    if ((preset.category == 'solfeggio' ||
+            preset.category == 'chakra' ||
+            preset.category == 'planetary') &&
+        _hasAudioFile(preset)) {
       await _playAudioFile(preset);
     } else if (preset.category == 'binaural') {
       // Binaural beats need base frequency
@@ -126,9 +131,9 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
       await FrequencyPlayerService.play(preset.frequency);
       setState(() => _isPlaying = true);
     }
-    
+
     HapticService.mediumImpact();
-    
+
     if (mounted && _isPlaying) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -139,40 +144,49 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
       );
     }
   }
-  
+
   Future<void> _pausePlayback() async {
     await _audioPlayer.pause();
     await FrequencyPlayerService.stop();
     setState(() => _isPlaying = false);
     HapticService.lightImpact();
   }
-  
+
   Future<void> _resumePlayback() async {
     await _audioPlayer.resume();
     setState(() => _isPlaying = true);
     HapticService.lightImpact();
   }
-  
+
   bool _hasAudioFile(FrequencyPreset preset) {
     // Solfeggio & Chakra frequencies (use integer Hz)
     if (preset.category == 'solfeggio' || preset.category == 'chakra') {
       final freqInt = preset.frequency.round();
-      return [174, 285, 396, 417, 432, 528, 639, 741, 852, 963].contains(freqInt);
+      return [174, 285, 396, 417, 432, 528, 639, 741, 852, 963]
+          .contains(freqInt);
     }
-    
+
     // Planetary frequencies (use planet ID)
     if (preset.category == 'planetary') {
-      return ['sun', 'moon', 'earth', 'mercury', 'venus', 'mars', 'jupiter', 'saturn']
-          .any((planet) => preset.id.contains(planet));
+      return [
+        'sun',
+        'moon',
+        'earth',
+        'mercury',
+        'venus',
+        'mars',
+        'jupiter',
+        'saturn'
+      ].any((planet) => preset.id.contains(planet));
     }
-    
+
     return false;
   }
-  
+
   Future<void> _playAudioFile(FrequencyPreset preset) async {
     try {
       String audioPath;
-      
+
       // Determine audio file path based on category
       if (preset.category == 'planetary') {
         // Extract planet name from ID (e.g., 'planet_sun' -> 'sun')
@@ -184,16 +198,16 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
         final freqInt = preset.frequency.round();
         audioPath = 'audio/frequency_${freqInt}hz.mp3';
       }
-      
+
       // Stop any currently playing audio first
       await _audioPlayer.stop();
-      
+
       await _audioPlayer.setVolume(_volume);
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
       await _audioPlayer.play(AssetSource(audioPath));
-      
+
       setState(() => _isPlaying = true);
-      
+
       if (kDebugMode) {
         debugPrint('✅ Playing real audio: $audioPath');
       }
@@ -202,7 +216,7 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
         debugPrint('❌ Audio playback error: $e');
       }
       setState(() => _isPlaying = false);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -260,18 +274,18 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
             children: [
               // Header
               _buildHeader(),
-              
+
               // Search Bar
               _buildSearchBar(),
-              
+
               // Category Tabs
               _buildCategoryTabs(),
-              
+
               const SizedBox(height: 16),
-              
+
               // Active Preset Display
               if (_activePreset != null) _buildActivePreset(),
-              
+
               // Preset List
               Expanded(
                 child: _buildPresetList(),
@@ -327,15 +341,19 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      _getCategoryColor(_selectedCategory).withValues(alpha: 0.6 + _pulseController.value * 0.4),
-                      _getCategoryColor(_selectedCategory).withValues(alpha: 0.0),
+                      _getCategoryColor(_selectedCategory).withValues(
+                          alpha: 0.6 + _pulseController.value * 0.4),
+                      _getCategoryColor(_selectedCategory)
+                          .withValues(alpha: 0.0),
                     ],
                   ),
                 ),
                 child: Center(
                   child: Icon(
                     _isPlaying ? Icons.music_note : Icons.music_off,
-                    color: _isPlaying ? _getCategoryColor(_selectedCategory) : Colors.white54,
+                    color: _isPlaying
+                        ? _getCategoryColor(_selectedCategory)
+                        : Colors.white54,
                     size: 24,
                   ),
                 ),
@@ -395,7 +413,7 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
         itemBuilder: (context, index) {
           final category = categories[index];
           final isActive = _selectedCategory == category['id'];
-          
+
           return GestureDetector(
             onTap: () => _selectCategory(category['id']!),
             child: Container(
@@ -406,7 +424,8 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
                     ? LinearGradient(
                         colors: [
                           _getCategoryColor(category['id']!),
-                          _getCategoryColor(category['id']!).withValues(alpha: 0.6),
+                          _getCategoryColor(category['id']!)
+                              .withValues(alpha: 0.6),
                         ],
                       )
                     : null,
@@ -433,7 +452,8 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
                     category['label']!,
                     style: TextStyle(
                       color: isActive ? Colors.white : Colors.white54,
-                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          isActive ? FontWeight.bold : FontWeight.normal,
                       fontSize: 14,
                     ),
                   ),
@@ -479,7 +499,8 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
                 height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _getCategoryColor(_selectedCategory).withValues(alpha: 0.2),
+                  color: _getCategoryColor(_selectedCategory)
+                      .withValues(alpha: 0.2),
                 ),
                 child: Center(
                   child: Text(
@@ -556,7 +577,8 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _getCategoryColor(_selectedCategory).withValues(alpha: 0.2),
+              color:
+                  _getCategoryColor(_selectedCategory).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -612,8 +634,10 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
               gradient: isActive
                   ? LinearGradient(
                       colors: [
-                        _getCategoryColor(preset.category).withValues(alpha: 0.2),
-                        _getCategoryColor(preset.category).withValues(alpha: 0.1),
+                        _getCategoryColor(preset.category)
+                            .withValues(alpha: 0.2),
+                        _getCategoryColor(preset.category)
+                            .withValues(alpha: 0.1),
                       ],
                     )
                   : null,
@@ -633,7 +657,8 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
                   height: 50,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _getCategoryColor(preset.category).withValues(alpha: 0.2),
+                    color: _getCategoryColor(preset.category)
+                        .withValues(alpha: 0.2),
                   ),
                   child: Center(
                     child: Text(
@@ -667,7 +692,8 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
                       Text(
                         preset.benefit,
                         style: TextStyle(
-                          color: _getCategoryColor(preset.category).withValues(alpha: 0.8),
+                          color: _getCategoryColor(preset.category)
+                              .withValues(alpha: 0.8),
                           fontSize: 11,
                           height: 1.3,
                         ),
