@@ -90,6 +90,44 @@ heisst nur anders. Wer dieses Buch nicht gelesen hat, ist nicht gewappnet.
 - **Lesezeit**: ca. 8-10 Stunden
 - **Bestes Zeitfenster**: Abends in mehreren Sessions - das Buch braucht Verdauung.
 - **Verfuegbar als**: Print, eBook, Hoerbuch (mehrere deutsche Uebersetzungen verfuegbar)
+
+## Kapitel-fuer-Kapitel Analyse
+
+### Teil 1: Die Welt von Ozeanien
+Orwell baut die Welt mit ungeheurer oekonomischer Praezision. Wir folgen Winston Smith durch ein London, in dem jede Wand einen Tele-Schirm hat, jede Strasse ein Parteiplakat traegt, jede Stunde Hassminuten gegen Goldstein. Die zentrale Idee dieses Teils: Konditionierung beginnt vor dem Denken. Bevor Winston etwas denken darf, hat Sprache, Architektur und Tonfall des Alltags ihm bereits gesagt, was zu denken erlaubt ist. Die staerkste Szene: Winston kauft heimlich ein leeres Tagebuch und kann minutenlang nicht schreiben, weil er vergessen hat, wie eigene Gedanken aussehen. Schwaeche: Orwells Frauenbild bleibt holzschnittartig - Julia ist mehr Symbol als Charakter.
+
+### Teil 2: Die Liebe und die Rebellion
+Winston und Julia finden zueinander, treffen O'Brien, glauben an die Bruderschaft. Orwell zeichnet hier Hoffnung als die letzte Falle: Jeder Akt der Auflehnung wird vom System antizipiert und kanalisiert. Die zentrale Idee: Wer rebelliert, identifiziert sich. Die Szene mit dem Glasbeschwerer (Winston kauft ein Stueck altes Glas mit eingeschlossener Koralle, Symbol einer Welt vor der Partei) ist der einzige Moment echter Schoenheit im Buch und gleichzeitig die Falle. Schwaeche: Goldsteins eingeschobenes Buch wirkt als langer Theorie-Block; viele Leser ueberspringen es - dabei ist es das eigentliche Manifest.
+
+### Teil 3: Liebe Ministerium und Zimmer 101
+Folter, Bruch, Wiederherstellung. O'Brien arbeitet nicht mit Schmerz, sondern mit Logik: Er ueberzeugt Winston, dass zwei plus zwei wirklich fuenf ist, wenn die Partei es so wuenscht. Zentrale Idee: Macht ist nicht Mittel, sondern Selbstzweck. Die Anekdote des Stiefels-fuer-immer auf dem Gesicht ist keine Drohung, sondern Definition. Wer das Buch nur ein Mal liest, denkt: Dystopie. Wer es zweimal liest, denkt: Phaenomenologie der Macht.
+
+### Anhang: Die Prinzipien des Newspeak
+Oft uebersehen, in Wahrheit der dichteste Text Orwells. Hier erklaert er, warum die Reduktion des Wortschatzes von 30000 auf 6000 Worte das Ziel ist: Worte ohne Synonyme, ohne Nuancen, ohne Geschichte. Schwaeche: Orwell unterschaetzt die Faehigkeit von Sprache, neue Bedeutungen aus alten Stuempfen zu zuechten - heutige Internet-Slangs zeigen das.
+
+## Wer war George Orwell? - Biographischer Kontext
+
+Eric Arthur Blair (1903-1950), unter dem Pseudonym George Orwell bekannt, war britischer Kolonialpolizist in Burma (1922-27), Tellerwaescher in Paris, Tramp in London, spaeter Spanienkrieger auf seiten der trotzkistischen POUM gegen Franco. Diese Biographie ist der Schluessel zu seinem Werk: Orwell schrieb nicht aus Theorie, sondern aus Verwundung. In Spanien wurde er von einem faschistischen Scharfschuetzen in den Hals getroffen - und gleichzeitig von der stalinistischen Geheimpolizei der eigenen Seite gejagt, weil POUM gesaeubert werden sollte. Diese doppelte Erfahrung - dass auch die "richtige" Seite luegt und mordet - praegte alles, was er danach schrieb.
+
+Vor 1984 erschien Homage to Catalonia (1938, sein Spanienbericht, lange totgeschwiegen), The Road to Wigan Pier (1937, Sozialreportage), Animal Farm (1945, die Stalin-Allegorie als Tierfabel). 1984 begann er auf der schottischen Insel Jura zu schreiben, schwer tuberkulosekrank, oft nur mit einer Hand auf der Schreibmaschine. Er starb am 21. Januar 1950, drei Monate nach Erscheinen des Buches, mit 46 Jahren - bevor er sehen konnte, dass er zum meistzitierten politischen Autor des 20. Jahrhunderts werden wuerde.
+
+## Kritische Wuerdigung
+
+Unbestrittene Staerken: Sprachgewalt (Newspeak ist heute Linguistik-Lehrbuch), Klarheit der Diagnose, prophetische Kraft. Kein Buch hat das Vokabular politischer Analyse so gepraegt - Big Brother, Doppeldenk, Memory Hole, Thought Police sind Allgemeinplatz. Kritik in der Wissenschafts-Community: Orwells totalitarismustheoretische Annahme einer monolithischen Macht-Zentrale ueberzeichnet; die DDR, Nordkorea oder das maoistische China waren chaotischer, faktioneller, weniger effizient als Ozeanien. Hannah Arendt (Elemente und Urspruenge totaler Herrschaft, 1951) bietet die wissenschaftlichere Version derselben Frage.
+
+Faktische Schwaechen: Die Annahme eines stabilen Drei-Mass-Welt-Systems (Ozeanien, Eurasien, Ostasien) ist nicht so eingetreten - die Globalisierung loeste die Bloecke auf. Die Sex-als-Rebellion-These wirkt heute naiv: Die "sexuelle Befreiung" wurde laengst kommerzialisiert und zum Kontrollinstrument umgebaut, was eher Huxley vorhersah. Was sich bestaetigt hat: Sprachpolitik, Geschichtsrevision, permanente Kriegsrhetorik, Zwei-Minuten-Hass im algorithmischen Format. 1984 ist nicht so eingetreten wie geschrieben, aber genauer als Orwell selbst es geahnt haben kann.
+
+## Aktualitaetsbezug 2026
+
+Smartphones haben die Tele-Schirme uebertroffen - sie sind freiwillig, tragbar, immer eingeschaltet und horchen auch dann, wenn niemand bewusst befiehlt. Cancel Culture entspricht Vaporisation in beschleunigter Form: Personen werden aus dem Diskurs geloescht, ihre frueheren Tweets archiviert und als Beweise gegen sie verwendet. Die Faktencheck-Industrie operiert wie das Ministerium fuer Wahrheit - sie korrigiert nicht nur, sie definiert rueckwirkend, was schon immer wahr war. Die Pandemie 2020-23 lieferte Echtzeitanschauung: Empfehlungen, die im April Verschwoerung waren, wurden im November Standard. Krieg in der Ukraine, Krieg in Gaza, Krieg gegen den Terror - der Dauerkriegszustand legitimiert dauerhafte Notstandsmassnahmen, exakt wie Goldsteins Buch es vorhersagt. Was Orwell nicht ahnte: dass die Kontrolle nicht von einem Innenministerium kommt, sondern von Plattform-Algorithmen, die niemand entworfen hat zu zensieren, aber genau das tun.
+
+## Vergleichsbuecher in der Bibliothek
+
+- **Schoene neue Welt** (Huxley, materie_003) - die sanfte Variante: Kontrolle durch Lust statt Schmerz, beide Buecher zusammen ergeben das vollstaendige Bild.
+- **Bekenntnisse eines Economic Hitman** (Perkins, materie_002) - Orwell in real: wie weiche Macht ganze Laender unterwirft, ohne Stiefel im Gesicht.
+- **Tragedy and Hope** (Quigley, materie_004) - die Soziologie der Eliten, die Orwell intuitiv beschrieb.
+- **Operation Mockingbird** (Bernstein, materie_013) - das Ministerium fuer Wahrheit als reales CIA-Medien-Programm.
+- **Wendepunkte des Lebens** (Ursprung-Welt) - waehrend Orwell die aeussere Dystopie zeichnet, fragt dieses Werk nach innerer Souveraenitaet als Gegengewicht.
 ''',
     category: 'Geopolitik',
     type: 'book',
@@ -100,7 +138,7 @@ heisst nur anders. Wer dieses Buch nicht gelesen hat, ist nicht gewappnet.
     yearPublished: 1949,
     viewCount: 0,
     rating: 4.8,
-    readingTimeMinutes: 540,
+    readingTimeMinutes: 480,
   ),
 
   // ============================================
@@ -187,6 +225,44 @@ Perkins' Handbuch.
 - **Lesezeit**: ca. 7-8 Stunden
 - **Bestes Zeitfenster**: Wochenende - die Wut braucht Raum.
 - **Verfuegbar als**: Print (Riemann Verlag), eBook, Hoerbuch
+
+## Kapitel-fuer-Kapitel Analyse
+
+### Teil 1: Die Rekrutierung (1963-1971)
+Perkins beschreibt, wie er als idealistischer Friedenscorps-Freiwilliger in Ecuador von einer Frau namens Claudine angesprochen wird, die im Auftrag der National Security Agency die psychologische Eignung neuer EHM-Kandidaten prueft. Zentrale Idee: Das System rekrutiert nicht Boese, es rekrutiert Idealisten und biegt sie um. Claudine erklaert ihm offen, dass sein Job sein wird, Statistiken zu faelschen und Praesidenten zu korrumpieren - und dass er, wenn er einmal drin ist, nicht mehr aussteigen kann. Schwaeche: Die Figur Claudine ist so romantisch-mysterioes gezeichnet, dass mancher Kritiker bezweifelt, ob sie real war oder eine dramaturgische Verdichtung mehrerer Personen.
+
+### Teil 2: Indonesien und Saudi-Arabien
+Sein erster operativer Einsatz: Stromnetz-Prognosen fuer Indonesien, die bewusst um Faktor 3-5 ueberhoehte BIP-Wachstumsraten unterstellen, damit Milliardenkredite gerechtfertigt sind. Zentrale Idee: Wirtschaftsprognosen sind keine Wissenschaft, sondern Waffen. Anekdote: Beim Treffen mit dem indonesischen Minister erklaert Perkins die Zahlen, der Minister versteht, dass sie gefaelscht sind, und nickt - weil er weiss, dass die Kredite ohne diese Zahlen nicht fliessen. Der Saudi-Arabien-Kapitel beschreibt den Petrodollar-Deal: Saudische Oelmilliarden wandern zurueck in US-Staatsanleihen und US-Infrastrukturauftraege, das Haus Saud bekommt im Gegenzug militaerischen Schutz. Schwaeche: Perkins liefert wenige Originaldokumente, vieles ist Erinnerungs-Rekonstruktion.
+
+### Teil 3: Panama, Ecuador und die Schakale
+Omar Torrijos (Panama) und Jaime Roldos (Ecuador) - beide weigerten sich, die Spielregeln einzuhalten. Beide starben 1981 binnen weniger Monate bei Flugzeugabstuerzen unter ungeklaerten Umstaenden. Perkins beschreibt seine eigene Reaktion: Schock, Schuldgefuehl, gleichzeitig die Beruhigung des Systems, dass es ja Zufall war. Zentrale Idee: Das System hat drei Stufen - Oekonomen, dann Schakale (Geheimdienste), dann Militaer. Iraks Saddam Hussein durchlief alle drei.
+
+### Teil 4: Mein Verrat
+Warum hat Perkins 20 Jahre gewartet? Er schreibt, dass er mehrmals ansetzte und durch Drohungen, Geldzahlungen und subtile Beraterauftraege gebremst wurde. Erst nach 9/11 entschied er, dass Schweigen mitschuldig macht. Schwaeche: Die Selbstreflexion bleibt manchmal zu sehr in der Buesserrolle - der analytische Mehrwert haette mit weniger Pathos staerker gewirkt.
+
+## Wer war John Perkins? - Biographischer Kontext
+
+John Perkins (geboren 1945 in Hanover, New Hampshire) wuchs in einer puritanischen Neuengland-Familie auf, dessen Vater Latein-Lehrer und Mutter strenge Methodistin war. Sein Onkel, ein Berater der NSA, ebnete ihm den Weg ins Friedenscorps Ecuador (1968-70) und anschliessend zu Chas. T. Main, einer Boston-Beratungsfirma, die als ziviler Mantel fuer Weltbank-Projekte mit verdeckter Geheimdienst-Anbindung diente. Perkins arbeitete dort von 1971 bis 1980 als Chefoekonom, kuendigte dann unter Burnout-Druck und gruendete eine alternative Energie-Firma (IPS, Independent Power Systems), die er 1990 verkaufte.
+
+Vor Confessions schrieb er Buecher ueber indigene Schamanen Amazoniens (z.B. Spirit of the Shuar, 2001) und Beziehungs-Psychologie. Confessions of an Economic Hit Man erschien 2004 bei Berrett-Koehler, einem kleinen Verlag, nachdem grosse Verlage abgelehnt hatten. Es wurde gegen alle Erwartungen ein NYT-Bestseller (73 Wochen). Spaeter folgten The Secret History of the American Empire (2007) und New Confessions (2016, erweiterte Neuauflage). Perkins lebt heute in Florida und tritt als Speaker auf - umstritten, polarisierend, aber unermuedlich.
+
+## Kritische Wuerdigung
+
+Unbestrittene Staerken: Perkins ist die seltene Whistleblower-Stimme aus dem inneren Kreis - kein Journalist, kein Akademiker, sondern jemand, der die Faelschungen selbst angefertigt hat. Die strukturelle Beschreibung des EHM-Mechanismus deckt sich mit dem, was unabhaengige Wissenschaftler (Stiglitz, Chang, Reinhart) ueber IMF-Strukturanpassungen empirisch belegt haben. Joseph Stiglitz' Die Schatten der Globalisierung (2002) ist die akademische Schwesterversion.
+
+Kritik: Akademische Oekonomen werfen Perkins Vereinfachungen vor - nicht jedes IMF-Programm sei korrupt, viele Schuldenkrisen seien hausgemacht. Investigativjournalisten (Sebastian Mallaby) bezweifeln Details, etwa ob Torrijos wirklich ermordet wurde oder ob es echter Flugunfall war. Perkins liefert wenige nachpruefbare Primaerquellen. Was sich seit 2004 bestaetigt hat: die afrikanische China-Debt-Trap-Debatte, Sri Lankas Hambantota-Hafen (2017 wegen Schulden an China abgetreten), Argentinien-Krise 2018-19, Ecuadors Yasuni-Oel-Konzessionen. Was sich teilweise widerlegt hat: Die These einer monolithischen US-Steuerung greift heute zu kurz, China und Russland spielen das gleiche Spiel.
+
+## Aktualitaetsbezug 2026
+
+Die Belt-and-Road-Initiative Chinas hat Perkins' Schablone perfektioniert: Infrastrukturkredite an Entwicklungslaender, vergeben von chinesischen Staatsbanken, ausgefuehrt von chinesischen Konzernen, abgesichert durch Hafenkonzessionen und Rohstoffrechte. Sri Lanka 2022: Staatsbankrott, Praesident Rajapaksa floh, IWF-Notkredit mit Auflagen wie aus dem Lehrbuch. Argentinien 2024 unter Milei: Schock-Dollarisierung, Sparprogramm, Privatisierungen - die Naomi-Klein-Mechanik live. Pakistan, Aegypten, Ghana: alle in IWF-Programmen mit Rohstoff- und Energie-Privatisierungs-Auflagen. Selbst innerhalb der EU: Griechenland 2010-18, jetzt Italien-Diskussion - die EHM-Mechanik funktioniert auch zwischen entwickelten Volkswirtschaften, sie heisst nur Troika statt CIA.
+
+## Vergleichsbuecher in der Bibliothek
+
+- **Tragedy and Hope** (Quigley, materie_004) - die historische Tiefe hinter Perkins' operativen Erlebnissen.
+- **1984** (Orwell, materie_001) - die strukturelle Aehnlichkeit zwischen Ozeaniens Dauerkrieg und Perkins' Dauerschuldenfalle.
+- **Der Kapitalismus-Crash** (Glasl/Lievegoed, materie_015) - die Systemtheorie zu Perkins' Anekdoten.
+- **Operation Mockingbird** (Bernstein, materie_013) - wie die Medien die EHM-Geschichten 30 Jahre lang aus dem Diskurs hielten.
+- **Energiegesetze unserer Zeit** (Energie-Welt) - warum Oel-Geopolitik die treibende Variable hinter den meisten Perkins-Geschichten ist.
 ''',
     category: 'Geopolitik',
     type: 'book',
@@ -282,6 +358,44 @@ abschreckendes Beispiel bleibt.
 - **Lesezeit**: ca. 7-9 Stunden
 - **Bestes Zeitfenster**: Sonntagvormittag - braucht Reflexion.
 - **Verfuegbar als**: Print (Fischer Verlag), eBook, Hoerbuch
+
+## Kapitel-fuer-Kapitel Analyse
+
+### Kapitel 1-3: Die Bokanovsky-Fabrik
+Huxley fuehrt uns mit einer Werksbesichtigung in die Welt ein: Studenten begleiten den Direktor durch die Brueterei, wo Embryos in Glasflaschen gezuechtet werden. Zentrale Idee: Reproduktion wird industrialisiert, Geburt wird obszoen, Mutter ein Schimpfwort. Die staerkste Anekdote: das Bokanovsky-Verfahren, bei dem ein einziges Embryo bis zu 96 identische Klone produziert - die Grundlage der Massenproduktion von Arbeitskraeften. Bereits 1932 antizipierte Huxley Klonen, In-vitro-Fertilisation und genetische Selektion. Schwaeche: Die hierarchische Aufteilung in fuenf Kasten ist sozialdarwinistisch grob; die heutige Realitaet ist fliessender, aber gerade dadurch unsichtbarer.
+
+### Kapitel 4-6: Lenina, Bernard und das Soma
+Wir folgen Lenina Crowne (Beta-Plus) und Bernard Marx (Alpha-Plus mit Konstruktions-Fehler - zu klein, zu nachdenklich). Bernard fuehlt sich als Aussenseiter, weil er noch Restspuren von Individualitaet hat. Zentrale Idee: Im perfekten Glueckssystem ist Unzufriedenheit der schwerste Defekt. Soma, die universelle Pille (Antidepressivum, Anxiolytikum, Halluzinogen in einem), erstickt jede Regung, die nicht systemkonform ist. Anekdote: Wenn Lenina ein unangenehmes Gespraech ueberkommt, schluckt sie sofort ein Gramm Soma. Schwaeche: Huxley unterschaetzte, dass die echte Soma-Funktion in unserer Zeit nicht eine Pille uebernehmen wuerde, sondern viele kleine Dopamin-Hits (Scrollen, Liken, Konsumieren).
+
+### Kapitel 7-9: Das Reservat und Johns Auftritt
+Lenina und Bernard reisen nach Malpais (New Mexico), wo Menschen noch alt werden, Krankheiten haben, beten, ehelich gebunden leben. Sie treffen John, Sohn einer in Malpais gestrandeten Brueterei-Frau, der Shakespeare auswendig gelernt hat. Zentrale Idee: John verkoerpert das, was die Zivilisation ausgeloescht hat - Leid, Liebe, Sterblichkeit, Sinn. Die staerkste Szene: John wird in die Zivilisation gebracht und reagiert mit zunehmender Verstoerung auf Soma-Orgien, Fuehl-Kinos und sexuelle Verfuegbarkeit. Schwaeche: Johns Sprache (Shakespeare-Zitate als Lebenshilfe) wirkt manchmal manieriert.
+
+### Kapitel 10-15: Mond und das Ende
+Der Weltkontrolleur Mustapha Mond fuehrt mit John, Bernard und Helmholtz das beruehmte Gespraech. Mond gibt zu, dass er Shakespeare, Wissenschaft, Religion absichtlich verbietet - weil sie Stabilitaet bedrohen. Zentrale Idee: Glueck und Wahrheit sind unvereinbar. John zieht sich in einen Leuchtturm zurueck, geisselt sich, wird zur Sensation, ertraegt es nicht und erhaengt sich. Das letzte Bild - die langsam pendelnden Fuesse - ist das schwaerzeste in Huxleys Werk. Schwaeche: Das Ende kommt schnell; viele Leser wuenschen sich mehr Aufloesung. Vermutlich war genau das Huxleys Punkt.
+
+## Wer war Aldous Huxley? - Biographischer Kontext
+
+Aldous Leonard Huxley (1894-1963) entstammte einer der einflussreichsten intellektuellen Familien Englands: Grossvater Thomas Henry Huxley war Darwins Buldogge, sein Bruder Julian Huxley wurde erster UNESCO-Generaldirektor, sein Halbbruder Andrew Huxley erhielt 1963 den Medizin-Nobelpreis. Mit 16 erkrankte Aldous an einer Keratitis, die ihn beinahe vollstaendig erblinden liess - eine Erfahrung, die seine lebenslange Beschaeftigung mit Wahrnehmung, Bewusstsein und der Frage, wie wir Wirklichkeit konstruieren, praegte.
+
+Vor Brave New World schrieb er satirische Gesellschaftsromane (Crome Yellow 1921, Antic Hay 1923, Point Counter Point 1928). Brave New World entstand 1931 in vier Monaten in Sanary-sur-Mer (Suedfrankreich), wo Huxley mit seiner Frau Maria lebte. 1937 emigrierte er nach Los Angeles, schrieb fuer Hollywood (Pride and Prejudice, Jane Eyre) und vertiefte sich in Mystik (The Perennial Philosophy 1945) und Psychedelika (The Doors of Perception 1954, Heaven and Hell 1956). 1958 erschien Brave New World Revisited, in dem er konstatierte, dass sich die Dystopie schneller realisierte als von ihm prognostiziert. Er starb am 22. November 1963 - am gleichen Tag wie John F. Kennedy und C.S. Lewis - nach einer letzten LSD-Injektion durch seine zweite Frau Laura, exakt wie er es schriftlich vorbereitet hatte.
+
+## Kritische Wuerdigung
+
+Unbestrittene Staerken: Huxley antizipierte Reproduktionsmedizin (IVF 1978), Psychopharmakologie (Prozac 1987), genetische Selektion (PID seit 1990), Behavioral Conditioning (Skinner-Schule), Massenkonsum als Religion. Die Brave-New-World-Diagnose ist insgesamt naeher an unserer Realitaet als Orwells 1984 - was bemerkenswert ist, weil Huxley 17 Jahre frueher schrieb.
+
+Kritik in der Wissenschafts-Community: Huxley unterschaetzt die menschliche Anpassungsfaehigkeit an Sinnverlust - er nahm an, dass Menschen wie John verzweifeln und Selbstmord begehen wuerden. Empirisch zeigt sich: Menschen finden mit Antidepressiva, Konsum, Streaming und Bildschirmen erstaunlich gut auch in sinnentleerten Strukturen weiter, ohne kollektive Krise. Sein Determinismus (Bokanovsky-Klonen produziert identische Persoenlichkeiten) ist epigenetisch widerlegt. Was sich seit 1932 bestaetigt hat: Konsum als Identitaetsersatz, Pharmazeutisierung psychischer Probleme, sexuelle Liberalisierung als Markt, Bildung als Konditionierung. Was sich nicht bestaetigt hat: die offizielle Abschaffung von Familie und Religion - sie existieren weiter, aber als entkernte Markenhuellen.
+
+## Aktualitaetsbezug 2026
+
+In den USA nehmen 13% der Erwachsenen ein Antidepressivum (CDC 2024), in Deutschland 8% - statistisch ist Soma laengst gesellschaftliche Standardausstattung. SSRI-Verschreibungen sind seit 2000 um 400% gestiegen. Online-Dating und Hookup-Apps haben "jeder gehoert jedem" technisch umgesetzt. CRISPR-Gen-Editing bei Embryonen (He Jiankui 2018 in China) hat die Bokanovsky-Methode realistisch gemacht; Designer-Babies sind kein Sci-Fi mehr, sondern Regulierungsfrage. Algorithmische Konditionierung via TikTok, YouTube und Netflix funktioniert hypnopaedisch: Wer 8 Stunden taeglich kuratierten Content konsumiert, dessen Weltbild wurde nicht erklaert, sondern eingepflanzt. Das Metaverse, Apple Vision Pro und VR-Pornographie sind die Fuehl-Kinos von Brave New World, technisch perfektioniert. Sogar Soma als Wort lebt: Ozempic, Methylphenidat, Mikrodosing-LSD-Therapie - die pharmakologisch optimierte Existenz ist Mainstream.
+
+## Vergleichsbuecher in der Bibliothek
+
+- **1984** (Orwell, materie_001) - die brutale Schwesterdystopie; beide zusammen ergeben das Gesamtbild.
+- **Heile deinen Koerper** (Hay, materie_005) - die Gegenposition: Heilung durch Bewusstsein statt Sedierung durch Pillen.
+- **Die Heilkraft des Wassers** (Batmanghelidj, materie_007) - wie Pharmaindustrie Symptome behandelt, statt Ursachen zu finden - exakt Huxleys Soma-Kritik.
+- **Operation Mockingbird** (Bernstein, materie_013) - wie Konditionierung in unserer Welt operativ ablaeuft.
+- **Sinn-Findung im Spaetkapitalismus** (Ursprung-Welt) - die Gegenfrage: wie John zu sein, ohne sich aufzuhaengen.
 ''',
     category: 'Geopolitik',
     type: 'book',
