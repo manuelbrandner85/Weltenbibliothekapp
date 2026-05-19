@@ -118,11 +118,14 @@ class ImageAnalysisService {
             'score': ((item['score'] as num?)?.toDouble() ?? 0.0),
           }).toList();
 
+          // v95 Crash-Fix: topResults kann leer sein wenn API leeres
+          // Array liefert -- .first würde dann InvalidArgument werfen.
+          final first = topResults.isNotEmpty ? topResults.first : null;
           return {
             'model': 'google/vit-base-patch16-224',
             'topLabels': topResults,
-            'topLabel': topResults.first['label'],
-            'confidence': topResults.first['score'],
+            'topLabel': first?['label'] ?? 'unbekannt',
+            'confidence': first?['score'] ?? 0.0,
           };
         }
       } else if (response.statusCode == 503) {

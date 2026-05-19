@@ -446,8 +446,9 @@ async function dispatchPushQueue(env, pushAuth) {
   }
 
   // 2. Pending-Zeilen laden (bis 100 pro Lauf) + retrybare Failed-Items (attempts < 3)
+  // v96: legacy_user_id mitselectieren -- InvisibleAuth-User haben user_id NULL.
   const fetchRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/notification_queue?or=(status.eq.pending,and(status.eq.failed,attempts.lt.3))&select=id,user_id,title,body,data,attempts&order=created_at.asc&limit=100`,
+    `${SUPABASE_URL}/rest/v1/notification_queue?or=(status.eq.pending,and(status.eq.failed,attempts.lt.3))&select=id,user_id,legacy_user_id,title,body,data,attempts&order=created_at.asc&limit=100`,
     { headers: pushAuth }
   );
   const rows = await fetchRes.json().catch(() => []);
@@ -459,30 +460,38 @@ async function dispatchPushQueue(env, pushAuth) {
   let failed = 0;
   for (const row of list) {
     let deliveryOk = false;
-    // user_id URL-encoden um Parameter-Poisoning bei Sonderzeichen zu vermeiden.
+    // v96 KRITISCH-FIX: lese aus user_devices (v91), NICHT push_subscriptions
+    // (v13). Die App registriert nur in user_devices -- der alte
+    // push_subscriptions-Pfad war daher leer und niemand bekam Push.
+    // user_devices.profile_id matched profiles.id (UUID) bei Web-Auth;
+    // user_devices.legacy_user_id matched InvisibleAuth-IDs.
+    const lookupColumn = row.user_id ? 'profile_id' : 'legacy_user_id';
+    const lookupValue = row.user_id || row.legacy_user_id || '';
     const subsRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${encodeURIComponent(row.user_id)}&is_active=eq.true&fcm_token=not.is.null&select=fcm_token`,
+      `${SUPABASE_URL}/rest/v1/user_devices?${lookupColumn}=eq.${encodeURIComponent(lookupValue)}&fcm_token=not.is.null&select=fcm_token`,
       { headers: pushAuth }
     );
     const subs = await subsRes.json().catch(() => []);
-    const tokens = (Array.isArray(subs) ? subs : []).map(s => s.fcm_token).filter(Boolean);
+    const tokens = (Array.isArray(subs) ? subs : [])
+        .map(s => s.fcm_token).filter(Boolean);
 
     if (tokens.length === 0) {
       // Kein FCM-Token für diesen User → als 'sent' markieren (kein Gerät registriert)
-      console.warn(`push skip: user ${row.user_id} hat kein aktives fcm_token`);
+      console.warn(`push skip: ${lookupColumn}=${lookupValue} hat kein aktives fcm_token`);
     } else {
       for (const token of tokens) {
         try {
           const r = await sendFcmMessage(fcm.accessToken, fcm.projectId, token, row.title, row.body, row.data || {});
           if (r.ok) {
             deliveryOk = true;
-            console.log(`FCM ok: user=${row.user_id}`);
+            console.log(`FCM ok: ${lookupColumn}=${lookupValue}`);
           } else if (r.status === 404 || r.status === 410) {
             // Token invalid / unregistered → deaktivieren
-            console.warn(`FCM token invalid (${r.status}), deaktiviere: ${token.slice(0, 20)}…`);
+            console.warn(`FCM token invalid (${r.status}), entferne: ${token.slice(0, 20)}…`);
+            // user_devices hat keine is_active-Spalte -- direkt loeschen.
             await fetch(
-              `${SUPABASE_URL}/rest/v1/push_subscriptions?fcm_token=eq.${encodeURIComponent(token)}`,
-              { method: 'PATCH', headers: { ...pushAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: false }) }
+              `${SUPABASE_URL}/rest/v1/user_devices?fcm_token=eq.${encodeURIComponent(token)}`,
+              { method: 'DELETE', headers: pushAuth }
             );
           } else {
             const errBody = await r.text().catch(() => '');
@@ -1337,12 +1346,20 @@ export default {
 
           // Admin-Passwort-Prüfung — env.ROOT_ADMIN_PASSWORD via
           // `wrangler secret put ROOT_ADMIN_PASSWORD`. Fallback auf alten
-          // Hardcoded-Wert für Übergangszeit damit kein User ausgesperrt
-          // wird falls Secret noch nicht gesetzt. TODO: nach Migration
-          // Fallback entfernen.
+          // v95: Kein hardcoded Fallback-Passwort mehr -- wenn das Secret
+          // ROOT_ADMIN_PASSWORD fehlt, ist der Root-Admin-Login deaktiviert.
+          // Bei fehlendem Secret wird ein 503 zurueckgegeben statt eines
+          // bekannten Passworts zu akzeptieren.
           const ADMIN_USERNAME = 'weltenbibliothek';
-          const ADMIN_PASSWORD = env.ROOT_ADMIN_PASSWORD || 'Jolene2305';
+          const ADMIN_PASSWORD = env.ROOT_ADMIN_PASSWORD;
           if (body.username && body.username.toLowerCase() === ADMIN_USERNAME) {
+            if (!ADMIN_PASSWORD) {
+              return jsonResponse({
+                success: false,
+                error: 'Root-Admin-Login serverseitig nicht konfiguriert. '
+                       'ROOT_ADMIN_PASSWORD muss via wrangler secret gesetzt werden.',
+              }, 503);
+            }
             if (!body.password || body.password !== ADMIN_PASSWORD) {
               return jsonResponse({ success: false, error: 'Falsches Admin-Passwort.' }, 403);
             }
@@ -2564,19 +2581,29 @@ export default {
       };
 
       // Helper: Notification in beiden Tabellen speichern (In-App + FCM-Queue)
+      // v96: InvisibleAuth-tauglich. Wenn userId mit 'user_' beginnt, ist
+      // es eine InvisibleAuth-ID -> wir setzen legacy_user_id statt
+      // user_id (UUID). Sonst normal UUID-Pfad.
       const pushNotif = async (userId, type, title, body, data = {}) => {
         if (!userId || !svcKey) return;
         const h = svcHeaders;
+        const isLegacy = String(userId).startsWith('user_');
+        const queueRow = isLegacy
+          ? { legacy_user_id: userId, title, body, data, status: 'pending' }
+          : { user_id: userId, title, body, data, status: 'pending' };
+        const notifRow = isLegacy
+          ? { legacy_user_id: userId, type, title, body, data }
+          : { user_id: userId, type, title, body, data };
         await Promise.all([
           fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
             method: 'POST', headers: { ...h, 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ user_id: userId, type, title, body, data }),
-          }),
+            body: JSON.stringify(notifRow),
+          }).catch(() => {}),
           fetch(`${SUPABASE_URL}/rest/v1/notification_queue`, {
             method: 'POST', headers: { ...h, 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ user_id: userId, title, body, data }),
-          }),
-        ]).catch(() => {});
+            body: JSON.stringify(queueRow),
+          }).catch(() => {}),
+        ]);
       };
 
       // ── GET /api/admin/content/:world ───────────────────────
@@ -2752,8 +2779,18 @@ export default {
       // versuche zuerst mit, dann ohne (Fallback bei 42703 column not exist).
       if (method === 'GET' && path === '/api/admin/users') {
         try {
-          const anonKey = env.SUPABASE_ANON_KEY || '';
-          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+          // v95: Kein Anon-Fallback mehr -- ohne SERVICE_ROLE_KEY wuerde der
+          // Endpoint via RLS nur die eigene Profile-Zeile zurueckgeben oder
+          // (schlimmer) gar nichts. Lieber explizit 503 statt geheime
+          // User-Liste mit anonymem Token zu exponieren.
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
+          if (!serviceKey) {
+            return errorResponse(
+              'SUPABASE_SERVICE_ROLE_KEY fehlt -- Admin-User-Endpoint deaktiviert. '
+              'Service-Role-Secret muss via wrangler secret put gesetzt werden.',
+              503,
+            );
+          }
           // v5.44.7: legacy_user_id (v91) + xp dazu, damit InvisibleAuth-User
           // korrekt erscheinen + Admin XP-Statistik sieht.
           const baseCols = ['id','username','display_name','role','is_banned','avatar_url','avatar_emoji','created_at'];
@@ -3271,38 +3308,63 @@ export default {
       }
 
       // ── POST /api/admin/promote/:world/:userId ──────────────
+      // Body kann { role: 'admin'|'root_admin'|'moderator'|'content_editor' }
+      // enthalten. Default 'admin'. Bisher wurde der Body komplett ignoriert
+      // -- Root-Admin-Promote ging nie durch.
       if (method === 'POST' && path.includes('/promote')) {
         try {
           const parts = path.split('/');
           const userId = parts[parts.length - 1];
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const allowed = ['user','moderator','content_editor','admin','root_admin'];
+          const targetRole = allowed.includes(body.role) ? body.role : 'admin';
           const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
             method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' },
-            body: JSON.stringify({ role: 'admin' }),
+            body: JSON.stringify({ role: targetRole }),
           });
           if (res.ok) {
-            await pushNotif(userId, 'system', '🌟 Du bist jetzt Admin!',
-              'Ein Administrator hat dich befördert. Du hast jetzt erweiterte Rechte.',
-              { type: 'promoted', new_role: 'admin' });
+            const friendly = targetRole === 'root_admin' ? 'Root-Admin'
+              : targetRole === 'admin' ? 'Admin'
+              : targetRole === 'moderator' ? 'Moderator'
+              : targetRole === 'content_editor' ? 'Content-Editor'
+              : 'User';
+            await pushNotif(userId, 'system', `🌟 Neue Rolle: ${friendly}`,
+              `Ein Administrator hat dich zu ${friendly} befördert.`,
+              { type: 'promoted', new_role: targetRole });
           }
-          return jsonResponse({ success: res.ok, message: res.ok ? 'User zu Admin befördert' : 'Fehler beim Befördern' });
+          return jsonResponse({
+            success: res.ok,
+            new_role: targetRole,
+            message: res.ok ? `User zu ${targetRole} befördert` : 'Fehler beim Befördern',
+          });
         } catch (e) { return errorResponse(`Promote-Fehler: ${e.message}`); }
       }
 
       // ── POST /api/admin/demote/:world/:userId ───────────────
+      // Body kann { role: 'user'|'moderator'|... } enthalten. Default 'user'.
       if (method === 'POST' && path.includes('/demote')) {
         try {
           const parts = path.split('/');
           const userId = parts[parts.length - 1];
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const allowed = ['user','moderator','content_editor','admin'];
+          const targetRole = allowed.includes(body.role) ? body.role : 'user';
           const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
             method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' },
-            body: JSON.stringify({ role: 'user' }),
+            body: JSON.stringify({ role: targetRole }),
           });
           if (res.ok) {
             await pushNotif(userId, 'system', 'ℹ️ Rollenänderung',
-              'Deine Admin-Rechte wurden angepasst.',
-              { type: 'demoted', new_role: 'user' });
+              `Deine Rolle wurde auf ${targetRole} angepasst.`,
+              { type: 'demoted', new_role: targetRole });
           }
-          return jsonResponse({ success: res.ok, message: res.ok ? 'Admin zu User degradiert' : 'Fehler beim Degradieren' });
+          return jsonResponse({
+            success: res.ok,
+            new_role: targetRole,
+            message: res.ok ? `Auf ${targetRole} degradiert` : 'Fehler beim Degradieren',
+          });
         } catch (e) { return errorResponse(`Demote-Fehler: ${e.message}`); }
       }
 

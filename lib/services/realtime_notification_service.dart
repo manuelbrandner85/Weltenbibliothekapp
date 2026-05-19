@@ -114,25 +114,40 @@ class RealtimeNotificationService {
   }
 
   Future<void> _subscribeQueue() async {
-    final userId = UnifiedProfileService.instance.userId;
-    if (userId == null || userId.isEmpty) {
+    // v96: zwei moegliche Identitaeten -- UUID (Supabase Auth) oder
+    // legacy_user_id (InvisibleAuth). Wir subscriben fuer beide, weil ein
+    // User je nach Pfad mal das eine, mal das andere haben kann.
+    final profile = UnifiedProfileService.instance;
+    final userId = profile.userId;
+    final legacyId = profile.current?.userId; // gleichlautend, falls vorhanden
+    final legacyOnly = (profile.current != null &&
+        (userId == null || userId.isEmpty) &&
+        (legacyId != null && legacyId.startsWith('user_')))
+        ? legacyId
+        : null;
+
+    if ((userId == null || userId.isEmpty) && legacyOnly == null) {
       if (kDebugMode) {
-        debugPrint('🔔 Realtime-Queue: kein userId -- skip subscribe');
+        debugPrint('🔔 Realtime-Queue: keine Identitaet -- skip subscribe');
       }
       return;
     }
+
     try {
       final client = supabase;
+      final keyValue = userId?.isNotEmpty == true ? userId! : legacyOnly!;
+      final filterColumn =
+          userId?.isNotEmpty == true ? 'user_id' : 'legacy_user_id';
       _channel = client
-          .channel('rt-notif-$userId-${DateTime.now().millisecondsSinceEpoch}')
+          .channel('rt-notif-$keyValue-${DateTime.now().millisecondsSinceEpoch}')
           .onPostgresChanges(
             event: PostgresChangeEvent.insert,
             schema: 'public',
             table: 'notification_queue',
             filter: PostgresChangeFilter(
               type: PostgresChangeFilterType.eq,
-              column: 'user_id',
-              value: userId,
+              column: filterColumn,
+              value: keyValue,
             ),
             callback: (payload) {
               final row = payload.newRecord;
@@ -148,7 +163,8 @@ class RealtimeNotificationService {
           )
           .subscribe();
       if (kDebugMode) {
-        debugPrint('🔔 Realtime-Queue subscribed for user $userId');
+        debugPrint(
+            '🔔 Realtime-Queue subscribed via $filterColumn=$keyValue');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Realtime-Queue subscribe failed: $e');

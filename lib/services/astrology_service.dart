@@ -58,8 +58,12 @@ class AstrologyService {
     
     try {
       final parts = birthTime.split(':');
-      final hour = int.parse(parts[0]);
-      final minute = parts.length > 1 ? int.parse(parts[1]) : 0;
+      if (parts.isEmpty) return null;
+      // v95 Crash-Fix: tryParse statt parse -- bei ungueltigen Strings
+      // wie "XX:YY" gab es einen FormatException-Crash.
+      final hour = int.tryParse(parts[0]);
+      if (hour == null) return null;
+      final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
       
       // Vereinfacht: 2 Stunden pro Zeichen, startend bei Sonnenaufgang (~6 Uhr)
       final offsetHours = (hour - 6 + (minute / 60)).toDouble();
