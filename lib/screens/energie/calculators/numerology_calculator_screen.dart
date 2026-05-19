@@ -371,17 +371,23 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildProfileCard(),
-          const SizedBox(height: 16),
+          // Kompakter Profil-Header (immer sichtbar -- ersetzt das
+          // gelegentlich unsichtbare HoverGlowCard).
+          _buildProfileHeader(),
+          const SizedBox(height: 14),
           _buildSystemToggle(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           _buildSectionTitle(
               _chaldeanMode ? 'CHALDAEISCH (ca. 4000 v. Chr.)' : 'PYTHAGORAEISCH'),
           const SizedBox(height: 16),
           _buildNumberCard(
             'Lebenszahl',
             _lifePath ?? 0,
-            _getLifePathDescription(_lifePath ?? 0),
+            _systemPrefixedDescription(
+              _getLifePathDescription(_lifePath ?? 0),
+              kind: 'life',
+              number: _lifePath ?? 0,
+            ),
             const Color(0xFFE91E63),
             Icons.my_location,
           ),
@@ -389,7 +395,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           _buildNumberCard(
             'Seelenzahl',
             soul,
-            _getSoulDescription(soul),
+            _systemPrefixedDescription(
+              _getSoulDescription(soul),
+              kind: 'soul',
+              number: soul,
+            ),
             const Color(0xFF9C27B0),
             Icons.favorite,
           ),
@@ -397,7 +407,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           _buildNumberCard(
             'Ausdruckszahl',
             expression,
-            _getExpressionDescription(expression),
+            _systemPrefixedDescription(
+              _getExpressionDescription(expression),
+              kind: 'expression',
+              number: expression,
+            ),
             const Color(0xFF673AB7),
             Icons.stars,
           ),
@@ -405,7 +419,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           _buildNumberCard(
             'Persönlichkeitszahl',
             personality,
-            _getPersonalityDescription(personality),
+            _systemPrefixedDescription(
+              _getPersonalityDescription(personality),
+              kind: 'personality',
+              number: personality,
+            ),
             const Color(0xFF7B1FA2),
             Icons.person,
           ),
@@ -448,6 +466,175 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         ],
       ),
     );
+  }
+
+  // ── Kompakter Profil-Header (v95 ersetzt _buildProfileCard im KERN-Tab,
+  // der durch HoverGlowCard manchmal unsichtbar blieb) ───────────────────
+  Widget _buildProfileHeader() {
+    final p = _profile;
+    final firstName = (p?.firstName.trim().isNotEmpty ?? false)
+        ? p!.firstName
+        : (p?.username.trim().isNotEmpty ?? false ? p!.username : 'Explorer');
+    final fullName = '${p?.firstName ?? ''} ${p?.lastName ?? ''}'.trim();
+    final birth = p == null
+        ? ''
+        : '${p.birthDate.day.toString().padLeft(2, '0')}.'
+            '${p.birthDate.month.toString().padLeft(2, '0')}.'
+            '${p.birthDate.year}';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF7C4DFF).withValues(alpha: 0.22),
+            const Color(0xFF9C27B0).withValues(alpha: 0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: const Color(0xFFCE93D8).withValues(alpha: 0.45),
+            width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7C4DFF).withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [Color(0xFF9C27B0), Color(0xFFFFD700)],
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              p?.avatarEmoji?.isNotEmpty == true
+                  ? p!.avatarEmoji!
+                  : firstName[0].toUpperCase(),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fullName.isEmpty ? firstName : fullName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 2),
+                if (birth.isNotEmpty)
+                  Text('Geboren: $birth',
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 11)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C4DFF).withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: const Color(0xFFCE93D8).withValues(alpha: 0.5)),
+            ),
+            child: Text(
+              _chaldeanMode ? 'Chaldäisch' : 'Pythagoräisch',
+              style: const TextStyle(
+                  color: Color(0xFFEA80FC),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Erweitert eine pythagoräisch-basierte Beschreibung um System-spezifischen
+  // Kontext, sodass Toggle Pyth/Chald sichtbar unterschiedliche Texte liefert
+  // -- selbst wenn beide Systeme zufaellig dieselbe Zahl ausspucken.
+  String _systemPrefixedDescription(
+    String base, {
+    required String kind,
+    required int number,
+  }) {
+    // Lebenszahl ist immer pythagoraeisch (datumsbasiert) -- nur dort kein
+    // Prefix.
+    if (kind == 'life') return base;
+
+    if (_chaldeanMode) {
+      final lens = _chaldeanLens(kind, number);
+      return 'CHALDÄISCHE AUSLEGUNG (Klangschwingung, ca. 4000 v. Chr.):\n'
+          '$lens\n\n'
+          '— Pythagoräische Standard-Deutung der Zahl $number zum Vergleich —\n'
+          '$base';
+    }
+    final lens = _pythagoreanLens(kind, number);
+    return 'PYTHAGORÄISCHE AUSLEGUNG (Buchstaben-Reihenfolge):\n'
+        '$lens\n\n'
+        '$base';
+  }
+
+  String _pythagoreanLens(String kind, int n) {
+    switch (kind) {
+      case 'soul':
+        return 'Die innere Sehnsucht in der pythagoräischen Tradition: '
+            'Vokale ergeben die Resonanz deiner Wünsche im Ordnungssystem '
+            'von Pythagoras.';
+      case 'expression':
+        return 'Talente und Ausdruck nach Pythagoras: alle Buchstaben '
+            'tragen den Wert ihrer Position im Alphabet (1-9, dann '
+            'Wiederholung).';
+      case 'personality':
+        return 'Wirkung nach aussen: Konsonanten bilden im '
+            'pythagoräischen System die Maske, die du der Welt zeigst.';
+      default:
+        return 'Pythagoräische Berechnung.';
+    }
+  }
+
+  String _chaldeanLens(String kind, int n) {
+    switch (kind) {
+      case 'soul':
+        return 'Im chaldäischen System klingen deine Vokale als '
+            'archaische Schwingung -- nicht aus dem Alphabet, sondern '
+            'aus dem Klang abgeleitet. Die 9 fehlt absichtlich (heilig). '
+            'Deine Seele resoniert hier mit der Zahl $n auf einer '
+            'tieferen, vorsemitischen Ebene.';
+      case 'expression':
+        return 'Dein gesamter Name ergibt im chaldäischen System die '
+            'Schwingung $n. Dieses ältere Verfahren betrachtet jeden '
+            'Buchstaben als Trägerschwingung -- die Resonanz ist oft '
+            'spezifischer als beim pythagoräischen Pendant.';
+      case 'personality':
+        return 'Die Konsonanten ergeben chaldäisch die Zahl $n. '
+            'Hier zeigt sich, wie deine Stimme klingt, wenn andere dich '
+            'erstmals wahrnehmen -- archaische Resonanz statt '
+            'systematischer Wert.';
+      default:
+        return 'Chaldäische Berechnung -- Klangschwingung, 9 ist heilig.';
+    }
   }
 
   Widget _buildSystemToggle() {
