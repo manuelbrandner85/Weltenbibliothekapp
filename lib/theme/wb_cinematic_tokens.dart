@@ -261,6 +261,29 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
 extension WBCinematicContext on BuildContext {
   WBCinematic get wb =>
       Theme.of(this).extension<WBCinematic>() ?? WBCinematic.dark;
+
+  /// v5.44.7: Theme-aware Text/Icon-Farben fuer cinematic Screens.
+  /// In Dark-Mode weiss, in Light-Mode dunkelblau.
+  /// Verwendung: `Text('...', style: TextStyle(color: context.onBg))`
+  Color get onBg {
+    return Theme.of(this).brightness == Brightness.light
+        ? const Color(0xFF1A1A2E)
+        : Colors.white;
+  }
+
+  /// Sekundaere Text-Farbe (60% Opacity vom Primaer).
+  Color get onBgSecondary {
+    return Theme.of(this).brightness == Brightness.light
+        ? const Color(0xFF1A1A2E).withValues(alpha: 0.65)
+        : Colors.white.withValues(alpha: 0.65);
+  }
+
+  /// Tertiaere/Hint-Text-Farbe (38% Opacity).
+  Color get onBgHint {
+    return Theme.of(this).brightness == Brightness.light
+        ? const Color(0xFF1A1A2E).withValues(alpha: 0.38)
+        : Colors.white.withValues(alpha: 0.38);
+  }
 }
 
 /// Cinematic-Spacings (4er-Rhythmus).
