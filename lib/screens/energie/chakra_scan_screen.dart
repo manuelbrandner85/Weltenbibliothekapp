@@ -1,6 +1,11 @@
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../services/streak_tracking_service.dart';
+import 'frequency_generator_screen.dart';
 
 /// 💎 Chakra-Assessment — Fragebogen-basierte Energieanalyse
 class ChakraScanScreen extends StatefulWidget {
@@ -464,6 +469,11 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
 
   Widget _buildResult(Color accent) {
     final sc = _scores;
+    // v95: Scan im SharedPrefs-History speichern (max 50 Eintraege).
+    // Best-effort, blockiert UI nicht.
+    _persistScan(sc);
+
+    final weak = sc.where((s) => s.score < 0.5).toList();
 
     return Column(
       key: const ValueKey('result'),
@@ -486,12 +496,143 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
               // Chakra-Rad
               Center(child: _ChakraWheel(scores: sc, pulseCtrl: _pulseCtrl)),
               const SizedBox(height: 24),
+              if (weak.isNotEmpty) ...[
+                _buildHarmonizeBanner(weak),
+                const SizedBox(height: 14),
+              ],
               ...sc.map((s) => _ChakraResultCard(score: s)),
             ],
           ),
         ),
       ],
     );
+  }
+
+  // v95: schwache Chakren -> Link zum FrequenzGenerator mit passender Hz.
+  Widget _buildHarmonizeBanner(List<_ChakraScore> weak) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF7C4DFF).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: const Color(0xFF7C4DFF).withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(children: [
+            Icon(Icons.graphic_eq_rounded, color: Color(0xFFCE93D8), size: 18),
+            SizedBox(width: 8),
+            Text('Schwache Chakren harmonisieren',
+                style: TextStyle(
+                    color: Color(0xFFCE93D8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4)),
+          ]),
+          const SizedBox(height: 10),
+          ...weak.map((s) {
+            final name = (s.chakra['name'] as String?) ?? '';
+            final freq = _chakraFrequency(name);
+            final crystals = _chakraCrystals(name);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(children: [
+                Text((s.chakra['emoji'] as String?) ?? '◯',
+                    style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('$name · $freq Hz',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                      Text('Kristalle: $crystals',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              height: 1.3)),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => _openFrequency(freq),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C4DFF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    minimumSize: const Size(0, 30),
+                    textStyle: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                  child: const Text('Tönen'),
+                ),
+              ]),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  int _chakraFrequency(String name) {
+    if (name.contains('Wurzel')) return 396;
+    if (name.contains('Sakral')) return 417;
+    if (name.contains('Solar')) return 528;
+    if (name.contains('Herz')) return 639;
+    if (name.contains('Hals')) return 741;
+    if (name.contains('Stirn')) return 852;
+    if (name.contains('Kron')) return 963;
+    return 432;
+  }
+
+  String _chakraCrystals(String name) {
+    if (name.contains('Wurzel')) return 'Roter Jaspis, Granat, Hämatit';
+    if (name.contains('Sakral')) return 'Karneol, Orangencalcit, Mondstein';
+    if (name.contains('Solar')) return 'Citrin, Tigerauge, Bernstein';
+    if (name.contains('Herz')) return 'Rosenquarz, Aventurin, Malachit';
+    if (name.contains('Hals')) return 'Chalcedon, Sodalith, Aquamarin';
+    if (name.contains('Stirn')) return 'Amethyst, Lapislazuli, Fluorit';
+    if (name.contains('Kron')) return 'Bergkristall, Selenit, Sugilith';
+    return 'Bergkristall';
+  }
+
+  void _openFrequency(int hz) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FrequencyGeneratorScreen(initialHz: hz),
+      ),
+    );
+  }
+
+  Future<void> _persistScan(List<_ChakraScore> scores) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'chakra_scans_v1';
+      final existing = prefs.getStringList(key) ?? <String>[];
+      final entry = jsonEncode({
+        'ts': DateTime.now().toIso8601String(),
+        'scores': {
+          for (final s in scores)
+            (s.chakra['name'] as String? ?? 'unknown'): s.score,
+        },
+      });
+      final list = [entry, ...existing];
+      // Maximal 50 Eintraege behalten
+      if (list.length > 50) list.removeRange(50, list.length);
+      await prefs.setStringList(key, list);
+      StreakTrackingService().trackToolUsage('chakra_scan_completed');
+    } catch (_) {
+      // ignore: best-effort
+    }
   }
 }
 

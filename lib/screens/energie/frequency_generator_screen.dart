@@ -9,7 +9,9 @@ import 'package:audioplayers/audioplayers.dart';
 
 /// 🎵 FREQUENCY GENERATOR - Heilende Klänge & Frequenzen
 class FrequencyGeneratorScreen extends StatefulWidget {
-  const FrequencyGeneratorScreen({super.key});
+  /// Optional: vorauswahl ueber Hz (z.B. aus Chakra-Scan kommend).
+  final int? initialHz;
+  const FrequencyGeneratorScreen({super.key, this.initialHz});
 
   @override
   State<FrequencyGeneratorScreen> createState() => _FrequencyGeneratorScreenState();
@@ -32,7 +34,21 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
   void initState() {
     super.initState();
     _filteredPresets = FrequencyPreset.getByCategory(_selectedCategory);
-    
+
+    // v95: Wenn initialHz uebergeben wurde (z.B. aus Chakra-Scan),
+    // suche ein passendes Preset und waehle es aus.
+    final initHz = widget.initialHz;
+    if (initHz != null) {
+      final all = FrequencyPreset.getByCategory(_selectedCategory);
+      final match = all.where((p) => p.frequency.round() == initHz);
+      if (match.isNotEmpty) {
+        _activePreset = match.first;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _playPreset(match.first);
+        });
+      }
+    }
+
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
