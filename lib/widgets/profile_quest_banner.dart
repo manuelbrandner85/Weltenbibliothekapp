@@ -1,17 +1,14 @@
 // Profile-Quest-Banner — sanfter Onboarding-Prompt.
 //
 // Wird im Portal angezeigt, wenn der User noch kein Profil angelegt hat
-// (weder Materie- noch Energie-Profil im StorageService). Tap → öffnet
-// ProfileOnboardingScreen. Wenn der User danach ein Profil hat,
-// verschwindet der Banner automatisch.
-//
-// Vorher: Web-User kam ohne Profil ins Portal und stolperte erst beim
-// Eintritt in eine Funktion über ProfileRequiredWidget. Jetzt: aktiver
-// Hinweis schon auf der Home-Screen.
+// (weder Materie- noch Energie-Profil im StorageService). Tap oeffnet
+// den UNIFIED ProfileEditorScreen (welt-uebergreifend). v95-Fix:
+// vorher fuehrte der Banner zum welt-spezifischen Onboarding -- das
+// war verwirrend, weil der User EIN Profil hat das fuer alle Welten gilt.
 
 import 'package:flutter/material.dart';
 
-import '../screens/profile_onboarding_screen.dart';
+import '../screens/shared/profile_editor_screen.dart';
 import '../services/storage_service.dart';
 
 class ProfileQuestBanner extends StatefulWidget {
@@ -52,10 +49,10 @@ class _ProfileQuestBannerState extends State<ProfileQuestBanner> {
           onTap: () async {
             await Navigator.of(context).push(
               MaterialPageRoute(
-                // Default 'materie' — User kann das Profil danach für jede
-                // Welt mitnutzen, weil es nur ein unified Profile pro User
-                // gibt (siehe Auth-Refactor in CLAUDE.md TODOs).
-                builder: (_) => const ProfileOnboardingScreen(worldType: 'materie'),
+                // v95: Unified ProfileEditorScreen statt welt-spezifisches
+                // Onboarding -- EIN Profil pro User fuer alle Welten.
+                builder: (_) =>
+                    const ProfileEditorScreen(world: 'energie'),
                 fullscreenDialog: true,
               ),
             );
