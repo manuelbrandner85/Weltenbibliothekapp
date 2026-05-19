@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/mentor_service.dart';
+import '../../widgets/mentor_hero_card.dart';
 import '../shared/mentor_chat_screen.dart';
 
 import '../../widgets/daily_path_widget.dart';
@@ -238,7 +239,11 @@ class UrsprungHomeTab extends StatelessWidget {
   }
 
   Widget _buildMentorButton(BuildContext context) {
-    return GestureDetector(
+    return MentorHeroCard(
+      world: 'ursprung',
+      mentorName: 'Alchemist',
+      tagline: 'Bewusstsein · Quanten · Realität',
+      icon: Icons.all_inclusive_rounded,
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
@@ -246,72 +251,6 @@ class UrsprungHomeTab extends StatelessWidget {
             personality: MentorPersonality.alchemist,
             world: 'ursprung',
           ),
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              _cyan.withValues(alpha: 0.14),
-              _cyan.withValues(alpha: 0.04),
-            ],
-          ),
-          border: Border.all(color: _cyan.withValues(alpha: 0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: _cyan.withValues(alpha: 0.10),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    _cyan.withValues(alpha: 0.30),
-                    _cyan.withValues(alpha: 0.08),
-                  ],
-                ),
-                border: Border.all(color: _cyan.withValues(alpha: 0.5)),
-              ),
-              child: const Icon(Icons.all_inclusive, color: _cyan, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Sprich mit dem Alchemisten',
-                    style: TextStyle(
-                      color: _cyan,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'KI-Mentor · Bewusstsein, Quanten, Realität',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.55),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: _cyan.withValues(alpha: 0.55),
-                size: 16),
-          ],
         ),
       ),
     );

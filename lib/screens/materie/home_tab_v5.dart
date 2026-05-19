@@ -20,6 +20,7 @@ import '../../services/world_subscription_service.dart';
 import '../../config/wb_design.dart';
 import '../../services/mentor_service.dart';
 import '../shared/mentor_chat_screen.dart';
+import '../../widgets/mentor_hero_card.dart';
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/trending_rooms_section.dart';
 
@@ -397,8 +398,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                       parent: AlwaysScrollableScrollPhysics()),
                   slivers: [
                     _buildHeroHeader(),
-                    _buildLiveStatBanner(),
+                    // 🧠 Mentor direkt unter Hero -- Top-Sichtbarkeit
                     _buildMentorBanner(),
+                    _buildLiveStatBanner(),
                     const SliverToBoxAdapter(child: DailyPathWidget()),
                     _buildActionGrid(),
                     _buildRecentRooms(),
@@ -756,12 +758,17 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     );
   }
 
-  // ── 🧠 MENTOR BANNER ────────────────────────────────────────────────────
+  // ── 🧠 MENTOR HERO CARD (Top-Position, cinematic) ───────────────────────
   Widget _buildMentorBanner() {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: GestureDetector(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: MentorHeroCard(
+          world: 'materie',
+          mentorName: 'Forscher',
+          tagline: 'KI-Mentor für Wissenschaft & Fakten',
+          icon: Icons.science_rounded,
+          userFirstName: _energieProfile?.firstName,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
@@ -769,68 +776,6 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                 personality: MentorPersonality.forscher,
                 world: 'materie',
               ),
-            ),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [
-                  _blue.withValues(alpha: 0.15),
-                  _blue.withValues(alpha: 0.05),
-                ],
-              ),
-              border: Border.all(color: _blue.withValues(alpha: 0.3)),
-              boxShadow: [
-                BoxShadow(
-                  color: _blue.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [_blue.withValues(alpha: 0.3), _blue.withValues(alpha: 0.1)],
-                    ),
-                    border: Border.all(color: _blue.withValues(alpha: 0.5)),
-                  ),
-                  child: const Icon(Icons.science, color: Color(0xFF2979FF), size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Sprich mit dem Forscher',
-                        style: TextStyle(
-                          color: Color(0xFF82B1FF),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Dein KI-Mentor für Wissenschaft & Fakten',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios,
-                    color: _blue.withValues(alpha: 0.5), size: 16),
-              ],
             ),
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/mentor_service.dart';
+import '../../widgets/mentor_hero_card.dart';
 import '../../services/vorhang_service.dart';
 import '../shared/mentor_chat_screen.dart';
 import '../../widgets/daily_path_widget.dart';
@@ -333,7 +334,11 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
 
   // ── PRESERVED: Mentor Button ──
   Widget _buildMentorButton(BuildContext context) {
-    return GestureDetector(
+    return MentorHeroCard(
+      world: 'vorhang',
+      mentorName: 'Stratege',
+      tagline: 'KI-Mentor für Machtstrategien',
+      icon: Icons.psychology_rounded,
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
@@ -341,67 +346,6 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
             personality: MentorPersonality.stratege,
             world: 'vorhang',
           ),
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              _gold.withValues(alpha: 0.15),
-              _gold.withValues(alpha: 0.05),
-            ],
-          ),
-          border: Border.all(color: _gold.withValues(alpha: 0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: _gold.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [_gold.withValues(alpha: 0.3), _gold.withValues(alpha: 0.1)],
-                ),
-                border: Border.all(color: _gold.withValues(alpha: 0.5)),
-              ),
-              child: const Icon(Icons.psychology, color: _gold, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Sprich mit dem Strategen',
-                    style: TextStyle(
-                      color: _gold,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Dein KI-Mentor für Machtstrategien',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: _gold.withValues(alpha: 0.5), size: 16),
-          ],
         ),
       ),
     );

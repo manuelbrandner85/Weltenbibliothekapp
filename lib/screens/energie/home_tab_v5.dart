@@ -19,6 +19,7 @@ import '../../config/wb_design.dart';
 import 'spirit_tab_modern.dart';
 import '../../services/mentor_service.dart';
 import '../shared/mentor_chat_screen.dart';
+import '../../widgets/mentor_hero_card.dart';
 import 'calculators/chakra_calculator_screen.dart';
 import '../../widgets/daily_mantra_banner.dart'; // 🌙 F1 Tages-Mantra
 import '../../widgets/daily_path_widget.dart';
@@ -436,6 +437,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                       parent: AlwaysScrollableScrollPhysics()),
                   slivers: [
                     _buildHeroHeader(),
+                    // 🧠 Mentor direkt unter Hero -- Top-Sichtbarkeit
+                    _buildMentorBanner(),
                     _buildMysticBanner(),
                     // 🌙 F1: Tages-Mantra aus daily_mantras-Tabelle (gewichtetes
                     // Random pro Tag, deterministisch via Datum-Seed).
@@ -443,7 +446,6 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     _buildDailyQuoteSliver(),
                     _buildCosmicEnergySliver(),
                     _buildLiveStatBanner(),
-                    _buildMentorBanner(),
                     const SliverToBoxAdapter(child: DailyPathWidget()),
                     _buildActionGrid(),
                     const SliverToBoxAdapter(child: _RecentSpiritReadingsSection()),
@@ -1153,12 +1155,17 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     );
   }
 
-  // ── 🧠 MENTOR BANNER ────────────────────────────────────────────────────
+  // ── 🧠 MENTOR HERO CARD (Top-Position, cinematic) ───────────────────────
   Widget _buildMentorBanner() {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: GestureDetector(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: MentorHeroCard(
+          world: 'energie',
+          mentorName: 'Heiler',
+          tagline: 'KI-Mentor für Energie & Heilung',
+          icon: Icons.favorite_rounded,
+          userFirstName: _profile?.firstName,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
@@ -1166,68 +1173,6 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 personality: MentorPersonality.heiler,
                 world: 'energie',
               ),
-            ),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                colors: [
-                  _purple.withValues(alpha: 0.15),
-                  _purple.withValues(alpha: 0.05),
-                ],
-              ),
-              border: Border.all(color: _purple.withValues(alpha: 0.3)),
-              boxShadow: [
-                BoxShadow(
-                  color: _purple.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [_purple.withValues(alpha: 0.3), _purple.withValues(alpha: 0.1)],
-                    ),
-                    border: Border.all(color: _purple.withValues(alpha: 0.5)),
-                  ),
-                  child: const Icon(Icons.favorite, color: Color(0xFF7C4DFF), size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Sprich mit dem Heiler',
-                        style: TextStyle(
-                          color: Color(0xFFCE93D8),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Dein KI-Mentor für Energie & Heilung',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios,
-                    color: _purple.withValues(alpha: 0.5), size: 16),
-              ],
             ),
           ),
         ),
