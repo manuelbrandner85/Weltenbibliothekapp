@@ -37,18 +37,56 @@ class WorldAdminDashboard extends ConsumerStatefulWidget {
 class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  // v95: Welt-Switcher -- Admin kann live zwischen Welten wechseln.
+  // Initialwert kommt aus der Route (widget.world), dann lokal mutable.
+  late String _selectedWorld;
+  static const _allWorlds = ['materie', 'energie', 'vorhang', 'ursprung'];
 
-  // ── Theme per World ────────────────────────────────────────────────────
-  Color get _primary =>
-      widget.world == 'materie' ? const Color(0xFF1565C0) : const Color(0xFF6A1B9A);
-  Color get _accent =>
-      widget.world == 'materie' ? const Color(0xFF42A5F5) : const Color(0xFFCE93D8);
-  Color get _accentBright =>
-      widget.world == 'materie' ? const Color(0xFF82B1FF) : const Color(0xFFEA80FC);
+  // ── Theme per (aktuell gewaehlter) Welt ────────────────────────────────
+  Color get _primary {
+    switch (_selectedWorld) {
+      case 'materie': return const Color(0xFF1565C0);
+      case 'energie': return const Color(0xFF6A1B9A);
+      case 'vorhang': return const Color(0xFFB07D2B);
+      case 'ursprung': return const Color(0xFF00897B);
+      default: return const Color(0xFF6A1B9A);
+    }
+  }
+
+  Color get _accent {
+    switch (_selectedWorld) {
+      case 'materie': return const Color(0xFF42A5F5);
+      case 'energie': return const Color(0xFFCE93D8);
+      case 'vorhang': return const Color(0xFFC9A84C);
+      case 'ursprung': return const Color(0xFF00D4AA);
+      default: return const Color(0xFFCE93D8);
+    }
+  }
+
+  Color get _accentBright {
+    switch (_selectedWorld) {
+      case 'materie': return const Color(0xFF82B1FF);
+      case 'energie': return const Color(0xFFEA80FC);
+      case 'vorhang': return const Color(0xFFFFE08A);
+      case 'ursprung': return const Color(0xFF80FFE0);
+      default: return const Color(0xFFEA80FC);
+    }
+  }
+
+  String get _worldEmoji {
+    switch (_selectedWorld) {
+      case 'materie': return '🔷';
+      case 'energie': return '⚡';
+      case 'vorhang': return '🎭';
+      case 'ursprung': return '🌀';
+      default: return '🌍';
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _selectedWorld = widget.world;
     _tabController = TabController(length: 7, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _waitForState();
@@ -57,10 +95,15 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
 
   Future<void> _waitForState() async {
     for (int i = 0; i < 8; i++) {
-      final a = ref.read(adminStateProvider(widget.world));
+      final a = ref.read(adminStateProvider(_selectedWorld));
       if (a.username != null && a.username!.isNotEmpty) return;
       await Future.delayed(const Duration(milliseconds: 400));
     }
+  }
+
+  void _switchWorld(String newWorld) {
+    if (newWorld == _selectedWorld) return;
+    setState(() => _selectedWorld = newWorld);
   }
 
   @override
@@ -71,7 +114,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
 
   @override
   Widget build(BuildContext context) {
-    final admin = ref.watch(adminStateProvider(widget.world));
+    final admin = ref.watch(adminStateProvider(_selectedWorld));
 
     // ⚠️ Supabase-Session NICHT mehr Pflicht — Root-Admin via InvisibleAuth
     // oder Web-Login (WebAuthGate) hat keine Supabase-Session, ist aber
@@ -97,11 +140,14 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           ),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              '${widget.world.toUpperCase()} Admin',
-              style: const TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              const Text('Admin',
+                  style: TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(width: 6),
+              // Welt-Switcher als kompakte PopupMenu
+              _buildWorldSwitcher(),
+            ]),
             Text(admin.username ?? '',
                 style: TextStyle(fontSize: 10, color: _accent)),
           ]),
@@ -160,7 +206,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             icon: Icon(Icons.refresh_rounded, color: _accentBright),
             tooltip: 'Alles neu laden',
             onPressed: () {
-              ref.read(adminStateProvider(widget.world).notifier).refresh();
+              ref.read(adminStateProvider(_selectedWorld).notifier).refresh();
               setState(() {});
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -201,16 +247,99 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _OverviewTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
-          _UsersTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
-          _ChatModerationTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
+          _OverviewTab(world: _selectedWorld, admin: admin, accent: _accent, accentBright: _accentBright),
+          _UsersTab(world: _selectedWorld, admin: admin, accent: _accent, accentBright: _accentBright),
+          _ChatModerationTab(world: _selectedWorld, admin: admin, accent: _accent, accentBright: _accentBright),
           _ContentInsightsTab(accent: _accent, accentBright: _accentBright),
           _PushBroadcastTab(accent: _accent, accentBright: _accentBright),
-          _AuditReportsWrapper(world: widget.world, accent: _accent, accentBright: _accentBright),
+          _AuditReportsWrapper(world: _selectedWorld, accent: _accent, accentBright: _accentBright),
           _SystemTab(accent: _accent, accentBright: _accentBright),
         ],
       ),
     );
+  }
+
+  Widget _buildWorldSwitcher() {
+    return PopupMenuButton<String>(
+      tooltip: 'Welt umschalten',
+      onSelected: _switchWorld,
+      color: const Color(0xFF12121E),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: _accent.withValues(alpha: 0.3)),
+      ),
+      offset: const Offset(0, 36),
+      itemBuilder: (_) => _allWorlds.map((w) {
+        final sel = w == _selectedWorld;
+        return PopupMenuItem<String>(
+          value: w,
+          child: Row(children: [
+            Text(
+              _emojiForWorld(w),
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _labelForWorld(w),
+              style: TextStyle(
+                color: sel ? _accentBright : Colors.white,
+                fontWeight: sel ? FontWeight.w800 : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+            if (sel) ...[
+              const Spacer(),
+              const Icon(Icons.check_rounded,
+                  color: Colors.greenAccent, size: 14),
+            ],
+          ]),
+        );
+      }).toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: _accent.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _accent.withValues(alpha: 0.4), width: 0.8),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(_worldEmoji, style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: 4),
+          Text(
+            _labelForWorld(_selectedWorld),
+            style: TextStyle(
+              color: _accentBright,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(width: 2),
+          Icon(Icons.arrow_drop_down_rounded,
+              color: _accentBright, size: 16),
+        ]),
+      ),
+    );
+  }
+
+  static String _emojiForWorld(String w) {
+    switch (w) {
+      case 'materie': return '🔷';
+      case 'energie': return '⚡';
+      case 'vorhang': return '🎭';
+      case 'ursprung': return '🌀';
+      default: return '🌍';
+    }
+  }
+
+  static String _labelForWorld(String w) {
+    switch (w) {
+      case 'materie': return 'MATERIE';
+      case 'energie': return 'ENERGIE';
+      case 'vorhang': return 'VORHANG';
+      case 'ursprung': return 'URSPRUNG';
+      default: return w.toUpperCase();
+    }
   }
 
   Widget _loadingScaffold() => Scaffold(
@@ -293,6 +422,16 @@ class _OverviewTabState extends State<_OverviewTab> {
     super.initState();
     _load();
     _timer = Timer.periodic(const Duration(seconds: 30), (_) => _load());
+  }
+
+  @override
+  void didUpdateWidget(covariant _OverviewTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Welt-Switch im Parent -> neu laden mit neuem Realm.
+    if (oldWidget.world != widget.world) {
+      setState(() => _loading = true);
+      _load();
+    }
   }
 
   @override
@@ -1525,21 +1664,55 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
   @override
   void initState() {
     super.initState();
-    _rooms = widget.world == 'materie'
-        ? [
-            'materie-politik', 'materie-geschichte', 'materie-ufo',
-            'materie-verschwoerung', 'materie-wissenschaft', 'materie-tech',
-            'materie-gesundheit', 'materie-medien', 'materie-finanzen',
-          ]
-        : [
-            'energie-meditation', 'energie-chakra', 'energie-bewusstsein',
-            'energie-heilung', 'energie-kristalle', 'energie-astrologie',
-            'energie-traumdeutung',
-          ];
+    _rebuildRoomsForWorld();
     _selectedRoom = _rooms.first;
     _loadMessages();
     _pollTimer = Timer.periodic(const Duration(seconds: 20),
         (_) { if (_autoRefresh) _loadMessages(); });
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChatModerationTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.world != widget.world) {
+      _rebuildRoomsForWorld();
+      setState(() {
+        _selectedRoom = _rooms.first;
+        _messages = [];
+        _loadingMsgs = true;
+      });
+      _loadMessages();
+    }
+  }
+
+  void _rebuildRoomsForWorld() {
+    switch (widget.world) {
+      case 'materie':
+        _rooms = [
+          'materie-politik', 'materie-geschichte', 'materie-ufo',
+          'materie-verschwoerung', 'materie-wissenschaft', 'materie-tech',
+          'materie-gesundheit', 'materie-medien', 'materie-finanzen',
+        ];
+        break;
+      case 'vorhang':
+        _rooms = [
+          'vorhang-strategie', 'vorhang-macht', 'vorhang-medien',
+          'vorhang-geopolitik',
+        ];
+        break;
+      case 'ursprung':
+        _rooms = [
+          'ursprung-bewusstsein', 'ursprung-quanten', 'ursprung-realitaet',
+        ];
+        break;
+      case 'energie':
+      default:
+        _rooms = [
+          'energie-meditation', 'energie-chakra', 'energie-bewusstsein',
+          'energie-heilung', 'energie-kristalle', 'energie-astrologie',
+          'energie-traumdeutung',
+        ];
+    }
   }
 
   @override
