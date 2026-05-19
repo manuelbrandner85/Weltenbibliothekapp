@@ -162,6 +162,95 @@ async function countFromSupabase(env, table, filters = '') {
 // Ohne Secret: Queue-Zeilen werden nur als 'sent' markiert (Client-Polling).
 // ───────────────────────────────────────────────────────────────
 
+// v103 (1.5): Daily Wisdom-Spruechepool. 30 Eintraege fuer
+// abwechslungsreichen Cron-Versand. Auswahl via Math.random.
+const DAILY_WISDOM = [
+  'Wissen ist nicht Macht. Anwendung von Wissen ist Macht.',
+  'Wer die Wahrheit sucht, darf sich nicht von Bequemlichkeit aufhalten lassen.',
+  'Stille ist der erste Schritt zur Erkenntnis.',
+  'Das groesste Geheimnis ist die einfache Wahrheit, die niemand sehen will.',
+  'Frage immer nach dem Warum, bevor du das Was glaubst.',
+  'Jede Quelle hat eine Quelle. Geh weiter zurueck.',
+  'Bewusstsein ist das einzige, das wir wirklich besitzen.',
+  'Skepsis ist die hoechste Form von Respekt vor der Wahrheit.',
+  'Wer denkt, ist nie allein.',
+  'Verbindungen sehen wo andere nur Chaos sehen -- das ist der Weg.',
+  'Die Welt veraendert sich, wenn du dich veraenderst.',
+  'Was du fokussierst, waechst -- waehle bewusst.',
+  'Die Antwort liegt selten in den Schlagzeilen.',
+  'Manchmal ist Schweigen das lauteste Argument.',
+  'Sei kritisch. Auch gegenueber dieser Botschaft.',
+  'Wahrheit braucht keinen Konsens, aber Mut zur Einsamkeit.',
+  'Lerne deine Werkzeuge kennen, bevor du sie benutzt.',
+  'Achtsamkeit ist Widerstand.',
+  'Das, was wir nicht hinterfragen, hat uns bereits.',
+  'Jeder Schritt zaehlt, auch der kleine.',
+  'Information ohne Kontext ist Manipulation.',
+  'Geduld ist die unsichtbare Superkraft.',
+  'Die besten Detektive sehen das, was nicht da ist.',
+  'Wer fragt, fuehrt das Gespraech.',
+  'Heute ist ein guter Tag, etwas Neues zu wissen.',
+  'Vertraue der Quelle erst, wenn du sie ueberprueft hast.',
+  'Mit jedem Atemzug entsteht eine neue Moeglichkeit.',
+  'Bequeme Geschichten sind selten wahr.',
+  'Daten luegen nicht -- ihre Interpreten schon.',
+  'Wer langsam liest, sieht mehr.',
+];
+
+/// v103 Helper: enqueue a push to ALL subscribers of a topic.
+/// Used by cron triggers and topic-broadcast endpoints. Falls back to
+/// global broadcast when no subscribers have the topic in their
+/// device_info -> topics array (legacy clients).
+async function sendPushToTopic(env, pushAuth, topic, title, body, data) {
+  try {
+    const topicFilter =
+        `device_info->topics=cs.["${topic.replace(/"/g, '\\"')}"]`;
+    let recRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?select=user_id&is_active=eq.true&${topicFilter}&limit=5000`,
+      { headers: pushAuth },
+    );
+    let recipients = recRes.ok ? await recRes.json().catch(() => []) : [];
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      recRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/push_subscriptions?select=user_id&is_active=eq.true&limit=5000`,
+        { headers: pushAuth },
+      );
+      recipients = recRes.ok ? await recRes.json().catch(() => []) : [];
+    }
+    const userIds = (Array.isArray(recipients) ? recipients : [])
+      .map(r => r.user_id)
+      .filter(id => id && !String(id).startsWith('00000000-'));
+    if (userIds.length === 0) {
+      return { sent: 0, failed: 0, topic };
+    }
+    const now = new Date().toISOString();
+    const rows = userIds.map(uid => ({
+      user_id: uid,
+      title,
+      body,
+      data: { ...(data || {}), topic, source: 'cron_topic' },
+      status: 'pending',
+      created_at: now,
+    }));
+    const insRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/notification_queue`,
+      {
+        method: 'POST',
+        headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(rows),
+      },
+    );
+    if (!insRes.ok) {
+      return { sent: 0, failed: userIds.length, topic, error: `HTTP ${insRes.status}` };
+    }
+    try { await dispatchPushQueue(env, pushAuth); } catch (_) {}
+    return { sent: userIds.length, failed: 0, topic };
+  } catch (e) {
+    return { sent: 0, failed: 0, topic, error: e.message };
+  }
+}
+// ───────────────────────────────────────────────────────────────
+
 function base64UrlEncode(data) {
   let str;
   if (data instanceof ArrayBuffer) {
@@ -589,6 +678,68 @@ export default {
       }
     } catch (e) {
       console.error('cron queue-cleanup failed:', e.message);
+    }
+
+    // 💡 v103 (1.5) Daily Wisdom -- 08:00 UTC each day. Picks one of 30
+    // wisdom snippets and sends to topic 'daily_wisdom'.
+    try {
+      const nowUTC = new Date();
+      if (nowUTC.getUTCHours() === 8 && nowUTC.getUTCMinutes() < 5) {
+        const wisdom = DAILY_WISDOM[
+          Math.floor(Math.random() * DAILY_WISDOM.length)
+        ];
+        const result = await sendPushToTopic(
+          env, pushAuth,
+          'daily_wisdom',
+          '💡 Tägliche Weisheit',
+          wisdom,
+          { type: 'daily_wisdom' },
+        );
+        console.log('cron daily-wisdom:', JSON.stringify(result));
+      }
+    } catch (e) {
+      console.error('cron daily-wisdom failed:', e.message);
+    }
+
+    // 📊 v103 (1.6) Weekly Summary -- Sunday 10:00 UTC. Aggregates
+    // counts (new users, messages last 7 days) and broadcasts.
+    try {
+      const nowUTC = new Date();
+      if (nowUTC.getUTCDay() === 0 &&
+          nowUTC.getUTCHours() === 10 &&
+          nowUTC.getUTCMinutes() < 5) {
+        const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          .toISOString();
+        const [usersRes, msgsRes] = await Promise.all([
+          fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id&created_at=gte.${cutoff}&limit=1`,
+            { headers: { ...pushAuth, 'Prefer': 'count=exact' } },
+          ),
+          fetch(
+            `${SUPABASE_URL}/rest/v1/chat_messages?select=id&created_at=gte.${cutoff}&limit=1`,
+            { headers: { ...pushAuth, 'Prefer': 'count=exact' } },
+          ),
+        ]);
+        const newUsers = parseInt(
+          usersRes.headers.get('content-range')?.split('/')[1] || '0',
+        );
+        const newMsgs = parseInt(
+          msgsRes.headers.get('content-range')?.split('/')[1] || '0',
+        );
+        const summary =
+          'Letzte 7 Tage: ' + newUsers + ' neue User · ' +
+          newMsgs + ' Nachrichten.';
+        const result = await sendPushToTopic(
+          env, pushAuth,
+          'weekly_summary',
+          '📊 Dein Wochenrückblick',
+          summary,
+          { type: 'weekly_summary', new_users: newUsers, messages: newMsgs },
+        );
+        console.log('cron weekly-summary:', JSON.stringify(result));
+      }
+    } catch (e) {
+      console.error('cron weekly-summary failed:', e.message);
     }
   },
 
