@@ -59,7 +59,27 @@ class MaterieProfile {
   factory MaterieProfile.empty() {
     return MaterieProfile(username: '');
   }
-  
+
   // Validierung
   bool get isValid => username.isNotEmpty;
+
+  /// v103: copyWith fuer immutable Update-Pattern (analog zu EnergieProfile).
+  MaterieProfile copyWith({
+    String? username,
+    String? name,
+    String? avatarUrl,
+    String? avatarEmoji,
+    String? bio,
+    String? userId,
+    String? role,
+  }) =>
+      MaterieProfile(
+        username: username ?? this.username,
+        name: name ?? this.name,
+        avatarUrl: avatarUrl ?? this.avatarUrl,
+        avatarEmoji: avatarEmoji ?? this.avatarEmoji,
+        bio: bio ?? this.bio,
+        userId: userId ?? this.userId,
+        role: role ?? this.role,
+      );
 }
