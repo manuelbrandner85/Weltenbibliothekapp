@@ -7,6 +7,7 @@ import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
 import 'knowledge_reader_mode.dart';
 import '../wissen/cinematic_book_reader_screen.dart'; // v5.44.6 Buecher
+import '../../widgets/wissen/bookshelf_3d_view.dart'; // v5.44.7 Bookshelf
 import 'advanced_search_delegate.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -34,6 +35,8 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
   bool _isLoading = true;
   String _cat = 'all';
   int _tab = 0; // 0 Entdecken | 1 Gespeichert | 2 Verlauf | 3 Für dich
+  // v5.44.7: View-Mode-Toggle - Liste (default) oder Bookshelf-3D
+  bool _bookshelfView = false;
 
   late AnimationController _ambient;
   late AnimationController _pulse;
@@ -423,6 +426,22 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
   // ── TAB 0: ENTDECKEN ──────────────────────────────────────────────────────
   Widget _buildExplore() {
     if (_filtered.isEmpty) return _buildEmptyState();
+
+    // v5.44.7: Bookshelf-Modus zeigt nur Buecher als 3D-Regal
+    if (_bookshelfView) {
+      final books = _filtered.where((e) => e.type == 'book').toList();
+      return Column(children: [
+        _buildViewModeBar(),
+        Expanded(
+          child: Bookshelf3DView(
+            books: books,
+            world: widget.world,
+            onTap: _openEntry,
+          ),
+        ),
+      ]);
+    }
+
     final featured = _all.where((e) => e.rating >= 4.0).take(6).toList();
 
     return RefreshIndicator(
@@ -431,6 +450,7 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
       backgroundColor: _deep,
       child: CustomScrollView(
         slivers: [
+          SliverToBoxAdapter(child: _buildViewModeBar()),
           // Featured horizontal row
           if (featured.isNotEmpty) ...[
             SliverToBoxAdapter(child: _sectionHeader('EMPFOHLEN', Icons.auto_awesome)),
@@ -459,6 +479,45 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 90)),
+        ],
+      ),
+    );
+  }
+
+  /// v5.44.7: Toggle-Bar zwischen Liste/Grid und Bookshelf-3D-View.
+  /// Bookshelf zeigt nur Eintraege mit type='book'.
+  Widget _buildViewModeBar() {
+    final bookCount = _filtered.where((e) => e.type == 'book').length;
+    if (bookCount < 3) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            '$bookCount Buecher',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 11,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(width: 10),
+          _ViewModeChip(
+            label: 'Liste',
+            icon: Icons.view_module,
+            selected: !_bookshelfView,
+            primary: _primary,
+            onTap: () => setState(() => _bookshelfView = false),
+          ),
+          const SizedBox(width: 6),
+          _ViewModeChip(
+            label: 'Regal',
+            icon: Icons.menu_book_outlined,
+            selected: _bookshelfView,
+            primary: _primary,
+            onTap: () => setState(() => _bookshelfView = true),
+          ),
         ],
       ),
     );
@@ -1160,5 +1219,55 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
   void dispose() {
     _noteController.dispose();
     super.dispose();
+  }
+}
+
+/// v5.44.7: Toggle-Chip fuer den Liste/Bookshelf-Switch im Wissen-Tab.
+class _ViewModeChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final Color primary;
+  final VoidCallback onTap;
+
+  const _ViewModeChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.primary,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? primary.withValues(alpha: 0.25)
+                : Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? primary : Colors.white.withValues(alpha: 0.12),
+            ),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 14,
+                color: selected ? primary : Colors.white.withValues(alpha: 0.6)),
+            const SizedBox(width: 6),
+            Text(label, style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w700,
+              color: selected ? Colors.white : Colors.white.withValues(alpha: 0.7),
+            )),
+          ]),
+        ),
+      ),
+    );
   }
 }
