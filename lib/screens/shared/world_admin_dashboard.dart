@@ -3970,7 +3970,8 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
   @override
   void initState() {
     super.initState();
-    _ctrl = TabController(length: 3, vsync: this);
+    // v103 Phase 4d: 4. Sub-Tab fuer Community-Post-Reports.
+    _ctrl = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -3986,6 +3987,7 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
         color: const Color(0xFF0D0D1A),
         child: TabBar(
           controller: _ctrl,
+          isScrollable: true,
           indicatorColor: widget.accent,
           labelColor: widget.accentBright,
           unselectedLabelColor: Colors.white38,
@@ -3994,6 +3996,7 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
             Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Progress'),
             Tab(icon: Icon(Icons.auto_awesome_rounded, size: 16), text: 'Spirit'),
             Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Editor'),
+            Tab(icon: Icon(Icons.report_rounded, size: 16), text: 'Reports'),
           ],
         ),
       ),
@@ -4004,6 +4007,7 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
             _ModuleProgressTab(accent: widget.accent, accentBright: widget.accentBright),
             _SpiritStatsTab(accent: widget.accent, accentBright: widget.accentBright),
             _ModuleEditorTab(accent: widget.accent, accentBright: widget.accentBright),
+            _PostReportsTab(accent: widget.accent, accentBright: widget.accentBright),
           ],
         ),
       ),
@@ -5227,7 +5231,15 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
                 const SizedBox(height: 12),
                 _field('Empfänger-Zielgruppe',
                     children: [
-                      for (final t in ['all', 'materie', 'energie', 'vorhang', 'ursprung'])
+                      for (final t in [
+                        'all',
+                        'admins',
+                        'active',
+                        'materie',
+                        'energie',
+                        'vorhang',
+                        'ursprung'
+                      ])
                         Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: ChoiceChip(
@@ -6767,4 +6779,189 @@ class _AdminTabDef {
   final String label;
   final String kind;
   const _AdminTabDef({required this.icon, required this.label, required this.kind});
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// COMMUNITY POST REPORTS TAB (v103 Phase 4d + 4h)
+// ═════════════════════════════════════════════════════════════════════════════
+class _PostReportsTab extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  const _PostReportsTab({required this.accent, required this.accentBright});
+
+  @override
+  State<_PostReportsTab> createState() => _PostReportsTabState();
+}
+
+class _PostReportsTabState extends State<_PostReportsTab> {
+  List<PostReport> _reports = const [];
+  bool _loading = true;
+  String _status = 'open';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final list = await ModerationQueueService.instance
+        .postQueue(status: _status, limit: 100);
+    if (!mounted) return;
+    setState(() {
+      _reports = list;
+      _loading = false;
+    });
+  }
+
+  Future<void> _review(String id, String newStatus) async {
+    final adminUser = supabase.auth.currentUser?.email ?? 'admin';
+    final ok = await ModerationQueueService.instance.reviewPost(
+      reportId: id,
+      status: newStatus,
+      reviewedBy: adminUser,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? 'Status aktualisiert' : 'Fehler')),
+    );
+    if (ok) _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        child: Row(children: [
+          for (final s in ['open', 'reviewed', 'actioned', 'dismissed'])
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: ChoiceChip(
+                label: Text(s, style: const TextStyle(fontSize: 10)),
+                selected: _status == s,
+                onSelected: (_) {
+                  setState(() => _status = s);
+                  _load();
+                },
+                selectedColor: widget.accent,
+              ),
+            ),
+          const Spacer(),
+          IconButton(
+              icon: Icon(Icons.refresh, color: widget.accent),
+              onPressed: _load),
+        ]),
+      ),
+      Expanded(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _reports.isEmpty
+                ? const Center(
+                    child: Text('Keine Meldungen',
+                        style: TextStyle(color: Colors.white60)))
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                    itemCount: _reports.length,
+                    itemBuilder: (_, i) {
+                      final r = _reports[i];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF12121E),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: widget.accent.withValues(alpha: 0.18)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                    color: widget.accent
+                                        .withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(4)),
+                                child: Text(r.reason.toUpperCase(),
+                                    style: TextStyle(
+                                        color: widget.accentBright,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              const Spacer(),
+                              Text(
+                                r.createdAt
+                                    .toLocal()
+                                    .toIso8601String()
+                                    .substring(0, 16),
+                                style: const TextStyle(
+                                    color: Colors.white38, fontSize: 10),
+                              ),
+                            ]),
+                            const SizedBox(height: 6),
+                            Text('Post: ${r.postId}',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600)),
+                            if (r.authorUsername != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text('Von: @${r.authorUsername}',
+                                    style: const TextStyle(
+                                        color: Colors.white60, fontSize: 11)),
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text('Reporter: @${r.reporterName ?? r.reporterId}',
+                                  style: const TextStyle(
+                                      color: Colors.white38, fontSize: 11)),
+                            ),
+                            if (r.notes != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(r.notes!,
+                                    style: const TextStyle(
+                                        color: Colors.white70, fontSize: 11)),
+                              ),
+                            if (r.status == 'open') ...[
+                              const SizedBox(height: 8),
+                              Row(children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () =>
+                                        _review(r.id, 'dismissed'),
+                                    style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white60,
+                                        side: const BorderSide(
+                                            color: Colors.white24)),
+                                    child: const Text('Verwerfen',
+                                        style: TextStyle(fontSize: 11)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () =>
+                                        _review(r.id, 'actioned'),
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.redAccent),
+                                    child: const Text('Aktion',
+                                        style: TextStyle(fontSize: 11)),
+                                  ),
+                                ),
+                              ]),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+      ),
+    ]);
+  }
 }

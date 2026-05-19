@@ -30,6 +30,7 @@ import '../../services/livekit_moderation_service.dart';
 import '../../services/pip_service.dart';
 import '../../services/recording_service.dart';
 import '../../services/soundscape_service.dart';
+import '../../core/constants/roles.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/cowatch_panel.dart';
 import '../../widgets/incall_chat_panel.dart';
@@ -116,8 +117,9 @@ class _LiveKitGroupCallScreenState
     final storage = StorageService();
     final m = storage.getMaterieProfile();
     final e = storage.getEnergieProfile();
-    final role = (m?.role ?? e?.role ?? '').toLowerCase().replaceAll('-', '_');
-    _isModerator = role == 'root_admin' || role == 'admin' || role == 'moderator';
+    final role = m?.role ?? e?.role;
+    // v103: AppRoles.canModerateVoice ist die Single Source of Truth.
+    _isModerator = AppRoles.canModerateVoice(role);
     _moderatorUsername = (m?.username ?? e?.username ?? '').trim();
   }
 

@@ -2691,11 +2691,19 @@ export default {
 
           // Empfänger-Liste aus profiles holen
           // world_preference-Spalte ggf. entfernt — fallback ohne wenn 42703.
+          // v103 Phase 4e: 'admins' und 'active' als neue Targets.
           let filter = '';
           if (target === 'materie' || target === 'energie' || target === 'vorhang' || target === 'ursprung') {
             filter = `&or=(world.eq.${target},world_preference.eq.${target})`;
           } else if (target === 'user' && body.userId) {
             filter = `&id=eq.${body.userId}`;
+          } else if (target === 'admins') {
+            // Alle Admin-Rollen
+            filter = `&role=in.(admin,root_admin,root-admin,moderator,content_editor)`;
+          } else if (target === 'active') {
+            // Aktive User: last_seen_at in den letzten 7 Tagen
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+            filter = `&last_seen_at=gte.${sevenDaysAgo}`;
           }
           let recRes = await fetch(
             `${SUPABASE_URL}/rest/v1/profiles?select=id${filter}&limit=2000`,
