@@ -54,6 +54,7 @@ import 'services/achievement_service.dart';  // 🏆 Achievement System
 import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
+import 'services/profile_migration_service.dart'; // 👻 GHOST-USER-MIGRATION (v103)
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
 import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (FCM + in-app)
 import 'package:firebase_core/firebase_core.dart';
@@ -235,6 +236,10 @@ void main() async {
       debugPrint('⚠️ Profile-Restore Fehler (ignoriert): $e');
     });
   }
+
+  // 👻 GHOST-USER-MIGRATION (v103): Altnutzer ohne Supabase-Eintrag
+  // einmalig nachsynchronisieren. Idempotent, mit Flag in Prefs.
+  unawaited(ProfileMigrationService.migrateIfNeeded());
   
   // ═══════════════════════════════════════════════════════════
   // APP STARTEN (NICHT BLOCKIEREND)
