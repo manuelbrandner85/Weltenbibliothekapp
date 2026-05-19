@@ -30,6 +30,7 @@ import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
 import 'calculators/tarot_lexicon_screen.dart'; // 📚 78-Karten-Lexikon
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
 import 'calculators/galdr_meditation_screen.dart'; // ᚠ Galdr-Gesang
+import 'calculators/synastry_chart_screen.dart'; // 💞 Astrologie-Synastrie
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
 import 'calculators/biorhythm_chart_screen.dart'; // 📊 90-Tage Bio + Critical Days
@@ -660,6 +661,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFFC9A84C),
         'category': 'core',
         'screen': const GaldrMeditationScreen(),
+      },
+      // 💞 Synastrie -- Astrologie Partner-Vergleich (v95)
+      {
+        'icon': Icons.favorite_border_rounded,
+        'iconEmoji': '💞',
+        'title': 'Synastrie-Chart',
+        'subtitle': 'Astrologie Partner-Vergleich · 5 Aspekte',
+        'color': const Color(0xFFEC407A),
+        'category': 'core',
+        'screen': const SynastryChartScreen(),
       },
 
       // 💫 Affirmationen · Cinematic AI-Studio
