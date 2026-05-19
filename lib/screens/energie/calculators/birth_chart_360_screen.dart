@@ -44,6 +44,9 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
   static const Color _gold = Color(0xFFFFD54F);
 
   DateTime _birthDate = DateTime(1990, 6, 21, 12, 0);
+  // v95: Geburtsort-Koordinaten fuer Haeuser-Berechnung
+  double? _profileLat;
+  double? _profileLng;
   bool _hasTime = true;
   NatalChartResult? _chart;
   NatalChartResult? _transit;
@@ -75,6 +78,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
     }
     setState(() {
       _birthDate = DateTime(bd.year, bd.month, bd.day, h, m);
+      _profileLat = p.birthLatitude;
+      _profileLng = p.birthLongitude;
     });
     // Auto-compute sobald Profil-Daten da sind
     _compute();
@@ -242,6 +247,8 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
                   _chartWheel(),
                   const SizedBox(height: 14),
                   _planetTable(),
+                  const SizedBox(height: 14),
+                  _housesCard(),
                 ] else
                   _emptyState(),
               ]),
@@ -376,6 +383,132 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
       ),
     );
   }
+
+  // v95: Haeuser-Card. Erfordert Geburtsort-Koordinaten -- ohne wird
+  // ein erklaerender Hinweis statt der Haeuser angezeigt.
+  Widget _housesCard() {
+    final birth = _birthDate.toUtc();
+    // Versuche, Koordinaten aus dem Profil zu holen
+    // (Light-Weight: wir nutzen 0/0 als Default und zeigen Hinweis).
+    final lat = _profileLat;
+    final lng = _profileLng;
+    if (lat == null || lng == null) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.amber.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.info_outline_rounded,
+              color: Colors.amberAccent, size: 18),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Häuser können nicht berechnet werden -- Geburtsort mit '
+              'Koordinaten im Profil erforderlich.',
+              style: TextStyle(
+                  color: Colors.white, fontSize: 12.5, height: 1.45),
+            ),
+          ),
+        ]),
+      );
+    }
+    final houses = NatalAstrology.calculateHouses(
+      birthDateUtc: birth,
+      latitude: lat,
+      longitude: lng,
+    );
+    if (houses == null) return const SizedBox.shrink();
+    final asc = houses['ascendant'] as PlanetPosition;
+    final mc = houses['midheaven'] as PlanetPosition;
+    final planetHouses = (houses['planetHouses'] as Map).cast<String, int>();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _gold.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _gold.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('HÄUSER (EQUAL-HOUSE)',
+              style: TextStyle(
+                  color: _gold,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2)),
+          const SizedBox(height: 10),
+          _angleRow('Aszendent', _signName(asc.sign),
+              '${asc.degree.toStringAsFixed(1)}°'),
+          _angleRow('Medium Coeli', _signName(mc.sign),
+              '${mc.degree.toStringAsFixed(1)}°'),
+          const SizedBox(height: 10),
+          const Text('Planeten in Häusern',
+              style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: planetHouses.entries.map((e) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${_planetDe(e.key)} → ${e.value}. Haus',
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 11.5,
+                      fontWeight: FontWeight.w600),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _angleRow(String label, String sign, String deg) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+          const Spacer(),
+          Text('$sign · $deg',
+              style: const TextStyle(
+                  color: _gold, fontSize: 12.5, fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  String _planetDe(String key) => switch (key) {
+        'sun' => '☉ Sonne',
+        'moon' => '☽ Mond',
+        'mercury' => '☿ Merkur',
+        'venus' => '♀ Venus',
+        'mars' => '♂ Mars',
+        'jupiter' => '♃ Jupiter',
+        'saturn' => '♄ Saturn',
+        'uranus' => '♅ Uranus',
+        'neptune' => '♆ Neptun',
+        'pluto' => '♇ Pluto',
+        _ => key,
+      };
 
   Widget _planetTable() {
     final planets = _chart!.planets;
