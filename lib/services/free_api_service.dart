@@ -209,6 +209,109 @@ class FreeApiService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // 6b. WIKIDATA RELATIONEN (R2)
+  // Holt die echten Property-Verknuepfungen einer Entity:
+  //   P361 (part-of), P463 (member-of), P108 (employer),
+  //   P39 (position held), P127 (owned-by), P749 (parent-org),
+  //   P159 (HQ location).
+  // ─────────────────────────────────────────────────────────────────────────
+  static const Map<String, String> _wikidataRelationProps = {
+    'P361': 'Teil von',
+    'P463': 'Mitglied von',
+    'P108': 'Arbeitgeber',
+    'P39': 'Position',
+    'P127': 'Eigentuemer',
+    'P749': 'Mutterorganisation',
+    'P159': 'Hauptsitz',
+  };
+
+  Future<List<WikidataRelation>> fetchWikidataRelations(String entityId) async {
+    if (entityId.isEmpty) return [];
+    final url = Uri.parse(
+      'https://www.wikidata.org/wiki/Special:EntityData/$entityId.json',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final entities = data['entities'] as Map<String, dynamic>?;
+      if (entities == null) return [];
+      final entity = entities[entityId] as Map<String, dynamic>?;
+      if (entity == null) return [];
+      final claims = entity['claims'] as Map<String, dynamic>?;
+      if (claims == null) return [];
+
+      // Sammle Target-IDs pro Property + sammle alle Target-IDs fuer
+      // Batch-Label-Lookup.
+      final targetIds = <String>{};
+      final pairs = <(String, String, String)>[]; // (propId, propLabel, targetId)
+      _wikidataRelationProps.forEach((propId, propLabel) {
+        final values = claims[propId] as List?;
+        if (values == null) return;
+        for (final v in values) {
+          try {
+            final mainSnak = (v as Map<String, dynamic>)['mainsnak'];
+            final dv = mainSnak?['datavalue'];
+            final value = dv?['value'];
+            if (value is Map && value['id'] is String) {
+              final tid = value['id'] as String;
+              targetIds.add(tid);
+              pairs.add((propId, propLabel, tid));
+            }
+          } catch (_) { /* skip malformed */ }
+        }
+      });
+
+      if (targetIds.isEmpty) return [];
+
+      // Batch-Label-Lookup ueber wbgetentities (max 50 ids).
+      final labels = await _fetchWikidataLabels(targetIds.toList());
+
+      return pairs.map((p) => WikidataRelation(
+            sourceId: entityId,
+            targetId: p.$3,
+            targetLabel: labels[p.$3] ?? p.$3,
+            propertyId: p.$1,
+            propertyLabel: p.$2,
+          )).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Wikidata-Relations: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, String>> _fetchWikidataLabels(List<String> ids) async {
+    if (ids.isEmpty) return {};
+    final chunk = ids.take(50).toList();
+    final url = Uri.parse(
+      'https://www.wikidata.org/w/api.php'
+      '?action=wbgetentities'
+      '&ids=${chunk.join('|')}'
+      '&props=labels'
+      '&languages=de|en'
+      '&format=json'
+      '&origin=*',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return {};
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final entities = data['entities'] as Map<String, dynamic>? ?? {};
+      final out = <String, String>{};
+      entities.forEach((id, raw) {
+        final labels = (raw as Map<String, dynamic>)['labels'] as Map?;
+        if (labels == null) return;
+        final de = (labels['de'] as Map?)?['value'] as String?;
+        final en = (labels['en'] as Map?)?['value'] as String?;
+        out[id] = de ?? en ?? id;
+      });
+      return out;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // 7. NASA DONKI — Sonnenstürme / Kosmische Ereignisse
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -704,6 +807,23 @@ class WikidataEntry {
         description: j['description'] as String?,
         url: j['url'] as String? ?? 'https://www.wikidata.org/wiki/${j['id']}',
       );
+}
+
+/// Echte Wikidata-Property-Relation zwischen zwei Entities.
+class WikidataRelation {
+  final String sourceId;
+  final String targetId;
+  final String targetLabel;
+  final String propertyId;   // 'P361','P463',...
+  final String propertyLabel; // 'Teil von','Mitglied von',...
+
+  const WikidataRelation({
+    required this.sourceId,
+    required this.targetId,
+    required this.targetLabel,
+    required this.propertyId,
+    required this.propertyLabel,
+  });
 }
 
 class DonkiEvent {
