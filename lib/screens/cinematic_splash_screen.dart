@@ -11,7 +11,6 @@
 //
 // User kann mit Tap ueberspringen (HapticFeedback).
 
-import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -33,7 +32,7 @@ class CinematicSplashScreen extends StatefulWidget {
   const CinematicSplashScreen({
     super.key,
     required this.onComplete,
-    this.totalDuration = const Duration(milliseconds: 5000),
+    this.totalDuration = const Duration(milliseconds: 7000),
   });
 
   @override
@@ -80,6 +79,11 @@ class _CinematicSplashScreenState extends State<CinematicSplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Wall-time-Schwellen (in ms). Buildup laeuft genauso schnell wie vorher,
+    // der Logo-Reveal wird nur ~2s laenger gehalten, bevor er ausfadet.
+    final totalMs = widget.totalDuration.inMilliseconds;
+    final size = MediaQuery.of(context).size;
+
     return Material(
       color: _bgVoid,
       child: GestureDetector(
@@ -88,12 +92,22 @@ class _CinematicSplashScreenState extends State<CinematicSplashScreen>
         child: AnimatedBuilder(
           animation: _master,
           builder: (context, _) {
-            final t = _master.value;
+            final ms = _master.value * totalMs;
+            // Lokale Phasenwerte (0..1).
+            final particleAlpha =
+                ((ms - 250) / 500).clamp(0.0, 0.4);
+            final orbP =
+                Curves.easeInOutCubic.transform(((ms - 750) / 2500).clamp(0.0, 1.0));
+            final burstP = ((ms - 2000) / 1250).clamp(0.0, 1.0);
+            final logoP = ((ms - 2750) / 1150).clamp(0.0, 1.0);
+            final subtitleP = ((ms - 3900) / 1000).clamp(0.0, 1.0);
+            final fadeP = ((ms - (totalMs - 500)) / 500).clamp(0.0, 1.0);
+
             return Stack(fit: StackFit.expand, children: [
               // Layer 1: Particles (subtil, ambient)
-              if (t > 0.05)
+              if (particleAlpha > 0)
                 Opacity(
-                  opacity: ((t - 0.05) * 4).clamp(0.0, 0.4),
+                  opacity: particleAlpha,
                   child: AnimatedBuilder(
                     animation: _ambient,
                     builder: (_, __) => CustomPaint(
@@ -103,34 +117,40 @@ class _CinematicSplashScreenState extends State<CinematicSplashScreen>
                   ),
                 ),
 
-              // Layer 2: 4 Welt-Orbs Konvergenz
-              if (t > 0.15 && t < 0.65)
+              // Layer 2: 4 Welt-Orbs Konvergenz (waehrend Buildup)
+              if (ms > 750 && ms < 3250)
                 CustomPaint(
-                  painter: _WeltOrbsConverge(_orbProgress(t)),
+                  painter: _WeltOrbsConverge(orbP),
                   size: Size.infinite,
                 ),
 
               // Layer 3: Konvergenz-Burst (goldener Lichtblitz)
-              if (t > 0.40 && t < 0.65)
-                Center(
-                  child: _BurstFlash(progress: ((t - 0.40) / 0.25).clamp(0.0, 1.0)),
+              if (ms > 2000 && ms < 3250)
+                Center(child: _BurstFlash(progress: burstP)),
+
+              // Layer 4: Logo + Title Reveal (haelt bis Fade beginnt)
+              if (ms > 2750)
+                SafeArea(
+                  minimum: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Center(
+                    child: _LogoReveal(
+                      progress: logoP,
+                      maxWidth: size.width - 48,
+                    ),
+                  ),
                 ),
 
-              // Layer 4: Logo + Title Reveal
-              if (t > 0.55)
-                Center(child: _LogoReveal(progress: ((t - 0.55) / 0.45).clamp(0.0, 1.0))),
-
               // Layer 5: Subtitle
-              if (t > 0.78)
+              if (ms > 3900)
                 Positioned(
                   left: 0,
                   right: 0,
-                  bottom: 100,
-                  child: _Subtitle(progress: ((t - 0.78) / 0.22).clamp(0.0, 1.0)),
+                  bottom: 80 + MediaQuery.of(context).padding.bottom,
+                  child: _Subtitle(progress: subtitleP),
                 ),
 
-              // Layer 6: Skip hint (subtle, top right)
-              if (t > 0.05 && t < 0.85)
+              // Layer 6: Skip hint (waehrend Buildup + Hold)
+              if (ms > 250 && ms < totalMs - 500)
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 12,
                   right: 16,
@@ -149,21 +169,15 @@ class _CinematicSplashScreenState extends State<CinematicSplashScreen>
                 ),
 
               // Layer 7: Final fade-out overlay
-              if (t > 0.93)
-                Container(
-                  color: _bgVoid.withValues(alpha: ((t - 0.93) / 0.07).clamp(0.0, 1.0)),
+              if (fadeP > 0)
+                IgnorePointer(
+                  child: Container(color: _bgVoid.withValues(alpha: fadeP)),
                 ),
             ]);
           },
         ),
       ),
     );
-  }
-
-  /// Orb-Konvergenz: 0.15 -> 0.65 mapped to easeOutCubic 0->1
-  double _orbProgress(double t) {
-    final p = ((t - 0.15) / 0.50).clamp(0.0, 1.0);
-    return Curves.easeInOutCubic.transform(p);
   }
 }
 
@@ -284,12 +298,15 @@ class _BurstFlash extends StatelessWidget {
 
 class _LogoReveal extends StatelessWidget {
   final double progress; // 0..1
-  const _LogoReveal({required this.progress});
+  final double maxWidth;
+  const _LogoReveal({required this.progress, required this.maxWidth});
 
   @override
   Widget build(BuildContext context) {
     final scale = 0.7 + Curves.easeOutBack.transform(progress.clamp(0.0, 1.0)) * 0.45;
     final fade = (progress * 1.8).clamp(0.0, 1.0);
+    // Responsive logo size: max 220 auf grossen Bildschirmen, sonst 55% Breite.
+    final logoSize = math.min(220.0, maxWidth * 0.55);
     return Opacity(
       opacity: fade,
       child: Transform.scale(
@@ -300,8 +317,8 @@ class _LogoReveal extends StatelessWidget {
           children: [
             // Logo image with cinematic glow
             Container(
-              width: 220,
-              height: 220,
+              width: logoSize,
+              height: logoSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 boxShadow: [
@@ -353,19 +370,24 @@ class _LogoReveal extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            // Title with shader gradient
-            ShaderMask(
-              shaderCallback: (rect) => const LinearGradient(
-                colors: [_gold, _energieColor, _ursprungColor],
-              ).createShader(rect),
-              child: Text(
-                'WELTENBIBLIOTHEK',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 8.0 * fade,
-                  color: Colors.white,
-                  height: 1,
+            // Title with shader gradient -- skaliert sich auf schmalen Screens
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: ShaderMask(
+                shaderCallback: (rect) => const LinearGradient(
+                  colors: [_gold, _energieColor, _ursprungColor],
+                ).createShader(rect),
+                child: Text(
+                  'WELTENBIBLIOTHEK',
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 8.0 * fade,
+                    color: Colors.white,
+                    height: 1,
+                  ),
                 ),
               ),
             ),
@@ -386,17 +408,21 @@ class _Subtitle extends StatelessWidget {
       opacity: progress,
       child: Transform.translate(
         offset: Offset(0, 20 * (1 - progress)),
-        child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(
               'Wo die Wahrheit aus 4 Perspektiven ans Licht kommt',
               textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.fade,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.75),
                 fontSize: 12,
                 letterSpacing: 3,
                 fontWeight: FontWeight.w400,
                 fontStyle: FontStyle.italic,
+                height: 1.4,
               ),
             ),
             const SizedBox(height: 16),
@@ -437,8 +463,3 @@ class _MiniDot extends StatelessWidget {
   }
 }
 
-// ignore: unused_element
-double _unused() {
-  // Avoid unused-import lint for ImageFilter (might be needed by later refactor).
-  return ImageFilter.blur(sigmaX: 1, sigmaY: 1).runtimeType.toString().length.toDouble();
-}
