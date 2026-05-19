@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/openclaw_dashboard_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/materie_profile.dart';
+import '../../models/energie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 import 'materie_live_chat_screen.dart';
@@ -53,6 +54,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   // ── State ──────────────────────────────────────────────────────────────
   MaterieProfile? _profile;
+  // v5.44.7: zusaetzlich EnergieProfile laden fuer Cross-Welt-firstName
+  // (User-Profile sind shared - Vorname soll auch in Materie greifen).
+  EnergieProfile? _energieProfile;
   bool _loading = true;
   String? _errorMessage;
   int _articles = 0, _sessions = 0, _bookmarks = 0, _shares = 0;
@@ -131,6 +135,10 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   Future<void> _loadProfile() async {
     _profile = StorageService().getMaterieProfile();
+    // v5.44.7: zusaetzlich EnergieProfile fuer firstName-Greeting laden.
+    // User-Profil ist shared - firstName aus dem Profile-Editor (Energie-Tab)
+    // soll auch in der Materie-Welt fuer Begruessung verwendet werden.
+    _energieProfile = await StorageService().loadEnergieProfile();
   }
 
   Future<void> _loadStats() async {
@@ -529,7 +537,13 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         Row(children: [
           Flexible(
             child: Text(
-              _profile?.username ?? 'Explorer',
+              // v5.44.7: konsistente Begruessung mit Energie - Vorname first,
+              // dann Materie.name (Spitzname), dann Username, dann 'Explorer'.
+              (_energieProfile?.firstName.isNotEmpty == true)
+                  ? _energieProfile!.firstName
+                  : (_profile?.name?.isNotEmpty == true
+                      ? _profile!.name!
+                      : (_profile?.username ?? 'Explorer')),
               style: const TextStyle(
                   color: Colors.white, fontSize: 20,
                   fontWeight: FontWeight.bold, letterSpacing: -0.3),
