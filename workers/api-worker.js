@@ -2901,14 +2901,19 @@ export default {
       // Merge-Quelle 1: admin_audit_log (echtes Audit-Log, ab v76).
       // Merge-Quelle 2: chat_messages (edited/deleted) als historisches
       // Aktivitäts-Feed. Beide werden zusammengeführt + nach Zeit sortiert.
+      // v100: world='all' -> kein Welt-Filter, alle Eintraege zurueck.
       if (method === 'GET' && path.match(/\/api\/admin\/audit\/\w+/)) {
         try {
           const world = path.split('/')[4];
           const limit = parseInt(url.searchParams.get('limit') || '100', 10);
+          const isAllWorlds = world === 'all';
+          const auditFilter = isAllWorlds
+            ? ''
+            : `or=(world.eq.${world},world.is.null)&`;
 
           const [auditRes, editedRes, deletedRes] = await Promise.all([
             fetch(
-              `${SUPABASE_URL}/rest/v1/admin_audit_log?or=(world.eq.${world},world.is.null)&order=created_at.desc&limit=${limit}`,
+              `${SUPABASE_URL}/rest/v1/admin_audit_log?${auditFilter}order=created_at.desc&limit=${limit}`,
               { headers: svcHeaders }
             ).catch(() => null),
             fetch(

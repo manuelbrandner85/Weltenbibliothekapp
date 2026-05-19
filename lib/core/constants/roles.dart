@@ -36,26 +36,58 @@ class AppRoles {
   // ============================================================================
   // BERECHTIGUNGS-CHECKS - USER MANAGEMENT
   // ============================================================================
-  
+
   static bool _isRoot(String? r) => r == rootAdmin || r == rootAdminLegacy;
+  static bool _isAdminLike(String? r) =>
+      _isRoot(r) || r == admin;
+  static bool _isModeratorOrAbove(String? r) =>
+      _isAdminLike(r) || r == moderator;
 
   /// Kann auf Admin-Dashboard zugreifen
   static bool isModerator(String? role) => role == moderator;
 
   static bool canAccessAdminDashboard(String? role) =>
-      role == admin || _isRoot(role) || role == contentEditor || role == moderator;
+      _isModeratorOrAbove(role) || role == contentEditor;
 
-  /// Kann User verwalten (Erstellen, Löschen, Befördern)
+  /// Kann User in Supabase persistieren / massiv eingreifen.
+  /// Nur Root: User loeschen + Rollen auf admin/root_admin setzen.
   static bool canManageUsers(String? role) => _isRoot(role);
 
-  /// Kann User befördern/degradieren
-  static bool canPromoteDemote(String? role) => _isRoot(role);
+  /// Rollen aendern? Root darf alles, admin nur bis zu 'moderator'.
+  static bool canPromoteDemote(String? role) => _isAdminLike(role);
 
-  /// Kann User-Liste einsehen
-  static bool canViewUserList(String? role) => _isRoot(role);
+  /// Nur Root darf zu root_admin/admin promoten -- admin nur bis moderator.
+  static bool canPromoteToRole(String? actorRole, String? targetRole) {
+    if (_isRoot(actorRole)) return true;
+    if (actorRole == admin) {
+      // admin darf maximal moderator/content_editor/user setzen
+      return targetRole == moderator ||
+             targetRole == contentEditor ||
+             targetRole == user;
+    }
+    return false;
+  }
 
-  /// Kann User löschen
+  /// Wer darf die User-Liste im Dashboard sehen?
+  static bool canViewUserList(String? role) => _isModeratorOrAbove(role);
+
+  /// Wer darf User vollstaendig loeschen? Nur Root.
   static bool canDeleteUsers(String? role) => _isRoot(role);
+
+  /// Wer darf bannen/entbannen? Moderator+
+  static bool canBanUsers(String? role) => _isModeratorOrAbove(role);
+
+  /// Wer darf XP vergeben? Admin+
+  static bool canGrantXp(String? role) => _isAdminLike(role);
+
+  /// Wer darf Chat-Nachrichten loeschen? Moderator+
+  static bool canDeleteMessages(String? role) => _isModeratorOrAbove(role);
+
+  /// Wer darf Audit-Log sehen? Admin+ (Root sieht alles inkl. detaillierter Reports)
+  static bool canViewAuditLog(String? role) => _isAdminLike(role);
+
+  /// Wer darf Profile-Sync triggern? Admin+
+  static bool canRunUserSync(String? role) => _isAdminLike(role);
 
   // ============================================================================
   // BERECHTIGUNGS-CHECKS - CONTENT MANAGEMENT

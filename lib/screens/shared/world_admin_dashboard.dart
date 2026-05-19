@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel, PostgresChangeEvent;
 
 import '../../config/api_config.dart';
+import '../../core/constants/roles.dart';
 import '../../features/admin/state/admin_state.dart';
 import '../../services/activity_heatmap_service.dart'; // 🔥 M2
 import '../../services/cloudflare_api_service.dart';
@@ -40,7 +41,11 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   // v95: Welt-Switcher -- Admin kann live zwischen Welten wechseln.
   // Initialwert kommt aus der Route (widget.world), dann lokal mutable.
   late String _selectedWorld;
-  static const _allWorlds = ['materie', 'energie', 'vorhang', 'ursprung'];
+  // v100: 'all' = welt-uebergreifender Aggregat-Modus, Default beim
+  // Oeffnen des Dashboards. Admin sieht alle Welten zusammen statt nur
+  // die, aus der er ins Dashboard kam.
+  static const String kAllWorlds = 'all';
+  static const _allWorlds = [kAllWorlds, 'materie', 'energie', 'vorhang', 'ursprung'];
 
   // ── Theme per (aktuell gewaehlter) Welt ────────────────────────────────
   Color get _primary {
@@ -86,7 +91,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   @override
   void initState() {
     super.initState();
-    _selectedWorld = widget.world;
+    // v100: Dashboard startet welt-uebergreifend. Admin kann optional
+    // auf einzelne Welt filtern. Vorher zeigte das Dashboard nur die
+    // Welt aus der man kam -> Daten der anderen Welten unsichtbar.
+    _selectedWorld = kAllWorlds;
     _tabController = TabController(length: 7, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _waitForState();
@@ -324,6 +332,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
 
   static String _emojiForWorld(String w) {
     switch (w) {
+      case kAllWorlds: return '🌐';
       case 'materie': return '🔷';
       case 'energie': return '⚡';
       case 'vorhang': return '🎭';
@@ -334,6 +343,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
 
   static String _labelForWorld(String w) {
     switch (w) {
+      case kAllWorlds: return 'ALLE WELTEN';
       case 'materie': return 'MATERIE';
       case 'energie': return 'ENERGIE';
       case 'vorhang': return 'VORHANG';
@@ -1650,18 +1660,22 @@ class _UsersTabState extends State<_UsersTab> {
                                   child: _UserTile(
                                     user: u,
                                     isRootAdmin: widget.admin.isRootAdmin,
+                                    actorRole: widget.admin.role,
                                     accent: widget.accent,
                                     accentBright: widget.accentBright,
                                     onBan: () => _ban(u),
                                     onUnban: () => _unban(u),
                                     onPromote: () => _promote(u),
                                     onDemote: () => _demote(u),
-                                    onGrantXp: () => _grantXp(u),
-                                    onDelete: widget.admin.isRootAdmin
+                                    onGrantXp: AppRoles.canGrantXp(widget.admin.role)
+                                        ? () => _grantXp(u)
+                                        : null,
+                                    onDelete: AppRoles.canDeleteUsers(widget.admin.role)
                                         ? () => _deleteUser(u)
                                         : null,
-                                    onChangeRole: (newRole) =>
-                                        _changeRole(u, newRole),
+                                    onChangeRole: AppRoles.canPromoteDemote(widget.admin.role)
+                                        ? (newRole) => _changeRole(u, newRole)
+                                        : null,
                                   ),
                                 ),
                               ]);
@@ -1829,32 +1843,39 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
   }
 
   void _rebuildRoomsForWorld() {
+    const materie = [
+      'materie-politik', 'materie-geschichte', 'materie-ufo',
+      'materie-verschwoerung', 'materie-wissenschaft', 'materie-tech',
+      'materie-gesundheit', 'materie-medien', 'materie-finanzen',
+    ];
+    const energie = [
+      'energie-meditation', 'energie-chakra', 'energie-bewusstsein',
+      'energie-heilung', 'energie-kristalle', 'energie-astrologie',
+      'energie-traumdeutung',
+    ];
+    const vorhang = [
+      'vorhang-strategie', 'vorhang-macht', 'vorhang-medien',
+      'vorhang-geopolitik',
+    ];
+    const ursprung = [
+      'ursprung-bewusstsein', 'ursprung-quanten', 'ursprung-realitaet',
+    ];
     switch (widget.world) {
+      case _WorldAdminDashboardState.kAllWorlds:
+        _rooms = [...materie, ...energie, ...vorhang, ...ursprung];
+        break;
       case 'materie':
-        _rooms = [
-          'materie-politik', 'materie-geschichte', 'materie-ufo',
-          'materie-verschwoerung', 'materie-wissenschaft', 'materie-tech',
-          'materie-gesundheit', 'materie-medien', 'materie-finanzen',
-        ];
+        _rooms = materie;
         break;
       case 'vorhang':
-        _rooms = [
-          'vorhang-strategie', 'vorhang-macht', 'vorhang-medien',
-          'vorhang-geopolitik',
-        ];
+        _rooms = vorhang;
         break;
       case 'ursprung':
-        _rooms = [
-          'ursprung-bewusstsein', 'ursprung-quanten', 'ursprung-realitaet',
-        ];
+        _rooms = ursprung;
         break;
       case 'energie':
       default:
-        _rooms = [
-          'energie-meditation', 'energie-chakra', 'energie-bewusstsein',
-          'energie-heilung', 'energie-kristalle', 'energie-astrologie',
-          'energie-traumdeutung',
-        ];
+        _rooms = energie;
     }
   }
 
@@ -2654,6 +2675,9 @@ class _ActivityTile extends StatelessWidget {
 class _UserTile extends StatelessWidget {
   final WorldUser user;
   final bool isRootAdmin;
+  // v100: Rolle des aktuell eingeloggten Admins. Bestimmt welche Aktionen
+  // angezeigt werden (canBan, canDeleteMessages, canPromoteDemote ...).
+  final String? actorRole;
   final Color accent, accentBright;
   final VoidCallback onBan, onUnban, onPromote, onDemote;
   final VoidCallback? onGrantXp;
@@ -2665,6 +2689,7 @@ class _UserTile extends StatelessWidget {
   const _UserTile({
     required this.user,
     required this.isRootAdmin,
+    this.actorRole,
     required this.accent,
     required this.accentBright,
     required this.onBan,
@@ -2859,18 +2884,24 @@ class _UserTile extends StatelessWidget {
                     'ID: ${user.userId.isEmpty ? "Unbekannt" : user.userId}'),
                 const SizedBox(height: 12),
                 Wrap(spacing: 8, runSpacing: 8, children: [
-                  if (isRootAdmin && !user.isAdmin)
+                  // v100: Promote/Demote nur fuer Admin+ (canPromoteDemote).
+                  if (AppRoles.canPromoteDemote(actorRole) && !user.isAdmin)
                     _ActionBtn(
-                        Icons.arrow_upward_rounded, 'Zum Admin', Colors.green, onPromote),
-                  if (isRootAdmin && user.isAdmin && !user.isRootAdmin)
+                        Icons.arrow_upward_rounded, 'Befoerdern', Colors.green, onPromote),
+                  if (AppRoles.canPromoteDemote(actorRole)
+                      && user.isAdmin && !user.isRootAdmin)
                     _ActionBtn(
                         Icons.arrow_downward_rounded, 'Degradieren', Colors.orange, onDemote),
-                  _ActionBtn(Icons.block_rounded, 'Sperren', Colors.red, onBan),
-                  _ActionBtn(Icons.check_circle_outline_rounded, 'Entsperren', Colors.teal, onUnban),
+                  // Ban/Unban fuer Moderator+.
+                  if (AppRoles.canBanUsers(actorRole))
+                    _ActionBtn(Icons.block_rounded, 'Sperren', Colors.red, onBan),
+                  if (AppRoles.canBanUsers(actorRole))
+                    _ActionBtn(Icons.check_circle_outline_rounded, 'Entsperren',
+                        Colors.teal, onUnban),
                   if (onGrantXp != null)
                     _ActionBtn(Icons.auto_awesome_rounded, 'XP vergeben',
                         const Color(0xFFFFC107), onGrantXp!),
-                  if (isRootAdmin && onDelete != null)
+                  if (onDelete != null)
                     _ActionBtn(Icons.delete_forever_rounded, 'Loeschen',
                         Colors.redAccent, onDelete!),
                 ]),
