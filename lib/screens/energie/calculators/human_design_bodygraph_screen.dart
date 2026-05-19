@@ -87,6 +87,46 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
     setState(() {});
   }
 
+  // v95: Tap auf ein Center oeffnet ein Info-Sheet mit der Deutung
+  // (definiert vs. offen). Position-Lookup matched die _BodyGraphPainter-
+  // Konstanten so gut wie moeglich.
+  void _handleCenterTap(Offset local) {
+    if (_hd == null) return;
+    final ctx = context;
+    final size = (ctx.findRenderObject() as RenderBox?)?.size;
+    final w = size?.width ?? 360;
+    final h = w / 0.78;
+    final positions = <String, Offset>{
+      'crown':        Offset(w * 0.5, h * 0.08),
+      'ajna':         Offset(w * 0.5, h * 0.22),
+      'throat':       Offset(w * 0.5, h * 0.37),
+      'g':            Offset(w * 0.5, h * 0.55),
+      'heart':        Offset(w * 0.75, h * 0.55),
+      'spleen':       Offset(w * 0.18, h * 0.65),
+      'solar_plexus': Offset(w * 0.82, h * 0.65),
+      'sacral':       Offset(w * 0.5, h * 0.75),
+      'root':         Offset(w * 0.5, h * 0.92),
+    };
+    String? hit;
+    double bestDist = 40;
+    positions.forEach((key, pos) {
+      final d = (pos - local).distance;
+      if (d < bestDist) {
+        bestDist = d;
+        hit = key;
+      }
+    });
+    if (hit == null) return;
+    HapticFeedback.lightImpact();
+    final isDefined = _hd!.definedCenters.contains(hit);
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CenterInfoSheet(
+          centerKey: hit!, isDefined: isDefined, accent: _gold),
+    );
+  }
+
   void _compute() {
     HapticFeedback.mediumImpact();
     final result = HumanDesign.compute(birthDateUtc: _birthDate.toUtc());
@@ -397,12 +437,17 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
               aspectRatio: 0.78,
               child: AnimatedBuilder(
                 animation: _revealCtrl,
-                builder: (_, __) => CustomPaint(
-                  painter: _BodyGraphPainter(
-                    defined: _hd!.definedCenters,
-                    reveal: _revealCtrl.value,
-                    gold: _gold,
-                    accent: _accent,
+                builder: (_, __) => GestureDetector(
+                  onTapDown: (d) => _handleCenterTap(d.localPosition),
+                  child: CustomPaint(
+                    painter: _BodyGraphPainter(
+                      defined: _hd!.definedCenters,
+                      definedGates: _hd!.definedGates,
+                      definedChannels: _hd!.definedChannels,
+                      reveal: _revealCtrl.value,
+                      gold: _gold,
+                      accent: _accent,
+                    ),
                   ),
                 ),
               ),
@@ -475,12 +520,16 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
 // ── PAINTER: Body-Graph ──────────────────────────────────────────────────────
 class _BodyGraphPainter extends CustomPainter {
   final Set<String> defined;
+  final Set<int> definedGates;
+  final Set<List<int>> definedChannels;
   final double reveal;
   final Color gold;
   final Color accent;
 
   _BodyGraphPainter({
     required this.defined,
+    this.definedGates = const {},
+    this.definedChannels = const {},
     required this.reveal,
     required this.gold,
     required this.accent,
@@ -546,9 +595,77 @@ class _BodyGraphPainter extends CustomPainter {
       final p1 = positions[c[0]]!;
       final p2 = positions[c[1]]!;
       final bothDefined = defined.contains(c[0]) && defined.contains(c[1]);
-      final col = bothDefined ? gold : Colors.white.withValues(alpha: 0.08);
-      canvas.drawLine(p1, p2,
-          Paint()..color = col.withValues(alpha: (bothDefined ? 0.6 : 0.3) * reveal)..strokeWidth = bothDefined ? 1.5 : 0.8);
+      // v95: pruefe ob ein aktiver Channel diese beiden Center verbindet.
+      final channelActive = _hasActiveChannelBetween(c[0], c[1]);
+      Color col;
+      double sw;
+      double alpha;
+      if (channelActive) {
+        col = gold;
+        sw = 3.0;
+        alpha = 0.95;
+      } else if (bothDefined) {
+        col = gold;
+        sw = 1.8;
+        alpha = 0.6;
+      } else {
+        col = Colors.white.withValues(alpha: 0.08);
+        sw = 0.8;
+        alpha = 0.3;
+      }
+      canvas.drawLine(
+        p1,
+        p2,
+        Paint()
+          ..color = col.withValues(alpha: alpha * reveal)
+          ..strokeWidth = sw,
+      );
+      // Glow auf aktive Channels.
+      if (channelActive) {
+        canvas.drawLine(
+          p1,
+          p2,
+          Paint()
+            ..color = gold.withValues(alpha: 0.4 * reveal)
+            ..strokeWidth = 8
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+        );
+      }
+    }
+
+    // v95 Gate-Dots: kleine Punkte fuer aktive Gates pro Center.
+    // Vereinfacht: wir verteilen aktive Gates radial um das Center.
+    for (final centerKey in _centerLabels.keys) {
+      final gates = _gatesForCenter(centerKey);
+      final active = gates.where(definedGates.contains).toList();
+      if (active.isEmpty) continue;
+      final centerPos = positions[centerKey]!;
+      final radius = (sizes[centerKey] ?? 50) / 2 + 10;
+      for (int i = 0; i < active.length; i++) {
+        final angle = (2 * math.pi * i / active.length) - math.pi / 2;
+        final dotPos = Offset(
+          centerPos.dx + math.cos(angle) * radius,
+          centerPos.dy + math.sin(angle) * radius,
+        );
+        canvas.drawCircle(
+          dotPos,
+          3.2,
+          Paint()
+            ..color = gold.withValues(alpha: reveal)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5),
+        );
+        // Kleine Gate-Nummer
+        final tp = TextPainter(
+          text: TextSpan(
+              text: '${active[i]}',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.95 * reveal),
+                  fontSize: 7,
+                  fontWeight: FontWeight.w800)),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        tp.paint(canvas, dotPos.translate(-tp.width / 2, -tp.height / 2));
+      }
     }
 
     // Zentren
@@ -653,9 +770,61 @@ class _BodyGraphPainter extends CustomPainter {
       ..close();
   }
 
+  // v95: Lookup-Tabelle Gate -> Center (HD-Standard).
+  static const Map<int, String> _gateToCenter = {
+    // Crown
+    61: 'crown', 63: 'crown', 64: 'crown',
+    // Ajna
+    47: 'ajna', 24: 'ajna', 4: 'ajna', 17: 'ajna', 43: 'ajna', 11: 'ajna',
+    // Throat
+    62: 'throat', 23: 'throat', 56: 'throat', 35: 'throat', 12: 'throat',
+    45: 'throat', 33: 'throat', 8: 'throat', 31: 'throat',
+    16: 'throat', 20: 'throat',
+    // G
+    1: 'g', 2: 'g', 7: 'g', 10: 'g', 13: 'g', 15: 'g', 25: 'g', 46: 'g',
+    // Heart/Ego
+    21: 'heart', 26: 'heart', 40: 'heart', 51: 'heart',
+    // Spleen
+    18: 'spleen', 28: 'spleen', 32: 'spleen', 44: 'spleen',
+    48: 'spleen', 50: 'spleen', 57: 'spleen',
+    // Solar Plexus
+    6: 'solar_plexus', 22: 'solar_plexus', 30: 'solar_plexus',
+    36: 'solar_plexus', 37: 'solar_plexus', 49: 'solar_plexus',
+    55: 'solar_plexus',
+    // Sacral
+    3: 'sacral', 5: 'sacral', 9: 'sacral', 14: 'sacral', 27: 'sacral',
+    29: 'sacral', 34: 'sacral', 42: 'sacral', 59: 'sacral',
+    // Root
+    19: 'root', 38: 'root', 39: 'root', 41: 'root', 52: 'root', 53: 'root',
+    54: 'root', 58: 'root', 60: 'root',
+  };
+
+  List<int> _gatesForCenter(String center) {
+    return _gateToCenter.entries
+        .where((e) => e.value == center)
+        .map((e) => e.key)
+        .toList();
+  }
+
+  /// Prueft ob ein aktiver Channel zwischen zwei Centern verlaeuft.
+  /// Channel = beide Gates definiert. definedChannels enthaelt
+  /// List<int> mit 2 Gate-Nummern pro Eintrag.
+  bool _hasActiveChannelBetween(String a, String b) {
+    for (final channel in definedChannels) {
+      if (channel.length < 2) continue;
+      final ca = _gateToCenter[channel[0]];
+      final cb = _gateToCenter[channel[1]];
+      if ((ca == a && cb == b) || (ca == b && cb == a)) return true;
+    }
+    return false;
+  }
+
   @override
   bool shouldRepaint(_BodyGraphPainter old) =>
-      old.defined.length != defined.length || old.reveal != reveal;
+      old.defined.length != defined.length ||
+      old.definedGates.length != definedGates.length ||
+      old.definedChannels.length != definedChannels.length ||
+      old.reveal != reveal;
 }
 
 class _HdOrbsPainter extends CustomPainter {
@@ -681,4 +850,127 @@ class _HdOrbsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_HdOrbsPainter old) => old.t != t;
+}
+
+
+class _CenterInfoSheet extends StatelessWidget {
+  final String centerKey;
+  final bool isDefined;
+  final Color accent;
+  const _CenterInfoSheet({
+    required this.centerKey,
+    required this.isDefined,
+    required this.accent,
+  });
+
+  static const _info = <String, Map<String, String>>{
+    'crown': {
+      'name': 'Krone',
+      'defined': 'Konstante Inspiration und mentaler Druck. Du hast feste Fragen.',
+      'open': 'Du nimmst die Fragen anderer auf. Unterscheide eigene von fremden Gedanken.',
+    },
+    'ajna': {
+      'name': 'Ajna',
+      'defined': 'Feste Art zu denken und Konzepte zu verarbeiten.',
+      'open': 'Flexibles Denken. Viele Perspektiven moeglich.',
+    },
+    'throat': {
+      'name': 'Kehle',
+      'defined': 'Konsistente Manifestation und Ausdruck.',
+      'open': 'Sprich nur wenn eingeladen. Dein Timing ist entscheidend.',
+    },
+    'g': {
+      'name': 'Selbst/G',
+      'defined': 'Feste Identitaet und Lebensrichtung.',
+      'open': 'Chamaeleon. Identitaet variiert je nach Umgebung.',
+    },
+    'heart': {
+      'name': 'Herz/Ego',
+      'defined': 'Konsistente Willenskraft. Halte Versprechen.',
+      'open': 'Beweise niemandem deinen Wert. Du bist genug.',
+    },
+    'sacral': {
+      'name': 'Sakral',
+      'defined': 'Generator-Energie. Reagiere mit Bauchgefuehl (uh-huh/uh-uh).',
+      'open': 'Nicht zum Marathon-Arbeiten gemacht. Kenne dein Limit.',
+    },
+    'spleen': {
+      'name': 'Milz',
+      'defined': 'Spontane Intuition. Vertraue dem ersten Impuls.',
+      'open': 'Festhalte-Tendenz. Lass los was nicht gut ist.',
+    },
+    'solar_plexus': {
+      'name': 'Solar Plexus',
+      'defined': 'Emotionale Autoritaet. Warte auf Klarheit, keine spontanen Entscheidungen.',
+      'open': 'Empathie-Schwamm. Unterscheide eigene von fremden Emotionen.',
+    },
+    'root': {
+      'name': 'Wurzel',
+      'defined': 'Konstanter Antriebsdruck. Lass dich nicht hetzen.',
+      'open': 'Stress-anfaellig durch aeusseren Druck. Setze Grenzen.',
+    },
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final info = _info[centerKey] ?? const {'name': 'Center', 'defined': '', 'open': ''};
+    final body = isDefined ? info['defined']! : info['open']!;
+    final status = isDefined ? 'DEFINIERT' : 'OFFEN';
+    final statusColor = isDefined ? const Color(0xFFFFD54F) : const Color(0xFF4FC3F7);
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B0716).withValues(alpha: 0.96),
+            border: Border(top: BorderSide(color: accent.withValues(alpha: 0.4), width: 1.4)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 50, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(children: [
+                Text(info['name']!,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900)),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+                  ),
+                  child: Text(status,
+                      style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5)),
+                ),
+              ]),
+              const SizedBox(height: 14),
+              Text(body,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 14, height: 1.55)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
