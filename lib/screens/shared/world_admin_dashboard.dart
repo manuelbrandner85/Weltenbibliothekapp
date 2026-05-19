@@ -17,6 +17,7 @@ import '../../services/activity_heatmap_service.dart'; // 🔥 M2
 import '../../services/cloudflare_api_service.dart';
 import '../../services/health_check_service.dart';
 import '../../services/moderation_queue_service.dart'; // 🚨 M3
+import '../../services/push_notification_helper.dart';
 import '../../services/storage_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/world_admin_service.dart';
@@ -5796,6 +5797,27 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final enq = data['enqueued'] ?? 0;
+        // v103 (5.1): Zusaetzlicher Broadcast ueber den neuen Endpoint --
+        // schreibt admin_audit_log mit Admin-Username und sendet via
+        // sendPushToUser direkt an alle aktiven Subscriptions.
+        // Fire-and-forget, blockiert die UI nicht.
+        if (_target == 'all') {
+          final adminName =
+              StorageService().getMaterieProfile()?.username ??
+                  StorageService().getEnergieProfile()?.username ??
+                  supabase.auth.currentUser?.email ??
+                  'admin';
+          PushNotificationHelper.instance
+              .sendBroadcast(
+                title: _title.text.trim(),
+                body: _body.text.trim(),
+                adminUsername: adminName,
+                data: _deeplink.text.trim().isEmpty
+                    ? null
+                    : {'deeplink': _deeplink.text.trim()},
+              )
+              .ignore();
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(
