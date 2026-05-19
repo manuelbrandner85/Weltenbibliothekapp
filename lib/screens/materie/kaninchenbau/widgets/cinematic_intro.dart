@@ -232,24 +232,45 @@ class _CinematicIntroState extends State<CinematicIntro>
                       Positioned(
                         top: MediaQuery.of(context).padding.top + 12,
                         right: 12,
-                        child: TextButton.icon(
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) =>
-                                  const MyInvestigationsScreen(),
-                            ));
-                          },
-                          icon: Icon(Icons.bookmark,
-                              size: 16, color: KbDesign.goldAccent),
-                          label: Text(
-                            'Ermittlungen',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                        child: Row(
+                          children: [
+                            TextButton.icon(
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.of(context).pushNamed(
+                                    '/research-hub');
+                              },
+                              icon: Icon(Icons.science_outlined,
+                                  size: 16, color: KbDesign.goldAccent),
+                              label: Text(
+                                'Tools',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
-                          ),
+                            TextButton.icon(
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) =>
+                                      const MyInvestigationsScreen(),
+                                ));
+                              },
+                              icon: Icon(Icons.bookmark,
+                                  size: 16, color: KbDesign.goldAccent),
+                              label: Text(
+                                'Ermittlungen',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],

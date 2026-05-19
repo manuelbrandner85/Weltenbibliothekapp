@@ -35,6 +35,7 @@ import 'screens/materie/propaganda_detector_screen.dart';
 import 'screens/materie/image_forensics_screen.dart';
 import 'screens/materie/power_network_mapper_screen.dart';
 import 'screens/materie/event_predictor_screen.dart';
+import 'screens/research/research_hub_screen.dart';
 // 🔐 ADMIN-DASHBOARD (World-Based Admin System)
 import 'screens/shared/world_admin_dashboard.dart';
 // import 'screens/energie/notification_settings_screen.dart'; // FIREBASE - deaktiviert
@@ -465,6 +466,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
             '/image-forensics': (context) => const ImageForensicsScreen(),
             '/power-network-mapper': (context) => const PowerNetworkMapperScreen(),
             '/event-predictor': (context) => const EventPredictorScreen(),
+            '/research-hub': (context) => const ResearchHubScreen(),
             // 🌐 WEB-ADMIN (Web-Zugänge verwalten)
             '/admin/web-users': (context) => const WebAdminPanel(),
           },
