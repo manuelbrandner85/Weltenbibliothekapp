@@ -1,5 +1,6 @@
 import '../config/api_config.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 import '../models/materie_profile.dart';
@@ -441,7 +442,6 @@ class SupabaseProfileSync {
     try {
       final supa = Supabase.instance.client;
       final auth = supa.auth.currentUser;
-
       if (auth != null) {
         await supa.from('profiles').upsert({
           'id': auth.id,
@@ -455,10 +455,25 @@ class SupabaseProfileSync {
         }, onConflict: 'id');
         return true;
       }
-
-      if (legacyId == null || legacyId.isEmpty) return false;
+      // v103 Ghost-User-Fix: Wenn legacyId aus dem Profil-Objekt null ist
+      // (Altnutzer ohne userId-Feld), holen wir die InvisibleAuth-ID aus
+      // SharedPreferences als Fallback. Damit kommen ALLE Altnutzer in die
+      // profiles-Tabelle, sobald sie irgendwas im Profil-Editor speichern
+      // oder die einmalige Migration laeuft.
+      String? effectiveLegacyId = legacyId;
+      if (effectiveLegacyId == null || effectiveLegacyId.isEmpty) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          effectiveLegacyId = prefs.getString('auth_user_id');
+          if (kDebugMode && effectiveLegacyId != null) {
+            debugPrint(
+                '🔄 SupabaseProfileSync: Fallback auf InvisibleAuth-ID: $effectiveLegacyId');
+          }
+        } catch (_) {}
+      }
+      if (effectiveLegacyId == null || effectiveLegacyId.isEmpty) return false;
       await supa.rpc('ensure_legacy_profile', params: {
-        'p_legacy_id': legacyId,
+        'p_legacy_id': effectiveLegacyId,
         'p_username': username,
         'p_display_name': displayName,
         'p_avatar_emoji': avatarEmoji,
