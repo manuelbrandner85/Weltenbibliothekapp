@@ -3299,7 +3299,7 @@ export default {
       // ── GET /api/admin/users/:userId/status ─────────────────
       if (method === 'GET' && path.includes('/status')) {
         try {
-          const userId = path.split('/')[5];
+          const userId = path.split('/')[4];
           const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,username,role,is_banned&id=eq.${userId}&limit=1`, { headers: svcHeaders });
           const data = await res.json().catch(() => []);
           const p = Array.isArray(data) ? data[0] : {};
@@ -3545,36 +3545,80 @@ export default {
       }
 
       // ── POST /api/admin/users/:userId/ban ───────────────────
-      if (method === 'POST' && path.includes('/ban')) {
+      // v98-bugfix: vorher las path.split('/')[5] -> war immer "ban" (action),
+      // nicht die userId. Damit PATCH'te der Worker eine nicht existierende
+      // Zeile id=eq.ban und Ban schlug silent fehl. Jetzt [4] = userId.
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/ban')) {
         try {
-          const userId = path.split('/')[5];
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
-            method: 'PATCH', headers: svcHeaders,
-            body: JSON.stringify({ is_banned: true }),
-          });
-          if (res.ok) {
-            await pushNotif(userId, 'system', '🚫 Konto gesperrt',
-              'Dein Konto wurde von einem Administrator gesperrt.',
-              { type: 'banned' });
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify({ is_banned: true }),
+            },
+          );
+          if (!res.ok) {
+            const t = await res.text().catch(() => '');
+            return errorResponse(`Ban-Fehler: ${res.status} ${t.slice(0, 200)}`);
           }
-          return jsonResponse({ success: res.ok, action: 'banned' });
+          const updated = await res.json().catch(() => []);
+          if (!Array.isArray(updated) || updated.length === 0) {
+            return errorResponse('User nicht gefunden', 404);
+          }
+          // Best-effort Push-Notif + Audit-Log.
+          await pushNotif(userId, 'system', '🚫 Konto gesperrt',
+            'Dein Konto wurde von einem Administrator gesperrt.',
+            { type: 'banned' });
+          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              actor_id: '00000000-0000-0000-0000-000000000000',
+              action: 'ban', target_type: 'profile', target_id: userId,
+              payload: { username: updated[0]?.username || null },
+            }),
+          }).catch(() => {});
+          return jsonResponse({ success: true, action: 'banned', user_id: userId });
         } catch (e) { return errorResponse(`Ban-Fehler: ${e.message}`); }
       }
 
       // ── POST /api/admin/users/:userId/unban ─────────────────
-      if (method === 'POST' && path.includes('/unban')) {
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/unban')) {
         try {
-          const userId = path.split('/')[5];
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
-            method: 'PATCH', headers: svcHeaders,
-            body: JSON.stringify({ is_banned: false }),
-          });
-          if (res.ok) {
-            await pushNotif(userId, 'system', '✅ Sperre aufgehoben',
-              'Deine Kontosperre wurde von einem Administrator aufgehoben.',
-              { type: 'unbanned' });
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify({ is_banned: false }),
+            },
+          );
+          if (!res.ok) {
+            const t = await res.text().catch(() => '');
+            return errorResponse(`Unban-Fehler: ${res.status} ${t.slice(0, 200)}`);
           }
-          return jsonResponse({ success: res.ok, action: 'unbanned' });
+          const updated = await res.json().catch(() => []);
+          if (!Array.isArray(updated) || updated.length === 0) {
+            return errorResponse('User nicht gefunden', 404);
+          }
+          await pushNotif(userId, 'system', '✅ Sperre aufgehoben',
+            'Deine Kontosperre wurde von einem Administrator aufgehoben.',
+            { type: 'unbanned' });
+          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              actor_id: '00000000-0000-0000-0000-000000000000',
+              action: 'unban', target_type: 'profile', target_id: userId,
+              payload: { username: updated[0]?.username || null },
+            }),
+          }).catch(() => {});
+          return jsonResponse({ success: true, action: 'unbanned', user_id: userId });
         } catch (e) { return errorResponse(`Unban-Fehler: ${e.message}`); }
       }
 
@@ -3593,9 +3637,9 @@ export default {
       // amount kann positiv (Bonus) oder negativ (Abzug) sein, |amount| ≤ 10000.
       // Versucht zuerst RPC add_user_xp; bei Fehler direkter PATCH auf profiles.xp.
       // Schreibt admin_audit_log und sendet In-App + Push-Benachrichtigung.
-      if (method === 'POST' && path.includes('/xp')) {
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/xp')) {
         try {
-          const userId = path.split('/')[5];
+          const userId = path.split('/')[4];
           if (!userId) return errorResponse('userId fehlt', 400);
           const body = await request.json().catch(() => ({}));
           const amountRaw = Number(body.amount);
@@ -3792,9 +3836,9 @@ export default {
       // Server-Seitige Schreib-Stelle fuer role bleibt (siehe v91 RLS-Policy
       // profiles_role_update_admin_only). Schreibt automatisch in
       // admin_audit_log via v91 trigger profiles_role_change_audit.
-      if ((method === 'PUT' || method === 'POST') && path.includes('/role')) {
+      if ((method === 'PUT' || method === 'POST') && path.includes('/users/') && path.endsWith('/role')) {
         try {
-          const userId = path.split('/')[5];
+          const userId = path.split('/')[4];
           if (!userId) return errorResponse('userId fehlt', 400);
           const body = await request.json().catch(() => ({}));
           const newRole = String(body.role || '').toLowerCase().replace('-', '_');
