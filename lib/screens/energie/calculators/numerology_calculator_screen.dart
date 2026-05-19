@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../models/energie_profile.dart';
+import '../../../services/achievement_service.dart';
 import '../../../services/numerology_pdf_service.dart';
 import '../../../services/spirit_calculations/cross_system_engine.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
@@ -920,6 +921,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         bridgeNumbers: bridges,
       );
       StreakTrackingService().trackToolUsage('numerology_pdf');
+      // Achievements: erstes PDF + 5-Shares-Progress
+      final svc = AchievementService();
+      await svc.incrementProgress('numerology_pdf_first');
+      await svc.incrementProgress('numerology_pdf_share_5');
       if (kIsWeb) {
         // Web-Fallback: nur Vorschau-Snackbar (kein direkter Share).
         if (!mounted) return;

@@ -6,6 +6,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../../../services/achievement_service.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../services/streak_tracking_service.dart';
 import '../../../widgets/cinematic/wb_ambient_particles.dart';
@@ -88,6 +89,29 @@ class _NumerologyQuizScreenState extends State<NumerologyQuizScreen> {
       });
     } else {
       setState(() => _finished = true);
+      _grantAchievements();
+    }
+  }
+
+  Future<void> _grantAchievements() async {
+    final passed = _score >= 7;
+    final allRight = _score == _questions.length;
+    final svc = AchievementService();
+    if (passed) {
+      switch (_level) {
+        case _QuizLevel.grundlagen:
+          await svc.incrementProgress('numerology_quiz_lehrling');
+          break;
+        case _QuizLevel.fortgeschritten:
+          await svc.incrementProgress('numerology_quiz_geselle');
+          break;
+        case _QuizLevel.experte:
+          await svc.incrementProgress('numerology_quiz_meister');
+          if (allRight) {
+            await svc.incrementProgress('numerology_quiz_guru');
+          }
+          break;
+      }
     }
   }
 
