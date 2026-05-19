@@ -58,6 +58,8 @@ import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (FC
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
+import 'widgets/realtime_notification_host.dart'; // 🔔 v95 In-App Activity Banner
+import 'services/realtime_notification_service.dart'; // 🔔 v95
 import 'services/pip_service.dart'; // 📺 B10.3 PiP
 import 'services/feature_flags.dart'; // 🚩 v5.44.2 Phase-2-Toggle-System
 
@@ -415,10 +417,15 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
           // Mini-Bar für aktiven Sprach-Anruf wird ÜBER allen Screens injiziert
           // Auf Web: keine LiveKit Mini-Bar (WebRTC nicht unterstützt)
           builder: (context, child) {
-            if (kIsWeb) return child ?? const SizedBox.shrink();
+            // RealtimeNotificationHost umhuellt alles -- in-app Banner
+            // werden ueber allen Screens gezeigt.
+            final hosted = RealtimeNotificationHost(
+              child: child ?? const SizedBox.shrink(),
+            );
+            if (kIsWeb) return hosted;
             return Stack(
               children: [
-                child ?? const SizedBox.shrink(),
+                hosted,
                 const Positioned(
                   top: 0,
                   left: 0,
