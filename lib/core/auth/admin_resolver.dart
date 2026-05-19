@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/roles.dart';
+import '../storage/unified_storage_service.dart';
 import '../../services/storage_service.dart';
 
 class AdminResolver {
@@ -78,16 +79,25 @@ class AdminResolver {
           storage.getEnergieProfile()?.username;
       if (localUsername != null && localUsername.isNotEmpty) {
         if (AppRoles.isRootAdminByUsername(localUsername)) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint(
                 '🔐 [AdminResolver] Local profile: ROOT_ADMIN ($localUsername)');
+          }
+          await _persistUnifiedRole(localUsername, AppRoles.rootAdmin);
           return AppRoles.rootAdmin;
         }
         if (AppRoles.isContentEditorByUsername(localUsername)) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('🔐 [AdminResolver] Local profile: CONTENT_EDITOR');
+          }
+          await _persistUnifiedRole(localUsername, AppRoles.contentEditor);
           return AppRoles.contentEditor;
         }
+
+        // v104: Auch fuer Nicht-Admin-User den Username in
+        // UnifiedStorageService persistieren damit AdminStateNotifier
+        // Schritt 2 beim naechsten Aufruf sofort trifft.
+        await _persistUnifiedRole(localUsername, AppRoles.user);
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ [AdminResolver] Local-Profile-Fehler: $e');
@@ -124,5 +134,25 @@ class AdminResolver {
   static Future<bool> isCurrentUserAdmin() async {
     final role = await resolveCurrentRole();
     return AppRoles.isAdmin(role);
+  }
+
+  /// v104: Schreibt den aufgeloesten Username + Rolle in
+  /// UnifiedStorageService damit AdminStateNotifier Schritt 2 beim
+  /// naechsten Aufruf sofort trifft. Wird nach jedem erfolgreichen
+  /// Username-basierten Resolve aufgerufen. Beide Welten persistieren
+  /// dieselbe Identity (single profile per user).
+  static Future<void> _persistUnifiedRole(
+      String username, String role) async {
+    try {
+      final unified = UnifiedStorageService();
+      await unified.saveProfile('materie', {
+        'username': username,
+        'role': role,
+      });
+      await unified.saveProfile('energie', {
+        'username': username,
+        'role': role,
+      });
+    } catch (_) { /* best-effort, NICHT crashen */ }
   }
 }
