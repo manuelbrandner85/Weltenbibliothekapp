@@ -35,6 +35,7 @@ import 'calculators/bind_rune_screen.dart'; // 🪬 Bind-Rune
 import 'calculators/crystal_finder_screen.dart'; // 💎 K2 Wizard
 import 'calculators/crystal_combiner_screen.dart'; // 💎 K3 Combiner
 import 'calculators/birthstone_matcher_screen.dart'; // 💎 K4 Birthstone
+import 'calculators/my_crystals_screen.dart'; // 💎 K6 Meine Sammlung
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
 import 'calculators/biorhythm_chart_screen.dart'; // 📊 90-Tage Bio + Critical Days
@@ -705,6 +706,17 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFFC9A84C),
         'category': 'core',
         'screen': const BirthstoneMatcherScreen(),
+      },
+
+      // 📚 Meine Kristall-Sammlung (v95)
+      {
+        'icon': Icons.collections_bookmark_rounded,
+        'iconEmoji': '📚',
+        'title': 'Meine Kristalle',
+        'subtitle': 'Persoenliche Sammlung mit Stats',
+        'color': const Color(0xFFC9A84C),
+        'category': 'core',
+        'screen': const MyCrystalsScreen(),
       },
 
       // 💞 Synastrie -- Astrologie Partner-Vergleich (v95)
