@@ -46,6 +46,7 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
   final Map<String, WikidataEntry> _entries = {}; // id -> Entry
   final List<WikidataRelation> _relations = [];
   final Map<String, int> _idToNodeId = {}; // wikidata-id -> graph-int-id
+  final Map<int, String> _nodeIdToWikidataId = {}; // graph-int-id -> wikidata-id
   int _nextNodeId = 0;
 
   static const _seeds = [
@@ -84,6 +85,7 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
       _entries.clear();
       _relations.clear();
       _idToNodeId.clear();
+      _nodeIdToWikidataId.clear();
       _nextNodeId = 0;
       _graph.nodes.clear();
       _graph.edges.clear();
@@ -117,6 +119,7 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     final nodeId = _nextNodeId++;
     _entries[e.id] = e;
     _idToNodeId[e.id] = nodeId;
+    _nodeIdToWikidataId[nodeId] = e.id;
     _graph.addNode(Node.Id(nodeId));
   }
 
@@ -402,15 +405,9 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
           ..style = PaintingStyle.stroke,
         builder: (Node node) {
           final id = node.key!.value as int;
-          final entry = _entries.entries
-              .firstWhere(
-                (e) => _idToNodeId[e.key] == id,
-                orElse: () => MapEntry(
-                    '',
-                    const WikidataEntry(
-                        id: '', label: '?', url: '')),
-              )
-              .value;
+          final wikidataId = _nodeIdToWikidataId[id];
+          final entry = wikidataId == null ? null : _entries[wikidataId];
+          if (entry == null) return const SizedBox.shrink();
           final type = _typeOf(entry);
           final color = _colorOf(type);
           return _GraphNode(

@@ -493,13 +493,14 @@ class _UploadTabState extends State<_UploadTab> {
   }
 
   Future<void> _extract() async {
-    if (_fileBytes == null) return;
+    final bytes = _fileBytes;
+    if (bytes == null) return;
     setState(() {
       _processing = true;
       _status = 'Text wird extrahiert ...';
     });
     try {
-      final doc = PdfDocument(inputBytes: _fileBytes);
+      final doc = PdfDocument(inputBytes: bytes);
       final extractor = PdfTextExtractor(doc);
       final text = extractor.extractText();
       doc.dispose();
