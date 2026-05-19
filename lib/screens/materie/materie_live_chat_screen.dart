@@ -141,6 +141,27 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _polls = []; // 🗳️ POLLS
 
+  /// v5.44.7: Smart-Reply-Vorschlaege fuer MessageBarV2 (siehe Energie).
+  List<String>? _computeSmartReplies() {
+    if (_messages.isEmpty) return null;
+    Map<String, dynamic>? lastForeign;
+    for (var i = _messages.length - 1; i >= 0; i--) {
+      final msg = _messages[i];
+      final sender = msg['username']?.toString() ?? '';
+      if (sender.isNotEmpty && sender != _username) {
+        lastForeign = msg;
+        break;
+      }
+    }
+    if (lastForeign == null) return null;
+    final text = (lastForeign['content'] ?? lastForeign['text'] ?? '').toString();
+    if (text.trim().isEmpty) return null;
+    return SmartReplyComputer.computeQuick(
+      lastMessageText: text,
+      world: 'materie',
+    );
+  }
+
   // 🚩 v5.44.2 Phase 2: Adapter fuer neuen PinsPollsHeader (siehe Energie).
   List<PinnedMessageEntry> get _pinsForNewHeaderMaterie =>
       const <PinnedMessageEntry>[];
@@ -2102,6 +2123,14 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               onAttachImage: _showAttachmentSheet,
               onAttachVoice: _openVoiceRecorder,
               isRecordingVoice: false,
+              // ✨ v5.44.7: Smart-Reply-Vorschlaege aus letzter Fremd-Nachricht
+              smartReplySuggestions: _computeSmartReplies(),
+              onSmartReplyTap: (text) {
+                _messageController.text = text;
+                _messageController.selection = TextSelection.fromPosition(
+                  TextPosition(offset: text.length),
+                );
+              },
             )
           else
           // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───

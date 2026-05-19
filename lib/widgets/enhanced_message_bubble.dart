@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter; // v5.44.7 Glassmorphism BackdropFilter
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -211,20 +212,47 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                   content: replyToContent,
                 ),
               
-              // Main message bubble
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: widget.isMyMessage 
-                      ? widget.worldColor.withValues(alpha: 0.3)
-                      : const Color(0xFF2A2A2A),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: widget.worldColor.withValues(alpha: 0.5),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
+              // ✨ v5.44.7: Glassmorphism Message Bubble - BackdropFilter Blur
+              // statt opaker Hintergrund. Eigene Nachrichten in Welt-Farbe
+              // getoent, Fremd-Nachrichten in dunklem Glas-Look.
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: widget.isMyMessage
+                            ? [
+                                widget.worldColor.withValues(alpha: 0.32),
+                                widget.worldColor.withValues(alpha: 0.18),
+                              ]
+                            : [
+                                Colors.white.withValues(alpha: 0.10),
+                                Colors.white.withValues(alpha: 0.04),
+                              ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: widget.worldColor.withValues(
+                          alpha: widget.isMyMessage ? 0.55 : 0.22,
+                        ),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: widget.worldColor.withValues(
+                            alpha: widget.isMyMessage ? 0.18 : 0.08,
+                          ),
+                          blurRadius: 10,
+                          spreadRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // User info
@@ -375,7 +403,10 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                     }).toList(),
                   ),
                 ),
-              
+                  ), // Container (Glassmorphism-Inner)
+                ), // BackdropFilter
+              ), // ClipRRect
+
               // Reaction Picker
               if (_showReactionPicker)
                 Container(

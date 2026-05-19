@@ -144,6 +144,32 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _polls = []; // 🆕 Polls list
 
+  /// v5.44.7: Smart-Reply-Vorschlaege fuer MessageBarV2.
+  /// Sucht die letzte Nachricht von jemand anderem als dem User selbst
+  /// und ruft den heuristischen SmartReplyComputer auf.
+  /// Returns null wenn keine relevante Vorlage existiert (Bar zeigt dann
+  /// keine Chips).
+  List<String>? _computeSmartReplies() {
+    if (_messages.isEmpty) return null;
+    // Suche letzte Fremd-Nachricht (nicht von _username)
+    Map<String, dynamic>? lastForeign;
+    for (var i = _messages.length - 1; i >= 0; i--) {
+      final msg = _messages[i];
+      final sender = msg['username']?.toString() ?? '';
+      if (sender.isNotEmpty && sender != _username) {
+        lastForeign = msg;
+        break;
+      }
+    }
+    if (lastForeign == null) return null;
+    final text = (lastForeign['content'] ?? lastForeign['text'] ?? '').toString();
+    if (text.trim().isEmpty) return null;
+    return SmartReplyComputer.computeQuick(
+      lastMessageText: text,
+      world: 'energie',
+    );
+  }
+
   // 🚩 v5.44.2 Phase 2: Adapter fuer neuen PinsPollsHeader (nur aktiv wenn
   // FeatureFlag.newPinsHeader=true). Default leere Listen damit der
   // Header SizedBox.shrink() rendert bis Daten-Pipeline angeschlossen wird.
@@ -1972,6 +1998,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     onAttachImage: _showAttachmentSheet,
                     onAttachVoice: _openVoiceRecorder,
                     isRecordingVoice: false,
+                    // ✨ v5.44.7: Smart-Reply-Suggestions aus letzter Fremd-Nachricht
+                    smartReplySuggestions: _computeSmartReplies(),
+                    onSmartReplyTap: (text) {
+                      _messageController.text = text;
+                      _messageController.selection = TextSelection.fromPosition(
+                        TextPosition(offset: text.length),
+                      );
+                    },
                   )
                 else
                 // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
