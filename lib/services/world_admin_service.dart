@@ -773,6 +773,57 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// v98: Hard-Delete eines Users. Loescht profile-Zeile (cascadiert)
+  /// und auth.users-Zeile falls UUID. Returns true bei HTTP 200 + success.
+  static Future<bool> deleteUser({
+    required String userId,
+    String? adminUsername,
+  }) async {
+    try {
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/$userId');
+      final response =
+          await http.delete(url, headers: _h).timeout(WorldAdminService._timeout);
+      if (response.statusCode == 200) {
+        final data =
+            jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+        return data['success'] as bool? ?? true;
+      }
+      if (kDebugMode) {
+        debugPrint('❌ deleteUser failed: HTTP ${response.statusCode}');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ deleteUser exception: $e');
+      return false;
+    }
+  }
+
+  /// v98: Sync-Endpoint. Backfillt Profile fuer auth.users und optional
+  /// fuer InvisibleAuth-Sessions aus dem Client.
+  static Future<Map<String, dynamic>?> syncUsers({
+    List<Map<String, dynamic>>? extraUsers,
+  }) async {
+    try {
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/sync');
+      final response = await http
+          .post(
+            url,
+            headers: _h,
+            body: jsonEncode({'users': extraUsers ?? []}),
+          )
+          .timeout(WorldAdminService._timeout);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ syncUsers exception: $e');
+      return null;
+    }
+  }
+
   // Manual XP-Vergabe durch Admin. amount > 0 = Bonus, amount < 0 = Abzug.
   // Worker schreibt Audit-Log + sendet Push.
   // Returns: { success, new_xp, amount } oder null bei Fehler.

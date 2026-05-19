@@ -3368,7 +3368,169 @@ export default {
         } catch (e) { return errorResponse(`Demote-Fehler: ${e.message}`); }
       }
 
-      // ── DELETE /api/admin/delete/:world/:userId ─────────────
+      // ── DELETE /api/admin/users/:userId  (Hard-Delete, v98) ─────────
+      // Loescht profile-Zeile (cascades zu vielen FKs). Bei vorhandener
+      // auth.users-Zeile (UUID id) wird zusaetzlich auth.admin.deleteUser
+      // via Service-Role aufgerufen. Fuer reine InvisibleAuth-User reicht
+      // der profile-DELETE.
+      if (method === 'DELETE' && /^\/api\/admin\/users\/[^/]+\/?$/.test(path)) {
+        try {
+          if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+            return errorResponse('SUPABASE_SERVICE_ROLE_KEY fehlt', 503);
+          }
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+
+          // 1. Profile-Zeile loeschen.
+          const delProfile = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+            { method: 'DELETE', headers: svcHeaders },
+          );
+
+          // 2. Falls UUID-Form -> auch auth.users loeschen (Service-Role only).
+          let authDeleted = false;
+          const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+          if (looksLikeUuid) {
+            try {
+              const authRes = await fetch(
+                `${SUPABASE_URL}/auth/v1/admin/users/${userId}`,
+                { method: 'DELETE', headers: {
+                    'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+                    'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+                  } },
+              );
+              authDeleted = authRes.ok;
+            } catch (_) { /* auth-delete ist best-effort */ }
+          }
+
+          // Audit-Log
+          try {
+            await fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                actor_id: '00000000-0000-0000-0000-000000000000',
+                action: 'user_hard_delete',
+                target_type: 'profile',
+                target_id: userId,
+                payload: { auth_deleted: authDeleted, looks_like_uuid: looksLikeUuid },
+              }),
+            });
+          } catch (_) {}
+
+          return jsonResponse({
+            success: delProfile.ok,
+            profile_deleted: delProfile.ok,
+            auth_deleted: authDeleted,
+            user_id: userId,
+          });
+        } catch (e) { return errorResponse(`Hard-Delete-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/sync  (v98) ───────────────────────────
+      // Synchronisiert Profile-Zeilen mit auth.users. Fuer jeden auth.user
+      // ohne profile-Eintrag wird einer angelegt. Antwortet mit Statistik.
+      // Ausserdem werden anonyme Sessions (InvisibleAuth-Heartbeats die
+      // username + legacy_user_id im Body schicken) in profiles upserted.
+      if (method === 'POST' && path === '/api/admin/users/sync') {
+        try {
+          if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+            return errorResponse('SUPABASE_SERVICE_ROLE_KEY fehlt', 503);
+          }
+          const body = await request.json().catch(() => ({}));
+          const extraUsers = Array.isArray(body.users) ? body.users : [];
+
+          // 1. Alle auth.users holen (paginiert via admin API).
+          let authUsers = [];
+          try {
+            const authRes = await fetch(
+              `${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`,
+              { headers: {
+                  'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+                  'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+                } },
+            );
+            if (authRes.ok) {
+              const data = await authRes.json().catch(() => ({}));
+              authUsers = Array.isArray(data.users) ? data.users : (data || []);
+            }
+          } catch (_) { /* falls auth-admin fehlt, weiter mit extraUsers */ }
+
+          // 2. Existierende profile-IDs holen.
+          const existRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,legacy_user_id&limit=10000`,
+            { headers: svcHeaders },
+          );
+          const existing = await existRes.json().catch(() => []);
+          const existIds = new Set((Array.isArray(existing) ? existing : []).map(p => p.id));
+          const existLegacy = new Set(
+            (Array.isArray(existing) ? existing : [])
+              .map(p => p.legacy_user_id)
+              .filter(Boolean),
+          );
+
+          // 3. Fehlende Profile fuer auth.users anlegen.
+          const toInsert = [];
+          for (const u of authUsers) {
+            if (!u || !u.id || existIds.has(u.id)) continue;
+            const meta = u.user_metadata || {};
+            const baseName = meta.username || meta.display_name ||
+                (u.email ? u.email.split('@')[0] : null) || `user_${u.id.slice(0, 8)}`;
+            toInsert.push({
+              id: u.id,
+              username: baseName,
+              display_name: meta.display_name || baseName,
+              role: 'user',
+              is_banned: false,
+              created_at: u.created_at || new Date().toISOString(),
+              last_seen_at: u.last_sign_in_at || null,
+            });
+          }
+
+          // 4. Zusaetzlich extraUsers (InvisibleAuth aus Client-Sync) upserten.
+          for (const u of extraUsers) {
+            if (!u || typeof u !== 'object') continue;
+            const legacyId = String(u.legacy_user_id || u.user_id || '').trim();
+            const username = String(u.username || '').trim();
+            if (!legacyId || !username) continue;
+            if (existLegacy.has(legacyId)) continue;
+            // InvisibleAuth-Profile: id muss UUID sein. Wir koennen entweder
+            // eine ableitbare UUID generieren oder Supabase eine geben lassen.
+            // Variante: Insert ohne id -> DB generiert gen_random_uuid().
+            toInsert.push({
+              username,
+              display_name: u.display_name || username,
+              role: 'user',
+              is_banned: false,
+              legacy_user_id: legacyId,
+              created_at: new Date().toISOString(),
+              last_seen_at: u.last_seen_at || new Date().toISOString(),
+            });
+          }
+
+          let inserted = 0;
+          if (toInsert.length > 0) {
+            const insRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal,resolution=ignore-duplicates' },
+              body: JSON.stringify(toInsert),
+            });
+            if (insRes.ok) inserted = toInsert.length;
+          }
+
+          return jsonResponse({
+            success: true,
+            auth_users_seen: authUsers.length,
+            extra_users_seen: extraUsers.length,
+            profiles_before: existing.length || 0,
+            profiles_inserted: inserted,
+          });
+        } catch (e) {
+          return errorResponse(`Sync-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── DELETE /api/admin/delete/:world/:userId  (Legacy soft-delete) ──
       if (method === 'DELETE' && path.includes('/delete')) {
         try {
           const parts = path.split('/');

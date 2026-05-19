@@ -4,9 +4,9 @@
 // last_seen_at auf das eigene profile. Im Background (pausiert) stoppt
 // der Timer; ein letzter Tick beim Pausieren markiert "gerade weg".
 //
-// Verbraucht keine Netzwerk-Bandbreite wenn der User nicht angemeldet
-// ist (no-op). Profile-Lookup via username case-insensitive damit auch
-// InvisibleAuth-User profitieren.
+// v98: nutzt ensure_legacy_profile RPC um Profile fuer InvisibleAuth-User
+// automatisch anzulegen falls fehlt -- so erscheinen sie sicher im
+// Admin-Dashboard, sobald sie die App das erste Mal oeffnen.
 
 import 'dart:async';
 
@@ -45,10 +45,13 @@ class UserPresenceService {
       final username = (m?.username ?? e?.username ?? '').trim();
       if (username.isEmpty) return;
 
+      final displayName =
+          (m?.displayName ?? e?.displayName ?? username).trim();
       final now = DateTime.now().toUtc().toIso8601String();
 
-      // Wenn Supabase Session da ist: per ID updaten (genauer).
       final supa = Supabase.instance.client;
+
+      // Wenn Supabase Session da ist: per ID updaten (genauer).
       final auth = supa.auth.currentUser;
       if (auth != null) {
         await supa.from('profiles')
@@ -57,7 +60,26 @@ class UserPresenceService {
         return;
       }
 
-      // Sonst per username — die meisten App-User sind InvisibleAuth.
+      // InvisibleAuth: ensure_legacy_profile RPC legt Profil an falls
+      // fehlt und aktualisiert last_seen_at atomar (v98).
+      final legacyId = (m?.userId ?? e?.userId ?? '').trim();
+      if (legacyId.isNotEmpty) {
+        try {
+          await supa.rpc('ensure_legacy_profile', params: {
+            'p_legacy_id': legacyId,
+            'p_username': username,
+            'p_display_name': displayName,
+          });
+          return;
+        } catch (rpcErr) {
+          if (kDebugMode) {
+            debugPrint(
+                '⚠️ ensure_legacy_profile RPC fail, fallback: $rpcErr');
+          }
+        }
+      }
+
+      // Fallback (ohne RPC verfuegbar): per username.
       await supa.from('profiles')
           .update({'last_seen_at': now})
           .ilike('username', username);
