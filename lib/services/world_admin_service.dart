@@ -3,6 +3,8 @@ import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
+
+import 'push_notification_helper.dart';
 import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
 import '../core/storage/unified_storage_service.dart'; // ✅ Storage für Username
@@ -834,6 +836,19 @@ extension WorldAdminServiceV162 on WorldAdminService {
           .timeout(WorldAdminService._timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+        // v103 (4.5): Push an den User mit der neuen Rolle. Fire-and-forget.
+        PushNotificationHelper.instance.sendToUser(
+          targetUserId: userId,
+          type: 'admin_role_change',
+          title: '🛡️ Rolle geändert',
+          body:
+              'Deine Rolle wurde zu "${_prettyRoleName(newRole)}" geändert.',
+          data: {
+            'action': 'role_change',
+            'new_role': newRole,
+            'admin': adminUsername,
+          },
+        ).ignore();
         return data['success'] as bool? ?? true;
       }
       if (kDebugMode) {
@@ -844,6 +859,25 @@ extension WorldAdminServiceV162 on WorldAdminService {
     } catch (e) {
       if (kDebugMode) debugPrint('❌ changeUserRole exception: $e');
       return false;
+    }
+  }
+
+  /// v103 (4.5): Helper fuer User-freundliche Rollennamen in Push-Texten.
+  static String _prettyRoleName(String role) {
+    switch (role) {
+      case 'root_admin':
+      case 'root-admin':
+        return 'Root-Admin';
+      case 'admin':
+        return 'Administrator';
+      case 'content_editor':
+        return 'Content-Editor';
+      case 'moderator':
+        return 'Moderator';
+      case 'user':
+        return 'Benutzer';
+      default:
+        return role;
     }
   }
 
