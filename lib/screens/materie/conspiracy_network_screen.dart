@@ -1,20 +1,29 @@
+// Conspiracy-Network-Screen (R2): echte Wikidata-Relations als Force-Graph.
+//
+// Edges stammen aus FreeApiService.fetchWikidataRelations() ueber die
+// Properties P361 (Teil von), P463 (Mitglied von), P108 (Arbeitgeber),
+// P39 (Position), P127 (Eigentuemer), P749 (Mutterorganisation),
+// P159 (Hauptsitz). Knoten werden nach Entity-Typ (Heuristik aus
+// description) farblich differenziert. Tap auf Knoten oeffnet ein Sheet
+// mit "Netzwerk erweitern" -> fetcht zusaetzliche Relations.
+// Hard cap: 50 Nodes.
+
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../services/free_api_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Materie-Farben
-// ─────────────────────────────────────────────────────────────────────────────
 const _kAccent = Color(0xFFE53935);
-const _kBg = Color(0xFF0D0505);
 const _kSurface = Color(0xFF1A0000);
+const _kMaxNodes = 50;
 
-/// 🕸️ Verschwörungs-Netzwerk — Wikidata-Daten als interaktiver Force-Graph
+enum _EntityType { person, organisation, location, concept }
+
 class ConspiracyNetworkScreen extends StatefulWidget {
   final String roomId;
   const ConspiracyNetworkScreen({super.key, required this.roomId});
@@ -29,11 +38,15 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
   final _searchCtrl = TextEditingController();
   Timer? _debounce;
 
-  List<WikidataEntry> _entries = [];
   bool _loading = false;
-  bool _showGraph = true; // true = Graph, false = Liste
-
+  bool _showGraph = true;
   String _activeChip = 'Illuminati';
+
+  // Aktueller Netzwerkzustand.
+  final Map<String, WikidataEntry> _entries = {}; // id -> Entry
+  final List<WikidataRelation> _relations = [];
+  final Map<String, int> _idToNodeId = {}; // wikidata-id -> graph-int-id
+  int _nextNodeId = 0;
 
   static const _seeds = [
     'Illuminati',
@@ -46,12 +59,8 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     'Bohemian Grove',
   ];
 
-  // Graph-State
   final Graph _graph = Graph()..isTree = false;
-  final _algorithm = FruchtermanReingoldAlgorithm(iterations: 200);
-
-  // Mapping WikidataEntry.id → Graph-Node für Tap-Detection
-  final Map<int, WikidataEntry> _nodeMap = {};
+  final _algorithm = FruchtermanReingoldAlgorithm(iterations: 250);
 
   @override
   void initState() {
@@ -66,23 +75,91 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     super.dispose();
   }
 
-  // ── Daten laden ──────────────────────────────────────────────────────────
-
   Future<void> _load(String query) async {
     if (!mounted) return;
     setState(() => _loading = true);
     try {
-      final results = await _api.fetchWikidataEntries(query, limit: 20);
+      final results = await _api.fetchWikidataEntries(query, limit: 8);
+      // Reset graph for a new seed.
+      _entries.clear();
+      _relations.clear();
+      _idToNodeId.clear();
+      _nextNodeId = 0;
+      _graph.nodes.clear();
+      _graph.edges.clear();
+
+      for (final e in results) {
+        _addEntryAsNode(e);
+      }
+      // Fetch relations for the top-k seeds in parallel.
+      final topSeeds = results.take(5).toList();
+      final relResults = await Future.wait(
+        topSeeds
+            .map((e) => _api.fetchWikidataRelations(e.id).catchError((_) =>
+                <WikidataRelation>[])),
+      );
+      for (final rels in relResults) {
+        for (final r in rels) {
+          _ingestRelation(r);
+        }
+      }
       if (!mounted) return;
-      setState(() {
-        _entries = results;
-        _buildGraph(results);
-        _loading = false;
-      });
+      setState(() => _loading = false);
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  void _addEntryAsNode(WikidataEntry e) {
+    if (_entries.containsKey(e.id)) return;
+    if (_entries.length >= _kMaxNodes) return;
+    final nodeId = _nextNodeId++;
+    _entries[e.id] = e;
+    _idToNodeId[e.id] = nodeId;
+    _graph.addNode(Node.Id(nodeId));
+  }
+
+  void _ingestRelation(WikidataRelation r) {
+    if (_entries.length >= _kMaxNodes) return;
+    // Source muss existieren.
+    if (!_entries.containsKey(r.sourceId)) return;
+    // Target ggf. anlegen (als Light-Entry).
+    if (!_entries.containsKey(r.targetId)) {
+      if (_entries.length >= _kMaxNodes) return;
+      _addEntryAsNode(WikidataEntry(
+        id: r.targetId,
+        label: r.targetLabel,
+        description: null,
+        url: 'https://www.wikidata.org/wiki/${r.targetId}',
+      ));
+    }
+    // Doppelte Edge vermeiden.
+    final exists = _relations.any((x) =>
+        x.sourceId == r.sourceId &&
+        x.targetId == r.targetId &&
+        x.propertyId == r.propertyId);
+    if (exists) return;
+    _relations.add(r);
+    final s = _idToNodeId[r.sourceId];
+    final t = _idToNodeId[r.targetId];
+    if (s == null || t == null) return;
+    _graph.addEdge(
+      _graph.nodes.firstWhere((n) => n.key!.value == s),
+      _graph.nodes.firstWhere((n) => n.key!.value == t),
+    );
+  }
+
+  Future<void> _expandNode(WikidataEntry entry) async {
+    setState(() => _loading = true);
+    try {
+      final rels = await _api.fetchWikidataRelations(entry.id);
+      for (final r in rels) {
+        _ingestRelation(r);
+      }
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _loading = false);
   }
 
   void _onSearch(String value) {
@@ -92,53 +169,77 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     });
   }
 
-  // ── Graph aufbauen ───────────────────────────────────────────────────────
-
-  void _buildGraph(List<WikidataEntry> entries) {
-    // Graph leeren
-    _graph.nodes.clear();
-    _graph.edges.clear();
-    _nodeMap.clear();
-
-    if (entries.isEmpty) return;
-
-    // Nodes erstellen — jede WikidataEntry bekommt einen Node
-    final nodes = <Node>[];
-    for (int i = 0; i < entries.length; i++) {
-      final node = Node.Id(i);
-      nodes.add(node);
-      _nodeMap[i] = entries[i];
+  _EntityType _typeOf(WikidataEntry e) {
+    final d = (e.description ?? '').toLowerCase();
+    if (d.contains('person') ||
+        d.contains('schauspiel') ||
+        d.contains('politiker') ||
+        d.contains('businessman') ||
+        d.contains('autor') ||
+        d.contains('musiker')) {
+      return _EntityType.person;
     }
-
-    // Alle Nodes zum Graph hinzufügen
-    for (final node in nodes) {
-      _graph.addNode(node);
+    if (d.contains('organisation') ||
+        d.contains('unternehmen') ||
+        d.contains('company') ||
+        d.contains('bank') ||
+        d.contains('gesellschaft') ||
+        d.contains('orden') ||
+        d.contains('group')) {
+      return _EntityType.organisation;
     }
-
-    // Kanten: jeder Node → nächster (Kette) + jeder dritte → Node 0 (Hub)
-    for (int i = 0; i < nodes.length - 1; i++) {
-      _graph.addEdge(nodes[i], nodes[i + 1]);
+    if (d.contains('stadt') ||
+        d.contains('country') ||
+        d.contains('land') ||
+        d.contains('city')) {
+      return _EntityType.location;
     }
-    // Hub-Verbindungen: alle 3 Nodes zurück zu Node 0
-    for (int i = 3; i < nodes.length; i += 3) {
-      _graph.addEdge(nodes[i], nodes[0]);
+    return _EntityType.concept;
+  }
+
+  Color _colorOf(_EntityType t) {
+    switch (t) {
+      case _EntityType.person:
+        return const Color(0xFFE53935); // Materie Rot
+      case _EntityType.organisation:
+        return const Color(0xFFFFA726); // Orange
+      case _EntityType.location:
+        return const Color(0xFF42A5F5); // Blau
+      case _EntityType.concept:
+        return const Color(0xFFAB47BC); // Lila
     }
   }
 
-  // ── Bottom Sheet bei Node-Tap ────────────────────────────────────────────
-
   void _showNodeDetail(WikidataEntry entry) {
+    final outRels = _relations.where((r) => r.sourceId == entry.id).toList();
+    final inRels = _relations.where((r) => r.targetId == entry.id).toList();
     showModalBottomSheet(
       context: context,
       backgroundColor: _kSurface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => _NodeDetailSheet(entry: entry),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.55,
+        maxChildSize: 0.92,
+        builder: (_, sc) => _NodeDetailSheet(
+          entry: entry,
+          type: _typeOf(entry),
+          color: _colorOf(_typeOf(entry)),
+          outRels: outRels,
+          inRels: inRels,
+          scrollController: sc,
+          onExpand: () async {
+            Navigator.pop(ctx);
+            await _expandNode(entry);
+          },
+          onResolveLabel: (id) => _entries[id]?.label,
+        ),
+      ),
     );
   }
-
-  // ── UI ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -148,12 +249,9 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
         world: WBWorld.materie,
         title: 'Verschwörungs-Netzwerk',
         actions: [
-          // Graph / Liste togglen
           IconButton(
-            icon: Icon(
-              _showGraph ? Icons.list : Icons.bubble_chart,
-              color: _kAccent,
-            ),
+            icon: Icon(_showGraph ? Icons.list : Icons.bubble_chart,
+                color: _kAccent),
             tooltip: _showGraph ? 'Listenansicht' : 'Graphansicht',
             onPressed: () => setState(() => _showGraph = !_showGraph),
           ),
@@ -163,17 +261,32 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
         children: [
           _buildSearchBar(),
           _buildChips(),
+          _buildLegend(),
           Expanded(
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator(color: _kAccent),
-                  )
+                    child: CircularProgressIndicator(color: _kAccent))
                 : _entries.isEmpty
                     ? _buildEmpty()
                     : _showGraph
                         ? _buildGraphView()
                         : _buildListView(),
           ),
+          if (_entries.isNotEmpty)
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              color: Colors.black54,
+              child: Row(
+                children: [
+                  Text(
+                    '${_entries.length}/$_kMaxNodes Knoten - ${_relations.length} Kanten',
+                    style: const TextStyle(
+                        color: Colors.white60, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -186,7 +299,7 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
         controller: _searchCtrl,
         style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          hintText: 'Thema suchen …',
+          hintText: 'Thema suchen ...',
           hintStyle: const TextStyle(color: Colors.white38),
           prefixIcon: const Icon(Icons.search, color: _kAccent),
           filled: true,
@@ -228,8 +341,7 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
                 color: active ? _kAccent : _kSurface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: active ? _kAccent : Colors.white12,
-                ),
+                    color: active ? _kAccent : Colors.white12),
               ),
               child: Text(
                 seed,
@@ -247,27 +359,63 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     );
   }
 
-  // ── Graphansicht ─────────────────────────────────────────────────────────
+  Widget _buildLegend() {
+    Widget chip(String label, Color c) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 4),
+            Text(label,
+                style: const TextStyle(color: Colors.white70, fontSize: 10)),
+          ],
+        );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Wrap(
+        spacing: 12,
+        children: [
+          chip('Person', _colorOf(_EntityType.person)),
+          chip('Organisation', _colorOf(_EntityType.organisation)),
+          chip('Ort', _colorOf(_EntityType.location)),
+          chip('Konzept', _colorOf(_EntityType.concept)),
+        ],
+      ),
+    );
+  }
 
   Widget _buildGraphView() {
     return InteractiveViewer(
       constrained: false,
-      boundaryMargin: const EdgeInsets.all(200),
-      minScale: 0.2,
+      boundaryMargin: const EdgeInsets.all(240),
+      minScale: 0.15,
       maxScale: 3.0,
       child: GraphView(
         graph: _graph,
         algorithm: _algorithm,
         paint: Paint()
-          ..color = _kAccent.withOpacity(0.5)
-          ..strokeWidth = 1.2
+          ..color = _kAccent.withValues(alpha: 0.45)
+          ..strokeWidth = 1.1
           ..style = PaintingStyle.stroke,
         builder: (Node node) {
           final id = node.key!.value as int;
-          final entry = _nodeMap[id];
-          if (entry == null) return const SizedBox.shrink();
+          final entry = _entries.entries
+              .firstWhere(
+                (e) => _idToNodeId[e.key] == id,
+                orElse: () => MapEntry(
+                    '',
+                    const WikidataEntry(
+                        id: '', label: '?', url: '')),
+              )
+              .value;
+          final type = _typeOf(entry);
+          final color = _colorOf(type);
           return _GraphNode(
             entry: entry,
+            color: color,
             onTap: () => _showNodeDetail(entry),
           );
         },
@@ -275,9 +423,8 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     );
   }
 
-  // ── Listenansicht ────────────────────────────────────────────────────────
-
   Widget _buildListView() {
+    final list = _entries.values.toList();
     return GridView.builder(
       padding: const EdgeInsets.all(12),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -286,52 +433,53 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
       ),
-      itemCount: _entries.length,
-      itemBuilder: (_, i) => _ListCard(
-        entry: _entries[i],
-        onTap: () => _showNodeDetail(_entries[i]),
-      ),
+      itemCount: list.length,
+      itemBuilder: (_, i) {
+        final e = list[i];
+        final t = _typeOf(e);
+        return _ListCard(
+          entry: e,
+          color: _colorOf(t),
+          onTap: () => _showNodeDetail(e),
+        );
+      },
     );
   }
 
   Widget _buildEmpty() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.hub_outlined, color: Colors.white24, size: 64),
-          const SizedBox(height: 12),
-          const Text(
-            'Keine Ergebnisse',
-            style: TextStyle(color: Colors.white38, fontSize: 16),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Wähle ein Thema oder suche manuell.',
-            style: TextStyle(color: Colors.white24, fontSize: 13),
-          ),
+          SizedBox(height: 12),
+          Text('Keine Ergebnisse',
+              style: TextStyle(color: Colors.white38, fontSize: 16)),
+          SizedBox(height: 6),
+          Text('Waehle ein Thema oder suche manuell.',
+              style: TextStyle(color: Colors.white24, fontSize: 13)),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Graph-Node-Widget
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _GraphNode extends StatelessWidget {
   final WikidataEntry entry;
+  final Color color;
   final VoidCallback onTap;
 
-  const _GraphNode({required this.entry, required this.onTap});
+  const _GraphNode({
+    required this.entry,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final label = entry.label.length > 14
-        ? '${entry.label.substring(0, 13)}…'
+        ? '${entry.label.substring(0, 13)}...'
         : entry.label;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -340,10 +488,10 @@ class _GraphNode extends StatelessWidget {
         decoration: BoxDecoration(
           color: _kSurface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _kAccent, width: 1.4),
+          border: Border.all(color: color, width: 1.4),
           boxShadow: [
             BoxShadow(
-              color: _kAccent.withOpacity(0.35),
+              color: color.withValues(alpha: 0.35),
               blurRadius: 8,
               spreadRadius: 1,
             ),
@@ -367,15 +515,16 @@ class _GraphNode extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Listen-Karte
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _ListCard extends StatelessWidget {
   final WikidataEntry entry;
+  final Color color;
   final VoidCallback onTap;
 
-  const _ListCard({required this.entry, required this.onTap});
+  const _ListCard({
+    required this.entry,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -385,10 +534,10 @@ class _ListCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: _kSurface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _kAccent.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
           boxShadow: [
             BoxShadow(
-              color: _kAccent.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -402,11 +551,11 @@ class _ListCard extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: _kAccent.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
-                border: Border.all(color: _kAccent, width: 1.2),
+                border: Border.all(color: color, width: 1.2),
               ),
-              child: const Icon(Icons.hub, color: _kAccent, size: 16),
+              child: Icon(Icons.hub, color: color, size: 16),
             ),
             const SizedBox(height: 8),
             Text(
@@ -436,24 +585,48 @@ class _ListCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Node-Detail Bottom Sheet
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _NodeDetailSheet extends StatelessWidget {
   final WikidataEntry entry;
+  final _EntityType type;
+  final Color color;
+  final List<WikidataRelation> outRels;
+  final List<WikidataRelation> inRels;
+  final ScrollController scrollController;
+  final Future<void> Function() onExpand;
+  final String? Function(String id) onResolveLabel;
 
-  const _NodeDetailSheet({required this.entry});
+  const _NodeDetailSheet({
+    required this.entry,
+    required this.type,
+    required this.color,
+    required this.outRels,
+    required this.inRels,
+    required this.scrollController,
+    required this.onExpand,
+    required this.onResolveLabel,
+  });
+
+  String _typeLabel(_EntityType t) {
+    switch (t) {
+      case _EntityType.person:
+        return 'Person';
+      case _EntityType.organisation:
+        return 'Organisation';
+      case _EntityType.location:
+        return 'Ort';
+      case _EntityType.concept:
+        return 'Konzept';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
+      controller: scrollController,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Drag handle
           Center(
             child: Container(
               width: 40,
@@ -465,70 +638,157 @@ class _NodeDetailSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Icon + Titel
           Row(
             children: [
               Container(
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: _kAccent.withOpacity(0.15),
+                  color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
-                  border: Border.all(color: _kAccent, width: 1.5),
+                  border: Border.all(color: color, width: 1.5),
                 ),
-                child:
-                    const Icon(Icons.hub, color: _kAccent, size: 20),
+                child: Icon(Icons.hub, color: color, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  entry.label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(_typeLabel(type),
+                          style: TextStyle(
+                              color: color,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.8)),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          // Wikidata-ID
-          Text(
-            'ID: ${entry.id}',
-            style:
-                const TextStyle(color: Colors.white38, fontSize: 12),
-          ),
+          Text('ID: ${entry.id}',
+              style:
+                  const TextStyle(color: Colors.white38, fontSize: 12)),
           if (entry.description != null && entry.description!.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(
-              entry.description!,
-              style:
-                  const TextStyle(color: Colors.white70, fontSize: 14),
-            ),
+            Text(entry.description!,
+                style:
+                    const TextStyle(color: Colors.white70, fontSize: 14)),
+          ],
+          if (outRels.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            const Text('Verbindungen',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2)),
+            const SizedBox(height: 6),
+            ...outRels.map((r) => _relTile(r, outgoing: true)),
+          ],
+          if (inRels.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text('Eingehende Verbindungen',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2)),
+            const SizedBox(height: 6),
+            ...inRels.map((r) => _relTile(r, outgoing: false)),
           ],
           const SizedBox(height: 18),
-          // Wikidata-Link
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.account_tree_outlined, size: 16),
+                  label: const Text('Netzwerk erweitern'),
+                  onPressed: onExpand,
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              icon: const Icon(Icons.open_in_new, size: 16),
-              label: const Text('Auf Wikidata öffnen'),
-              onPressed: () async {
-                final uri = Uri.parse(entry.url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri,
-                      mode: LaunchMode.externalApplication);
-                }
-              },
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: color,
+                    side: BorderSide(color: color),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.open_in_new, size: 14),
+                  label: const Text('Wikidata'),
+                  onPressed: () async {
+                    final uri = Uri.parse(entry.url);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _relTile(WikidataRelation r, {required bool outgoing}) {
+    final otherId = outgoing ? r.targetId : r.sourceId;
+    final otherLabel =
+        outgoing ? r.targetLabel : (onResolveLabel(r.sourceId) ?? r.sourceId);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            outgoing ? Icons.arrow_forward : Icons.arrow_back,
+            color: Colors.white38,
+            size: 14,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                children: [
+                  TextSpan(
+                      text: r.propertyLabel,
+                      style: TextStyle(
+                          color: _kAccent.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.bold)),
+                  const TextSpan(text: '  '),
+                  TextSpan(text: otherLabel),
+                  TextSpan(
+                      text: '  ($otherId)',
+                      style: const TextStyle(
+                          color: Colors.white38, fontSize: 10)),
+                ],
+              ),
             ),
           ),
         ],
