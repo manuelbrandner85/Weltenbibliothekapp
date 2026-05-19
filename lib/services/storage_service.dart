@@ -115,7 +115,7 @@ class StorageService {
     // v99: nach lokalem Speichern Profil sofort nach Supabase pushen,
     // damit es im Admin-Dashboard mit Echtdaten erscheint.
     // Best-effort -- bei Netzfehler bleibt es trotzdem lokal gespeichert.
-    unawaited(ProfileSyncService.instance.syncMaterieProfile(profile));
+    unawaited(SupabaseProfileSync.instance.syncMaterieProfile(profile));
   }
 
   MaterieProfile? getMaterieProfile() {
@@ -147,7 +147,7 @@ class StorageService {
   Future<void> saveEnergieProfile(EnergieProfile profile) async {
     final prefs = await _ensurePrefs();
     await prefs.setString(_kEnergieProfile, jsonEncode(profile.toJson()));
-    unawaited(ProfileSyncService.instance.syncEnergieProfile(profile));
+    unawaited(SupabaseProfileSync.instance.syncEnergieProfile(profile));
   }
 
   EnergieProfile? getEnergieProfile() {
