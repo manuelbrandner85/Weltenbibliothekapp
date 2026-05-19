@@ -64,6 +64,10 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     final wb = context.wb;
     final palette = wb.palette(world);
     final bottomHeight = bottom?.preferredSize.height ?? 0.0;
+    // v5.44.6: theme-aware Title/Icon-Farbe. Im Dark-Mode weiss,
+    // im Light-Mode dunkel (sonst unsichtbar auf weiss-frosted Glas).
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final onGlassColor = isLight ? const Color(0xFF1A1A2E) : Colors.white;
 
     return ClipRect(
       child: BackdropFilter(
@@ -85,8 +89,7 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
                             leading!
                           else if (Navigator.of(context).canPop())
                             IconButton(
-                              icon: const Icon(Icons.arrow_back,
-                                  color: Colors.white),
+                              icon: Icon(Icons.arrow_back, color: onGlassColor),
                               onPressed: () =>
                                   Navigator.of(context).maybePop(),
                             )
@@ -102,12 +105,12 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
                                       ? const SizedBox.shrink()
                                       : Text(
                                           title!,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontFamily: 'Inter',
                                             fontWeight: FontWeight.w400,
                                             fontSize: 16,
                                             letterSpacing: 0.4,
-                                            color: Colors.white,
+                                            color: onGlassColor,
                                           ),
                                         )),
                             ),

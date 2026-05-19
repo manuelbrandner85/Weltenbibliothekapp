@@ -1113,7 +1113,13 @@ export default {
           httpMetadata: { contentType: file.type || 'audio/m4a' },
         });
         const publicUrl = `https://pub-${env.CF_ACCOUNT_ID || 'unknown'}.r2.dev/${key}`;
-        return jsonResponse({ url: publicUrl, key });
+        // v5.44.7: media_url als kanonisches Feld - Client erwartet das.
+        // url bleibt fuer Rueckwaertskompatibilitaet.
+        return jsonResponse({
+          media_url: publicUrl,
+          url: publicUrl,
+          key,
+        });
       } catch (e) {
         return errorResponse(`Voice-Upload-Fehler: ${e.message}`);
       }
@@ -3578,9 +3584,13 @@ export default {
         const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${fileName}`;
 
         // Avatar-URL auch in profiles.avatar_url speichern
+        // v5.44.7: InvisibleAuth-User haben TEXT-id (user_<ts>_<rand>),
+        // nicht UUID - patche dann via legacy_user_id statt id.
         if (userId && userId !== 'unknown') {
+          const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+          const lookupCol = looksLikeUuid ? 'id' : 'legacy_user_id';
           await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+            `${SUPABASE_URL}/rest/v1/profiles?${lookupCol}=eq.${encodeURIComponent(userId)}`,
             {
               method: 'PATCH',
               headers: {
@@ -3594,7 +3604,16 @@ export default {
           ).catch(() => null);
         }
 
-        return jsonResponse({ avatar_url: publicUrl, url: publicUrl, path: fileName, ...data });
+        // v5.44.7: media_url als kanonisches Feld (Client erwartet das,
+        // siehe image_upload_service.dart Zeile 81). avatar_url + url
+        // bleiben fuer Rueckwaertskompatibilitaet.
+        return jsonResponse({
+          media_url: publicUrl,
+          avatar_url: publicUrl,
+          url: publicUrl,
+          path: fileName,
+          ...data,
+        });
       } catch (e) {
         return errorResponse(`Avatar-Upload-Fehler: ${e.message}`);
       }
@@ -3622,7 +3641,13 @@ export default {
           httpMetadata: { contentType: file.type },
         });
         const publicUrl = `https://pub-${env.CF_ACCOUNT_ID || 'unknown'}.r2.dev/${key}`;
-        return jsonResponse({ url: publicUrl, key });
+        // v5.44.7: media_url als kanonisches Feld - Client erwartet das.
+        // url bleibt fuer Rueckwaertskompatibilitaet.
+        return jsonResponse({
+          media_url: publicUrl,
+          url: publicUrl,
+          key,
+        });
       } catch (e) {
         return errorResponse(`Upload-Fehler: ${e.message}`);
       }
