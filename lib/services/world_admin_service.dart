@@ -269,23 +269,25 @@ class WorldAdminService {
 
     // FALLBACK: direkt Supabase (funktioniert nur wenn RLS auf profiles
     // breit genug ist oder der eingeloggte User SELECT-Recht auf alle Rows hat).
+    // v5.45+ avatar_emoji + legacy_user_id mit drin, damit Web- und
+    // InvisibleAuth-User identisch dargestellt werden.
     if (raw == null) {
       try {
         raw = {'rows': await supabase
             .from('profiles')
-            .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference,last_seen_at')
+            .select('id,username,display_name,full_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,world_preference,last_seen_at,legacy_user_id')
             .order('created_at', ascending: false)
-            .limit(500)};
+            .limit(5000)};
       } on PostgrestException catch (e) {
-        if (e.code == '42703' || e.message.contains('last_seen_at')) {
-          if (kDebugMode) debugPrint('⚠️ last_seen_at fehlt — Fallback ohne Online-Status');
+        if (e.code == '42703' || e.message.contains('last_seen_at') || e.message.contains('legacy_user_id') || e.message.contains('avatar_emoji')) {
+          if (kDebugMode) debugPrint('⚠️ Optional-Spalte fehlt — minimaler Fallback');
           hasLastSeen = false;
           try {
             raw = {'rows': await supabase
                 .from('profiles')
                 .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
                 .order('created_at', ascending: false)
-                .limit(500)};
+                .limit(5000)};
           } catch (e2) {
             if (kDebugMode) debugPrint('❌ getAllUsers Fallback-Fehler: $e2');
             return const [];
@@ -304,20 +306,32 @@ class WorldAdminService {
       final result = raw['rows'] as List<dynamic>;
       final users = result
           .map((u) => Map<String, dynamic>.from(u as Map))
+          // System-Profile (00000000-...) ausfiltern. KEINE Filterung mehr
+          // nach role='system' weil das echte User mit administrativen Rollen
+          // ausschloss (matched Worker-Verhalten seit v5.44.7).
           .where((u) => !(u['id'] as String? ?? '').startsWith('00000000-'))
-          .where((u) => (u['role'] as String? ?? 'user') != 'system')
-          .map((u) => WorldUser(
-                profileId: u['id'] as String? ?? '',
-                userId: u['id'] as String? ?? '',
-                username: u['username'] as String? ?? 'Unbekannt',
-                displayName: u['display_name'] as String?,
-                role: u['role'] as String? ?? 'user',
-                avatarUrl: u['avatar_url'] as String?,
-                avatarEmoji: null,
-                createdAt: u['created_at'] as String? ?? '',
-                lastSeenAt: hasLastSeen ? u['last_seen_at'] as String? : null,
-              )
-                ..world = (u['world'] as String?) ?? (u['world_preference'] as String?))
+          .map((u) {
+            final id = (u['id'] as String?) ?? '';
+            final legacy = u['legacy_user_id'] as String?;
+            final username = (u['username'] as String?)?.trim().isNotEmpty == true
+                ? u['username'] as String
+                : '(ohne Username)';
+            return WorldUser(
+              profileId: id,
+              // Aktionen brauchen einen nicht-leeren userId. Bevorzuge UUID,
+              // sonst legacy_user_id (InvisibleAuth). Sonst Profile-ID.
+              userId: id.isNotEmpty ? id : (legacy ?? ''),
+              username: username,
+              displayName: (u['display_name'] as String?) ?? (u['full_name'] as String?),
+              role: u['role'] as String? ?? 'user',
+              avatarUrl: u['avatar_url'] as String?,
+              avatarEmoji: u['avatar_emoji'] as String?,
+              createdAt: u['created_at'] as String? ?? '',
+              lastSeenAt: hasLastSeen ? u['last_seen_at'] as String? : null,
+              legacyUserId: legacy,
+              isSuspended: u['is_banned'] as bool? ?? false,
+            )..world = (u['world'] as String?) ?? (u['world_preference'] as String?);
+          })
           .toList();
 
       const order = {'root_admin': 0, 'admin': 1, 'moderator': 2, 'content_editor': 3, 'user': 4};
@@ -550,6 +564,9 @@ class WorldUser {
   final String? suspensionReason;
   // 🟢 Online-Status: ISO-Timestamp des letzten Heartbeats.
   final String? lastSeenAt;
+  // 🔑 InvisibleAuth legacy ID (client-generated `user_<ts>_<rand>`).
+  // null wenn User ueber Supabase Auth (Web) registriert wurde.
+  final String? legacyUserId;
 
   WorldUser({
     required this.profileId,
@@ -564,12 +581,18 @@ class WorldUser {
     this.isSuspended = false,
     this.suspensionReason,
     this.lastSeenAt,
+    this.legacyUserId,
   });
 
   factory WorldUser.fromJson(Map<String, dynamic> json) {
+    final id = json['profile_id'] as String? ?? json['profileId'] as String? ?? '';
+    final legacy = json['legacy_user_id'] as String? ?? json['legacyUserId'] as String?;
     return WorldUser(
-      profileId: json['profile_id'] as String? ?? json['profileId'] as String? ?? '',
-      userId: json['user_id'] as String? ?? json['userId'] as String? ?? '',
+      profileId: id,
+      // userId fuer Aktionen: wenn UUID vorhanden, nimm die. Sonst InvisibleAuth-ID.
+      userId: (json['user_id'] as String?)?.isNotEmpty == true
+          ? json['user_id'] as String
+          : (id.isNotEmpty ? id : (legacy ?? '')),
       username: json['username'] as String? ?? '',
       role: json['role'] as String? ?? 'user',
       displayName: json['display_name'] as String? ?? json['displayName'] as String?,
@@ -579,12 +602,23 @@ class WorldUser {
       world: json['world'] as String?,
       isSuspended: json['is_suspended'] as bool? ?? json['is_banned'] as bool? ?? false,
       suspensionReason: json['suspension_reason'] as String? ?? json['ban_reason'] as String?,
+      lastSeenAt: json['last_seen_at'] as String? ?? json['lastSeenAt'] as String?,
+      legacyUserId: legacy,
     );
   }
 
   bool get isAdmin => role == 'admin' || role == 'root_admin';
   bool get isRootAdmin => role == 'root_admin';
-  
+
+  /// Herkunft des Profils: 'web' wenn ueber Supabase-Auth (UUID id),
+  /// 'app' wenn nur InvisibleAuth-Legacy-ID, 'unknown' fallback.
+  String get source {
+    final hasUuid = profileId.length >= 32 && profileId.contains('-');
+    if (hasUuid) return 'web';
+    if ((legacyUserId ?? '').isNotEmpty || profileId.startsWith('user_')) return 'app';
+    return 'unknown';
+  }
+
   /// World label for display
   String get worldLabel {
     if (world == 'materie') return 'Materie';

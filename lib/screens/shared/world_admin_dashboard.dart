@@ -652,8 +652,12 @@ class _UsersTabState extends State<_UsersTab> {
   List<WorldUser> _filtered = [];
   bool _loading = true;
   bool _processing = false;
+  String? _errorMessage;
+  DateTime? _lastLoadedAt;
   String _search = '';
   String _roleFilter = 'all';
+  String _sourceFilter = 'all'; // 'all' | 'web' | 'app'
+  String _sortMode = 'role'; // 'role' | 'newest' | 'oldest' | 'az' | 'online'
   final _searchCtrl = TextEditingController();
 
   // Bulk-Selection — UserIDs der angehakten User. Bulk-Action-Bar erscheint
@@ -698,29 +702,40 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _load() async {
-    if (mounted) setState(() => _loading = true);
+    if (mounted) setState(() { _loading = true; _errorMessage = null; });
     try {
-      // ✅ FIX: Lade ALLE User aus beiden Welten
       final users = await WorldAdminService.getAllUsers();
       if (mounted) {
         setState(() {
           _all = users;
+          _lastLoadedAt = DateTime.now();
           _applyFilter();
           _loading = false;
+          if (users.isEmpty) {
+            _errorMessage = 'Keine Profile gefunden. Pruefe Worker + Service-Role-Key.';
+          }
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _loading = false);
-        _snack('❌ Fehler beim Laden: ${e.toString().substring(0, 60)}');
+        final msg = e.toString();
+        setState(() {
+          _loading = false;
+          _errorMessage = 'Laden fehlgeschlagen: ${msg.length > 120 ? '${msg.substring(0, 120)}...' : msg}';
+        });
       }
     }
   }
 
   void _applyFilter() {
     var list = _all;
-    if (_roleFilter != 'all') {
+    if (_roleFilter == 'banned') {
+      list = list.where((u) => u.isSuspended).toList();
+    } else if (_roleFilter != 'all') {
       list = list.where((u) => u.role == _roleFilter).toList();
+    }
+    if (_sourceFilter != 'all') {
+      list = list.where((u) => u.source == _sourceFilter).toList();
     }
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
@@ -728,7 +743,40 @@ class _UsersTabState extends State<_UsersTab> {
           u.username.toLowerCase().contains(q) ||
           (u.displayName ?? '').toLowerCase().contains(q)).toList();
     }
-    _filtered = list;
+    // Sortier-Mode anwenden (nicht-mutativ, Kopie).
+    final sortable = [...list];
+    switch (_sortMode) {
+      case 'newest':
+        sortable.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+      case 'oldest':
+        sortable.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        break;
+      case 'az':
+        sortable.sort((a, b) =>
+            a.username.toLowerCase().compareTo(b.username.toLowerCase()));
+        break;
+      case 'online':
+        sortable.sort((a, b) {
+          final ad = a.lastSeenAt ?? '';
+          final bd = b.lastSeenAt ?? '';
+          return bd.compareTo(ad);
+        });
+        break;
+      case 'role':
+      default:
+        // Default-Sortierung aus dem Service ist bereits Rollen-basiert.
+        break;
+    }
+    _filtered = sortable;
+  }
+
+  String _formatRelative(DateTime ts) {
+    final diff = DateTime.now().difference(ts);
+    if (diff.inSeconds < 60) return 'gerade eben';
+    if (diff.inMinutes < 60) return 'vor ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'vor ${diff.inHours} h';
+    return 'vor ${diff.inDays} Tagen';
   }
 
   void _snack(String msg, {Color? color}) {
@@ -1087,11 +1135,12 @@ class _UsersTabState extends State<_UsersTab> {
             color: const Color(0xFF0D0D1A),
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
             child: Column(children: [
-              // User count badge
-              if (!_loading)
+              // User count + Quellen-Aufschluesselung + Refresh-Hint
+              if (!_loading) ...[
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(children: [
+                    // Hauptzahl: X von Y -- klar verstaendlich
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -1100,22 +1149,54 @@ class _UsersTabState extends State<_UsersTab> {
                         border: Border.all(color: widget.accent.withValues(alpha: 0.3)),
                       ),
                       child: Text(
-                        '${_filtered.length} Nutzer',
-                        style: TextStyle(color: widget.accent, fontSize: 12, fontWeight: FontWeight.w600),
+                        _filtered.length == _all.length
+                            ? '${_all.length} Nutzer'
+                            : '${_filtered.length} von ${_all.length}',
+                        style: TextStyle(
+                            color: widget.accent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Quellen-Aufschluesselung
+                    Tooltip(
+                      message: 'Web-Profile (via Anmeldung)',
+                      child: _MiniPill(
+                        label: '🌐 ${_all.where((u) => u.source == 'web').length}',
+                        color: const Color(0xFF4FC3F7),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message: 'App-Profile (InvisibleAuth)',
+                      child: _MiniPill(
+                        label: '📱 ${_all.where((u) => u.source == 'app').length}',
+                        color: const Color(0xFF81C784),
                       ),
                     ),
                     const Spacer(),
+                    if (_lastLoadedAt != null)
+                      Text(
+                        'Aktualisiert ${_formatRelative(_lastLoadedAt!)}',
+                        style: const TextStyle(color: Colors.white38, fontSize: 10),
+                      ),
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: _load,
                       child: Row(children: [
-                        Icon(Icons.refresh_rounded, color: Colors.white38, size: 14),
-                        const SizedBox(width: 4),
-                        const Text('Aktualisieren',
-                            style: TextStyle(color: Colors.white38, fontSize: 11)),
+                        Icon(Icons.refresh_rounded, color: Colors.white54, size: 14),
+                        const SizedBox(width: 3),
+                        const Text('Neu laden',
+                            style: TextStyle(color: Colors.white54, fontSize: 11)),
                       ]),
                     ),
                   ]),
                 ),
+                // Fehler-Banner mit Retry, falls Last-Load fehlgeschlagen ist
+                if (_errorMessage != null)
+                  _ErrorBanner(message: _errorMessage!, onRetry: _load),
+              ],
               // Search field
               TextField(
                 controller: _searchCtrl,
@@ -1191,6 +1272,61 @@ class _UsersTabState extends State<_UsersTab> {
                   }).toList(),
                 ),
               ),
+              const SizedBox(height: 6),
+              // Source filter (Web / App) + Sort-Dropdown
+              Row(children: [
+                _ToggleChip(
+                  label: 'Alle',
+                  selected: _sourceFilter == 'all',
+                  accent: widget.accent,
+                  accentBright: widget.accentBright,
+                  onTap: () => setState(() { _sourceFilter = 'all'; _applyFilter(); }),
+                ),
+                const SizedBox(width: 6),
+                _ToggleChip(
+                  label: '🌐 Web',
+                  selected: _sourceFilter == 'web',
+                  accent: widget.accent,
+                  accentBright: widget.accentBright,
+                  onTap: () => setState(() { _sourceFilter = 'web'; _applyFilter(); }),
+                ),
+                const SizedBox(width: 6),
+                _ToggleChip(
+                  label: '📱 App',
+                  selected: _sourceFilter == 'app',
+                  accent: widget.accent,
+                  accentBright: widget.accentBright,
+                  onTap: () => setState(() { _sourceFilter = 'app'; _applyFilter(); }),
+                ),
+                const Spacer(),
+                // Sort-Dropdown
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _sortMode,
+                      dropdownColor: const Color(0xFF1A1A2E),
+                      iconEnabledColor: Colors.white54,
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      isDense: true,
+                      items: const [
+                        DropdownMenuItem(value: 'role', child: Text('↕ Rolle')),
+                        DropdownMenuItem(value: 'newest', child: Text('🕒 Neueste')),
+                        DropdownMenuItem(value: 'oldest', child: Text('📜 Aelteste')),
+                        DropdownMenuItem(value: 'az', child: Text('🔤 A-Z')),
+                        DropdownMenuItem(value: 'online', child: Text('🟢 Online zuerst')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setState(() { _sortMode = v; _applyFilter(); });
+                      },
+                    ),
+                  ),
+                ),
+              ]),
             ]),
           ),
 
@@ -1202,7 +1338,14 @@ class _UsersTabState extends State<_UsersTab> {
                     onRefresh: _load,
                     color: widget.accent,
                     child: _filtered.isEmpty
-                        ? _EmptyHint('Keine Nutzer gefunden.\nProbiere einen anderen Filter.')
+                        ? ListView(children: [
+                            const SizedBox(height: 40),
+                            _EmptyHint(
+                              _all.isEmpty
+                                  ? 'Noch keine Profile geladen.\nZiehe nach unten zum Aktualisieren.'
+                                  : 'Keine Treffer bei den aktuellen Filtern.\nLeere Suche oder waehle "Alle".',
+                            ),
+                          ])
                         : ListView.builder(
                             itemCount: _filtered.length,
                             padding: EdgeInsets.only(top: 4, bottom: _selectedIds.isNotEmpty ? 90 : 16),
@@ -1254,6 +1397,11 @@ class _UsersTabState extends State<_UsersTab> {
               count: _selectedIds.length,
               accent: widget.accent,
               accentBright: widget.accentBright,
+              onSelectAll: () => setState(() {
+                _selectedIds
+                  ..clear()
+                  ..addAll(_filtered.map((u) => u.userId).where((id) => id.isNotEmpty));
+              }),
               onPromote: _bulkPromote,
               onDemote: _bulkDemote,
               onBan: _bulkBan,
@@ -1262,17 +1410,22 @@ class _UsersTabState extends State<_UsersTab> {
             ),
           ),
 
-        // Processing overlay
+        // Processing overlay -- AbsorbPointer blockiert Doppel-Taps
         if (_processing)
-          Container(
-            color: Colors.black54,
-            child: Center(
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                CircularProgressIndicator(color: widget.accent),
-                const SizedBox(height: 16),
-                const Text('Wird verarbeitet…',
-                    style: TextStyle(color: Colors.white70)),
-              ]),
+          Positioned.fill(
+            child: AbsorbPointer(
+              absorbing: true,
+              child: Container(
+                color: Colors.black54,
+                child: Center(
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    CircularProgressIndicator(color: widget.accent),
+                    const SizedBox(height: 16),
+                    const Text('Wird verarbeitet…',
+                        style: TextStyle(color: Colors.white70)),
+                  ]),
+                ),
+              ),
             ),
           ),
       ],
@@ -1918,6 +2071,121 @@ class _EmptyHint extends StatelessWidget {
       );
 }
 
+// ── Kompakter Toggle-Chip fuer Source-Filter / Sub-Filter ────────────────
+class _ToggleChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color accent;
+  final Color accentBright;
+  final VoidCallback onTap;
+  const _ToggleChip({
+    required this.label,
+    required this.selected,
+    required this.accent,
+    required this.accentBright,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? accent.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? accent : Colors.transparent,
+            width: 1.2,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? accentBright : Colors.white54,
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Wiederverwendbare Mini-Pille fuer Welt/Quelle/Status-Badges ──────────
+class _MiniPill extends StatelessWidget {
+  final String label;
+  final Color color;
+  final String? tooltip;
+  const _MiniPill({required this.label, required this.color, this.tooltip});
+
+  @override
+  Widget build(BuildContext context) {
+    final pill = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+    if (tooltip != null) return Tooltip(message: tooltip!, child: pill);
+    return pill;
+  }
+}
+
+// ── Fehler-Banner mit Retry-Button (User-Tab + Audit-Tab) ────────────────
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorBanner({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.35)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text('Erneut'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent.withValues(alpha: 0.85),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: const Size(0, 32),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ]),
+      );
+}
+
 // ── Klickbare Statistik-Karte ─────────────────────────────────────────────
 class _ClickableStatCard extends StatelessWidget {
   final IconData icon;
@@ -2144,7 +2412,7 @@ class _UserTile extends StatelessWidget {
                 child: Text(
                   user.avatarEmoji?.isNotEmpty == true
                       ? user.avatarEmoji!
-                      : user.username[0].toUpperCase(),
+                      : (user.username.isEmpty ? '?' : user.username[0].toUpperCase()),
                   style: const TextStyle(fontSize: 18),
                 ),
               ),
@@ -2159,35 +2427,32 @@ class _UserTile extends StatelessWidget {
           title: Text(user.displayName ?? user.username,
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-          subtitle: Row(
+          subtitle: Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text('@${user.username}',
                   style: TextStyle(color: accent.withValues(alpha: 0.7), fontSize: 11)),
-              if (user.world != null) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: user.world == 'materie'
-                        ? Colors.orange.withValues(alpha: 0.15)
-                        : Colors.teal.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: user.world == 'materie'
-                          ? Colors.orange.withValues(alpha: 0.4)
-                          : Colors.teal.withValues(alpha: 0.4),
-                    ),
-                  ),
-                  child: Text(
-                    user.world == 'materie' ? 'M' : 'E',
-                    style: TextStyle(
-                      color: user.world == 'materie' ? Colors.orange : Colors.teal,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+              if (user.world != null)
+                _MiniPill(
+                  label: user.world == 'materie' ? 'M' : 'E',
+                  color: user.world == 'materie' ? Colors.orange : Colors.teal,
+                  tooltip: user.world == 'materie' ? 'Materie-Welt' : 'Energie-Welt',
                 ),
-              ],
+              // 🔑 Herkunfts-Badge: Web (Supabase-Auth) vs. App (InvisibleAuth)
+              if (user.source == 'web')
+                const _MiniPill(
+                  label: '🌐 Web',
+                  color: Color(0xFF4FC3F7),
+                  tooltip: 'Profil ueber Web-Anmeldung erstellt',
+                )
+              else if (user.source == 'app')
+                const _MiniPill(
+                  label: '📱 App',
+                  color: Color(0xFF81C784),
+                  tooltip: 'Profil ueber die Flutter-App erstellt',
+                ),
             ],
           ),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -2365,6 +2630,7 @@ class _BulkActionBar extends StatelessWidget {
   final VoidCallback onBan;
   final VoidCallback onUnban;
   final VoidCallback onClear;
+  final VoidCallback? onSelectAll;
   const _BulkActionBar({
     required this.count,
     required this.accent,
@@ -2374,6 +2640,7 @@ class _BulkActionBar extends StatelessWidget {
     required this.onBan,
     required this.onUnban,
     required this.onClear,
+    this.onSelectAll,
   });
 
   @override
@@ -2406,7 +2673,20 @@ class _BulkActionBar extends StatelessWidget {
               child: Text('$count ausgewählt',
                   style: TextStyle(color: accentBright, fontSize: 12, fontWeight: FontWeight.w700)),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
+            if (onSelectAll != null) ...[
+              TextButton.icon(
+                onPressed: onSelectAll,
+                icon: const Icon(Icons.select_all_rounded, size: 16, color: Colors.white70),
+                label: const Text('Alle waehlen',
+                    style: TextStyle(color: Colors.white70, fontSize: 11)),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: const Size(0, 28),
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
             _ActionBtn(Icons.arrow_upward, 'Befördern', Colors.green, onPromote),
             const SizedBox(width: 6),
             _ActionBtn(Icons.arrow_downward, 'Degradieren', Colors.orange, onDemote),

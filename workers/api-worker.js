@@ -2661,11 +2661,11 @@ export default {
           // Always use both world and world_preference to catch all profiles
           // Use OR filter: world=materie OR world_preference=materie
           const res1 = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at&world=eq.${world}&order=created_at.desc&limit=200`,  // avatar_emoji now exists after migration v14
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,full_name,role,is_banned,avatar_url,avatar_emoji,created_at,legacy_user_id,last_seen_at&world=eq.${world}&order=created_at.desc&limit=5000`,  // avatar_emoji now exists after migration v14
             { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
           );
           const res2 = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at&world_preference=eq.${world}&order=created_at.desc&limit=200`,  // avatar_emoji now exists after migration v14
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,full_name,role,is_banned,avatar_url,avatar_emoji,created_at,legacy_user_id,last_seen_at&world_preference=eq.${world}&order=created_at.desc&limit=5000`,  // avatar_emoji now exists after migration v14
             { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
           );
           const data1 = await res1.json().catch(() => []);
@@ -2676,10 +2676,14 @@ export default {
           const unique = allProfiles.filter(u => { if (seen.has(u.id)) return false; seen.add(u.id); return true; });
           const users = unique.map(u => ({
             profile_id: u.id, user_id: u.id,
-            username: u.username || '', display_name: u.display_name || '',
+            legacy_user_id: u.legacy_user_id || null,
+            username: u.username || '(ohne Username)',
+            display_name: u.display_name || u.full_name || '',
+            full_name: u.full_name || null,
             role: u.role || 'user', is_banned: u.is_banned || false,
             avatar_url: u.avatar_url, avatar_emoji: u.avatar_emoji || null,
             created_at: u.created_at || '',
+            last_seen_at: u.last_seen_at || null,
           }));
           return jsonResponse({ success: true, users, total: users.length });
         } catch (e) { return errorResponse(`Users-Fehler: ${e.message}`); }
