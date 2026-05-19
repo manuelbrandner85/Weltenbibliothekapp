@@ -1,39 +1,53 @@
-/// ADMIN ACTION SERVICE
-/// Verwaltet alle Admin-Aktionen: Kick, Mute, Ban, Timeout, Warnings
-/// 
+/// ADMIN ACTION SERVICE (v103)
+///
+/// Persistente Admin-Aktionen via Supabase. Vorher waren Bans/Warnings/
+/// Kicks rein In-Memory -- App-Neustart hat alle Bans vergessen. Jetzt
+/// werden alle Aktionen in admin_actions/admin_bans/admin_warnings
+/// persistiert (RLS gegen Profile-Rolle abgesichert, siehe v103 SQL).
+///
 /// Features:
-/// - Log aller Admin-Aktionen
-/// - Ban-System (permanent & temporary)
-/// - Warning-System (3-Strike-Rule)
-/// - Timeout-System
-/// - Admin-Transparenz
+/// - Audit-Log aller Admin-Aktionen (admin_actions)
+/// - Ban-System (admin_bans, permanent + temporaer)
+/// - Warning-System mit 3-Strike-Rule (admin_warnings)
+/// - SlowMode bleibt In-Memory (pro Session reicht aus)
 library;
 
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../models/admin_action.dart';
+import 'supabase_service.dart';
 
 class AdminActionService {
-  // In-Memory Storage (in production würde man Firestore verwenden)
-  final List<AdminAction> _actionLog = [];
-  final Map<String, UserBanInfo> _bannedUsers = {};
-  final Map<String, List<UserWarning>> _userWarnings = {};
-  final Map<String, int> _slowModeSettings = {}; // roomId -> seconds
-  
-  // Streams für Echtzeit-Updates
-  final _actionLogController = StreamController<List<AdminAction>>.broadcast();
-  final _bannedUsersController = StreamController<Map<String, UserBanInfo>>.broadcast();
-  final _warningsController = StreamController<Map<String, List<UserWarning>>>.broadcast();
-  
+  AdminActionService._();
+  static final AdminActionService instance = AdminActionService._();
+
+  // SlowMode bleibt In-Memory (Per-Room, Per-Session). Persistierung waere
+  // overkill -- ein App-Neustart resetted ohnehin den Chat-Zustand.
+  final Map<String, int> _slowModeSettings = {};
+
+  // Cache fuer aktive Bans, vermeidet pro Message-Check eine Supabase-Query.
+  // Wird via Realtime-Channel invalidiert.
+  final Map<String, UserBanInfo> _bansCache = {};
+  bool _bansCachePopulated = false;
+  RealtimeChannel? _bansChannel;
+
+  // Streams fuer UI (Admin-Dashboard, Chat-Filter).
+  final _actionLogController =
+      StreamController<List<AdminAction>>.broadcast();
+  final _bannedUsersController =
+      StreamController<Map<String, UserBanInfo>>.broadcast();
+
   Stream<List<AdminAction>> get actionLogStream => _actionLogController.stream;
-  Stream<Map<String, UserBanInfo>> get bannedUsersStream => _bannedUsersController.stream;
-  Stream<Map<String, List<UserWarning>>> get warningsStream => _warningsController.stream;
-  
-  // Getters
-  List<AdminAction> get actionLog => List.unmodifiable(_actionLog);
-  Map<String, UserBanInfo> get bannedUsers => Map.unmodifiable(_bannedUsers);
-  
-  /// 🚫 KICK USER (aus Voice Chat entfernen)
+  Stream<Map<String, UserBanInfo>> get bannedUsersStream =>
+      _bannedUsersController.stream;
+
+  // ── PUBLIC API ────────────────────────────────────────────────────────────
+
+  /// 🚫 KICK USER (Voice-Chat-Ausschluss, nur Audit-Log -- Voice-Server
+  /// kickt direkt via LiveKit API).
   Future<bool> kickUser({
     required String adminId,
     required String adminUsername,
@@ -41,37 +55,17 @@ class AdminActionService {
     required String targetUsername,
     String? reason,
     String? roomId,
-  }) async {
-    try {
-      final action = AdminAction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+  }) =>
+      _logAction(
         adminId: adminId,
         adminUsername: adminUsername,
         targetUserId: targetUserId,
         targetUsername: targetUsername,
         type: AdminActionType.kick,
         reason: reason,
-        timestamp: DateTime.now(),
         roomId: roomId,
       );
-      
-      _actionLog.insert(0, action);
-      _actionLogController.add(actionLog);
-      
-      if (kDebugMode) {
-        debugPrint('🚫 [ADMIN] $adminUsername kicked $targetUsername${reason != null ? " (Grund: $reason)" : ""}');
-      }
-      
-      return true;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [ADMIN] Kick failed: $e');
-      }
-      return false;
-    }
-  }
-  
-  /// 🔇 MUTE USER (Voice Chat)
+
   Future<bool> muteUser({
     required String adminId,
     required String adminUsername,
@@ -79,73 +73,34 @@ class AdminActionService {
     required String targetUsername,
     String? reason,
     String? roomId,
-  }) async {
-    try {
-      final action = AdminAction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+  }) =>
+      _logAction(
         adminId: adminId,
         adminUsername: adminUsername,
         targetUserId: targetUserId,
         targetUsername: targetUsername,
         type: AdminActionType.mute,
         reason: reason,
-        timestamp: DateTime.now(),
         roomId: roomId,
       );
-      
-      _actionLog.insert(0, action);
-      _actionLogController.add(actionLog);
-      
-      if (kDebugMode) {
-        debugPrint('🔇 [ADMIN] $adminUsername muted $targetUsername${reason != null ? " (Grund: $reason)" : ""}');
-      }
-      
-      return true;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [ADMIN] Mute failed: $e');
-      }
-      return false;
-    }
-  }
-  
-  /// 🔊 UNMUTE USER (Stummschaltung aufheben)
+
   Future<bool> unmuteUser({
     required String adminId,
     required String adminUsername,
     required String targetUserId,
     required String targetUsername,
     String? roomId,
-  }) async {
-    try {
-      final action = AdminAction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+  }) =>
+      _logAction(
         adminId: adminId,
         adminUsername: adminUsername,
         targetUserId: targetUserId,
         targetUsername: targetUsername,
         type: AdminActionType.unmute,
-        timestamp: DateTime.now(),
         roomId: roomId,
       );
-      
-      _actionLog.insert(0, action);
-      _actionLogController.add(actionLog);
-      
-      if (kDebugMode) {
-        debugPrint('🔊 [ADMIN] $adminUsername unmuted $targetUsername');
-      }
-      
-      return true;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [ADMIN] Unmute failed: $e');
-      }
-      return false;
-    }
-  }
-  
-  /// 🔴 BAN USER (Permanent oder Temporär)
+
+  /// 🔴 BAN USER -- persistent in admin_bans + admin_actions.
   Future<bool> banUser({
     required String adminId,
     required String adminUsername,
@@ -155,76 +110,68 @@ class AdminActionService {
     BanDuration duration = BanDuration.permanent,
   }) async {
     try {
-      final now = DateTime.now();
-      DateTime? expiresAt;
-      
-      // Berechne Ablaufzeit basierend auf Duration
-      if (duration != BanDuration.permanent) {
-        switch (duration) {
-          case BanDuration.fiveMinutes:
-            expiresAt = now.add(const Duration(minutes: 5));
-            break;
-          case BanDuration.thirtyMinutes:
-            expiresAt = now.add(const Duration(minutes: 30));
-            break;
-          case BanDuration.oneHour:
-            expiresAt = now.add(const Duration(hours: 1));
-            break;
-          case BanDuration.oneDay:
-            expiresAt = now.add(const Duration(hours: 24));
-            break;
-          case BanDuration.permanent:
-            expiresAt = null;
-            break;
-        }
+      final now = DateTime.now().toUtc();
+      DateTime? expires;
+      switch (duration) {
+        case BanDuration.fiveMinutes:
+          expires = now.add(const Duration(minutes: 5));
+          break;
+        case BanDuration.thirtyMinutes:
+          expires = now.add(const Duration(minutes: 30));
+          break;
+        case BanDuration.oneHour:
+          expires = now.add(const Duration(hours: 1));
+          break;
+        case BanDuration.oneDay:
+          expires = now.add(const Duration(hours: 24));
+          break;
+        case BanDuration.permanent:
+          expires = null;
+          break;
       }
-      
-      final banInfo = UserBanInfo(
+      final isPermanent = duration == BanDuration.permanent;
+
+      await supabase.from('admin_bans').upsert({
+        'user_id': targetUserId,
+        'username': targetUsername,
+        'admin_id': adminId,
+        'admin_username': adminUsername,
+        'reason': reason,
+        'is_permanent': isPermanent,
+        'expires_at': expires?.toIso8601String(),
+      }, onConflict: 'user_id');
+
+      final ok = await _logAction(
+        adminId: adminId,
+        adminUsername: adminUsername,
+        targetUserId: targetUserId,
+        targetUsername: targetUsername,
+        type: isPermanent ? AdminActionType.ban : AdminActionType.timeout,
+        reason: reason,
+        duration: duration,
+        expiresAt: expires,
+      );
+
+      // Cache lokal aktualisieren.
+      _bansCache[targetUserId] = UserBanInfo(
         userId: targetUserId,
         username: targetUsername,
         adminId: adminId,
         adminUsername: adminUsername,
         reason: reason,
         bannedAt: now,
-        expiresAt: expiresAt,
-        isPermanent: duration == BanDuration.permanent,
+        expiresAt: expires,
+        isPermanent: isPermanent,
       );
-      
-      _bannedUsers[targetUserId] = banInfo;
-      _bannedUsersController.add(bannedUsers);
-      
-      final action = AdminAction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        adminId: adminId,
-        adminUsername: adminUsername,
-        targetUserId: targetUserId,
-        targetUsername: targetUsername,
-        type: duration == BanDuration.permanent 
-            ? AdminActionType.ban 
-            : AdminActionType.timeout,
-        reason: reason,
-        timestamp: now,
-        duration: duration,
-        expiresAt: expiresAt,
-      );
-      
-      _actionLog.insert(0, action);
-      _actionLogController.add(actionLog);
-      
-      if (kDebugMode) {
-        debugPrint('🔴 [ADMIN] $adminUsername banned $targetUsername (${duration.name})${reason != null ? " (Grund: $reason)" : ""}');
-      }
-      
-      return true;
+      _bannedUsersController.add(Map.unmodifiable(_bansCache));
+      return ok;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [ADMIN] Ban failed: $e');
-      }
+      if (kDebugMode) debugPrint('❌ AdminAction.banUser: $e');
       return false;
     }
   }
-  
-  /// ✅ UNBAN USER (Ban aufheben)
+
+  /// ✅ UNBAN USER -- loescht aus admin_bans + Audit-Log.
   Future<bool> unbanUser({
     required String adminId,
     required String adminUsername,
@@ -232,36 +179,26 @@ class AdminActionService {
     required String targetUsername,
   }) async {
     try {
-      _bannedUsers.remove(targetUserId);
-      _bannedUsersController.add(bannedUsers);
-      
-      final action = AdminAction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      await supabase
+          .from('admin_bans')
+          .delete()
+          .eq('user_id', targetUserId);
+      _bansCache.remove(targetUserId);
+      _bannedUsersController.add(Map.unmodifiable(_bansCache));
+      return _logAction(
         adminId: adminId,
         adminUsername: adminUsername,
         targetUserId: targetUserId,
         targetUsername: targetUsername,
         type: AdminActionType.unban,
-        timestamp: DateTime.now(),
       );
-      
-      _actionLog.insert(0, action);
-      _actionLogController.add(actionLog);
-      
-      if (kDebugMode) {
-        debugPrint('✅ [ADMIN] $adminUsername unbanned $targetUsername');
-      }
-      
-      return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [ADMIN] Unban failed: $e');
-      }
+      if (kDebugMode) debugPrint('❌ AdminAction.unbanUser: $e');
       return false;
     }
   }
-  
-  /// ⚠️ WARN USER (Verwarnung aussprechen)
+
+  /// ⚠️ WARN USER -- erstellt Warning + Audit. Bei 3 Warnungen -> auto 24h Ban.
   Future<bool> warnUser({
     required String adminId,
     required String adminUsername,
@@ -271,43 +208,30 @@ class AdminActionService {
     String? roomId,
   }) async {
     try {
-      final warning = UserWarning(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: targetUserId,
-        username: targetUsername,
-        adminId: adminId,
-        adminUsername: adminUsername,
-        reason: reason,
-        timestamp: DateTime.now(),
-        roomId: roomId,
-      );
-      
-      if (!_userWarnings.containsKey(targetUserId)) {
-        _userWarnings[targetUserId] = [];
-      }
-      _userWarnings[targetUserId]!.add(warning);
-      _warningsController.add(_userWarnings);
-      
-      final action = AdminAction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      await supabase.from('admin_warnings').insert({
+        'user_id': targetUserId,
+        'username': targetUsername,
+        'admin_id': adminId,
+        'admin_username': adminUsername,
+        'reason': reason,
+        'room_id': roomId,
+      });
+      await _logAction(
         adminId: adminId,
         adminUsername: adminUsername,
         targetUserId: targetUserId,
         targetUsername: targetUsername,
         type: AdminActionType.warning,
         reason: reason,
-        timestamp: DateTime.now(),
         roomId: roomId,
       );
-      
-      _actionLog.insert(0, action);
-      _actionLogController.add(actionLog);
-      
-      // 3-Strike-Rule: Bei 3 Verwarnungen automatisch 24h Ban
-      final warningCount = _userWarnings[targetUserId]!.length;
-      if (warningCount >= 3) {
+
+      // 3-Strike-Rule
+      final count = await getWarningCount(targetUserId);
+      if (count >= 3) {
         if (kDebugMode) {
-          debugPrint('⚠️ [ADMIN] $targetUsername hat 3 Verwarnungen → Automatischer 24h Ban');
+          debugPrint(
+              '⚠️ AdminAction: $targetUsername hat 3 Warnungen -> Auto-24h-Ban');
         }
         await banUser(
           adminId: adminId,
@@ -317,93 +241,320 @@ class AdminActionService {
           reason: '3 Verwarnungen erhalten',
           duration: BanDuration.oneDay,
         );
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️ [ADMIN] $adminUsername warned $targetUsername ($warningCount/3) - Grund: $reason');
-        }
       }
-      
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [ADMIN] Warning failed: $e');
-      }
+      if (kDebugMode) debugPrint('❌ AdminAction.warnUser: $e');
       return false;
     }
   }
-  
-  /// 🐌 SET SLOW MODE (Rate Limiting)
+
+  /// Pruefe Ban-Status. Nutzt Cache, faellt bei Miss zu Supabase zurueck.
+  Future<bool> isUserBanned(String userId) async {
+    if (_bansCachePopulated) {
+      final cached = _bansCache[userId];
+      if (cached == null) return false;
+      if (cached.isPermanent) return true;
+      if (cached.expiresAt == null) return true;
+      if (DateTime.now().toUtc().isAfter(cached.expiresAt!.toUtc())) {
+        _bansCache.remove(userId);
+        _bannedUsersController.add(Map.unmodifiable(_bansCache));
+        return false;
+      }
+      return true;
+    }
+    try {
+      final res = await supabase
+          .from('admin_bans')
+          .select()
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (res == null) return false;
+      final ban = _rowToBan(res);
+      if (!ban.isPermanent &&
+          ban.expiresAt != null &&
+          DateTime.now().toUtc().isAfter(ban.expiresAt!.toUtc())) {
+        await supabase.from('admin_bans').delete().eq('user_id', userId);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ AdminAction.isUserBanned: $e');
+      return false;
+    }
+  }
+
+  Future<UserBanInfo?> getBanInfo(String userId) async {
+    try {
+      final res = await supabase
+          .from('admin_bans')
+          .select()
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (res == null) return null;
+      return _rowToBan(res);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<UserWarning>> getUserWarnings(String userId) async {
+    try {
+      final res = await supabase
+          .from('admin_warnings')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+      return (res as List).map((r) => _rowToWarning(r as Map)).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<int> getWarningCount(String userId) async {
+    try {
+      final res = await supabase
+          .from('admin_warnings')
+          .select('id')
+          .eq('user_id', userId);
+      return (res as List).length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  Future<void> clearWarnings(String userId) async {
+    try {
+      await supabase
+          .from('admin_warnings')
+          .delete()
+          .eq('user_id', userId);
+    } catch (_) {}
+  }
+
+  /// Letzte N Admin-Aktionen.
+  Future<List<AdminAction>> getRecentActions(int count) async {
+    try {
+      final res = await supabase
+          .from('admin_actions')
+          .select()
+          .order('created_at', ascending: false)
+          .limit(count);
+      return (res as List).map((r) => _rowToAction(r as Map)).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<AdminAction>> getUserActions(String userId) async {
+    try {
+      final res = await supabase
+          .from('admin_actions')
+          .select()
+          .eq('target_user_id', userId)
+          .order('created_at', ascending: false);
+      return (res as List).map((r) => _rowToAction(r as Map)).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Slow-Mode (In-Memory).
   void setSlowMode(String roomId, int seconds) {
     if (seconds > 0) {
       _slowModeSettings[roomId] = seconds;
-      if (kDebugMode) {
-        debugPrint('🐌 [ADMIN] Slow mode set to $seconds seconds for room $roomId');
-      }
     } else {
       _slowModeSettings.remove(roomId);
-      if (kDebugMode) {
-        debugPrint('🐌 [ADMIN] Slow mode disabled for room $roomId');
-      }
     }
   }
-  
-  /// Check if user is banned
-  bool isUserBanned(String userId) {
-    final banInfo = _bannedUsers[userId];
-    if (banInfo == null) return false;
-    
-    // Check if temporary ban expired
-    if (!banInfo.isPermanent && banInfo.expiresAt != null) {
-      if (DateTime.now().isAfter(banInfo.expiresAt!)) {
-        _bannedUsers.remove(userId);
-        _bannedUsersController.add(bannedUsers);
-        return false;
+
+  int getSlowMode(String roomId) => _slowModeSettings[roomId] ?? 0;
+
+  /// Cache initial befuellen + Realtime-Subscription.
+  /// Wird beim ersten getBans()-Aufruf oder explizit via initialize() benutzt.
+  Future<void> initialize() async {
+    if (_bansCachePopulated) return;
+    try {
+      final res = await supabase.from('admin_bans').select();
+      for (final r in (res as List)) {
+        final ban = _rowToBan(r as Map);
+        _bansCache[ban.userId] = ban;
       }
+      _bansCachePopulated = true;
+      _bannedUsersController.add(Map.unmodifiable(_bansCache));
+
+      // Realtime-Channel fuer Ban-Aenderungen.
+      _bansChannel = supabase
+          .channel('admin_bans_changes')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'admin_bans',
+            callback: _onBanChange,
+          )
+          .subscribe();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ AdminAction.initialize: $e');
     }
-    
-    return true;
   }
-  
-  /// Get ban info for user
-  UserBanInfo? getBanInfo(String userId) {
-    return _bannedUsers[userId];
+
+  Future<void> dispose() async {
+    await _bansChannel?.unsubscribe();
+    await _actionLogController.close();
+    await _bannedUsersController.close();
   }
-  
-  /// Get warnings for user
-  List<UserWarning> getUserWarnings(String userId) {
-    return _userWarnings[userId] ?? [];
+
+  // ── INTERNAL ──────────────────────────────────────────────────────────────
+
+  Future<bool> _logAction({
+    required String adminId,
+    required String adminUsername,
+    required String targetUserId,
+    required String targetUsername,
+    required AdminActionType type,
+    String? reason,
+    String? roomId,
+    BanDuration? duration,
+    DateTime? expiresAt,
+  }) async {
+    try {
+      await supabase.from('admin_actions').insert({
+        'admin_id': adminId,
+        'admin_username': adminUsername,
+        'target_user_id': targetUserId,
+        'target_username': targetUsername,
+        'action_type': _typeToString(type),
+        'reason': reason,
+        'room_id': roomId,
+        'duration': duration?.name,
+        'expires_at': expiresAt?.toIso8601String(),
+      });
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ AdminAction._logAction: $e');
+      return false;
+    }
   }
-  
-  /// Get warning count
-  int getWarningCount(String userId) {
-    return _userWarnings[userId]?.length ?? 0;
+
+  void _onBanChange(PostgresChangePayload payload) {
+    try {
+      final newRow = payload.newRecord;
+      final oldRow = payload.oldRecord;
+      if (payload.eventType == PostgresChangeEvent.delete) {
+        final uid = (oldRow['user_id'] as String?) ?? '';
+        if (uid.isNotEmpty) _bansCache.remove(uid);
+      } else {
+        final ban = _rowToBan(newRow);
+        _bansCache[ban.userId] = ban;
+      }
+      _bannedUsersController.add(Map.unmodifiable(_bansCache));
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ AdminAction._onBanChange: $e');
+    }
   }
-  
-  /// Get slow mode setting for room
-  int getSlowMode(String roomId) {
-    return _slowModeSettings[roomId] ?? 0;
+
+  static String _typeToString(AdminActionType t) {
+    switch (t) {
+      case AdminActionType.kick:
+        return 'kick';
+      case AdminActionType.mute:
+        return 'mute';
+      case AdminActionType.unmute:
+        return 'unmute';
+      case AdminActionType.ban:
+        return 'ban';
+      case AdminActionType.unban:
+        return 'unban';
+      case AdminActionType.timeout:
+        return 'timeout';
+      case AdminActionType.warning:
+        return 'warning';
+      case AdminActionType.deleteMessage:
+        return 'delete_message';
+      case AdminActionType.slowMode:
+        return 'slow_mode';
+    }
   }
-  
-  /// Get recent actions (last N)
-  List<AdminAction> getRecentActions(int count) {
-    return _actionLog.take(count).toList();
+
+  static AdminActionType _typeFromString(String s) {
+    switch (s) {
+      case 'kick':
+        return AdminActionType.kick;
+      case 'mute':
+        return AdminActionType.mute;
+      case 'unmute':
+        return AdminActionType.unmute;
+      case 'ban':
+        return AdminActionType.ban;
+      case 'unban':
+        return AdminActionType.unban;
+      case 'timeout':
+        return AdminActionType.timeout;
+      case 'warning':
+        return AdminActionType.warning;
+      case 'delete_message':
+        return AdminActionType.deleteMessage;
+      case 'slow_mode':
+        return AdminActionType.slowMode;
+      default:
+        return AdminActionType.warning;
+    }
   }
-  
-  /// Get actions for specific user
-  List<AdminAction> getUserActions(String userId) {
-    return _actionLog.where((a) => a.targetUserId == userId).toList();
-  }
-  
-  /// Clear all warnings for user
-  void clearWarnings(String userId) {
-    _userWarnings.remove(userId);
-    _warningsController.add(_userWarnings);
-  }
-  
-  /// Dispose
-  void dispose() {
-    _actionLogController.close();
-    _bannedUsersController.close();
-    _warningsController.close();
+
+  UserBanInfo _rowToBan(Map row) => UserBanInfo(
+        userId: row['user_id'] as String,
+        username: row['username'] as String? ?? '',
+        adminId: row['admin_id'] as String? ?? '',
+        adminUsername: row['admin_username'] as String? ?? '',
+        reason: row['reason'] as String?,
+        bannedAt: DateTime.parse(row['created_at'] as String),
+        expiresAt: row['expires_at'] == null
+            ? null
+            : DateTime.parse(row['expires_at'] as String),
+        isPermanent: row['is_permanent'] as bool? ?? true,
+      );
+
+  UserWarning _rowToWarning(Map row) => UserWarning(
+        id: row['id'] as String,
+        userId: row['user_id'] as String,
+        username: row['username'] as String? ?? '',
+        adminId: row['admin_id'] as String? ?? '',
+        adminUsername: row['admin_username'] as String? ?? '',
+        reason: row['reason'] as String? ?? '',
+        timestamp: DateTime.parse(row['created_at'] as String),
+        roomId: row['room_id'] as String?,
+      );
+
+  AdminAction _rowToAction(Map row) => AdminAction(
+        id: row['id'] as String,
+        adminId: row['admin_id'] as String? ?? '',
+        adminUsername: row['admin_username'] as String? ?? '',
+        targetUserId: row['target_user_id'] as String? ?? '',
+        targetUsername: row['target_username'] as String? ?? '',
+        type: _typeFromString(row['action_type'] as String? ?? 'warning'),
+        reason: row['reason'] as String?,
+        timestamp: DateTime.parse(row['created_at'] as String),
+        roomId: row['room_id'] as String?,
+        duration: row['duration'] == null
+            ? null
+            : _durationFromString(row['duration'] as String),
+        expiresAt: row['expires_at'] == null
+            ? null
+            : DateTime.parse(row['expires_at'] as String),
+      );
+
+  static BanDuration _durationFromString(String s) {
+    switch (s) {
+      case 'fiveMinutes':
+        return BanDuration.fiveMinutes;
+      case 'thirtyMinutes':
+        return BanDuration.thirtyMinutes;
+      case 'oneHour':
+        return BanDuration.oneHour;
+      case 'oneDay':
+        return BanDuration.oneDay;
+      default:
+        return BanDuration.permanent;
+    }
   }
 }
