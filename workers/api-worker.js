@@ -1785,6 +1785,107 @@ export default {
         }
       }
 
+      // POST /api/push/test-suite → sendet alle 18 Test-Push-Notifications
+      // serverseitig nacheinander (1s Abstand). App muss NICHT offen sein --
+      // der Worker drained jeden Push sofort via FCM, sobald er in der
+      // notification_queue ist.
+      //
+      // Body: { user_id: "<uuid oder user_<ts>_<rand>>" }
+      // v103: Push-Test-Suite -- nach erfolgreicher Verifikation entfernbar.
+      if (method === 'POST' && path.endsWith('/test-suite')) {
+        const suiteBody = await request.json().catch(() => ({}));
+        const userId = suiteBody?.user_id;
+        if (!userId) return errorResponse('user_id required', 400);
+        if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+
+        const tests = [
+          { id: '1.1', type: 'materie_breaking', title: '🔥 [TEST 1/18] Materie Breaking News', body: 'Test: Breaking-News-Push aus der Materie-Welt funktioniert!' },
+          { id: '1.2', type: 'materie_research', title: '🔍 [TEST 2/18] Neue Recherche', body: 'Test: Recherche-Push aus der Materie-Welt funktioniert!' },
+          { id: '1.3', type: 'energie_meditation', title: '🧘 [TEST 3/18] Meditation Update', body: 'Test: Meditations-Push aus der Energie-Welt funktioniert!' },
+          { id: '1.4', type: 'energie_astral', title: '✨ [TEST 4/18] Astralreisen Update', body: 'Test: Astralreisen-Push aus der Energie-Welt funktioniert!' },
+          { id: '1.5', type: 'daily_wisdom', title: '💡 [TEST 5/18] Tägliche Weisheit', body: 'Test: "Wissen ist der Schlüssel" -- Push funktioniert!' },
+          { id: '1.6', type: 'weekly_summary', title: '📊 [TEST 6/18] Wöchentliche Zusammenfassung', body: 'Test: Wochen-Recap-Push funktioniert!' },
+          { id: '2.1', type: 'chat_message', title: '💬 [TEST 7/18] Neue Chat-Nachricht', body: 'Test: Chat-Nachricht-Push funktioniert!' },
+          { id: '2.2', type: 'chat_mention', title: '📢 [TEST 8/18] Du wurdest erwähnt!', body: 'Test: Mention-Push funktioniert!' },
+          { id: '3.1', type: 'achievement', title: '🏆 [TEST 9/18] Achievement freigeschaltet!', body: 'Test: Achievement-Push funktioniert!' },
+          { id: '3.2', type: 'level_up', title: '⬆️ [TEST 10/18] LEVEL UP!', body: 'Test: Level-Up-Push funktioniert!' },
+          { id: '4.1', type: 'admin_ban', title: '🚫 [TEST 11/18] Account gesperrt', body: 'Test: Ban-Push funktioniert! (Kein echter Ban)' },
+          { id: '4.2', type: 'admin_unban', title: '✅ [TEST 12/18] Sperre aufgehoben', body: 'Test: Unban-Push funktioniert!' },
+          { id: '4.3', type: 'admin_warning', title: '⚠️ [TEST 13/18] Verwarnung', body: 'Test: Verwarnungs-Push funktioniert! (Kein echter Strike)' },
+          { id: '4.4', type: 'admin_mute', title: '🔇 [TEST 14/18] Stummgeschaltet', body: 'Test: Mute-Push funktioniert! (Kein echter Mute)' },
+          { id: '4.5', type: 'admin_role_change', title: '🛡️ [TEST 15/18] Rolle geändert', body: 'Test: Rollenwechsel-Push funktioniert! (Keine echte Änderung)' },
+          { id: '5.1', type: 'admin_broadcast', title: '📢 [TEST 16/18] Admin-Ankündigung', body: 'Test: Broadcast-Push funktioniert!' },
+          { id: '6.1', type: 'admin_xp_grant', title: '⭐ [TEST 17/18] +50 XP erhalten!', body: 'Test: XP-Grant-Push funktioniert! (Keine echten XP)' },
+          { id: '8.1', type: 'scheduled_test', title: '⏰ [TEST 18/18] Alle Tests abgeschlossen!', body: 'Test: Scheduled-Push funktioniert! 🎉 Alle 18 Push-Typen getestet!' },
+        ];
+
+        // InvisibleAuth-IDs starten mit 'user_' und gehen in legacy_user_id.
+        const isLegacy = String(userId).startsWith('user_');
+        const idField = isLegacy ? 'legacy_user_id' : 'user_id';
+        const results = [];
+        let sent = 0;
+        let failed = 0;
+        const startedAt = new Date().toISOString();
+
+        for (let i = 0; i < tests.length; i++) {
+          const t = tests[i];
+          try {
+            const queueRow = {
+              [idField]: userId,
+              title: t.title,
+              body: t.body,
+              data: {
+                type: t.type,
+                test: true,
+                test_id: t.id,
+                test_index: i + 1,
+                test_total: tests.length,
+                timestamp: new Date().toISOString(),
+              },
+              status: 'pending',
+            };
+            const ins = await fetch(
+              `${SUPABASE_URL}/rest/v1/notification_queue`,
+              {
+                method: 'POST',
+                headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+                body: JSON.stringify(queueRow),
+              }
+            );
+            if (!ins.ok) {
+              const txt = await ins.text().catch(() => '');
+              throw new Error(`HTTP ${ins.status}: ${txt.substring(0, 100)}`);
+            }
+            // Sofort dispatchen damit FCM-Push nicht auf den naechsten
+            // Cron wartet (sonst bis zu 5 Min Verzoegerung pro Push).
+            try {
+              await dispatchPushQueue(env, pushAuth);
+            } catch (_) { /* dispatch non-fatal */ }
+            results.push({ id: t.id, success: true });
+            sent++;
+          } catch (e) {
+            results.push({ id: t.id, success: false, error: e.message });
+            failed++;
+          }
+          // 1 Sekunde Abstand zwischen Pushes
+          if (i < tests.length - 1) {
+            await new Promise(r => setTimeout(r, 1000));
+          }
+        }
+
+        return jsonResponse({
+          success: true,
+          user_id: userId,
+          id_field: idField,
+          sent,
+          failed,
+          total: tests.length,
+          started_at: startedAt,
+          finished_at: new Date().toISOString(),
+          results,
+        });
+      }
+
       // POST /api/push/dispatch → drains notification_queue; callable by cron.
       if (method === 'POST' && path.endsWith('/dispatch')) {
         if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);

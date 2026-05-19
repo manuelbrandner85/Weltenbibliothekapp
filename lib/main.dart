@@ -56,7 +56,12 @@ import 'utils/error_boundary.dart'; // 🛡️ Error Boundary
 import 'services/supabase_service.dart'; // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_migration_service.dart'; // 👻 GHOST-USER-MIGRATION (v103)
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
+import 'services/cloudflare_push_service.dart'; // 🧪 v103 Push-Test-Suite
 import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (FCM + in-app)
+import 'config/api_config.dart'; // 🌐 Worker URL fuer Push-Test
+import 'package:shared_preferences/shared_preferences.dart'; // 🧪 v103 Test-Flag
+import 'package:http/http.dart' as http; // 🧪 v103 Push-Test
+import 'dart:convert' show jsonEncode; // 🧪 v103 Push-Test
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
@@ -242,6 +247,15 @@ void main() async {
   // 👻 GHOST-USER-MIGRATION (v103): Altnutzer ohne Supabase-Eintrag
   // einmalig nachsynchronisieren. Idempotent, mit Flag in Prefs.
   unawaited(ProfileMigrationService.migrateIfNeeded());
+
+  // 🧪 EINMALIGE PUSH-TEST-SUITE (v103, nach Verifikation entfernbar)
+  // Triggert serverseitig 18 Test-Pushes ueber den Worker. App kann nach
+  // dem Trigger geschlossen werden -- der Worker drained alle Pushes
+  // selbst via FCM. Flag 'push_test_suite_v1_done' verhindert
+  // Wiederholung.
+  if (!kIsWeb) {
+    unawaited(_triggerPushTestSuiteOnce());
+  }
 
   // ═══════════════════════════════════════════════════════════
   // APP STARTEN (NICHT BLOCKIEREND)
@@ -519,5 +533,62 @@ class _MobileEntryGateState extends State<_MobileEntryGate> {
         if (mounted) setState(() => _splashDone = true);
       },
     );
+  }
+}
+
+/// Einmaliger Trigger der serverseitigen Push-Test-Suite (v103).
+///
+/// Schickt einen POST-Request an den Worker -- der sendet daraufhin alle
+/// 18 Test-Pushes nacheinander via FCM. Die App kann waehrend dessen
+/// geschlossen werden, der Worker arbeitet selbststaendig durch.
+///
+/// Flag 'push_test_suite_v1_done' in SharedPreferences verhindert dass
+/// der Trigger jemals wieder feuert. Bei HTTP-Fehlern wird das Flag
+/// NICHT gesetzt -- der naechste App-Start versucht es erneut.
+Future<void> _triggerPushTestSuiteOnce() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('push_test_suite_v1_done') == true) return;
+
+    // 5 Sekunden warten damit Push-Service sicher initialisiert ist.
+    await Future.delayed(const Duration(seconds: 5));
+
+    final pushService = CloudflarePushService();
+    if (pushService.getUserId() == null) await pushService.initialize();
+    final userId = pushService.getUserId();
+    if (userId == null) {
+      debugPrint('❌ Push-Test-Suite: Keine user_id vorhanden');
+      return;
+    }
+
+    debugPrint(
+        '🧪 Push-Test-Suite: Triggere 18 serverseitige Tests für $userId...');
+    debugPrint(
+        '🧪 App kann jetzt geschlossen werden — Worker sendet eigenständig!');
+
+    final response = await http
+        .post(
+          Uri.parse('${ApiConfig.workerUrl}/api/push/test-suite'),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'user_id': userId}),
+        )
+        .timeout(const Duration(seconds: 60));
+
+    if (response.statusCode == 200) {
+      try {
+        final body = response.body;
+        // Light parse to log -- not strict.
+        debugPrint('✅ Push-Test-Suite Response: $body');
+      } catch (_) {}
+      // Flag setzen → passiert nie wieder
+      await prefs.setBool('push_test_suite_v1_done', true);
+    } else {
+      debugPrint(
+          '❌ Push-Test-Suite: HTTP ${response.statusCode} — ${response.body}');
+      // Kein Flag-Set → nächster App-Start versucht erneut
+    }
+  } catch (e) {
+    debugPrint('❌ Push-Test-Suite Fehler: $e');
+    // Kein Flag-Set → nächster App-Start versucht erneut
   }
 }
