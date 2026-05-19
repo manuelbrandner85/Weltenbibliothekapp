@@ -16,6 +16,7 @@ import '../../services/activity_heatmap_service.dart'; // 🔥 M2
 import '../../services/cloudflare_api_service.dart';
 import '../../services/health_check_service.dart';
 import '../../services/moderation_queue_service.dart'; // 🚨 M3
+import '../../services/storage_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/world_admin_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
@@ -101,6 +102,47 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     });
   }
 
+  /// v102: Fallback-Resolution wenn adminStateProvider noch leer ist.
+  /// Liest Materie/Energie-Profile aus dem lokalen Storage, checkt ob
+  /// Username Root-Admin oder Content-Editor ist, sonst nimmt das
+  /// gespeicherte role-Feld. Verhindert das Dashboard-Loading-Loop und
+  /// das "Kein Zugriff"-Screen wenn der Provider noch laedt.
+  AdminState _resolveLocalFallback(AdminState provider) {
+    if (provider.username != null && provider.username!.isNotEmpty) {
+      // Provider hat geladen -> nimm ihn.
+      return provider;
+    }
+    try {
+      final storage = StorageService();
+      final m = storage.getMaterieProfile();
+      final e = storage.getEnergieProfile();
+      final localUser = m?.username ?? e?.username;
+      if (localUser == null || localUser.isEmpty) return provider;
+
+      String? localRole = m?.role ?? e?.role;
+      if (localRole == null || localRole.isEmpty) {
+        if (AppRoles.isRootAdminByUsername(localUser)) {
+          localRole = AppRoles.rootAdmin;
+        } else if (AppRoles.isContentEditorByUsername(localUser)) {
+          localRole = AppRoles.contentEditor;
+        }
+      }
+
+      if (localRole == null) return provider;
+      return AdminState(
+        isAdmin: AppRoles.isAdmin(localRole),
+        isRootAdmin: AppRoles.isRootAdmin(localRole),
+        isModerator: AppRoles.isModerator(localRole),
+        world: provider.world,
+        backendVerified: false,
+        username: localUser,
+        role: localRole,
+      );
+    } catch (_) {
+      return provider;
+    }
+  }
+
   Future<void> _waitForState() async {
     // v101: adminStateProvider wird NUR mit der Original-Welt (widget.world)
     // aufgerufen, damit der Cache aus dem World-Wrapper getroffen wird.
@@ -131,7 +173,12 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     // v101: Rolle/Zugriff IMMER aus der Original-Welt lesen.
     // _selectedWorld wird nur an die Tabs weitergegeben fuer Daten-Filter,
     // beeinflusst aber nie die Auth-State-Resolution.
-    final admin = ref.watch(adminStateProvider(widget.world));
+    final providerAdmin = ref.watch(adminStateProvider(widget.world));
+
+    // v102: Lokaler Fallback falls Provider noch nicht geladen oder
+    // Backend nicht erreichbar. Pruft Materie/Energie-Username gegen
+    // den hardcoded Root-Admin-Username sowie das lokale role-Feld.
+    final admin = _resolveLocalFallback(providerAdmin);
 
     // ⚠️ Supabase-Session NICHT mehr Pflicht — Root-Admin via InvisibleAuth
     // oder Web-Login (WebAuthGate) hat keine Supabase-Session, ist aber

@@ -15,12 +15,14 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants/roles.dart';
 import '../features/admin/state/admin_state.dart';
 import '../screens/shared/world_admin_dashboard.dart';
+import '../services/storage_service.dart';
 
-class AdminDashboardButton extends StatelessWidget {
+class AdminDashboardButton extends StatefulWidget {
   const AdminDashboardButton({
     super.key,
     required this.adminState,
@@ -31,10 +33,85 @@ class AdminDashboardButton extends StatelessWidget {
   final String world;
 
   @override
-  Widget build(BuildContext context) {
-    if (!adminState.isAdmin) return const SizedBox.shrink();
+  State<AdminDashboardButton> createState() => _AdminDashboardButtonState();
+}
 
-    final scheme = _resolveScheme(adminState.role);
+class _AdminDashboardButtonState extends State<AdminDashboardButton> {
+  bool _fallbackIsAdmin = false;
+  String? _fallbackRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveFallback();
+  }
+
+  /// v102: Falls adminStateProvider noch nicht geladen ist (Provider haengt,
+  /// Network-Timeout, Cache leer), checken wir parallel:
+  ///   - Lokales Materie/Energie-Profil: Username == Root-Admin?
+  ///   - Lokales Profil: Role-Feld bereits 'admin'/'root_admin'/...?
+  ///   - Web-SharedPref: web_is_admin == true?
+  /// Damit ist der Dashboard-Button auch dann sichtbar, wenn der
+  /// adminStateProvider noch im Loading-State steht.
+  Future<void> _resolveFallback() async {
+    try {
+      final storage = StorageService();
+      final mUser = storage.getMaterieProfile()?.username;
+      final eUser = storage.getEnergieProfile()?.username;
+      final mRole = storage.getMaterieProfile()?.role;
+      final eRole = storage.getEnergieProfile()?.role;
+
+      final usernameMatch = AppRoles.isRootAdminByUsername(mUser) ||
+          AppRoles.isRootAdminByUsername(eUser) ||
+          AppRoles.isContentEditorByUsername(mUser) ||
+          AppRoles.isContentEditorByUsername(eUser);
+      final roleMatch = AppRoles.isAdmin(mRole) || AppRoles.isAdmin(eRole);
+
+      bool webMatch = false;
+      String? webRole;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        webMatch = prefs.getBool('web_is_admin') ?? false;
+        if (webMatch) {
+          // Web-Login schreibt manchmal die Rolle in web_user_role.
+          webRole = prefs.getString('web_user_role');
+        }
+      } catch (_) {}
+
+      String? resolvedRole;
+      if (mRole != null && mRole.isNotEmpty) resolvedRole = mRole;
+      if (resolvedRole == null && eRole != null && eRole.isNotEmpty) {
+        resolvedRole = eRole;
+      }
+      if (resolvedRole == null && (
+          AppRoles.isRootAdminByUsername(mUser) ||
+              AppRoles.isRootAdminByUsername(eUser))) {
+        resolvedRole = AppRoles.rootAdmin;
+      }
+      if (resolvedRole == null && (
+          AppRoles.isContentEditorByUsername(mUser) ||
+              AppRoles.isContentEditorByUsername(eUser))) {
+        resolvedRole = AppRoles.contentEditor;
+      }
+      if (resolvedRole == null && webMatch) {
+        resolvedRole = webRole ?? AppRoles.admin;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _fallbackIsAdmin = usernameMatch || roleMatch || webMatch;
+        _fallbackRole = resolvedRole;
+      });
+    } catch (_) { /* still false */ }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = widget.adminState.isAdmin || _fallbackIsAdmin;
+    if (!isAdmin) return const SizedBox.shrink();
+
+    final role = widget.adminState.role ?? _fallbackRole;
+    final scheme = _resolveScheme(role);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -45,7 +122,7 @@ class AdminDashboardButton extends StatelessWidget {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => WorldAdminDashboard(world: world),
+                builder: (_) => WorldAdminDashboard(world: widget.world),
               ),
             );
           },
