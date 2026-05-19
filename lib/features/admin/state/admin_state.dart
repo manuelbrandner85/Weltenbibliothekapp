@@ -299,10 +299,32 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
     }
 
     if (username == null || username.isEmpty) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ AdminState: Kein Profil gefunden ($world)');
+      }
       state = AdminState.empty(world);
       return;
+    }
+
+    // v104 FIX: Finaler Hard-Username-Override als absoluter Last Resort.
+    // Falls trotz aller vorherigen Schritte role weiterhin null/'user'
+    // ist, aber der Username einem bekannten Admin-Account entspricht,
+    // setze die Rolle hart. Schliesst die letzte Race-Condition-Luecke.
+    if ((role == null || role == AppRoles.user || role.isEmpty) &&
+        username.isNotEmpty) {
+      if (AppRoles.isRootAdminByUsername(username)) {
+        role = AppRoles.rootAdmin;
+        if (kDebugMode) {
+          debugPrint(
+              '🔐 AdminState: FINAL Override → root_admin für $username');
+        }
+      } else if (AppRoles.isContentEditorByUsername(username)) {
+        role = AppRoles.contentEditor;
+        if (kDebugMode) {
+          debugPrint(
+              '🔐 AdminState: FINAL Override → content_editor für $username');
+        }
+      }
     }
 
     state = AdminState.fromCache(world, username, role);
