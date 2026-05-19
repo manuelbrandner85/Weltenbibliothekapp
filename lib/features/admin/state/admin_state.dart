@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/storage/unified_storage_service.dart';
 import '../../../services/sqlite_storage_service.dart';
+import '../../../services/storage_service.dart';
 import '../../../core/auth/admin_resolver.dart';
 import '../../../core/constants/roles.dart';
 import '../../../services/supabase_service.dart';
@@ -216,6 +217,36 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
         }
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ AdminState: Profil-Box Fallback: $e');
+      }
+    }
+
+    // v104 FIX: SharedPreferences-Fallback fuer InvisibleAuth-User.
+    // StorageService speichert das Profil in SharedPreferences
+    // (sp_materie_profile / sp_energie_profile). UnifiedStorageService
+    // (SQLite user_data) wird nur vom Supabase-Path befuellt. Ohne
+    // diesen Block hat ein InvisibleAuth-User keinen Username im
+    // AdminState -- und Schritt 2.5 + die Admin-Resolution greifen nie.
+    if (username == null || username.isEmpty) {
+      try {
+        final storage = StorageService();
+        final mProfile = storage.getMaterieProfile();
+        final eProfile = storage.getEnergieProfile();
+        username = mProfile?.username ?? eProfile?.username;
+        role = mProfile?.role ?? eProfile?.role;
+        if (username != null && username.isNotEmpty) {
+          // Persistiere ins UnifiedStorage damit zukuenftige Aufrufe
+          // sofort treffen (kein erneuter SharedPreferences-Lookup).
+          await _storage.saveProfile(world, {
+            'username': username,
+            'role': role ?? AppRoles.user,
+          });
+          if (kDebugMode) {
+            debugPrint(
+                '🔐 AdminState: SharedPreferences-Fallback: username=$username, role=$role');
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ AdminState: SP-Fallback-Fehler: $e');
       }
     }
 
