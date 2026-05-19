@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../models/energie_profile.dart';
 import '../../../services/numerology_pdf_service.dart';
+import '../../../services/spirit_calculations/cross_system_engine.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/streak_tracking_service.dart';
@@ -73,7 +74,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this); // 🚀 6 Tabs jetzt (inkl. Year Journey)
+    _tabController = TabController(length: 7, vsync: this); // 🚀 7 Tabs inkl. KOSMOS
     _loadProfileAndCalculate();
     _loadPersonalYearJourney();
     _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat(reverse: true);
@@ -219,6 +220,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                     Tab(text: 'ZYKLEN'),
                     Tab(text: 'SPEZIAL'),
                     Tab(text: 'PARTNER'),
+                    Tab(text: 'KOSMOS'),
                   ],
                 ),
               ),
@@ -339,6 +341,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                   _buildCyclesTab(),
                   _buildSpecialNumbersTab(),
                   _buildPartnerCompatibilityTab(),
+                  _buildKosmosTab(),
                 ],
               ),
       ),
@@ -669,6 +672,178 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             child: _buildChallengeCard(challenge),
           )),
         ],
+      ),
+    );
+  }
+
+  // ── KOSMOS-Tab (Verbesserung 8) ──────────────────────────────────────
+  Widget _buildKosmosTab() {
+    final lp = _lifePath ?? 0;
+    if (lp == 0) {
+      return _buildEmptyCard('Kosmische Verbindungen erscheinen nach Profil-Load.',
+          Icons.public_rounded);
+    }
+    final kab = CrossSystemEngine.getKabbalisticCorrespondence(lp);
+    final hebrew = CrossSystemEngine.getHebrewLetterCorrespondence(lp);
+    final tarot = CrossSystemEngine.getTarotCorrespondence(lp);
+    final planet = CrossSystemEngine.getPlanetaryCorrespondence(lp);
+    final freq = CrossSystemEngine.getResonanceFrequency(lp);
+    final freqEffect = CrossSystemEngine.getFrequencyEffect(lp);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('KOSMISCHES NETZ FUER LEBENSZAHL $lp'),
+          const SizedBox(height: 6),
+          const Text(
+            'Deine Lebenszahl resoniert mit folgenden Systemen.',
+            style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          _kosmosCard(
+            icon: Icons.account_tree_rounded,
+            iconLabel: kab['symbol'] as String,
+            title: 'Kabbala · ${kab['sephira']}',
+            subtitle: kab['sephiraName'] as String,
+            body: kab['description'] as String,
+            accent: const Color(0xFFC9A84C),
+          ),
+          const SizedBox(height: 12),
+          _kosmosCard(
+            icon: Icons.translate_rounded,
+            iconLabel: hebrew['symbol'] as String,
+            title: 'Hebraeischer Buchstabe · ${hebrew['letter']}',
+            subtitle:
+                'Element: ${hebrew['element']} · ${hebrew['tarot']}',
+            body: hebrew['description'] as String,
+            accent: const Color(0xFF7C4DFF),
+          ),
+          const SizedBox(height: 12),
+          _kosmosCard(
+            icon: Icons.style_rounded,
+            iconLabel: tarot['roman'] as String,
+            title: 'Tarot · ${tarot['card']}',
+            subtitle: 'Grosse Arkana',
+            body: tarot['description'] as String,
+            accent: const Color(0xFFCE93D8),
+          ),
+          const SizedBox(height: 12),
+          _kosmosCard(
+            icon: Icons.public_rounded,
+            iconLabel: planet['symbol'] as String,
+            title: 'Planet · ${planet['planet']}',
+            subtitle: 'Planetarische Zuordnung',
+            body: planet['description'] as String,
+            accent: const Color(0xFF4FC3F7),
+          ),
+          const SizedBox(height: 12),
+          _kosmosCard(
+            icon: Icons.graphic_eq_rounded,
+            iconLabel: '${freq.toInt()} Hz',
+            title: 'Solfeggio-Frequenz',
+            subtitle: 'Resonanz-Hz fuer Lebenszahl $lp',
+            body: freqEffect,
+            accent: const Color(0xFF80FFE0),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kosmosCard({
+    required IconData icon,
+    required String iconLabel,
+    required String title,
+    required String subtitle,
+    required String body,
+    required Color accent,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                accent.withValues(alpha: 0.14),
+                accent.withValues(alpha: 0.04),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: accent.withValues(alpha: 0.45)),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      accent.withValues(alpha: 0.6),
+                      accent.withValues(alpha: 0.15),
+                    ],
+                  ),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.6), width: 1.2),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  iconLabel,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(icon, color: accent, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(title,
+                              style: TextStyle(
+                                  color: accent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.3)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            color: Colors.white60, fontSize: 11)),
+                    const SizedBox(height: 6),
+                    Text(body,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.5,
+                            height: 1.45)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
