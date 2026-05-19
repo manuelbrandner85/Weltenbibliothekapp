@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
-import '../screens/profile_onboarding_screen.dart';
+import '../screens/shared/profile_editor_screen.dart';
 
-/// Widget für fehlende Profile - zeigt hilfreichen Hinweis
+/// Widget fuer fehlende Profile -- leitet zum UNIFIED Profile-Editor.
+///
+/// v95: Frueher fuehrte der Button zum welt-spezifischen
+/// ProfileOnboardingScreen (Materie-Profil/Energie-Profil). Das war
+/// verwirrend, weil der User EIN Profil hat, das fuer alle Welten gilt.
+/// Jetzt: Klick auf 'Profil erstellen' oeffnet den allgemeinen
+/// ProfileEditorScreen (lib/screens/shared/profile_editor_screen.dart).
 class ProfileRequiredWidget extends StatelessWidget {
-  final String worldType; // 'materie' oder 'energie'
+  /// Optionaler Welt-Kontext fuer Akzentfarbe der Karte. Egal welcher
+  /// Wert -- der Editor selbst ist welt-uebergreifend.
+  final String worldType;
   final String message;
   final VoidCallback? onProfileCreated;
-  
+
   const ProfileRequiredWidget({
     super.key,
-    required this.worldType,
+    this.worldType = 'energie',
     this.message = 'Profil erforderlich',
     this.onProfileCreated,
   });
@@ -18,11 +26,18 @@ class ProfileRequiredWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMaterie = worldType == 'materie';
     final primaryColor = isMaterie ? Colors.blue : Colors.purple;
-    
+    // v95: Welt-spezifische Phrasen im message normalisieren -- der
+    // Profil-Editor ist welt-uebergreifend.
+    final displayMessage = message
+        .replaceAll('Energie-Profil', 'Profil')
+        .replaceAll('Materie-Profil', 'Profil')
+        .replaceAll('Vorhang-Profil', 'Profil')
+        .replaceAll('Ursprung-Profil', 'Profil');
+
     return Center(
       child: Container(
         margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -39,10 +54,8 @@ class ProfileRequiredWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Icon
             Container(
-              width: 80,
-              height: 80,
+              width: 80, height: 80,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isMaterie
@@ -52,19 +65,13 @@ class ProfileRequiredWidget extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child: Icon(
-                  Icons.person_add_outlined,
-                  size: 40,
-                  color: Colors.white,
-                ),
+                child: Icon(Icons.person_add_outlined,
+                    size: 40, color: Colors.white),
               ),
             ),
-            
-            const SizedBox(height: 24),
-            
-            // Titel
+            const SizedBox(height: 20),
             Text(
-              message,
+              displayMessage,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -72,36 +79,27 @@ class ProfileRequiredWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            
-            const SizedBox(height: 12),
-            
-            // Beschreibung
+            const SizedBox(height: 10),
             Text(
-              isMaterie
-                  ? 'Erstelle ein Materie-Profil, um diese Funktion zu nutzen.'
-                  : 'Erstelle ein Energie-Profil mit deinen Geburtsdaten, um spirituelle Tools zu verwenden.',
+              'Lege dein allgemeines Profil mit Geburtsdaten an -- es gilt '
+              'fuer alle Welten und Tools (Numerologie, Astrologie, '
+              'Spirit-Tools, Kristalle, Mantras).',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 color: Colors.white.withValues(alpha: 0.7),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
-            
-            const SizedBox(height: 28),
-            
-            // Button
+            const SizedBox(height: 22),
             FilledButton.icon(
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ProfileOnboardingScreen(
-                      worldType: worldType,
-                    ),
+                    builder: (_) => const ProfileEditorScreen(world: 'energie'),
                   ),
                 );
-                
                 if (result == true && onProfileCreated != null) {
                   onProfileCreated!();
                 }
@@ -115,20 +113,16 @@ class ProfileRequiredWidget extends StatelessWidget {
                 backgroundColor: primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+                  horizontal: 32, vertical: 14,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
-            
-            const SizedBox(height: 16),
-            
-            // Info-Box
+            const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(10),
@@ -137,16 +131,16 @@ class ProfileRequiredWidget extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.info_outline,
-                    size: 18,
+                    Icons.lock_outline_rounded,
+                    size: 16,
                     color: Colors.white.withValues(alpha: 0.6),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Flexible(
                     child: Text(
-                      'Deine Daten bleiben lokal gespeichert',
+                      'Daten lokal gespeichert',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: Colors.white.withValues(alpha: 0.6),
                       ),
                     ),
