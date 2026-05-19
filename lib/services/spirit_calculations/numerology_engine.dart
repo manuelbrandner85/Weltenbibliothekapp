@@ -33,6 +33,21 @@ class NumerologyEngine {
     'I': 9, 'R': 9,
   };
 
+  /// Chaldean Letter Values (ca. 4000 v.Chr., Babylonien).
+  /// WICHTIG: Die 9 ist heilig und keinem Buchstaben zugeordnet.
+  /// Basiert auf Klangschwingungen, nicht auf Reihenfolge.
+  static const Map<String, int> _chaldeanValues = {
+    'A': 1, 'I': 1, 'J': 1, 'Q': 1, 'Y': 1,
+    'B': 2, 'K': 2, 'R': 2,
+    'C': 3, 'G': 3, 'L': 3, 'S': 3,
+    'D': 4, 'M': 4, 'T': 4,
+    'E': 5, 'H': 5, 'N': 5, 'X': 5,
+    'U': 6, 'V': 6, 'W': 6,
+    'O': 7, 'Z': 7,
+    'F': 8, 'P': 8,
+    // 9 wird KEINEM Buchstaben zugeordnet (heilig).
+  };
+
   static const List<String> _vowels = ['A', 'E', 'I', 'O', 'U'];
   static const List<int> _masterNumbers = [11, 22, 33];
   static const List<int> _karmaNumbers = [13, 14, 16, 19];
@@ -291,6 +306,466 @@ class NumerologyEngine {
   ) {
     return (lifePath + soul + expression + personality) / 4.0;
   }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 🏛️ CHALDÄISCHES SYSTEM (Verbesserung 1)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Chaldean Name Number (gesamter Name).
+  static int calculateChaldeanName(String firstName, String lastName) {
+    final fullName = '$firstName $lastName'.toUpperCase();
+    int sum = 0;
+    for (int i = 0; i < fullName.length; i++) {
+      final v = _chaldeanValues[fullName[i]];
+      if (v != null) sum += v;
+    }
+    return _reduceToSingleDigit(sum, keepMaster: true);
+  }
+
+  /// Chaldean Soul Number (nur Vokale).
+  static int calculateChaldeanSoul(String firstName, String lastName) {
+    final fullName = '$firstName $lastName'.toUpperCase();
+    int sum = 0;
+    for (int i = 0; i < fullName.length; i++) {
+      final c = fullName[i];
+      if (_vowels.contains(c)) {
+        final v = _chaldeanValues[c];
+        if (v != null) sum += v;
+      }
+    }
+    return _reduceToSingleDigit(sum, keepMaster: true);
+  }
+
+  /// Chaldean Personality Number (nur Konsonanten).
+  static int calculateChaldeanPersonality(String firstName, String lastName) {
+    final fullName = '$firstName $lastName'.toUpperCase();
+    int sum = 0;
+    for (int i = 0; i < fullName.length; i++) {
+      final c = fullName[i];
+      if (!_vowels.contains(c)) {
+        final v = _chaldeanValues[c];
+        if (v != null) sum += v;
+      }
+    }
+    return _reduceToSingleDigit(sum, keepMaster: true);
+  }
+
+  /// Wichtige Quellen-Notiz fuer UI.
+  static const String chaldeanSystemInfo =
+      'Das Chaldaeische System (ca. 4000 v.Chr., Babylonien) gilt als '
+      'das aeltere System. Es basiert auf Klangschwingungen statt '
+      'alphabetischer Reihenfolge. Die 9 wird als heilig betrachtet und '
+      'keinem Buchstaben zugeordnet.';
+
+  // ════════════════════════════════════════════════════════════════════
+  // 👰 GEBURTSNAME VS. AKTUELLER NAME (Verbesserung 2)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Vergleicht Schwingung des Geburtsnamens mit aktuellem Namen.
+  /// Liefert beide Sets + Shift + Deutung.
+  static Map<String, dynamic> compareNameVibrations(
+    String birthFirst,
+    String? birthMiddle,
+    String birthLast,
+    String currentFirst,
+    String currentLast,
+  ) {
+    // Geburtsname kombiniert Vor- + Zweit- + Nachname.
+    final birthFullFirst = (birthMiddle?.trim().isNotEmpty ?? false)
+        ? '$birthFirst $birthMiddle'
+        : birthFirst;
+
+    final birthExpression =
+        calculateExpressionNumber(birthFullFirst, birthLast);
+    final birthSoul = calculateSoulNumber(birthFullFirst, birthLast);
+    final birthPersonality =
+        calculatePersonalityNumber(birthFullFirst, birthLast);
+
+    final currentExpression =
+        calculateExpressionNumber(currentFirst, currentLast);
+    final currentSoul = calculateSoulNumber(currentFirst, currentLast);
+    final currentPersonality =
+        calculatePersonalityNumber(currentFirst, currentLast);
+
+    final shift = (birthExpression - currentExpression).abs();
+
+    return {
+      'birthExpression': birthExpression,
+      'currentExpression': currentExpression,
+      'birthSoul': birthSoul,
+      'currentSoul': currentSoul,
+      'birthPersonality': birthPersonality,
+      'currentPersonality': currentPersonality,
+      'vibrationShift': shift,
+      'shiftInterpretation': _interpretShift(
+          birthExpression, currentExpression, birthSoul, currentSoul),
+    };
+  }
+
+  static String _interpretShift(int birthExp, int currentExp, int birthSoul,
+      int currentSoul) {
+    if (birthExp == currentExp && birthSoul == currentSoul) {
+      return 'Deine Schwingung ist unveraendert geblieben - du lebst auch '
+          'mit dem neuen Namen deine urspruengliche Mission.';
+    }
+    if (birthExp == currentExp) {
+      return 'Die Hauptschwingung deines Namens ist erhalten - nur die '
+          'innere Sehnsucht (Seele) hat sich verschoben.';
+    }
+    if (birthSoul == currentSoul) {
+      return 'Deine Seele schwingt unveraendert, aber deine aeussere '
+          'Ausdrucksform hat eine neue Resonanz angenommen.';
+    }
+    final delta = (birthExp - currentExp).abs();
+    if (delta <= 1) {
+      return 'Eine sanfte Verschiebung - dein neuer Name liegt nahe an der '
+          'Geburtsschwingung. Du bist gewachsen, ohne dich zu verlieren.';
+    }
+    if (delta >= 5) {
+      return 'Eine grosse Schwingungsverschiebung - der neue Name oeffnet '
+          'voellig neue Energiebereiche. Tiefe Transformation.';
+    }
+    return 'Mittlere Verschiebung - der neue Name bringt frische Themen '
+        'in dein Leben, ohne deine Wurzeln zu kappen.';
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 🌉 BRÜCKENZAHLEN (Verbesserung 3)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Bridge Numbers: Differenzen zwischen Kernzahlen mit Ratschlaegen.
+  /// Eine Bruecke = die Energie, die zwei Aspekte verbindet.
+  static List<Map<String, dynamic>> calculateBridgeNumbers(
+    int lifePath,
+    int expression,
+    int soul,
+    int personality,
+  ) {
+    return [
+      _buildBridge('Lebenszahl', lifePath, 'Ausdruckszahl', expression),
+      _buildBridge('Seelenzahl', soul, 'Persoenlichkeitszahl', personality),
+      _buildBridge('Lebenszahl', lifePath, 'Seelenzahl', soul),
+      _buildBridge('Ausdruckszahl', expression, 'Persoenlichkeitszahl',
+          personality),
+    ];
+  }
+
+  static Map<String, dynamic> _buildBridge(
+      String labelA, int a, String labelB, int b) {
+    final bridge = (a - b).abs();
+    return {
+      'labelA': labelA,
+      'numberA': a,
+      'labelB': labelB,
+      'numberB': b,
+      'bridge': bridge,
+      'interpretation': _getBridgeInterpretation(bridge),
+    };
+  }
+
+  static String _getBridgeInterpretation(int bridge) {
+    switch (bridge) {
+      case 0:
+        return 'Perfekte Harmonie zwischen diesen Aspekten - sie verstaerken sich gegenseitig.';
+      case 1:
+        return 'Mehr Eigeninitiative und Selbstvertrauen verbindet diese Energien.';
+      case 2:
+        return 'Diplomatisches Feingefuehl und Kooperation schliessen die Bruecke.';
+      case 3:
+        return 'Kreativer Selbstausdruck und Kommunikation sind der Schluessel.';
+      case 4:
+        return 'Praktische Disziplin und Struktur bauen die Verbindung.';
+      case 5:
+        return 'Flexibilitaet und Offenheit fuer Veraenderung heilen die Luecke.';
+      case 6:
+        return 'Mehr Verantwortung und liebevolle Fuersorge harmonisieren.';
+      case 7:
+        return 'Meditation, Stille und innere Einkehr ueberbruecken die Differenz.';
+      case 8:
+        return 'Materielles Engagement und Fuehrungskraft verbinden die Kraefte.';
+      default:
+        return 'Aussergewoehnliche Spanne - braucht bewusste Integration.';
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 🗺️ INCLUSION CHART (Verbesserung 4)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Zaehlt wie oft jede Zahl 1-9 im Namen vorkommt (Pythagoraeisch).
+  /// Fehlende Zahlen = Karmische Lektionen.
+  /// Zahlen mit 3+ Vorkommen = Staerken/Dominanz.
+  static Map<String, dynamic> calculateInclusionChart(
+    String firstName,
+    String lastName,
+  ) {
+    final fullName = '$firstName $lastName'.toUpperCase();
+    final counts = <int, int>{
+      for (var n = 1; n <= 9; n++) n: 0,
+    };
+
+    for (int i = 0; i < fullName.length; i++) {
+      final v = _pythagoreanValues[fullName[i]];
+      if (v != null) counts[v] = (counts[v] ?? 0) + 1;
+    }
+
+    final missing = <int>[];
+    final dominant = <int>[];
+    counts.forEach((n, c) {
+      if (c == 0) missing.add(n);
+      if (c >= 3) dominant.add(n);
+    });
+
+    final missingInterpretations = <int, String>{
+      1: 'Karmische Lektion: Selbstvertrauen und Unabhaengigkeit entwickeln.',
+      2: 'Karmische Lektion: Geduld, Kooperation und Feingefuehl lernen.',
+      3: 'Karmische Lektion: Kreativen Selbstausdruck und Freude kultivieren.',
+      4: 'Karmische Lektion: Disziplin, Ordnung und Durchhaltevermoegen aufbauen.',
+      5: 'Karmische Lektion: Anpassungsfaehigkeit und Freiheit zulassen.',
+      6: 'Karmische Lektion: Verantwortung und bedingungslose Liebe ueben.',
+      7: 'Karmische Lektion: Vertrauen in Intuition und spirituelle Tiefe.',
+      8: 'Karmische Lektion: Materiellen Erfolg und Macht annehmen.',
+      9: 'Karmische Lektion: Mitgefuehl, Loslassen und Universalitaet.',
+    };
+
+    return {
+      'numberCounts': counts,
+      'missingNumbers': missing,
+      'dominantNumbers': dominant,
+      'missingInterpretations': {
+        for (final n in missing) n: missingInterpretations[n]!,
+      },
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 💞 ECHTE KOMPATIBILITÄTSMATRIX (Verbesserung 6)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Klassische numerologische Kompatibilitaets-Matrix (Score 0-100).
+  static int calculateTrueCompatibility(int a, int b) {
+    final key = a <= b ? '$a-$b' : '$b-$a';
+    return _compatibilityMatrix[key] ?? 50;
+  }
+
+  /// Textuelle Beschreibung pro Paar.
+  static String getCompatibilityDescription(int a, int b) {
+    final key = a <= b ? '$a-$b' : '$b-$a';
+    return _compatibilityDescriptions[key] ??
+        'Eine einzigartige Konstellation - betrachte beide Energien als '
+            'Ergaenzung statt als Gegensatz.';
+  }
+
+  static const Map<String, int> _compatibilityMatrix = {
+    '1-1': 75, '1-2': 60, '1-3': 80, '1-4': 50, '1-5': 90,
+    '1-6': 55, '1-7': 65, '1-8': 45, '1-9': 70,
+    '2-2': 80, '2-3': 75, '2-4': 85, '2-5': 40, '2-6': 95,
+    '2-7': 60, '2-8': 70, '2-9': 65,
+    '3-3': 70, '3-4': 35, '3-5': 85, '3-6': 90, '3-7': 55,
+    '3-8': 50, '3-9': 80,
+    '4-4': 65, '4-5': 30, '4-6': 80, '4-7': 70, '4-8': 90, '4-9': 45,
+    '5-5': 60, '5-6': 40, '5-7': 75, '5-8': 50, '5-9': 85,
+    '6-6': 75, '6-7': 45, '6-8': 55, '6-9': 90,
+    '7-7': 80, '7-8': 40, '7-9': 70,
+    '8-8': 65, '8-9': 50,
+    '9-9': 75,
+  };
+
+  static const Map<String, String> _compatibilityDescriptions = {
+    '1-1': 'Zwei Pioniere - feurig und ambitioniert. Beide wollen fuehren, das kann Reibung erzeugen, aber auch enorme Power.',
+    '1-2': 'Pionier trifft Diplomat. Die 1 fuehrt, die 2 unterstuetzt sanft. Funktioniert wenn beide ihre Rollen ehren.',
+    '1-3': 'Pionier + Kuenstler. Sehr inspirierend und kreativ. Beide lieben Aufmerksamkeit, koennen sich gegenseitig bestaerken.',
+    '1-4': 'Pionier + Baumeister. Tempo trifft Geduld. Herausfordernd, aber die 4 erdet die 1, wenn beide nachgeben.',
+    '1-5': 'Eine elektrische, aufregende Verbindung! Beide lieben Freiheit und Abenteuer. Pionier (1) und Freigeist (5) inspirieren sich gegenseitig.',
+    '1-6': 'Pionier + Naehrender. Die 6 fordert Familienzeit, die 1 will durchstarten - Kompromisse noetig.',
+    '1-7': 'Pionier + Mystiker. Komplementaer: 7 bringt Tiefe, 1 bringt Aktion. Brauchen Verstaendnis fuer beide Welten.',
+    '1-8': 'Zwei Alphas auf demselben Feld. Machtkampf vorprogrammiert, sofern keine klare Rollenverteilung.',
+    '1-9': 'Pionier + Humanist. 9 zaehmt 1, 1 mobilisiert 9. Sehr fruchtbar wenn beide ihre Egos zuegeln.',
+    '2-2': 'Doppelte Harmonie - sanft, liebevoll, einfuehlsam. Risiko: Entscheidungsschwaeche.',
+    '2-3': 'Harmonisch und kreativ. 3 bringt Leichtigkeit, 2 bringt Tiefe. Schoene Balance.',
+    '2-4': 'Sehr stabile Verbindung. 2 sorgt fuer Frieden, 4 fuer Struktur. Klassisches Erfolgsteam.',
+    '2-5': 'Schwierig: 2 will Sicherheit, 5 will Freiheit. Nur bei viel Reife tragfaehig.',
+    '2-6': 'Top-Match. Beide werte-orientiert, fuersorglich und partnerschaftlich. Sehr nahrhaft.',
+    '2-7': 'Subtil und tief. 7 braucht Rueckzug, 2 sehnt sich nach Naehe - kann ungleich wirken.',
+    '2-8': 'Klassisches Klassikerpaar: 8 fuehrt, 2 unterstuetzt. Funktioniert wenn 8 die 2 wertschaetzt.',
+    '2-9': 'Beide humanitaer veranlagt, gemeinsame Mission moeglich. Sehr warm.',
+    '3-3': 'Doppelte Kreativitaet - viel Spass, aber auch viel Drama. Beide brauchen Buehne.',
+    '3-4': 'Herausfordernd: 3 liebt Spontanitaet, 4 will Planung. Kann sich aber wunderbar ergaenzen.',
+    '3-5': 'Lebhaft, freiheitsliebend, abenteuerlustig. Sehr inspirierend, kann fluechtig sein.',
+    '3-6': 'Warmes Kuenstler-Paar. 6 erdet die 3, 3 bringt Lebendigkeit in das 6er-Heim.',
+    '3-7': 'Kuenstler + Mystiker. Tief und kreativ - aber 7 braucht mehr Ruhe als 3 verstehen kann.',
+    '3-8': 'Aussen vs. Innen: 8 will Erfolg, 3 will Ausdruck. Kann sich ergaenzen, oft kontaer.',
+    '3-9': 'Beide kreativ und expressiv, mit Tiefe. Sehr inspirierend und farbig.',
+    '4-4': 'Stabil, vorhersehbar, sicher. Risiko: zu wenig Funken, Routine.',
+    '4-5': 'Herausforderndste Kombi: Stabilitaet trifft Freiheit. Grosses Wachstumspotenzial bei Kompromissbereitschaft.',
+    '4-6': 'Solide Familien-Verbindung. Beide bauen, beide tragen Verantwortung.',
+    '4-7': 'Strukturiert + introspektiv. Funktioniert leise, beide schaetzen Tiefe.',
+    '4-8': 'Power-Duo: Disziplin + Erfolg. Sehr kraftvolle Verbindung, sehr ergebnisorientiert.',
+    '4-9': 'Pragmatiker + Idealist. 9 sieht das grosse Ganze, 4 die Details - braucht Geduld.',
+    '5-5': 'Doppelte Freiheit, dauerhafte Abwechslung. Schwer fuer Bindung, leicht fuer Erlebnisse.',
+    '5-6': 'Freigeist + Familienseele. Zugkraefte in entgegengesetzte Richtungen.',
+    '5-7': 'Beide unabhaengig und tief, geben sich Raum - sehr respektvoll.',
+    '5-8': 'Ehrgeiz + Freiheit. 8 will Stabilitaet im Erfolg, 5 will offene Tueren.',
+    '5-9': 'Universell und abenteuerlustig - beide wollen die Welt sehen und veraendern.',
+    '6-6': 'Warmes, fuersorgliches Paar. Familienzentriert, harmonisch.',
+    '6-7': 'Naehrer + Denker. 7 zieht sich zurueck, 6 will Naehe - sanfte Reibung.',
+    '6-8': 'Solide, fokussiert - 6 schafft das Zuhause, 8 schafft den Erfolg.',
+    '6-9': 'Bedingungslose Liebe meets universelle Liebe - sehr selten und kostbar.',
+    '7-7': 'Tiefe, philosophische Verbindung. Beide brauchen viel Allein-Zeit.',
+    '7-8': 'Innenwelt + Aussenwelt - selten an einem Strang, aber komplementaer wenn ja.',
+    '7-9': 'Mystiker + Humanist. Tief, weise, oft spirituell ausgerichtet.',
+    '8-8': 'Doppelte Power - oft Geschaeftspartner und Liebhaber zugleich. Klare Spielregeln noetig.',
+    '8-9': 'Ehrgeiz + Mitgefuehl. 9 erdet das Materielle der 8 im Sinn fuer das Hoehere.',
+    '9-9': 'Doppelter Idealismus - kann sich gegenseitig hochziehen oder gemeinsam erschoepfen.',
+  };
+
+  /// Gewichteter Gesamt-Score fuer Synastrie:
+  /// Lebenszahl 40%, Seelenzahl 35%, Ausdruckszahl 25%.
+  static int calculateWeightedCompatibility({
+    required int lifePathA,
+    required int lifePathB,
+    required int soulA,
+    required int soulB,
+    required int expressionA,
+    required int expressionB,
+  }) {
+    final lp = calculateTrueCompatibility(lifePathA, lifePathB);
+    final so = calculateTrueCompatibility(soulA, soulB);
+    final ex = calculateTrueCompatibility(expressionA, expressionB);
+    return (lp * 0.40 + so * 0.35 + ex * 0.25).round();
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 🏠 ADRESS- / TELEFON- / KENNZEICHEN-NUMEROLOGIE (Verbesserung 9)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Extrahiert nur Ziffern aus Adresse und reduziert.
+  static int calculateAddressNumber(String address) {
+    int sum = 0;
+    for (final ch in address.split('')) {
+      final n = int.tryParse(ch);
+      if (n != null) sum += n;
+    }
+    if (sum == 0) return 0;
+    return _reduceToSingleDigit(sum, keepMaster: false);
+  }
+
+  /// Alle Ziffern der Telefonnummer summiert und reduziert.
+  static int calculatePhoneNumber(String phone) {
+    int sum = 0;
+    for (final ch in phone.split('')) {
+      final n = int.tryParse(ch);
+      if (n != null) sum += n;
+    }
+    if (sum == 0) return 0;
+    return _reduceToSingleDigit(sum, keepMaster: false);
+  }
+
+  /// Kennzeichen: Buchstaben (Pythagoraeisch) + Ziffern.
+  static int calculateLicensePlate(String plate) {
+    final upper = plate.toUpperCase();
+    int sum = 0;
+    for (int i = 0; i < upper.length; i++) {
+      final ch = upper[i];
+      final asDigit = int.tryParse(ch);
+      if (asDigit != null) {
+        sum += asDigit;
+      } else {
+        final letter = _pythagoreanValues[ch];
+        if (letter != null) sum += letter;
+      }
+    }
+    if (sum == 0) return 0;
+    return _reduceToSingleDigit(sum, keepMaster: false);
+  }
+
+  static String getAddressNumberMeaning(int number) {
+    switch (number) {
+      case 1:
+        return 'Haus der Unabhaengigkeit - foerdert Eigenstaendigkeit und neue Anfaenge.';
+      case 2:
+        return 'Haus der Partnerschaft - ideal fuer Paare und harmonisches Zusammenleben.';
+      case 3:
+        return 'Haus der Kreativitaet - inspiriert kuenstlerischen Ausdruck und Geselligkeit.';
+      case 4:
+        return 'Haus der Stabilitaet - foerdert harte Arbeit, Ordnung und Sicherheit.';
+      case 5:
+        return 'Haus der Veraenderung - dynamisch, aufregend, ideal fuer Freigeister.';
+      case 6:
+        return 'Haus der Familie - warm, naehrend, perfekt fuer Familien.';
+      case 7:
+        return 'Haus der Stille - ideal fuer Denker, Meditierende und Suchende.';
+      case 8:
+        return 'Haus des Wohlstands - foerdert finanziellen Erfolg und Ambitionen.';
+      case 9:
+        return 'Haus der Vollendung - humanitaer, weltoffen, spirituell.';
+      default:
+        return 'Keine Ziffern erkannt - bitte Adresse pruefen.';
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // 📅 TAGES-ENERGIE-TEXTE (Verbesserung 5 -- App-seitig fuer Fallback)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// 3 Varianten pro Tagesenergie 1..9. Selektion deterministisch pro Datum.
+  static String getDailyEnergyText(int personalDay, {DateTime? seed}) {
+    final variants = _dailyEnergyTexts[personalDay] ?? const [
+      'Heute traegt deine einzigartige Schwingung. Hoere auf dein Inneres.',
+    ];
+    if (variants.isEmpty) return '';
+    final date = seed ?? DateTime.now();
+    final idx = (date.day + date.month) % variants.length;
+    return variants[idx];
+  }
+
+  static const Map<int, List<String>> _dailyEnergyTexts = {
+    1: [
+      'Heute strahlt Pionierenergie! Starte etwas Neues.',
+      'Tag der Initiative - geh voran!',
+      'Die 1 ruft: Sei mutig und eigenstaendig!',
+    ],
+    2: [
+      'Harmonie-Tag: Pflege deine Beziehungen.',
+      'Diplomatie und Feingefuehl sind heute deine Staerken.',
+      'Die 2 fluestert: Hoere zu und vermittle.',
+    ],
+    3: [
+      'Kreativitaets-Explosion! Druecke dich aus.',
+      'Freude und Ausdruck stehen heute im Fokus.',
+      'Die 3 singt: Erschaffe etwas Schoenes!',
+    ],
+    4: [
+      'Strukturtag: Ordne und organisiere.',
+      'Heute lohnt sich fleissige Arbeit doppelt.',
+      'Die 4 spricht: Baue solide Fundamente.',
+    ],
+    5: [
+      'Abenteuer-Tag! Sei offen fuer Neues.',
+      'Veraenderung liegt in der Luft - umarme sie!',
+      'Die 5 ruft: Brich aus der Routine aus!',
+    ],
+    6: [
+      'Familien- und Liebestag.',
+      'Fuersorge und Verantwortung tragen heute Fruechte.',
+      'Die 6 waermt: Gib und empfange Liebe.',
+    ],
+    7: [
+      'Tag der inneren Einkehr und Analyse.',
+      'Meditation und Stille bringen heute Klarheit.',
+      'Die 7 schweigt: Hoere nach innen.',
+    ],
+    8: [
+      'Manifestations-Tag! Denke gross.',
+      'Materieller Fokus bringt heute Ergebnisse.',
+      'Die 8 manifestiert: Dein Erfolg wartet.',
+    ],
+    9: [
+      'Tag des Loslassens und der Vollendung.',
+      'Mitgefuehl und Dienst am Naechsten erfuellen heute.',
+      'Die 9 vollendet: Lass los, was nicht mehr dient.',
+    ],
+  };
 
   /// Hilfsfunktion: Reduziere auf einzelne Ziffer
   static int _reduceToSingleDigit(int number, {bool keepMaster = false}) {
