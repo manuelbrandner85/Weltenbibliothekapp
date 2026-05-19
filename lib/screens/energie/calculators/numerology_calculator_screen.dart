@@ -34,6 +34,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   EnergieProfile? _profile;
   EnergieProfile? _partnerProfile; // 🆕 Partner-Profil
 
+  // System-Toggle (Verbesserung 1): false = pythagoraeisch, true = chaldaeisch
+  bool _chaldeanMode = false;
+
   // Cinema background
   late AnimationController _bgCtrl;
   late AnimationController _pulseCtrl;
@@ -343,14 +346,32 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   }
 
   Widget _buildCoreNumbersTab() {
+    // Aktuelle Werte basierend auf System-Toggle:
+    // Lebenszahl bleibt immer pythagoraeisch (basiert auf Datum, nicht Name).
+    final soul = _chaldeanMode && _profile != null
+        ? NumerologyEngine.calculateChaldeanSoul(
+            _profile!.firstName, _profile!.lastName)
+        : (_soul ?? 0);
+    final expression = _chaldeanMode && _profile != null
+        ? NumerologyEngine.calculateChaldeanName(
+            _profile!.firstName, _profile!.lastName)
+        : (_expression ?? 0);
+    final personality = _chaldeanMode && _profile != null
+        ? NumerologyEngine.calculateChaldeanPersonality(
+            _profile!.firstName, _profile!.lastName)
+        : (_personality ?? 0);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildProfileCard(),
-          const SizedBox(height: 24),
-          _buildSectionTitle('DEINE KERN-ZAHLEN'),
+          const SizedBox(height: 16),
+          _buildSystemToggle(),
+          const SizedBox(height: 20),
+          _buildSectionTitle(
+              _chaldeanMode ? 'CHALDAEISCH (ca. 4000 v. Chr.)' : 'PYTHAGORAEISCH'),
           const SizedBox(height: 16),
           _buildNumberCard(
             'Lebenszahl',
@@ -362,31 +383,222 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           const SizedBox(height: 12),
           _buildNumberCard(
             'Seelenzahl',
-            _soul ?? 0,
-            _getSoulDescription(_soul ?? 0),
+            soul,
+            _getSoulDescription(soul),
             const Color(0xFF9C27B0),
             Icons.favorite,
           ),
           const SizedBox(height: 12),
           _buildNumberCard(
             'Ausdruckszahl',
-            _expression ?? 0,
-            _getExpressionDescription(_expression ?? 0),
+            expression,
+            _getExpressionDescription(expression),
             const Color(0xFF673AB7),
             Icons.stars,
           ),
           const SizedBox(height: 12),
           _buildNumberCard(
             'Persönlichkeitszahl',
-            _personality ?? 0,
-            _getPersonalityDescription(_personality ?? 0),
+            personality,
+            _getPersonalityDescription(personality),
             const Color(0xFF7B1FA2),
             Icons.person,
           ),
+          if (_chaldeanMode) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC9A84C).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: const Color(0xFFC9A84C).withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.history_edu_rounded,
+                      color: Color(0xFFC9A84C), size: 18),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      NumerologyEngine.chaldeanSystemInfo,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          height: 1.45),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
+          // Vergleichskarte: Geburtsname vs. aktueller Name (Verbesserung 2)
+          if (_profile?.hasDifferentBirthName ?? false) ...[
+            _buildBirthNameComparisonCard(),
+            const SizedBox(height: 24),
+          ],
           _buildFrequencyCard(),
         ],
       ),
+    );
+  }
+
+  Widget _buildSystemToggle() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+            color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+              child: _toggleButton(
+                  label: 'Pythagoraeisch',
+                  active: !_chaldeanMode,
+                  onTap: () => setState(() => _chaldeanMode = false))),
+          Expanded(
+              child: _toggleButton(
+                  label: 'Chaldaeisch',
+                  active: _chaldeanMode,
+                  onTap: () => setState(() => _chaldeanMode = true))),
+        ],
+      ),
+    );
+  }
+
+  Widget _toggleButton({
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: active
+              ? const Color(0xFF7C4DFF).withValues(alpha: 0.28)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? Colors.white : Colors.white60,
+            fontSize: 12,
+            fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Vergleichskarte Geburtsname vs. aktueller Name (Verbesserung 2)
+  Widget _buildBirthNameComparisonCard() {
+    if (_profile == null) return const SizedBox.shrink();
+    final cmp = NumerologyEngine.compareNameVibrations(
+      _profile!.birthFirstName ?? _profile!.firstName,
+      _profile!.birthMiddleNames,
+      _profile!.birthLastName ?? _profile!.lastName,
+      _profile!.firstName,
+      _profile!.lastName,
+    );
+    final shift = cmp['vibrationShift'] as int;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: const Color(0xFFC9A84C).withValues(alpha: 0.4)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.compare_arrows_rounded,
+                      color: Color(0xFFC9A84C), size: 20),
+                  SizedBox(width: 8),
+                  Text('Geburts-Schwingung vs. Aktuell',
+                      style: TextStyle(
+                          color: Color(0xFFC9A84C),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                      child: _comparisonColumn('Geburt',
+                          cmp['birthExpression'] as int,
+                          cmp['birthSoul'] as int)),
+                  Container(
+                    width: 1.2,
+                    height: 60,
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                  Expanded(
+                      child: _comparisonColumn('Aktuell',
+                          cmp['currentExpression'] as int,
+                          cmp['currentSoul'] as int)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFC9A84C).withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('Schwingungs-Shift: $shift',
+                    style: const TextStyle(
+                        color: Color(0xFFC9A84C),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800)),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                cmp['shiftInterpretation'] as String,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 12.5, height: 1.45),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _comparisonColumn(String label, int expression, int soul) {
+    return Column(
+      children: [
+        Text(label,
+            style: const TextStyle(
+                color: Colors.white60,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2)),
+        const SizedBox(height: 6),
+        Text('Ausdruck $expression  ·  Seele $soul',
+            style: const TextStyle(
+                color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 
