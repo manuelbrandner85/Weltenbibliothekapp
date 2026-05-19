@@ -406,28 +406,44 @@ class _OverviewTabState extends State<_OverviewTab> {
   Map<String, dynamic> _stats = {};
   List<AuditLogEntry> _activity = [];
   bool _loading = true;
-  Timer? _timer;
+  RealtimeChannel? _channel;
 
   @override
   void initState() {
     super.initState();
     _load();
-    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _load());
+    // v103 Phase 4c: Statt Timer.periodic alle 30s -> Realtime auf
+    // profiles + admin_actions. Spart Netzwerk-Traffic + sofortige
+    // Updates wenn neue Aktionen passieren.
+    try {
+      _channel = supabase
+          .channel('admin-overview-realtime')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'profiles',
+            callback: (_) => _load(),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'admin_actions',
+            callback: (_) => _load(),
+          )
+          .subscribe();
+    } catch (_) { /* RT optional */ }
   }
 
   @override
   void didUpdateWidget(covariant _OverviewTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Welt-Switch im Parent -> neu laden mit neuem Realm.
-    if (oldWidget.world != widget.world) {
-      setState(() => _loading = true);
-      _load();
-    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    try {
+      _channel?.unsubscribe();
+    } catch (_) {}
     super.dispose();
   }
 
@@ -5966,11 +5982,50 @@ class _AuditLogTabState extends State<_AuditLogTab> {
   List<Map<String, dynamic>> _logs = [];
   bool _loading = true;
   String _filterAction = 'all';
+  // v103 Phase 4f: zusaetzlicher Zeitraum-Filter.
+  String _filterRange = 'all'; // 'today' | '7d' | '30d' | 'all'
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  bool _matchesRange(DateTime? created) {
+    if (_filterRange == 'all' || created == null) return true;
+    final now = DateTime.now();
+    switch (_filterRange) {
+      case 'today':
+        return created.year == now.year &&
+            created.month == now.month &&
+            created.day == now.day;
+      case '7d':
+        return now.difference(created).inDays <= 7;
+      case '30d':
+        return now.difference(created).inDays <= 30;
+      default:
+        return true;
+    }
+  }
+
+  DateTime? _parseLogTs(Map<String, dynamic> l) {
+    final ts = l['created_at'] ?? l['timestamp'];
+    if (ts is String) return DateTime.tryParse(ts);
+    return null;
+  }
+
+  List<int> _last7DaysCounts() {
+    final counts = List<int>.filled(7, 0);
+    final now = DateTime.now();
+    for (final l in _logs) {
+      final ts = _parseLogTs(l);
+      if (ts == null) continue;
+      final delta = now.difference(ts).inDays;
+      if (delta >= 0 && delta < 7) {
+        counts[6 - delta]++;
+      }
+    }
+    return counts;
   }
 
   Future<void> _load() async {
@@ -5997,13 +6052,22 @@ class _AuditLogTabState extends State<_AuditLogTab> {
   }
 
   List<Map<String, dynamic>> get _filtered {
-    if (_filterAction == 'all') return _logs;
-    return _logs.where((l) => (l['action'] as String? ?? '').contains(_filterAction)).toList();
+    return _logs.where((l) {
+      if (_filterAction != 'all' &&
+          !(l['action'] as String? ?? '').contains(_filterAction)) {
+        return false;
+      }
+      if (!_matchesRange(_parseLogTs(l))) return false;
+      return true;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final actions = {'all', ..._logs.map((l) => (l['action'] as String? ?? 'unknown')).toSet()};
+    final dayCounts = _last7DaysCounts();
+    final maxCount =
+        dayCounts.isEmpty ? 1 : (dayCounts.reduce((a, b) => a > b ? a : b).clamp(1, 9999));
     return Column(
       children: [
         Padding(
@@ -6014,6 +6078,91 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             const Spacer(),
             IconButton(icon: Icon(Icons.refresh, color: widget.accent), onPressed: _load),
           ]),
+        ),
+        // v103 Phase 4f: Mini-Balkendiagramm letzte 7 Tage.
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: widget.accent.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: widget.accent.withValues(alpha: 0.15)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Aktionen pro Tag (letzte 7 Tage)',
+                style: TextStyle(
+                    color: widget.accentBright,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 36,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (int i = 0; i < dayCounts.length; i++)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Container(
+                                height: (dayCounts[i] / maxCount) * 28,
+                                decoration: BoxDecoration(
+                                  color: dayCounts[i] > 0
+                                      ? widget.accent
+                                      : widget.accent.withValues(alpha: 0.15),
+                                  borderRadius:
+                                      BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${dayCounts[i]}',
+                                style: const TextStyle(
+                                    color: Colors.white60, fontSize: 8),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Zeitraum-Filter (Phase 4f).
+        SizedBox(
+          height: 32,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            children: [
+              for (final r in [
+                ('all', 'Alle'),
+                ('today', 'Heute'),
+                ('7d', '7 Tage'),
+                ('30d', '30 Tage'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(r.$2, style: const TextStyle(fontSize: 10)),
+                    selected: _filterRange == r.$1,
+                    onSelected: (_) =>
+                        setState(() => _filterRange = r.$1),
+                    selectedColor: widget.accentBright,
+                  ),
+                ),
+            ],
+          ),
         ),
         SizedBox(
           height: 36,
