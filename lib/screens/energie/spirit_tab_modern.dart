@@ -6,6 +6,7 @@ import '../../widgets/favorite_button.dart';
 import '../../models/favorite.dart';
 import '../../models/energie_profile.dart';
 import 'calculators/numerology_calculator_screen.dart';
+import 'calculators/everyday_numerology_screen.dart';
 import 'calculators/archetype_calculator_screen.dart';
 import 'calculators/chakra_calculator_screen.dart';
 import 'calculators/kabbalah_calculator_screen.dart';
@@ -128,6 +129,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF9C27B0),
         'category': 'core',
         'screen': const NumerologyCalculatorScreen(),
+      },
+      // 🏠 Alltags-Numerologie -- Adresse, Telefon, Kennzeichen
+      {
+        'icon': Icons.home_rounded,
+        'iconEmoji': '🏠',
+        'title': 'Alltags-Numerologie',
+        'subtitle': 'Adresse, Telefon, Kennzeichen',
+        'color': const Color(0xFF7C4DFF),
+        'category': 'core',
+        'screen': const EverydayNumerologyScreen(),
       },
       // 💕 Beziehungs-Numerologie — Synastrie aus zwei Profilen
       {
