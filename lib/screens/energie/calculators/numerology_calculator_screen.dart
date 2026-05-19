@@ -2024,9 +2024,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                         child: Text(
                           _getCyclePersonalizedText(cycle['cycle'], cycle['number'], _profile?.firstName ?? 'Du'),
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.85),
-                            height: 1.5,
+                            fontSize: 13.5,
+                            color: Colors.white.withValues(alpha: 0.92),
+                            height: 1.65,
                           ),
                         ),
                       ),
@@ -2051,12 +2051,98 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   }
 
   String _getCyclePersonalizedText(int cycle, int number, String name) {
-    if (cycle == 1) {
-      return '$name, deine Jugendphase (0-28 Jahre) wurde von der Energie $number geprägt. Diese Zeit formte deine Grundpersönlichkeit und legte das Fundament für alles Kommende.';
-    } else if (cycle == 2) {
-      return '$name, deine Reifephase (28-56 Jahre) trägt die Schwingung $number. Dies ist deine produktivste Zeit - nutze diese Energie, um deine Lebenswerke zu erschaffen.';
-    } else {
-      return '$name, deine Weisheitsphase (ab 56 Jahre) vibriert mit der Zahl $number. Diese Jahre sind für die Weitergabe deiner Lebenserfahrung und spirituelle Vertiefung bestimmt.';
+    // v95 ausfuehrliche, persoenliche Texte pro Zyklus-Phase + Zahl.
+    // Pro Phase eine eigene Anrede + pro Zahl 1..9 eine konkrete Lebensaussage.
+    final number3 = number == 0 ? 9 : (number > 9 ? number % 10 : number);
+    final phase = _cyclePhaseFraming(cycle, name);
+    final detail = _cycleNumberDetail(cycle, number3, name);
+    return '$phase\n\n$detail';
+  }
+
+  String _cyclePhaseFraming(int cycle, String name) {
+    switch (cycle) {
+      case 1:
+        return '$name, deine JUGEND-PHASE (0-28 Jahre) ist der Boden, in den deine Seele '
+            'zuerst Wurzeln geschlagen hat. Was hier passierte, war noch keine bewusste '
+            'Wahl -- du wurdest geformt durch Familie, Schule, erste Lieben und die '
+            'ersten Niederlagen. Das ist deine Pre-Story. Sie erklaert nicht, wer du '
+            'bist, aber sie zeigt, woher du kommst.';
+      case 2:
+        return '$name, deine REIFE-PHASE (28-56 Jahre) ist das Hauptkapitel deines Lebens. '
+            'Hier baust du auf, was die Jugend gelegt hat -- oder du brichst es bewusst ab '
+            'und schreibst neu. Diese 28 Jahre sind dein groesster Beitrag zur Welt, '
+            'deine produktivste Spanne. Was du jetzt nicht angehst, wird in der Weisheits-'
+            'Phase nur noch Wehmut sein.';
+      case 3:
+        return '$name, deine WEISHEITS-PHASE (ab 56 Jahre) ist nicht das Ende, sondern '
+            'der Aufstieg auf den Beobachtungs-Posten. Du siehst jetzt aus der Hoehe, was '
+            'in den ersten beiden Phasen wirklich passiert ist. Diese Jahre gehoeren dir, '
+            'deinen Lieblingsmenschen und allem, was du noch zu sagen hast.';
+      default:
+        return name;
+    }
+  }
+
+  String _cycleNumberDetail(int cycle, int n, String name) {
+    final age = cycle == 1 ? '0-28' : (cycle == 2 ? '28-56' : '56+');
+    switch (n) {
+      case 1:
+        return 'Die Schwingung 1 macht dich in dieser Phase zum PIONIER. Du gehst voran, '
+            'oft allein, oft als Erster. Im Alter $age fordert dich das Leben auf, '
+            'Verantwortung fuer eigene Initiativen zu uebernehmen. Wenn du in dieser Zeit '
+            'auf andere wartest, verlierst du Energie. Selbststaendigkeit ist hier die '
+            'Aufgabe -- nicht aus Trotz, sondern aus Klarheit.';
+      case 2:
+        return 'Die 2 macht diese Phase zu einer SCHULE DER BEZIEHUNG. Im Alter $age '
+            'lernst du, dass du nicht alleine groesser wirst -- sondern an und mit '
+            'anderen. Partnerschaft, Geduld, Diplomatie. Wenn du in dieser Phase Konflikten '
+            'ausweichst, verpasst du das Wesentliche: dass wahre Staerke aus Verbindung '
+            'kommt, nicht aus Abgrenzung.';
+      case 3:
+        return 'Die 3 oeffnet in der Phase $age den KREATIV-RAUM. Selbstausdruck, Kunst, '
+            'Sprache, Buehne -- alles, was deine Seele nach aussen tragen will, findet '
+            'jetzt seinen Kanal. Du wirst von anderen gesehen -- das kann beschenken oder '
+            'verunsichern. Lass dich nicht von Schweigen oder Selbstkritik blockieren. '
+            'Deine Stimme will gehoert werden.';
+      case 4:
+        return 'Die 4 in der Phase $age verlangt FUNDAMENT-ARBEIT. Disziplin, Struktur, '
+            'lange Atem. Was du jetzt baust, soll halten. Wenn du in dieser Phase '
+            'Abkuerzungen suchst, wirst du sie spaeter teuer bezahlen. Aber wenn du Tag '
+            'fuer Tag dranbleibst, entsteht ein Werk, das dich selbst ueberlebt -- '
+            'finanziell, beruflich oder als Familie.';
+      case 5:
+        return 'Die 5 macht diese Phase zur ABENTEUER-PHASE. Im Alter $age braucht deine '
+            'Seele Bewegung, neue Orte, neue Erfahrungen. Festhalten kostet hier mehr '
+            'Energie, als loszulassen. Du wirst dich oefter haeuten -- Beziehungen, '
+            'Jobs, Wohnorte. Das ist nicht Flucht, das ist deine Lernform. Vertraue, dass '
+            'der Wandel selbst der Halt ist.';
+      case 6:
+        return 'Die 6 macht die Phase $age zum VERANTWORTUNGS-FELD. Familie, Partner, '
+            'Kinder, Eltern -- die Themen kommen in Wellen. Du bist hier nicht der '
+            'Solo-Held, sondern der Naehrende, der Heiler. Wenn du in dieser Phase '
+            'zu wenig auf dich selbst achtest, brennst du leise aus. Selbst-Fuersorge '
+            'ist hier kein Egoismus, sondern Voraussetzung fuer alles andere.';
+      case 7:
+        return 'Die 7 dreht die Phase $age nach INNEN. Stille, Studium, Spiritualitaet, '
+            'Therapie, philosophische Tiefe -- darum geht es jetzt. Aeusserer Erfolg fuehlt '
+            'sich oberflaechlich an. Das Leben fordert dich auf, zu fragen: Wer bin ich, '
+            'wenn niemand schaut? Wenn du diese Phase als Krise erlebst, ist das normal '
+            '-- sie ist eine Einladung zur Innenkehr.';
+      case 8:
+        return 'Die 8 macht die Phase $age zur POWER-PHASE. Karriere, Geld, Einfluss, '
+            'oeffentliche Position -- jetzt manifestiert sich, was du in dir traegst. '
+            'Du wirst gesehen und auch herausgefordert. Macht ohne Demut wird hier zur '
+            'Falle. Macht mit Integritaet wird zum Vermaechtnis. Welche Seite du staerkst, '
+            'liegt ganz an dir.';
+      case 9:
+        return 'Die 9 macht die Phase $age zum VOLLENDUNGS-ZYKLUS. Du schliesst Kapitel ab, '
+            'manchmal schmerzhaft, oft befreiend. Loslassen ist hier die Aufgabe -- alte '
+            'Beziehungen, alte Berufe, alte Selbstbilder. Wer das Loslassen verweigert, '
+            'haengt fest. Wer es zulaesst, geht reicher heraus. Diese Phase macht aus dir '
+            'einen Menschen mit Tiefe, den andere als Anker erleben.';
+      default:
+        return 'Diese Phase traegt die Sonderschwingung $n -- jede Erfahrung jetzt hat '
+            'doppelte Bedeutung. Pass besonders gut auf, was dir wiederholt begegnet.';
     }
   }
 
@@ -2156,11 +2242,15 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '$name, ab dem Alter von ${pinnacle['startAge']} Jahren erreichst du einen Lebens-Gipfelpunkt! Die Energie der Zahl ${pinnacle['number']} wird besonders stark. Dies ist eine Zeit großer Chancen und Entwicklung - nutze sie weise!',
+                          _getPinnaclePersonalText(
+                              pinnacle['pinnacle'] as int,
+                              pinnacle['number'] as int,
+                              pinnacle['startAge'] as int,
+                              name),
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.85),
-                            height: 1.5,
+                            fontSize: 13.5,
+                            color: Colors.white.withValues(alpha: 0.92),
+                            height: 1.6,
                           ),
                         ),
                       ),
@@ -2177,6 +2267,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   Widget _buildChallengeCard(Map<String, dynamic> challenge) {
     final color = const Color(0xFFE91E63);
+    final name = _profile?.firstName ?? 'Du';
+    final challengeNum = challenge['challenge'] as int;
+    final number = challenge['number'] as int;
+    final stage = _challengeStageLabel(challengeNum);
 
     return HoverGlowCard(
       glowColor: color,
@@ -2184,63 +2278,99 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.15), const Color(0xFF1E1E1E)],
+            colors: [color.withValues(alpha: 0.18), const Color(0xFF1E1E1E)],
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.fitness_center, color: color, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Herausforderung ${challenge['challenge']}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.6),
-                    ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                  child: Icon(Icons.fitness_center, color: color, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        challenge['number'].toString(),
+                        'HERAUSFORDERUNG $challengeNum · $stage',
                         style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
                           color: color,
+                          letterSpacing: 1.5,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          challenge['theme'],
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            number.toString(),
+                            style: TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                              color: color,
+                              height: 1,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              challenge['theme'] as String,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D0D0D).withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _getChallengePersonalText(challengeNum, number, name),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: Colors.white.withValues(alpha: 0.92),
+                  height: 1.6,
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _challengeStageLabel(int challenge) {
+    switch (challenge) {
+      case 1: return 'JUGEND';
+      case 2: return 'MITTLERE PHASE';
+      case 3: return 'HAUPT-LEKTION';
+      case 4: return 'SPÄTE PHASE';
+      default: return '';
+    }
   }
 
   Widget _buildMasterNumberCard(int number) {
@@ -2333,9 +2463,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                   Text(
                     _getMasterNumberPersonalText(number, name),
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 14,
                       color: Colors.white,
-                      height: 1.6,
+                      height: 1.65,
                     ),
                   ),
                 ],
@@ -2359,13 +2489,204 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   String _getMasterNumberPersonalText(int number, String name) {
     switch (number) {
       case 11:
-        return '$name, du trägst die kraftvollste Meisterzahl in dir! Die 11 ist die Zahl des spirituellen Boten. Du hast eine besonders starke Intuition und Verbindung zur spirituellen Welt. Deine Lebensaufgabe ist es, als Lichtbringer zu dienen - Menschen zu inspirieren und höhere Wahrheiten zu vermitteln. Du spürst Dinge, bevor sie geschehen. Deine Vision geht über das Sichtbare hinaus. Dies ist eine große Verantwortung, aber auch ein unglaubliches Geschenk!';
+        return '$name, du traegst die kraftvollste Meisterzahl in dir -- die 11, '
+            'die Zahl des spirituellen Boten. Sie macht dich hochsensibel, '
+            'feinfuehlig, oft hellsichtig oder hellfuehlig. Dinge, die andere '
+            'erst spueren, wenn sie laengst passiert sind, kommen bei dir '
+            'frueher an. Das ist Geschenk und Buerde zugleich.\n\n'
+            'WAS DIE 11 VON DIR WILL:\n'
+            '• Lerne, deine Intuition als zuverlaessigen Kompass anzunehmen -- '
+            'nicht als Zufall, sondern als Werkzeug.\n'
+            '• Finde deinen Kanal: schreiben, lehren, heilen, musizieren -- '
+            'irgendwo muss das, was durch dich kommt, raus.\n'
+            '• Lebe gesund, schlafe genug, schuetze dich vor Reizueberflutung. '
+            'Die 11 ist eine offene Antenne -- du nimmst alles wahr.\n'
+            '• Akzeptiere, dass du Phasen tiefer Klarheit und Phasen voller '
+            'Selbstzweifel haben wirst. Beides gehoert zur 11.\n\n'
+            'HERAUSFORDERUNG: Nicht im Nebel der eigenen Empfindsamkeit '
+            'verloren gehen. Erdung, Routine, Koerper-Arbeit sind dein Anker. '
+            'Ohne sie bleibst du Visionaer ohne Wirkung.';
       case 22:
-        return '$name, die Meisterzahl 22 macht dich zum ultimativen Manifestator! Du vereinst spirituelle Vision mit praktischer Umsetzungskraft. Während andere träumen, kannst du tatsächlich erschaffen. Dein Potenzial ist es, Großes in die physische Welt zu bringen - Projekte, die Generationen überdauern. Du bist hier, um die Welt konkret zu verändern. Dein Einfluss kann global sein. Nutze diese Kraft weise!';
+        return '$name, die Meisterzahl 22 macht dich zum MASTER BUILDER -- '
+            'jemandem, der Visionen tatsaechlich materialisieren kann. Andere '
+            'traeumen davon, was moeglich waere. Du baust es.\n\n'
+            'WAS DIE 22 VON DIR WILL:\n'
+            '• Denke gross genug. Die 22 ist enttaeuscht von kleinen Zielen.\n'
+            '• Bleib gleichzeitig pragmatisch -- jeder Stein einzeln gesetzt, '
+            'jedes Detail durchdacht. Genie der Ausfuehrung.\n'
+            '• Halte spirituelle Klarheit und materielle Disziplin in Balance.\n'
+            '• Erlaube dir, Verantwortung fuer ein groesseres Ganzes zu '
+            'tragen -- Firma, Organisation, Bewegung, Familie als System.\n\n'
+            'HERAUSFORDERUNG: Die schiere Last der eigenen Moeglichkeiten kann '
+            'lähmen. Viele 22er lassen die volle Kraft ungenutzt, weil sie sich '
+            'sagen "so gross darf ich nicht denken". Doch: Genau dafuer bist '
+            'du hier. Dein Werk wird Generationen ueberdauern.';
       case 33:
-        return '$name, du trägst die seltenste und höchste Meisterzahl - die 33, die Zahl des Christusbewusstseins! Du bist hier, um bedingungslose Liebe zu verkörpern und zu lehren. Deine Lebensaufgabe geht über persönlichen Erfolg hinaus - du bist bestimmt, die Menschheit durch Liebe, Heilung und Weisheit zu erheben. Dein bloßes Sein hat heilende Wirkung. Dies ist ein heiliger Pfad mit großer Verantwortung.';
+        return '$name, du traegst die seltenste und hoechste Meisterzahl -- die '
+            '33, die Zahl des Christusbewusstseins. In klassischer Numerologie '
+            'wird sie als "Meisterlehrer" bezeichnet, weil dein blosses Sein '
+            'eine heilende Frequenz traegt.\n\n'
+            'WAS DIE 33 VON DIR WILL:\n'
+            '• Sei das Beispiel, nicht die Predigt. Menschen lernen mehr aus '
+            'deinem Sein als aus deinen Worten.\n'
+            '• Tiefe Mitgefuehls-Arbeit: in der Familie, im Beruf, im Stillen.\n'
+            '• Hueten vor Maertyrer-Falle. Du musst dich nicht aufopfern, um '
+            'wirkungsvoll zu sein. Eigentliche 33 ist freudig.\n'
+            '• Lebe deine Tiefe, ohne sie zu erklaeren.\n\n'
+            'HERAUSFORDERUNG: Die 33 traegt manchmal eine Lebensschwere mit, '
+            'die nicht alle verstehen. Spirituelle Reife heisst hier: Liebe '
+            'nicht weil du musst, sondern weil du gar nicht anders kannst -- '
+            'und sorge gleichzeitig fuer dich.';
       default:
-        return '$name, deine Meisterzahl $number zeigt besonderes spirituelles Potenzial!';
+        return '$name, deine Meisterzahl $number zeigt besonderes spirituelles Potenzial.';
+    }
+  }
+
+  // v95 Pinnacle-Texte: pro Pinnacle-Phase (1..4) + pro Zahl 1..9 detailliert.
+  String _getPinnaclePersonalText(int pinnacle, int number, int startAge, String name) {
+    final n = number == 0 ? 9 : (number > 9 ? number % 10 : number);
+    final pinnacleLabel = switch (pinnacle) {
+      1 => 'ERSTER GIPFEL',
+      2 => 'ZWEITER GIPFEL',
+      3 => 'DRITTER GIPFEL',
+      4 => 'VIERTER GIPFEL',
+      _ => 'GIPFEL',
+    };
+    final framing = '$name, dein $pinnacleLabel beginnt ab dem Alter $startAge und '
+        'traegt die Schwingung $number. Pinnacles sind nicht das Hintergrund-'
+        'Rauschen deines Lebens, sondern die HAUPT-AUFTRAEGE einzelner Lebens-'
+        'Abschnitte -- klare Lernfelder, die in dieser Zeit besonders druecken '
+        'und besonders viel zurueckgeben.\n\n';
+    return framing + _pinnacleDetail(n, startAge);
+  }
+
+  String _pinnacleDetail(int n, int startAge) {
+    switch (n) {
+      case 1:
+        return 'PIONIER-GIPFEL: Ab $startAge wirst du auf Eigenstaendigkeit '
+            'getrimmt. Entscheidungen, die du jetzt allein triffst, formen den '
+            'Rest deines Lebens. Das Leben fragt dich: "Wer bist du, wenn '
+            'niemand dich fuehrt?" Initiative, Mut, Selbstvertrauen sind die '
+            'Werkzeuge. Wer hier zoegert, ergibt sich. Wer handelt, erschafft.';
+      case 2:
+        return 'DIPLOMATIE-GIPFEL: Ab $startAge geht es um Beziehungen -- Paar, '
+            'Familie, Team, Geschaeftspartner. Du lernst, dass du in Verbindung '
+            'staerker bist als im Alleingang. Geduld, Zuhoeren, Feingefuehl. '
+            'Diese Phase macht aus dem Solisten einen Ensemble-Spieler.';
+      case 3:
+        return 'KREATIV-GIPFEL: Ab $startAge oeffnet sich der Ausdrucks-Kanal '
+            'weit. Schreiben, sprechen, kuenstlerisch wirken, lehren -- jetzt '
+            'oder nie. Vorsicht vor Verzettelung in zu vielen Projekten. Fokus '
+            'auf ein bis zwei Hauptlinien bringt die echte Ernte.';
+      case 4:
+        return 'BAUMEISTER-GIPFEL: Ab $startAge errichtest du etwas Bleibendes -- '
+            'Karriere, Haus, Familie als System, Unternehmen. Diese Phase '
+            'belohnt Disziplin und bestraft Bequemlichkeit. Was du jetzt baust, '
+            'finanziert dich vielleicht ein Leben lang.';
+      case 5:
+        return 'FREIHEITS-GIPFEL: Ab $startAge bringt das Leben Veraenderung, '
+            'Reise, Vielfalt -- ob du willst oder nicht. Versuche nicht, '
+            'festzuhalten, was sich aufloesen will. In dieser Phase wirst du '
+            'oft ein "vorher" und "nachher" haben.';
+      case 6:
+        return 'VERANTWORTUNGS-GIPFEL: Ab $startAge wachsen die Aufgaben gegen-'
+            'ueber anderen -- Kinder, Eltern, Gemeinschaft. Du wirst der '
+            'Stamm, an den sich andere lehnen. Sorge auch fuer dich, sonst '
+            'kippt diese Phase in Erschoepfung.';
+      case 7:
+        return 'WEISHEITS-GIPFEL: Ab $startAge zieht das Leben dich nach innen. '
+            'Studium, Spiritualitaet, vielleicht Therapie oder Sabbatical. '
+            'Aeusserer Erfolg bleibt blass, innerer Reichtum waechst. Lass die '
+            'Stille zu -- sie hat dir viel zu sagen.';
+      case 8:
+        return 'MANIFESTATIONS-GIPFEL: Ab $startAge kann materieller Erfolg '
+            'unverkennbar werden. Karriere-Sprung, finanzieller Zugewinn, '
+            'Position. Bleibe ehrlich -- diese Phase belohnt Integritaet und '
+            'straft Abkuerzungen. Macht ohne Demut wird hier zur Falle.';
+      case 9:
+        return 'VOLLENDUNGS-GIPFEL: Ab $startAge schliesst du Kapitel ab -- '
+            'manchmal mit Schmerz, oft mit Erleichterung. Diese Phase macht '
+            'dich grosszuegiger, weiser, mitfuehlender. Was du jetzt loslaesst, '
+            'macht Platz fuer das, was du bald wirst.';
+      default:
+        return 'Diese Phase hat eine besondere Schwingung. Beobachte, welche '
+            'Themen sich wiederholen -- sie sind dein Lernfeld.';
+    }
+  }
+
+  // v95 Challenge-Texte: pro Challenge-Stage 1..4 + pro Zahl 0..8 detailliert.
+  String _getChallengePersonalText(int challenge, int number, String name) {
+    final stage = switch (challenge) {
+      1 => 'die JUGEND und fruehe Erwachsenenjahre',
+      2 => 'die mittleren Lebensjahre',
+      3 => 'die HAUPT-Lebens-Lektion',
+      4 => 'die spaeteren Jahre',
+      _ => 'eine bestimmte Lebensphase',
+    };
+    final framing = '$name, diese Herausforderung praegt $stage. Es ist nicht '
+        'Strafe, sondern Wachstums-Stoff -- das Leben will dich an dieser Stelle '
+        'erweitern.\n\n';
+    return framing + _challengeDetail(number);
+  }
+
+  String _challengeDetail(int n) {
+    switch (n) {
+      case 0:
+        return 'Du bringst bereits viele Lektionen aus frueheren Erfahrungen mit. '
+            'Diese Herausforderung ist die Aufgabe, die anderen Lektionen klug '
+            'zu integrieren -- ohne Stolz, ohne falsche Bescheidenheit. Du '
+            'wirst gepruefe: "Kannst du dein Wissen leise teilen?"';
+      case 1:
+        return 'Lerne, ALLEINE zu stehen. Das heisst nicht einsam, sondern '
+            'unabhaengig. Es wird Momente geben, in denen niemand dir Antworten '
+            'gibt -- und du musst selbst entscheiden. Selbstvertrauen ist die '
+            'Lektion. Konkret: Sag oefter NEIN zu fremden Erwartungen, JA zu '
+            'eigenen Entscheidungen.';
+      case 2:
+        return 'Lerne, MIT ANDEREN zu sein. Sensibilitaet ohne Selbstverlust. '
+            'Konflikte nicht ueberdramatisieren, aber auch nicht alles '
+            'schlucken. Die Aufgabe: emotionale Resonanz, ohne in der Resonanz '
+            'verloren zu gehen. Konkret: Lerne diplomatisch klar zu sein. '
+            'Sagen, was ist -- ohne Drama, ohne Rueckzug.';
+      case 3:
+        return 'Lerne, dich AUSZUDRUECKEN. Schweigen wird hier teuer -- '
+            'sowohl im Beruf als auch in Beziehungen. Lerne, deine Wahrheit '
+            'in Worte zu fassen, ohne sie zu zerreden. Konkret: Schreiben, '
+            'sprechen, Coaching -- alles, was dich zwingt, deine inneren '
+            'Themen nach aussen zu tragen.';
+      case 4:
+        return 'Lerne DISZIPLIN. Anfangen ist nicht die Schwierigkeit -- '
+            'durchhalten ist es. Schritt fuer Schritt, ohne den grossen '
+            'Genie-Funken. Konkret: kleine, taegliche Routinen einfuehren. '
+            'Sport, Schlaf, Finanzen, Lernen. Die Wirkung dieser Phase zeigt '
+            'sich erst nach Jahren -- und dann gewaltig.';
+      case 5:
+        return 'Lerne, mit VERAENDERUNG zu leben. Was du festhalten willst, '
+            'wird dir genau dadurch genommen. Loslassen ist die Lektion -- '
+            'Beziehungen, Jobs, Orte, Selbstbilder. Konkret: Stelle dich '
+            'bewusst neuen Erfahrungen. Bleibe nicht aus Bequemlichkeit, gehe '
+            'nicht aus Flucht.';
+      case 6:
+        return 'Lerne VERANTWORTUNG -- aber gesund. Diese Phase fordert dich, '
+            'fuer andere da zu sein, ohne dich selbst zu verlieren. Aufopferung '
+            'ist hier die Falle. Konkret: lerne klare Grenzen zu setzen. '
+            'Liebe fordert keine Selbstausloeschung.';
+      case 7:
+        return 'Lerne VERTRAUEN ins Unsichtbare. Aeussere Sicherheit alleine '
+            'reicht nicht -- du brauchst eine innere Quelle. Therapie, '
+            'Meditation, geistige Praxis sind keine Hobbys, sondern Werkzeug. '
+            'Konkret: pflege bewusst eine spirituelle Praxis. Die 7 zwingt '
+            'dich, in die Tiefe zu gehen.';
+      case 8:
+        return 'Lerne den UMGANG MIT MACHT -- Geld, Einfluss, Position. Die '
+            'Aufgabe ist nicht, Macht zu meiden, sondern sie integer zu fuehren. '
+            'Konkret: lerne aus Niederlagen finanziell und beruflich klueger '
+            'aufzustehen. Diese Phase macht dich entweder reicher oder reifer '
+            '-- idealerweise beides.';
+      default:
+        return 'Diese Herausforderung hat eine seltene Schwingung. Beobachte, '
+            'welche Themen dich besonders haeufig treffen -- dort liegt deine '
+            'Lektion.';
     }
   }
 
@@ -2448,9 +2769,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               child: Text(
                 _getKarmaNumberPersonalText(number, name),
                 style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.85),
-                  height: 1.6,
+                  fontSize: 13.5,
+                  color: Colors.white.withValues(alpha: 0.92),
+                  height: 1.65,
                 ),
               ),
             ),
@@ -2463,15 +2784,64 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   String _getKarmaNumberPersonalText(int number, String name) {
     switch (number) {
       case 13:
-        return '$name, die Karma-Zahl 13 zeigt, dass du in diesem Leben lernen darfst, durch Disziplin und harte Arbeit zu transformieren. Möglicherweise hast du in früheren Leben Abkürzungen genommen - jetzt geht es darum, den langen, ehrlichen Weg zu gehen. Jede Herausforderung macht dich stärker. Akzeptiere, dass echter Erfolg Zeit und Hingabe braucht. Deine Belohnung wird umso süßer sein!';
+        return '$name, die Karma-Zahl 13 ist die Lektion der TRANSFORMATION DURCH '
+            'ARBEIT. Sie heisst klassisch: "Du hast in frueheren Zyklen '
+            'Abkuerzungen gesucht -- in diesem Leben gehst du den langen Weg."\n\n'
+            'WAS DAS PRAKTISCH HEISST:\n'
+            '• Dinge, die anderen leicht zufallen, kosten dich Schweiss. Das '
+            'ist nicht Pech -- das ist deine Schule.\n'
+            '• Bequemlichkeit und Schummeln werden dir dieses Leben hindurch '
+            'teuer. Disziplin baut deine Substanz.\n'
+            '• Wenn du dranbleibst, bist du am Ende der 13 ein Mensch mit '
+            'verlaesslicher Tiefe -- jemand, dem andere vertrauen.\n\n'
+            'DEINE FRAGE: Wo nimmst du gerade Abkuerzungen, die dich langfristig '
+            'kosten? Diese Stelle ist deine Lektion.';
       case 14:
-        return '$name, mit der Karma-Zahl 14 lernst du die Balance zwischen Freiheit und Verantwortung. Vielleicht hast du in vergangenen Leben Exzesse gelebt - nun geht es um Maß und Ausgewogenheit. Du musst lernen, dass wahre Freiheit durch Selbstdisziplin entsteht, nicht durch Zügellosigkeit. Finde die Mitte zwischen Spaß und Pflicht. Dies ist deine Chance, echte Reife zu entwickeln!';
+        return '$name, die Karma-Zahl 14 ist die Lektion der BALANCE ZWISCHEN '
+            'FREIHEIT UND VERANTWORTUNG. Klassisch heisst sie: "Du hast in '
+            'frueheren Zyklen Exzess gelebt -- jetzt lernst du das Mass."\n\n'
+            'WAS DAS PRAKTISCH HEISST:\n'
+            '• Versuchungen sind in deinem Leben staerker als bei anderen -- '
+            'Suechte, Affaeren, finanzielle Risiken, Reizueberflutung.\n'
+            '• Wahre Freiheit entsteht in dieser Lektion durch SELBST-'
+            'DISZIPLIN, nicht durch Zuegellosigkeit.\n'
+            '• Achte auf deinen Koerper -- die 14 hinterlaesst gesundheitliche '
+            'Quittungen, wenn du sie ignorierst.\n\n'
+            'DEINE FRAGE: Wo lebst du gerade ohne Mass -- und welcher Preis ist '
+            'dafuer faellig?';
       case 16:
-        return '$name, die Karma-Zahl 16 ist ein Ruf zur Ego-Transformation. Möglicherweise war in früheren Leben dein Ego zu groß - nun musst du lernen, Demut zu entwickeln. Das Leben wird dein Ego immer wieder herausfordern, bis du lernst loszulassen. Jede Demütigung ist eine Chance zur spirituellen Erhebung. Wenn du dich dem hingibst, wirst du wahre Weisheit finden!';
+        return '$name, die Karma-Zahl 16 ist die Lektion der EGO-DEMUTIGUNG. '
+            'Sie ist die intensivste der vier Karma-Zahlen: "Du hast in frueheren '
+            'Zyklen ueberhebliches Ego gelebt -- in diesem Leben wird das Ego '
+            'gebrochen, damit etwas Wahreres entstehen kann."\n\n'
+            'WAS DAS PRAKTISCH HEISST:\n'
+            '• Ploetzliche Brueche sind moeglich -- Karriere-Knicke, Beziehungs-'
+            'Verluste, Image-Schaden. Sie sind keine Strafe, sondern Reinigung.\n'
+            '• Was du verloren hast, war oft Identifikation mit Aeusserem.\n'
+            '• Die 16 macht dich nicht klein -- sie macht dich echt. Wer das '
+            'aushaelt, wird tief weise.\n\n'
+            'DEINE FRAGE: Welcher Bruch fuehlte sich wie eine Katastrophe an -- '
+            'und was hat er dir freigeraeumt, das jetzt erst Platz haben darf?';
       case 19:
-        return '$name, mit der Karma-Zahl 19 lernst du Unabhängigkeit und Selbstständigkeit. Vielleicht warst du in vergangenen Leben zu abhängig von anderen - nun musst du lernen, auf eigenen Füßen zu stehen. Das Leben fordert dich auf, deine eigene Kraft zu entdecken. Lehne dich nicht an andere an - finde deine eigene Stärke. Dies ist deine Chance, wahre Souveränität zu entwickeln!';
+        return '$name, die Karma-Zahl 19 ist die Lektion der WAHREN UNABHAENGIG-'
+            'KEIT. Klassisch: "Du hast in frueheren Zyklen Macht oder '
+            'Eigenstaendigkeit missbraucht -- in diesem Leben lernst du, allein '
+            'zu stehen, ohne ueber andere zu herrschen."\n\n'
+            'WAS DAS PRAKTISCH HEISST:\n'
+            '• Du wirst in Lebens-Situationen geworfen, in denen niemand fuer '
+            'dich entscheidet. Du musst selbst entscheiden.\n'
+            '• Macht-Missbrauch (auch subtil: Kontrolle in Beziehungen) wird '
+            'sich rasch raechen.\n'
+            '• Wenn du echt eigenstaendig wirst -- frei von Anlehnung, aber '
+            'auch frei von Herrschsucht -- wirst du zum natuerlichen Anker '
+            'fuer andere.\n\n'
+            'DEINE FRAGE: Wo erlaubst du anderen, deine Entscheidungen zu '
+            'treffen -- oder wo versuchst du, die Entscheidungen anderer zu '
+            'kontrollieren?';
       default:
-        return '$name, deine Karma-Zahl $number zeigt eine wichtige Lebenslektion, die du meistern darfst.';
+        return '$name, deine Karma-Zahl $number zeigt eine wichtige Lebenslektion. '
+            'Beobachte, welche Themen sich in deinem Leben wiederholen -- dort '
+            'liegt die Lektion verborgen.';
     }
   }
 
