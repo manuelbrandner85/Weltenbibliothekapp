@@ -90,6 +90,7 @@ import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
 import '../../services/feature_flags.dart';
 import '../../widgets/live/live_chat_hero.dart';
+import '../../services/live_schedule_service.dart';
 import '../../widgets/live/empty_chat_orb.dart';
 import '../../widgets/live/chat_intelligence_widgets.dart'
     show CatchupCard, TopicCloud, SmartReplyComputer;
@@ -122,6 +123,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
       TypingIndicatorService(); // ⌨️ NEW
 
   late String _selectedRoom;
+
+  // Live-Schedule (lokal persistiert via LiveScheduleService)
+  DateTime? _scheduledAt;
+  String? _scheduledTopic;
 
   /// Maps internal room key → DB room ID (energie world)
   static const Map<String, String> _roomIdMap = {
@@ -339,6 +344,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'meditation';
     RecentRoomsService.instance.touch('energie', _selectedRoom);
+    _loadLiveSchedule();
 
     // 🎥 Voice-Service: WebRTC → LiveKit Migration läuft. Init geschieht
     // jetzt via LiveKitCallService.joinRoom() beim User-Klick auf Voice-Button.
@@ -419,6 +425,154 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
     await ReadReceiptService.instance.markRead(
       roomId: _fullRoomId,
       userId: _userId,
+    );
+  }
+
+  Future<void> _loadLiveSchedule() async {
+    final sched =
+        await LiveScheduleService.instance.load('energie', _selectedRoom);
+    if (!mounted) return;
+    setState(() {
+      _scheduledAt = sched?.when;
+      _scheduledTopic = sched?.topic;
+    });
+  }
+
+  Future<void> _scheduleLiveSession() async {
+    final backendRole = StorageService().getEnergieProfile()?.role;
+    final isAdmin = AppRoles.canViewModTools(backendRole);
+    final topicCtrl = TextEditingController(text: _scheduledTopic ?? '');
+    DateTime when =
+        _scheduledAt ?? DateTime.now().add(const Duration(hours: 1));
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: const Text('Live-Session planen',
+              style: TextStyle(color: Colors.white)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isAdmin)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'Hinweis: Nur Admins koennen Sessions fuer alle planen.\nDu siehst die Planung lokal als Erinnerung.',
+                      style:
+                          TextStyle(color: Colors.orangeAccent, fontSize: 12),
+                    ),
+                  ),
+                TextField(
+                  controller: topicCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Thema',
+                    labelStyle: TextStyle(color: Colors.white70),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.calendar_today,
+                            color: Colors.white70),
+                        label: Text(
+                            '${when.day}.${when.month}.${when.year}',
+                            style: const TextStyle(color: Colors.white)),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: ctx,
+                            initialDate: when,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now()
+                                .add(const Duration(days: 365)),
+                          );
+                          if (picked != null) {
+                            setLocal(() => when = DateTime(
+                                picked.year,
+                                picked.month,
+                                picked.day,
+                                when.hour,
+                                when.minute));
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon:
+                            const Icon(Icons.access_time, color: Colors.white70),
+                        label: Text(
+                            '${when.hour.toString().padLeft(2, '0')}:${when.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(color: Colors.white)),
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: ctx,
+                            initialTime: TimeOfDay(
+                                hour: when.hour, minute: when.minute),
+                          );
+                          if (picked != null) {
+                            setLocal(() => when = DateTime(when.year, when.month,
+                                when.day, picked.hour, picked.minute));
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            if (_scheduledAt != null)
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Loeschen',
+                    style: TextStyle(color: Colors.redAccent)),
+              ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF9B51E0)),
+              onPressed: () {
+                if (topicCtrl.text.trim().isEmpty) return;
+                Navigator.of(ctx).pop(true);
+              },
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved == null) return;
+    if (saved == false) {
+      await LiveScheduleService.instance.clear('energie', _selectedRoom);
+      if (!mounted) return;
+      setState(() {
+        _scheduledAt = null;
+        _scheduledTopic = null;
+      });
+      return;
+    }
+    final schedule = LiveSchedule(when: when, topic: topicCtrl.text.trim());
+    await LiveScheduleService.instance
+        .save('energie', _selectedRoom, schedule);
+    if (!mounted) return;
+    setState(() {
+      _scheduledAt = schedule.when;
+      _scheduledTopic = schedule.topic;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Live-Session geplant')),
     );
   }
 
@@ -1696,6 +1850,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                               _messages.length > 50 ? 50 : _messages.length,
                           activeCall:
                               null, // wird in Phase 2 mit echtem Call-State verbunden
+                          scheduledAt: _scheduledAt,
+                          scheduledTopic: _scheduledTopic,
                           onJoinCall: () {
                             Navigator.push(
                               context,
@@ -1722,12 +1878,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                               ),
                             );
                           },
-                          onSchedule: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Live-Schedule kommt bald.')),
-                            );
-                          },
+                          onSchedule: _scheduleLiveSession,
                           // Starte einen neuen Live-Call: First-in-room ist Host.
                           onStartLive: () {
                             Navigator.push(

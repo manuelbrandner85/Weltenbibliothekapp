@@ -954,6 +954,38 @@ export default {
       return jsonResponse({ ok: true, results });
     }
 
+    // ── Error Report (Client-Side) ────────────────────────────
+    // Akzeptiert FlutterErrorDetails-aehnliche Payloads vom Client
+    // und schreibt sie in Supabase Tabelle 'client_errors'. Best-effort.
+    if (path === '/api/error-report' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const payload = {
+          error: String(body.error || '').slice(0, 4000),
+          library: String(body.library || '').slice(0, 200),
+          stack: String(body.stack || '').slice(0, 8000),
+          context: String(body.context || '').slice(0, 1000),
+          platform: String(body.platform || '').slice(0, 50),
+          client_timestamp: body.timestamp || null,
+          received_at: new Date().toISOString(),
+        };
+        // Fire-and-forget Insert -- bei fehlender Tabelle ignorieren
+        await fetch(`${env.SUPABASE_URL}/rest/v1/client_errors`, {
+          method: 'POST',
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(payload),
+        }).catch(() => {});
+        return jsonResponse({ ok: true });
+      } catch (e) {
+        return jsonResponse({ ok: false, error: String(e) }, 200);
+      }
+    }
+
     // ── Health Check ──────────────────────────────────────────
     if (path === '/' || path === '/health') {
       return jsonResponse({

@@ -1,5 +1,12 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../../models/energie_profile.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/spirit_calculations/gematria_engine.dart';
@@ -3924,15 +3931,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Implement image export
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('📸 Export-Funktion kommt bald!'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
+                  onPressed: _exportGematriaCard,
                   icon: const Icon(Icons.image, size: 16),
                   label: const Text('ALS BILD EXPORTIEREN'),
                   style: OutlinedButton.styleFrom(
@@ -4016,6 +4015,120 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
         ),
       ],
     );
+  }
+
+  Future<void> _exportGematriaCard() async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final png = await _renderGematriaPng();
+      if (kIsWeb) {
+        // Web: nur Hinweis, share_plus + path_provider sind dort eingeschraenkt
+        messenger.showSnackBar(const SnackBar(
+          content: Text('Bild-Export ist nur in der Mobile-App verfuegbar'),
+        ));
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final fileName =
+          'gematria_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = await File('${dir.path}/$fileName').writeAsBytes(png);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'image/png')],
+        text:
+            'Meine Gematria-Werte (Hebraeisch $_hebrewFullName / Latein $_latinFullName) -- Weltenbibliothek',
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('Gematria-Export-Fehler: $e');
+      messenger.showSnackBar(SnackBar(
+        content: Text('Export fehlgeschlagen: $e'),
+      ));
+    }
+  }
+
+  Future<Uint8List> _renderGematriaPng() async {
+    const double w = 1080;
+    const double h = 1350;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, w, h));
+
+    final bgPaint = Paint()
+      ..shader = ui.Gradient.linear(
+        const Offset(0, 0),
+        const Offset(w, h),
+        [const Color(0xFF1A0033), const Color(0xFF000000)],
+      );
+    canvas.drawRect(const Rect.fromLTWH(0, 0, w, h), bgPaint);
+
+    _drawText(canvas, 'WELTENBIBLIOTHEK', w / 2,
+        80, color: const Color(0xFFFFD700), size: 28, bold: true);
+    _drawText(canvas, 'GEMATRIA-KARTE', w / 2, 130,
+        color: Colors.white, size: 44, bold: true);
+
+    final fullName =
+        '${_profile?.firstName ?? ''} ${_profile?.lastName ?? ''}'.trim();
+    if (fullName.isNotEmpty) {
+      _drawText(canvas, fullName, w / 2, 220,
+          color: const Color(0xFFE91E63), size: 36, bold: true);
+    }
+
+    // Hauptzahlen
+    _drawBigNumber(canvas, 'HEBRAEISCH', _hebrewFullName.toString(),
+        w / 2 - 260, 360, const Color(0xFFFFD700));
+    _drawBigNumber(canvas, 'LATEIN', _latinFullName.toString(), w / 2 + 260,
+        360, const Color(0xFFE91E63));
+
+    _drawBigNumber(canvas, 'SEELE', _soulNumber.toString(), w / 2 - 260, 680,
+        const Color(0xFF9C27B0));
+    _drawBigNumber(canvas, 'SCHICKSAL', _destinyNumber.toString(),
+        w / 2 + 260, 680, const Color(0xFF2196F3));
+
+    _drawBigNumber(canvas, 'LEBENSWEG', _lifePathNumber.toString(),
+        w / 2 - 260, 1000, const Color(0xFF00BCD4));
+    _drawBigNumber(canvas, 'AUSDRUCK', _expressionNumber.toString(),
+        w / 2 + 260, 1000, const Color(0xFF4CAF50));
+
+    _drawText(canvas, 'weltenbibliothek.app', w / 2, h - 60,
+        color: Colors.white54, size: 22);
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(w.toInt(), h.toInt());
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
+  void _drawText(Canvas c, String text, double cx, double cy,
+      {required Color color,
+      required double size,
+      bool bold = false}) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          letterSpacing: bold ? 1.5 : 0,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+    )..layout();
+    tp.paint(c, Offset(cx - tp.width / 2, cy - tp.height / 2));
+  }
+
+  void _drawBigNumber(
+      Canvas c, String label, String value, double cx, double cy, Color color) {
+    final boxPaint = Paint()..color = color.withValues(alpha: 0.18);
+    final rect = Rect.fromCenter(center: Offset(cx, cy), width: 380, height: 240);
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(24));
+    c.drawRRect(rrect, boxPaint);
+    final border = Paint()
+      ..color = color.withValues(alpha: 0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    c.drawRRect(rrect, border);
+    _drawText(c, label, cx, cy - 70, color: Colors.white70, size: 22, bold: true);
+    _drawText(c, value, cx, cy + 20, color: color, size: 86, bold: true);
   }
 }
 

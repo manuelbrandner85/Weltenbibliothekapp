@@ -26,6 +26,7 @@ import 'screens/enhanced_profile_screen.dart'; // 👤 Enhanced Profile
 import 'screens/cloudflare_notification_settings_screen.dart'; // CLOUDFLARE PUSH
 import 'screens/materie/search_history_screen.dart';
 import 'screens/shared/update_history_screen.dart';
+import 'screens/profile_settings_screen.dart';
 import 'screens/shared/backend_health_monitor_screen.dart'; // 🏥 HEALTH MONITOR // 🆕 SEARCH HISTORY
 import 'screens/vorhang/vorhang_world_wrapper.dart'; // 🎭 VORHANG WORLD
 import 'screens/ursprung/ursprung_world_wrapper.dart'; // 🌀 URSPRUNG WORLD
@@ -478,6 +479,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
                 const BackendHealthMonitorScreen(), // 🏥 HEALTH MONITOR
             UpdateHistoryScreen.routeName: (context) =>
                 const UpdateHistoryScreen(),
+            '/profile_settings': (context) => const ProfileSettingsScreen(),
             // REMOVED: '/simple_voice_test' route (deprecated Simple Voice Test)
             // 🔐 ADMIN-DASHBOARD (v101 unified, default ueber alle Welten)
             // Per Welt-Pfad bleiben fuer Rueckwaerts-Kompatibilitaet erhalten

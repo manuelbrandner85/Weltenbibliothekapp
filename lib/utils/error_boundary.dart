@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+
+import '../config/api_config.dart';
 
 /// Global Error Boundary - Verhindert App-Crashes
 ///
@@ -51,26 +56,28 @@ class ErrorBoundary {
     }
   }
 
-  /// Sende Error-Report an Backend (optional)
+  /// Sende Error-Report an Cloudflare Worker fuer Monitoring.
+  /// Fire-and-forget, 5s Timeout, niemals werfen.
   static Future<void> _reportErrorToBackend(FlutterErrorDetails details) async {
+    if (kDebugMode) return; // Im Debug nicht reporten
     try {
-      // TODO: Error an Cloudflare Worker senden für Monitoring
-      // Nur in Production Mode
-      if (!kDebugMode) {
-        // await http.post(
-        //   Uri.parse('https://weltenbibliothek-worker.brandy13062.workers.dev/api/error-report'),
-        //   body: jsonEncode({
-        //     'error': details.exception.toString(),
-        //     'stack': details.stack.toString(),
-        //     'timestamp': DateTime.now().toIso8601String(),
-        //   }),
-        // );
-      }
+      await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/error-report'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'error': details.exception.toString(),
+              'library': details.library ?? 'unknown',
+              'stack': details.stack?.toString() ?? '',
+              'context': details.context?.toDescription() ?? '',
+              'timestamp': DateTime.now().toIso8601String(),
+              'platform': defaultTargetPlatform.name,
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
     } catch (e) {
-      // Stilles Fehlschlagen - keine zusätzlichen Errors werfen
-      if (kDebugMode) {
-        debugPrint('⚠️ Failed to report error: $e');
-      }
+      // Stilles Fehlschlagen -- keine zusaetzlichen Errors werfen
+      if (kDebugMode) debugPrint('Failed to report error: $e');
     }
   }
 }

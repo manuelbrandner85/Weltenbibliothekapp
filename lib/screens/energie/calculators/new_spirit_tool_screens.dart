@@ -4135,7 +4135,7 @@ class TransformationTrackerScreen extends StatefulWidget {
 
 class _TransformationTrackerScreenState
     extends State<TransformationTrackerScreen> {
-  final List<Map<String, dynamic>> _milestones = [
+  final List<Map<String, dynamic>> _milestones = <Map<String, dynamic>>[
     {
       'title': 'Erste Meditation',
       'date': '2024-01-15',
@@ -4222,11 +4222,7 @@ class _TransformationTrackerScreenState
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Neuer Meilenstein - Feature kommt bald!')),
-          );
-        },
+        onPressed: _showAddMilestoneDialog,
         backgroundColor: Color(0xFF00796B),
         child: Icon(Icons.add),
       ),
@@ -4296,6 +4292,103 @@ class _TransformationTrackerScreenState
         ],
       ),
     );
+  }
+
+  Future<void> _showAddMilestoneDialog() async {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    String category = 'Meditation';
+    final nextLevel = _milestones.isEmpty
+        ? 1
+        : (_milestones
+                .map((m) => (m['level'] as int?) ?? 0)
+                .reduce((a, b) => a > b ? a : b)) +
+            1;
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: const Text('Neuer Meilenstein',
+              style: TextStyle(color: Colors.white)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Titel',
+                    labelStyle: TextStyle(color: Colors.white70),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: category,
+                  dropdownColor: const Color(0xFF1A1A2E),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Kategorie',
+                    labelStyle: TextStyle(color: Colors.white70),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'Meditation', child: Text('Meditation')),
+                    DropdownMenuItem(value: 'Energie', child: Text('Energie')),
+                    DropdownMenuItem(
+                        value: 'Bewusstsein', child: Text('Bewusstsein')),
+                    DropdownMenuItem(
+                        value: 'Heilung', child: Text('Heilung')),
+                    DropdownMenuItem(
+                        value: 'Spirituell', child: Text('Spirituell')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setLocal(() => category = v);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Beschreibung',
+                    labelStyle: TextStyle(color: Colors.white70),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00796B)),
+              onPressed: () {
+                if (titleCtrl.text.trim().isEmpty) return;
+                Navigator.of(ctx).pop({
+                  'title': titleCtrl.text.trim(),
+                  'date': DateTime.now().toIso8601String().split('T').first,
+                  'category': category,
+                  'description': descCtrl.text.trim(),
+                  'level': nextLevel,
+                });
+              },
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() => _milestones.add(result));
+    }
   }
 }
 
