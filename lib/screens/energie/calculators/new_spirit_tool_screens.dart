@@ -5796,6 +5796,23 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
   @override
   void initState() {
     super.initState();
+    // Spirit-Audit-Fix: Erst Profil laden, DANN berechnen. Vorher
+    // wurde immer mit 1990-01-01 12:00 gerechnet -- der User sah ein
+    // Horoskop das nichts mit ihm zu tun hat.
+    _prefillThenCalculate();
+  }
+
+  Future<void> _prefillThenCalculate() async {
+    final p = await StorageService().loadEnergieProfile();
+    if (p != null && mounted) {
+      _birthDate = p.birthDate;
+      if (p.birthTime != null && p.birthTime!.contains(':')) {
+        final parts = p.birthTime!.split(':');
+        final h = int.tryParse(parts[0]) ?? 12;
+        final m = int.tryParse(parts[1]) ?? 0;
+        _birthTime = TimeOfDay(hour: h, minute: m);
+      }
+    }
     _calculate();
   }
 

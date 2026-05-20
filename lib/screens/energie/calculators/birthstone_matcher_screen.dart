@@ -120,13 +120,48 @@ class _BirthstoneMatcherScreenState extends State<BirthstoneMatcherScreen> {
   }
 
   Widget _noProfile() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(40),
-        child: Text(
-          'Profil mit Geburtsdatum benoetigt -- bitte erst im Profil-Editor eingeben.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.diamond_outlined,
+                size: 56, color: Color(0xFFC9A84C)),
+            const SizedBox(height: 16),
+            const Text(
+              'Profil mit Geburtsdatum benoetigt',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Damit dir die passenden Kristalle zugeordnet werden koennen,\n'
+              'brauchen wir dein Geburtsdatum aus dem Profil.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/profile_settings'),
+              icon: const Icon(Icons.edit, size: 18),
+              label: const Text('Profil bearbeiten'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFC9A84C),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -88,7 +88,11 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
   Future<void> _loadProfile() async {
     try {
-      final profile = StorageService().getEnergieProfile();
+      // Spirit-Audit-Fix: loadEnergieProfile() liest VOLLSTAENDIG aus
+      // SharedPreferences/Hive (async). getEnergieProfile() ist nur ein
+      // synchroner Cache-Lookup und kann null geben wenn die App gerade
+      // gestartet ist und Hive noch nicht warmgelaufen ist.
+      final profile = await StorageService().loadEnergieProfile();
       if (!mounted) return;
       setState(() {
         _profile = profile;

@@ -18,6 +18,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/storage/unified_storage_service.dart';
 import '../../../services/spirit_reading_service.dart';
+import '../../../services/storage_service.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_ambient_particles.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -71,6 +72,18 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
         AnimationController(vsync: this, duration: const Duration(seconds: 10))
           ..repeat();
     _drawCtrl.forward();
+    // Spirit-Audit-Fix: Geburtsdatum aus EnergieProfile statt hardcoded
+    // 1990-06-21. Biorhythmus haengt zu 100% am Geburtsdatum -- ohne
+    // korrekten Wert ist die Anzeige Nonsens.
+    _prefillFromProfile();
+  }
+
+  Future<void> _prefillFromProfile() async {
+    final p = await StorageService().loadEnergieProfile();
+    if (p == null || !mounted) return;
+    setState(() {
+      _birthDate = p.birthDate;
+    });
   }
 
   @override
