@@ -22,6 +22,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import '../core/auth/admin_resolver.dart';
+import '../core/constants/roles.dart';
 import 'storage_service.dart';
 
 class AdminAuthService {
@@ -55,6 +56,11 @@ class AdminAuthService {
       }
 
       final token = _hmacHex(_secret, username.toLowerCase());
+      if (kDebugMode) {
+        debugPrint(
+            '[AdminAuthService] sending X-Admin-Username="$username" '
+            '(role=$role) -- HMAC computed');
+      }
       return {
         'X-Admin-Username': username,
         'X-Admin-Token': token,
@@ -72,13 +78,44 @@ class AdminAuthService {
       role == 'moderator' ||
       role == 'content_editor';
 
+  /// Liefert den Username der zum Supabase-profiles-Eintrag passt -- NICHT
+  /// die InvisibleAuth-ID.
+  ///
+  /// Bug-Fix Identity-Chain: vorher liess die Methode einfach
+  /// getMaterieProfile().username durchschlagen. Wenn dort die Auth-ID
+  /// ('user_<ts>_<rand>') stand statt der echten Username (z.B.
+  /// 'Weltenbibliothek'), schickte der Client das an den Worker, der
+  /// `profiles WHERE username='user_<ts>_<rand>'` queryt -> 0 rows ->
+  /// 403. Jetzt: zuerst nach Admin-Username-Konstanten (Weltenbibliothek,
+  /// Weltenbibliothekedit) in ALLEN Profil-Feldern suchen -- wenn match,
+  /// nimm den. Sonst der erste nicht-leere wirklich Profil-username,
+  /// der NICHT mit 'user_' anfaengt (InvisibleAuth-IDs aussortieren).
   String? _currentUsername() {
     try {
       final storage = StorageService();
-      final mat = storage.getMaterieProfile()?.username;
-      if (mat != null && mat.isNotEmpty) return mat;
-      final en = storage.getEnergieProfile()?.username;
-      if (en != null && en.isNotEmpty) return en;
+      final candidates = <String>[
+        storage.getMaterieProfile()?.username ?? '',
+        storage.getEnergieProfile()?.username ?? '',
+      ].where((u) => u.trim().isNotEmpty).toList();
+
+      // Prio 1: bekannte Admin-Usernames (case-insensitive, .trim() inside)
+      for (final u in candidates) {
+        if (AppRoles.isRootAdminByUsername(u)) {
+          return AppRoles.rootAdminUsername;
+        }
+        if (AppRoles.isContentEditorByUsername(u)) {
+          return AppRoles.contentEditorUsername;
+        }
+      }
+
+      // Prio 2: erster non-InvisibleAuth-Username
+      for (final u in candidates) {
+        if (!u.startsWith('user_')) return u;
+      }
+
+      // Prio 3 (Fallback): erster non-empty -- gibt dem Worker zumindest
+      // eine Chance fuer legacy_user_id-Lookup.
+      return candidates.isEmpty ? null : candidates.first;
     } catch (_) {/* best-effort */}
     return null;
   }

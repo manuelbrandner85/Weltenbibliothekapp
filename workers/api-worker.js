@@ -159,25 +159,45 @@ async function verifyAdminCaller(request, env) {
   const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
   if (!svcKey) return null;
   try {
-    const res = await fetch(
-      `${env.SUPABASE_URL}/rest/v1/profiles?username=eq.${encodeURIComponent(username)}&select=id,role,is_banned&limit=1`,
-      {
-        headers: {
-          apikey: svcKey,
-          Authorization: `Bearer ${svcKey}`,
-        },
-      }
+    const headers = {
+      apikey: svcKey,
+      Authorization: `Bearer ${svcKey}`,
+    };
+    // Identity-Chain-Fix: erst per username queryen (Standardfall fuer
+    // echte Supabase-Auth-User UND InvisibleAuth-User die ein Profil
+    // mit z.B. 'Weltenbibliothek' angelegt haben). Wenn das leer ist
+    // UND der Header-Wert wie eine InvisibleAuth-ID aussieht
+    // ('user_<ts>_<rand>'), nochmal per legacy_user_id versuchen.
+    // Damit funktioniert HMAC fuer beide Identity-Quellen.
+    let res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/profiles?username=eq.${encodeURIComponent(username)}&select=id,role,is_banned,username,legacy_user_id&limit=1`,
+      { headers }
     );
     if (!res.ok) return null;
-    const rows = await res.json();
-    if (!Array.isArray(rows) || rows.length === 0) return null;
+    let rows = await res.json();
+    if ((!Array.isArray(rows) || rows.length === 0) &&
+        username.startsWith('user_')) {
+      res = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/profiles?legacy_user_id=eq.${encodeURIComponent(username)}&select=id,role,is_banned,username,legacy_user_id&limit=1`,
+        { headers }
+      );
+      if (!res.ok) return null;
+      rows = await res.json();
+    }
+    if (!Array.isArray(rows) || rows.length === 0) {
+      console.warn(`verifyAdminCaller: no profile for username='${username}'`);
+      return null;
+    }
     const row = rows[0];
     if (row.is_banned === true) return null;
     const role = String(row.role || 'user');
-    if (!ADMIN_ROLES.has(role)) return null;
+    if (!ADMIN_ROLES.has(role)) {
+      console.warn(`verifyAdminCaller: profile found but role='${role}' not admin`);
+      return null;
+    }
     return {
       userId: row.id,
-      username,
+      username: row.username || username,
       role,
       isAdmin: ADMIN_ROLES.has(role),
       isHighPrivilege: HIGH_PRIVILEGE.has(role),
