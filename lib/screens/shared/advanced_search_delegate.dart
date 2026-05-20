@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // OpenClaw v2.0
 import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
@@ -554,13 +555,25 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
     );
   }
 
+  static const _historyKey = 'advanced_search_history';
+  static const _historyMax = 20;
+
   Future<List<String>> _loadSearchHistory() async {
-    // TODO: Load from persistent storage
-    return [];
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_historyKey) ?? <String>[];
   }
 
   Future<void> _saveSearchHistory(String term) async {
-    // TODO: Save to persistent storage
+    final t = term.trim();
+    if (t.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_historyKey) ?? <String>[];
+    list.removeWhere((e) => e.toLowerCase() == t.toLowerCase());
+    list.insert(0, t);
+    if (list.length > _historyMax) {
+      list.removeRange(_historyMax, list.length);
+    }
+    await prefs.setStringList(_historyKey, list);
   }
 
   String _getCategoryLabel(String category) {

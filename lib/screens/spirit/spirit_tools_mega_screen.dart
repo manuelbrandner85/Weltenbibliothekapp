@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 // OpenClaw v2.0
+import 'dart:async';
 import 'dart:math' as math;
 import '../../models/spirit_tools_models.dart';
 import '../../services/achievement_service.dart';
@@ -218,7 +219,7 @@ class RuneOracleScreen extends StatefulWidget {
 }
 
 class _RuneOracleScreenState extends State<RuneOracleScreen> {
-  final _achievement = AchievementService(); // ignore: unused_field
+  final _achievement = AchievementService();
   final _questionController = TextEditingController();
 
   List<DrawnRune>? _drawnRunes;
@@ -254,11 +255,9 @@ class _RuneOracleScreenState extends State<RuneOracleScreen> {
       _isDrawing = false;
     });
 
-    // Achievement tracking
-    if (mounted) {
-      // TODO: Re-enable after achievement integration
-      // await _achievement.trackProgress(context, 'rune_first');
-    }
+    // Achievement tracking -- erste Rune entspricht 'spirit_first'
+    // (spirituelles Tool zum ersten Mal benutzt).
+    unawaited(_achievement.incrementProgress('spirit_first'));
   }
 
   @override

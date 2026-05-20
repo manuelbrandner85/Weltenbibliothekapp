@@ -117,8 +117,9 @@ class CommunityService {
           shares: 0,
           tags: [article['category'] as String? ?? 'general'],
           worldType: worldType ?? WorldType.materie,
-          mediaUrl: null, // TODO: Extract media URLs from content
-          mediaType: null,
+          mediaUrl: _extractMediaUrl(article['content'] as String? ?? ''),
+          mediaType: _detectMediaType(
+              _extractMediaUrl(article['content'] as String? ?? '')),
         );
       }).toList();
 
@@ -298,5 +299,48 @@ class CommunityService {
 
       return [];
     }
+  }
+
+  /// Extrahiert die erste eingebettete Media-URL aus einem Post-Body.
+  /// Erkennt Bilder (.jpg/.png/.gif/.webp), Videos (.mp4/.webm) und
+  /// YouTube-Links. Nutzt eine konservative Regex -- bei Treffer wird
+  /// das gesamte URL-Token zurueckgegeben, sonst null.
+  String? _extractMediaUrl(String content) {
+    if (content.isEmpty) return null;
+    final urlRegex = RegExp(
+      r'https?://[^\s<>"]+',
+      caseSensitive: false,
+    );
+    for (final m in urlRegex.allMatches(content)) {
+      final url = m.group(0)!;
+      final lower = url.toLowerCase();
+      if (lower.endsWith('.jpg') ||
+          lower.endsWith('.jpeg') ||
+          lower.endsWith('.png') ||
+          lower.endsWith('.gif') ||
+          lower.endsWith('.webp') ||
+          lower.endsWith('.mp4') ||
+          lower.endsWith('.webm') ||
+          lower.contains('youtube.com/watch') ||
+          lower.contains('youtu.be/') ||
+          lower.contains('/storage/v1/object/') ||
+          lower.contains('cloudflare') && lower.contains('/media/')) {
+        return url;
+      }
+    }
+    return null;
+  }
+
+  /// Mappt eine Media-URL auf einen groben MIME-Bucket: 'image' / 'video'
+  /// / 'youtube'. Wird vom Post-Renderer ausgewertet damit das richtige
+  /// Widget (Image / VideoPlayer / YoutubeEmbed) gewaehlt werden kann.
+  String? _detectMediaType(String? url) {
+    if (url == null) return null;
+    final lower = url.toLowerCase();
+    if (lower.contains('youtube.com/watch') || lower.contains('youtu.be/')) {
+      return 'youtube';
+    }
+    if (lower.endsWith('.mp4') || lower.endsWith('.webm')) return 'video';
+    return 'image';
   }
 }
