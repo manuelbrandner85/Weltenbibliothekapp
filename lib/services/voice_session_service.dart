@@ -57,8 +57,9 @@ class VoiceSessionService {
   }
 
   Future<void> leaveSession({String? roomName, String? userId}) async {
-    if (_currentSessionId == null && (roomName == null || userId == null))
+    if (_currentSessionId == null && (roomName == null || userId == null)) {
       return;
+    }
     try {
       final session = Supabase.instance.client.auth.currentSession;
       final token = session?.accessToken ?? ApiConfig.supabaseAnonKey;
@@ -89,7 +90,7 @@ class VoiceSessionService {
   Future<Map<String, List<Map<String, dynamic>>>> getActiveSessions(
       String world) async {
     try {
-      final anonKey = ApiConfig.supabaseAnonKey;
+      const anonKey = ApiConfig.supabaseAnonKey;
       final res = await http.get(
         Uri.parse(
             '${ApiConfig.workerUrl}/api/voice/sessions?world=${Uri.encodeComponent(world)}'),

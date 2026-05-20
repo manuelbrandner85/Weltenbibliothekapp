@@ -447,8 +447,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             backgroundColor: Colors.red,
                           ));
                         } finally {
-                          if (mounted)
+                          if (mounted) {
                             setState(() => _isUploadingAvatar = false);
+                          }
                         }
                       },
                 child: Stack(
@@ -1992,9 +1993,9 @@ class _VersionInfoCardState extends State<_VersionInfoCard> {
 
   @override
   Widget build(BuildContext context) {
-    final version = UpdateService.currentAppVersion;
+    const version = UpdateService.currentAppVersion;
     final patchLabel = _patchNumber != null ? '· Patch #$_patchNumber' : '';
-    final isDebug = version == '0.0.0';
+    const isDebug = version == '0.0.0';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

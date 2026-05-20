@@ -6,7 +6,6 @@ import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../widgets/frequency_audio_player.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 🎵 FREQUENZ-SESSIONS SCREEN
 /// Gemeinsame Heilfrequenz-Sessions mit Timer

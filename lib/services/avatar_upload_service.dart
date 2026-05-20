@@ -100,8 +100,9 @@ class AvatarUploadService {
   /// Pfad: {userId}/avatar.jpg — upsert:true ersetzt automatisch das alte Bild.
   /// Speichert die öffentliche URL in profiles.avatar_url.
   Future<String> uploadAvatarOrThrow(File imageFile, String userId) async {
-    if (kDebugMode)
+    if (kDebugMode) {
       debugPrint('⬆️ Uploading avatar for user $userId to Supabase Storage...');
+    }
 
     try {
       final client = Supabase.instance.client;

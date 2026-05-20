@@ -122,8 +122,8 @@ class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
             _NewJourneyTab(),
             _JourneyHistoryTab(),
             _GuidesTab(),
-            const _DrumLibraryTab(),
-            const _PowerAnimalsTab(),
+            _DrumLibraryTab(),
+            _PowerAnimalsTab(),
           ],
         ),
       ),
@@ -397,7 +397,7 @@ class _JourneyTimerScreenState extends State<_JourneyTimerScreen> {
     _tick();
   }
 
-  void _tick() async {
+  Future<void> _tick() async {
     while (mounted && _running && _remaining > 0) {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted || !_running) return;

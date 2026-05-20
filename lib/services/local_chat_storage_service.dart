@@ -121,8 +121,9 @@ class LocalChatStorageService {
     await _addToPendingSync(chatMessage);
     await _updateRoomActivity(realm, roomId, timestamp);
 
-    if (kDebugMode)
+    if (kDebugMode) {
       debugPrint('💬 Message sent locally: $messageId in $roomId');
+    }
     return {'success': true, 'message': chatMessage};
   }
 
@@ -144,8 +145,9 @@ class LocalChatStorageService {
 
     final msg =
         jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
-    if (msg['userId'] != userId)
+    if (msg['userId'] != userId) {
       throw Exception('Not authorized to edit this message');
+    }
 
     msg['message'] = newMessage;
     msg['edited'] = true;

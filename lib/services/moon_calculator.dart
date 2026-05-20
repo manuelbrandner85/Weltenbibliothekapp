@@ -448,7 +448,7 @@ DateTime nextMoonPhase(DateTime fromUtc, double phase) {
   final fromJd = julianDayFromUtc(fromUtc.toUtc());
 
   // K-Startwert: Anzahl Synodischer Monate seit 2000-01-06
-  double kApprox = (fromJd - 2451550.09766) / 29.53058861;
+  final double kApprox = (fromJd - 2451550.09766) / 29.53058861;
 
   // Phasen-Offset (0/0.25/0.5/0.75)
   final offset = phase / 360.0;

@@ -229,7 +229,7 @@ class ConfettiPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (var particle in particles) {
+    for (final particle in particles) {
       final x = particle.startX * size.width +
           (particle.endX - particle.startX) * size.width * progress;
       final y = particle.startY * size.height +

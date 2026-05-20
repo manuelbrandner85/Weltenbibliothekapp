@@ -361,9 +361,10 @@ class CloudflareApiService {
       }
 
       // Worker-Fehler: Fallback auf direkten Supabase-Insert
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
             '⚠️ [Chat] Worker failed (${response.statusCode}), Supabase fallback');
+      }
       final messageType = switch (mediaType) {
         'audio' => 'voice',
         'image' => 'image',

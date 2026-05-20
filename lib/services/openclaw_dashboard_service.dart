@@ -80,8 +80,9 @@ class OpenClawDashboardService {
           };
         }).toList();
       } catch (e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('⚠️ [Dashboard] Supabase notifications error: $e');
+        }
       }
     }
     // Fallback: neueste Artikel als Info-Notifications

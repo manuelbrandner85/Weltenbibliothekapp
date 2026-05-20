@@ -222,7 +222,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
   }
 
   // Easter Egg Handler (v5.40 - Enhanced with all improvements)
-  void _handlePortalTap() async {
+  Future<void> _handlePortalTap() async {
     final now = DateTime.now();
     if (_lastTapTime != null &&
         now.difference(_lastTapTime!) > const Duration(seconds: 2)) {
@@ -800,7 +800,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                           final dx = x - _touchPosition!.dx;
                           final dy = y - _touchPosition!.dy;
                           final distance = math.sqrt(dx * dx + dy * dy);
-                          final pushRadius =
+                          const pushRadius =
                               150.0; // Particles flee within 150px
 
                           if (distance < pushRadius) {
@@ -1971,7 +1971,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
     );
   }
 
-  void _navigateWithCinematicTransition(Widget screen,
+  Future<void> _navigateWithCinematicTransition(Widget screen,
       {String targetWorld = ''}) async {
     // Bestimme Welt-Typ automatisch wenn nicht explizit übergeben
     if (targetWorld.isEmpty) {
@@ -2581,7 +2581,7 @@ ${_goldenPortalUnlocked ? '• 👑 Goldenes Portal FREIGESCHALTET!' : ''}
   }
 
   // v5.40 - Achievement Unlock Handler (FIXED: Persistent Storage)
-  void _unlockAchievement(String achievementId) async {
+  Future<void> _unlockAchievement(String achievementId) async {
     final achievementService = AchievementService();
 
     // ✅ PERSISTENT UNLOCK via AchievementService

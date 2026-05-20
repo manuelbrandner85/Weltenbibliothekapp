@@ -384,8 +384,8 @@ class _GeometryPainter extends CustomPainter {
 
   void _drawSriYantra(Canvas canvas, Offset c, double r, Paint p, Paint g) {
     // Vereinfacht: 4 Aufwärts + 5 Abwärts-Dreiecke um zentralen Punkt.
-    final triangles = 9;
-    final perTri = 1.0 / triangles;
+    const triangles = 9;
+    const perTri = 1.0 / triangles;
     for (var i = 0; i < triangles; i++) {
       final tp = ((progress - i * perTri) / perTri).clamp(0.0, 1.0);
       if (tp <= 0) continue;
@@ -443,8 +443,8 @@ class _GeometryPainter extends CustomPainter {
 
   void _drawTorus(Canvas canvas, Offset c, double r, Paint p, Paint g) {
     // Mehrere konzentrische Ellipsen aus verschiedenen Winkeln
-    final ringCount = 16;
-    final perRing = 1.0 / ringCount;
+    const ringCount = 16;
+    const perRing = 1.0 / ringCount;
     for (var i = 0; i < ringCount; i++) {
       final rp = ((progress - i * perRing) / perRing).clamp(0.0, 1.0);
       if (rp <= 0) continue;
@@ -462,7 +462,7 @@ class _GeometryPainter extends CustomPainter {
   void _drawGoldenSpiral(Canvas canvas, Offset c, double r, Paint p, Paint g) {
     final phi = (1 + math.sqrt(5)) / 2;
     final path = Path();
-    final maxT = 4 * math.pi;
+    const maxT = 4 * math.pi;
     final t = maxT * progress;
     final scale = r / 30;
     path.moveTo(c.dx, c.dy);
@@ -477,7 +477,7 @@ class _GeometryPainter extends CustomPainter {
   }
 
   void _drawHexagram(Canvas canvas, Offset c, double r, Paint p, Paint g) {
-    final triangles = 2;
+    const triangles = 2;
     for (var i = 0; i < triangles; i++) {
       final tp = ((progress - i * 0.5) / 0.5).clamp(0.0, 1.0);
       if (tp <= 0) continue;

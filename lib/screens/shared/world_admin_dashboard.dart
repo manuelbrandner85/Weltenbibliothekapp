@@ -23,7 +23,6 @@ import '../../services/supabase_service.dart';
 import '../../services/world_admin_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -1021,11 +1020,12 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _load() async {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _loading = true;
         _errorMessage = null;
       });
+    }
     try {
       final users = await WorldAdminService.getAllUsers();
       if (mounted) {
@@ -1816,11 +1816,12 @@ class _UsersTabState extends State<_UsersTab> {
                             value: 'online', child: Text('🟢 Online zuerst')),
                       ],
                       onChanged: (v) {
-                        if (v != null)
+                        if (v != null) {
                           setState(() {
                             _sortMode = v;
                             _applyFilter();
                           });
+                        }
                       },
                     ),
                   ),
@@ -3684,11 +3685,12 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
     if (!mounted) return;
     try {
       final users = await WorldAdminService.getAllUsers();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _all = users;
           _loading = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -4502,11 +4504,12 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
         });
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = 'Netzwerk: $e';
           _loading = false;
         });
+      }
     }
   }
 
@@ -4664,8 +4667,9 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                               'admin': 'admin',
                             };
                             final d = int.tryParse(duration.text.trim());
-                            if (d != null)
+                            if (d != null) {
                               payload['exercise_duration_minutes'] = d;
+                            }
                             final x = int.tryParse(xp.text.trim());
                             if (x != null) payload['xp_reward'] = x;
                             final f = double.tryParse(freq.text.trim());
@@ -5035,24 +5039,27 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
               '${ApiConfig.workerUrl}/api/admin/spirit-stats?days=$_days'))
           .timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _data = jsonDecode(res.body) as Map<String, dynamic>;
             _loading = false;
           });
+        }
       } else {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
             _loading = false;
           });
+        }
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = 'Netzwerk: $e';
           _loading = false;
         });
+      }
     }
   }
 
@@ -5391,24 +5398,27 @@ class _ModuleProgressTabState extends State<_ModuleProgressTab>
           .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'))
           .timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _data = jsonDecode(res.body) as Map<String, dynamic>;
             _loading = false;
           });
+        }
       } else {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
             _loading = false;
           });
+        }
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = 'Netzwerk: $e';
           _loading = false;
         });
+      }
     }
   }
 
@@ -6302,11 +6312,12 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         });
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = 'Netzwerk: $e';
           _loading = false;
         });
+      }
     }
   }
 

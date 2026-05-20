@@ -7,7 +7,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -352,14 +351,12 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
           .eq('user_id', user.id)
           .order('created_at', ascending: false)
           .limit(5);
-      if (res is List) {
-        return res
-            .whereType<Map>()
-            .map<Map<String, dynamic>>(
-                (e) => Map<String, dynamic>.from(e as Map))
-            .toList(growable: false);
-      }
-    } catch (e) {
+      return res
+          .whereType<Map>()
+          .map<Map<String, dynamic>>(
+              (e) => Map<String, dynamic>.from(e))
+          .toList(growable: false);
+        } catch (e) {
       debugPrint('HealthSettingsScreen._loadRecentReadings failed: $e');
     }
     return const [];

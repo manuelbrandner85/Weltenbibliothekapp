@@ -65,7 +65,7 @@ class TypingIndicatorService {
 
   void dispose() {
     _typingController.close();
-    for (var timer in _timeouts.values) {
+    for (final timer in _timeouts.values) {
       timer?.cancel();
     }
   }

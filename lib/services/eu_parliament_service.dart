@@ -43,8 +43,9 @@ class EuVote {
       : (result.toUpperCase() == 'REJECTED' ? 'red' : 'amber');
 
   int? get total {
-    if (forVotes == null && againstVotes == null && abstainVotes == null)
+    if (forVotes == null && againstVotes == null && abstainVotes == null) {
       return null;
+    }
     return (forVotes ?? 0) + (againstVotes ?? 0) + (abstainVotes ?? 0);
   }
 

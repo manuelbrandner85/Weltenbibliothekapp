@@ -6,7 +6,6 @@ import '../../services/user_service.dart';
 import '../../services/free_api_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 🌿 Natürliche Heilmethoden + PubMed Forschung (Energie-Welt)
 class AlternativeHealingScreen extends StatefulWidget {
@@ -54,11 +53,12 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
     setState(() => _loading = true);
     try {
       final items = await _svc.getHealingMethods(roomId: widget.roomId);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _items = items;
           _loading = false;
         });
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ healing load: $e');
       if (mounted) setState(() => _loading = false);
@@ -72,11 +72,12 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
       _pubmedQuery = q;
     });
     final result = await _api.fetchPubMedStudies(q, limit: 8);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _studies = result;
         _loadingStudies = false;
       });
+    }
   }
 
   void _add() {

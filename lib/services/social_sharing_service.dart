@@ -186,7 +186,7 @@ class SocialSharingService {
     required String achievementName,
     required SharePlatform platform,
   }) async {
-    final shareUrl = '$_baseUrl/achievements';
+    const shareUrl = '$_baseUrl/achievements';
     final shareText =
         '🏆 Ich habe "$achievementName" freigeschaltet!\n\nSchau dir meine Erfolge in der Weltenbibliothek an!';
 
@@ -205,7 +205,7 @@ class SocialSharingService {
     required int achievementCount,
     required SharePlatform platform,
   }) async {
-    final shareUrl = '$_baseUrl/profile';
+    const shareUrl = '$_baseUrl/profile';
     final shareText =
         '👤 $username - Level $level\n🏆 $achievementCount Achievements\n\nSieh dir mein Profil in der Weltenbibliothek an!';
 
@@ -221,8 +221,8 @@ class SocialSharingService {
   Future<bool> shareApp({
     required SharePlatform platform,
   }) async {
-    final shareUrl = _baseUrl;
-    final shareText =
+    const shareUrl = _baseUrl;
+    const shareText =
         '📚 Entdecke die Weltenbibliothek!\n\nEine App voller faszinierender Geschichten, Geheimnisse und Wissen aus aller Welt. 🌍';
 
     return await _share(
@@ -389,7 +389,7 @@ class SocialSharingService {
 
   Map<SharePlatform, int> get sharesByPlatform {
     final Map<SharePlatform, int> counts = {};
-    for (var platform in SharePlatform.values) {
+    for (final platform in SharePlatform.values) {
       counts[platform] =
           _shareHistory.where((r) => r.platform == platform).length;
     }
@@ -398,7 +398,7 @@ class SocialSharingService {
 
   Map<String, int> get sharesByContentType {
     final Map<String, int> counts = {};
-    for (var record in _shareHistory) {
+    for (final record in _shareHistory) {
       counts[record.contentType] = (counts[record.contentType] ?? 0) + 1;
     }
     return counts;

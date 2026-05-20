@@ -155,10 +155,11 @@ class _TimeCapsuleScreenState extends State<TimeCapsuleScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_loading)
+    if (_loading) {
       return Scaffold(
           backgroundColor: _bg(context),
           body: Center(child: CircularProgressIndicator(color: _primary)));
+    }
     final ripe = _capsules
         .where((c) => !c.opened && DateTime.now().isAfter(c.openAt))
         .toList();

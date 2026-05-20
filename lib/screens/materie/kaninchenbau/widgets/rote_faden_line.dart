@@ -83,7 +83,7 @@ class _FadenPainter extends CustomPainter {
     canvas.drawLine(Offset(cx, 0), Offset(cx, size.height), line);
 
     // Glow-Knoten am aktuellen Scroll-Punkt + entlang
-    final spotsCount = 5;
+    const spotsCount = 5;
     for (var i = 0; i < spotsCount; i++) {
       final f = ((sparkleOffset + i / spotsCount) % 1.0);
       final y = f * size.height;
@@ -103,7 +103,7 @@ class _FadenPainter extends CustomPainter {
     canvas.drawCircle(Offset(cx, activeY), 4, core);
 
     // Markierungen (kleine Notches)
-    final notches = 8;
+    const notches = 8;
     final notch = Paint()
       ..color = KbDesign.neonRed.withValues(alpha: 0.5)
       ..strokeWidth = 1;
@@ -114,7 +114,7 @@ class _FadenPainter extends CustomPainter {
 
     // unbenutzte math-import verhindert
     // ignore: unused_local_variable
-    final _ = math.pi;
+    const _ = math.pi;
   }
 
   @override

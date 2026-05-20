@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 🌀 URSPRUNG Tools Screen — Placeholder
 ///

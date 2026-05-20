@@ -38,7 +38,7 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen>
     super.dispose();
   }
 
-  void _analyze() async {
+  Future<void> _analyze() async {
     if (_textController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Bitte Text eingeben')),

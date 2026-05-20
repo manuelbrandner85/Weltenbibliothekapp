@@ -178,7 +178,7 @@ class _SkeletonState extends State<_Skeleton>
       animation: _c,
       builder: (_, __) {
         final v = 0.3 + 0.4 * _c.value;
-        Color c = Colors.white.withValues(alpha: v * 0.18);
+        final Color c = Colors.white.withValues(alpha: v * 0.18);
         return Row(
           children: [
             Container(

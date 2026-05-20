@@ -319,8 +319,9 @@ class OfflineSyncService extends ChangeNotifier {
 
     if (queuedUserId == null || queuedUserId.isEmpty) {
       // Action hat keinen Owner — drop (broken queue entry).
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️  OfflineSync: queued action ohne userId — drop');
+      }
       return true;
     }
     if (currentUserId == null) {
@@ -384,9 +385,10 @@ class OfflineSyncService extends ChangeNotifier {
           if (kDebugMode) debugPrint('📁 OfflineSync: File upload skipped');
           return true;
         case OfflineActionType.updateProfile:
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint(
                 '👤 OfflineSync: Profile update – use ProfileSyncService');
+          }
           return true;
         case OfflineActionType.createPost:
           await api.sendChatMessage(
@@ -399,8 +401,9 @@ class OfflineSyncService extends ChangeNotifier {
           return true;
         case OfflineActionType.updatePost:
         case OfflineActionType.deletePost:
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('📝 OfflineSync: Post op – no offline support');
+          }
           return true;
       }
     } catch (e) {
@@ -450,8 +453,9 @@ class OfflineSyncService extends ChangeNotifier {
           .map((r) => jsonDecode(r['data'] as String) as Map<String, dynamic>)
           .toList();
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('❌ OfflineSync: getOfflineMessages failed - $e');
+      }
       return [];
     }
   }
@@ -536,8 +540,9 @@ class OfflineSyncService extends ChangeNotifier {
     try {
       await _pendingActionsController.close();
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ pendingActionsController close failed: $e');
+      }
     }
     super.dispose();
   }

@@ -504,7 +504,7 @@ class AchievementService {
       ),
     ];
 
-    for (var achievement in achievements) {
+    for (final achievement in achievements) {
       _achievements[achievement.id] = achievement;
     }
   }
@@ -517,7 +517,7 @@ class AchievementService {
       final progressData = prefs.getString(_kProgress);
       if (progressData != null) {
         final List<dynamic> progressList = jsonDecode(progressData);
-        for (var json in progressList) {
+        for (final json in progressList) {
           final progress =
               AchievementProgress.fromJson(json as Map<String, dynamic>);
           _progress[progress.achievementId] = progress;
@@ -530,7 +530,7 @@ class AchievementService {
             UserLevel.fromJson(jsonDecode(levelData) as Map<String, dynamic>);
       }
 
-      for (var achievementId in _achievements.keys) {
+      for (final achievementId in _achievements.keys) {
         if (!_progress.containsKey(achievementId)) {
           _progress[achievementId] =
               AchievementProgress(achievementId: achievementId);
@@ -616,7 +616,7 @@ class AchievementService {
       } catch (_) {}
     });
 
-    for (var listener in _unlockListeners) {
+    for (final listener in _unlockListeners) {
       listener(achievement, progress);
     }
 
@@ -656,7 +656,7 @@ class AchievementService {
       _userLevel.currentXP -= _userLevel.xpForNextLevel;
       _userLevel.level++;
 
-      for (var listener in _levelUpListeners) {
+      for (final listener in _levelUpListeners) {
         listener(_userLevel);
       }
 

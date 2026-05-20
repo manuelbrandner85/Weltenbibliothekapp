@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../services/cloudflare_push_service.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
-import '../widgets/cinematic/wb_vignette.dart';
 
 class CloudflareNotificationSettingsScreen extends StatefulWidget {
   const CloudflareNotificationSettingsScreen({super.key});
@@ -93,7 +92,7 @@ class _CloudflareNotificationSettingsScreenState
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: Color(0xFF0A0A0A),
         body: Center(child: CircularProgressIndicator()),
       );
     }

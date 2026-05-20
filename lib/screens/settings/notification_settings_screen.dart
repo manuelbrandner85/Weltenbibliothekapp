@@ -49,7 +49,7 @@ class _NotificationSettingsScreenState
 
       // Load topic subscriptions
       final topics = CloudflarePushService.availableTopics.keys.toList();
-      for (var topic in topics) {
+      for (final topic in topics) {
         _topicSubscriptions[topic] =
             (prefs['topics'] as List?)?.contains(topic) ?? false;
       }
@@ -371,11 +371,12 @@ class _QuietHoursCardState extends State<_QuietHoursCard> {
 
   Future<void> _load() async {
     final p = await QuietHoursService.instance.load();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _prefs = p;
         _loading = false;
       });
+    }
   }
 
   Future<void> _save(QuietHoursPrefs p) async {

@@ -194,7 +194,7 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
     for (final l in lines) {
       final m = re.firstMatch(l);
       if (m != null) {
-        var s = m.group(2)!.trim();
+        final s = m.group(2)!.trim();
         if (s.length > 6 && s.length < 200) out.add(s);
       } else {
         final t = l.trim();

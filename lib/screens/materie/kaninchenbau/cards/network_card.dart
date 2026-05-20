@@ -289,7 +289,7 @@ class _NetworkCardState extends State<NetworkCard>
               ),
             ),
             // Outer nodes
-            for (var n in widget.nodes.where((n) => n.id != 'center'))
+            for (final n in widget.nodes.where((n) => n.id != 'center'))
               if (positions[n.id] != null)
                 Positioned(
                   left: positions[n.id]!.dx - 32,

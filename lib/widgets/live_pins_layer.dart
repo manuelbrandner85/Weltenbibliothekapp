@@ -241,7 +241,7 @@ class _LivePinMarkerState extends State<_LivePinMarker>
     if (s < 60) return 'gerade eben';
     final m = s ~/ 60;
     if (m < 5) return 'vor $m Min';
-    return 'vor ${m} Min (verschwindet bald)';
+    return 'vor $m Min (verschwindet bald)';
   }
 }
 

@@ -60,7 +60,7 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
     _Cycle('spiritual', 'Spirituell', 53, Color(0xFF66BB6A), '✨'),
   ];
 
-  Set<String> _enabled = {'physical', 'emotional', 'intellectual'};
+  final Set<String> _enabled = {'physical', 'emotional', 'intellectual'};
 
   @override
   void initState() {
@@ -179,14 +179,18 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
     final emo = _cycleValue(28, _focusOffset);
     final intel = _cycleValue(33, _focusOffset);
     final avg = (phys + emo + intel) / 3;
-    if (avg > 0.6)
+    if (avg > 0.6) {
       return '🚀 Hoch-Energie · Großes anpacken, körperlich fordernd, kreative Sprünge.';
-    if (avg > 0.2)
+    }
+    if (avg > 0.2) {
       return '⚡ Solider Tag · Routinen, Verabredungen, kleinere Schritte.';
-    if (avg > -0.2)
+    }
+    if (avg > -0.2) {
       return '🌿 Übergang · Geduldig sein, beobachten, nicht überfordern.';
-    if (avg > -0.6)
+    }
+    if (avg > -0.6) {
       return '🛌 Niedrige Phase · Erholung, lesen, planen, nicht performen.';
+    }
     return '🌑 Tief · Tag der Stille. Was darf integriert werden?';
   }
 
@@ -328,7 +332,7 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
               Text(
                   offset == 0
                       ? 'HEUTE'
-                      : (offset > 0 ? '+$offset TAGE' : '${offset} TAGE'),
+                      : (offset > 0 ? '+$offset TAGE' : '$offset TAGE'),
                   style: const TextStyle(
                       color: _gold,
                       fontSize: 10,
@@ -686,8 +690,8 @@ class _BiorhythmChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final padX = 16.0;
-    final padY = 18.0;
+    const padX = 16.0;
+    const padY = 18.0;
     final plotW = w - 2 * padX;
     final plotH = h - 2 * padY;
     final centerY = padY + plotH / 2;

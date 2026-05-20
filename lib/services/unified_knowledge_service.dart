@@ -66,16 +66,16 @@ class UnifiedKnowledgeService {
     if (!hasAny) {
       debugPrint('📚 Loading initial knowledge data (100 entries)...');
 
-      for (var entry in materieKnowledgeDatabase) {
+      for (final entry in materieKnowledgeDatabase) {
         await db.put(_knowledgeBox, entry.id, entry.toJson());
       }
-      for (var entry in materieKnowledgeComplete) {
+      for (final entry in materieKnowledgeComplete) {
         await db.put(_knowledgeBox, entry.id, entry.toJson());
       }
-      for (var entry in energieKnowledgeDatabase) {
+      for (final entry in energieKnowledgeDatabase) {
         await db.put(_knowledgeBox, entry.id, entry.toJson());
       }
-      for (var entry in energieKnowledgeComplete) {
+      for (final entry in energieKnowledgeComplete) {
         await db.put(_knowledgeBox, entry.id, entry.toJson());
       }
 
@@ -250,7 +250,7 @@ class UnifiedKnowledgeService {
       final favoriteIds = await db.getKeys(_favoritesBox);
 
       final List<KnowledgeEntry> favorites = [];
-      for (var id in favoriteIds) {
+      for (final id in favoriteIds) {
         final entry = await getEntry(id);
         if (entry != null && (world == null || entry.world == world)) {
           favorites.add(entry);
@@ -357,7 +357,7 @@ class UnifiedKnowledgeService {
           await SqliteStorageService.instance.getKeys(_notesBox);
 
       final List<KnowledgeEntry> entries = [];
-      for (var id in knowledgeIds) {
+      for (final id in knowledgeIds) {
         final entry = await getEntry(id);
         if (entry != null && (world == null || entry.world == world)) {
           entries.add(entry);
@@ -441,7 +441,7 @@ class UnifiedKnowledgeService {
       final keys = await db.getKeys(_progressBox);
       final List<KnowledgeEntry> readEntries = [];
 
-      for (var key in keys) {
+      for (final key in keys) {
         final progressData = db.getSync(_progressBox, key);
         if (progressData == null) continue;
         final progress = ReadingProgress.fromJson(
@@ -490,7 +490,7 @@ class UnifiedKnowledgeService {
 
     // Collect tags from read and favorited entries
     final Set<String> userInterestTags = {};
-    for (var entry in [...readEntries, ...favorites]) {
+    for (final entry in [...readEntries, ...favorites]) {
       userInterestTags.addAll(entry.tags);
     }
 
@@ -499,14 +499,14 @@ class UnifiedKnowledgeService {
 
     // Score entries based on matching tags
     final Map<KnowledgeEntry, int> scoredEntries = {};
-    for (var entry in allEntries) {
+    for (final entry in allEntries) {
       // Skip already read entries
       final isRead = readEntries.any((e) => e.id == entry.id);
       if (isRead) continue;
 
       // Calculate score
       int score = 0;
-      for (var tag in entry.tags) {
+      for (final tag in entry.tags) {
         if (userInterestTags.contains(tag)) {
           score += 2; // High weight for matching tags
         }

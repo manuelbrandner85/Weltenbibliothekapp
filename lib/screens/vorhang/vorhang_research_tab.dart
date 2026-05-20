@@ -358,7 +358,7 @@ class _Concept {
 
 class _CategoryCard extends StatefulWidget {
   final _Category category;
-  const _CategoryCard({required this.category, super.key});
+  const _CategoryCard({required this.category});
 
   @override
   State<_CategoryCard> createState() => _CategoryCardState();
@@ -431,7 +431,7 @@ class _CategoryCardState extends State<_CategoryCard> {
                 Divider(color: _gold.withValues(alpha: 0.15), height: 1),
                 ...widget.category.concepts
                     .map((c) => _ConceptTile(concept: c))
-                    .toList(),
+                    ,
               ],
             ),
           ),
@@ -443,7 +443,7 @@ class _CategoryCardState extends State<_CategoryCard> {
 
 class _ConceptTile extends StatelessWidget {
   final _Concept concept;
-  const _ConceptTile({required this.concept, super.key});
+  const _ConceptTile({required this.concept});
 
   static const _gold = Color(0xFFC9A84C);
   static const _surface = Color(0xFF0D0B00);

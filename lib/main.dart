@@ -67,7 +67,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
 import 'widgets/realtime_notification_host.dart'; // 🔔 v95 In-App Activity Banner
-import 'services/realtime_notification_service.dart'; // 🔔 v95
+// 🔔 v95
 import 'services/pip_service.dart'; // 📺 B10.3 PiP
 import 'services/feature_flags.dart'; // 🚩 v5.44.2 Phase-2-Toggle-System
 
@@ -138,7 +138,7 @@ void main() async {
 
   // 🔔 PUSH NOTIFICATION MANAGER - Auto-Register + in-app polling (nur Mobile)
   // (fire-and-forget; init itself is awaitable but non-critical)
-  if (!kIsWeb)
+  if (!kIsWeb) {
     unawaited(PushNotificationManager.instance.init(
       onDeepLink: (data) {
         final nav = appNavigatorKey.currentState;
@@ -180,6 +180,7 @@ void main() async {
         }
       },
     ));
+  }
 
   // ═══════════════════════════════════════════════════════════
   // MOBILE SYSTEM UI OPTIMIERUNGEN (SYNC - SCHNELL) — nur auf Mobile

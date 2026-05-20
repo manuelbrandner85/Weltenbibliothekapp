@@ -99,8 +99,9 @@ class BookmarkService {
     try {
       await _ensureLoaded();
       if (_bookmarks.any((b) => b.id == bookmark.id)) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('⚠️ Bookmark already exists: ${bookmark.id}');
+        }
         return false;
       }
       _bookmarks.add(bookmark);

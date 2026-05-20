@@ -16,6 +16,7 @@ import 'smooth_transitions.dart';
 import 'media_widgets.dart';
 // import 'voice_recorder_widget.dart'; // Disabled - missing record package
 import 'drawing_canvas_widget.dart';
+import 'android_voice_recorder.dart';
 
 /// 🚀 CREATE POST DIALOG V2 - ALLE 10 FEATURES KOMPLETT!
 ///
@@ -77,6 +78,10 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2>
   String? _selectedGifUrl;
   List<XFile> _selectedImages = [];
   Map<String, dynamic>? _videoMetadata;
+
+  // Voice Note
+  String? _voiceNotePath;
+  Duration? _voiceNoteDuration;
 
   // Feature 4: Reichweite
   PostVisibility _visibility = PostVisibility.public;
@@ -142,7 +147,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2>
     if (draft.poll != null) {
       _isPollMode = true;
       _pollOptions.clear();
-      for (var option in draft.poll!.options) {
+      for (final option in draft.poll!.options) {
         _pollOptions.add(TextEditingController(text: option.text));
       }
       _pollExpiresAt = draft.poll!.expiresAt;
@@ -223,7 +228,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2>
     _tagsController.dispose();
     _tabController.dispose();
     _autoSaveTimer?.cancel();
-    for (var controller in _pollOptions) {
+    for (final controller in _pollOptions) {
       controller.dispose();
     }
     super.dispose();
@@ -325,6 +330,32 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2>
       _uploadedMediaUrl = null;
       _selectedFilter = 'Original';
     });
+  }
+
+  Future<void> _openVoiceRecorder() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        child: AndroidVoiceRecorder(
+          onRecordingComplete: (path, duration) {
+            setState(() {
+              _voiceNotePath = path;
+              _voiceNoteDuration = duration;
+            });
+            Navigator.of(ctx).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Voice Note aufgenommen (${duration.inSeconds}s)'),
+              ),
+            );
+          },
+          onCancel: () => Navigator.of(ctx).pop(),
+        ),
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -831,7 +862,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2>
     );
   }
 
-  void _showPollExpiryPicker() async {
+  Future<void> _showPollExpiryPicker() async {
     final options = [
       {'label': '24 Stunden', 'hours': 24},
       {'label': '3 Tage', 'hours': 72},
@@ -1007,14 +1038,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2>
                 icon: Icons.mic,
                 label: 'Voice Note',
                 colors: [const Color(0xFF2196F3), const Color(0xFF03A9F4)],
-                onTap: () {
-                  // Voice recording disabled - missing record package
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Voice recording coming soon!'),
-                    ),
-                  );
-                },
+                onTap: _openVoiceRecorder,
               ),
               _buildMediaButton(
                 icon: Icons.draw,

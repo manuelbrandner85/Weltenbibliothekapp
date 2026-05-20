@@ -356,14 +356,18 @@ class ImageAnalysisService {
   static Map<String, dynamic> _detectFormat(Uint8List bytes) {
     if (bytes.length < 4) return {'format': 'unbekannt', 'valid': false};
 
-    if (bytes[0] == 0xFF && bytes[1] == 0xD8)
+    if (bytes[0] == 0xFF && bytes[1] == 0xD8) {
       return {'format': 'JPEG', 'valid': true};
-    if (bytes[0] == 0x89 && bytes[1] == 0x50)
+    }
+    if (bytes[0] == 0x89 && bytes[1] == 0x50) {
       return {'format': 'PNG', 'valid': true};
-    if (bytes[0] == 0x47 && bytes[1] == 0x49)
+    }
+    if (bytes[0] == 0x47 && bytes[1] == 0x49) {
       return {'format': 'GIF', 'valid': true};
-    if (bytes[0] == 0x42 && bytes[1] == 0x4D)
+    }
+    if (bytes[0] == 0x42 && bytes[1] == 0x4D) {
       return {'format': 'BMP', 'valid': true};
+    }
     if (bytes[0] == 0x52 &&
         bytes[1] == 0x49 &&
         bytes[4] == 0x57 &&

@@ -91,7 +91,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
     final supa = Supabase.instance.client;
     final like = '%${query.replaceAll('%', '').replaceAll('_', '')}%';
 
-    Future<List<_Hit>> profilesFut = supa
+    final Future<List<_Hit>> profilesFut = supa
         .from('profiles')
         .select('username,display_name,avatar_url,role')
         .or('username.ilike.$like,display_name.ilike.$like')
@@ -108,7 +108,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
             .toList())
         .onError((_, __) => <_Hit>[]);
 
-    Future<List<_Hit>> messagesFut = supa
+    final Future<List<_Hit>> messagesFut = supa
         .from('chat_messages')
         .select('id,username,message,room_id,realm,created_at')
         .ilike('message', like)
@@ -125,7 +125,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
             .toList())
         .onError((_, __) => <_Hit>[]);
 
-    Future<List<_Hit>> modulesFut = supa
+    final Future<List<_Hit>> modulesFut = supa
         .from('vorhang_modules')
         .select('module_code,title,branch,description')
         .or('title.ilike.$like,description.ilike.$like,module_code.ilike.$like')

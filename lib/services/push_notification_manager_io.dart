@@ -145,8 +145,9 @@ Future<void> fcmBackgroundHandler(RemoteMessage message) async {
   try {
     await Firebase.initializeApp();
   } catch (e) {
-    if (kDebugMode)
+    if (kDebugMode) {
       debugPrint('⚠️ fcmBackgroundHandler Firebase.initializeApp: $e');
+    }
   }
   if (message.notification == null) {
     final data = message.data;
@@ -179,8 +180,9 @@ Future<void> fcmBackgroundHandler(RemoteMessage message) async {
         payload: jsonEncode(data),
       );
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ fcmBackgroundHandler localPlugin.show: $e');
+      }
     }
   }
 }
@@ -456,8 +458,9 @@ class PushNotificationManager with WidgetsBindingObserver {
       final subs = body is Map ? (body['subscriptions'] as List? ?? []) : [];
       final hasActive = subs.any((s) => s is Map && s['is_active'] == true);
       if (!hasActive) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('🩹 push: keine aktive Subscription → re-register');
+        }
         _subscribed = false;
         await _registerSubscription(uid);
       }
@@ -517,8 +520,9 @@ class PushNotificationManager with WidgetsBindingObserver {
     // (oder Master-Toggle aus), Notification verwerfen. In-App-Center
     // zeigt sie trotzdem (nutzt eigenen Fetch auf `notifications`-Tabelle).
     if (!PushPreferencesService.instance.isTypeEnabled(type)) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('🔕 push gefiltert (type=$type per Pref deaktiviert)');
+      }
       return;
     }
 
@@ -571,7 +575,7 @@ class PushNotificationManager with WidgetsBindingObserver {
     if (count >= 2 &&
         !kIsWeb &&
         defaultTargetPlatform == TargetPlatform.android) {
-      final summaryId = (groupKey + '_summary').hashCode & 0x7FFFFFFF;
+      final summaryId = ('${groupKey}_summary').hashCode & 0x7FFFFFFF;
       await _localPlugin.show(
         summaryId,
         'Weltenbibliothek · Chat',

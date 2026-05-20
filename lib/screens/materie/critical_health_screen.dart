@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 /// Kritische Gesundheits-Recherche — Materie-Welt (Rot)
 /// Tab 1: OpenFDA Nebenwirkungen
@@ -1291,8 +1290,9 @@ class _CmsPaymentCard extends StatelessWidget {
   // Farb-Mapping für Zahlungstypen
   Color _typeColor(String type) {
     final t = type.toLowerCase();
-    if (t.contains('food') || t.contains('meal'))
+    if (t.contains('food') || t.contains('meal')) {
       return const Color(0xFF4CAF50);
+    }
     if (t.contains('speaking')) return const Color(0xFF2196F3);
     if (t.contains('consulting')) return const Color(0xFFFF9800);
     if (t.contains('research')) return const Color(0xFF9C27B0);

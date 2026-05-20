@@ -286,7 +286,7 @@ class _InAppVideoPlayerState extends State<InAppVideoPlayer> {
     );
   }
 
-  void _openInBrowser(String url) async {
+  Future<void> _openInBrowser(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);

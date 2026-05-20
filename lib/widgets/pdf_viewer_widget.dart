@@ -211,7 +211,7 @@ class InAppPdfViewer extends StatelessWidget {
     );
   }
 
-  void _openInBrowser() async {
+  Future<void> _openInBrowser() async {
     // Google Docs Viewer für bessere Kompatibilität
     final viewerUrl =
         'https://docs.google.com/viewer?url=${Uri.encodeComponent(pdfUrl)}&embedded=true';

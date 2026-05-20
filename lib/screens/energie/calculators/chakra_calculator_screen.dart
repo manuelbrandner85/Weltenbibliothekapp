@@ -1700,7 +1700,7 @@ class _ChakraWheelPainter extends CustomPainter {
 
     for (int i = 0; i < 7; i++) {
       final startAngle = (i * 2 * math.pi / 7) - math.pi / 2;
-      final sweepAngle = 2 * math.pi / 7 - 0.05;
+      const sweepAngle = 2 * math.pi / 7 - 0.05;
       final paint = Paint()
         ..color = _chakraColors[i].withValues(alpha: 0.7)
         ..style = PaintingStyle.fill;

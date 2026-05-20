@@ -198,10 +198,11 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
   Future<void> _tapBead() async {
     setState(() => _beadCount++);
     // Haptik alle 9 (Mala-Sub-Cycle)
-    if (_beadCount % 9 == 0)
+    if (_beadCount % 9 == 0) {
       await HapticFeedback.mediumImpact();
-    else
+    } else {
       await HapticFeedback.selectionClick();
+    }
     // Bei 108: vollständige Runde — kräftiges Feedback + Reset-Option
     if (_beadCount >= 108) {
       await HapticFeedback.heavyImpact();

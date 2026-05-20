@@ -48,7 +48,7 @@ class SoundService {
   }
 
   /// Play tap sound with variable pitch
-  static void playTapSound({double pitch = 1.0}) async {
+  static Future<void> playTapSound({double pitch = 1.0}) async {
     try {
       final player = _instance._getAvailablePlayer();
       if (player == null) {
@@ -72,7 +72,7 @@ class SoundService {
   }
 
   /// Play unlock sound when Easter Egg is triggered
-  static void playUnlockSound() async {
+  static Future<void> playUnlockSound() async {
     try {
       final player = _instance._getAvailablePlayer();
       if (player == null) return;
@@ -91,7 +91,7 @@ class SoundService {
   }
 
   /// Play achievement unlock sound
-  static void playAchievementSound() async {
+  static Future<void> playAchievementSound() async {
     try {
       final player = _instance._getAvailablePlayer();
       if (player == null) return;
@@ -110,7 +110,7 @@ class SoundService {
   }
 
   /// Play mini-game sound effects
-  static void playGameSound(String type) async {
+  static Future<void> playGameSound(String type) async {
     try {
       final player = _instance._getAvailablePlayer();
       if (player == null) return;
@@ -160,7 +160,7 @@ class SoundService {
       }
 
       // Find idle player
-      for (var player in _playerPool) {
+      for (final player in _playerPool) {
         if (player.state != PlayerState.playing) {
           return player;
         }
@@ -178,7 +178,7 @@ class SoundService {
 
   /// Dispose all audio players
   void dispose() {
-    for (var player in _playerPool) {
+    for (final player in _playerPool) {
       player.dispose();
     }
     _playerPool.clear();
@@ -189,7 +189,7 @@ class SoundService {
   }
 
   /// Play custom sound from URL or asset path
-  static void playCustomSound(String soundUrl, {double volume = 0.5}) async {
+  static Future<void> playCustomSound(String soundUrl, {double volume = 0.5}) async {
     try {
       final player = _instance._getAvailablePlayer();
       if (player == null) return;

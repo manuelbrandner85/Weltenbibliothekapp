@@ -206,14 +206,19 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
   List<_Source> get _filtered {
     final q = _search.trim().toLowerCase();
     return _sources.where((s) {
-      if (_filterCategory == 'bookmarks' && !_bookmarks.contains(s.url))
+      if (_filterCategory == 'bookmarks' && !_bookmarks.contains(s.url)) {
         return false;
+      }
       if (_filterCategory != 'all' &&
           _filterCategory != 'bookmarks' &&
-          s.category != _filterCategory) return false;
+          s.category != _filterCategory) {
+        return false;
+      }
       if (q.isNotEmpty &&
           !s.title.toLowerCase().contains(q) &&
-          !s.description.toLowerCase().contains(q)) return false;
+          !s.description.toLowerCase().contains(q)) {
+        return false;
+      }
       return true;
     }).toList();
   }

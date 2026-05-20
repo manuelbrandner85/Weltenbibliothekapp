@@ -113,8 +113,9 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
 
   Future<void> load() async {
     if (_isLoading) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('🔐 AdminState: load() skipped (already running)');
+      }
       return;
     }
     _isLoading = true;
@@ -191,8 +192,9 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
         }
       }
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ AdminState: Supabase-Load fehlgeschlagen: $e');
+      }
     }
 
     // ──────────────────────────────────────────────────────────────

@@ -2173,7 +2173,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   }
 
   Widget _buildPinnacleCard(Map<String, dynamic> pinnacle) {
-    final color = const Color(0xFFFFD700);
+    const color = Color(0xFFFFD700);
     final name = _profile?.firstName ?? 'Du';
 
     return HoverGlowCard(
@@ -2293,7 +2293,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   }
 
   Widget _buildChallengeCard(Map<String, dynamic> challenge) {
-    final color = const Color(0xFFE91E63);
+    const color = Color(0xFFE91E63);
     final name = _profile?.firstName ?? 'Du';
     final challengeNum = challenge['challenge'] as int;
     final number = challenge['number'] as int;

@@ -82,11 +82,13 @@ class KaninchenbauService {
                 '${ApiConfig.workerUrl}/api/kaninchenbau/wikipedia-network?topic=${Uri.encodeQueryComponent(topic)}'),
           )
           .timeout(const Duration(seconds: 15));
-      if (resp.statusCode != 200)
+      if (resp.statusCode != 200) {
         return NetworkGraph(nodes: [centerNode], edges: const []);
+      }
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      if (data['found'] != true)
+      if (data['found'] != true) {
         return NetworkGraph(nodes: [centerNode], edges: const []);
+      }
 
       final realCenter = NetworkNode(
         id: 'center',
@@ -420,7 +422,9 @@ LIMIT 30
         d.contains('firma') ||
         d.contains('unternehmen') ||
         d.contains('konzern') ||
-        d.contains('aktiengesellschaft')) return 'company';
+        d.contains('aktiengesellschaft')) {
+      return 'company';
+    }
     if (d.contains('politician') ||
         d.contains('person') ||
         d.contains('researcher') ||
@@ -428,17 +432,23 @@ LIMIT 30
         d.contains('manager') ||
         d.contains('unternehmer') ||
         d.contains('autor') ||
-        d.contains('wissenschaftler')) return 'person';
+        d.contains('wissenschaftler')) {
+      return 'person';
+    }
     if (d.contains('organization') ||
         d.contains('foundation') ||
         d.contains('organisation') ||
         d.contains('stiftung') ||
         d.contains('verein') ||
-        d.contains('partei')) return 'org';
+        d.contains('partei')) {
+      return 'org';
+    }
     if (d.contains('city') ||
         d.contains('country') ||
         d.contains('stadt') ||
-        d.contains('land')) return 'place';
+        d.contains('land')) {
+      return 'place';
+    }
     return 'concept';
   }
 
@@ -449,16 +459,22 @@ LIMIT 30
         t.contains('aktiengesellschaft') ||
         t.contains('konzern') ||
         t.contains('business') ||
-        t.contains('company')) return 'company';
+        t.contains('company')) {
+      return 'company';
+    }
     if (t.contains('organisation') ||
         t.contains('stiftung') ||
         t.contains('verein') ||
         t.contains('partei') ||
-        t.contains('party')) return 'org';
+        t.contains('party')) {
+      return 'org';
+    }
     if (t.contains('stadt') ||
         t.contains('staat') ||
         t.contains('city') ||
-        t.contains('country')) return 'place';
+        t.contains('country')) {
+      return 'place';
+    }
     return 'concept';
   }
 
@@ -1315,7 +1331,7 @@ LIMIT 30
   /// Schreibt auf Deutsch eine prägnante investigative Einsicht zum Thema.
   Future<String?> fetchAiInsight(String topic, {String? context}) async {
     try {
-      final system =
+      const system =
           'Du bist VIRGIL, ein investigativer Recherche-Begleiter im Stil eines '
           'erfahrenen deutschen Investigativ-Journalisten (LobbyControl, Correctiv, '
           'NDR-Panorama). Du sprichst NUR Deutsch. Stil: knapp, präzise, sachlich, '

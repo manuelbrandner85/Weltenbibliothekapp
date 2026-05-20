@@ -9,7 +9,6 @@ import '../services/saved_threads_service.dart';
 import '../widgets/kb_design.dart';
 import '../../../../theme/wb_cinematic_tokens.dart';
 import '../../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../../widgets/cinematic/wb_vignette.dart';
 
 class MyInvestigationsScreen extends StatefulWidget {
   const MyInvestigationsScreen({super.key});

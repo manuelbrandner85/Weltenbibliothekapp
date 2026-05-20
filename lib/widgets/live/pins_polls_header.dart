@@ -170,8 +170,9 @@ class _PinsPollsHeaderState extends State<PinsPollsHeader>
     final pinCount = widget.pins.length;
     final pollCount = widget.polls.length;
     final parts = <String>[];
-    if (pinCount > 0)
+    if (pinCount > 0) {
       parts.add('📌 $pinCount ${pinCount == 1 ? "Pin" : "Pins"}');
+    }
     if (pollCount > 0) {
       parts.add('📊 $pollCount ${pollCount == 1 ? "Umfrage" : "Umfragen"}');
     }

@@ -144,33 +144,37 @@ class _SynchronizitaetenLoggerScreenState
                 d['message'] ??
                 '') as String)
             .trim();
-        if (mounted)
+        if (mounted) {
           setState(() {
             _aiInsight = txt;
             _loadingAi = false;
           });
+        }
       } else {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _aiInsight = '⚠️ AI HTTP ${res.statusCode}';
             _loadingAi = false;
           });
+        }
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _aiInsight = '⚠️ $e';
           _loadingAi = false;
         });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading)
+    if (_loading) {
       return Scaffold(
           backgroundColor: _bg(context),
           body: Center(child: CircularProgressIndicator(color: _primary)));
+    }
     return Scaffold(
       backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,

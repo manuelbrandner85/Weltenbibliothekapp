@@ -83,9 +83,10 @@ class _StudyAnalystScreenState extends State<StudyAnalystScreen>
 
   Future<void> _loadBib() async {
     final prefs = await SharedPreferences.getInstance();
-    if (mounted)
+    if (mounted) {
       setState(() =>
           _bibliography = (prefs.getStringList(_kBibKey) ?? const []).toSet());
+    }
   }
 
   Future<void> _persistBib() async {
@@ -157,7 +158,9 @@ class _StudyAnalystScreenState extends State<StudyAnalystScreen>
 
   Future<void> _requestAiTldr(StudyPaper p) async {
     if (_aiTldrCache[p.id] != null ||
-        (p.abstractText == null && p.tldr == null)) return;
+        (p.abstractText == null && p.tldr == null)) {
+      return;
+    }
     HapticFeedback.lightImpact();
     setState(() => _aiTldrCache[p.id] = '__loading__');
     try {
@@ -201,8 +204,9 @@ class _StudyAnalystScreenState extends State<StudyAnalystScreen>
             .trim();
         if (mounted) setState(() => _aiTldrCache[p.id] = answer);
       } else {
-        if (mounted)
+        if (mounted) {
           setState(() => _aiTldrCache[p.id] = '⚠️ HTTP ${res.statusCode}');
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _aiTldrCache[p.id] = '⚠️ $e');

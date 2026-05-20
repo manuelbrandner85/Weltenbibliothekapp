@@ -648,7 +648,7 @@ class CategoryPieChart extends StatelessWidget {
     final chartData = <String, double>{};
     final chartColors = <String, Color>{};
 
-    for (var item in data) {
+    for (final item in data) {
       final category = item['category'] as String;
       final count = (item['count'] as int).toDouble();
       final color = item['color'] as Color;

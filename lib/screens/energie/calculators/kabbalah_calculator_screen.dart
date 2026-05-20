@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 
 /// 🌳 Kabbala-Rechner – Interaktiver Lebensbaum mit 10 Sephiroth
 /// Cinema-Stil mit animiertem Tree of Life (CustomPainter)

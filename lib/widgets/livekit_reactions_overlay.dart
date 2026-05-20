@@ -170,7 +170,7 @@ class _FloatingEmojiState extends State<_FloatingEmoji>
         final y = yStart + (yEnd - yStart) * t;
 
         // X: leichter Zickzack via sin
-        final waveAmplitude = 30.0;
+        const waveAmplitude = 30.0;
         final xBase = size.width * widget.data.startXFraction;
         final x = xBase +
             math.sin(t * math.pi * 2 + widget.data.wavePhase) *

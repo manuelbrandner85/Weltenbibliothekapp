@@ -15,7 +15,6 @@ import 'package:translator/translator.dart';
 import 'dart:io' if (dart.library.html) '../../stubs/dart_io_stub.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 class EpsteinFilesSimpleScreen extends StatefulWidget {
   const EpsteinFilesSimpleScreen({super.key});
@@ -122,7 +121,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen>
 
   /// 🌐 Verstecke Google Translate Banner - Sieht sauberer aus
   void _hideGoogleTranslateBanner() {
-    final jsCode = '''
+    const jsCode = '''
       (function() {
         // Entferne Google Translate Banner
         const banner = document.querySelector('.goog-te-banner-frame');

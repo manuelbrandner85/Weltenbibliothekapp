@@ -17,10 +17,8 @@ import '../../../utils/kaninchenbau_markdown_export.dart'; // 📄 C1
 import 'cards/abgeordnete_card.dart';
 import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
-import 'cards/aleph_card.dart';
 import 'cards/annotations_card.dart';
 import 'cards/archive_card.dart';
-import 'cards/companies_card.dart';
 import 'cards/court_cases_card.dart';
 import 'cards/deep_research_card.dart';
 import 'cards/documents_card.dart';
@@ -33,17 +31,13 @@ import 'cards/lobbying_card.dart';
 import 'cards/media_compass_card.dart';
 import 'cards/money_flow_card.dart';
 import 'cards/network_card.dart';
-import 'cards/offshore_card.dart';
-import 'cards/opensanctions_card.dart';
 import 'cards/power_relations_card.dart';
-import 'cards/propaganda_card.dart';
 import 'cards/pubmed_card.dart';
 import 'cards/related_paths_card.dart';
 import 'cards/rss_mentions_card.dart';
 import 'cards/sanctions_card.dart';
 import 'cards/semantic_papers_card.dart';
 import 'cards/sherlock_card.dart';
-import 'cards/skandale_card.dart';
 import 'cards/sources_card.dart';
 import 'cards/timeline_card.dart';
 import 'cards/wayback_card.dart';
@@ -112,7 +106,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
     super.dispose();
   }
 
-  void _openThread(String topic) async {
+  Future<void> _openThread(String topic) async {
     final t = topic.trim();
     if (t.isEmpty) return;
 
@@ -144,8 +138,9 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
         s.loadedApiCount++;
       });
       Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted && !s.disposed)
+        if (mounted && !s.disposed) {
           setState(() => s.showLoadingOverlay = false);
+        }
       });
     });
 
@@ -1393,7 +1388,7 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
     _advanceMsg();
   }
 
-  void _advanceMsg() async {
+  Future<void> _advanceMsg() async {
     while (mounted) {
       await Future.delayed(const Duration(milliseconds: 1600));
       if (!mounted) return;
@@ -1703,10 +1698,11 @@ class _ShareFabState extends State<_ShareFab>
     return GestureDetector(
       onTap: () {
         setState(() => _expanded = !_expanded);
-        if (_expanded)
+        if (_expanded) {
           _c.forward();
-        else
+        } else {
           _c.reverse();
+        }
         HapticFeedback.lightImpact();
         widget.onTap();
       },

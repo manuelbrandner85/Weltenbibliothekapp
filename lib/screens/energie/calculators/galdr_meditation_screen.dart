@@ -2,7 +2,6 @@
 // Bereich D2 -- Atemzyklus + visuelle Runen-Pulsation.
 
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

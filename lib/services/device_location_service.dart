@@ -76,8 +76,9 @@ class DeviceLocationService {
     // Wenn der User Permission abgelehnt hat, in dieser Session nicht
     // erneut nerven (User kann manuell in Settings re-enablen).
     if (prefs.getBool(_deniedKey) ?? false) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('📍 Location previously denied — skipping prompt');
+      }
       return null;
     }
 

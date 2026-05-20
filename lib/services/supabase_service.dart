@@ -326,8 +326,9 @@ class SupabaseCommunityService {
         .select()
         .single();
 
-    if (kDebugMode)
+    if (kDebugMode) {
       debugPrint('✅ [Community] Artikel erstellt: ${response['id']}');
+    }
     return response;
   }
 
@@ -915,8 +916,9 @@ class SupabaseChatService {
         'p_room_id': roomId,
         'p_user_id': userId,
       });
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('📖 [Chat] Alle Nachrichten in $roomId gelesen');
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ [Chat] markRoomMessagesAsRead failed: $e');
     }

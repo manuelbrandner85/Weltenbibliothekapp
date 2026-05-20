@@ -141,8 +141,9 @@ class _SourceTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(KbDesign.radiusSm),
         onTap: () async {
           final uri = Uri.tryParse(item.url);
-          if (uri != null)
+          if (uri != null) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
         },
         child: Container(
           padding: const EdgeInsets.all(12),

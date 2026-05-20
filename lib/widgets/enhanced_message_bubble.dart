@@ -125,8 +125,9 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
     try {
       final messageId = widget.message['id'];
       if (messageId == null) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('⚠️ Cannot add reaction: Message missing ID');
+        }
         return;
       }
 
@@ -146,8 +147,9 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
         setState(() => _showReactionPicker = false);
         await _loadReactions();
       } else {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('❌ Add reaction failed: ${response.statusCode}');
+        }
       }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Add reaction error: $e');
@@ -158,8 +160,9 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
     try {
       final messageId = widget.message['id'];
       if (messageId == null) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('⚠️ Cannot remove reaction: Message missing ID');
+        }
         return;
       }
 
@@ -178,8 +181,9 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
       if (response.statusCode == 200) {
         await _loadReactions();
       } else {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('❌ Remove reaction failed: ${response.statusCode}');
+        }
       }
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Remove reaction error: $e');

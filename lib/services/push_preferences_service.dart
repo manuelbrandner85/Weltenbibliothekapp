@@ -57,8 +57,9 @@ class PushPreferencesService {
       _follow = prefs.getBool(_kEnabledFollow) ?? true;
       _article = prefs.getBool(_kEnabledArticle) ?? true;
       _system = prefs.getBool(_kEnabledSystem) ?? true;
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('🔔 PushPreferences hydriert (master=$_master)');
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ PushPreferences init failed: $e');
     }

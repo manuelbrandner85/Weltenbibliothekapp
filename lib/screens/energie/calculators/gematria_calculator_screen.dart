@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -1093,73 +1092,73 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
   String _getPastStoryText(String name, int vibration) {
     // Dynamisch basierend auf Numerologie UND Gematria
-    String karmaInsight = _getKarmaInsight(_lifePathNumber);
-    String soulOrigin = _getSoulOrigin(_soulNumber);
-    String pastLifePattern = _getPastLifePattern(vibration, _destinyNumber);
+    final String karmaInsight = _getKarmaInsight(_lifePathNumber);
+    final String soulOrigin = _getSoulOrigin(_soulNumber);
+    final String pastLifePattern = _getPastLifePattern(vibration, _destinyNumber);
 
     return '$name, dein Name trägt die Schwingung $vibration – ${_getVibrationQuality(vibration)}. Diese Frequenz ist dein kosmischer Fingerabdruck, eingeprägt seit Äonen.\n\n$soulOrigin\n\n$pastLifePattern\n\n$karmaInsight\n\nAls Kind spürtest du wahrscheinlich manchmal, dass du "anders" bist. ${_getChildhoodMemoryPattern(_personalityNumber)} Das ist die Erinnerung deiner Seele. Dein Name ruft diese alte Weisheit wach.';
   }
 
   String _getChildhoodText(String name, int number) {
-    String soulLessons = _getSoulNumberChildhoodLessons(number);
-    String earlyTraits = _getEarlyPersonalityTraits(_personalityNumber);
-    String familyDynamics = _getFamilyKarmaPattern(_lifePathNumber, number);
+    final String soulLessons = _getSoulNumberChildhoodLessons(number);
+    final String earlyTraits = _getEarlyPersonalityTraits(_personalityNumber);
+    final String familyDynamics = _getFamilyKarmaPattern(_lifePathNumber, number);
 
     return '$name, deine Kindheit wurde von der Seelen-Zahl $number geprägt – ${_getNumberQuality(number)}. Diese Phase war fundamental.\n\n$soulLessons\n\n$earlyTraits\n\n$familyDynamics\n\nSchau zurück: Erkennst du das Muster? Jede Freude, jeder Schmerz formte dich genau so, wie du sein solltest.';
   }
 
   String _getYoungAdultText(String name, int number) {
-    String destinyUnfolding =
+    final String destinyUnfolding =
         _getDestinyUnfoldingPattern(number, _expressionNumber);
-    String relationshipKarma =
+    final String relationshipKarma =
         _getRelationshipKarmaPattern(_soulNumber, _destinyNumber);
-    String careerSeeds = _getCareerSeedsPattern(_lifePathNumber, _personalYear);
+    final String careerSeeds = _getCareerSeedsPattern(_lifePathNumber, _personalYear);
 
     return '$name, zwischen 21 und 35 Jahren begann deine Schicksals-Zahl $number sich zu manifestieren – ${_getNumberQuality(number)}. Dies war deine Experimentier-Phase.\n\n$destinyUnfolding\n\n$relationshipKarma\n\n$careerSeeds\n\nALLES war Teil des Plans. Jeder "Fehler" war ein notwendiger Schritt.';
   }
 
   String _getPresentStoryText(String name, int age, int vibration) {
-    String currentPhaseEnergy = _getCurrentPhaseEnergy(age, _personalYear);
-    String activationCode =
+    final String currentPhaseEnergy = _getCurrentPhaseEnergy(age, _personalYear);
+    final String activationCode =
         _getActivationCode(_soulNumber, _destinyNumber, _lifePathNumber);
-    String nowMoment =
+    final String nowMoment =
         _getNowMomentGuidance(_expressionNumber, _personalityNumber);
 
     return '$name, JETZT – mit $age Jahren stehst du an einem kraftvollen Punkt. ${_getAgeWisdomInsight(age)} Du trägst die Weisheit deiner Vergangenheit in dir.\n\n$currentPhaseEnergy\n\n$activationCode\n\n$nowMoment\n\nDie Gegenwart ist der einzige Moment mit Macht. JETZT ist ein Geschenk. Das Universum bereitet dich auf etwas Größeres vor.';
   }
 
   String _getCurrentMissionText(String name, int soul, int destiny) {
-    String missionBlueprint =
+    final String missionBlueprint =
         _getMissionBluedebugPrint(soul, destiny, _lifePathNumber);
-    String uniqueGift = _getUniqueGiftPattern(_expressionNumber, _personalYear);
-    String worldImpact = _getWorldImpactVision(soul, destiny);
+    final String uniqueGift = _getUniqueGiftPattern(_expressionNumber, _personalYear);
+    final String worldImpact = _getWorldImpactVision(soul, destiny);
 
     return '$name, deine Lebensaufgabe ist in den Zahlen kodiert: Seelen-Zahl $soul (${_getNumberQuality(soul)}) + Schicksals-Zahl $destiny (${_getNumberQuality(destiny)}) = deine Mission.\n\n$missionBlueprint\n\n$uniqueGift\n\n$worldImpact\n\nHöre auf, dich klein zu machen – es ist Zeit, zu strahlen!';
   }
 
   String _getHiddenTalentsText(String name, int vibration) {
-    String dormantAbilities =
+    final String dormantAbilities =
         _getDormantAbilities(_expressionNumber, _personalityNumber);
-    String intuitiveGifts = _getIntuitiveGifts(_soulNumber, _lifePathNumber);
-    String creativeChannels = _getCreativeChannels(vibration, _personalYear);
+    final String intuitiveGifts = _getIntuitiveGifts(_soulNumber, _lifePathNumber);
+    final String creativeChannels = _getCreativeChannels(vibration, _personalYear);
 
     return '$name, tief in dir schlummern Fähigkeiten. Die Gematria-Zahl $vibration (${_getVibrationQuality(vibration)}) ist dein Tresorschlüssel.\n\n$dormantAbilities\n\n$intuitiveGifts\n\n$creativeChannels\n\nHör auf deine Intuition – sie wird dich zu deinen verborgenen Talenten führen.';
   }
 
   String _getFutureStoryText(String name, int vibration) {
-    String timelineVision = _getTimelineVision(_personalYear, _lifePathNumber);
-    String upcomingLessons = _getUpcomingLessons(_destinyNumber, _soulNumber);
-    String manifestationPath =
+    final String timelineVision = _getTimelineVision(_personalYear, _lifePathNumber);
+    final String upcomingLessons = _getUpcomingLessons(_destinyNumber, _soulNumber);
+    final String manifestationPath =
         _getManifestationPath(vibration, _expressionNumber);
 
     return '$name, die Zukunft ist ein Feld unendlicher Möglichkeiten. Dein Name (Schwingung $vibration) ist dein Kompass.\n\n$timelineVision\n\n$upcomingLessons\n\n$manifestationPath\n\nDeine größte Zeit liegt noch vor dir. Was kommt, ist die Erfüllung. Das Beste ist noch nicht geschehen!';
   }
 
   String _getHighestPotentialText(String name, int soul) {
-    String peakExpression = _getPeakExpression(soul, _expressionNumber);
-    String fulfilledVision =
+    final String peakExpression = _getPeakExpression(soul, _expressionNumber);
+    final String fulfilledVision =
         _getFulfilledVision(_destinyNumber, _lifePathNumber);
-    String evolutionPath = _getEvolutionPath(soul, _personalYear);
+    final String evolutionPath = _getEvolutionPath(soul, _personalYear);
 
     return '$name, wenn du dein volles Potenzial lebst – die Essenz der Seelen-Zahl $soul (${_getNumberQuality(soul)}) verkörperst – wirst du unstoppbar sein.\n\n$peakExpression\n\n$fulfilledVision\n\n$evolutionPath\n\nDu KANNST werden, wer du sein sollst. Jeder mutige Moment bringt dich näher.';
   }
@@ -1294,12 +1293,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
   String _getPastLifePattern(int vibration, int destiny) {
     final combo = (vibration % 7) + (destiny % 3);
-    if (combo <= 2)
+    if (combo <= 2) {
       return 'Die Kombination deiner Zahlen zeigt: In früheren Leben warst du oft allein – ein Einsiedler, ein Pionier. Du musstest lernen, dein eigenes Licht zu sein.';
-    if (combo <= 5)
+    }
+    if (combo <= 5) {
       return 'Deine Zahlenmuster deuten an: Du warst oft Teil von Gemeinschaften – Orden, Gilden, Stämme. Du kennst die Kraft des Kollektivs.';
-    if (combo <= 8)
+    }
+    if (combo <= 8) {
       return 'Die Gematria enthüllt: Du hattest viele Leben als Lehrender – Weisen, Professoren, Guides. Wissen weiterzugeben ist dir vertraut.';
+    }
     return 'Deine Zahlen zeigen: Du warst oft ein Krieger – nicht im Krieg, sondern ein Kämpfer für Wahrheit und Gerechtigkeit.';
   }
 
@@ -1380,12 +1382,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
   String _getFamilyKarmaPattern(int lifePath, int soul) {
     final combined = lifePath + soul;
-    if (combined <= 5)
+    if (combined <= 5) {
       return 'Deine Familie war vermutlich Teil deiner Karma-Lektionen – nicht immer einfach, aber notwendig für dein Wachstum.';
-    if (combined <= 10)
+    }
+    if (combined <= 10) {
       return 'Deine Familie war wahrscheinlich dein erstes Übungsfeld – hier lerntest du, wer du NICHT sein willst.';
-    if (combined <= 15)
+    }
+    if (combined <= 15) {
       return 'Deine Familie brachte dir vermutlich wichtige Spiegel – in ihnen sahst du deine eigenen Themen.';
+    }
     return 'Deine Familie war wahrscheinlich ein Geschenk – sie unterstützte deine Seelen-Mission von Anfang an.';
   }
 
@@ -1465,12 +1470,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
   String _getDestinyUnfoldingPattern(int destiny, int expression) {
     final combined = destiny + expression;
-    if (combined <= 5)
+    if (combined <= 5) {
       return 'Zwischen 21 und 35 begann sich dein Schicksal zu entfalten – langsam, aber sicher. Du musstest Geduld lernen.';
-    if (combined <= 10)
+    }
+    if (combined <= 10) {
       return 'In dieser Phase zeigte sich dein Schicksal deutlich – durch Menschen, Orte, Ereignisse. Alles fügte sich.';
-    if (combined <= 15)
+    }
+    if (combined <= 15) {
       return 'Dein Schicksal kam plötzlich – wie ein Blitz. Große Veränderungen in kurzer Zeit.';
+    }
     return 'Diese Phase war turbulent – dein Schicksal forderte dich heraus, dich zu transformieren.';
   }
 
@@ -1548,20 +1556,25 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
   String _getNowMomentGuidance(int expression, int personality) {
     final combined = expression + personality;
-    if (combined <= 6)
+    if (combined <= 6) {
       return 'JETZT ist deine Zeit, leise zu sein – beobachte, lerne, sammle Information.';
-    if (combined <= 12)
+    }
+    if (combined <= 12) {
       return 'JETZT ist deine Zeit zu handeln – setze um, was du lange geplant hast.';
+    }
     return 'JETZT ist deine Zeit zu lehren – teile, was du weißt. Andere brauchen deine Weisheit.';
   }
 
   String _getAgeWisdomInsight(int age) {
-    if (age < 25)
+    if (age < 25) {
       return 'Mit $age Jahren bist du jung, aber nicht unerfahren – deine Seele ist älter als dein Körper.';
-    if (age < 40)
+    }
+    if (age < 40) {
       return 'Mit $age Jahren bist du in deiner Kraft – nutze sie weise.';
-    if (age < 60)
+    }
+    if (age < 60) {
       return 'Mit $age Jahren hast du viel gesehen – und verstehst, dass es noch viel zu entdecken gibt.';
+    }
     return 'Mit $age Jahren bist du ein Weiser – deine Erfahrung ist Gold wert.';
   }
 
@@ -1683,12 +1696,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
   String _getTimelinePrediction(int year, int lifePath) {
     final combined = year + lifePath;
-    if (combined <= 5)
+    if (combined <= 5) {
       return 'eine Zeit der Konsolidierung – sammle Kraft, bereite vor';
-    if (combined <= 10)
+    }
+    if (combined <= 10) {
       return 'eine Zeit des Aufbruchs – große Veränderungen kommen';
-    if (combined <= 15)
+    }
+    if (combined <= 15) {
       return 'eine Zeit der Ernte – du wirst ernten, was du gesät hast';
+    }
     return 'eine Zeit der Transformation – nichts wird so bleiben wie es ist';
   }
 
@@ -1714,12 +1730,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
   String _getManifestationPath(int vibration, int expression) {
     final path = (vibration % 9) + (expression % 3);
-    if (path <= 3)
+    if (path <= 3) {
       return 'Dein Manifestations-Weg: Durch Taten. Was du erschaffen willst, musst du MACHEN.';
-    if (path <= 6)
+    }
+    if (path <= 6) {
       return 'Dein Manifestations-Weg: Durch Gedanken. Visualisiere, und es wird Realität.';
-    if (path <= 9)
+    }
+    if (path <= 9) {
       return 'Dein Manifestations-Weg: Durch Gefühle. Fühle es bereits, und es kommt.';
+    }
     return 'Dein Manifestations-Weg: Durch Hingabe. Lass das Universum arbeiten, vertraue.';
   }
 
@@ -2180,10 +2199,11 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
   // ═══════════════════════════════════════════════════════════
 
   Widget _buildNameVariantsTab() {
-    if (_profile == null)
+    if (_profile == null) {
       return const Center(
           child: Text('Profil erforderlich',
               style: TextStyle(color: Colors.white)));
+    }
 
     // 🔥 ECHTE VARIANTEN mit echten Gematria-Berechnungen
     final firstName = _profile!.firstName;
@@ -2790,10 +2810,11 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
   // ═══════════════════════════════════════════════════════════
 
   Widget _buildChartsTab() {
-    if (_profile == null)
+    if (_profile == null) {
       return const Center(
           child: Text('Profil erforderlich',
               style: TextStyle(color: Colors.white)));
+    }
 
     final fullName = '${_profile!.firstName} ${_profile!.lastName}';
     final letterFreq = GematriaEngine.calculateLetterFrequency(fullName);
@@ -3300,7 +3321,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
   // 🆕 FEATURE 10: COMMUNITY-FEATURES (VOLLSTÄNDIG - ECHTE DATEN)
   // ═══════════════════════════════════════════════════════════
 
-  void _loadCommunityData() async {
+  Future<void> _loadCommunityData() async {
     try {
       // 🔥 ECHTE DATEN: Lade Community-Statistiken aus Hive
 
@@ -3334,7 +3355,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
         final journalBox = await StorageService().getBox('gematria_journal');
         final numberFrequency = <int, int>{};
 
-        for (var entry in journalBox.values) {
+        for (final entry in journalBox.values) {
           final vibration = entry['totalVibration'] as int? ?? 0;
           final reduced = _reduceToSingleDigit(vibration);
           numberFrequency[reduced] = (numberFrequency[reduced] ?? 0) + 1;
@@ -3355,7 +3376,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
         final journalBox = await StorageService().getBox('gematria_journal');
         if (journalBox.isNotEmpty) {
           int sum = 0;
-          for (var entry in journalBox.values) {
+          for (final entry in journalBox.values) {
             sum += entry['totalVibration'] as int? ?? 0;
           }
           averageVibration = (sum / journalBox.length).round();
@@ -3374,7 +3395,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
           limit: 10,
         );
 
-        for (var content in userContent) {
+        for (final content in userContent) {
           realShares.add({
             'user': content['username'] ?? 'Anonym',
             'nameValue': content['gematria_value'] ?? 0,

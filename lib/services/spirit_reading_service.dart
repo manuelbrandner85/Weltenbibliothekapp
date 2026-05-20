@@ -98,9 +98,10 @@ class SpiritReadingService {
         'p_reason': 'spirit:$tool',
       });
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
             'XP-Award via RPC fehlgeschlagen ($e), versuche Direct-Update');
+      }
       try {
         // Fallback: SELECT current XP, dann UPDATE +10
         final profile = await _s
@@ -112,8 +113,9 @@ class SpiritReadingService {
         final current = (profile['xp'] as num?)?.toInt() ?? 0;
         await _s.from('profiles').update({'xp': current + 10}).eq('id', userId);
       } catch (e2) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('XP-Award Fallback auch fehlgeschlagen: $e2');
+        }
       }
     }
   }

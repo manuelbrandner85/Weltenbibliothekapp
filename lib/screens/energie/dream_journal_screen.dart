@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../services/group_tools_service.dart';
 import '../../services/journal_search_service.dart'; // 🔍 H3
 import '../../services/user_service.dart';
@@ -44,11 +43,12 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
   Future<void> _loadUserData() async {
     try {
       final user = await _userService.getCurrentUser();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _username = user.username;
           _userId = 'user_${user.username.toLowerCase()}';
         });
+      }
     } catch (_) {}
   }
 
@@ -56,11 +56,12 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
     setState(() => _isLoading = true);
     try {
       final dreams = await _toolsService.getDreams(roomId: widget.roomId);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _dreams = dreams;
           _isLoading = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -657,11 +658,12 @@ class _JournalSearchScreenState extends State<_JournalSearchScreen> {
   Future<void> _loadTags() async {
     final t = await JournalSearchService.instance.tagCloud();
     final today = await JournalSearchService.instance.onThisDay();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _tags = t;
         _onThisDay = today;
       });
+    }
   }
 
   Future<void> _search(String q) async {

@@ -745,7 +745,7 @@ class _JournalTabState extends State<_JournalTab> {
   }
 
   Future<void> _showAddDialog(BuildContext context) async {
-    final mantras = mantraLibrary;
+    const mantras = mantraLibrary;
     var selectedMantra = mantras.first.translit;
     var feeling = 7.0;
     final noteCtrl = TextEditingController();

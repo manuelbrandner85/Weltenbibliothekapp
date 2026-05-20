@@ -159,7 +159,7 @@ class HealthCheckService extends ChangeNotifier {
     final sw = Stopwatch()..start();
     _totalChecks++;
     try {
-      final raw = ApiConfig.livekitUrl;
+      const raw = ApiConfig.livekitUrl;
       if (raw.isEmpty) {
         sw.stop();
         _serviceHealth['livekit'] = ServiceHealth(

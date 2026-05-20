@@ -162,11 +162,7 @@ class StudyAnalystService {
             (m['externalIds'] as Map?)?.cast<String, dynamic>() ?? const {};
         final doi = extIds['DOI'] as String?;
         final type = _detectStudyType(
-          (m['title'] as String? ?? '') +
-              ' ' +
-              (m['abstract'] as String? ?? '') +
-              ' ' +
-              pubTypes.join(' '),
+          '${m['title'] as String? ?? ''} ${m['abstract'] as String? ?? ''} ${pubTypes.join(' ')}',
         );
         final citation = (m['citationCount'] as int?) ?? 0;
         final influential = (m['influentialCitationCount'] as int?) ?? 0;
@@ -301,12 +297,16 @@ class StudyAnalystService {
     if (RegExp(r'systematic\s+review').hasMatch(t)) return 'review';
     if (RegExp(
             r'\brct\b|randomi[sz]ed\s+controlled\s+trial|randomi[sz]ed\s+clinical\s+trial')
-        .hasMatch(t)) return 'rct';
+        .hasMatch(t)) {
+      return 'rct';
+    }
     if (RegExp(r'cohort\s+study').hasMatch(t)) return 'cohort';
     if (RegExp(r'case\s+report|case\s+series').hasMatch(t)) return 'case';
     if (RegExp(r'\breview\b').hasMatch(t)) return 'review';
     if (RegExp(r'observational\s+study|cross[\s-]?sectional|case[\s-]?control')
-        .hasMatch(t)) return 'observational';
+        .hasMatch(t)) {
+      return 'observational';
+    }
     return 'unknown';
   }
 

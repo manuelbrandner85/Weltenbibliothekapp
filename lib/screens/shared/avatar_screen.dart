@@ -457,7 +457,7 @@ class AvatarPainter extends CustomPainter {
     ];
 
     // Y-Positionen: Wurzel (cy+90) bis Krone (cy-90)
-    final double chakraSpacing = 180.0 / 6;
+    const double chakraSpacing = 180.0 / 6;
     final List<Offset> chakraPositions = List.generate(
       7,
       (i) => Offset(cx, cy + 90 - i * chakraSpacing),
@@ -545,7 +545,7 @@ class AvatarPainter extends CustomPainter {
     const List<Color> orbitColors = [_kMaterie, _kEnergie, _kUrsprung];
     for (int i = 0; i < 3; i++) {
       final angle = animValue * 2 * pi + i * (2 * pi / 3);
-      final orbitRadius = 100.0;
+      const orbitRadius = 100.0;
       final orbitX = cx + orbitRadius * cos(angle);
       final orbitY = cy + orbitRadius * sin(angle) * 0.5; // elliptisch
       paint

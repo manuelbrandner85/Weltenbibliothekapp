@@ -150,13 +150,13 @@ class ChakraEngine {
   /// Berechne dominantes Chakra basierend auf Lebenszahl
   static Map<String, dynamic> calculateDominantChakra(int lifePathNumber) {
     // Reduziere Lebenszahl auf 1-7
-    int chakraNumber = ((lifePathNumber - 1) % 7) + 1;
+    final int chakraNumber = ((lifePathNumber - 1) % 7) + 1;
     return _chakras[chakraNumber] ?? _chakras[1]!;
   }
 
   /// Berechne blockiertes Chakra (simuliert durch Herausforderungszahl)
   static Map<String, dynamic> calculateBlockedChakra(int challengeNumber) {
-    int chakraNumber = ((challengeNumber - 1) % 7) + 1;
+    final int chakraNumber = ((challengeNumber - 1) % 7) + 1;
     return _chakras[chakraNumber] ?? _chakras[1]!;
   }
 
@@ -175,19 +175,19 @@ class ChakraEngine {
     }
 
     // Dominantes Chakra erhält Bonus
-    int dominantChakra = ((lifePathNumber - 1) % 7) + 1;
+    final int dominantChakra = ((lifePathNumber - 1) % 7) + 1;
     scores[dominantChakra] = (scores[dominantChakra] ?? 50) + 25;
 
     // Namen-Energie-Einfluss
-    int nameSum = _calculateNameSum(firstName + lastName);
+    final int nameSum = _calculateNameSum(firstName + lastName);
     for (int i = 1; i <= 7; i++) {
-      int influence = (nameSum + i * 13) % 20 - 10;
+      final int influence = (nameSum + i * 13) % 20 - 10;
       scores[i] = (scores[i] ?? 50) + influence;
     }
 
     // Geburtstag-Einfluss
-    int birthDay = birthDate.day;
-    int birthInfluence = ((birthDay - 1) % 7) + 1;
+    final int birthDay = birthDate.day;
+    final int birthInfluence = ((birthDay - 1) % 7) + 1;
     scores[birthInfluence] = (scores[birthInfluence] ?? 50) + 15;
 
     // Normalisiere alle Scores auf 0-100
@@ -273,17 +273,17 @@ class ChakraEngine {
     chakraScores.forEach((_, score) {
       sum += score;
     });
-    int average = (sum / 7).round();
+    final int average = (sum / 7).round();
 
     // Berechne Varianz (niedrige Varianz = gute Balance)
     int variance = 0;
     chakraScores.forEach((_, score) {
       variance += ((score - average) * (score - average)).abs();
     });
-    int variancePenalty = (variance / 100).round();
+    final int variancePenalty = (variance / 100).round();
 
     // Balance-Score: Durchschnitt minus Varianz-Strafe
-    int balanceScore = average - variancePenalty;
+    final int balanceScore = average - variancePenalty;
     return balanceScore.clamp(0, 100);
   }
 

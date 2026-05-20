@@ -191,7 +191,7 @@ class FavoritesService {
     return {
       'total': _favorites.length,
       'byType': {
-        for (var type in FavoriteType.values)
+        for (final type in FavoriteType.values)
           type.label: _favorites.where((f) => f.type == type).length,
       },
       'oldestDate': _favorites.isEmpty

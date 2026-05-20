@@ -12,7 +12,6 @@
 // User kann mit Tap ueberspringen (HapticFeedback).
 
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

@@ -223,7 +223,7 @@ class UpdateService {
   /// Wird idR. vom Auto-Updater erledigt; hier nur als Trigger wenn die App
   /// länger offen ist. Nach erfolgreichem Download wird der Stream befeuert.
   Future<void> checkAndDownloadPatch() async {
-    void _emit(PatchDownloadPhase phase) {
+    void emit(PatchDownloadPhase phase) {
       if (!_patchDownloadController.isClosed) {
         _patchDownloadController.add(PatchDownloadStatus(phase));
       }
@@ -239,22 +239,22 @@ class UpdateService {
         }
         return;
       }
-      _emit(PatchDownloadPhase.checking);
+      emit(PatchDownloadPhase.checking);
       final status = await _shorebird.checkForUpdate();
       if (status == UpdateStatus.outdated) {
-        _emit(PatchDownloadPhase.downloading);
+        emit(PatchDownloadPhase.downloading);
         await _shorebird.update();
-        _emit(PatchDownloadPhase.done);
+        emit(PatchDownloadPhase.done);
         // Nach erfolgreichem Download: Patch-Status prüfen und Listener benachrichtigen.
         final result = await checkPatchReady();
         if (result.patchReady && !_patchReadyController.isClosed) {
           _patchReadyController.add(result);
         }
       } else {
-        _emit(PatchDownloadPhase.done);
+        emit(PatchDownloadPhase.done);
       }
     } catch (e) {
-      _emit(PatchDownloadPhase.error);
+      emit(PatchDownloadPhase.error);
       if (kDebugMode) {
         debugPrint('⚠️  [UpdateService] Patch-Download fehlgeschlagen: $e');
       }

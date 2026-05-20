@@ -122,7 +122,7 @@ class SocialMediaShareWidget extends StatelessWidget {
   }
 
   // Twitter/X Share
-  void _shareToTwitter() async {
+  Future<void> _shareToTwitter() async {
     final text = Uri.encodeComponent(
         'Interessante Recherche: $query\n\n$url\n\n#Weltenbibliothek #AlternativeMedien');
     final uri = Uri.parse('https://twitter.com/intent/tweet?text=$text');
@@ -133,7 +133,7 @@ class SocialMediaShareWidget extends StatelessWidget {
   }
 
   // Reddit Share
-  void _shareToReddit() async {
+  Future<void> _shareToReddit() async {
     final title = Uri.encodeComponent('Recherche: $query');
     final urlEncoded = Uri.encodeComponent(url);
     final uri =
@@ -145,7 +145,7 @@ class SocialMediaShareWidget extends StatelessWidget {
   }
 
   // Telegram Share
-  void _shareToTelegram() async {
+  Future<void> _shareToTelegram() async {
     final text = Uri.encodeComponent('Interessante Recherche: $query\n\n$url');
     final uri = Uri.parse('https://t.me/share/url?url=$url&text=$text');
 
@@ -155,7 +155,7 @@ class SocialMediaShareWidget extends StatelessWidget {
   }
 
   // WhatsApp Share
-  void _shareToWhatsApp() async {
+  Future<void> _shareToWhatsApp() async {
     final text = Uri.encodeComponent('Interessante Recherche: $query\n\n$url');
     final uri = Uri.parse('https://wa.me/?text=$text');
 

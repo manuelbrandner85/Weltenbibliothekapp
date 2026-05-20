@@ -42,9 +42,10 @@ class CommunityInteractionService {
           _likeCache[key] = prefs.getBool(key) ?? false;
         }
       }
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
             '✅ CommunityInteraction cache hydriert: ${_likeCache.length} likes');
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Cache-Hydration failed: $e');
     }
@@ -84,8 +85,9 @@ class CommunityInteractionService {
         return !isLiked;
       } else {
         await prefs.setBool(likeKey, isLiked);
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('⚠️ Like toggle failed: ${response.statusCode}');
+        }
         return isLiked;
       }
     } catch (e) {
@@ -186,8 +188,9 @@ class CommunityInteractionService {
       await prefs.setInt(countKey, count);
       return count;
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ getLikeCount Supabase failed, trying cache: $e');
+      }
     }
 
     final cached = prefs.getInt(countKey);

@@ -55,10 +55,12 @@ class _SynastryChartScreenState extends State<SynastryChartScreen> {
         final m = int.tryParse(parts[1]);
         if (h != null && m != null) _timeA = TimeOfDay(hour: h, minute: m);
       }
-      if (p.birthLatitude != null)
+      if (p.birthLatitude != null) {
         _latACtrl.text = p.birthLatitude!.toStringAsFixed(4);
-      if (p.birthLongitude != null)
+      }
+      if (p.birthLongitude != null) {
         _lngACtrl.text = p.birthLongitude!.toStringAsFixed(4);
+      }
     });
   }
 

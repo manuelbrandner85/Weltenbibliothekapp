@@ -98,7 +98,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
     }
   }
 
-  void _showComments() async {
+  Future<void> _showComments() async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => CommentsDialog(
@@ -112,7 +112,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
     }
   }
 
-  void _sharePost() async {
+  Future<void> _sharePost() async {
     try {
       final shareText = '${widget.post.content}\n\n'
           'Von: ${widget.post.authorUsername} ${widget.post.authorAvatar}\n'

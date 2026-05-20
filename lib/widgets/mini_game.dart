@@ -68,7 +68,7 @@ class _PortalDefenseMiniGameState extends State<PortalDefenseMiniGame> {
     _gameTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       if (!_gameOver) {
         setState(() {
-          for (var invader in _invaders) {
+          for (final invader in _invaders) {
             invader.update();
 
             // Check if invader reached center (game over condition)

@@ -25,7 +25,7 @@ import 'calculators/biorhythm_compatibility_screen.dart'; // 📊 Bio-Kompat
 import 'calculators/god_oracle_chat_screen.dart'; // 🏛️ Götter-KI-Dialog
 import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
 import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
-import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme (alt)
+// 🔮 Tarot-Legesysteme (alt)
 import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
 import 'calculators/tarot_lexicon_screen.dart'; // 📚 78-Karten-Lexikon
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
@@ -63,7 +63,7 @@ import 'calculators/shamanic_guided_journey_screen.dart'; // 🥁 AI-Guided cine
 import 'calculators/natal_chart_tool_screen.dart'; // ♓ v25 Geburtshoroskop
 import 'calculators/human_design_tool_screen.dart'; // 🌀 v26 Human Design
 import 'frequency_generator_screen.dart'; // 🎵 FREQUENCY GENERATOR
-import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
+// 🆕 V115 MEGA UPDATE TOOLS
 import 'planetary_transit_screen.dart'; // 🪐 Planeten & Transite
 import 'energie_recherche_screen.dart'; // 🔮 Spirituelle Recherche
 

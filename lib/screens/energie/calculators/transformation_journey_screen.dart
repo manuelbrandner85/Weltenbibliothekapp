@@ -174,10 +174,12 @@ class _TransformationJourneyScreenState
           if (dayMap[yKey] == true) {
             streak = 1;
             checkDay = checkDay.subtract(const Duration(days: 1));
-          } else
+          } else {
             break;
-        } else
+          }
+        } else {
           break;
+        }
       }
     }
     return streak;
@@ -609,8 +611,8 @@ class _TransformChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (snaps.length < 2) return;
-    final padX = 14.0;
-    final padY = 10.0;
+    const padX = 14.0;
+    const padY = 10.0;
     final plotW = size.width - 2 * padX;
     final plotH = size.height - 2 * padY;
 

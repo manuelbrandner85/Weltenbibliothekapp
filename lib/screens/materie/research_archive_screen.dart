@@ -29,7 +29,7 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
     'telepathy parapsychology research',
     'plant medicine phytochemicals',
   ];
-  int _queryIndex = 0;
+  final int _queryIndex = 0;
 
   @override
   void initState() {
@@ -51,11 +51,12 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
       _query = q;
     });
     final results = await _api.fetchOpenAlexWorks(q, limit: 20);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _works = results;
         _loading = false;
       });
+    }
   }
 
   void _onSearchChanged(String val) {
@@ -259,8 +260,9 @@ class _WorkCard extends StatelessWidget {
           onTap: () {
             final url = work.openAccessUrl ??
                 (work.doi != null ? 'https://doi.org/${work.doi}' : null);
-            if (url != null)
+            if (url != null) {
               launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+            }
           },
           child: Padding(
             padding: const EdgeInsets.all(14),

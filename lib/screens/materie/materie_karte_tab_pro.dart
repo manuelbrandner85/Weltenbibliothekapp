@@ -164,7 +164,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         if (loc.date == null) return false; // Events ohne Datum ausblenden
 
         final eventYear = loc.date!.year;
-        final tolerance = 50.0;
+        const tolerance = 50.0;
 
         return (eventYear >= _selectedYear - tolerance) &&
             (eventYear <= _selectedYear + tolerance);
@@ -1596,7 +1596,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
   // ───────────────────────────────────────────────────────────────────
   Future<void> _showLivePinModal(BuildContext context, LatLng latlng) async {
     final controller = TextEditingController();
-    final accent = const Color(0xFF2979FF);
+    const accent = Color(0xFF2979FF);
     final messenger = ScaffoldMessenger.of(context);
     final user = Supabase.instance.client.auth.currentUser;
     final userMeta = user?.userMetadata ?? const {};

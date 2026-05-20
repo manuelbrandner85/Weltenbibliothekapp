@@ -1017,10 +1017,11 @@ class _KristallPainter extends CustomPainter {
         final angle = rotation + v * math.pi / 3;
         final px = cx + math.cos(angle) * scale;
         final py = cy + math.sin(angle) * scale;
-        if (v == 0)
+        if (v == 0) {
           path.moveTo(px, py);
-        else
+        } else {
           path.lineTo(px, py);
+        }
       }
       path.close();
 
@@ -1933,8 +1934,9 @@ class _TopBar extends StatelessWidget {
               ValueListenableBuilder<RecordingState>(
                 valueListenable: RecordingService.instance.stateNotifier,
                 builder: (_, recState, __) {
-                  if (recState != RecordingState.recording)
+                  if (recState != RecordingState.recording) {
                     return const SizedBox.shrink();
+                  }
                   return Container(
                     margin: const EdgeInsets.only(right: 6),
                     padding:
@@ -2376,8 +2378,9 @@ class _ParticipantTileState extends State<_ParticipantTile>
     _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
-    if (widget.micEnabled || widget.isActiveSpeaker)
+    if (widget.micEnabled || widget.isActiveSpeaker) {
       _pulseCtrl.repeat(reverse: true);
+    }
   }
 
   @override

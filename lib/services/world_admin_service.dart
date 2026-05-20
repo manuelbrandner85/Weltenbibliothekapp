@@ -272,14 +272,16 @@ class WorldAdminService {
         raw = {'rows': users};
         if (kDebugMode) debugPrint('✅ Loaded ${users.length} users via Worker');
       } else {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint(
               '⚠️ Worker /api/admin/users ${res.statusCode} — Fallback Supabase');
+        }
         raw = null;
       }
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ Worker /api/admin/users failed: $e — Fallback Supabase');
+      }
       raw = null;
     }
 
@@ -302,8 +304,9 @@ class WorldAdminService {
             e.message.contains('last_seen_at') ||
             e.message.contains('legacy_user_id') ||
             e.message.contains('avatar_emoji')) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('⚠️ Optional-Spalte fehlt — minimaler Fallback');
+          }
           hasLastSeen = false;
           try {
             raw = {
@@ -403,9 +406,10 @@ class WorldAdminService {
         if (kDebugMode) debugPrint('✅ User promoted successfully');
         return true;
       } else {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint(
               '⚠️ Promotion failed: ${response.statusCode} – ${response.body}');
+        }
         return false;
       }
     } on SocketException {
@@ -442,9 +446,10 @@ class WorldAdminService {
         if (kDebugMode) debugPrint('✅ User demoted');
         return true;
       }
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
             '⚠️ Demotion failed: ${response.statusCode} – ${response.body}');
+      }
       return false;
     } on SocketException {
       return false;
@@ -477,9 +482,10 @@ class WorldAdminService {
         if (kDebugMode) debugPrint('✅ User deleted');
         return true;
       }
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint(
             '⚠️ Deletion failed: ${response.statusCode} – ${response.body}');
+      }
       return false;
     } on SocketException {
       return false;
@@ -506,8 +512,9 @@ class WorldAdminService {
     // ─────────────────────────────────────────────────────────────────────
     try {
       final url = Uri.parse('$_baseUrl/api/admin/audit/$world?limit=$limit');
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('📜 Fetching audit log for: $world (role: $role)');
+      }
 
       final response = await http
           .get(
@@ -520,8 +527,9 @@ class WorldAdminService {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final logs = (data['logs'] as List<dynamic>?) ?? [];
         if (logs.isNotEmpty) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('✅ Fetched ${logs.length} audit log entries');
+          }
           return logs
               .map((l) => AuditLogEntry.fromJson(l as Map<String, dynamic>))
               .toList();
@@ -540,8 +548,9 @@ class WorldAdminService {
     //    Zeigt letzte Nachrichten als "Aktivitäten" wenn kein echtes Audit-Log
     // ─────────────────────────────────────────────────────────────────────
     try {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('📜 Fallback: Lade Chat-Aktivitäten als Audit-Log');
+      }
 
       // Lade editierte/gelöschte Nachrichten als Audit-Einträge
       final editedResult = await supabase
@@ -595,8 +604,9 @@ class WorldAdminService {
 
       // Nach Zeit sortieren (neueste zuerst)
       entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('✅ Fallback Audit: ${entries.length} Aktivitäten');
+      }
       return entries.take(limit).toList();
     } catch (supaErr) {
       if (kDebugMode) debugPrint('⚠️ Supabase audit fallback error: $supaErr');
@@ -684,8 +694,9 @@ class WorldUser {
   String get source {
     final hasUuid = profileId.length >= 32 && profileId.contains('-');
     if (hasUuid) return 'web';
-    if ((legacyUserId ?? '').isNotEmpty || profileId.startsWith('user_'))
+    if ((legacyUserId ?? '').isNotEmpty || profileId.startsWith('user_')) {
       return 'app';
+    }
     return 'unknown';
   }
 
@@ -981,8 +992,9 @@ extension WorldAdminServiceV162 on WorldAdminService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('❌ grantXp HTTP ${response.statusCode}: ${response.body}');
+      }
       return null;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ grantXp: $e');

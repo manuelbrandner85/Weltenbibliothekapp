@@ -7,7 +7,6 @@
 // bewusst nicht-dogmatisch: was die offizielle Wissenschaft sagt + was die
 // esoterische Tradition daraus macht.
 
-import 'package:flutter/material.dart' show Color;
 import 'package:latlong2/latlong.dart';
 
 import '../screens/energie/energie_karte_tab_pro.dart';
@@ -268,7 +267,7 @@ Die Edmund-Hillary-Gedenkstätte erinnert an die Mount-Everest-Vorbereitung: Hil
     detailedInfo:
         '''6.961 m — höchster Gipfel der Anden und außerhalb Asiens. 1985 Fund einer Inka-Kindermumie auf 5.300 m — Beleg für Höhen-Ritualstätten der Inka. "Aconcagua" bedeutet möglicherweise "Steinwächter" (Quechua).
 
-Wettergottheit-Sitz in der Inka-Kosmologie. Gilt heute als kraftvoller Bewusstseins-Punkt für die spirituelle Praxis "Munay-Ki" der Q\'ero-Schamanen.''',
+Wettergottheit-Sitz in der Inka-Kosmologie. Gilt heute als kraftvoller Bewusstseins-Punkt für die spirituelle Praxis "Munay-Ki" der Q'ero-Schamanen.''',
     position: const LatLng(-32.6532, -70.0109),
     category: EnergieCategory.sacredSites,
     keywords: ['Aconcagua', 'Anden', 'Inka', 'Argentinien'],
@@ -283,7 +282,7 @@ Wettergottheit-Sitz in der Inka-Kosmologie. Gilt heute als kraftvoller Bewusstse
     detailedInfo:
         '''Einer der aktivsten Vulkane der Welt, fast durchgehend aktiv seit 1983. Im hawaiianischen Glauben ist hier Pele zu Hause — die Göttin der Vulkane, der Feuer und des Schaffens.
 
-Lavaformen werden als Botschaften gedeutet. Touristen, die Lavasteine mitnehmen, bekommen laut Tradition Unglück ("Pele\'s curse") — die Volcanoes National Park-Verwaltung erhält jährlich Pakete mit zurückgeschickten Steinen.''',
+Lavaformen werden als Botschaften gedeutet. Touristen, die Lavasteine mitnehmen, bekommen laut Tradition Unglück ("Pele's curse") — die Volcanoes National Park-Verwaltung erhält jährlich Pakete mit zurückgeschickten Steinen.''',
     position: const LatLng(19.4069, -155.2834),
     category: EnergieCategory.sacredSites,
     keywords: ['Kilauea', 'Hawaii', 'Pele', 'Vulkan'],
@@ -403,7 +402,7 @@ Bis 1959 Hauptresidenz des Dalai Lama und Sitz der tibetischen Regierung. Heute 
     detailedInfo:
         '''708 n.Chr. von Bischof Aubert gegründet, nach einer Vision des Erzengels Michael. Bei Flut wird der Berg eine Insel, bei Ebbe begehbar — Symbolik für den spirituellen Übergang.
 
-Der Mont liegt exakt auf der "Apollo-Michael-Linie" — der berühmtesten europäischen Leyline (St. Michael\'s Mount in England → Hetlin in Cornwall → Mont-Saint-Michel → Sacra di San Michele in Italien → Monte Gargano → Symi-Insel → Stella Maris auf dem Karmel).''',
+Der Mont liegt exakt auf der "Apollo-Michael-Linie" — der berühmtesten europäischen Leyline (St. Michael's Mount in England → Hetlin in Cornwall → Mont-Saint-Michel → Sacra di San Michele in Italien → Monte Gargano → Symi-Insel → Stella Maris auf dem Karmel).''',
     position: const LatLng(48.6360, -1.5115),
     category: EnergieCategory.sacredSites,
     keywords: ['Mont-Saint-Michel', 'Michael-Linie', 'Normandie', 'Aubert'],

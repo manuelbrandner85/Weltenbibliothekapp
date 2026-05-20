@@ -497,8 +497,9 @@ class LiveKitCallService extends ChangeNotifier {
             msg = body['error'] as String;
           }
         } catch (e) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('⚠️ [LiveKit] Token-Error-Parse fehlgeschlagen: $e');
+          }
         }
         throw Exception(msg);
       }
@@ -1028,8 +1029,9 @@ class LiveKitCallService extends ChangeNotifier {
                 .removePublishedTrack(pub.sid)
                 .timeout(const Duration(seconds: 3));
           } catch (e) {
-            if (kDebugMode)
+            if (kDebugMode) {
               debugPrint('⚠️ [LiveKit] removePublishedTrack (leaveRoom): $e');
+            }
           }
         }
       }
@@ -1149,6 +1151,7 @@ class LiveKitCallService extends ChangeNotifier {
           if (kDebugMode) {
             debugPrint('⚠️ setMicrophoneEnabled($target) Timeout');
           }
+          return null;
         },
       );
       if (timedOut) {
@@ -1241,6 +1244,7 @@ class LiveKitCallService extends ChangeNotifier {
             if (kDebugMode) {
               debugPrint('⚠️ setCameraEnabled(true) Timeout');
             }
+            return null;
           },
         );
       } else {
@@ -1401,6 +1405,7 @@ class LiveKitCallService extends ChangeNotifier {
           onTimeout: () {
             timedOut = true;
             if (kDebugMode) debugPrint('⚠️ setScreenShareEnabled Timeout');
+            return null;
           },
         );
         if (timedOut) {
@@ -1417,16 +1422,18 @@ class LiveKitCallService extends ChangeNotifier {
                 .removePublishedTrack(pub.sid)
                 .timeout(const Duration(seconds: 3));
           } catch (e) {
-            if (kDebugMode)
+            if (kDebugMode) {
               debugPrint('⚠️ [LiveKit] ScreenShare Track remove: $e');
+            }
           }
         }
         try {
           await FlutterBackground.disableBackgroundExecution();
         } catch (e) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint(
                 '⚠️ [LiveKit] Background deaktivieren (ScreenShare): $e');
+          }
         }
       }
       _errorMessage = null; // Erfolg → alte Fehler löschen

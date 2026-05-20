@@ -3,8 +3,6 @@
 // Bereich E2 -- erweitert chakra_scan_screen.dart.
 
 import 'dart:convert';
-import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';

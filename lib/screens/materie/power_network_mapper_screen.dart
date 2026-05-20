@@ -973,8 +973,9 @@ class _PowerNetworkMapperScreenState extends State<PowerNetworkMapperScreen>
                                   );
                                 }).toList(),
                                 onChanged: (value) {
-                                  if (value != null)
+                                  if (value != null) {
                                     setState(() => _selectedCategory = value);
+                                  }
                                 },
                               ),
                             ),
@@ -1083,7 +1084,7 @@ class _PowerNetworkMapperScreenState extends State<PowerNetworkMapperScreen>
   void _handleTap(Offset position) {
     // CRITICAL FIX: Einfache Tap-Detection ohne komplexe Transformation
     // InteractiveViewer gibt bereits die korrekte Position
-    final center = const Offset(700, 600);
+    const center = Offset(700, 600);
     final relativePos = position - center;
 
     NetworkNode? tappedNode;

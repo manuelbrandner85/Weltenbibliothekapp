@@ -182,7 +182,7 @@ class FrequencyPlayerServiceAndroid {
 
   /// Notify all listeners of play state change
   static void _notifyPlayState() {
-    for (var controller in _playStateControllers) {
+    for (final controller in _playStateControllers) {
       if (!controller.isClosed) {
         controller.add(_isPlaying);
       }
@@ -209,7 +209,7 @@ class FrequencyPlayerServiceAndroid {
     await _player?.dispose();
     _player = null;
 
-    for (var controller in _playStateControllers) {
+    for (final controller in _playStateControllers) {
       controller.close();
     }
     _playStateControllers.clear();
@@ -247,7 +247,7 @@ class FrequencyPlayerServiceAndroid {
     double closest = solfeggio.keys.first;
     double minDiff = (freq - closest).abs();
 
-    for (var key in solfeggio.keys) {
+    for (final key in solfeggio.keys) {
       final diff = (freq - key).abs();
       if (diff < minDiff) {
         minDiff = diff;

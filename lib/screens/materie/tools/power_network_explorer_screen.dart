@@ -5,7 +5,6 @@
 // Watch-List (lokal, alarmiert wenn Entity in neuer Liste auftaucht).
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -220,8 +219,9 @@ class _PowerNetworkExplorerScreenState extends State<PowerNetworkExplorerScreen>
               .map((e) {
                 final v = e.value;
                 final str = v is List ? v.join(', ') : v.toString();
-                if (str.length > 200)
+                if (str.length > 200) {
                   return _kv(e.key, '${str.substring(0, 200)}…');
+                }
                 return _kv(e.key, str);
               }),
         ],

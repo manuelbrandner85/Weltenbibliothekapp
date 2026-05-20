@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/map_clustering_helper.dart'; // 🗺️ MARKER-CLUSTERING
 import '../../services/live_map_pins_service.dart'; // 📍 B9: Live-Pins

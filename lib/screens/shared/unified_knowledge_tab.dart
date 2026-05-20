@@ -11,7 +11,6 @@ import '../../widgets/wissen/bookshelf_3d_view.dart'; // v5.44.7 Bookshelf
 import 'advanced_search_delegate.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CINEMATIC WISSEN-TAB  ·  Weltenbibliothek
@@ -132,7 +131,7 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
     });
   }
 
-  void _openEntry(KnowledgeEntry entry) async {
+  Future<void> _openEntry(KnowledgeEntry entry) async {
     await _svc.incrementViewCount(entry.id);
     if (!mounted) return;
     // v5.44.6: Buecher (type='book') bekommen den neuen Cinematic-Reader
@@ -974,10 +973,11 @@ class _CinematicCard extends StatelessWidget {
                     return GestureDetector(
                       onTap: () async {
                         HapticFeedback.selectionClick();
-                        if (isFav)
+                        if (isFav) {
                           await svc.removeFavorite(entry.id);
-                        else
+                        } else {
                           await svc.addFavorite(entry.id);
+                        }
                         (ctx as Element).markNeedsBuild();
                       },
                       child: Icon(

@@ -54,7 +54,7 @@ class UpdateConfirmationService {
       final prefs = await SharedPreferences.getInstance();
       final storedVersion = prefs.getString(_keyVersion);
       final storedPatch = prefs.getInt(_keyPatch);
-      final currentVersion = UpdateService.currentAppVersion;
+      const currentVersion = UpdateService.currentAppVersion;
 
       // Patch-Aktivierung prüfen (Shorebird)
       int? currentPatch;

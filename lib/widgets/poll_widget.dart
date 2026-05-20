@@ -38,7 +38,7 @@ class _PollWidgetState extends State<PollWidget> {
   void _checkMyVote() {
     // Check if user already voted
     final votes = widget.poll['votes'] as List<dynamic>? ?? [];
-    for (var vote in votes) {
+    for (final vote in votes) {
       if (vote['user_id'] == widget.currentUserId) {
         setState(() => _myVote = vote['option_index']);
         break;
@@ -103,7 +103,7 @@ class _PollWidgetState extends State<PollWidget> {
 
     // Calculate vote counts per option
     final voteCounts = List<int>.filled(options.length, 0);
-    for (var vote in votes) {
+    for (final vote in votes) {
       final optionIndex = vote['option_index'] as int?;
       final count = vote['count'] as int? ?? 0;
       if (optionIndex != null && optionIndex < voteCounts.length) {
@@ -367,7 +367,7 @@ class _CreatePollDialogState extends State<CreatePollDialog> {
   @override
   void dispose() {
     _questionController.dispose();
-    for (var ctrl in _optionControllers) {
+    for (final ctrl in _optionControllers) {
       ctrl.dispose();
     }
     super.dispose();

@@ -160,7 +160,7 @@ class StatsService {
   Future<void> _loadAchievements() async {
     _achievements = Achievement.getAll();
     // Load unlocked status from prefs
-    for (var achievement in _achievements!) {
+    for (final achievement in _achievements!) {
       final isUnlocked =
           _prefs.getBool('achievement_${achievement.id}') ?? false;
       achievement.isUnlocked = isUnlocked;
@@ -201,7 +201,7 @@ class StatsService {
   }
 
   Future<void> _checkAchievements() async {
-    for (var achievement in _achievements!) {
+    for (final achievement in _achievements!) {
       if (achievement.isUnlocked) continue;
 
       bool shouldUnlock = false;

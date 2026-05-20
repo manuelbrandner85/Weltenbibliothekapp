@@ -77,9 +77,10 @@ class StorageService {
   Future<void> init() async {
     if (kDebugMode) debugPrint('📦 Storage: Initialisierung starten...');
     _prefs = await SharedPreferences.getInstance();
-    if (kDebugMode)
+    if (kDebugMode) {
       debugPrint(
           '✅ Storage: Bereit (Profile via SharedPreferences, Daten via SQLite)');
+    }
   }
 
   /// Hive-kompatibler Box-Shim (Hive→sqflite Migration).
@@ -408,8 +409,8 @@ class StorageService {
   Map<int, int> getSynchronicityNumberPatterns() {
     final entries = getSynchronicities();
     final patterns = <int, int>{};
-    for (var entry in entries) {
-      for (var number in entry.numbers) {
+    for (final entry in entries) {
+      for (final number in entry.numbers) {
         patterns[number] = (patterns[number] ?? 0) + 1;
       }
     }
@@ -484,7 +485,7 @@ class StorageService {
 
   WeeklyHoroscope? getCurrentWeekHoroscope() {
     final now = DateTime.now();
-    for (var entry in _db.getAllSync(_weeklyHoroscopeBox)) {
+    for (final entry in _db.getAllSync(_weeklyHoroscopeBox)) {
       final horoscope =
           WeeklyHoroscope.fromJson(Map<String, dynamic>.from(entry as Map));
       if (now.isAfter(horoscope.weekStart) && now.isBefore(horoscope.weekEnd)) {
@@ -1004,7 +1005,7 @@ class StorageService {
     if (sessions.isEmpty) return 0;
     int streak = 0;
     DateTime? lastDate;
-    for (var session in sessions.reversed) {
+    for (final session in sessions.reversed) {
       final date = DateTime.parse(session['timestamp'] as String);
       final dateOnly = DateTime(date.year, date.month, date.day);
       if (lastDate == null) {

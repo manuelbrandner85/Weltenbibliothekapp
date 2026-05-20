@@ -300,11 +300,13 @@ class _IChingOracleScreenState extends State<IChingOracleScreen>
         final reply = (data['response'] as String?) ??
             (data['message'] as String?) ??
             (data['reply'] as String?);
-        if (mounted)
+        if (mounted) {
           setState(() => _aiInterpretation = reply ?? '(keine Antwort)');
+        }
       } else {
-        if (mounted)
+        if (mounted) {
           setState(() => _aiInterpretation = 'Worker-Fehler ${res.statusCode}');
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _aiInterpretation = 'Netzwerk-Fehler: $e');

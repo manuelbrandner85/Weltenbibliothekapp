@@ -1325,8 +1325,9 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern>
 
   Widget? _postBadge(CommunityPost post) {
     final age = DateTime.now().difference(post.createdAt);
-    if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty)
+    if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty) {
       return _badge('📸 Foto', _mCyan);
+    }
     if (age.inHours < 2) return _badge('✨ Neu', _mGreen);
     if (post.likes > 20) return _badge('🔥 Trending', Colors.orange);
     if (post.comments > 10) return _badge('💬 Diskussion', _mAmber);

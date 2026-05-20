@@ -18,7 +18,7 @@ import '../../services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Pha
 import '../../services/user_service.dart';
 import '../../services/storage_service.dart'; // StorageService for profile access
 import '../../core/storage/unified_storage_service.dart'; // UnifiedStorageService
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
+// Riverpod
 import '../../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../../models/energie_profile.dart';
 import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
@@ -99,7 +99,6 @@ import '../../widgets/live/message_bar_v2.dart';
 import '../live/live_replay_library_screen.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 // 📷 Image Picker
 
 /// ✅ EINFACHER ENERGIE LIVE CHAT - MIT ALLEN 11 FEATURES!
@@ -634,8 +633,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
       // ✅ Flag NICHT zurücksetzen – verhindert Popup bei Rückkehr
     } else {
       // Kein Profil → Popup (nur einmal)
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ Kein Energie-Profil gefunden – zeige Profil-Dialog');
+      }
       if (!_profileDialogShown && mounted) {
         _profileDialogShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1996,10 +1996,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                               if (v.abs() < 350) return;
                               final keys = _rooms.keys.toList();
                               final idx = keys.indexOf(_selectedRoom);
-                              if (v < 0 && idx < keys.length - 1)
+                              if (v < 0 && idx < keys.length - 1) {
                                 _switchToRoom(keys[idx + 1]);
-                              if (v > 0 && idx > 0)
+                              }
+                              if (v > 0 && idx > 0) {
                                 _switchToRoom(keys[idx - 1]);
+                              }
                             },
                             behavior: HitTestBehavior.translucent,
                             child: _errorMessage != null && _messages.isEmpty
@@ -2287,8 +2289,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                                 builder: (context, snapshot) {
                                   final typingText = _typingService
                                       .getTypingText(_selectedRoom, _username);
-                                  if (typingText.isEmpty)
+                                  if (typingText.isEmpty) {
                                     return const SizedBox.shrink();
+                                  }
 
                                   return Container(
                                     padding: const EdgeInsets.symmetric(
@@ -2915,8 +2918,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
         }
       },
     );
-    if (kDebugMode)
+    if (kDebugMode) {
       debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
+    }
   }
 
   // C4: Realtime Auto-Reconnect mit Exponential Backoff
@@ -3085,7 +3089,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
 
   // 😀 EMOJI REACTIONS
   // 🛠️ MESSAGE OPTIONS (EDIT/DELETE)
-  void _showMessageOptions(
+  Future<void> _showMessageOptions(
       BuildContext context, Map<String, dynamic> msg) async {
     final isOwnMessage = msg['username'] == _username;
 
@@ -3341,8 +3345,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
           .then((_) {
         if (kDebugMode) debugPrint('✅ Energie Edit gespeichert');
       }).catchError((e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('⚠️ Energie Edit server error (optimistic bleibt): $e');
+        }
       });
     }
   }
@@ -4018,26 +4023,34 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
   // Feature #17: smart reply suggestions based on last received message
   static List<String> _generateSmartReplies(String msg) {
     final lower = msg.toLowerCase();
-    if (msg.trim().endsWith('?'))
+    if (msg.trim().endsWith('?')) {
       return ['Ja', 'Nein', 'Vielleicht', 'Weiß nicht'];
-    if (lower.contains('danke') || lower.contains('thanks'))
+    }
+    if (lower.contains('danke') || lower.contains('thanks')) {
       return ['Gerne!', 'Kein Problem', '👍', '😊'];
+    }
     if (lower.contains('hallo') ||
         lower.contains('hey') ||
-        lower.contains('hi')) return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
+        lower.contains('hi')) {
+      return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
+    }
     if (lower.contains('interessant') ||
         lower.contains('spannend') ||
-        lower.contains('krass'))
+        lower.contains('krass')) {
       return ['Wirklich? 😮', 'Mehr davon!', 'Quelle?', '🔥'];
+    }
     if (lower.contains('ok') ||
         lower.contains('alles klar') ||
-        lower.contains('verstanden')) return ['👍', 'Super', '✅', 'Danke'];
+        lower.contains('verstanden')) {
+      return ['👍', 'Super', '✅', 'Danke'];
+    }
     return ['Ok', 'Verstanden', '👍', '❤️'];
   }
 
   Widget _buildSmartRepliesRow(Color accentColor) {
-    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty)
+    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty) {
       return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
       child: SingleChildScrollView(
@@ -4624,7 +4637,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
 
   /// 🗑️ ADMIN DELETE: Root admin can delete any message
   // ignore: unused_element
-  void _adminDeleteMessage(Map<String, dynamic> msg) async {
+  Future<void> _adminDeleteMessage(Map<String, dynamic> msg) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

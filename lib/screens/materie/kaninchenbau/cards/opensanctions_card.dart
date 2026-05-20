@@ -83,8 +83,9 @@ class OpenSanctionsCard extends StatelessWidget {
             : () async {
                 HapticFeedback.lightImpact();
                 final uri = Uri.tryParse(r.url!);
-                if (uri != null && await canLaunchUrl(uri))
+                if (uri != null && await canLaunchUrl(uri)) {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
               },
         borderRadius: BorderRadius.circular(10),
         child: Container(

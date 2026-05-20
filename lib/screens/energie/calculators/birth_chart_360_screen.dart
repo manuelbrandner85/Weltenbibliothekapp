@@ -379,9 +379,10 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
                 value: _hasTime,
                 onChanged: (v) => setState(() {
                   _hasTime = v;
-                  if (!v)
+                  if (!v) {
                     _birthDate = DateTime(_birthDate.year, _birthDate.month,
                         _birthDate.day, 12, 0);
+                  }
                 }),
                 activeColor: _accent,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -754,7 +755,7 @@ class _ZodiacWheelPainter extends CustomPainter {
     // 1. Außen-Ring: Zeichen-Sektoren als Tortenstücke
     for (int i = 0; i < 12; i++) {
       final startAngle = _signStartAngle(i);
-      final sweep = math.pi / 6;
+      const sweep = math.pi / 6;
       final paint = Paint()
         ..style = PaintingStyle.fill
         ..color = _signColors[i].withValues(alpha: 0.18 * reveal);

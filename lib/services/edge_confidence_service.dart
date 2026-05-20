@@ -47,7 +47,7 @@ class EdgeConfidenceService {
           .eq('node_b', pair.b)
           .maybeSingle();
       final ownRating =
-          (ownRes as Map<String, dynamic>?)?['rating'] as int? ?? 0;
+          (ownRes)?['rating'] as int? ?? 0;
 
       // 2) aggregat
       final aggRes = await _s
@@ -58,7 +58,7 @@ class EdgeConfidenceService {
           .eq('node_b', pair.b)
           .maybeSingle();
       final voteCount =
-          (aggRes as Map<String, dynamic>?)?['vote_count'] as int? ?? 0;
+          (aggRes)?['vote_count'] as int? ?? 0;
       final avgRating = ((aggRes)?['avg_rating'] as num?)?.toDouble() ?? 0.0;
 
       return EdgeConfidence(

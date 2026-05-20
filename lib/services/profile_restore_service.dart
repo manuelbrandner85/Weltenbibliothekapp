@@ -112,13 +112,15 @@ class ProfileRestoreService {
 
   Future<bool> _restoreMaterie(String username) async {
     try {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('🔄 Versuche Materie-Profil wiederherzustellen: $username');
+      }
       final profile = await _sync.getMaterieProfile(username);
       if (profile != null && profile.username.isNotEmpty) {
         await _storage.saveMaterieProfile(profile);
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('✅ Materie wiederhergestellt: ${profile.username}');
+        }
         return true;
       }
     } catch (e) {
@@ -129,13 +131,15 @@ class ProfileRestoreService {
 
   Future<bool> _restoreEnergie(String username) async {
     try {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('🔄 Versuche Energie-Profil wiederherzustellen: $username');
+      }
       final profile = await _sync.getEnergieProfile(username);
       if (profile != null && profile.username.isNotEmpty) {
         await _storage.saveEnergieProfile(profile);
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('✅ Energie wiederhergestellt: ${profile.username}');
+        }
         return true;
       }
     } catch (e) {
@@ -173,8 +177,9 @@ class ProfileRestoreService {
       final key =
           world == 'materie' ? _keyMaterieUsername : _keyEnergieUsername;
       await prefs.setString(key, username);
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('💾 Restore-Username gespeichert: $world → $username');
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ registerProfileForRestore Fehler: $e');
     }
@@ -188,8 +193,9 @@ class ProfileRestoreService {
     final profile = await _restoreMaterie(username.trim())
         ? _storage.getMaterieProfile()
         : null;
-    if (profile != null)
+    if (profile != null) {
       await registerProfileForRestore('materie', profile.username);
+    }
     return profile;
   }
 
@@ -197,8 +203,9 @@ class ProfileRestoreService {
     final profile = await _restoreEnergie(username.trim())
         ? _storage.getEnergieProfile()
         : null;
-    if (profile != null)
+    if (profile != null) {
       await registerProfileForRestore('energie', profile.username);
+    }
     return profile;
   }
 }

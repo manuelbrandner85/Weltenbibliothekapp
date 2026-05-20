@@ -116,20 +116,20 @@ class HermeticEngine {
 
   /// Berechne dominantes Prinzip basierend auf Lebenszahl
   static Map<String, dynamic> calculateDominantPrinciple(int lifePathNumber) {
-    int principleNumber = ((lifePathNumber - 1) % 7) + 1;
+    final int principleNumber = ((lifePathNumber - 1) % 7) + 1;
     return _principles[principleNumber] ?? _principles[1]!;
   }
 
   /// Berechne zu entwickelndes Prinzip
   static Map<String, dynamic> calculateDevelopmentPrinciple(
       int expressionNumber) {
-    int principleNumber = ((expressionNumber - 1) % 7) + 1;
+    final int principleNumber = ((expressionNumber - 1) % 7) + 1;
     return _principles[principleNumber] ?? _principles[1]!;
   }
 
   /// Berechne schwächstes Prinzip (Herausforderung)
   static Map<String, dynamic> calculateWeakPrinciple(int challengeNumber) {
-    int principleNumber = ((challengeNumber - 1) % 7) + 1;
+    final int principleNumber = ((challengeNumber - 1) % 7) + 1;
     return _principles[principleNumber] ?? _principles[1]!;
   }
 
@@ -148,18 +148,18 @@ class HermeticEngine {
     }
 
     // Dominantes Prinzip erhält Bonus
-    int dominantPrinciple = ((lifePathNumber - 1) % 7) + 1;
+    final int dominantPrinciple = ((lifePathNumber - 1) % 7) + 1;
     scores[dominantPrinciple] = (scores[dominantPrinciple] ?? 50) + 25;
 
     // Namen-Einfluss
-    int nameSum = _calculateNameSum(firstName + lastName);
+    final int nameSum = _calculateNameSum(firstName + lastName);
     for (int i = 1; i <= 7; i++) {
-      int influence = (nameSum + i * 11) % 20 - 10;
+      final int influence = (nameSum + i * 11) % 20 - 10;
       scores[i] = (scores[i] ?? 50) + influence;
     }
 
     // Geburtsjahr-Einfluss (Rhythmus)
-    int yearInfluence = ((birthDate.year % 7) + 1);
+    final int yearInfluence = ((birthDate.year % 7) + 1);
     scores[yearInfluence] = (scores[yearInfluence] ?? 50) + 15;
 
     // Normalisiere auf 0-100
@@ -185,16 +185,16 @@ class HermeticEngine {
     principleScores.forEach((_, score) {
       sum += score;
     });
-    int average = (sum / 7).round();
+    final int average = (sum / 7).round();
 
     // Varianz berechnen
     int variance = 0;
     principleScores.forEach((_, score) {
       variance += ((score - average) * (score - average)).abs();
     });
-    int variancePenalty = (variance / 50).round();
+    final int variancePenalty = (variance / 50).round();
 
-    int balanceScore = average - variancePenalty;
+    final int balanceScore = average - variancePenalty;
     return balanceScore.clamp(0, 100);
   }
 

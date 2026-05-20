@@ -113,7 +113,7 @@ class BackendRechercheService {
     final sourcesData = data['results'] as List<dynamic>? ??
         data['sources'] as List<dynamic>? ??
         [];
-    var multimedia = data['multimedia'] as Map<String, dynamic>?;
+    final multimedia = data['multimedia'] as Map<String, dynamic>?;
 
     // 🔍 ENHANCE WITH REAL SOURCES
     final enhancedMultimedia = await _enhanceWithRealSources(query, multimedia);

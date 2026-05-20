@@ -565,7 +565,7 @@ class _ParticleRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rng = math.Random(42); // Deterministisch für konsistente Partikel
-    final particleCount = 60;
+    const particleCount = 60;
     final ringProgress = ((progress - 0.1) / 0.7).clamp(0.0, 1.0);
     final fade =
         progress > 0.8 ? 1.0 - ((progress - 0.8) / 0.1).clamp(0.0, 1.0) : 1.0;

@@ -304,7 +304,7 @@ class FrequencyPlayerService {
     double closest = solfeggio.keys.first;
     double minDiff = (freq - closest).abs();
 
-    for (var key in solfeggio.keys) {
+    for (final key in solfeggio.keys) {
       final diff = (freq - key).abs();
       if (diff < minDiff) {
         minDiff = diff;

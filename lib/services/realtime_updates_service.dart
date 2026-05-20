@@ -175,7 +175,7 @@ class RealtimeUpdatesService {
     // Load Achievement unlocks
     // Note: AchievementService doesn't expose unlocked list directly
     // We can show unlock count instead
-    final unlockedCount = 0; // _achievementService.unlockedCount;
+    const unlockedCount = 0; // _achievementService.unlockedCount;
     if (unlockedCount > 0) {
       _activities.add(ActivityItem(
         id: 'achievements_unlocked',

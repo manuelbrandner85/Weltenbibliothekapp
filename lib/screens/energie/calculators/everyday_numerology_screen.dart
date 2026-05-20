@@ -207,7 +207,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = const Color(0xFF7C4DFF);
+    const accent = Color(0xFF7C4DFF);
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(

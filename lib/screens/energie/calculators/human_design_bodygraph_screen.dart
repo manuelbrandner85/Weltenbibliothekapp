@@ -331,9 +331,10 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
                 value: _hasTime,
                 onChanged: (v) => setState(() {
                   _hasTime = v;
-                  if (!v)
+                  if (!v) {
                     _birthDate = DateTime(_birthDate.year, _birthDate.month,
                         _birthDate.day, 12, 0);
+                  }
                 }),
                 activeColor: _primary,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

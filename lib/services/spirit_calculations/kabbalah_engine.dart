@@ -185,20 +185,20 @@ class KabbalahEngine {
   /// Berechne persönliche Sephira basierend auf Lebenszahl
   static Map<String, dynamic> calculatePersonalSephira(int lifePathNumber) {
     // Reduziere auf 1-10
-    int sephiraNumber = ((lifePathNumber - 1) % 10) + 1;
+    final int sephiraNumber = ((lifePathNumber - 1) % 10) + 1;
     return _sephiroth[sephiraNumber] ?? _sephiroth[1]!;
   }
 
   /// Berechne Entwicklungs-Sephira (wohin du wächst)
   static Map<String, dynamic> calculateDevelopmentSephira(
       int expressionNumber) {
-    int sephiraNumber = ((expressionNumber - 1) % 10) + 1;
+    final int sephiraNumber = ((expressionNumber - 1) % 10) + 1;
     return _sephiroth[sephiraNumber] ?? _sephiroth[1]!;
   }
 
   /// Berechne blockierte Sephira (Herausforderung)
   static Map<String, dynamic> calculateBlockedSephira(int challengeNumber) {
-    int sephiraNumber = ((challengeNumber - 1) % 10) + 1;
+    final int sephiraNumber = ((challengeNumber - 1) % 10) + 1;
     return _sephiroth[sephiraNumber] ?? _sephiroth[1]!;
   }
 
@@ -217,18 +217,18 @@ class KabbalahEngine {
     }
 
     // Persönliche Sephira erhält Bonus
-    int personalSephira = ((lifePathNumber - 1) % 10) + 1;
+    final int personalSephira = ((lifePathNumber - 1) % 10) + 1;
     scores[personalSephira] = (scores[personalSephira] ?? 40) + 30;
 
     // Namen-Einfluss
-    int nameSum = _calculateNameSum(firstName + lastName);
+    final int nameSum = _calculateNameSum(firstName + lastName);
     for (int i = 1; i <= 10; i++) {
-      int influence = (nameSum + i * 7) % 25 - 12;
+      final int influence = (nameSum + i * 7) % 25 - 12;
       scores[i] = (scores[i] ?? 40) + influence;
     }
 
     // Geburtsdatum-Einfluss
-    int birthInfluence = ((birthDate.day + birthDate.month) % 10) + 1;
+    final int birthInfluence = ((birthDate.day + birthDate.month) % 10) + 1;
     scores[birthInfluence] = (scores[birthInfluence] ?? 40) + 20;
 
     // Normalisiere auf 0-100
@@ -251,19 +251,19 @@ class KabbalahEngine {
   static Map<String, int> calculatePillarBalance(
       Map<int, int> sephirothScores) {
     // Rechte Säule (Gnade): Chokmah (2), Chesed (4), Netzach (7)
-    int rightPillar = ((sephirothScores[2] ?? 0) +
+    final int rightPillar = ((sephirothScores[2] ?? 0) +
             (sephirothScores[4] ?? 0) +
             (sephirothScores[7] ?? 0)) ~/
         3;
 
     // Linke Säule (Strenge): Binah (3), Geburah (5), Hod (8)
-    int leftPillar = ((sephirothScores[3] ?? 0) +
+    final int leftPillar = ((sephirothScores[3] ?? 0) +
             (sephirothScores[5] ?? 0) +
             (sephirothScores[8] ?? 0)) ~/
         3;
 
     // Mittlere Säule (Balance): Kether (1), Tiphereth (6), Yesod (9), Malkuth (10)
-    int middlePillar = ((sephirothScores[1] ?? 0) +
+    final int middlePillar = ((sephirothScores[1] ?? 0) +
             (sephirothScores[6] ?? 0) +
             (sephirothScores[9] ?? 0) +
             (sephirothScores[10] ?? 0)) ~/
@@ -280,25 +280,25 @@ class KabbalahEngine {
   static Map<String, int> calculateWorldsDistribution(
       Map<int, int> sephirothScores) {
     // Atziluth (Göttliche Welt): Kether (1), Chokmah (2), Binah (3)
-    int atziluth = ((sephirothScores[1] ?? 0) +
+    final int atziluth = ((sephirothScores[1] ?? 0) +
             (sephirothScores[2] ?? 0) +
             (sephirothScores[3] ?? 0)) ~/
         3;
 
     // Briah (Schöpfungswelt): Chesed (4), Geburah (5), Tiphereth (6)
-    int briah = ((sephirothScores[4] ?? 0) +
+    final int briah = ((sephirothScores[4] ?? 0) +
             (sephirothScores[5] ?? 0) +
             (sephirothScores[6] ?? 0)) ~/
         3;
 
     // Yetzirah (Formungswelt): Netzach (7), Hod (8), Yesod (9)
-    int yetzirah = ((sephirothScores[7] ?? 0) +
+    final int yetzirah = ((sephirothScores[7] ?? 0) +
             (sephirothScores[8] ?? 0) +
             (sephirothScores[9] ?? 0)) ~/
         3;
 
     // Assiah (Materielle Welt): Malkuth (10)
-    int assiah = sephirothScores[10] ?? 0;
+    final int assiah = sephirothScores[10] ?? 0;
 
     return {
       'Atziluth (Göttlich)': atziluth,

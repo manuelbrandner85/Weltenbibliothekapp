@@ -87,11 +87,12 @@ class _AkashaChronicleScreenState extends State<AkashaChronicleScreen>
         out.add(_JournalEntry.fromJson(jsonDecode(s) as Map<String, dynamic>));
       } catch (_) {}
     }
-    if (mounted)
+    if (mounted) {
       setState(() {
         _entries = out;
         _loading = false;
       });
+    }
   }
 
   Future<void> _persist() async {

@@ -738,7 +738,7 @@ class _MiniGraphPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (nodes.isEmpty) return;
-    final pad = 20.0;
+    const pad = 20.0;
     final w = size.width - pad * 2;
     final h = size.height - pad * 2;
 

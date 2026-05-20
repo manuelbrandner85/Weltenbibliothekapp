@@ -7,7 +7,6 @@ import '../../../widgets/profile_required_widget.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../widgets/cinematic/wb_vignette.dart';
 
 /// 🎭 ARCHETYPEN-ANALYSE SCREEN
 ///
@@ -672,20 +671,18 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen>
                       const SizedBox(height: 16),
                       _buildDetailedInfoRow(
                           '🎯 Was dich antreibt',
-                          strengthText.substring(
-                                  0, math.min(160, strengthText.length)) +
-                              '…'),
+                          '${strengthText.substring(
+                                  0, math.min(160, strengthText.length))}…'),
                       _buildDetailedInfoRow('😨 Was du fürchtest',
                           _getPersonalizedFear(archetypeName)),
                       _buildDetailedInfoRow(
                           '💪 Deine Superkraft',
-                          _getPersonalizedStrength(archetypeName).substring(
+                          '${_getPersonalizedStrength(archetypeName).substring(
                                   0,
                                   math.min(
                                       140,
                                       _getPersonalizedStrength(archetypeName)
-                                          .length)) +
-                              '…'),
+                                          .length))}…'),
                       _buildDetailedInfoRow('⚠️ Deine Falle',
                           _getPersonalizedWeakness(archetypeName)),
                       _buildDetailedInfoRow(
@@ -957,11 +954,13 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen>
   }
 
   String _getIntegrationMessage(int score) {
-    if (score >= 80)
+    if (score >= 80) {
       return 'Exzellente Integration! Deine Archetypen arbeiten harmonisch zusammen.';
+    }
     if (score >= 60) return 'Gute Integration. Es gibt noch Raum für Wachstum.';
-    if (score >= 40)
+    if (score >= 40) {
       return 'Moderate Integration. Arbeite an der Balance deiner Archetypen.';
+    }
     return 'Niedrige Integration. Fokussiere dich auf Schattenarbeit.';
   }
 

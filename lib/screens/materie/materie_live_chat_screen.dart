@@ -31,7 +31,7 @@ import '../../services/storage_service.dart'; // StorageService for profile acce
 import '../../core/storage/unified_storage_service.dart'; // UnifiedStorageService sync
 import '../../models/materie_profile.dart'; // MaterieProfile model
 import '../../services/profile_sync_service.dart'; // ProfileSyncService
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
+// Riverpod
 // 🔥 BACKEND SYNC
 // import '../../services/voice_message_service_export.dart'; // 🎙️ VOICE MESSAGE (Disabled for Android)
 // import '../../widgets/voice_record_button.dart'; // 🎙️ VOICE RECORD BUTTON (Disabled for Android)
@@ -65,11 +65,11 @@ import '../../widgets/android_voice_recorder.dart'; // 🎤 Android Voice Record
 // 🎵 Telegram Voice Player
 import '../../widgets/voice_message_player.dart'
     show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
-import 'ufo_sightings_screen.dart'; // 🛸 UFO-Sichtungen
-import 'geopolitik_map_screen.dart'; // 🎭 Geopolitik-Kartierung
-import 'conspiracy_network_screen.dart'; // 👁️ Verbindungsnetz
-import 'research_archive_screen.dart'; // 🔬 Forschungs-Archiv
-import 'critical_health_screen.dart'; // 💊 Kritische Gesundheitsforschung
+// 🛸 UFO-Sichtungen
+// 🎭 Geopolitik-Kartierung
+// 👁️ Verbindungsnetz
+// 🔬 Forschungs-Archiv
+// 💊 Kritische Gesundheitsforschung
 // ✨ Batch-1 Chat-Erweiterungen
 import '../../widgets/chat/chat_markdown_text.dart';
 import '../../widgets/chat/chat_emoji_picker_button.dart';
@@ -97,7 +97,6 @@ import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 /// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
 class MaterieLiveChatScreen extends StatefulWidget {
@@ -651,8 +650,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
       // Rückkehr aus ProfileEditorScreen wenn Profil schon existiert
     } else {
       // Kein Profil → Dialog einmalig zeigen
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ Kein Materie-Profil gefunden – zeige Profil-Dialog');
+      }
       if (!_profileDialogShown) {
         _profileDialogShown = true;
         Future.delayed(const Duration(milliseconds: 800), () {
@@ -830,8 +830,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
               );
             }
             // Feature #17: generate smart reply suggestions
-            if (mounted)
+            if (mounted) {
               setState(() => _smartReplies = _generateSmartReplies(text));
+            }
           }
           _scrollToBottomIfAtEnd();
         }
@@ -890,8 +891,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
         }
       },
     );
-    if (kDebugMode)
+    if (kDebugMode) {
       debugPrint('🔴 [Materie Realtime] Subscribed to room: $roomId');
+    }
   }
 
   // C4: Realtime Auto-Reconnect mit Exponential Backoff
@@ -1941,10 +1943,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
                               if (v.abs() < 350) return;
                               final keys = _materieRooms.keys.toList();
                               final idx = keys.indexOf(_selectedRoom);
-                              if (v < 0 && idx < keys.length - 1)
+                              if (v < 0 && idx < keys.length - 1) {
                                 _switchToRoom(keys[idx + 1]);
-                              if (v > 0 && idx > 0)
+                              }
+                              if (v > 0 && idx > 0) {
                                 _switchToRoom(keys[idx - 1]);
+                              }
                             },
                             behavior: HitTestBehavior.translucent,
                             child: _buildMessageList(),
@@ -3038,7 +3042,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
   }
 
   // 🛠️ MESSAGE OPTIONS
-  void _showMessageOptions(
+  Future<void> _showMessageOptions(
       BuildContext context, Map<String, dynamic> msg) async {
     final isOwnMessage = msg['username'] == _username;
 
@@ -3813,26 +3817,34 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
   // Feature #17: smart reply suggestions based on last received message
   static List<String> _generateSmartReplies(String msg) {
     final lower = msg.toLowerCase();
-    if (msg.trim().endsWith('?'))
+    if (msg.trim().endsWith('?')) {
       return ['Ja', 'Nein', 'Vielleicht', 'Weiß nicht'];
-    if (lower.contains('danke') || lower.contains('thanks'))
+    }
+    if (lower.contains('danke') || lower.contains('thanks')) {
       return ['Gerne!', 'Kein Problem', '👍', '😊'];
+    }
     if (lower.contains('hallo') ||
         lower.contains('hey') ||
-        lower.contains('hi')) return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
+        lower.contains('hi')) {
+      return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
+    }
     if (lower.contains('interessant') ||
         lower.contains('spannend') ||
-        lower.contains('krass'))
+        lower.contains('krass')) {
       return ['Wirklich? 😮', 'Mehr davon!', 'Quelle?', '🔥'];
+    }
     if (lower.contains('ok') ||
         lower.contains('alles klar') ||
-        lower.contains('verstanden')) return ['👍', 'Super', '✅', 'Danke'];
+        lower.contains('verstanden')) {
+      return ['👍', 'Super', '✅', 'Danke'];
+    }
     return ['Ok', 'Verstanden', '👍', '❤️'];
   }
 
   Widget _buildSmartRepliesRow(Color accentColor) {
-    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty)
+    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty) {
       return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
       child: SingleChildScrollView(
@@ -4440,7 +4452,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
 
   /// 🗑️ ADMIN DELETE: Root admin can delete any message
   // ignore: unused_element
-  void _adminDeleteMessage(Map<String, dynamic> msg) async {
+  Future<void> _adminDeleteMessage(Map<String, dynamic> msg) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -4494,8 +4506,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
             .then((_) {
           if (kDebugMode) debugPrint('✅ Materie Admin-Delete gespeichert');
         }).catchError((e) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint('⚠️ Materie Admin-Delete server error: $e');
+          }
         });
       }
     }

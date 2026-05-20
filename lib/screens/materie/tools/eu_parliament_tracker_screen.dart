@@ -7,7 +7,6 @@
 
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -108,11 +107,12 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         });
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = '$e';
           _loading = false;
         });
+      }
     }
   }
 
@@ -136,11 +136,12 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         });
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = '$e';
           _loading = false;
         });
+      }
     }
   }
 
@@ -149,11 +150,12 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
     setState(() => _loadingMeps = true);
     try {
       final meps = await _service.getMembers(limit: 250);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _meps = meps;
           _loadingMeps = false;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => _loadingMeps = false);
     }
@@ -185,8 +187,9 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
   List<EuVote> get _filteredVotes {
     if (_filter == 'all') return _votes;
     if (_filter == 'adopted') return _votes.where((v) => v.isAdopted).toList();
-    if (_filter == 'rejected')
+    if (_filter == 'rejected') {
       return _votes.where((v) => v.result.toUpperCase() == 'REJECTED').toList();
+    }
     return _votes;
   }
 
@@ -383,8 +386,9 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
   }
 
   Widget _votesList() {
-    if (_loading)
+    if (_loading) {
       return Center(child: CircularProgressIndicator(color: _primary));
+    }
     if (_error != null) {
       return Center(
           child: Padding(
@@ -568,14 +572,15 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         ]),
       ),
       const SizedBox(height: 2),
-      Text('${total} Stimmen',
+      Text('$total Stimmen',
           style: const TextStyle(color: Colors.white38, fontSize: 9)),
     ]);
   }
 
   Widget _mepsView() {
-    if (_loadingMeps)
+    if (_loadingMeps) {
       return Center(child: CircularProgressIndicator(color: _primary));
+    }
     if (_meps.isEmpty) {
       return Center(
           child: Padding(

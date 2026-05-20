@@ -63,8 +63,9 @@ class InvisibleAuthService {
         _deviceId = _generateDeviceId();
         _authToken = _generateAuthToken(_userId!, _deviceId!);
 
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('🆕 [Auth] Creating invisible user: $_userId');
+        }
 
         final response = await http
             .post(
@@ -142,8 +143,9 @@ class InvisibleAuthService {
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           _authToken = data['auth_token'] as String?;
-          if (_authToken != null)
+          if (_authToken != null) {
             await prefs.setString(_kAuthToken, _authToken!);
+          }
           if (kDebugMode) debugPrint('🔄 [Auth] Token refreshed');
         } else if (response.statusCode == 401) {
           throw AuthException('Token refresh failed',

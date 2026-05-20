@@ -107,7 +107,7 @@ class LinkPreviewService {
     String? ogTitle = _meta(head, property: 'og:title');
     String? ogDesc = _meta(head, property: 'og:description');
     String? ogImg = _meta(head, property: 'og:image');
-    String? ogSite = _meta(head, property: 'og:site_name');
+    final String? ogSite = _meta(head, property: 'og:site_name');
 
     ogTitle ??= _meta(head, name: 'twitter:title');
     ogDesc ??= _meta(head, name: 'twitter:description');

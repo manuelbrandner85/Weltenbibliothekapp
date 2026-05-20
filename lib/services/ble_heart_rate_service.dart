@@ -296,7 +296,7 @@ class BleHeartRateService {
         final advUuids = r.advertisementData.serviceUuids
             .map((g) => g.str.toLowerCase())
             .toList(growable: false);
-        final hrShort = '180d';
+        const hrShort = '180d';
         final hrLong = heartRateServiceUuid.str.toLowerCase();
         final hasHr = advUuids.any(
           (u) => u == hrShort || u == hrLong || u.contains('180d'),

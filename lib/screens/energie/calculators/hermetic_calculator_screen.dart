@@ -20,7 +20,7 @@ class _HermeticCalculatorScreenState extends State<HermeticCalculatorScreen>
 
   // Meditation Timer
   bool _meditationRunning = false;
-  int _meditationSeconds = 300; // 5 Minuten
+  final int _meditationSeconds = 300; // 5 Minuten
   int _meditationElapsed = 0;
 
   @override
@@ -58,7 +58,7 @@ class _HermeticCalculatorScreenState extends State<HermeticCalculatorScreen>
     if (_meditationRunning) _runMeditationTimer();
   }
 
-  void _runMeditationTimer() async {
+  Future<void> _runMeditationTimer() async {
     while (_meditationRunning &&
         _meditationElapsed < _meditationSeconds &&
         mounted) {

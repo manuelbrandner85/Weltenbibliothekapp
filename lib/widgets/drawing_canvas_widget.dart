@@ -66,7 +66,7 @@ class _DrawingCanvasWidgetState extends State<DrawingCanvasWidget> {
     // Convert canvas to image
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final size = const Size(400, 400);
+    const size = Size(400, 400);
 
     // Draw background
     canvas.drawRect(

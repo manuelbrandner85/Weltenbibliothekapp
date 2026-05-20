@@ -63,7 +63,7 @@ class _SacredGeometryConstructorScreenState
   Offset _center = const Offset(0.5, 0.5); // normiert 0..1
   double _radius = 0.18; // normiert relativ zur kleineren Achse
   double _rotation = 0.0; // in Radians
-  double _reveal = 1.0; // 0..1 — Stroke-Reveal-Animation
+  final double _reveal = 1.0; // 0..1 — Stroke-Reveal-Animation
 
   late final AnimationController _glowCtrl;
   late final AnimationController _revealCtrl;

@@ -152,7 +152,7 @@ class SoundscapeService {
 
   /// Generiert eine einzelne Sinuswelle als WAV.
   Uint8List _generateSine(int freqHz, {double volume = 1.0}) {
-    final totalSamples = _sampleRate * _durationSec;
+    const totalSamples = _sampleRate * _durationSec;
     final fadeSamples = (_sampleRate * 0.020).round(); // 20ms Fade
 
     final samples = Int16List(totalSamples);
@@ -173,7 +173,7 @@ class SoundscapeService {
 
   /// Generiert einen binauralen Mix aus zwei Frequenzen.
   Uint8List _generateBinaural(int hz1, int hz2, {double volume = 1.0}) {
-    final totalSamples = _sampleRate * _durationSec;
+    const totalSamples = _sampleRate * _durationSec;
     final fadeSamples = (_sampleRate * 0.020).round();
 
     final samples = Int16List(totalSamples);

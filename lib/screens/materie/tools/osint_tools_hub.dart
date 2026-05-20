@@ -5,7 +5,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../../services/osint_history_service.dart'; // 🕰️ D1
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../widgets/cinematic/wb_vignette.dart';
 import 'eu_parliament_tracker_screen.dart';
 import 'power_network_explorer_screen.dart';
 import 'study_analyst_screen.dart';
@@ -194,7 +193,7 @@ class _DbCard extends StatelessWidget {
 
 class _OsintWebViewScreen extends StatefulWidget {
   final _DbDef db;
-  const _OsintWebViewScreen({required this.db, super.key});
+  const _OsintWebViewScreen({required this.db});
 
   @override
   State<_OsintWebViewScreen> createState() => _OsintWebViewScreenState();

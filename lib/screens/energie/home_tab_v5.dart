@@ -136,17 +136,19 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   // ── Data ───────────────────────────────────────────────────────────────
   Future<void> _loadAll() async {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _loading = true;
         _errorMessage = null;
       });
+    }
     try {
       await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() => _errorMessage =
             'Daten konnten nicht geladen werden. Bitte Verbindung prüfen.');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -204,8 +206,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     int streak = 0;
     var cursor = DateTime.now();
     cursor = DateTime(cursor.year, cursor.month, cursor.day);
-    if (!daySet.contains(cursor))
+    if (!daySet.contains(cursor)) {
       cursor = cursor.subtract(const Duration(days: 1));
+    }
     while (daySet.contains(cursor)) {
       streak++;
       cursor = cursor.subtract(const Duration(days: 1));
@@ -2592,12 +2595,13 @@ class _RecentSpiritReadingsSectionState
         }
         check = check.subtract(const Duration(days: 1));
       }
-      if (mounted)
+      if (mounted) {
         setState(() {
           _readings = list;
           _streak = streak;
           _loading = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -2660,7 +2664,7 @@ class _RecentSpiritReadingsSectionState
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: _gold.withValues(alpha: 0.5)),
               ),
-              child: Text("🔥 ${_streak}",
+              child: Text("🔥 $_streak",
                   style: const TextStyle(
                       color: _gold, fontSize: 11, fontWeight: FontWeight.bold)),
             ),

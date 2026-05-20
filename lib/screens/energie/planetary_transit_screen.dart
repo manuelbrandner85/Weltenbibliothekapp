@@ -1292,15 +1292,17 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
 
   String _getMeditationTip(double phase) {
     if (phase < 0.25) return 'Stille Meditation zum Setzen von Absichten';
-    if (phase < 0.5)
+    if (phase < 0.5) {
       return 'Dynamische Meditation — Energie in Bewegung bringen';
+    }
     if (phase < 0.75) return 'Dankbarkeitsmeditation im Vollmond-Licht';
     return 'Loslassmeditation — was darf gehen?';
   }
 
   String _getManifestTip(double phase) {
-    if (phase < 0.25)
+    if (phase < 0.25) {
       return 'Schreibe deine Wünsche auf — Neumond lädt zum Säen ein';
+    }
     if (phase < 0.5) return 'Handle aktiv — die Energie unterstützt Wachstum';
     if (phase < 0.75) return 'Vollende Projekte und ernte deine Arbeit';
     return 'Räume auf und mache Platz für Neues';

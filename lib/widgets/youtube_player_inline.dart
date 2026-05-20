@@ -37,11 +37,12 @@ class _YoutubePlayerInlineState extends State<YoutubePlayerInline> {
       ..addJavaScriptChannel(
         'YtError',
         onMessageReceived: (_) {
-          if (mounted)
+          if (mounted) {
             setState(() {
               _hasError = true;
               _loading = false;
             });
+          }
         },
       )
       ..setNavigationDelegate(NavigationDelegate(
@@ -49,11 +50,12 @@ class _YoutubePlayerInlineState extends State<YoutubePlayerInline> {
           if (mounted) setState(() => _loading = false);
         },
         onWebResourceError: (_) {
-          if (mounted)
+          if (mounted) {
             setState(() {
               _hasError = true;
               _loading = false;
             });
+          }
         },
         onNavigationRequest: (request) {
           final u = request.url;

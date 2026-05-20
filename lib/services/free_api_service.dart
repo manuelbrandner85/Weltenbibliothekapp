@@ -328,7 +328,7 @@ class FreeApiService {
   Future<List<DonkiEvent>> fetchDonkiEvents({int daysBack = 7}) async {
     final end = DateTime.now();
     final start = end.subtract(Duration(days: daysBack));
-    final fmt = (DateTime d) =>
+    fmt(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
     final url = Uri.parse(
@@ -598,7 +598,7 @@ class FreeApiService {
     final d = date ?? DateTime.now();
     // Bekannte Neumond-Referenz: 6. Januar 2000, 18:14 UTC
     final ref = DateTime.utc(2000, 1, 6, 18, 14);
-    final synodicMonth = 29.53058770576; // Tage
+    const synodicMonth = 29.53058770576; // Tage
     final diff = d.toUtc().difference(ref).inSeconds / 86400.0;
     final phase = (diff % synodicMonth) / synodicMonth;
     return MoonPhase(phase: phase.clamp(0.0, 1.0));
@@ -885,10 +885,12 @@ class DonkiEvent {
   String get intensityLabel {
     if (note == null) return 'Unbekannt';
     final n = note!.toLowerCase();
-    if (n.contains('x-class') || n.contains('x1') || n.contains('extreme'))
+    if (n.contains('x-class') || n.contains('x1') || n.contains('extreme')) {
       return 'X-Klasse (Extrem)';
-    if (n.contains('m-class') || n.contains('m1') || n.contains('strong'))
+    }
+    if (n.contains('m-class') || n.contains('m1') || n.contains('strong')) {
       return 'M-Klasse (Stark)';
+    }
     if (n.contains('c-class')) return 'C-Klasse (Mittel)';
     return 'Gemessen';
   }

@@ -126,17 +126,19 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   // ── Data ───────────────────────────────────────────────────────────────
   Future<void> _loadAll() async {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _loading = true;
         _errorMessage = null;
       });
+    }
     try {
       await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() => _errorMessage =
             'Daten konnten nicht geladen werden. Bitte Verbindung prüfen.');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -198,8 +200,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     int streak = 0;
     var cursor = DateTime.now();
     cursor = DateTime(cursor.year, cursor.month, cursor.day);
-    if (!daySet.contains(cursor))
+    if (!daySet.contains(cursor)) {
       cursor = cursor.subtract(const Duration(days: 1));
+    }
     while (daySet.contains(cursor)) {
       streak++;
       cursor = cursor.subtract(const Duration(days: 1));

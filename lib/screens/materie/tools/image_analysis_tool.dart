@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A — Bildanalyse
@@ -68,8 +67,9 @@ class _ImageAnalysisToolState extends State<ImageAnalysisTool> {
 
   Future<void> _openUrl(String url) async {
     final u = Uri.parse(url);
-    if (await canLaunchUrl(u))
+    if (await canLaunchUrl(u)) {
       await launchUrl(u, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _card(Widget child) => Container(

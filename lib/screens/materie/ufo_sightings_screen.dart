@@ -9,7 +9,6 @@ import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design-Tokens (Materie – Rot)
@@ -1223,19 +1222,19 @@ class _AircraftState {
   /// [8]=on_ground, [9]=velocity, [10]=true_track, ...
   factory _AircraftState.fromList(dynamic raw) {
     final List list = raw as List;
-    double? _d(int i) {
+    double? d(int i) {
       if (i >= list.length || list[i] == null) return null;
       return (list[i] as num?)?.toDouble();
     }
 
     return _AircraftState(
       callsign: ((list.length > 1 ? list[1] : null) as String? ?? '').trim(),
-      longitude: _d(5),
-      latitude: _d(6),
-      altitude: _d(7),
+      longitude: d(5),
+      latitude: d(6),
+      altitude: d(7),
       onGround: (list.length > 8 && list[8] == true),
-      velocity: _d(9),
-      heading: _d(10),
+      velocity: d(9),
+      heading: d(10),
     );
   }
 }

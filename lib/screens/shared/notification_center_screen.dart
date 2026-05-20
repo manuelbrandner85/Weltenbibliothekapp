@@ -54,19 +54,21 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   // ── Data ─────────────────────────────────────────────────────────────────
 
   Future<void> _loadNotifications() async {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _loading = true;
         _error = null;
       });
+    }
     try {
       final uid = _supabase.auth.currentUser?.id;
       if (uid == null) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _loading = false;
             _notifs = [];
           });
+        }
         return;
       }
       final result = await _supabase

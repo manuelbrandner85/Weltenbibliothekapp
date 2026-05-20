@@ -86,8 +86,9 @@ class TimezoneHelper {
     // Marquesas Inseln: MART = -9.5h
     if (lat >= -11 && lat <= -7.5 && lng >= -141 && lng <= -138) return -9.5;
     // Chatham Islands NZ: CHAST = +12.75h (super selten)
-    if (lat >= -44.5 && lat <= -43.5 && lng >= -177 && lng <= -176)
+    if (lat >= -44.5 && lat <= -43.5 && lng >= -177 && lng <= -176) {
       return 12.75;
+    }
     return null;
   }
 

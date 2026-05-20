@@ -109,7 +109,7 @@ class _CompassPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final pad = 16.0;
+    const pad = 16.0;
     final maxR = (size.width / 2) - pad;
 
     // Grid background

@@ -166,28 +166,28 @@ class ArchetypeEngine {
   /// Berechne Primär-Archetyp basierend auf Lebenszahl
   static Map<String, dynamic> calculatePrimaryArchetype(int lifePathNumber) {
     // Reduziere Lebenszahl auf 1-12 für Archetypen-Zuordnung
-    int archetypeNumber = ((lifePathNumber - 1) % 12) + 1;
+    final int archetypeNumber = ((lifePathNumber - 1) % 12) + 1;
     return _archetypes[archetypeNumber] ?? _archetypes[1]!;
   }
 
   /// Berechne Sekundär-Archetyp basierend auf Ausdruckszahl
   static Map<String, dynamic> calculateSecondaryArchetype(
       int expressionNumber) {
-    int archetypeNumber = ((expressionNumber - 1) % 12) + 1;
+    final int archetypeNumber = ((expressionNumber - 1) % 12) + 1;
     return _archetypes[archetypeNumber] ?? _archetypes[1]!;
   }
 
   /// Berechne Schatten-Archetyp (Gegenteil des Primär-Archetyps)
   static Map<String, dynamic> calculateShadowArchetype(int lifePathNumber) {
     // Schatten ist gegenüberliegend (6 Schritte weiter im Kreis)
-    int primaryArchetype = ((lifePathNumber - 1) % 12) + 1;
-    int shadowArchetype = ((primaryArchetype + 5) % 12) + 1;
+    final int primaryArchetype = ((lifePathNumber - 1) % 12) + 1;
+    final int shadowArchetype = ((primaryArchetype + 5) % 12) + 1;
     return _archetypes[shadowArchetype] ?? _archetypes[1]!;
   }
 
   /// Berechne Aktivierungs-Archetyp basierend auf Persönlichem Jahr
   static Map<String, dynamic> calculateActivationArchetype(int personalYear) {
-    int archetypeNumber = ((personalYear - 1) % 12) + 1;
+    final int archetypeNumber = ((personalYear - 1) % 12) + 1;
     return _archetypes[archetypeNumber] ?? _archetypes[1]!;
   }
 
@@ -209,7 +209,7 @@ class ArchetypeEngine {
     score += 20;
 
     // Varianz basierend auf Archetypen-Namen
-    int variation = (primary['name'].toString().length +
+    final int variation = (primary['name'].toString().length +
             secondary['name'].toString().length) %
         20;
     score += variation - 10;
@@ -237,14 +237,18 @@ class ArchetypeEngine {
     final shadowElement = shadow['element'] as String?;
     final activationElement = activation['element'] as String?;
 
-    if (primaryElement != null)
+    if (primaryElement != null) {
       elements[primaryElement] = (elements[primaryElement] ?? 0) + 2;
-    if (secondaryElement != null)
+    }
+    if (secondaryElement != null) {
       elements[secondaryElement] = (elements[secondaryElement] ?? 0) + 2;
-    if (shadowElement != null)
+    }
+    if (shadowElement != null) {
       elements[shadowElement] = (elements[shadowElement] ?? 0) + 1;
-    if (activationElement != null)
+    }
+    if (activationElement != null) {
       elements[activationElement] = (elements[activationElement] ?? 0) + 1;
+    }
 
     return elements;
   }

@@ -29,7 +29,6 @@ import '../../config/api_config.dart'; // v92 ApiConfig.workerUrl
 import '../../services/timezone_helper.dart'; // ✨ v93 TZ inference
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 import '../../widgets/profile/birth_place_autocomplete.dart'; // ✨ v93 Geocoding
 
 /// Vollständiger Profil-Editor für Materie & Energie Welten
@@ -1857,8 +1856,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                             value: _birthTimeUnknown,
                             onChanged: (v) => setState(() {
                               _birthTimeUnknown = v ?? false;
-                              if (_birthTimeUnknown)
+                              if (_birthTimeUnknown) {
                                 _birthTimeController.clear();
+                              }
                               _hasUnsavedChanges = true;
                             }),
                             title: const Text(

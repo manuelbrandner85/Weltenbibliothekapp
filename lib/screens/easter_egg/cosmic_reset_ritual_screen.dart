@@ -6,7 +6,6 @@
 // 3. Loslass-Atmung + 3-Sekunden-Hold-Button → Reset
 
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

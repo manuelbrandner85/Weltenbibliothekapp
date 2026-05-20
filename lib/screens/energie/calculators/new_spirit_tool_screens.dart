@@ -11,12 +11,10 @@ import 'dart:math' as math;
 import 'dart:async';
 import '../../../services/device_location_service.dart';
 import 'package:weltenbibliothek/services/storage_service.dart';
-import 'package:weltenbibliothek/services/achievement_service.dart';
 import 'package:weltenbibliothek/models/app_data.dart';
 import 'package:weltenbibliothek/screens/energie/moon_journal_screen.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ═══════════════════════════════════════════════════════════
 // 1. 🌙 MONDPHASEN-TRACKER SCREEN
@@ -3705,8 +3703,8 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
   Future<void> _loadWeather() async {
     // open-meteo.com — gratis, kein Key. Position via geolocator (mit Fallback).
     try {
-      final lat = 52.52; // Berlin Fallback wenn GPS nicht verfügbar
-      final lon = 13.41;
+      const lat = 52.52; // Berlin Fallback wenn GPS nicht verfügbar
+      const lon = 13.41;
       // Versuch GPS — wenn permission fehlt, Fallback nutzen
       double useLat = lat;
       double useLon = lon;
@@ -5815,27 +5813,37 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
     final month = date.month;
 
     // Zodiac sign date ranges
-    if ((month == 3 && day >= 21) || (month == 4 && day <= 19))
+    if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) {
       return 'Widder ♈';
-    if ((month == 4 && day >= 20) || (month == 5 && day <= 20))
+    }
+    if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) {
       return 'Stier ♉';
-    if ((month == 5 && day >= 21) || (month == 6 && day <= 20))
+    }
+    if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) {
       return 'Zwillinge ♊';
-    if ((month == 6 && day >= 21) || (month == 7 && day <= 22))
+    }
+    if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) {
       return 'Krebs ♋';
+    }
     if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return 'Löwe ♌';
-    if ((month == 8 && day >= 23) || (month == 9 && day <= 22))
+    if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) {
       return 'Jungfrau ♍';
-    if ((month == 9 && day >= 23) || (month == 10 && day <= 22))
+    }
+    if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) {
       return 'Waage ♎';
-    if ((month == 10 && day >= 23) || (month == 11 && day <= 21))
+    }
+    if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) {
       return 'Skorpion ♏';
-    if ((month == 11 && day >= 22) || (month == 12 && day <= 21))
+    }
+    if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) {
       return 'Schütze ♐';
-    if ((month == 12 && day >= 22) || (month == 1 && day <= 19))
+    }
+    if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) {
       return 'Steinbock ♑';
-    if ((month == 1 && day >= 20) || (month == 2 && day <= 18))
+    }
+    if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) {
       return 'Wassermann ♒';
+    }
     return 'Fische ♓';
   }
 

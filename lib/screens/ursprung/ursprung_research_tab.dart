@@ -581,7 +581,7 @@ class _MarkdownText extends StatelessWidget {
 }
 
 // Fallback-Themen, falls Supabase nicht erreichbar ist.
-final List<UrsprungTopic> _fallbackTopics = const [
+const List<UrsprungTopic> _fallbackTopics = [
   UrsprungTopic(
     id: 'fb-gateway',
     title: 'Gateway Experience',

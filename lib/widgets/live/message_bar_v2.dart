@@ -13,7 +13,6 @@
 //   * dart2js-safe (kein Record-Pattern, keine const-Maps mit Records)
 //   * Keine externen Pakete ausser Material + dart:ui + services
 
-import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 

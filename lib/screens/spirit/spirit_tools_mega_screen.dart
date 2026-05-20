@@ -10,7 +10,6 @@ import '../../models/spirit_tools_models.dart';
 import '../../services/achievement_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 // ========================================
 // 📔 TRAUMTAGEBUCH SCREEN

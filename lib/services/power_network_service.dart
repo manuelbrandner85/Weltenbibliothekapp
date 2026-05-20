@@ -94,9 +94,9 @@ class PowerNetworkService {
         // Risk-Score: Sanktioniert (1.0), PEP (0.6), Adverse-Media (0.4)
         double risk = 0.0;
         for (final t in topics) {
-          if (t == 'sanction')
+          if (t == 'sanction') {
             risk = 1.0;
-          else if (t == 'role.pep' && risk < 0.7)
+          } else if (t == 'role.pep' && risk < 0.7)
             risk = 0.7;
           else if (t == 'mil' && risk < 0.5)
             risk = 0.5;
@@ -157,20 +157,27 @@ class PowerNetworkService {
             .toList();
 
         final tags = <String>[];
-        if (collectionLabel.toLowerCase().contains('panama'))
+        if (collectionLabel.toLowerCase().contains('panama')) {
           tags.add('📂 Panama Papers');
-        if (collectionLabel.toLowerCase().contains('pandora'))
+        }
+        if (collectionLabel.toLowerCase().contains('pandora')) {
           tags.add('📂 Pandora Papers');
-        if (collectionLabel.toLowerCase().contains('fincen'))
+        }
+        if (collectionLabel.toLowerCase().contains('fincen')) {
           tags.add('📂 FinCEN');
-        if (collectionLabel.toLowerCase().contains('luxleaks'))
+        }
+        if (collectionLabel.toLowerCase().contains('luxleaks')) {
           tags.add('📂 LuxLeaks');
-        if (collectionLabel.toLowerCase().contains('suisse'))
+        }
+        if (collectionLabel.toLowerCase().contains('suisse')) {
           tags.add('📂 Suisse Secrets');
-        if (collectionLabel.toLowerCase().contains('offshore'))
+        }
+        if (collectionLabel.toLowerCase().contains('offshore')) {
           tags.add('📂 Offshore Leaks');
-        if (tags.isEmpty && collectionLabel.isNotEmpty)
+        }
+        if (tags.isEmpty && collectionLabel.isNotEmpty) {
           tags.add('📂 $collectionLabel');
+        }
 
         return PowerNetworkHit(
           id: 'aleph:${m['id']}',

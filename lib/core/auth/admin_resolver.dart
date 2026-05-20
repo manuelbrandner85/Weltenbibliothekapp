@@ -122,8 +122,9 @@ class AdminResolver {
           }
         }
       } catch (e) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('⚠️ [AdminResolver] Web-Fallback-Fehler: $e');
+        }
       }
     }
 

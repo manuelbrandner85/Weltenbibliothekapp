@@ -1315,7 +1315,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern>
   }
 
   // 3-Punkte-Menü für Posts
-  void _showPostMenu(BuildContext context, CommunityPost post) async {
+  Future<void> _showPostMenu(BuildContext context, CommunityPost post) async {
     // 🔐 Username aus Storage holen
     final storage = StorageService();
     final energieProfile = storage.getEnergieProfile();

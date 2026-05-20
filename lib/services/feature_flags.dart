@@ -74,8 +74,9 @@ class FeatureFlags {
       await _prefs!.setBool(_keyFor(f), value);
       _cache[f] = value;
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('[FeatureFlags] setEnabled $f=$value failed: $e');
+      }
     }
   }
 

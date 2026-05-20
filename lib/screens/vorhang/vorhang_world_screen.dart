@@ -7,7 +7,6 @@ import 'vorhang_community_tab.dart';
 import 'vorhang_map_tab.dart';
 import '../shared/unified_knowledge_tab.dart';
 import '../shared/stats_dashboard_screen.dart';
-import '../shared/world_admin_dashboard.dart';
 import '../../widgets/admin_dashboard_button.dart';
 import '../../services/haptic_service.dart';
 import '../../features/admin/state/admin_state.dart';

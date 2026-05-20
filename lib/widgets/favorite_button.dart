@@ -93,7 +93,7 @@ class _FavoriteButtonState extends State<FavoriteButton>
                 (f.type == widget.itemType && f.title == widget.itemTitle))
             .toList();
 
-        for (var fav in existing) {
+        for (final fav in existing) {
           await FavoritesService.deleteFavorite(fav.id);
         }
 

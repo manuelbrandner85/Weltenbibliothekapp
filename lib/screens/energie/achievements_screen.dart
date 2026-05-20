@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import '../../services/storage_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});

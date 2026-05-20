@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // G — Geo-Analyse
@@ -69,8 +68,9 @@ class _GeoAnalysisToolState extends State<GeoAnalysisTool> {
   Future<void> _openMap(double lat, double lon) async {
     final uri = Uri.parse(
         'https://www.openstreetmap.org/?mlat=$lat&mlon=$lon#map=12/$lat/$lon');
-    if (await canLaunchUrl(uri))
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _card(String title, IconData icon, Color color, Widget child) =>
@@ -274,9 +274,10 @@ class _GeoAnalysisToolState extends State<GeoAnalysisTool> {
                           final title = article['title'] as String? ?? '';
                           final wikiUri = Uri.parse(
                               'https://de.wikipedia.org/wiki/${Uri.encodeComponent(title)}');
-                          if (await canLaunchUrl(wikiUri))
+                          if (await canLaunchUrl(wikiUri)) {
                             await launchUrl(wikiUri,
                                 mode: LaunchMode.externalApplication);
+                          }
                         },
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 6),

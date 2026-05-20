@@ -204,7 +204,7 @@ class OpenClawComprehensiveService {
     final seen = <String>{};
     final unique = <Map<String, dynamic>>[];
 
-    for (var item in items) {
+    for (final item in items) {
       final url = item['url'] ?? item['src'] ?? '';
       if (url.isNotEmpty && !seen.contains(url)) {
         seen.add(url);
@@ -241,7 +241,7 @@ class OpenClawComprehensiveService {
       score += 40.0;
     } else {
       // Partial word match
-      for (var word in queryWords) {
+      for (final word in queryWords) {
         if (word.length > 3 && title.contains(word)) {
           score += 10.0;
         }
@@ -254,7 +254,7 @@ class OpenClawComprehensiveService {
     if (alt.contains(queryLower)) {
       score += 30.0;
     } else {
-      for (var word in queryWords) {
+      for (final word in queryWords) {
         if (word.length > 3 && alt.contains(word)) {
           score += 7.5;
         }
@@ -266,7 +266,7 @@ class OpenClawComprehensiveService {
     if (url.contains(queryLower)) {
       score += 20.0;
     } else {
-      for (var word in queryWords) {
+      for (final word in queryWords) {
         if (word.length > 3 && url.contains(word)) {
           score += 5.0;
         }

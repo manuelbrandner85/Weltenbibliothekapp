@@ -84,8 +84,9 @@ class AlephCard extends StatelessWidget {
             : () async {
                 HapticFeedback.lightImpact();
                 final uri = Uri.tryParse(d.url!);
-                if (uri != null && await canLaunchUrl(uri))
+                if (uri != null && await canLaunchUrl(uri)) {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
               },
         borderRadius: BorderRadius.circular(10),
         child: Container(
@@ -164,8 +165,9 @@ class AlephCard extends StatelessWidget {
     if (s.contains('person')) return Icons.person;
     if (s.contains('company') || s.contains('legal')) return Icons.business;
     if (s.contains('document') || s.contains('email')) return Icons.description;
-    if (s.contains('payment') || s.contains('asset'))
+    if (s.contains('payment') || s.contains('asset')) {
       return Icons.account_balance_wallet;
+    }
     return Icons.folder;
   }
 }

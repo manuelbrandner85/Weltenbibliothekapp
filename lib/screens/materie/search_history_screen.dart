@@ -4,7 +4,6 @@ import '../../services/search_history_service.dart';
 import '../../models/search_history.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
 
 /// Search History Screen v8.0
 ///

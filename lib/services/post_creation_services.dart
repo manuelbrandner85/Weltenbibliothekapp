@@ -330,19 +330,13 @@ class LinkPreviewService {
         // og:* und twitter:* sowohl als property als auch name unterstuetzen
         final patterns = [
           RegExp(
-              '<meta[^>]+property=["\']' +
-                  RegExp.escape(property) +
-                  '["\'][^>]+content=["\']([^"\']+)["\']',
+              '<meta[^>]+property=["\']${RegExp.escape(property)}["\'][^>]+content=["\']([^"\']+)["\']',
               caseSensitive: false),
           RegExp(
-              '<meta[^>]+name=["\']' +
-                  RegExp.escape(property) +
-                  '["\'][^>]+content=["\']([^"\']+)["\']',
+              '<meta[^>]+name=["\']${RegExp.escape(property)}["\'][^>]+content=["\']([^"\']+)["\']',
               caseSensitive: false),
           RegExp(
-              '<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']' +
-                  RegExp.escape(property) +
-                  '["\']',
+              '<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']${RegExp.escape(property)}["\']',
               caseSensitive: false),
         ];
         for (final p in patterns) {
