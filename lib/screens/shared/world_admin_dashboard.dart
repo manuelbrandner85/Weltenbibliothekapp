@@ -985,6 +985,7 @@ class _UsersTabState extends State<_UsersTab> {
   // Real-time-Subscription auf profiles — Liste aktualisiert sich live wenn
   // ein User promotet/gebannt/gelöscht/erstellt wird (egal welcher Admin).
   RealtimeChannel? _profilesChannel;
+  Timer? _realtimeDebounce;
 
   @override
   void initState() {
@@ -997,6 +998,7 @@ class _UsersTabState extends State<_UsersTab> {
   void dispose() {
     _searchCtrl.dispose();
     _profilesChannel?.unsubscribe();
+    _realtimeDebounce?.cancel();
     super.dispose();
   }
 
@@ -1009,8 +1011,14 @@ class _UsersTabState extends State<_UsersTab> {
             schema: 'public',
             table: 'profiles',
             callback: (_) {
-              if (kDebugMode) debugPrint('🔄 profiles change → reload');
-              if (mounted) _load();
+              if (kDebugMode) debugPrint('🔄 profiles change → reload (debounced)');
+              // AUDIT-FIX B11: Debounce damit ein Schwall von Profile-
+              // Aenderungen (z.B. 10 User joinen gleichzeitig) nicht 10
+              // Reloads ausloest. 800ms Quiet-Period.
+              _realtimeDebounce?.cancel();
+              _realtimeDebounce = Timer(const Duration(milliseconds: 800), () {
+                if (mounted) _load();
+              });
             },
           )
           .subscribe();
@@ -1036,7 +1044,8 @@ class _UsersTabState extends State<_UsersTab> {
           _loading = false;
           if (users.isEmpty) {
             _errorMessage =
-                'Keine Profile gefunden. Pruefe Worker + Service-Role-Key.';
+                // AUDIT-FIX C4: User-freundliche Meldung statt Tech-Sprech.
+                'Keine Nutzer geladen.\nBackend evtl. nicht erreichbar -- bitte spaeter erneut versuchen.';
           }
         });
       }
@@ -1272,6 +1281,8 @@ class _UsersTabState extends State<_UsersTab> {
   Future<void> _deleteUser(WorldUser u) async {
     if (!widget.admin.isRootAdmin) return;
     final confirmCtrl = TextEditingController();
+    // AUDIT-FIX B13: Reason-Feld bei Hard-Delete fuer Audit-Trail.
+    final reasonCtrl = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1281,39 +1292,62 @@ class _UsersTabState extends State<_UsersTab> {
           SizedBox(width: 8),
           Text('Hard-Delete', style: TextStyle(color: Colors.white)),
         ]),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '@${u.username} wird unwiderruflich geloescht.\n\n'
-              'Profile-Zeile + auth.users (falls vorhanden) werden geloescht. '
-              'XP, Chat-Eintraege und alle abhaengigen Daten gehen verloren.',
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Tippe "${u.username}" zur Bestaetigung:',
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              controller: confirmCtrl,
-              autofocus: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: u.username,
-                hintStyle: const TextStyle(color: Colors.white24),
-                filled: true,
-                fillColor: const Color(0xFF1A1A26),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(
-                      color: Colors.redAccent.withValues(alpha: 0.4)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '@${u.username} wird unwiderruflich geloescht.\n\n'
+                'Profile-Zeile + auth.users (falls vorhanden) werden geloescht. '
+                'XP, Chat-Eintraege und alle abhaengigen Daten gehen verloren.',
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Grund (Pflicht, fuer Audit-Trail):',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: reasonCtrl,
+                maxLength: 200,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'z.B. Account-Loeschung auf Wunsch',
+                  hintStyle: const TextStyle(color: Colors.white24),
+                  filled: true,
+                  fillColor: const Color(0xFF1A1A26),
+                  counterStyle: const TextStyle(color: Colors.white38),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.white24),
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                'Tippe "${u.username}" zur Bestaetigung:',
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: confirmCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: u.username,
+                  hintStyle: const TextStyle(color: Colors.white24),
+                  filled: true,
+                  fillColor: const Color(0xFF1A1A26),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                        color: Colors.redAccent.withValues(alpha: 0.4)),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -1327,6 +1361,12 @@ class _UsersTabState extends State<_UsersTab> {
             icon: const Icon(Icons.delete_forever_rounded, size: 16),
             label: const Text('Endgueltig loeschen'),
             onPressed: () {
+              if (reasonCtrl.text.trim().length < 3) {
+                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                  content: Text('Grund (min. 3 Zeichen) ist Pflicht.'),
+                ));
+                return;
+              }
               if (confirmCtrl.text.trim() == u.username) {
                 Navigator.pop(ctx, true);
               } else {
@@ -1346,6 +1386,7 @@ class _UsersTabState extends State<_UsersTab> {
     final success = await WorldAdminServiceV162.deleteUser(
       userId: u.userId,
       adminUsername: widget.admin.username,
+      reason: reasonCtrl.text.trim(),
     );
     if (!mounted) return;
     setState(() => _processing = false);
@@ -2228,6 +2269,8 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
       return;
     }
 
+    // AUDIT-FIX B12: Reason-Field statt hardcodedem 'Regelverstoß'
+    final reasonCtrl = TextEditingController();
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
@@ -2237,10 +2280,28 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
             title: const Text('🚫 Sender sperren',
                 style: TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
-            content: Text(
-              'Soll @$username für Chat-Verstöße gesperrt werden?\n\n'
-              'Der Nutzer kann 24 Stunden lang nicht mehr chatten.',
-              style: const TextStyle(color: Colors.white70, height: 1.4),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Soll @$username für Chat-Verstöße gesperrt werden?\n'
+                  'Der Nutzer kann 24 Stunden lang nicht mehr chatten.',
+                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: reasonCtrl,
+                  autofocus: true,
+                  maxLength: 200,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Grund (Pflicht)',
+                    labelStyle: TextStyle(color: Colors.white54),
+                    counterStyle: TextStyle(color: Colors.white38),
+                  ),
+                ),
+              ],
             ),
             actions: [
               TextButton(
@@ -2249,7 +2310,10 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
                     style: TextStyle(color: Colors.white54)),
               ),
               ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () {
+                  if (reasonCtrl.text.trim().length < 3) return;
+                  Navigator.pop(context, true);
+                },
                 icon: const Icon(Icons.block_rounded,
                     color: Colors.white, size: 16),
                 label: const Text('Sperren',
@@ -2267,11 +2331,14 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
 
     if (!confirmed) return;
 
+    final reason = reasonCtrl.text.trim().isEmpty
+        ? 'Chat-Moderation'
+        : 'Chat-Moderation: ${reasonCtrl.text.trim()}';
     final ok = await WorldAdminServiceV162.banUser(
         userId: userId,
-        reason: 'Chat-Moderation: Regelverstoß',
+        reason: reason,
         adminUserId: widget.admin.username);
-    _snack(ok ? '🚫 @$username gesperrt' : '❌ Fehler beim Sperren',
+    _snack(ok ? '🚫 @$username gesperrt ($reason)' : '❌ Fehler beim Sperren',
         color: ok ? Colors.red.shade700 : Colors.orange);
   }
 

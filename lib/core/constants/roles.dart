@@ -167,13 +167,15 @@ class AppRoles {
   /// Ist der User Content-Editor (nur Content-Rechte)
   static bool isContentEditor(String? role) => role == contentEditor;
 
-  /// Helper für Offline-Fallback - Check by Username
+  /// Helper für Offline-Fallback - Check by Username.
+  /// AUDIT-FIX B9: trim + lowercase damit polluted SharedPrefs
+  /// (' Weltenbibliothek\n') noch korrekt erkannt werden.
   static bool isRootAdminByUsername(String? username) =>
-      username?.toLowerCase() == rootAdminUsername.toLowerCase();
+      username?.trim().toLowerCase() == rootAdminUsername.toLowerCase();
 
   /// Helper für Offline-Fallback - Check by Username
   static bool isContentEditorByUsername(String? username) =>
-      username?.toLowerCase() == contentEditorUsername.toLowerCase();
+      username?.trim().toLowerCase() == contentEditorUsername.toLowerCase();
 
   /// Helper für Offline-Fallback - Check if user can edit content by username
   /// Prüft BEIDE: Root-Admin UND Content-Editor

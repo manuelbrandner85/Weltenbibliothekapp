@@ -130,12 +130,12 @@ class _AdminDashboardButtonState extends State<AdminDashboardButton> {
         widget.adminState.isModerator ||
         _fallbackIsAdmin;
 
-    // Solange weder Provider noch Fallback fertig sind: 0-Pixel-Platz-
-    // halter statt SizedBox.shrink(). Damit wird beim naechsten
-    // setState (sobald Fallback durch ist) NEU geprueft -- sonst
-    // verschwindet der Button und kommt nie zurueck.
+    // Solange weder Provider noch Fallback fertig sind: unsichtbarer
+    // Platzhalter (SizedBox.shrink) statt 0-Pixel-Container. Beide werden
+    // beim naechsten setState neu evaluiert; .shrink() entfernt den Knoten
+    // aber sauber aus dem Semantik-Baum/Tab-Order.
     if (!hasAccess && role == null && !_fallbackResolved) {
-      return const SizedBox(height: 0);
+      return const SizedBox.shrink();
     }
     if (!hasAccess) return const SizedBox.shrink();
 

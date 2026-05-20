@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
+import 'admin_auth_service.dart';
 import 'push_notification_helper.dart';
 import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
@@ -46,12 +47,25 @@ class WorldAdminService {
   static String get _adminId => supabase.auth.currentUser?.id ?? '';
 
   /// Standard-Auth-Header für Admin-Requests (JWT + UUID).
+  /// AUDIT-FIX A1: Legacy-Variante. Neue Endpoints brauchen
+  /// `_adminAuthHeaders()` mit HMAC-Token (asynchron).
   static Map<String, String> _adminHeaders({String? role}) => {
         'Authorization': 'Bearer $_jwt',
         'X-Admin-ID': _adminId,
         if (role != null) 'X-Role': role,
         'Content-Type': 'application/json',
       };
+
+  /// AUDIT-FIX A1: HMAC-Header fuer verifyAdminCaller im Worker.
+  /// Async weil Username via StorageService geholt wird. Kombiniert
+  /// die Legacy-Header mit dem neuen Token-Header.
+  static Future<Map<String, String>> _adminAuthHeaders({String? role}) async {
+    final hmac = await AdminAuthService.instance.headers();
+    return {
+      ..._adminHeaders(role: role),
+      ...hmac,
+    };
+  }
 
   // ════════════════════════════════════════════════════════════
   // ADMIN STATUS CHECK
@@ -398,7 +412,7 @@ class WorldAdminService {
       final response = await http
           .post(
             url,
-            headers: _adminHeaders(role: role ?? 'root_admin'),
+            headers: await _adminAuthHeaders(role: role ?? 'root_admin'),
           )
           .timeout(_timeout);
 
@@ -439,7 +453,7 @@ class WorldAdminService {
       final response = await http
           .post(
             url,
-            headers: _adminHeaders(role: role ?? 'root_admin'),
+            headers: await _adminAuthHeaders(role: role ?? 'root_admin'),
           )
           .timeout(_timeout);
       if (response.statusCode == 200) {
@@ -475,7 +489,7 @@ class WorldAdminService {
       final response = await http
           .delete(
             url,
-            headers: _adminHeaders(role: 'root_admin'),
+            headers: await _adminAuthHeaders(role: 'root_admin'),
           )
           .timeout(_timeout);
       if (response.statusCode == 200) {
@@ -775,8 +789,9 @@ class AuditLogEntry {
 /// }
 /// ```
 extension WorldAdminServiceV162 on WorldAdminService {
-  static Map<String, String> get _h =>
-      WorldAdminService._adminHeaders(role: 'root_admin');
+  // AUDIT-FIX A1: HMAC-Header fuer Worker verifyAdminCaller.
+  static Future<Map<String, String>> get _h async =>
+      WorldAdminService._adminAuthHeaders(role: 'root_admin');
 
   static Future<bool> banUser({
     required String userId,
@@ -790,7 +805,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http
           .post(
             url,
-            headers: _h,
+            headers: await _h,
             body:
                 jsonEncode({'reason': reason, 'durationHours': durationHours}),
           )
@@ -812,7 +827,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final url = Uri.parse(
           '${WorldAdminService._baseUrl}/api/admin/users/$userId/unban');
       final response =
-          await http.post(url, headers: _h).timeout(WorldAdminService._timeout);
+          await http.post(url, headers: await _h).timeout(WorldAdminService._timeout);
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -838,7 +853,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http
           .put(
             url,
-            headers: {..._h, 'Content-Type': 'application/json'},
+            headers: {...await _h, 'Content-Type': 'application/json'},
             body: jsonEncode({
               'role': newRole,
               if (adminUsername != null) 'admin': adminUsername,
@@ -904,7 +919,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http
           .post(
             url,
-            headers: _h,
+            headers: await _h,
             body: jsonEncode(
                 {'reason': reason, 'durationMinutes': durationMinutes}),
           )
@@ -920,12 +935,18 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<bool> deleteUser({
     required String userId,
     String? adminUsername,
+    String? reason,
   }) async {
     try {
-      final url =
-          Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId');
+      // AUDIT-FIX B13: Grund als Query-Param mitschicken -- Worker
+      // schreibt ihn ins admin_audit_log.
+      final qp = reason != null && reason.isNotEmpty
+          ? '?reason=${Uri.encodeQueryComponent(reason)}'
+          : '';
+      final url = Uri.parse(
+          '${WorldAdminService._baseUrl}/api/admin/users/$userId$qp');
       final response = await http
-          .delete(url, headers: _h)
+          .delete(url, headers: await _h)
           .timeout(WorldAdminService._timeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
@@ -952,7 +973,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http
           .post(
             url,
-            headers: _h,
+            headers: await _h,
             body: jsonEncode({'users': extraUsers ?? []}),
           )
           .timeout(WorldAdminService._timeout);
@@ -1008,7 +1029,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final url = Uri.parse(
           '${WorldAdminService._baseUrl}/api/admin/users/$userId/unmute');
       final response =
-          await http.post(url, headers: _h).timeout(WorldAdminService._timeout);
+          await http.post(url, headers: await _h).timeout(WorldAdminService._timeout);
       return response.statusCode == 200;
     } catch (e) {
       return false;

@@ -12,12 +12,27 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import 'admin_auth_service.dart';
 
 class PushNotificationHelper {
   PushNotificationHelper._();
   static final PushNotificationHelper instance = PushNotificationHelper._();
 
   static const Duration _timeout = Duration(seconds: 10);
+
+  /// AUDIT-FIX B6: Fire-and-forget mit Logging. Vorher hat jeder Caller
+  /// `.ignore()` benutzt -- Fehler verschwanden silent. Jetzt: bei Failure
+  /// wird debugPrint mit context geloggt damit man im Adb-Log sieht warum
+  /// ein Ban-Push z.B. nicht ankam.
+  void fireAndForget(Future<bool> pushFuture, {String context = 'push'}) {
+    pushFuture.then((ok) {
+      if (!ok && kDebugMode) {
+        debugPrint('⚠️ Push fire-and-forget failed: $context');
+      }
+    }).catchError((e) {
+      if (kDebugMode) debugPrint('⚠️ Push fire-and-forget error ($context): $e');
+    });
+  }
 
   /// Sends a push to a single user identified by their backend user_id
   /// (UUID) or legacy InvisibleAuth-ID ("user_<ts>_<rand>"). Worker
@@ -42,9 +57,14 @@ class PushNotificationHelper {
       },
     };
     try {
+      // AUDIT-FIX A1: HMAC-Header fuer verifyAdminCaller
+      final adminHeaders = await AdminAuthService.instance.headers();
       final res = await http
           .post(url,
-              headers: const {'Content-Type': 'application/json'},
+              headers: {
+                'Content-Type': 'application/json',
+                ...adminHeaders,
+              },
               body: jsonEncode(payload))
           .timeout(_timeout);
       if (res.statusCode == 200) return true;
@@ -79,9 +99,13 @@ class PushNotificationHelper {
       },
     };
     try {
+      final adminHeaders = await AdminAuthService.instance.headers();
       final res = await http
           .post(url,
-              headers: const {'Content-Type': 'application/json'},
+              headers: {
+                'Content-Type': 'application/json',
+                ...adminHeaders,
+              },
               body: jsonEncode(payload))
           .timeout(_timeout);
       if (res.statusCode == 200) return true;
@@ -115,9 +139,13 @@ class PushNotificationHelper {
       },
     };
     try {
+      final adminHeaders = await AdminAuthService.instance.headers();
       final res = await http
           .post(url,
-              headers: const {'Content-Type': 'application/json'},
+              headers: {
+                'Content-Type': 'application/json',
+                ...adminHeaders,
+              },
               body: jsonEncode(payload))
           .timeout(_timeout);
       if (res.statusCode == 200) return true;
