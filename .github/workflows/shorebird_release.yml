@@ -9,20 +9,23 @@ name: 🐦 Shorebird Android RELEASE (auto + manuell)
 # wieder gegen diese neue Release-Version.
 #
 # Trigger:
-#   • Push eines Tags v[0-9]+.[0-9]+.[0-9]+ (wird AUTOMATISCH von build_apk.yml
-#     via softprops/action-gh-release nach pubspec.yaml-Version-Bump erstellt).
-#     Damit erspart sich der Maintainer den manuellen Klick im Actions-Tab.
-#   • workflow_dispatch (manueller Fallback wenn der Tag schon existiert oder
-#     ein historischer Build neu released werden soll).
+#   • workflow_run nach erfolgreichem 'Build & Release APK' (= sobald
+#     build_apk.yml den v5.x.x-Tag + GitHub-Release erstellt hat). Vorher
+#     'on: push: tags:' -- das funktionierte aber nicht, weil Tags die von
+#     GITHUB_TOKEN-Workflows (softprops/action-gh-release) erstellt werden
+#     keine push-Events triggern (Anti-Recursion-Guard).
+#   • workflow_dispatch (manueller Fallback wenn der Tag schon existiert
+#     oder ein historischer Build neu released werden soll).
 #
 # WICHTIG: Build-Nummer in pubspec.yaml muss VOR dem Run gebumpt sein —
 # pro CLAUDE.md-Regel 1. Sonst registriert Shorebird denselben Release nochmal
 # und der Patch-Workflow bekommt wieder einen Konflikt.
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_run:
+    workflows: ['🏗️ Build & Release APK']
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       source_branch:
@@ -42,16 +45,22 @@ concurrency:
 jobs:
   release:
     name: 🐦 Shorebird Release android
+    # Bei workflow_run nur laufen wenn build_apk SUCCESS war; bei
+    # workflow_dispatch immer.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          # Bei Tag-Push (auto): den Tag-Ref auschecken damit pubspec.yaml die
-          # Version enthaelt die wir releasen wollen. Bei workflow_dispatch:
+          # Bei workflow_run: den Head-SHA des gebauten APKs (sicher dass
+          # pubspec.yaml-Version dem Build entspricht). Bei workflow_dispatch:
           # den Input-Branch (Default main).
-          ref: ${{ github.event.inputs.source_branch || github.ref }}
+          ref: >-
+            ${{ github.event.inputs.source_branch
+                || github.event.workflow_run.head_sha
+                || 'main' }}
 
       - name: ☕ Java 17
         uses: actions/setup-java@v4
