@@ -94,6 +94,10 @@ jobs:
           GOOGLE_FACTCHECK_API_KEY: ${{ secrets.GOOGLE_FACTCHECK_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           ALEPH_API_KEY: ${{ secrets.ALEPH_API_KEY }}
+          ADMIN_AUTH_SECRET: ${{ secrets.ADMIN_AUTH_SECRET }}
+          MIGRATION_TOKEN_V13: ${{ secrets.MIGRATION_TOKEN_V13 }}
+          MIGRATION_TOKEN_V14: ${{ secrets.MIGRATION_TOKEN_V14 }}
+          MIGRATION_TOKEN_V15: ${{ secrets.MIGRATION_TOKEN_V15 }}
         working-directory: workers
         run: |
           set -euo pipefail
@@ -110,6 +114,11 @@ jobs:
           }
 
           [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ] && set_secret "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY" || echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt"
+          # AUDIT-FIX A1 + A5: HMAC-Secret und Migrations-Tokens
+          [ -n "${ADMIN_AUTH_SECRET:-}" ]         && set_secret "ADMIN_AUTH_SECRET" "$ADMIN_AUTH_SECRET"               || echo "⚠️  ADMIN_AUTH_SECRET fehlt -- Admin-Endpoints werden 403 zurueckgeben"
+          [ -n "${MIGRATION_TOKEN_V13:-}" ]       && set_secret "MIGRATION_TOKEN_V13" "$MIGRATION_TOKEN_V13"           || echo "ℹ️  MIGRATION_TOKEN_V13 nicht gesetzt"
+          [ -n "${MIGRATION_TOKEN_V14:-}" ]       && set_secret "MIGRATION_TOKEN_V14" "$MIGRATION_TOKEN_V14"           || echo "ℹ️  MIGRATION_TOKEN_V14 nicht gesetzt"
+          [ -n "${MIGRATION_TOKEN_V15:-}" ]       && set_secret "MIGRATION_TOKEN_V15" "$MIGRATION_TOKEN_V15"           || echo "ℹ️  MIGRATION_TOKEN_V15 nicht gesetzt"
           [ -n "${FCM_SERVICE_ACCOUNT_JSON:-}" ]  && set_secret "FCM_SERVICE_ACCOUNT" "$FCM_SERVICE_ACCOUNT_JSON"        || echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt"
           [ -n "${GROQ_API_KEY:-}" ]              && set_secret "GROQ_API_KEY" "$GROQ_API_KEY"                          || echo "ℹ️  GROQ_API_KEY fehlt"
           [ -n "${GOOGLE_FACTCHECK_API_KEY:-}" ]  && set_secret "GOOGLE_FACTCHECK_API_KEY" "$GOOGLE_FACTCHECK_API_KEY"  || echo "ℹ️  GOOGLE_FACTCHECK_API_KEY fehlt"

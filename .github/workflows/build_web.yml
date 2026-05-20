@@ -85,6 +85,7 @@ jobs:
             --dart-define=SUPABASE_URL=$_SUPA_URL \
             --dart-define=SUPABASE_ANON_KEY=$_SUPA_ANON \
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
+            --dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }} \
             --dart-define=APP_VERSION="web-$(date +%Y%m%d%H%M)"
 
       - name: 🔍 Verify build output

@@ -274,7 +274,8 @@ jobs:
               --dart-define=SUPABASE_URL=$SUPABASE_URL \
               --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
               --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-              --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}; then
+              --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }} \
+              --dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}; then
               echo "✅ $v - Patch erfolgreich"
               SUCCESS_COUNT=$((SUCCESS_COUNT+1))
             else
