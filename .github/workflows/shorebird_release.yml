@@ -171,10 +171,14 @@ jobs:
           echo "Erstelle Release: $FULL_VERSION"
 
           # --no-confirm — keine interaktive Bestätigung in CI
+          # --target-platform NICHT mehr setzen: Shorebird's interner Build
+          # haengt diesen Flag selbst dran (mit Default arm+arm64+x64).
+          # Wenn wir es zusaetzlich uebergeben, sieht Flutter den Flag
+          # 2x -> 'libapp.so is a duplicate' Gradle-Fehler. abiFilters in
+          # android/app/build.gradle.kts strippt x64 schon zur Build-Zeit.
           shorebird release android \
             --no-confirm \
             -- \
-            --target-platform=android-arm64,android-arm \
             "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
             "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
             "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
