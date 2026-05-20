@@ -85,7 +85,135 @@ function errorResponse(message, status = 500, code = null, details = null) {
   return jsonResponse(body, status);
 }
 
-// ── Auto-Übersetzung ins Deutsche (Google GTX, kein Key) ───────────────────
+// ══════════════════════════════════════════════════════════════════════════
+// ADMIN-AUTH-HELPER (v106 -- Audit-Fix A1/A2/A4)
+// ══════════════════════════════════════════════════════════════════════════
+//
+// Vorher: /api/admin/* + /api/push/(broadcast|send-*) akzeptierten body.admin
+// als Klartext-Username und vertrauten dem -- Jeder konnte bannen/promoten/
+// XP-vergeben/Massen-Spam senden indem er body.admin='Weltenbibliothek'
+// schickte. Auth-Bypass.
+//
+// Jetzt: Caller muss sich mit X-Admin-Username + X-Admin-Token authen-
+// tifizieren. Token = HMAC-SHA256(username, env.ADMIN_AUTH_SECRET).
+// Server validiert (a) Token-Korrektheit (b) Rolle aus profiles.role.
+// Bei kompromittiertem Geraet wird der User serverseitig automatisch
+// blockiert wenn profiles.role auf 'user' zurueckgesetzt wird -- der
+// Token allein reicht NICHT.
+//
+// Tokens werden client-seitig in AdminAuthService aus dem AdminStateNotifier
+// gepullt und in allen Worker-Calls als Header mitgegeben.
+
+const ADMIN_ROLES = new Set(['root_admin', 'admin', 'moderator', 'content_editor']);
+const HIGH_PRIVILEGE = new Set(['root_admin', 'admin']);
+const SUPER_PRIVILEGE = new Set(['root_admin']);
+
+async function _hmacSha256Hex(secret, message) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return [...new Uint8Array(sig)]
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Validiert dass der Caller ein Admin ist und liefert seinen profiles-Eintrag.
+ *
+ * @returns {Object|null} {userId, username, role, isAdmin, isRootAdmin,
+ *                         isHighPrivilege} oder null bei Fehler.
+ *
+ * Header-Schema:
+ *   X-Admin-Username: <username>
+ *   X-Admin-Token:    <HMAC-SHA256(username, ADMIN_AUTH_SECRET)>
+ *
+ * Bei fehlendem ADMIN_AUTH_SECRET (z.B. lokales Dev ohne secret) wird
+ * ein Warn-Log produziert UND der Caller wird zurueckgewiesen --
+ * niemals fail-open im Production-Worker.
+ */
+async function verifyAdminCaller(request, env) {
+  const username = (request.headers.get('X-Admin-Username') || '').trim();
+  const token = (request.headers.get('X-Admin-Token') || '').trim();
+  if (!username || !token) return null;
+
+  const secret = env.ADMIN_AUTH_SECRET || '';
+  if (!secret) {
+    console.warn('verifyAdminCaller: ADMIN_AUTH_SECRET fehlt -- Auth wird abgelehnt');
+    return null;
+  }
+
+  // Konstante-Zeit-Vergleich des Tokens
+  const expected = await _hmacSha256Hex(secret, username.toLowerCase());
+  if (expected.length !== token.length) return null;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) {
+    diff |= expected.charCodeAt(i) ^ token.charCodeAt(i);
+  }
+  if (diff !== 0) return null;
+
+  // Rolle live aus profiles holen -- nicht aus dem Token!
+  // Damit wirken Demotions sofort, kein Token-Refresh noetig.
+  const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!svcKey) return null;
+  try {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/profiles?username=eq.${encodeURIComponent(username)}&select=id,role,is_banned&limit=1`,
+      {
+        headers: {
+          apikey: svcKey,
+          Authorization: `Bearer ${svcKey}`,
+        },
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    const row = rows[0];
+    if (row.is_banned === true) return null;
+    const role = String(row.role || 'user');
+    if (!ADMIN_ROLES.has(role)) return null;
+    return {
+      userId: row.id,
+      username,
+      role,
+      isAdmin: ADMIN_ROLES.has(role),
+      isHighPrivilege: HIGH_PRIVILEGE.has(role),
+      isRootAdmin: SUPER_PRIVILEGE.has(role),
+    };
+  } catch (e) {
+    console.error('verifyAdminCaller error:', e);
+    return null;
+  }
+}
+
+/** Convenience: 403 wenn nicht-admin, sonst null. */
+async function requireAdmin(request, env, { needHighPrivilege = false, needRootAdmin = false } = {}) {
+  const caller = await verifyAdminCaller(request, env);
+  if (!caller) {
+    return {
+      caller: null,
+      response: errorResponse('Admin-Auth erforderlich (X-Admin-Username + X-Admin-Token Header)', 403, 'admin_auth_required'),
+    };
+  }
+  if (needRootAdmin && !caller.isRootAdmin) {
+    return {
+      caller,
+      response: errorResponse('Root-Admin erforderlich', 403, 'root_admin_required'),
+    };
+  }
+  if (needHighPrivilege && !caller.isHighPrivilege) {
+    return {
+      caller,
+      response: errorResponse('Admin oder Root-Admin erforderlich', 403, 'high_privilege_required'),
+    };
+  }
+  return { caller, response: null };
+}
+
+
 const DE_WORDS = /\b(und|der|die|das|ist|von|auf|zu|für|nicht|mit|einen|einem|eine|des|den|wird|wurde|sind|hat|haben|kann|dass|als|aber|auch|nach|bei|über|durch|im|am|es|er|sie|wir|ihr|was|wie|wenn|dann|noch|nur|alle|sehr|mehr|so|da|hier|jetzt|schon|ihm|ihn|dem|diesem|seiner|ihrer|eines|welche|andere|andere)\b/i;
 
 async function translateToDe(text) {
@@ -549,10 +677,33 @@ async function dispatchPushQueue(env, pushAuth) {
   const list = Array.isArray(rows) ? rows : [];
   if (list.length === 0) return { drained: 0, sent: 0, failed: 0, fcmEnabled: true };
 
-  // 3. Für jede Queue-Zeile: FCM-Tokens des Users laden und senden
+  // 3. Für jede Queue-Zeile: FCM-Tokens des Users laden und senden.
+  //
+  // AUDIT-FIX A7: Race-Condition geschlossen. Vorher konnte ein zweiter
+  // gleichzeitig laufender Cron-Job dieselben pending-Rows lesen und den
+  // gleichen Push 2x zustellen. Jetzt: atomarer Claim per
+  // PATCH ?id=eq.<id>&status=eq.pending -- PostgREST uebersetzt das in
+  // UPDATE ... WHERE id=X AND status='pending', was zeilenweise atomar ist.
+  // Wenn die Row schon von einem anderen Cron auf 'processing' geschoben
+  // wurde, gibt PATCH ein leeres Array zurueck -> wir skippen.
   let sent = 0;
   let failed = 0;
   for (const row of list) {
+    // Atomarer Claim: setze pending -> processing nur wenn noch pending.
+    const claimRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/notification_queue?id=eq.${row.id}&status=eq.pending`,
+      {
+        method: 'PATCH',
+        headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+        body: JSON.stringify({ status: 'processing' }),
+      }
+    );
+    const claimed = claimRes.ok ? await claimRes.json().catch(() => []) : [];
+    if (!Array.isArray(claimed) || claimed.length === 0) {
+      // Row wurde bereits von einem parallelen Cron geclaimt -- skip.
+      continue;
+    }
+
     let deliveryOk = false;
     // v96 KRITISCH-FIX: lese aus user_devices (v91), NICHT push_subscriptions
     // (v13). Die App registriert nur in user_devices -- der alte
@@ -561,6 +712,49 @@ async function dispatchPushQueue(env, pushAuth) {
     // user_devices.legacy_user_id matched InvisibleAuth-IDs.
     const lookupColumn = row.user_id ? 'profile_id' : 'legacy_user_id';
     const lookupValue = row.user_id || row.legacy_user_id || '';
+
+    // AUDIT-FIX B7: User-Push-Preferences respektieren. Wenn der User den
+    // Typ (z.B. 'admin_broadcast', 'mention', 'achievement') opt-out hat,
+    // wird der Push uebersprungen aber als 'sent' markiert (kein Retry).
+    // Default = alles enabled wenn keine Row existiert.
+    const pushType = (row.data && (row.data.type || row.data.kind)) || 'generic';
+    let prefAllow = true;
+    let dndActive = false;
+    try {
+      const prefRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/user_push_preferences?${lookupColumn === 'profile_id' ? 'user_id' : 'legacy_user_id'}=eq.${encodeURIComponent(lookupValue)}&select=disabled_types,dnd_until&limit=1`,
+        { headers: pushAuth }
+      );
+      if (prefRes.ok) {
+        const prefRows = await prefRes.json().catch(() => []);
+        const pref = Array.isArray(prefRows) ? prefRows[0] : null;
+        if (pref) {
+          const disabled = Array.isArray(pref.disabled_types) ? pref.disabled_types : [];
+          if (disabled.includes(pushType)) prefAllow = false;
+          if (pref.dnd_until && new Date(pref.dnd_until) > new Date()) dndActive = true;
+        }
+      }
+    } catch (_) { /* best-effort */ }
+
+    if (!prefAllow || dndActive) {
+      console.log(`push skip pref/dnd: type=${pushType} user=${lookupValue}`);
+      // Markiere als 'sent' (kein Retry) und gehe zur naechsten Row.
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/notification_queue?id=eq.${row.id}`,
+        {
+          method: 'PATCH',
+          headers: { ...pushAuth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'sent',
+            processed_at: new Date().toISOString(),
+            attempts: (row.attempts || 0) + 1,
+          }),
+        }
+      );
+      sent++;
+      continue;
+    }
+
     const subsRes = await fetch(
       `${SUPABASE_URL}/rest/v1/user_devices?${lookupColumn}=eq.${encodeURIComponent(lookupValue)}&fcm_token=not.is.null&select=fcm_token`,
       { headers: pushAuth }
@@ -569,13 +763,17 @@ async function dispatchPushQueue(env, pushAuth) {
     const tokens = (Array.isArray(subs) ? subs : [])
         .map(s => s.fcm_token).filter(Boolean);
 
+    // AUDIT-FIX C9: FCM-Limits einhalten -- Title 150, Body 240 Zeichen.
+    const trimmedTitle = String(row.title || '').slice(0, 150);
+    const trimmedBody = String(row.body || '').slice(0, 240);
+
     if (tokens.length === 0) {
       // Kein FCM-Token für diesen User → als 'sent' markieren (kein Gerät registriert)
       console.warn(`push skip: ${lookupColumn}=${lookupValue} hat kein aktives fcm_token`);
     } else {
       for (const token of tokens) {
         try {
-          const r = await sendFcmMessage(fcm.accessToken, fcm.projectId, token, row.title, row.body, row.data || {});
+          const r = await sendFcmMessage(fcm.accessToken, fcm.projectId, token, trimmedTitle, trimmedBody, row.data || {});
           if (r.ok) {
             deliveryOk = true;
             console.log(`FCM ok: ${lookupColumn}=${lookupValue}`);
@@ -762,7 +960,7 @@ export default {
     // Aufruf: POST /admin/migrate-v15 {"token": "mig15-wb-2026"}
     if (path === '/admin/migrate-v15' && method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      if (body.token !== 'mig15-wb-2026') return jsonResponse({ error: 'Forbidden' }, 403);
+      if ((!env.MIGRATION_TOKEN_V15 || body.token !== env.MIGRATION_TOKEN_V15)) return jsonResponse({ error: 'Forbidden' }, 403);
       const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
       const results = [];
       
@@ -804,7 +1002,7 @@ export default {
     // ── Migration v13 (einmalig, Token-gesichert) ─────────────
     if (path === '/admin/migrate-v13' && method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      if (body.token !== 'mig13-wb-2026') return jsonResponse({ error: 'Forbidden' }, 403);
+      if ((!env.MIGRATION_TOKEN_V13 || body.token !== env.MIGRATION_TOKEN_V13)) return jsonResponse({ error: 'Forbidden' }, 403);
       const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
       const results = [];
       const statements = [
@@ -838,7 +1036,7 @@ export default {
     // Aufruf: POST /admin/migrate-v14 mit {"token": "mig14-wb-2026"}
     if (path === '/admin/migrate-v14' && method === 'POST') {
       const body = await request.json().catch(() => ({}));
-      if (body.token !== 'mig14-wb-2026') return jsonResponse({ error: 'Forbidden' }, 403);
+      if ((!env.MIGRATION_TOKEN_V14 || body.token !== env.MIGRATION_TOKEN_V14)) return jsonResponse({ error: 'Forbidden' }, 403);
       const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
       
       // WICHTIG: Supabase Management API zum Erstellen von SQL-Funktionen
@@ -1973,6 +2171,26 @@ export default {
         }
       }
 
+      // AUDIT-FIX A4: Admin-Push-Endpoints (send-to-user, send-to-topic,
+      // broadcast, schedule, test-suite) brauchen Admin-Auth. Vorher konnte
+      // jeder mit Worker-URL Massen-Pushes verschicken.
+      //
+      // Subscribe/Unsubscribe/Register/Token-Update bleiben offen
+      // (user-initiated, FCM-Token-Sync).
+      const isAdminPushPath =
+        path.endsWith('/test-suite') ||
+        path.endsWith('/schedule') ||
+        path.endsWith('/send-to-user') ||
+        path.endsWith('/send-to-topic') ||
+        (path.endsWith('/broadcast') && !path.includes('/admin/'));
+
+      let pushCaller = null;
+      if (isAdminPushPath) {
+        const check = await requireAdmin(request, env);
+        if (check.response) return check.response;
+        pushCaller = check.caller;
+      }
+
       // POST /api/push/test-suite → sendet alle 18 Test-Push-Notifications
       // serverseitig nacheinander (1s Abstand). App muss NICHT offen sein --
       // der Worker drained jeden Push sofort via FCM, sobald er in der
@@ -2284,15 +2502,21 @@ export default {
       }
 
       // POST /api/push/broadcast
-      // Body: { title, body, admin, data }
+      // Body: { title, body, data }   -- admin field IGNORED (vom Auth-Header)
       // Sends to ALL active subscribers. Logs admin_audit_log.
       if (method === 'POST' && path.endsWith('/broadcast') && !path.includes('/admin/')) {
         if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+        // AUDIT-FIX A4 + B1: Caller-Identitaet aus verifiziertem Header,
+        // NICHT aus body.admin (client-controllable). High-Privilege fuer
+        // Broadcast (alle User) -- nur admin/root_admin, keine Moderators.
+        if (!pushCaller || !pushCaller.isHighPrivilege) {
+          return errorResponse('Broadcast erfordert Admin oder Root-Admin', 403);
+        }
         try {
           const title = (body?.title || '').toString().trim();
           const msgBody = (body?.body || '').toString().trim();
           const data = body?.data || {};
-          const adminUsername = (body?.admin || 'system').toString().slice(0, 80);
+          const adminUsername = pushCaller.username;
           if (!title || !msgBody) {
             return errorResponse('title, body required', 400);
           }
@@ -2328,16 +2552,18 @@ export default {
             const txt = await insRes.text().catch(() => '');
             return errorResponse(`Enqueue ${insRes.status}: ${txt.slice(0, 200)}`);
           }
-          // Audit log (best-effort).
+          // Audit log (best-effort). AUDIT-FIX B1: echte actor_id aus
+          // verifiziertem Caller-Profile.
           fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
             method: 'POST',
             headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
             body: JSON.stringify({
-              actor_id: '00000000-0000-0000-0000-000000000000',
+              actor_id: pushCaller.userId,
+              admin_username: adminUsername,
               action: 'push_broadcast',
               target_type: 'all',
               target_id: 'all',
-              payload: { title, body: msgBody, admin: adminUsername, recipients: userIds.length },
+              payload: { title, body: msgBody, recipients: userIds.length },
             }),
           }).catch(() => {});
           try { await dispatchPushQueue(env, pushAuth); } catch (_) {}
@@ -3124,6 +3350,20 @@ export default {
 
     // ── Admin Benutzer-Aktionen ───────────────────────────────
     if (path.startsWith('/api/admin/')) {
+      // AUDIT-FIX A1: Auth-Bypass geschlossen. Jeder /api/admin/*-Call muss
+      // X-Admin-Username + X-Admin-Token mitschicken, der HMAC wird vom
+      // Worker gegen env.ADMIN_AUTH_SECRET verifiziert UND die Rolle wird
+      // live aus profiles.role gelesen (kein Token-Trust). Bei Demotion
+      // wirkt der Entzug sofort beim naechsten Request.
+      //
+      // Ausnahmen (oeffentliche admin-readonly Endpoints):
+      //   /api/admin/audit/recent  -- Mod-Audit-Read, separater Gate unten
+      //   /api/admin/dashboard     -- nur Stats, separater Gate unten
+      // Diese fragen weiter unten explizit nochmal nach.
+      const callerCheck = await requireAdmin(request, env);
+      if (callerCheck.response) return callerCheck.response;
+      const caller = callerCheck.caller;
+
       const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
       const svcHeaders = {
         'Content-Type': 'application/json',
@@ -3581,7 +3821,7 @@ export default {
           const body = await request.json().catch(() => ({}));
           const newStatus = String(body.status || '').trim();
           const note = body.resolution_note ? String(body.resolution_note).slice(0, 500) : null;
-          const reviewer = String(body.admin || 'admin').slice(0, 80);
+          const reviewer = caller.username; // AUDIT-FIX B1: aus verifiziertem Header
           if (!['open','reviewing','resolved','dismissed'].includes(newStatus)) {
             return errorResponse('status invalid', 400);
           }
@@ -3641,7 +3881,7 @@ export default {
           if (Object.keys(patch).length === 0) {
             return errorResponse('Keine editierbaren Felder gefunden', 400);
           }
-          const reviewer = String(body.admin || 'admin').slice(0, 80);
+          const reviewer = caller.username; // AUDIT-FIX B1: aus verifiziertem Header
           const r = await fetch(
             `${SUPABASE_URL}/rest/v1/${tableName}?module_code=eq.${encodeURIComponent(moduleCode)}`,
             {
@@ -3873,8 +4113,11 @@ export default {
 
       // ── POST /api/admin/promote/:world/:userId ──────────────
       // Body kann { role: 'admin'|'root_admin'|'moderator'|'content_editor' }
-      // enthalten. Default 'admin'. Bisher wurde der Body komplett ignoriert
-      // -- Root-Admin-Promote ging nie durch.
+      // enthalten. Default 'admin'.
+      //
+      // AUDIT-FIX A2: Privilege-Hierarchie. Nur Root-Admin darf zu Root-
+      // Admin oder Admin promoten. Moderator darf hoechstens content_editor
+      // oder moderator promoten. Verhindert Self-Escalation.
       if (method === 'POST' && path.includes('/promote')) {
         try {
           const parts = path.split('/');
@@ -3883,6 +4126,27 @@ export default {
           try { body = await request.clone().json(); } catch (_) {}
           const allowed = ['user','moderator','content_editor','admin','root_admin'];
           const targetRole = allowed.includes(body.role) ? body.role : 'admin';
+
+          // Hierarchy-Guard: caller.role muss > targetRole sein.
+          // root_admin > admin > moderator/content_editor > user
+          const callerLevel = caller.isRootAdmin ? 3 :
+                              caller.role === 'admin' ? 2 :
+                              (caller.role === 'moderator' || caller.role === 'content_editor') ? 1 : 0;
+          const targetLevel = targetRole === 'root_admin' ? 3 :
+                              targetRole === 'admin' ? 2 :
+                              (targetRole === 'moderator' || targetRole === 'content_editor') ? 1 : 0;
+          if (targetLevel >= callerLevel) {
+            return errorResponse(
+              `Promote zu '${targetRole}' erfordert hoehere Rolle als '${caller.role}'`,
+              403, 'insufficient_privilege'
+            );
+          }
+
+          // AUDIT-FIX B5: Selbst-Promote/Selbst-Demote blockieren
+          if (String(userId) === String(caller.userId)) {
+            return errorResponse('Selbst-Promotion ist nicht erlaubt', 403);
+          }
+
           const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
             method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' },
             body: JSON.stringify({ role: targetRole }),
@@ -3896,6 +4160,19 @@ export default {
             await pushNotif(userId, 'system', `🌟 Neue Rolle: ${friendly}`,
               `Ein Administrator hat dich zu ${friendly} befördert.`,
               { type: 'promoted', new_role: targetRole });
+            // AUDIT-FIX B1: Audit-Log mit echter actor_id
+            fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                actor_id: caller.userId,
+                admin_username: caller.username,
+                action: 'role_promote',
+                target_type: 'user',
+                target_id: userId,
+                payload: { new_role: targetRole, caller_role: caller.role },
+              }),
+            }).catch(() => {});
           }
           return jsonResponse({
             success: res.ok,
@@ -3907,6 +4184,8 @@ export default {
 
       // ── POST /api/admin/demote/:world/:userId ───────────────
       // Body kann { role: 'user'|'moderator'|... } enthalten. Default 'user'.
+      // AUDIT-FIX A2: Hierarchy-Guard. Niemand darf jemanden auf hoeheres
+      // oder gleiches Level demoten als er selbst hat.
       if (method === 'POST' && path.includes('/demote')) {
         try {
           const parts = path.split('/');
@@ -3915,6 +4194,30 @@ export default {
           try { body = await request.clone().json(); } catch (_) {}
           const allowed = ['user','moderator','content_editor','admin'];
           const targetRole = allowed.includes(body.role) ? body.role : 'user';
+
+          // Hole aktuelle Rolle des Ziels -- nur jemand mit strikt hoeherer
+          // Rolle als das Ziel-Aktuelle darf demoten.
+          const tgtRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=role&limit=1`,
+            { headers: svcHeaders }
+          );
+          const tgtRows = tgtRes.ok ? await tgtRes.json().catch(() => []) : [];
+          const currentTargetRole = (tgtRows[0]?.role) || 'user';
+          const callerLevel = caller.isRootAdmin ? 3 :
+                              caller.role === 'admin' ? 2 :
+                              (caller.role === 'moderator' || caller.role === 'content_editor') ? 1 : 0;
+          const targetCurrentLevel = currentTargetRole === 'root_admin' ? 3 :
+                              currentTargetRole === 'admin' ? 2 :
+                              (currentTargetRole === 'moderator' || currentTargetRole === 'content_editor') ? 1 : 0;
+          if (targetCurrentLevel >= callerLevel) {
+            return errorResponse(
+              `Demote eines '${currentTargetRole}' erfordert hoehere Rolle als '${caller.role}'`,
+              403, 'insufficient_privilege'
+            );
+          }
+          if (String(userId) === String(caller.userId)) {
+            return errorResponse('Selbst-Demote ist nicht erlaubt', 403);
+          }
           const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
             method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' },
             body: JSON.stringify({ role: targetRole }),
@@ -3973,7 +4276,8 @@ export default {
               method: 'POST',
               headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
               body: JSON.stringify({
-                actor_id: '00000000-0000-0000-0000-000000000000',
+                actor_id: caller.userId,
+                admin_username: caller.username,
                 action: 'user_hard_delete',
                 target_type: 'profile',
                 target_id: userId,
@@ -4116,6 +4420,39 @@ export default {
         try {
           const userId = path.split('/')[4];
           if (!userId) return errorResponse('userId fehlt', 400);
+
+          // AUDIT-FIX B5: Self-Ban-Guard
+          if (String(userId) === String(caller.userId)) {
+            return errorResponse('Selbst-Ban ist nicht erlaubt', 403);
+          }
+
+          // AUDIT-FIX A2: Hierarchie -- niemand kann jemanden mit hoeherer
+          // oder gleicher Rolle bannen.
+          const tgtRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role,username,is_banned&limit=1`,
+            { headers: svcHeaders }
+          );
+          const tgtRows = tgtRes.ok ? await tgtRes.json().catch(() => []) : [];
+          if (tgtRows.length === 0) return errorResponse('User nicht gefunden', 404);
+          const targetCurrentRole = tgtRows[0]?.role || 'user';
+          const callerLevel = caller.isRootAdmin ? 3 :
+                              caller.role === 'admin' ? 2 :
+                              (caller.role === 'moderator' || caller.role === 'content_editor') ? 1 : 0;
+          const targetLevel = targetCurrentRole === 'root_admin' ? 3 :
+                              targetCurrentRole === 'admin' ? 2 :
+                              (targetCurrentRole === 'moderator' || targetCurrentRole === 'content_editor') ? 1 : 0;
+          if (targetLevel >= callerLevel) {
+            return errorResponse(
+              `Kann '${targetCurrentRole}' nicht bannen (deine Rolle: '${caller.role}')`,
+              403, 'insufficient_privilege'
+            );
+          }
+
+          // AUDIT-FIX B4: Idempotenz -- wenn schon gebannt, nichts tun
+          if (tgtRows[0]?.is_banned === true) {
+            return jsonResponse({ success: true, action: 'already_banned', user_id: userId });
+          }
+
           const res = await fetch(
             `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
             {
@@ -4132,17 +4469,38 @@ export default {
           if (!Array.isArray(updated) || updated.length === 0) {
             return errorResponse('User nicht gefunden', 404);
           }
-          // Best-effort Push-Notif + Audit-Log.
+
+          // AUDIT-FIX A6: Spiegel-Eintrag in admin_bans (v103-Tabelle) damit
+          // Client-App und Worker dasselbe Ban-System nutzen. Best-effort.
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const reason = String(body?.reason || 'Admin-Ban').slice(0, 500);
+          const expiresAt = body?.expires_at || null;
+          fetch(`${SUPABASE_URL}/rest/v1/admin_bans`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+            body: JSON.stringify({
+              user_id: userId,
+              banned_by: caller.userId,
+              reason,
+              expires_at: expiresAt,
+              created_at: new Date().toISOString(),
+            }),
+          }).catch(() => {});
+
           await pushNotif(userId, 'system', '🚫 Konto gesperrt',
-            'Dein Konto wurde von einem Administrator gesperrt.',
-            { type: 'banned' });
+            `Dein Konto wurde gesperrt. Grund: ${reason}`,
+            { type: 'banned', reason });
+
+          // AUDIT-FIX B1: Audit-Log mit echter actor_id + admin_username
           fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
             method: 'POST',
             headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
             body: JSON.stringify({
-              actor_id: '00000000-0000-0000-0000-000000000000',
+              actor_id: caller.userId,
+              admin_username: caller.username,
               action: 'ban', target_type: 'profile', target_id: userId,
-              payload: { username: updated[0]?.username || null },
+              payload: { username: updated[0]?.username || null, reason, expires_at: expiresAt },
             }),
           }).catch(() => {});
           return jsonResponse({ success: true, action: 'banned', user_id: userId });
@@ -4170,6 +4528,13 @@ export default {
           if (!Array.isArray(updated) || updated.length === 0) {
             return errorResponse('User nicht gefunden', 404);
           }
+
+          // AUDIT-FIX A6: Ban auch in admin_bans entfernen.
+          fetch(`${SUPABASE_URL}/rest/v1/admin_bans?user_id=eq.${encodeURIComponent(userId)}`, {
+            method: 'DELETE',
+            headers: svcHeaders,
+          }).catch(() => {});
+
           await pushNotif(userId, 'system', '✅ Sperre aufgehoben',
             'Deine Kontosperre wurde von einem Administrator aufgehoben.',
             { type: 'unbanned' });
@@ -4177,7 +4542,8 @@ export default {
             method: 'POST',
             headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
             body: JSON.stringify({
-              actor_id: '00000000-0000-0000-0000-000000000000',
+              actor_id: caller.userId,
+              admin_username: caller.username,
               action: 'unban', target_type: 'profile', target_id: userId,
               payload: { username: updated[0]?.username || null },
             }),
@@ -4187,13 +4553,78 @@ export default {
       }
 
       // ── POST /api/admin/users/:userId/mute ──────────────────
+      // AUDIT-FIX B2: war ein No-Op-Stub (return success). Jetzt persistent
+      // in admin_mutes via v106-Migration. Body: { reason?, duration_h? }
       if (method === 'POST' && path.includes('/mute') && !path.includes('/unmute')) {
-        return jsonResponse({ success: true, action: 'muted' });
+        try {
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          if (String(userId) === String(caller.userId)) {
+            return errorResponse('Selbst-Mute ist nicht erlaubt', 403);
+          }
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const reason = String(body?.reason || 'Chat-Mute').slice(0, 500);
+          const durationH = Math.max(1, Math.min(8760, Number(body?.duration_h) || 24));
+          const expiresAt = new Date(Date.now() + durationH * 3600 * 1000).toISOString();
+
+          fetch(`${SUPABASE_URL}/rest/v1/admin_mutes`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+            body: JSON.stringify({
+              user_id: userId,
+              muted_by: caller.userId,
+              reason,
+              expires_at: expiresAt,
+              created_at: new Date().toISOString(),
+            }),
+          }).catch(() => {});
+
+          await pushNotif(userId, 'system', '🔇 Stummgeschaltet',
+            `Du wurdest fuer ${durationH}h stummgeschaltet. Grund: ${reason}`,
+            { type: 'muted', reason, expires_at: expiresAt });
+
+          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              actor_id: caller.userId,
+              admin_username: caller.username,
+              action: 'mute', target_type: 'profile', target_id: userId,
+              payload: { reason, duration_h: durationH, expires_at: expiresAt },
+            }),
+          }).catch(() => {});
+
+          return jsonResponse({ success: true, action: 'muted', user_id: userId, expires_at: expiresAt });
+        } catch (e) { return errorResponse(`Mute-Fehler: ${e.message}`); }
       }
 
       // ── POST /api/admin/users/:userId/unmute ────────────────
       if (method === 'POST' && path.includes('/unmute')) {
-        return jsonResponse({ success: true, action: 'unmuted' });
+        try {
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          fetch(`${SUPABASE_URL}/rest/v1/admin_mutes?user_id=eq.${encodeURIComponent(userId)}`, {
+            method: 'DELETE',
+            headers: svcHeaders,
+          }).catch(() => {});
+
+          await pushNotif(userId, 'system', '🔊 Stummschaltung aufgehoben',
+            'Du kannst wieder im Chat schreiben.',
+            { type: 'unmuted' });
+
+          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              actor_id: caller.userId,
+              admin_username: caller.username,
+              action: 'unmute', target_type: 'profile', target_id: userId,
+            }),
+          }).catch(() => {});
+
+          return jsonResponse({ success: true, action: 'unmuted', user_id: userId });
+        } catch (e) { return errorResponse(`Unmute-Fehler: ${e.message}`); }
       }
 
       // ── POST /api/admin/users/:userId/xp  (Admin vergibt XP manuell) ──
@@ -4212,7 +4643,7 @@ export default {
           }
           const amount = Math.max(-10000, Math.min(10000, Math.trunc(amountRaw)));
           const reason = String(body.reason || 'admin_grant').slice(0, 200);
-          const adminUsername = String(body.admin || 'unknown').slice(0, 80);
+          const adminUsername = caller.username; // AUDIT-FIX B1: aus verifiziertem Header
 
           // Versuch 1: RPC add_user_xp (atomares Increment).
           let newXp = null;
@@ -4317,7 +4748,7 @@ export default {
           const reqId = path.split('/')[4];
           const decision = path.endsWith('/approve') ? 'approved' : 'rejected';
           const body = await request.json().catch(() => ({}));
-          const adminUsername = String(body.admin || 'unknown').slice(0, 80);
+          const adminUsername = caller.username; // AUDIT-FIX B1: aus verifiziertem Header
           const note = String(body.note || '').slice(0, 500);
 
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
@@ -4412,7 +4843,23 @@ export default {
               `role muss einer von ${allowedRoles.join(', ')} sein`, 400
             );
           }
-          const adminUsername = String(body.admin || 'unknown').slice(0, 80);
+          // AUDIT-FIX A2 + B5: Hierarchie + Selbst-Aenderung-Block
+          if (String(userId) === String(caller.userId)) {
+            return errorResponse('Selbst-Rollenaenderung ist nicht erlaubt', 403);
+          }
+          const callerLevel = caller.isRootAdmin ? 3 :
+                              caller.role === 'admin' ? 2 :
+                              (caller.role === 'moderator' || caller.role === 'content_editor') ? 1 : 0;
+          const targetLevel = newRole === 'root_admin' ? 3 :
+                              newRole === 'admin' ? 2 :
+                              (newRole === 'moderator' || newRole === 'content_editor') ? 1 : 0;
+          if (targetLevel >= callerLevel) {
+            return errorResponse(
+              `Rolle '${newRole}' erfordert hoehere Caller-Rolle als '${caller.role}'`,
+              403, 'insufficient_privilege'
+            );
+          }
+          const adminUsername = caller.username;
 
           // PATCH profiles via Service-Role
           const patchRes = await fetch(
@@ -4451,13 +4898,13 @@ export default {
                 'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
               },
               body: JSON.stringify({
-                actor_id: '00000000-0000-0000-0000-000000000000',
+                actor_id: caller.userId,
+                admin_username: caller.username,
                 action: 'role_change_explicit',
                 target_type: 'profile',
                 target_id: userId,
                 payload: {
                   new_role: newRole,
-                  changed_by_admin: adminUsername,
                   source: 'api/admin/users/role',
                 },
               }),
