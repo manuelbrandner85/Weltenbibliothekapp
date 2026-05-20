@@ -3178,7 +3178,9 @@ class _UserTile extends StatelessWidget {
                       color: accent.withValues(alpha: 0.7), fontSize: 11)),
               if (user.world != null)
                 _MiniPill(
-                  label: user.world == 'materie' ? 'M' : 'E',
+                  // AUDIT-FIX C7: Symbol + Buchstabe statt nur color/letter
+                  // damit Farbenblinde die Welt erkennen.
+                  label: user.world == 'materie' ? '🌍 M' : '✨ E',
                   color: user.world == 'materie' ? Colors.orange : Colors.teal,
                   tooltip:
                       user.world == 'materie' ? 'Materie-Welt' : 'Energie-Welt',

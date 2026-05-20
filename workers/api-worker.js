@@ -189,6 +189,59 @@ async function verifyAdminCaller(request, env) {
   }
 }
 
+/**
+ * AUDIT-FIX B14: Rate-Limiter fuer Admin-Mutationen.
+ *
+ * Schreibt einen Counter pro (admin_id, action, minute-bucket) in
+ * admin_rate_limits. Bei Ueberschreitung wird der Aufruf mit 429
+ * abgewiesen. Standard-Limit: 30 Mutationen pro Minute pro Admin
+ * (genug fuer normale Bedienung, blockiert Massenbans-Spam).
+ *
+ * Best-effort: Bei Supabase-Fehler wird das Limit ignoriert (kein
+ * Fail-Closed, weil sonst legitime Admin-Aktionen gestoppt waeren).
+ */
+async function checkAdminRateLimit(env, adminId, action, { perMinute = 30 } = {}) {
+  try {
+    const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+    if (!svcKey || !adminId) return { ok: true };
+    const bucket = new Date();
+    bucket.setSeconds(0, 0);
+    const bucketIso = bucket.toISOString();
+
+    // Read current count
+    const readRes = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/admin_rate_limits?admin_id=eq.${adminId}&action=eq.${encodeURIComponent(action)}&bucket_minute=eq.${encodeURIComponent(bucketIso)}&select=count&limit=1`,
+      { headers: { apikey: svcKey, Authorization: `Bearer ${svcKey}` } }
+    );
+    const rows = readRes.ok ? await readRes.json().catch(() => []) : [];
+    const currentCount = (rows[0]?.count) || 0;
+    if (currentCount >= perMinute) {
+      return { ok: false, count: currentCount, limit: perMinute };
+    }
+
+    // Upsert (increment)
+    fetch(`${env.SUPABASE_URL}/rest/v1/admin_rate_limits`, {
+      method: 'POST',
+      headers: {
+        apikey: svcKey,
+        Authorization: `Bearer ${svcKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        admin_id: adminId,
+        action,
+        bucket_minute: bucketIso,
+        count: currentCount + 1,
+      }),
+    }).catch(() => {});
+
+    return { ok: true, count: currentCount + 1 };
+  } catch (_) {
+    return { ok: true }; // fail-open on infra error
+  }
+}
+
 /** Convenience: 403 wenn nicht-admin, sonst null. */
 async function requireAdmin(request, env, { needHighPrivilege = false, needRootAdmin = false } = {}) {
   const caller = await verifyAdminCaller(request, env);
@@ -4420,6 +4473,16 @@ export default {
         try {
           const userId = path.split('/')[4];
           if (!userId) return errorResponse('userId fehlt', 400);
+
+          // AUDIT-FIX B14: Rate-Limit -- 30 Bans/min/Admin reicht fuer
+          // legitime Bedienung, blockiert Spray-Ban-Attacken.
+          const rl = await checkAdminRateLimit(env, caller.userId, 'ban', { perMinute: 30 });
+          if (!rl.ok) {
+            return errorResponse(
+              `Rate-Limit erreicht (${rl.count}/${rl.limit} Bans pro Minute). Bitte warte eine Minute.`,
+              429, 'rate_limited'
+            );
+          }
 
           // AUDIT-FIX B5: Self-Ban-Guard
           if (String(userId) === String(caller.userId)) {
