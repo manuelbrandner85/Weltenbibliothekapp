@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'admin_auth_service.dart';
+
 /// Cloudflare-basierte Push-Benachrichtigungen
 /// Ersetzt Firebase Cloud Messaging
 class CloudflarePushService {
@@ -187,10 +189,14 @@ class CloudflarePushService {
     if (_userId == null) await initialize();
 
     try {
+      final adminHeaders = await AdminAuthService.instance.headers();
       await http
           .post(
         Uri.parse('$baseUrl/api/push/schedule'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          ...adminHeaders,
+        },
         body: json.encode({
           'user_id': _userId,
           'title': title,

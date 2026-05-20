@@ -58,6 +58,7 @@ import 'services/supabase_service.dart'; // 🟢 SUPABASE: Auth + Chat + Communi
 import 'services/profile_migration_service.dart'; // 👻 GHOST-USER-MIGRATION (v103)
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
 import 'services/cloudflare_push_service.dart'; // 🧪 v103 Push-Test-Suite
+import 'services/admin_auth_service.dart';
 import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (FCM + in-app)
 import 'config/api_config.dart'; // 🌐 Worker URL fuer Push-Test
 import 'package:shared_preferences/shared_preferences.dart'; // 🧪 v103 Test-Flag
@@ -569,10 +570,14 @@ Future<void> _triggerPushTestSuiteOnce() async {
     debugPrint(
         '🧪 App kann jetzt geschlossen werden — Worker sendet eigenständig!');
 
+    final adminHeaders = await AdminAuthService.instance.headers();
     final response = await http
         .post(
           Uri.parse('${ApiConfig.workerUrl}/api/push/test-suite'),
-          headers: const {'Content-Type': 'application/json'},
+          headers: {
+            'Content-Type': 'application/json',
+            ...adminHeaders,
+          },
           body: jsonEncode({'user_id': userId}),
         )
         .timeout(const Duration(seconds: 60));

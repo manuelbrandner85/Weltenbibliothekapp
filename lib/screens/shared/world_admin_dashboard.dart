@@ -13,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
 import '../../config/api_config.dart';
 import '../../core/constants/roles.dart';
 import '../../features/admin/state/admin_state.dart';
+import '../../services/admin_auth_service.dart';
 import '../../services/activity_heatmap_service.dart'; // 🔥 M2
 import '../../services/cloudflare_api_service.dart';
 import '../../services/health_check_service.dart';
@@ -4558,8 +4559,11 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
       _error = null;
     });
     try {
+      // AUDIT-FIX (Bug-Sweep 2): Admin-Auth-Header anhaengen.
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'))
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'),
+              headers: headers)
           .timeout(const Duration(seconds: 12));
       if (res.statusCode == 200 && mounted) {
         setState(() {
@@ -4568,7 +4572,7 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
         });
       } else if (mounted) {
         setState(() {
-          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+          _error = 'HTTP ${res.statusCode}: ${res.body.length > 120 ? res.body.substring(0, 120) : res.body}';
           _loading = false;
         });
       }
@@ -4585,9 +4589,12 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
   Future<void> _openEditor(String moduleType, String moduleCode) async {
     // Volles Modul vom Worker laden
     try {
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
-          .get(Uri.parse(
-              '${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'))
+          .get(
+              Uri.parse(
+                  '${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'),
+              headers: headers)
           .timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -4745,12 +4752,15 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                             if (f != null) payload['audio_frequency_hz'] = f;
 
                             try {
+                              final adminHeaders =
+                                  await AdminAuthService.instance.headers();
                               final res = await http
                                   .patch(
                                     Uri.parse(
                                         '${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'),
-                                    headers: const {
-                                      'Content-Type': 'application/json'
+                                    headers: {
+                                      'Content-Type': 'application/json',
+                                      ...adminHeaders,
                                     },
                                     body: jsonEncode(payload),
                                   )
@@ -4768,7 +4778,7 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                                 setSheet(() => saving = false);
                                 ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
                                   content: Text(
-                                      '❌ HTTP ${res.statusCode}: ${res.body.substring(0, 100)}'),
+                                      '❌ HTTP ${res.statusCode}: ${res.body.length > 100 ? res.body.substring(0, 100) : res.body}'),
                                   backgroundColor: Colors.redAccent,
                                 ));
                               }
@@ -5103,9 +5113,12 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
       _error = null;
     });
     try {
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
-          .get(Uri.parse(
-              '${ApiConfig.workerUrl}/api/admin/spirit-stats?days=$_days'))
+          .get(
+              Uri.parse(
+                  '${ApiConfig.workerUrl}/api/admin/spirit-stats?days=$_days'),
+              headers: headers)
           .timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
         if (mounted) {
@@ -5117,7 +5130,7 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
       } else {
         if (mounted) {
           setState(() {
-            _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+            _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
             _loading = false;
           });
         }
@@ -5463,8 +5476,10 @@ class _ModuleProgressTabState extends State<_ModuleProgressTab>
       _error = null;
     });
     try {
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
-          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'))
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'),
+              headers: headers)
           .timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
         if (mounted) {
@@ -5476,7 +5491,7 @@ class _ModuleProgressTabState extends State<_ModuleProgressTab>
       } else {
         if (mounted) {
           setState(() {
-            _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+            _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
             _loading = false;
           });
         }
@@ -5850,9 +5865,11 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
   Future<void> _loadHistory() async {
     setState(() => _loadingHistory = true);
     try {
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
           .get(
             Uri.parse('${ApiConfig.workerUrl}/api/admin/push/history'),
+            headers: headers,
           )
           .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
@@ -5880,10 +5897,14 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
     }
     setState(() => _sending = true);
     try {
+      final adminHeaders = await AdminAuthService.instance.headers();
       final res = await http
           .post(
             Uri.parse('${ApiConfig.workerUrl}/api/admin/push/broadcast'),
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              ...adminHeaders,
+            },
             body: jsonEncode({
               'target': _target,
               'title': _title.text.trim(),
@@ -6190,9 +6211,12 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
 
   Future<void> _loadReportsCount() async {
     try {
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
-          .get(Uri.parse(
-              '${ApiConfig.workerUrl}/api/admin/reports?status=open&limit=1'))
+          .get(
+              Uri.parse(
+                  '${ApiConfig.workerUrl}/api/admin/reports?status=open&limit=1'),
+              headers: headers)
           .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -6205,9 +6229,12 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
 
   Future<void> _loadUsernameRequestsCount() async {
     try {
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
-          .get(Uri.parse(
-              '${ApiConfig.workerUrl}/api/admin/username-change-requests'))
+          .get(
+              Uri.parse(
+                  '${ApiConfig.workerUrl}/api/admin/username-change-requests'),
+              headers: headers)
           .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -6360,7 +6387,9 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         if (_filterType != 'all') 'type': _filterType,
         'limit': '100',
       });
-      final res = await http.get(uri).timeout(const Duration(seconds: 12));
+      final headers = await AdminAuthService.instance.headers();
+      final res =
+          await http.get(uri, headers: headers).timeout(const Duration(seconds: 12));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {
@@ -6376,7 +6405,7 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         });
       } else if (mounted) {
         setState(() {
-          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
           _loading = false;
         });
       }
@@ -6395,14 +6424,17 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
     final id = report['id'] as String?;
     if (id == null) return;
     try {
+      final adminHeaders = await AdminAuthService.instance.headers();
       final res = await http
           .patch(
             Uri.parse('${ApiConfig.workerUrl}/api/admin/reports/$id'),
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              ...adminHeaders,
+            },
             body: jsonEncode({
               'status': status,
               if (note != null) 'resolution_note': note,
-              'admin': 'admin'
             }),
           )
           .timeout(const Duration(seconds: 10));
@@ -7027,10 +7059,12 @@ class _AuditLogTabState extends State<_AuditLogTab> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
           .get(
             Uri.parse(
                 '${ApiConfig.workerUrl}/api/admin/audit/${widget.world}?limit=200'),
+            headers: headers,
           )
           .timeout(const Duration(seconds: 12));
       if (res.statusCode == 200) {
@@ -7171,25 +7205,32 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             ],
           ),
         ),
-        SizedBox(
-          height: 36,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: [
-              for (final a in actions)
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: ChoiceChip(
-                    label: Text(a, style: const TextStyle(fontSize: 10)),
-                    selected: _filterAction == a,
-                    onSelected: (_) => setState(() => _filterAction = a),
-                    selectedColor: widget.accent,
+        // Action-Filter -- nur rendern wenn echte Aktionen im Audit-Log
+        // existieren. Bei leerem Log hat actions nur 'all' und der Chip
+        // wirkt redundant zum Zeitraum-Filter darueber.
+        if (actions.length > 1)
+          SizedBox(
+            height: 36,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                for (final a in actions)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(
+                        a == 'all' ? 'Alle Aktionen' : a,
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                      selected: _filterAction == a,
+                      onSelected: (_) => setState(() => _filterAction = a),
+                      selectedColor: widget.accent,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-        ),
         const SizedBox(height: 6),
         Expanded(
           child: _loading
@@ -7321,9 +7362,12 @@ class _UsernameRequestsTabState extends ConsumerState<_UsernameRequestsTab> {
   Future<void> _load() async {
     if (mounted) setState(() => _loading = true);
     try {
+      final headers = await AdminAuthService.instance.headers();
       final res = await http
-          .get(Uri.parse(
-              '${ApiConfig.workerUrl}/api/admin/username-change-requests'))
+          .get(
+              Uri.parse(
+                  '${ApiConfig.workerUrl}/api/admin/username-change-requests'),
+              headers: headers)
           .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
@@ -7410,12 +7454,16 @@ class _UsernameRequestsTabState extends ConsumerState<_UsernameRequestsTab> {
     if (!ok) return;
     setState(() => _processing = true);
     try {
+      final adminHeaders = await AdminAuthService.instance.headers();
       final res = await http
           .post(
             Uri.parse(
                 '${ApiConfig.workerUrl}/api/admin/username-change-requests/$id/approve'),
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'admin': _adminUsername}),
+            headers: {
+              'Content-Type': 'application/json',
+              ...adminHeaders,
+            },
+            body: jsonEncode(const {}),
           )
           .timeout(const Duration(seconds: 12));
       if (res.statusCode == 200) {
@@ -7495,13 +7543,16 @@ class _UsernameRequestsTabState extends ConsumerState<_UsernameRequestsTab> {
     final note = noteCtrl.text.trim();
     setState(() => _processing = true);
     try {
+      final adminHeaders = await AdminAuthService.instance.headers();
       final res = await http
           .post(
             Uri.parse(
                 '${ApiConfig.workerUrl}/api/admin/username-change-requests/$id/reject'),
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              ...adminHeaders,
+            },
             body: jsonEncode({
-              'admin': _adminUsername,
               if (note.isNotEmpty) 'note': note,
             }),
           )
