@@ -266,7 +266,7 @@ class _NotificationSettingsScreenState
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: Color(0xFFFF9800),
+            activeColor: Color(0xFFFF9800),
           ),
         ],
       ),

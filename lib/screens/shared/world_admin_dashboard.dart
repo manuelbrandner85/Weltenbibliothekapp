@@ -2298,7 +2298,7 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
             Switch(
               value: _autoRefresh,
               onChanged: (v) => setState(() => _autoRefresh = v),
-              activeThumbColor: widget.accent,
+              activeColor: widget.accent,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ]),

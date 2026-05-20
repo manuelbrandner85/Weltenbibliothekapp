@@ -507,7 +507,7 @@ class _MicToggleCard extends StatelessWidget {
               Switch.adaptive(
                 value: value,
                 onChanged: onChanged,
-                activeThumbColor: accent,
+                activeColor: accent,
               ),
             ],
           ),
@@ -590,7 +590,7 @@ class _AudioOnlyToggleCard extends StatelessWidget {
               Switch.adaptive(
                 value: value,
                 onChanged: onChanged,
-                activeThumbColor: accent,
+                activeColor: accent,
               ),
             ],
           ),

@@ -4376,38 +4376,40 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
               // Mute Type Selector
               const Text('Sperrdauer:', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
-              RadioGroup<String>(
-                groupValue: muteType,
-                onChanged: (value) {
-                  if (mounted && value != null) {
-                    setState(() {
-                      muteType = value;
-                    });
-                  }
-                },
-                child: Row(
-                  children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('24 Stunden',
+                          style:
+                              TextStyle(color: Colors.white, fontSize: 14)),
+                      value: '24h',
+                      groupValue: muteType,
+                      onChanged: (value) {
+                        if (mounted && value != null) {
+                          setState(() => muteType = value);
+                        }
+                      },
+                      activeColor: Colors.orange,
+                    ),
+                  ),
+                  if (isRootAdmin)
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('24 Stunden',
+                        title: const Text('Permanent',
                             style:
                                 TextStyle(color: Colors.white, fontSize: 14)),
-                        value: '24h',
-                        activeColor: Colors.orange,
+                        value: 'permanent',
+                        groupValue: muteType,
+                        onChanged: (value) {
+                          if (mounted && value != null) {
+                            setState(() => muteType = value);
+                          }
+                        },
+                        activeColor: Colors.red,
                       ),
                     ),
-                    if (isRootAdmin)
-                      Expanded(
-                        child: RadioListTile<String>(
-                          title: const Text('Permanent',
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 14)),
-                          value: 'permanent',
-                          activeColor: Colors.red,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
 
               const SizedBox(height: 16),

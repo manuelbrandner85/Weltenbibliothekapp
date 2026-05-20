@@ -235,7 +235,7 @@ class _CloudflareNotificationSettingsScreenState
           Switch(
             value: _isSubscribed,
             onChanged: _toggleSubscription,
-            activeThumbColor: Colors.green,
+            activeColor: Colors.green,
           ),
         ],
       ),
@@ -281,7 +281,7 @@ class _CloudflareNotificationSettingsScreenState
                 Switch(
                   value: isSubscribed,
                   onChanged: (value) => _toggleTopic(entry.key, value),
-                  activeThumbColor: Colors.blue,
+                  activeColor: Colors.blue,
                 ),
               ],
             ),

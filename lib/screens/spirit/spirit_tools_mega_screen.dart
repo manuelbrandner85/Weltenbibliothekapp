@@ -115,7 +115,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
 
           // Category Selector
           DropdownButtonFormField<DreamCategory>(
-            initialValue: _selectedCategory,
+            value: _selectedCategory,
             dropdownColor: const Color(0xFF1A1A2E),
             decoration: const InputDecoration(labelText: 'Kategorie'),
             items: DreamCategory.values.map((cat) {
@@ -135,7 +135,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
                 style: TextStyle(color: Colors.white)),
             value: _isLucid,
             onChanged: (value) => setState(() => _isLucid = value),
-            activeThumbColor: Colors.purple,
+            activeColor: Colors.purple,
           ),
 
           // Clarity Slider

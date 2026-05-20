@@ -1880,7 +1880,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
 
                           // ✨ v93: Geschlecht (optional, fuer gender-tuned Content)
                           DropdownButtonFormField<String?>(
-                            initialValue: _gender,
+                            value: _gender,
                             decoration: InputDecoration(
                               labelText: 'Geschlecht (optional)',
                               prefixIcon: const Icon(Icons.wc),

@@ -224,7 +224,7 @@ class _PushPreferencesScreenState extends State<PushPreferencesScreen> {
           Switch(
             value: _prefs.isMasterEnabled,
             onChanged: (v) => _toggleAndRefresh(() => _prefs.setMaster(v)),
-            activeThumbColor: Colors.white,
+            activeColor: Colors.white,
             activeTrackColor: Colors.white.withValues(alpha: 0.3),
             inactiveThumbColor: Colors.white.withValues(alpha: 0.6),
             inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
@@ -319,7 +319,7 @@ class _PushPreferencesScreenState extends State<PushPreferencesScreen> {
             Switch(
               value: value && _prefs.isMasterEnabled,
               onChanged: isMasterDisabled ? null : onChanged,
-              activeThumbColor: WbDesign.energiePurpleLight,
+              activeColor: WbDesign.energiePurpleLight,
               activeTrackColor: WbDesign.energiePurple.withValues(alpha: 0.5),
             ),
           ],

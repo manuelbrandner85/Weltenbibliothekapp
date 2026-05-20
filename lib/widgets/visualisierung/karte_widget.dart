@@ -312,7 +312,7 @@ class _KarteWidgetState extends State<KarteWidget> {
                         _showConnections = value;
                       });
                     },
-                    activeThumbColor: Colors.blue,
+                    activeColor: Colors.blue,
                   ),
                   const SizedBox(width: 8),
                   const Text(

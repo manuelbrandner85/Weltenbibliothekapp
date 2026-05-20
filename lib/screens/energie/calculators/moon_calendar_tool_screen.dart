@@ -1790,7 +1790,7 @@ class _NewEntrySheetState extends State<_NewEntrySheet> {
             contentPadding: EdgeInsets.zero,
             value: _ritualDone,
             onChanged: (v) => setState(() => _ritualDone = v),
-            activeThumbColor: Colors.amberAccent,
+            activeColor: Colors.amberAccent,
             title: const Text(
               'Ritual wurde heute ausgeführt',
               style: TextStyle(color: Colors.white, fontSize: 14),

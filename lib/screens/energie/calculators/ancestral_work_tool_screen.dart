@@ -665,7 +665,7 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
 
   Widget _relationPicker() {
     return DropdownButtonFormField<String>(
-      initialValue: _relation,
+      value: _relation,
       dropdownColor: _kCardBg,
       iconEnabledColor: _kAmber,
       style: const TextStyle(color: Colors.white),
@@ -1198,7 +1198,7 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
 
   Widget _typeDropdown() {
     return DropdownButtonFormField<String>(
-      initialValue: _type,
+      value: _type,
       dropdownColor: _kCardBg,
       iconEnabledColor: _kAmber,
       style: const TextStyle(color: Colors.white),
@@ -1233,7 +1233,7 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
 
   Widget _statusDropdown() {
     return DropdownButtonFormField<String>(
-      initialValue: _status,
+      value: _status,
       dropdownColor: _kCardBg,
       iconEnabledColor: _kAmber,
       style: const TextStyle(color: Colors.white),

@@ -335,7 +335,7 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
                     _birthDate = DateTime(_birthDate.year, _birthDate.month,
                         _birthDate.day, 12, 0);
                 }),
-                activeThumbColor: _primary,
+                activeColor: _primary,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ]),

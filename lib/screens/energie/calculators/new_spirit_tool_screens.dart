@@ -2634,7 +2634,7 @@ class _DnaActivationTrackerScreenState
               });
             },
             activeTrackColor: Color(0xFF00897B),
-            activeThumbColor: Color(0xFF00897B),
+            activeColor: Color(0xFF00897B),
           ),
         ],
       ),

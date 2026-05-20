@@ -1376,7 +1376,7 @@ class _PowerAnimalEditorSheetState extends State<_PowerAnimalEditorSheet> {
                   const SizedBox(height: 12),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    activeThumbColor: _kDeep,
+                    activeColor: _kDeep,
                     title: const Text('Aktiver Begleiter',
                         style: TextStyle(color: Colors.white)),
                     subtitle: const Text('Noch in meinem Leben präsent',

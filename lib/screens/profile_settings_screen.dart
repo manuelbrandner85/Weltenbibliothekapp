@@ -1613,7 +1613,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       }
                       if (mounted) setState(() {}); // Rebuild to update UI
                     },
-                    activeThumbColor: Colors.orange,
+                    activeColor: Colors.orange,
                   ),
                 ],
               ),
@@ -2100,7 +2100,7 @@ class _PrivacyModeCardState extends State<_PrivacyModeCard> {
               color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
         ),
         value: enabled,
-        activeThumbColor: const Color(0xFF00D4AA),
+        activeColor: const Color(0xFF00D4AA),
         onChanged: (v) => PrivacyModeService.instance.setEnabled(v),
         secondary: Icon(
           enabled ? Icons.privacy_tip : Icons.privacy_tip_outlined,

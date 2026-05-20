@@ -66,13 +66,25 @@ class _PinFormState extends State<_PinForm> {
     }
     setState(() => _saving = true);
     final storage = StorageService();
-    final profile = widget.world == 'materie'
-        ? storage.getMaterieProfile()
-        : storage.getEnergieProfile();
+    String userId = 'anonymous';
+    String? username;
+    if (widget.world == 'materie') {
+      final p = storage.getMaterieProfile();
+      if (p != null) {
+        userId = p.userId ?? 'anonymous';
+        username = p.username;
+      }
+    } else {
+      final p = storage.getEnergieProfile();
+      if (p != null) {
+        userId = p.userId ?? 'anonymous';
+        username = p.username;
+      }
+    }
     final pin = await ResearchPinService.instance.add(
       world: widget.world,
-      userId: profile?.userId ?? 'anonymous',
-      username: profile?.username,
+      userId: userId,
+      username: username,
       lat: widget.lat,
       lng: widget.lng,
       title: _titleCtrl.text.trim(),

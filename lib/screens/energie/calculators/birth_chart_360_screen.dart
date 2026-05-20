@@ -383,7 +383,7 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
                     _birthDate = DateTime(_birthDate.year, _birthDate.month,
                         _birthDate.day, 12, 0);
                 }),
-                activeThumbColor: _accent,
+                activeColor: _accent,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ]),
