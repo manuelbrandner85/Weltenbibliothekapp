@@ -113,15 +113,14 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- 🎙️ Foreground-Service fuer LiveKit Voice-Call (NICHT Screen-Share!).
-             Nur `microphone` -- das ist das Minimum was wir brauchen.
-             VORHER: mediaProjection|microphone|camera. Auf Android 14+ verlangt
-             mediaProjection einen User-Consent-Dialog VOR dem Service-Start
-             (MediaProjectionManager.createScreenCaptureIntent). Das Plugin
-             macht das nicht -> System killt den App-Prozess sofort beim
-             ersten Service-Start -> Call dropt jedesmal beim Minimieren.
-             Loesung: mediaProjection + camera entfernt. Microphone ohne Dialog.
-             Screen-Share-Feature deaktiviert (wir nutzen es nicht aktiv). -->
+        <!-- Foreground-Service fuer LiveKit Voice-Call. Nur microphone Type.
+             VORHER: mediaProjection|microphone|camera. Auf Android 14+
+             verlangt mediaProjection einen User-Consent-Dialog VOR dem
+             Service-Start (MediaProjectionManager.createScreenCaptureIntent).
+             flutter_background macht das nicht, System killt den App-Prozess
+             sofort beim ersten Service-Start, Call dropt jedesmal beim
+             Minimieren. Mit microphone-only kein Consent-Dialog noetig.
+             Screen-Share-Feature ist deaktiviert (wir nutzen es nicht). -->
         <service
             android:name="de.julianassmann.flutter_background.IsolateHolderService"
             android:foregroundServiceType="microphone"
