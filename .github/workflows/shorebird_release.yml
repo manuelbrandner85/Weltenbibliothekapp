@@ -9,23 +9,24 @@ name: 🐦 Shorebird Android RELEASE (auto + manuell)
 # wieder gegen diese neue Release-Version.
 #
 # Trigger:
-#   • workflow_run nach erfolgreichem 'Build & Release APK' (= sobald
-#     build_apk.yml den v5.x.x-Tag + GitHub-Release erstellt hat). Vorher
-#     'on: push: tags:' -- das funktionierte aber nicht, weil Tags die von
-#     GITHUB_TOKEN-Workflows (softprops/action-gh-release) erstellt werden
-#     keine push-Events triggern (Anti-Recursion-Guard).
-#   • workflow_dispatch (manueller Fallback wenn der Tag schon existiert
-#     oder ein historischer Build neu released werden soll).
+#   • workflow_dispatch (manueller Fallback). Wird normalerweise NICHT
+#     gebraucht weil build_apk.yml's 'Shorebird Release Build' Job bereits
+#     den Shorebird-Release publiziert (siehe Log: 'Creating release...
+#     Uploading artifacts'). Dieser Workflow ist nur fuer:
+#       a) Historischen Build neu publizieren wenn Shorebird-Console
+#          zickt
+#       b) Re-Upload nach geloeschtem Release in Shorebird-Console
+#       c) Force-Release wenn build_apk.yml fehlschlug (z.B. APK-Tag-
+#          Kollision) aber das AAB trotzdem hochgeladen werden soll.
 #
-# WICHTIG: Build-Nummer in pubspec.yaml muss VOR dem Run gebumpt sein —
-# pro CLAUDE.md-Regel 1. Sonst registriert Shorebird denselben Release nochmal
-# und der Patch-Workflow bekommt wieder einen Konflikt.
+# Frueher hatte dieser Workflow einen 'workflow_run'-Auto-Trigger nach
+# build_apk -- der schlug aber immer fehl mit 'release exists' weil
+# build_apk den Shorebird-Release schon selbst publiziert. Entfernt.
+#
+# WICHTIG: Build-Nummer in pubspec.yaml muss VOR dem Run gebumpt sein --
+# pro CLAUDE.md-Regel 1.
 
 on:
-  workflow_run:
-    workflows: ['🏗️ Build & Release APK']
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       source_branch:
@@ -45,22 +46,13 @@ concurrency:
 jobs:
   release:
     name: 🐦 Shorebird Release android
-    # Bei workflow_run nur laufen wenn build_apk SUCCESS war; bei
-    # workflow_dispatch immer.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          # Bei workflow_run: den Head-SHA des gebauten APKs (sicher dass
-          # pubspec.yaml-Version dem Build entspricht). Bei workflow_dispatch:
-          # den Input-Branch (Default main).
-          ref: >-
-            ${{ github.event.inputs.source_branch
-                || github.event.workflow_run.head_sha
-                || 'main' }}
+          ref: ${{ github.event.inputs.source_branch || 'main' }}
 
       - name: ☕ Java 17
         uses: actions/setup-java@v4
