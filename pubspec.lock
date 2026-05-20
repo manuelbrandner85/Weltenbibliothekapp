@@ -766,7 +766,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_webrtc:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: flutter_webrtc
       sha256: "71a38363a5b50603e405c275f30de2eb90f980b0cc94b0e1e9d8b9d6a6b03bf0"
@@ -2027,7 +2027,7 @@ packages:
     source: hosted
     version: "1.2.1"
   web:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: web
       sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"

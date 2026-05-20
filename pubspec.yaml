@@ -127,12 +127,6 @@ dependencies:
   syncfusion_flutter_pdf: ^28.1.36  # PDF Text Extraction
   translator: ^1.0.0                # Kostenlose Übersetzung (Google Translate API ohne Key)
 
-  # Direkt importiert in livekit_call_service.dart / push_notification_manager_web.dart
-  # (vor dem Audit nur transitive via livekit_client + flutter_web_plugins). Explizit
-  # auflisten damit der Dependency-Graph ehrlich ist.
-  flutter_webrtc: any
-  web: any
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
