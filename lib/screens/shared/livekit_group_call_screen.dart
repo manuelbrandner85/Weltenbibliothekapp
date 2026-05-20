@@ -303,12 +303,20 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        // Back-Taste → PiP statt Anruf beenden (wenn unterstützt)
-        if (PipService.instance.isSupported) {
-          await PipService.instance.enterPip();
-          return;
-        }
-        if (await _confirmLeave()) await _leaveAndPop();
+        // Back-Taste -> Mini-Bar uebernimmt, Stream bleibt aktiv.
+        // FlutterBackground haelt den Foreground-Service am Leben,
+        // LiveKitScreenVisibility wird in dispose() auf false gesetzt,
+        // Mini-Bar erscheint oben im Stack. User kann frei in alle 4
+        // Welten navigieren + weiter reden + zuhoeren.
+        //
+        // Vorher: confirmLeave-Dialog + leaveRoom() -> Stream droppte
+        // jedesmal beim Back-Press. Das war der Bug aus dem User-Feedback
+        // "kann man nicht durch die gesamte App steuern ohne dass live
+        // abbricht".
+        //
+        // Auflegen passiert NUR ueber die expliziten "End-Call"-Buttons
+        // (Vollbild-Screen + Mini-Bar Hangup-Icon).
+        if (mounted) Navigator.of(context).pop();
       },
       child: Scaffold(
         backgroundColor: bg,
@@ -1825,6 +1833,26 @@ class _TopBar extends StatelessWidget {
           ),
           child: Row(
             children: [
+              // Minimieren-Button: schickt den Call-Screen in den
+              // Hintergrund, Mini-Bar uebernimmt. Stream + Audio laufen
+              // weiter via FlutterBackground-Service.
+              IconButton(
+                tooltip: 'Minimieren -- Anruf laeuft weiter',
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                constraints:
+                    const BoxConstraints(minWidth: 40, minHeight: 40),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(width: 4),
               // Welt-Icon mit Aura
               Container(
                 width: 38,
