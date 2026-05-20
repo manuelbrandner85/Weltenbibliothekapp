@@ -580,13 +580,6 @@ class GroupToolsService {
   }
 
   // ========================================
-  // 🌍 MATERIE-WELT TOOLS (TODO)
-  // ========================================
-  // Placeholder methods - werden später implementiert
-
-  // ========================================
-  // ✨ SPIRIT-WELT TOOLS (TODO)
-  // ========================================
   // 🌍 MATERIE-WELT TOOLS
   // ========================================
 
@@ -1162,7 +1155,11 @@ class GroupToolsService {
   }
 
   // ========================================
-  // ✨ SPIRIT-WELT TOOLS (TODO)
+  // ✨ SPIRIT-WELT TOOLS
   // ========================================
-  // Placeholder methods - werden später implementiert
+  // Spirit-spezifische Gruppen-Tools werden ueber die Energie-Welt-
+  // Methoden weiter oben abgebildet (Meditation, Astral, Chakra,
+  // Kristalle, Frequenzen, Traeume). Eine eigene Spirit-Welt-Sektion
+  // ist absichtlich leer -- spirituelle Gruppentools liegen in den
+  // Energie-Methoden, kosmische/forschende Tools in der Materie-Sektion.
 }
