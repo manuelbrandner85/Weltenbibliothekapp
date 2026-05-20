@@ -20,9 +20,12 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../core/auth/admin_resolver.dart';
 import '../core/constants/roles.dart';
+import '../core/storage/unified_storage_service.dart';
 import 'storage_service.dart';
 
 class AdminAuthService {
@@ -45,7 +48,7 @@ class AdminAuthService {
       final role = await AdminResolver.resolveCurrentRole();
       if (!_isAdminRole(role)) return const {};
 
-      final username = _currentUsername();
+      final username = await _currentUsername();
       if (username == null || username.isEmpty) return const {};
       if (_secret.isEmpty) {
         if (kDebugMode) {
@@ -81,24 +84,49 @@ class AdminAuthService {
   /// Liefert den Username der zum Supabase-profiles-Eintrag passt -- NICHT
   /// die InvisibleAuth-ID.
   ///
-  /// Bug-Fix Identity-Chain: vorher liess die Methode einfach
-  /// getMaterieProfile().username durchschlagen. Wenn dort die Auth-ID
-  /// ('user_<ts>_<rand>') stand statt der echten Username (z.B.
-  /// 'Weltenbibliothek'), schickte der Client das an den Worker, der
-  /// `profiles WHERE username='user_<ts>_<rand>'` queryt -> 0 rows ->
-  /// 403. Jetzt: zuerst nach Admin-Username-Konstanten (Weltenbibliothek,
-  /// Weltenbibliothekedit) in ALLEN Profil-Feldern suchen -- wenn match,
-  /// nimm den. Sonst der erste nicht-leere wirklich Profil-username,
-  /// der NICHT mit 'user_' anfaengt (InvisibleAuth-IDs aussortieren).
-  String? _currentUsername() {
+  /// Sucht in 4 Quellen und nimmt die hoechste Prioritaet:
+  ///   1. Supabase-Auth-Session (web user) -> profile.username via DB
+  ///   2. AppRoles.isRootAdminByUsername / isContentEditorByUsername Match
+  ///      in StorageService (Hive) ODER UnifiedStorageService -> kanonische
+  ///      Username-Konstante zurueckgeben ('Weltenbibliothek')
+  ///   3. SharedPreferences 'web_user_name' (Web-Login Fallback)
+  ///   4. Erster non-'user_'-prefix Storage-Username
+  ///   5. (last resort): erster non-empty Storage-Username
+  Future<String?> _currentUsername() async {
     try {
       final storage = StorageService();
+      final unified = UnifiedStorageService();
+
+      // Sammle alle Quellen
       final candidates = <String>[
         storage.getMaterieProfile()?.username ?? '',
         storage.getEnergieProfile()?.username ?? '',
-      ].where((u) => u.trim().isNotEmpty).toList();
+        unified.getUsername('materie') ?? '',
+        unified.getUsername('energie') ?? '',
+      ];
 
-      // Prio 1: bekannte Admin-Usernames (case-insensitive, .trim() inside)
+      // Prio 1 (Web-User): Supabase-Auth-Session + profile-Lookup
+      try {
+        final supaUser = Supabase.instance.client.auth.currentUser;
+        if (supaUser != null) {
+          final row = await Supabase.instance.client
+              .from('profiles')
+              .select('username,role')
+              .eq('id', supaUser.id)
+              .maybeSingle()
+              .timeout(const Duration(seconds: 4));
+          final dbUsername = row?['username'] as String?;
+          if (dbUsername != null && dbUsername.trim().isNotEmpty) {
+            return dbUsername.trim();
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[AdminAuthService] Supabase-username lookup: $e');
+        }
+      }
+
+      // Prio 2: bekannter Admin-Username (kanonisch zurueckgeben)
       for (final u in candidates) {
         if (AppRoles.isRootAdminByUsername(u)) {
           return AppRoles.rootAdminUsername;
@@ -108,16 +136,29 @@ class AdminAuthService {
         }
       }
 
-      // Prio 2: erster non-InvisibleAuth-Username
-      for (final u in candidates) {
+      // Prio 3: SharedPreferences (Web-Auth-Gate fallback)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final webName = prefs.getString('web_user_name');
+        if (webName != null && webName.trim().isNotEmpty) {
+          return webName.trim();
+        }
+      } catch (_) {/* best-effort */}
+
+      final nonEmpty =
+          candidates.where((u) => u.trim().isNotEmpty).toList();
+
+      // Prio 4: erster non-InvisibleAuth-Username
+      for (final u in nonEmpty) {
         if (!u.startsWith('user_')) return u;
       }
 
-      // Prio 3 (Fallback): erster non-empty -- gibt dem Worker zumindest
-      // eine Chance fuer legacy_user_id-Lookup.
-      return candidates.isEmpty ? null : candidates.first;
-    } catch (_) {/* best-effort */}
-    return null;
+      // Prio 5 (Fallback): erster non-empty
+      return nonEmpty.isEmpty ? null : nonEmpty.first;
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AdminAuthService] _currentUsername: $e');
+      return null;
+    }
   }
 
   static String _hmacHex(String secret, String message) {

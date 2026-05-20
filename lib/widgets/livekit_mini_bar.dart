@@ -61,7 +61,8 @@ class LiveKitMiniBar extends ConsumerWidget {
         return IgnorePointer(
           ignoring: !shouldShow,
           child: AnimatedSlide(
-            offset: shouldShow ? Offset.zero : const Offset(0, -1.5),
+            // Slide from BOTTOM (positive Y) -- Mini-Bar sitzt jetzt unten.
+            offset: shouldShow ? Offset.zero : const Offset(0, 1.5),
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutCubic,
             child: AnimatedOpacity(
@@ -89,13 +90,18 @@ class _MiniBarContent extends StatelessWidget {
   }
 
   void _expandToFull(BuildContext context) {
-    // 🛑 Bundle 3.6: Wenn der Vollbild-Screen schon offen ist (oder gerade
-    // animiert), nicht nochmal pushen — sonst stapeln sich mehrere Screens.
+    // Wenn der Vollbild-Screen schon offen ist, nicht nochmal pushen --
+    // dann stapeln sich Screens. Aber: wenn die Bar trotzdem sichtbar
+    // ist (z.B. weil setVisible-flag stale war), trotzdem versuchen.
     if (LiveKitScreenVisibility.instance.visible) return;
     final world = svc.world ?? 'materie';
     final roomName = svc.roomName ?? '';
+    if (roomName.isEmpty) return;
+    // rootNavigator: true damit der Push ueber dem aktuellen Tab/World-
+    // Stack landet, nicht innerhalb einer Sub-Navigation.
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
+        fullscreenDialog: true,
         builder: (_) => LiveKitGroupCallScreen(
           roomName: roomName,
           world: world,
@@ -107,6 +113,11 @@ class _MiniBarContent extends StatelessWidget {
   }
 
   Future<void> _hangUp(BuildContext context) async {
+    // leaveRoom MUSS die Mini-Bar verschwinden lassen, aber NICHT die App
+    // schliessen. Der Service-leaveRoom raeumt nur den Room auf. Falls
+    // ein Listener auf disconnect-Event reagiert mit pop, wuerden wir
+    // ueber rootNavigator-pop unbeabsichtigt aus der App fliegen.
+    // Daher: nur den Service leaveRoom rufen, keinen Navigator-Pop.
     await svc.leaveRoom();
   }
 
@@ -118,10 +129,11 @@ class _MiniBarContent extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: SafeArea(
-        bottom: false,
+        top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => _expandToFull(context),
             child: Container(
               height: 52,

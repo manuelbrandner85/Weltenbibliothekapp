@@ -451,8 +451,12 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
             return Stack(
               children: [
                 hosted,
+                // Mini-Bar am UNTEREN Rand statt oben -- die top-Leiste
+                // der Welten (Admin-Dashboard-Link / Benachrichtigungen
+                // etc.) wuerde sonst verdeckt. Bottom-Offset ~88px = nav
+                // height (~56) + safe area (~24) + spacing.
                 const Positioned(
-                  top: 0,
+                  bottom: 88,
                   left: 0,
                   right: 0,
                   child: LiveKitMiniBar(),
