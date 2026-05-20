@@ -175,12 +175,12 @@ jobs:
             --no-confirm \
             -- \
             --target-platform=android-arm64,android-arm \
-            --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
-            --dart-define=SUPABASE_URL=$SUPABASE_URL \
-            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
-            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-            --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }} \
-            --dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}
+            "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
+            "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
+            "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
+            "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
+            "--dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}" \
+            "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
 
           echo "✅ Release $FULL_VERSION publiziert"
 

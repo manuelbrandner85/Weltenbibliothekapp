@@ -82,11 +82,11 @@ jobs:
           _SUPA_URL="${SUPABASE_URL:-https://adtviduaftdquvfjpojb.supabase.co}"
           _SUPA_ANON="${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98}"
           flutter build web --release \
-            --dart-define=SUPABASE_URL=$_SUPA_URL \
-            --dart-define=SUPABASE_ANON_KEY=$_SUPA_ANON \
-            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-            --dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }} \
-            --dart-define=APP_VERSION="web-$(date +%Y%m%d%H%M)"
+            "--dart-define=SUPABASE_URL=$_SUPA_URL" \
+            "--dart-define=SUPABASE_ANON_KEY=$_SUPA_ANON" \
+            "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
+            "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}" \
+            "--dart-define=APP_VERSION=web-$(date +%Y%m%d%H%M)"
 
       - name: 🔍 Verify build output
         run: |

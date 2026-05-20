@@ -288,15 +288,19 @@ jobs:
         # folgenden Schritte (GitHub Release, Supabase, History) laufen dann normal.
         run: |
           set +e
+          # Quoting der --dart-define-Werte damit Secrets mit Leerzeichen
+          # (z.B. versehentlich gespeicherte Befehlszeile) nicht zu Shell-
+          # Split fuehrt. Jede --dart-define=KEY=VALUE Kombi muss eine
+          # ARG sein.
           shorebird release android \
             --artifact=apk \
             --target-platform=android-arm64,android-arm \
-            --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
-            --dart-define=SUPABASE_URL=$SUPABASE_URL \
-            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
-            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-            --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }} \
-            --dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}
+            "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
+            "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
+            "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
+            "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
+            "--dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}" \
+            "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
           EXIT_CODE=$?
           if [ "$EXIT_CODE" -eq 70 ]; then
             echo "⚠️  Shorebird: Release v${{ steps.version.outputs.version }} ist bereits auf dem Server registriert."
