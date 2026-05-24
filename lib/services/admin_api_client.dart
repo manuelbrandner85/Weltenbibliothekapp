@@ -91,6 +91,12 @@ class AdminApiDiagEntry {
   });
 }
 
+class _CachedResponse {
+  final Map<String, dynamic> body;
+  final DateTime cachedAt;
+  _CachedResponse(this.body, this.cachedAt);
+}
+
 class AdminApiClient {
   AdminApiClient._();
   static final AdminApiClient instance = AdminApiClient._();
@@ -102,6 +108,23 @@ class AdminApiClient {
   /// Diagnose-Button im Dashboard angezeigt.
   final Queue<AdminApiDiagEntry> _diagLog = Queue<AdminApiDiagEntry>();
   List<AdminApiDiagEntry> get diagLog => List.unmodifiable(_diagLog);
+
+  /// In-Memory Response-Cache fuer GET-Endpoints. TTL 30s default.
+  /// Verhindert dass beim Tab-Wechsel sofort wieder gefetcht wird.
+  /// Kann via invalidateCache() forciert geleert werden (z.B. nach
+  /// erfolgreichem ban/role-change).
+  final Map<String, _CachedResponse> _cache = {};
+  Duration _cacheTtl = const Duration(seconds: 30);
+
+  /// Cache komplett leeren (z.B. nach einer Mutation um stale Daten
+  /// zu verhindern).
+  void invalidateCache([String? pathPrefix]) {
+    if (pathPrefix == null) {
+      _cache.clear();
+    } else {
+      _cache.removeWhere((key, _) => key.startsWith(pathPrefix));
+    }
+  }
 
   void _record(AdminApiDiagEntry e) {
     _diagLog.addLast(e);
@@ -139,18 +162,33 @@ class AdminApiClient {
   /// Wenn `path` mit 'http' beginnt, wird er als absolute URL behandelt.
   /// Liefert das geparste JSON als Map<String,dynamic> -- oder wirft
   /// AdminApiException bei !200.
+  ///
+  /// [useCache]: wenn true und Cache-Hit < cacheTtl, liefert sofort
+  ///   aus dem Cache statt zu netzwerken. Default false.
   Future<Map<String, dynamic>> getJson(
     String path, {
     String? role,
     Duration? timeout,
+    bool useCache = false,
   }) async {
-    return _request<Map<String, dynamic>>(
+    if (useCache) {
+      final cached = _cache[path];
+      if (cached != null &&
+          DateTime.now().difference(cached.cachedAt) < _cacheTtl) {
+        return cached.body;
+      }
+    }
+    final result = await _request<Map<String, dynamic>>(
       method: 'GET',
       path: path,
       role: role,
       timeout: timeout,
       parser: _parseAsMap,
     );
+    if (useCache) {
+      _cache[path] = _CachedResponse(result, DateTime.now());
+    }
+    return result;
   }
 
   /// Wie getJson aber gibt rohe Response zurueck (fuer Endpoints die

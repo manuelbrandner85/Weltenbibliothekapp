@@ -13,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
 import '../../config/api_config.dart';
 import '../../core/constants/roles.dart';
 import '../../features/admin/state/admin_state.dart';
+import '../../core/auth/admin_resolver.dart';
 import '../../services/admin_api_client.dart';
 import '../../services/admin_auth_service.dart';
 import '../../services/activity_heatmap_service.dart'; // 🔥 M2
@@ -582,6 +583,7 @@ class _OverviewTabState extends State<_OverviewTab> {
   /// vollstaendige Ergebnis im Modal damit Admins selbst sehen koennen
   /// WAS schiefgelaufen ist (Worker erreichbar? HMAC-Header da? Profile
   /// gefunden? Welcher Status-Code kam zurueck?).
+  /// PHASE-4: + Repair-Buttons (Cache leeren, Rolle neu aufloesen).
   Future<void> _runDiagnose(BuildContext context) async {
     showDialog<void>(
       context: context,
@@ -597,38 +599,101 @@ class _OverviewTabState extends State<_OverviewTab> {
     if (!context.mounted) return;
     Navigator.of(context).pop(); // Loading-Dialog schliessen
     final pretty = const JsonEncoder.withIndent('  ').convert(diag);
+    final adminUsers = diag['admin_users'] as Map?;
+    final hasError = adminUsers != null && adminUsers['ok'] != true;
     await showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF12121E),
-        title: const Row(children: [
-          Icon(Icons.bug_report_rounded, color: Color(0xFF26A69A)),
-          SizedBox(width: 8),
-          Text('Worker-Diagnose',
+        title: Row(children: [
+          Icon(
+            hasError ? Icons.warning_rounded : Icons.check_circle_rounded,
+            color: hasError ? Colors.orange : const Color(0xFF26A69A),
+          ),
+          const SizedBox(width: 8),
+          const Text('Worker-Diagnose',
               style: TextStyle(color: Colors.white, fontSize: 16)),
         ]),
         content: SizedBox(
           width: 520,
           child: SingleChildScrollView(
-            child: SelectableText(
-              pretty,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: 'monospace',
-                fontSize: 11,
-                height: 1.4,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (hasError)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: Colors.orange.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      'Admin-Endpoint lieferte HTTP '
+                      '${adminUsers['status']}. Probier "Reparieren" '
+                      'unten -- das laedt deine Rolle neu, leert den '
+                      'Cache und versucht es nochmal.',
+                      style: const TextStyle(
+                          color: Colors.orangeAccent, fontSize: 12),
+                    ),
+                  ),
+                if (hasError) const SizedBox(height: 12),
+                SelectableText(
+                  pretty,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
         actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.build_rounded, size: 16),
+            label: const Text('Reparieren'),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await _runRepair(context);
+            },
+          ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('Schliessen'),
           ),
         ],
       ),
     );
+  }
+
+  /// PHASE-4: Reparatur-Sequenz wenn Admin-Calls fehlschlagen.
+  /// 1) AdminApi-Cache leeren
+  /// 2) AdminResolver.resolveCurrentRole() forciert neu aufloesen
+  ///    (persistiert wieder den Username in UnifiedStorageService)
+  /// 3) Dashboard-Daten neu laden
+  Future<void> _runRepair(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    AdminApiClient.instance.invalidateCache();
+    try {
+      await AdminResolver.resolveCurrentRole();
+    } catch (_) {/* best-effort */}
+    if (!context.mounted) return;
+    messenger.showSnackBar(const SnackBar(
+      content: Text('🛠 Cache geleert + Rolle neu aufgeloest. Lade neu...'),
+      duration: Duration(seconds: 2),
+    ));
+    await _load();
+    if (!context.mounted) return;
+    messenger.showSnackBar(const SnackBar(
+      content: Text('✓ Reparatur abgeschlossen'),
+      duration: Duration(seconds: 2),
+    ));
   }
 
   Future<void> _load() async {

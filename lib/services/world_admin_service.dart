@@ -809,6 +809,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
           )
           .timeout(WorldAdminService._timeout);
       if (response.statusCode == 200) {
+        // Cache leeren damit Nutzer-Tab den Ban sofort sieht.
+        AdminApiClient.instance.invalidateCache('/api/admin/users');
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
         return data['success'] as bool? ?? true;
       }
