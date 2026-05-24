@@ -4,11 +4,11 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
+import 'admin_api_client.dart';
 import 'admin_auth_service.dart';
 import 'push_notification_helper.dart';
 import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
-import '../core/storage/unified_storage_service.dart'; // ✅ Storage für Username
 import '../config/api_config.dart'; // 🆕 API Config for admin token
 import 'supabase_service.dart'; // 🔥 Supabase Direct Access
 
@@ -229,13 +229,12 @@ class WorldAdminService {
     // 2️⃣ FALLBACK: Cloudflare Worker
     // ─────────────────────────────────────────────────────────────────────
     try {
+      // PHASE-1 FIX: HMAC-Header (deprecated getUsersByWorld -- aber falls
+      // noch genutzt, soll es auch funktionieren).
       final url = Uri.parse('$_baseUrl/api/admin/users/$world');
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}',
-          'Content-Type': 'application/json',
-        },
+        headers: await _adminAuthHeaders(role: role),
       ).timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -275,26 +274,23 @@ class WorldAdminService {
     // System-Profile + liefert last_seen_at/world.
     Map<String, dynamic>? raw;
     bool hasLastSeen = true;
+    // PHASE-1 FIX: AdminApiClient haengt HMAC-Header automatisch dran.
+    // Vorher fehlten die Headers -> Worker antwortete 403 -> Fallback
+    // auf Supabase RLS-Query lieferte 0 Rows -> "Keine Nutzer geladen".
     try {
-      final res = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/api/admin/users'),
-        headers: const {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 12));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final users = (data['users'] as List?) ?? const [];
-        raw = {'rows': users};
-        if (kDebugMode) debugPrint('✅ Loaded ${users.length} users via Worker');
-      } else {
-        if (kDebugMode) {
-          debugPrint(
-              '⚠️ Worker /api/admin/users ${res.statusCode} — Fallback Supabase');
-        }
-        raw = null;
+      final data = await AdminApiClient.instance.getJson('/api/admin/users');
+      final users = (data['users'] as List?) ?? const [];
+      raw = {'rows': users};
+      if (kDebugMode) debugPrint('✅ Loaded ${users.length} users via Worker');
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '⚠️ Worker /api/admin/users ${e.statusCode}: ${e.bodySnippet} -- Fallback Supabase');
       }
+      raw = null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Worker /api/admin/users failed: $e — Fallback Supabase');
+        debugPrint('⚠️ Worker /api/admin/users failed: $e -- Fallback Supabase');
       }
       raw = null;
     }
@@ -530,10 +526,12 @@ class WorldAdminService {
         debugPrint('📜 Fetching audit log for: $world (role: $role)');
       }
 
+      // PHASE-1 FIX: HMAC-Header via AdminAuthService (vorher fehlten sie,
+      // Audit-Tab war leer).
       final response = await http
           .get(
             url,
-            headers: _adminHeaders(role: role),
+            headers: await _adminAuthHeaders(role: role),
           )
           .timeout(_timeout);
 
@@ -997,12 +995,18 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUsername,
   }) async {
     try {
+      // PHASE-1 FIX: HMAC-Header via _h (vorher fehlten sie,
+      // XP-Vergeben schlug silent fehl).
       final url =
           Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/xp');
+      final adminHeaders = await _h;
       final response = await http
           .post(
             url,
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              ...adminHeaders,
+              'Content-Type': 'application/json',
+            },
             body: jsonEncode({
               'amount': amount,
               'reason': reason,
@@ -1042,15 +1046,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUserId,
   }) async {
     try {
+      // PHASE-1 FIX: HMAC-Header
       final url = Uri.parse(
           '${WorldAdminService._baseUrl}/api/admin/users/$userId/status');
-      final storage = UnifiedStorageService();
-      final adminUser =
-          adminUserId ?? storage.getUsername('materie') ?? 'admin';
-
       final response = await http.get(
         url,
-        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+        headers: await _h,
       ).timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
@@ -1071,15 +1072,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<Map<String, dynamic>> getAdminDashboard(
       {String? adminUserId}) async {
     try {
+      // PHASE-1 FIX: HMAC-Header
       final url =
           Uri.parse('${WorldAdminService._baseUrl}/api/admin/dashboard');
-      final storage = UnifiedStorageService();
-      final adminUser =
-          adminUserId ?? storage.getUsername('materie') ?? 'admin';
-
       final response = await http.get(
         url,
-        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+        headers: await _h,
       ).timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
@@ -1098,15 +1096,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUserId,
   }) async {
     try {
+      // PHASE-1 FIX: HMAC-Header
       final url = Uri.parse(
           '${WorldAdminService._baseUrl}/api/admin/analytics/$realm?days=$days');
-      final storage = UnifiedStorageService();
-      final adminUser =
-          adminUserId ?? storage.getUsername('materie') ?? 'admin';
-
       final response = await http.get(
         url,
-        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+        headers: await _h,
       ).timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
@@ -1154,11 +1149,10 @@ extension WorldAdminServiceV162 on WorldAdminService {
         debugPrint('📊 Fetching active voice calls for: $world');
       }
 
+      // PHASE-1 FIX: HMAC-Header (war Legacy _adminHeaders ohne HMAC)
       final response = await http.get(
         url,
-        headers: {
-          ...WorldAdminService._adminHeaders(),
-        },
+        headers: await _h,
       ).timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
@@ -1173,11 +1167,11 @@ extension WorldAdminServiceV162 on WorldAdminService {
 
           return calls.cast<Map<String, dynamic>>();
         }
-      } else if (response.statusCode == 401) {
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
         if (kDebugMode) {
-          debugPrint('⚠️  Unauthorized: Invalid API token');
+          debugPrint('⚠️  ${response.statusCode}: Admin-Auth fehlt');
         }
-        throw Exception('Unauthorized: Invalid API token');
+        throw Exception('Admin-Auth required (${response.statusCode})');
       }
 
       if (kDebugMode) {
@@ -1225,11 +1219,10 @@ extension WorldAdminServiceV162 on WorldAdminService {
         debugPrint('📚 Fetching call history for: $world (limit: $limit)');
       }
 
+      // PHASE-1 FIX: HMAC-Header
       final response = await http.get(
         url,
-        headers: {
-          ...WorldAdminService._adminHeaders(),
-        },
+        headers: await _h,
       ).timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
@@ -1296,11 +1289,10 @@ extension WorldAdminServiceV162 on WorldAdminService {
         debugPrint('👤 Fetching user profile for: $userId');
       }
 
+      // PHASE-1 FIX: HMAC-Header
       final response = await http.get(
         url,
-        headers: {
-          ...WorldAdminService._adminHeaders(),
-        },
+        headers: await _h,
       ).timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {

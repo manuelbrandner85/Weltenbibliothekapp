@@ -13,6 +13,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
 import '../../config/api_config.dart';
 import '../../core/constants/roles.dart';
 import '../../features/admin/state/admin_state.dart';
+import '../../services/admin_api_client.dart';
 import '../../services/admin_auth_service.dart';
 import '../../services/activity_heatmap_service.dart'; // 🔥 M2
 import '../../services/cloudflare_api_service.dart';
@@ -577,6 +578,59 @@ class _OverviewTabState extends State<_OverviewTab> {
     _load();
   }
 
+  /// PHASE-3 FIX: Live-Diagnose der Worker-Verbindung. Zeigt das
+  /// vollstaendige Ergebnis im Modal damit Admins selbst sehen koennen
+  /// WAS schiefgelaufen ist (Worker erreichbar? HMAC-Header da? Profile
+  /// gefunden? Welcher Status-Code kam zurueck?).
+  Future<void> _runDiagnose(BuildContext context) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    Map<String, dynamic> diag;
+    try {
+      diag = await AdminApiClient.instance.diagnose();
+    } catch (e) {
+      diag = {'error': e.toString()};
+    }
+    if (!context.mounted) return;
+    Navigator.of(context).pop(); // Loading-Dialog schliessen
+    final pretty = const JsonEncoder.withIndent('  ').convert(diag);
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        title: const Row(children: [
+          Icon(Icons.bug_report_rounded, color: Color(0xFF26A69A)),
+          SizedBox(width: 8),
+          Text('Worker-Diagnose',
+              style: TextStyle(color: Colors.white, fontSize: 16)),
+        ]),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              pretty,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'monospace',
+                fontSize: 11,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Schliessen'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _load() async {
     if (!mounted) return;
     try {
@@ -862,6 +916,16 @@ class _OverviewTabState extends State<_OverviewTab> {
             ),
           ]),
           const SizedBox(height: 10),
+          // PHASE-3 FIX: Diagnose-Button -- prueft Worker-Erreichbarkeit,
+          // HMAC-Header und Profile-Setup live. Bei 403/Fehler sieht der
+          // Admin sofort WAS schiefgelaufen ist statt nur "Keine Nutzer".
+          _QuickActionBtn(
+            icon: Icons.bug_report_rounded,
+            label: 'Diagnose: Worker-Verbindung pruefen',
+            color: const Color(0xFF26A69A),
+            onTap: () => _runDiagnose(context),
+          ),
+          const SizedBox(height: 10),
           // Web-User-Verwaltung (für alle Admins sichtbar)
           if (widget.admin.isAdmin) ...[
             _QuickActionBtn(
@@ -1044,9 +1108,28 @@ class _UsersTabState extends State<_UsersTab> {
           _applyFilter();
           _loading = false;
           if (users.isEmpty) {
-            _errorMessage =
-                // AUDIT-FIX C4: User-freundliche Meldung statt Tech-Sprech.
-                'Keine Nutzer geladen.\nBackend evtl. nicht erreichbar -- bitte spaeter erneut versuchen.';
+            // PHASE-4 FIX: Bei leerer Liste den LETZTEN Worker-Fehler aus
+            // dem Diag-Log holen damit der Admin sieht WAS schiefging.
+            final lastCall = AdminApiClient.instance.diagLog
+                .where((c) => c.path == '/api/admin/users')
+                .toList()
+                .reversed
+                .firstOrNull;
+            if (lastCall != null && lastCall.statusCode >= 400) {
+              _errorMessage =
+                  'Worker-Fehler: HTTP ${lastCall.statusCode}\n'
+                  '${lastCall.message}\n\n'
+                  'Tipp: Tap auf "Diagnose" in der Uebersicht fuer Details.';
+            } else if (lastCall != null && lastCall.statusCode == 0) {
+              _errorMessage =
+                  'Netzwerk-Fehler: ${lastCall.message}\n\n'
+                  'Tipp: Internet pruefen + Diagnose-Button in der Uebersicht.';
+            } else {
+              _errorMessage =
+                  'Keine Nutzer gefunden.\n\n'
+                  'Falls das nicht stimmt, tap auf "Diagnose" in der '
+                  'Uebersicht um die Worker-Verbindung zu pruefen.';
+            }
           }
         });
       }
