@@ -196,7 +196,7 @@ class EnhancedAppThemes {
       ),
 
       // Dialog — premium rounded
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 8,
         backgroundColor: lightSurface,
@@ -400,7 +400,7 @@ class EnhancedAppThemes {
       ),
 
       // Dialog — premium rounded
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         elevation: 0,
         backgroundColor: const Color(0xFF1A1A2E),
