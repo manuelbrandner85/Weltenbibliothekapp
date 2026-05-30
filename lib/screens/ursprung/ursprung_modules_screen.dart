@@ -39,6 +39,10 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
   int _totalCount = 0;
   int _completedCount = 0;
 
+  // V1-Pattern: Modul-Suche
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
   // Branch-Code → Icon. Codes wie in der DB (snake_case).
   static const Map<String, IconData> _branchIcons = {
     'gateway_foundation': Icons.foundation,
@@ -70,6 +74,40 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
   void initState() {
     super.initState();
     _fetchModules();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> _searchResults() {
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    final results = <Map<String, dynamic>>[];
+    for (final branch in _branchOrder) {
+      for (final m in _branches[branch] ?? const []) {
+        final title = (m['title'] as String?)?.toLowerCase() ?? '';
+        final code = (m['module_code'] as String?)?.toLowerCase() ?? '';
+        final sub = (m['subtitle'] as String?)?.toLowerCase() ?? '';
+        if (title.contains(q) || code.contains(q) || sub.contains(q)) {
+          results.add(m);
+        }
+      }
+    }
+    return results;
+  }
+
+  Map<String, dynamic>? _nextModule() {
+    for (final branch in _branchOrder) {
+      for (final m in _branches[branch] ?? const []) {
+        final completed = m['is_completed'] == true;
+        final unlocked = m['is_unlocked'] == true;
+        if (unlocked && !completed) return m;
+      }
+    }
+    return null;
   }
 
   Future<void> _fetchModules() async {
@@ -195,6 +233,8 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
 
   Widget _buildContent() {
     final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
+    final next = _nextModule();
+    final results = _searchResults();
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
       children: [
@@ -259,14 +299,90 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
                   fontSize: 12,
                 ),
               ),
+              if (next != null) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _openLesson(next),
+                    icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                    label: Text(
+                      'Weitermachen: ${next['title'] ?? ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _gold,
+                      foregroundColor: _bgBlack,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
 
-        // 6 Branches
-        for (final branchName in _branchOrder)
-          _buildBranchTile(branchName, _branches[branchName] ?? const []),
+        // Modul-Suche
+        TextField(
+          controller: _searchCtrl,
+          style: const TextStyle(color: Colors.white),
+          onChanged: (v) => setState(() => _searchQuery = v),
+          decoration: InputDecoration(
+            hintText: 'Modul suchen (Code oder Stichwort)',
+            hintStyle:
+                TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+            prefixIcon: Icon(Icons.search, color: _gold.withValues(alpha: 0.7)),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.close,
+                        color: _gold.withValues(alpha: 0.7)),
+                    onPressed: () {
+                      _searchCtrl.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.04),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _gold.withValues(alpha: 0.6)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        if (_searchQuery.trim().isNotEmpty) ...[
+          if (results.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Text(
+                  'Kein Modul gefunden für "$_searchQuery"',
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5)),
+                ),
+              ),
+            )
+          else
+            ...results.map(_buildModuleTile),
+        ] else
+          // 5 Branches
+          for (final branchName in _branchOrder)
+            _buildBranchTile(branchName, _branches[branchName] ?? const []),
       ],
     );
   }
