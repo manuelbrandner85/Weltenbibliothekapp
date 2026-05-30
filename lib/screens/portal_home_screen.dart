@@ -155,8 +155,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
         vsync: this,
       )..forward();
 
-      // Initialize 200 Particles
-      _particles = List.generate(200, (i) => Particle(index: i));
+      // 80 Particles — ausreichend visuell, halbierter GPU-Aufwand
+      _particles = List.generate(80, (i) => Particle(index: i));
 
       // Initialize 100 Stars (v5.37)
       _stars = List.generate(100, (i) => Star(index: i));

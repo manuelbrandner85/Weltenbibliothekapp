@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 
 enum WBGlowButtonVariant { primary, secondary, ghost }
@@ -56,10 +57,14 @@ class _WBGlowButtonState extends State<WBGlowButton> {
       case WBGlowButtonVariant.primary:
         deco = BoxDecoration(
           gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
+              Color.lerp(palette.primary, Colors.white, 0.18)!,
               palette.primary,
-              palette.deep,
+              Color.lerp(palette.primary, Colors.black, 0.22)!,
             ],
+            stops: const [0.0, 0.50, 1.0],
           ),
           borderRadius: BorderRadius.circular(WBRadius.md),
           boxShadow: disabled
@@ -67,10 +72,15 @@ class _WBGlowButtonState extends State<WBGlowButton> {
               : [
                   BoxShadow(
                     color: palette.primary
-                        .withValues(alpha: _pressed ? 0.65 : 0.40),
-                    blurRadius: _pressed ? 36 : 24,
-                    spreadRadius: _pressed ? 2 : 0,
+                        .withValues(alpha: _pressed ? 0.70 : 0.45),
+                    blurRadius: _pressed ? 40 : 28,
+                    spreadRadius: _pressed ? 3 : 0,
                     offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: palette.primary.withValues(alpha: 0.12),
+                    blurRadius: 60,
+                    spreadRadius: 8,
                   ),
                 ],
         );
@@ -113,11 +123,10 @@ class _WBGlowButtonState extends State<WBGlowButton> {
         ],
         Text(
           widget.label,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w500,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
             fontSize: 13,
-            letterSpacing: 1.6,
+            letterSpacing: 1.4,
             color: textColor.withValues(alpha: disabled ? 0.40 : 1.0),
           ),
         ),

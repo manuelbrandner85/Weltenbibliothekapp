@@ -6,6 +6,7 @@ import '../../theme/wb_cinematic_tokens.dart';
 ///
 /// Verwendet einen einzelnen `BackdropFilter` (medium blur) und genau
 /// 2 BoxShadows (drop + welt-glow), damit GPU-Last minimal bleibt.
+/// Top-Edge Specular simuliert echtes Glas-Licht.
 /// Wrap-bar mit `RepaintBoundary` von außen, falls dauerhaft animiert.
 class WBGlassCard extends StatelessWidget {
   final Widget child;
@@ -33,6 +34,39 @@ class WBGlassCard extends StatelessWidget {
     final palette = wb.palette(world);
     final bg = elevated ? wb.glassElevated : wb.glassBase;
 
+    final cardContent = Stack(
+      children: [
+        // Content layer
+        Container(
+          padding: padding,
+          child: child,
+        ),
+        // Top-edge specular highlight — simulates glass refractive index
+        IgnorePointer(
+          child: Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: radius + 2,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(radius)),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.07),
+                    Colors.white.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
     final card = ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
@@ -56,8 +90,7 @@ class WBGlassCard extends StatelessWidget {
                 ),
             ],
           ),
-          padding: padding,
-          child: child,
+          child: cardContent,
         ),
       ),
     );
