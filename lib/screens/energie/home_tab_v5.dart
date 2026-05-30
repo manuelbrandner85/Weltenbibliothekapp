@@ -409,6 +409,125 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     return '🌘 Alt';
   }
 
+  /// E6: Mondphasen-basierte Tagesempfehlung.
+  ({String theme, String tool, String hint, IconData icon}) get _dailyRecommendation {
+    final now = DateTime.now();
+    final daysSinceNew = now.difference(DateTime(2000, 1, 6)).inDays % 29;
+    if (daysSinceNew < 4) {
+      return (
+        theme: 'Neubeginn & Intention',
+        tool: 'Numerologie & Tarot',
+        hint: 'Der Neumond eignet sich, um Absichten zu setzen.',
+        icon: Icons.brightness_3,
+      );
+    }
+    if (daysSinceNew < 11) {
+      return (
+        theme: 'Wachstum & Aufbau',
+        tool: 'Chakren & Affirmationen',
+        hint: 'Zunehmender Mond -- Energie aufbauen und nähren.',
+        icon: Icons.spa_rounded,
+      );
+    }
+    if (daysSinceNew < 19) {
+      return (
+        theme: 'Manifestation & Klarheit',
+        tool: 'Meditation & Frequenzen',
+        hint: 'Vollmond -- Höhepunkt der Energie, ideal zum Manifestieren.',
+        icon: Icons.brightness_7,
+      );
+    }
+    return (
+      theme: 'Loslassen & Reinigung',
+      tool: 'Schattenarbeit & Atem',
+      hint: 'Abnehmender Mond -- bewusst loslassen, was nicht mehr dient.',
+      icon: Icons.brightness_4,
+    );
+  }
+
+  Widget _buildDailyToolRecommendationSliver() {
+    final rec = _dailyRecommendation;
+    const purple = Color(0xFF7C4DFF);
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+        child: GestureDetector(
+          onTap: _openSpiritTab,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  purple.withValues(alpha: 0.18),
+                  const Color(0xFF26C6DA).withValues(alpha: 0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: purple.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: purple.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(rec.icon, color: const Color(0xFFCE93D8), size: 26),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text('$_moonEmoji ',
+                              style: const TextStyle(fontSize: 13)),
+                          const Text(
+                            'TAGES-EMPFEHLUNG',
+                            style: TextStyle(
+                              color: Color(0xFFCE93D8),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        rec.theme,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${rec.tool} · ${rec.hint}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right,
+                    color: Colors.white.withValues(alpha: 0.4)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   String get _moonEmoji => _moonPhase.split(' ').first;
   String get _moonName {
     final parts = _moonPhase.split(' ');
@@ -480,6 +599,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     // Random pro Tag, deterministisch via Datum-Seed).
                     const SliverToBoxAdapter(child: DailyMantraBanner()),
                     _buildDailyQuoteSliver(),
+                    // ✨ E6: Tages-Empfehlung basierend auf Mondphase
+                    _buildDailyToolRecommendationSliver(),
                     _buildCosmicEnergySliver(),
                     _buildLiveStatBanner(),
                     const SliverToBoxAdapter(child: DailyPathWidget()),
