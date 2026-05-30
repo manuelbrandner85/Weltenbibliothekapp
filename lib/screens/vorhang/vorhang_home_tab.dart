@@ -7,6 +7,7 @@ import '../../services/vorhang_service.dart';
 import '../shared/mentor_chat_screen.dart';
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
+import '../../widgets/daily_revelation_card.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_modules_screen.dart';
 
@@ -161,6 +162,10 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
 
               // FEATURE (V1): Level + XP + Streak sichtbar.
               const WorldXpHeader(world: 'vorhang', accent: Color(0xFFC9A84C)),
+              const SizedBox(height: 12),
+
+              // FEATURE (V2): Tägliche Enthüllung -- Macht-Prinzip des Tages.
+              const DailyRevelationCard(accent: Color(0xFFC9A84C)),
               const SizedBox(height: 20),
 
               // ── 🧠 KI-Mentor Button (PRESERVED, lines 167-239 original) ──

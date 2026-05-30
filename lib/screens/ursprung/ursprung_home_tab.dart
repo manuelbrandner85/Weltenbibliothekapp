@@ -5,6 +5,7 @@ import '../shared/mentor_chat_screen.dart';
 
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
+import '../../widgets/daily_revelation_card.dart';
 
 import 'ursprung_modules_screen.dart';
 import 'tools/gateway_room_screen.dart';
@@ -41,6 +42,15 @@ class UrsprungHomeTab extends StatelessWidget {
 
             // FEATURE (U1): Level + XP + Streak sichtbar.
             const WorldXpHeader(world: 'ursprung', accent: Color(0xFF00D4AA)),
+            const SizedBox(height: 12),
+
+            // FEATURE (V2-analog): Täglicher Bewusstseins-Impuls.
+            DailyRevelationCard(
+              accent: const Color(0xFF00D4AA),
+              emoji: '🌌',
+              label: 'IMPULS DES TAGES',
+              principles: DailyRevelationCard.ursprungInsights,
+            ),
             const SizedBox(height: 16),
 
             // ── Mentor: Der Alchemist ──
