@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/mentor_service.dart';
 import '../../widgets/mentor_hero_card.dart';
 import '../shared/mentor_chat_screen.dart';
@@ -244,10 +245,9 @@ class UrsprungHomeTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'URSPRUNG',
-            style: TextStyle(
-              fontFamily: 'Inter',
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w200,
               fontSize: 36,
               letterSpacing: 10.0,

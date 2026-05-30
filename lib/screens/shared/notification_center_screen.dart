@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
@@ -263,10 +264,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           children: [
             Icon(Icons.notifications, color: _accentLight, size: 20),
             const SizedBox(width: 10),
-            const Text(
+            Text(
               'Benachrichtigungen',
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w400,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/stats/stats_charts.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -288,8 +289,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
               widget.world == 'materie'
                   ? 'Materie Statistiken'
                   : 'Energie Statistiken',
-              style: const TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w400,
                 letterSpacing: 0.4,

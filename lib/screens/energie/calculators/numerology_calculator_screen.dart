@@ -6,6 +6,7 @@ import 'dart:io' if (dart.library.html) '../../../stubs/dart_io_stub.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../models/energie_profile.dart';
 import '../../../services/achievement_service.dart';
@@ -198,10 +199,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             colors: [secondaryColor, primaryColor, accentCyan],
             stops: [0.0, 0.55, 1.0],
           ).createShader(rect),
-          child: const Text(
+          child: Text(
             'NUMEROLOGIE',
-            style: TextStyle(
-              fontFamily: 'Inter',
+            style: GoogleFonts.inter(
               fontSize: 17,
               fontWeight: FontWeight.w300,
               letterSpacing: 6.0,

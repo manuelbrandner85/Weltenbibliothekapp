@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'dart:async';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'materie_world_wrapper.dart';
 import 'energie_world_wrapper.dart';
 import 'vorhang/vorhang_world_wrapper.dart';
@@ -1398,8 +1399,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         Rect.fromLTWH(0, 0, b.width * total, b.height)),
                     child: Text(
                       letters[i] == ' ' ? ' ' : letters[i],
-                      style: const TextStyle(
-                          fontFamily: 'Inter',
+                      style: GoogleFonts.inter(
                           fontWeight: FontWeight.w300,
                           fontSize: 38,
                           letterSpacing: 10,
@@ -1409,8 +1409,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   )
                 : Text(
                     letters[i] == ' ' ? ' ' : letters[i],
-                    style: TextStyle(
-                        fontFamily: 'Inter',
+                    style: GoogleFonts.inter(
                         fontWeight: FontWeight.w200,
                         fontSize: 38,
                         letterSpacing: 10,

@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_ambient_particles.dart';
@@ -674,8 +675,7 @@ class _IntroView extends StatelessWidget {
             child: Text(
               'Welche Welt\ngehört zu dir?',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Cormorant Garamond',
+              style: GoogleFonts.cormorantGaramond(
                 fontSize: 42,
                 height: 1.05,
                 fontWeight: FontWeight.w600,
@@ -689,8 +689,7 @@ class _IntroView extends StatelessWidget {
             child: Text(
               '7 Fragen. Sei ehrlich, nicht clever.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontSize: 16,
                 color: Colors.white.withValues(alpha: 0.68),
                 letterSpacing: 0.4,
@@ -815,8 +814,7 @@ class _QuizView extends StatelessWidget {
               child: Text(
                 question.prompt,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Cormorant Garamond',
+                style: GoogleFonts.cormorantGaramond(
                   fontSize: 28,
                   height: 1.2,
                   fontWeight: FontWeight.w600,
@@ -953,8 +951,7 @@ class _OptionCardState extends State<_OptionCard> {
                   Expanded(
                     child: Text(
                       widget.label,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
+                      style: GoogleFonts.inter(
                         color: Colors.white.withValues(alpha: 0.92),
                         fontSize: 15,
                         height: 1.35,
@@ -1043,8 +1040,7 @@ class _ResultView extends StatelessWidget {
             child: Text(
               info.name.toUpperCase(),
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 color: info.color,
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
@@ -1064,8 +1060,7 @@ class _ResultView extends StatelessWidget {
             child: Text(
               info.description,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Cormorant Garamond',
+              style: GoogleFonts.cormorantGaramond(
                 color: Colors.white.withValues(alpha: 0.88),
                 fontSize: 19,
                 height: 1.4,
