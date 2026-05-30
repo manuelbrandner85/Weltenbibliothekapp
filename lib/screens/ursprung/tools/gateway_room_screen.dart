@@ -60,6 +60,25 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
   late final AnimationController _pulseController;
   final AudioPlayer _player = AudioPlayer();
   bool _audioOn = false;
+  bool _guidedMode = true; // U4: gefuehrter Modus mit Text-Prompts
+
+  // U4: zeitgesteuerte Anleitungstexte waehrend der Session.
+  static const List<_GuidePrompt> _guidePrompts = [
+    _GuidePrompt(0, 'Schliesse die Augen. Atme ruhig und tief.'),
+    _GuidePrompt(20, 'Spüre, wie dein Körper schwer und entspannt wird.'),
+    _GuidePrompt(50, 'Lass jeden Gedanken vorbeiziehen, ohne ihn festzuhalten.'),
+    _GuidePrompt(90, 'Richte deine Aufmerksamkeit auf die Frequenz.'),
+    _GuidePrompt(140, 'Dein Geist ist wach, dein Körper ruht vollkommen.'),
+    _GuidePrompt(200, 'Öffne dich für die erweiterte Wahrnehmung.'),
+  ];
+
+  String _currentPrompt() {
+    String text = _guidePrompts.first.text;
+    for (final p in _guidePrompts) {
+      if (_elapsedSeconds >= p.atSecond) text = p.text;
+    }
+    return text;
+  }
 
   @override
   void initState() {
@@ -324,6 +343,63 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
                     );
                   }).toList(),
                 ),
+                const SizedBox(height: 16),
+                // U4: Toggle fuer gefuehrten Modus
+                GestureDetector(
+                  onTap: () => setState(() => _guidedMode = !_guidedMode),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _guidedMode
+                            ? _cyan.withValues(alpha: 0.5)
+                            : Colors.white.withValues(alpha: 0.10),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _guidedMode
+                              ? Icons.auto_awesome
+                              : Icons.auto_awesome_outlined,
+                          color: _guidedMode ? _cyan : Colors.white38,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Geführter Modus',
+                                style: TextStyle(
+                                  color: _guidedMode ? _cyan : Colors.white70,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                'Sanfte Text-Anleitung während der Session',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.45),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _guidedMode,
+                          onChanged: (v) => setState(() => _guidedMode = v),
+                          activeColor: _cyan,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _start,
@@ -366,6 +442,36 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
                     ),
                   ),
                 ),
+                // U4: gefuehrter Modus - sanfte Anleitungstexte
+                if (_guidedMode) ...[
+                  const SizedBox(height: 20),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 600),
+                    child: Container(
+                      key: ValueKey(_currentPrompt()),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: level.color.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: level.color.withValues(alpha: 0.20),
+                        ),
+                      ),
+                      child: Text(
+                        _currentPrompt(),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 15,
+                          height: 1.5,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Row(
                   children: [
@@ -444,4 +550,11 @@ class _FocusLevel {
     this.frequencyHz,
     this.color,
   );
+}
+
+/// U4: Ein zeitgesteuerter Anleitungstext im gefuehrten Modus.
+class _GuidePrompt {
+  final int atSecond;
+  final String text;
+  const _GuidePrompt(this.atSecond, this.text);
 }

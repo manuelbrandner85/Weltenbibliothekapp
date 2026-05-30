@@ -63,6 +63,9 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
   Timer? _timer;
   late final AnimationController _scaleCtrl;
 
+  // Session-Tracking fuer Abschluss-Statistik (U3)
+  DateTime? _sessionStartedAt;
+
   @override
   void initState() {
     super.initState();
@@ -86,6 +89,7 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
       _stepIdx = 0;
       _cycleCount = 0;
       _stepRemaining = pattern.steps[0].seconds;
+      _sessionStartedAt = DateTime.now();
     });
     _animateStep();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -124,7 +128,121 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
   void _stop() {
     _timer?.cancel();
     _scaleCtrl.stop();
+    final pattern = _patterns[_patternIdx];
+    final cycles = _cycleCount;
+    final start = _sessionStartedAt;
+    final durationSec =
+        start != null ? DateTime.now().difference(start).inSeconds : 0;
     setState(() => _running = false);
+    // U3: Abschluss-Statistik anzeigen (nur bei nennenswerter Session)
+    if (durationSec >= 5) {
+      _showSummary(pattern, cycles, durationSec);
+    }
+  }
+
+  void _showSummary(_BreathPattern pattern, int cycles, int durationSec) {
+    final mins = durationSec ~/ 60;
+    final secs = durationSec % 60;
+    final durLabel = mins > 0 ? '$mins min $secs s' : '$secs s';
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF080818),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Icon(Icons.spa_rounded, color: pattern.color, size: 40),
+            const SizedBox(height: 12),
+            const Text(
+              'Atem-Session abgeschlossen',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _summaryStat('$cycles', 'Zyklen', pattern.color),
+                _summaryStat(durLabel, 'Dauer', pattern.color),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: pattern.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                pattern.name,
+                style: TextStyle(
+                  color: pattern.color,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: pattern.color,
+                  foregroundColor: _bgDeep,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Schliessen',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryStat(String value, String label, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 26,
+            fontWeight: FontWeight.w300,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
+            fontSize: 12,
+            letterSpacing: 1.0,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
