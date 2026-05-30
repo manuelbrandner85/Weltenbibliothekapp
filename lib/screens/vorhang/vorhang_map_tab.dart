@@ -24,6 +24,26 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
   final _mapController = MapController();
   _PowerCenter? _selected;
 
+  // FEATURE (V9): Kategorie-Filter. 'all' = alle anzeigen.
+  String _categoryFilter = 'all';
+
+  static const Map<String, ({String label, String emoji})> _categories = {
+    'all': (label: 'Alle', emoji: '🌐'),
+    'thinktank': (label: 'Think-Tanks', emoji: '🧠'),
+    'finance': (label: 'Finanz', emoji: '💰'),
+    'intel': (label: 'Geheimdienste', emoji: '🕵️'),
+    'secret': (label: 'Geheimbünde', emoji: '🔺'),
+    'media': (label: 'Medien', emoji: '📡'),
+    'tech': (label: 'Tech', emoji: '💻'),
+    'edu': (label: 'Bildung', emoji: '🎓'),
+    'religion': (label: 'Religion', emoji: '⛪'),
+  };
+
+  List<_PowerCenter> get _visibleCenters {
+    if (_categoryFilter == 'all') return _centers;
+    return _centers.where((c) => c.category == _categoryFilter).toList();
+  }
+
   void _showDetail(_PowerCenter c) {
     setState(() => _selected = c);
     showModalBottomSheet(
@@ -208,7 +228,7 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
               userAgentPackageName: 'com.myapp.mobile',
             ),
             MarkerLayer(
-              markers: _centers.map((c) {
+              markers: _visibleCenters.map((c) {
                 final sel = _selected?.name == c.name;
                 return Marker(
                   point: LatLng(c.lat, c.lng),
@@ -264,10 +284,62 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                         fontWeight: FontWeight.bold,
                         letterSpacing: 3)),
                 Text(
-                  '${_centers.length} Standorte · Marker antippen für Details',
+                  '${_visibleCenters.length} von ${_centers.length} Standorten · Marker antippen',
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.45),
                       fontSize: 12),
+                ),
+                const SizedBox(height: 10),
+                // FEATURE (V9): Kategorie-Filter-Chips.
+                SizedBox(
+                  height: 34,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: _categories.entries.map((e) {
+                      final active = _categoryFilter == e.key;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () =>
+                              setState(() => _categoryFilter = e.key),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? _gold.withValues(alpha: 0.9)
+                                  : _gold.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: active
+                                    ? _gold
+                                    : _gold.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(e.value.emoji,
+                                    style: const TextStyle(fontSize: 13)),
+                                const SizedBox(width: 5),
+                                Text(
+                                  e.value.label,
+                                  style: TextStyle(
+                                    color:
+                                        active ? Colors.black : Colors.white70,
+                                    fontSize: 12,
+                                    fontWeight: active
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
             ),

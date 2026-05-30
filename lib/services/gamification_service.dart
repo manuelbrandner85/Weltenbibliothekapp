@@ -1573,9 +1573,18 @@ class GamificationService {
   // ═══════════════════════════════════════════════════════════
 
   /// Gesamte XP über alle Welten.
+  /// FIX: vorher 'noir'/'genesis' (veraltete Welt-Namen) -> Vorhang +
+  /// Ursprung XP wurde nie mitgezaehlt.
+  static const List<String> allWorlds = [
+    'materie',
+    'energie',
+    'vorhang',
+    'ursprung',
+  ];
+
   int get totalXpAllWorlds {
     var total = 0;
-    for (final world in ['materie', 'energie', 'noir', 'genesis']) {
+    for (final world in allWorlds) {
       total += getProgress(world).totalXp;
     }
     return total;

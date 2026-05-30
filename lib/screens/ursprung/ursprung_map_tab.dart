@@ -27,6 +27,24 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
   final _mapController = MapController();
   _ResearchSite? _selected;
 
+  // FEATURE (U7): Kategorie-Filter fuer die Forschungsstaetten.
+  String _categoryFilter = 'all';
+
+  static const Map<String, ({String label, String emoji})> _categories = {
+    'all': (label: 'Alle', emoji: '🌐'),
+    'consciousness': (label: 'Bewusstsein', emoji: '🧠'),
+    'rv': (label: 'Remote Viewing', emoji: '👁️'),
+    'ufo': (label: 'UFO/Anomalien', emoji: '🛸'),
+    'archaeology': (label: 'Archäologie', emoji: '🏛️'),
+    'tradition': (label: 'Traditionen', emoji: '📜'),
+    'cymatics': (label: 'Kymatik', emoji: '🌊'),
+  };
+
+  List<_ResearchSite> get _visibleSites {
+    if (_categoryFilter == 'all') return _sites;
+    return _sites.where((s) => s.category == _categoryFilter).toList();
+  }
+
   void _showDetail(_ResearchSite s) {
     setState(() => _selected = s);
     showModalBottomSheet(
@@ -222,7 +240,7 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
               userAgentPackageName: 'com.myapp.mobile',
             ),
             MarkerLayer(
-              markers: _sites.map((s) {
+              markers: _visibleSites.map((s) {
                 final sel = _selected?.name == s.name;
                 return Marker(
                   point: LatLng(s.lat, s.lng),
@@ -278,10 +296,62 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                         fontWeight: FontWeight.bold,
                         letterSpacing: 3)),
                 Text(
-                  '${_sites.length} Forschungsstandorte · Marker antippen für Details',
+                  '${_visibleSites.length} von ${_sites.length} Standorten · Marker antippen',
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.45),
                       fontSize: 12),
+                ),
+                const SizedBox(height: 10),
+                // FEATURE (U7): Kategorie-Filter-Chips.
+                SizedBox(
+                  height: 34,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: _categories.entries.map((e) {
+                      final active = _categoryFilter == e.key;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: GestureDetector(
+                          onTap: () =>
+                              setState(() => _categoryFilter = e.key),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? _cyan.withValues(alpha: 0.9)
+                                  : _cyan.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                color: active
+                                    ? _cyan
+                                    : _cyan.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(e.value.emoji,
+                                    style: const TextStyle(fontSize: 13)),
+                                const SizedBox(width: 5),
+                                Text(
+                                  e.value.label,
+                                  style: TextStyle(
+                                    color:
+                                        active ? Colors.black : Colors.white70,
+                                    fontSize: 12,
+                                    fontWeight: active
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
             ),

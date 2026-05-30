@@ -56,7 +56,10 @@ class _WorldXpHeaderState extends State<WorldXpHeader> {
     final xpInLevel = p.totalXp - p.xpForCurrentLevel;
     final xpNeeded = p.xpForNextLevel - p.xpForCurrentLevel;
 
-    return Container(
+    return GestureDetector(
+      // Tap auf den Header oeffnet das welten-uebergreifende Dashboard (P5).
+      onTap: () => Navigator.of(context).pushNamed('/global_profile'),
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -191,6 +194,7 @@ class _WorldXpHeaderState extends State<WorldXpHeader> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
