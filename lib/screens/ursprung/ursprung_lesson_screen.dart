@@ -10,6 +10,7 @@ import '../../services/gamification_service.dart';
 import '../../services/ursprung_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/wb_cached_image.dart';
 
 /// 🌀 URSPRUNG Lesson Screen
 ///
@@ -864,10 +865,11 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
+                      // PERF (P11): Video-Thumbnails cachen.
+                      WbCachedImage(
                         thumb,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorWidget: Container(
                           color: _surface,
                           child: Icon(Icons.video_library,
                               color: _gold.withValues(alpha: 0.4), size: 40),

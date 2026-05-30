@@ -12,6 +12,7 @@ import '../../services/vorhang_lesson_notes_service.dart'; // 📝 I1
 import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/wb_cached_image.dart';
 
 /// 🎭 VORHANG Lesson Screen
 ///
@@ -870,10 +871,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
+                      // PERF (P11): Video-Thumbnails cachen.
+                      WbCachedImage(
                         thumb,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorWidget: Container(
                           color: _surface,
                           child: Icon(Icons.video_library,
                               color: _gold.withValues(alpha: 0.4), size: 40),

@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../data/vorhang_power_centers.dart';
+import '../../widgets/wb_cached_image.dart';
 
 class VorhangMapTab extends StatefulWidget {
   const VorhangMapTab({super.key});
@@ -74,32 +75,19 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                 ),
               ),
               if (c.imageUrl != null) ...[
-                ClipRRect(
+                // PERF (P11): CachedNetworkImage.
+                WbCachedImage(
+                  c.imageUrl!,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    c.imageUrl!,
+                  errorWidget: Container(
                     height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (_, child, p) => p == null
-                        ? child
-                        : Container(
-                            height: 180,
-                            color: Colors.white.withValues(alpha: 0.04),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: _gold,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          ),
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 180,
-                      color: Colors.white.withValues(alpha: 0.04),
-                      alignment: Alignment.center,
-                      child: Icon(c.icon,
-                          color: _gold.withValues(alpha: 0.6), size: 48),
-                    ),
+                    color: Colors.white.withValues(alpha: 0.04),
+                    alignment: Alignment.center,
+                    child: Icon(c.icon,
+                        color: _gold.withValues(alpha: 0.6), size: 48),
                   ),
                 ),
                 const SizedBox(height: 14),

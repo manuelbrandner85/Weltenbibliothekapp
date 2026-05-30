@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../data/ursprung_research_sites.dart';
+import '../../widgets/wb_cached_image.dart';
 
 class UrsprungMapTab extends StatefulWidget {
   const UrsprungMapTab({super.key});
@@ -75,30 +76,19 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                 ),
               ),
               if (s.imageUrl != null) ...[
-                ClipRRect(
+                // PERF (P11): CachedNetworkImage.
+                WbCachedImage(
+                  s.imageUrl!,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    s.imageUrl!,
+                  errorWidget: Container(
                     height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (_, child, p) => p == null
-                        ? child
-                        : Container(
-                            height: 180,
-                            color: Colors.white.withValues(alpha: 0.04),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                  color: _cyan, strokeWidth: 2),
-                            ),
-                          ),
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 180,
-                      color: Colors.white.withValues(alpha: 0.04),
-                      alignment: Alignment.center,
-                      child: Icon(s.icon,
-                          color: _cyan.withValues(alpha: 0.6), size: 48),
-                    ),
+                    color: Colors.white.withValues(alpha: 0.04),
+                    alignment: Alignment.center,
+                    child: Icon(s.icon,
+                        color: _cyan.withValues(alpha: 0.6), size: 48),
                   ),
                 ),
                 const SizedBox(height: 14),

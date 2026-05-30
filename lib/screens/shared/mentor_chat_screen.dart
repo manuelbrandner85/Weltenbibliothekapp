@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt; // 🎤 L2
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/mentor_service.dart';
+import '../../widgets/wb_cached_image.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 🧠 MENTOR CHAT SCREEN — KI-Mentor mit 4 Persönlichkeiten
@@ -1015,21 +1016,20 @@ class _MentorChatScreenState extends State<MentorChatScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail
-            ClipRRect(
+            // PERF (P11): Mentor-Video-Thumbnails cachen.
+            WbCachedImage(
+              thumbnail,
+              height: 85,
+              width: 200,
+              fit: BoxFit.cover,
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.network(
-                thumbnail,
+              errorWidget: Container(
                 height: 85,
                 width: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  height: 85,
-                  width: 200,
-                  color: Colors.white.withValues(alpha: 0.05),
-                  child: const Icon(Icons.play_circle_outline,
-                      color: Colors.white30, size: 32),
-                ),
+                color: Colors.white.withValues(alpha: 0.05),
+                child: const Icon(Icons.play_circle_outline,
+                    color: Colors.white30, size: 32),
               ),
             ),
             // Title

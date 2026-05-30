@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/thread.dart';
 import '../widgets/kb_design.dart';
+import '../../../../widgets/wb_cached_image.dart';
 
 class KeyPersonsCard extends StatelessWidget {
   final List<KeyPerson> persons;
@@ -133,10 +134,11 @@ class _PersonTile extends StatelessWidget {
               height: 100,
               width: double.infinity,
               child: person.imageUrl != null
-                  ? Image.network(
+                  // PERF (P11): Personen-Portraits cachen.
+                  ? WbCachedImage(
                       person.imageUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _initialAvatar(),
+                      errorWidget: _initialAvatar(),
                     )
                   : _initialAvatar(),
             ),

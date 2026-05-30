@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../services/youtube_service.dart';
 import '../../../../widgets/youtube_player_inline.dart';
+import '../../../../widgets/wb_cached_image.dart';
 
 class YoutubeCard extends StatefulWidget {
   final String topic;
@@ -198,14 +199,15 @@ class _VideoTile extends StatelessWidget {
           children: [
             Stack(
               children: [
-                Image.network(
+                // PERF (P11): Video-Thumbnails cachen.
+                WbCachedImage(
                   video.thumbnail.isNotEmpty
                       ? video.thumbnail
                       : video.fallbackThumbnail,
                   height: 90,
                   width: 160,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorWidget: Container(
                     height: 90,
                     color: Colors.white.withValues(alpha: 0.05),
                     child: const Center(
