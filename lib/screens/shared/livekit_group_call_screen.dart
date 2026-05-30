@@ -38,6 +38,7 @@ import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
 import '../../widgets/pip_overlay.dart';
+import '../../widgets/wb_cached_image.dart';
 
 // Per-Track-Info als Klasse statt Named-Record (dart2js-Bug-Workaround).
 class _TrackInfo {
@@ -2624,12 +2625,13 @@ class _ParticipantTileState extends State<_ParticipantTile>
                       clipBehavior: Clip.antiAlias,
                       child: (widget.avatarUrl != null &&
                               widget.avatarUrl!.isNotEmpty)
-                          ? Image.network(
+                          // PERF-FIX (#3): Avatar im Call cachen.
+                          ? WbCachedImage(
                               widget.avatarUrl!,
                               fit: BoxFit.cover,
                               width: avatarSize,
                               height: avatarSize,
-                              errorBuilder: (_, __, ___) => Center(
+                              errorWidget: Center(
                                 child: Text(
                                   initials,
                                   style: TextStyle(

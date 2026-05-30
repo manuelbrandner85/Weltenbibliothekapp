@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // OpenClaw v2.0
 import '../services/achievement_service.dart';
 import '../services/haptic_service.dart';
@@ -25,6 +26,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
   AchievementCategory _selectedCategory =
       AchievementCategory.researcher; // ignore: unused_field
 
+  static const _kLastTabKey = 'achievements_last_tab';
+
   @override
   void initState() {
     super.initState();
@@ -33,14 +36,36 @@ class _AchievementsScreenState extends State<AchievementsScreen>
       vsync: this,
     );
 
+    // FIX (#12): letzten Tab wiederherstellen statt immer auf 0 zu springen.
+    _restoreLastTab();
+
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {
           _selectedCategory = AchievementCategory.values[_tabController.index];
         });
         HapticService.lightImpact();
+        // Tab-Index persistieren.
+        SharedPreferences.getInstance().then(
+            (p) => p.setInt(_kLastTabKey, _tabController.index));
       }
     });
+  }
+
+  Future<void> _restoreLastTab() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final idx = prefs.getInt(_kLastTabKey);
+      if (idx != null &&
+          idx >= 0 &&
+          idx < AchievementCategory.values.length &&
+          mounted) {
+        _tabController.index = idx;
+        setState(() {
+          _selectedCategory = AchievementCategory.values[idx];
+        });
+      }
+    } catch (_) {/* best-effort */}
   }
 
   @override

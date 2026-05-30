@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 import 'glassmorphism_card.dart';
 import 'premium_icons.dart';
+import 'wb_cached_image.dart';
 import '../services/media_services.dart'; // Real Tenor API
 
 /// 🎬 VIDEO PREVIEW WIDGET - Video-Vorschau mit Thumbnail
@@ -283,38 +284,14 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
                           widget.onGifSelected(gif['url']);
                           Navigator.pop(context);
                         },
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: gif['url'] != null &&
-                                  (gif['url'] as String).startsWith('http')
-                              ? Image.network(
-                                  gif['preview'] ?? gif['url'],
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Container(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                    child: Center(
-                                      child: Text(
-                                        gif['title'] ?? 'GIF',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 10),
-                                      ),
-                                    ),
-                                  ),
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.1),
-                                      child: const Center(
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2)),
-                                    );
-                                  },
-                                )
-                              : Container(
+                        // PERF-FIX (#3): GIF-Picker-Thumbnails cachen.
+                        child: gif['url'] != null &&
+                                (gif['url'] as String).startsWith('http')
+                            ? WbCachedImage(
+                                (gif['preview'] ?? gif['url']) as String?,
+                                fit: BoxFit.cover,
+                                borderRadius: BorderRadius.circular(12),
+                                errorWidget: Container(
                                   color: Colors.white.withValues(alpha: 0.1),
                                   child: Center(
                                     child: Text(
@@ -325,7 +302,21 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
                                     ),
                                   ),
                                 ),
-                        ),
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Container(
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  child: Center(
+                                    child: Text(
+                                      gif['title'] ?? 'GIF',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 10),
+                                    ),
+                                  ),
+                                ),
+                              ),
                       );
                     },
                   ),

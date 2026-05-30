@@ -432,28 +432,18 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
                             ),
                           ],
                         ),
-                        trailing: Icon(
-                          freqData['hasAudio'] == true
-                              ? Icons.play_circle_filled
-                              : Icons.music_note,
-                          color: freqData['hasAudio'] == true
-                              ? Colors.amber
-                              : Colors.grey,
+                        // FIX (#5): Alle Frequenzen werden live synthetisiert
+                        // (FrequencyAudioPlayer). Der frueh. 'noch nicht
+                        // verfuegbar'-Zweig war toter Code (freqData faellt
+                        // immer auf 528 zurueck, das hasAudio:true hat) und
+                        // widersprach der Anzeige. Jetzt: immer abspielbar.
+                        trailing: const Icon(
+                          Icons.play_circle_filled,
+                          color: Colors.amber,
                         ),
-                        onTap: () {
-                          if (freqData['hasAudio'] == true) {
-                            _showFrequencyPlayer(context, freq, freqData,
-                                session['duration_minutes']);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'ℹ️ Audio für ${freqData['name']} noch nicht verfügbar'),
-                                backgroundColor: Colors.orange,
-                              ),
-                            );
-                          }
-                        },
+                        onTap: () => _showFrequencyPlayer(
+                            context, freq, freqData,
+                            session['duration_minutes']),
                       ),
                     );
                   },

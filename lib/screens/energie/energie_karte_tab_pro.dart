@@ -10,6 +10,7 @@ import '../../services/youtube_service.dart';
 import '../../services/wikimedia_service.dart';
 import '../../widgets/live_pins_layer.dart'; // 📍 B9: Live-Pins-Marker
 import '../../widgets/youtube_player_inline.dart';
+import '../../widgets/wb_cached_image.dart';
 import '../../data/energie_extra_locations.dart'; // 📍 +25 Marker (Phase 2)
 
 /// ENERGIE-Karte Tab - Spirituelle Kraftorte & Ley-Lines
@@ -1241,30 +1242,12 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                               tag: 'map_image_${index}_${location.name}',
                               child: Transform.translate(
                                 offset: Offset(offset, 0),
-                                child: Image.network(
+                                // PERF-FIX (#3): Karten-Bilder cachen.
+                                child: WbCachedImage(
                                   allImages[index],
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                   height: 220,
-                                  loadingBuilder: (ctx, child, progress) {
-                                    if (progress == null) return child;
-                                    return Container(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.05),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(
-                                            color: Colors.white54,
-                                            strokeWidth: 2),
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (_, __, ___) => Container(
-                                    color: Colors.white.withValues(alpha: 0.05),
-                                    child: Icon(Icons.broken_image,
-                                        color:
-                                            Colors.white.withValues(alpha: 0.3),
-                                        size: 48),
-                                  ),
                                 ),
                               ),
                             ),
@@ -1405,14 +1388,15 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           clipBehavior: Clip.antiAlias,
           child: Row(children: [
             Stack(children: [
-              Image.network(
+              // PERF-FIX (#3): Video-Thumbnails cachen.
+              WbCachedImage(
                 video.thumbnail.isNotEmpty
                     ? video.thumbnail
                     : video.fallbackThumbnail,
                 width: 110,
                 height: 70,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorWidget: Container(
                   width: 110,
                   height: 70,
                   color: Colors.white.withValues(alpha: 0.05),
@@ -2024,13 +2008,12 @@ class _FullscreenImageViewerState extends State<_FullscreenImageViewer>
                         maxScale: 4.0,
                         child: Hero(
                           tag: 'map_image_${index}_${widget.locationName}',
-                          child: Image.network(
+                          // PERF-FIX (#3): Fullscreen-Bild cachen.
+                          child: WbCachedImage(
                             widget.images[index],
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Icon(
-                                Icons.broken_image,
-                                color: Colors.white30,
-                                size: 80),
+                            errorWidget: const Icon(Icons.broken_image,
+                                color: Colors.white30, size: 80),
                           ),
                         ),
                       );

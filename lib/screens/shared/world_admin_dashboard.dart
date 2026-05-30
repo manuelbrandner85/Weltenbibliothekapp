@@ -503,6 +503,7 @@ class _OverviewTabState extends State<_OverviewTab> {
   Map<String, dynamic> _stats = {};
   List<AuditLogEntry> _activity = [];
   bool _loading = true;
+  String? _loadError; // FIX (#6): Fehler im Overview-Tab sichtbar machen
   RealtimeChannel? _channel;
 
   @override
@@ -714,10 +715,22 @@ class _OverviewTabState extends State<_OverviewTab> {
           _stats = stats;
           _activity = logs;
           _loading = false;
+          // FIX (#6): bei 'error'-Feld in stats den Fehler anzeigen.
+          final statErr = stats['error'];
+          _loadError = (statErr is String && statErr.isNotEmpty)
+              ? 'Statistiken konnten nicht geladen werden ($statErr). '
+                  'Tipp: Diagnose-Button pruefen.'
+              : null;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadError = 'Uebersicht konnte nicht geladen werden.\n'
+              'Tipp: "Diagnose"-Button weiter unten pruefen.';
+        });
+      }
       if (kDebugMode) debugPrint('❌ Overview load: $e');
     }
   }
@@ -879,6 +892,30 @@ class _OverviewTabState extends State<_OverviewTab> {
             ]),
           ),
           const SizedBox(height: 16),
+
+          // FIX (#6): Fehler-Banner wenn Stats nicht geladen werden konnten.
+          if (_loadError != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.warning_amber_rounded,
+                    color: Colors.orange, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(_loadError!,
+                      style: const TextStyle(
+                          color: Colors.orangeAccent, fontSize: 12)),
+                ),
+              ]),
+            ),
+          ],
+          const SizedBox(height: 12),
 
           // ── 2×2 Statistik-Karten (ALLE KLICKBAR) ─────────────────
           _SectionLabel('Statistiken', Icons.analytics_rounded, widget.accent),
@@ -1371,6 +1408,27 @@ class _UsersTabState extends State<_UsersTab> {
   Future<void> _changeRole(WorldUser u, String newRole) async {
     if (u.role == newRole) {
       _snack('@${u.username} hat bereits diese Rolle');
+      return;
+    }
+    // FIX (#8): Client-seitiger Hierarchie-Pre-Check. Verhindert den
+    // Umweg ueber einen Worker-403 (der nur "fehlgeschlagen" zeigte).
+    if (!AppRoles.canPromoteToRole(widget.admin.role, newRole)) {
+      _snack(
+        'Deine Rolle (${_prettyRole(widget.admin.role ?? 'user')}) darf '
+        '"${_prettyRole(newRole)}" nicht vergeben.',
+        color: Colors.orange,
+      );
+      return;
+    }
+    // Selbst-Aenderung blockieren (Worker macht das auch, aber sofort
+    // klarere Meldung). Vergleich ueber Username da AdminState keine
+    // userId fuehrt.
+    final adminName = widget.admin.username?.trim().toLowerCase();
+    if (adminName != null &&
+        adminName.isNotEmpty &&
+        u.username.trim().toLowerCase() == adminName) {
+      _snack('Du kannst deine eigene Rolle nicht aendern.',
+          color: Colors.orange);
       return;
     }
     final pretty = _prettyRole(newRole);
@@ -2621,7 +2679,6 @@ class _SystemTab extends StatefulWidget {
 
 class _SystemTabState extends State<_SystemTab> {
   final _health = HealthCheckService();
-  Timer? _uiTimer;
   bool _ready = false;
   bool _checking = false;
 
@@ -2629,9 +2686,14 @@ class _SystemTabState extends State<_SystemTab> {
   void initState() {
     super.initState();
     _init();
-    _uiTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (mounted) setState(() {});
-    });
+    // PERF-FIX (#1): Statt Timer.periodic alle 2s (= bis zu 1800 leere
+    // Rebuilds/Stunde, Akku-Drain) hoeren wir auf den ChangeNotifier.
+    // Rebuild nur wenn sich der Health-Status tatsaechlich aendert.
+    _health.addListener(_onHealthChanged);
+  }
+
+  void _onHealthChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _init() async {
@@ -2655,9 +2717,30 @@ class _SystemTabState extends State<_SystemTab> {
 
   @override
   void dispose() {
+    _health.removeListener(_onHealthChanged);
     _health.stopMonitoring();
-    _uiTimer?.cancel();
     super.dispose();
+  }
+
+  // FIX (#2): Metric-Cards hatten leere onTap-Handler (tote Buttons).
+  // Jetzt zeigen sie eine kurze Erklaerung der jeweiligen Metrik.
+  void _explainMetric(String title, String body) {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        content: Text(body,
+            style: const TextStyle(color: Colors.white70, height: 1.4)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Verstanden'),
+          ),
+        ],
+      ),
+    );
   }
 
   Color _latencyColor(double ms) {
@@ -2782,7 +2865,11 @@ class _SystemTabState extends State<_SystemTab> {
                     value: '${avgLatency.round()} ms',
                     icon: Icons.timer_rounded,
                     color: _latencyColor(avgLatency),
-                    onTap: () {})),
+                    onTap: () => _explainMetric(
+                        'Ø Latenz',
+                        'Durchschnittliche Antwortzeit aller ueberwachten '
+                            'Dienste. Unter 300 ms = sehr gut, ueber 800 ms '
+                            '= langsam.'))),
             const SizedBox(width: 10),
             Expanded(
                 child: _ClickableMetricCard(
@@ -2790,7 +2877,10 @@ class _SystemTabState extends State<_SystemTab> {
                     value: '${errRate.toStringAsFixed(1)} %',
                     icon: Icons.error_outline_rounded,
                     color: errRate > 10 ? Colors.red : Colors.green,
-                    onTap: () {})),
+                    onTap: () => _explainMetric(
+                        'Fehlerrate',
+                        'Anteil der Dienste die aktuell nicht erreichbar '
+                            'sind. 0 % = alle gesund.'))),
             const SizedBox(width: 10),
             Expanded(
                 child: _ClickableMetricCard(
@@ -2798,7 +2888,10 @@ class _SystemTabState extends State<_SystemTab> {
                     value: '${uptime.toStringAsFixed(0)} %',
                     icon: Icons.power_rounded,
                     color: uptime > 95 ? Colors.green : Colors.orange,
-                    onTap: () {})),
+                    onTap: () => _explainMetric(
+                        'Uptime',
+                        'Anteil der erfolgreichen Health-Checks seit App-'
+                            'Start. Ueber 95 % = stabil.'))),
           ]),
 
           const SizedBox(height: 20),
@@ -3658,12 +3751,18 @@ class _ChatMsgTile extends StatelessWidget {
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Text(username,
-                  style: TextStyle(
-                      color: accentBright,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13)),
-              const Spacer(),
+              // FIX (#9): langer Username darf den Timestamp nicht
+              // rausdruecken / Overflow verursachen -> Expanded + ellipsis.
+              Expanded(
+                child: Text(username,
+                    style: TextStyle(
+                        color: accentBright,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              const SizedBox(width: 8),
               Text(ts,
                   style: const TextStyle(color: Colors.white38, fontSize: 10)),
             ]),

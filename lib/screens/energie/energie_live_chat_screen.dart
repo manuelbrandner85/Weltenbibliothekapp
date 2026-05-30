@@ -1761,35 +1761,30 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
         ),
         actions: [
           // 🎥 LIVEKIT VIDEO/VOICE GROUPCALL
-          IconButton(
-            icon: const Icon(Icons.video_call, color: Colors.white),
-            onPressed: () {
-              if (!ApiConfig.isLivekitEnabled) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'Sprach-Anruf ist serverseitig noch nicht aktiviert.'),
-                    duration: Duration(seconds: 3),
+          // FIX (#4): Button nur zeigen wenn LiveKit konfiguriert ist,
+          // statt einen sichtbaren Button mit Error-SnackBar (verwirrte
+          // User die wiederholt klickten).
+          if (ApiConfig.isLivekitEnabled)
+            IconButton(
+              icon: const Icon(Icons.video_call, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LiveKitGroupCallScreen(
+                      roomName: 'wb-energie-$_selectedRoom',
+                      world: 'energie',
+                      displayName:
+                          _username.isNotEmpty ? _username : 'Mitglied',
+                      avatarUrl: _avatarUrl,
+                      audioOnly: false,
+                      initialMicEnabled: true,
+                    ),
                   ),
                 );
-                return;
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LiveKitGroupCallScreen(
-                    roomName: 'wb-energie-$_selectedRoom',
-                    world: 'energie',
-                    displayName: _username.isNotEmpty ? _username : 'Mitglied',
-                    avatarUrl: _avatarUrl,
-                    audioOnly: false,
-                    initialMicEnabled: true,
-                  ),
-                ),
-              );
-            },
-            tooltip: 'Sprach- & Video-Chat',
-          ),
+              },
+              tooltip: 'Sprach- & Video-Chat',
+            ),
           if (_username.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.alternate_email, color: Colors.white),

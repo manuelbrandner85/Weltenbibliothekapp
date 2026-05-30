@@ -28,6 +28,7 @@ import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_ambient_particles.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
+import '../../widgets/wb_cached_image.dart';
 
 // =========================================================================
 // MODELS
@@ -947,23 +948,20 @@ class _Thumbnail extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
+            // PERF-FIX (#3): CachedNetworkImage statt Image.network --
+            // Thumbnails in der Replay-Liste werden nicht mehr bei jedem
+            // Scroll neu geladen.
             if (url != null)
-              Image.network(
+              WbCachedImage(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    _AvatarFallback(initials: initials, theme: theme),
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return _AvatarFallback(initials: initials, theme: theme);
-                },
+                errorWidget: _AvatarFallback(initials: initials, theme: theme),
               )
             else if (recording.hostAvatarUrl != null)
-              Image.network(
+              WbCachedImage(
                 recording.hostAvatarUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    _AvatarFallback(initials: initials, theme: theme),
+                errorWidget: _AvatarFallback(initials: initials, theme: theme),
               )
             else
               _AvatarFallback(initials: initials, theme: theme),
