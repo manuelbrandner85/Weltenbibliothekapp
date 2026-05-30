@@ -539,6 +539,27 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+
+        // V4: Quick-Review (Karteikarten-Modus) der Test-Fragen
+        OutlinedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => _QuickReviewScreen(
+                questions: questions,
+                accent: _gold,
+                title: (_module?['title'] as String?) ?? 'Quick-Review',
+              ),
+            ),
+          ),
+          icon: const Icon(Icons.style_outlined, color: _gold, size: 18),
+          label: const Text('Quick-Review (Karteikarten)',
+              style: TextStyle(color: _gold)),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 44),
+            side: BorderSide(color: _gold.withValues(alpha: 0.4)),
+          ),
+        ),
         const SizedBox(height: 16),
 
         // Questions
@@ -1311,6 +1332,212 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// V4: Karteikarten-Quick-Review der Test-Fragen.
+///
+/// Zeigt jede Frage einzeln; per Tap wird die richtige Antwort + Erklaerung
+/// aufgedeckt. Kein Scoring -- reines Wiederholen zum Festigen.
+class _QuickReviewScreen extends StatefulWidget {
+  final List<Map<String, dynamic>> questions;
+  final Color accent;
+  final String title;
+
+  const _QuickReviewScreen({
+    required this.questions,
+    required this.accent,
+    required this.title,
+  });
+
+  @override
+  State<_QuickReviewScreen> createState() => _QuickReviewScreenState();
+}
+
+class _QuickReviewScreenState extends State<_QuickReviewScreen> {
+  int _index = 0;
+  bool _revealed = false;
+
+  static const _bg = Color(0xFF000000);
+
+  void _next() {
+    if (_index < widget.questions.length - 1) {
+      setState(() {
+        _index++;
+        _revealed = false;
+      });
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.accent;
+    final q = widget.questions[_index];
+    final question = (q['question'] as String?) ?? '';
+    final options = (q['options'] as List?)?.cast<dynamic>() ?? const [];
+    final correctIndex = (q['correct_index'] as num?)?.toInt() ?? 0;
+    final explanation = (q['explanation'] as String?) ?? '';
+    final correctAnswer = (correctIndex >= 0 && correctIndex < options.length)
+        ? options[correctIndex].toString()
+        : '';
+
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _bg,
+        elevation: 0,
+        iconTheme: IconThemeData(color: accent),
+        title: Text(
+          'Quick-Review · ${_index + 1}/${widget.questions.length}',
+          style: TextStyle(color: accent, fontSize: 14, letterSpacing: 1.0),
+        ),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: (_index + 1) / widget.questions.length,
+                  minHeight: 6,
+                  backgroundColor: accent.withValues(alpha: 0.1),
+                  valueColor: AlwaysStoppedAnimation(accent),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _revealed = !_revealed),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          accent.withValues(alpha: 0.12),
+                          Colors.white.withValues(alpha: 0.02),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: accent.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'FRAGE',
+                          style: TextStyle(
+                            color: accent.withValues(alpha: 0.7),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          question,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            height: 1.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        if (_revealed) ...[
+                          Divider(color: accent.withValues(alpha: 0.2)),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Icon(Icons.check_circle,
+                                  color: Colors.greenAccent, size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'ANTWORT',
+                                style: TextStyle(
+                                  color: Colors.greenAccent
+                                      .withValues(alpha: 0.9),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2.0,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            correctAnswer,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (explanation.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              explanation,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.65),
+                                fontSize: 13,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ] else
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 20),
+                              child: Text(
+                                'Tippe, um die Antwort aufzudecken',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.4),
+                                  fontSize: 13,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _next,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    _index < widget.questions.length - 1
+                        ? 'Nächste Karte'
+                        : 'Fertig',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
