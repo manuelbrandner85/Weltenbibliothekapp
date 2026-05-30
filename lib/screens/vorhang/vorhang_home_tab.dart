@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_world_orb.dart';
+import '../../widgets/cinematic/wb_stagger_reveal.dart';
 
 import '../../services/mentor_service.dart';
 import '../../widgets/mentor_hero_card.dart';
@@ -222,7 +223,15 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                   ),
                 ),
               ),
-            ],
+            ]
+                .asMap()
+                .entries
+                .map((e) => WBStaggerReveal(
+                      index: e.key,
+                      staggerStep: const Duration(milliseconds: 40),
+                      child: e.value,
+                    ))
+                .toList(),
           ),
         ),
       ),
