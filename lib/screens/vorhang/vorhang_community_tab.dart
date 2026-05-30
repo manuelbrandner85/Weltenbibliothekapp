@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/community_post.dart';
 import '../../services/community_service.dart';
+import '../../widgets/community_actions_bar.dart';
 
 class VorhangCommunityTab extends StatefulWidget {
   const VorhangCommunityTab({super.key});
@@ -69,7 +70,7 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
               likes: (r['likes_count'] as num?)?.toInt() ?? 0,
               comments: (r['comments_count'] as num?)?.toInt() ?? 0,
               tags: [],
-              worldType: WorldType.energie,
+              worldType: WorldType.vorhang, // FIX (U5): war faelschl. energie
             ))
         .toList();
   }
@@ -339,6 +340,8 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
             const SizedBox(height: 10),
             Text(post.content,
                 style: const TextStyle(color: Colors.white, fontSize: 14)),
+            // FEATURE (V7): Like + Kommentar.
+            CommunityActionsBar(post: post, accent: _gold),
           ],
         ),
       ),

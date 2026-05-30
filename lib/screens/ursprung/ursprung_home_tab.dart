@@ -4,6 +4,7 @@ import '../../widgets/mentor_hero_card.dart';
 import '../shared/mentor_chat_screen.dart';
 
 import '../../widgets/daily_path_widget.dart';
+import '../../widgets/world_xp_header.dart';
 
 import 'ursprung_modules_screen.dart';
 import 'tools/gateway_room_screen.dart';
@@ -36,7 +37,11 @@ class UrsprungHomeTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeroSection(),
-            const SizedBox(height: 28),
+            const SizedBox(height: 12),
+
+            // FEATURE (U1): Level + XP + Streak sichtbar.
+            const WorldXpHeader(world: 'ursprung', accent: Color(0xFF00D4AA)),
+            const SizedBox(height: 16),
 
             // ── Mentor: Der Alchemist ──
             _buildMentorButton(context),

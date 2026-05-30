@@ -106,4 +106,6 @@ class CommunityPost {
 enum WorldType {
   materie, // Forschung, Fakten, Geopolitik
   energie, // Spiritualität, Bewusstsein
+  vorhang, // Macht, Manipulation, Strategie
+  ursprung, // Bewusstsein, Quantenphysik, Remote Viewing
 }

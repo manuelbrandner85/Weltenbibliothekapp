@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/community_post.dart';
+import '../../widgets/community_actions_bar.dart';
 
 class UrsprungCommunityTab extends StatefulWidget {
   const UrsprungCommunityTab({super.key});
@@ -66,7 +67,7 @@ class _UrsprungCommunityTabState extends State<UrsprungCommunityTab> {
               likes: (r['likes_count'] as num?)?.toInt() ?? 0,
               comments: (r['comments_count'] as num?)?.toInt() ?? 0,
               tags: [],
-              worldType: WorldType.energie,
+              worldType: WorldType.ursprung, // FIX (U5): war faelschl. energie
             ))
         .toList();
   }
@@ -336,6 +337,8 @@ class _UrsprungCommunityTabState extends State<UrsprungCommunityTab> {
             const SizedBox(height: 10),
             Text(post.content,
                 style: const TextStyle(color: Colors.white, fontSize: 14)),
+            // FEATURE (U6): Like + Kommentar.
+            CommunityActionsBar(post: post, accent: _cyan),
           ],
         ),
       ),

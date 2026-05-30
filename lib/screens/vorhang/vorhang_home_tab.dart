@@ -6,6 +6,7 @@ import '../../widgets/mentor_hero_card.dart';
 import '../../services/vorhang_service.dart';
 import '../shared/mentor_chat_screen.dart';
 import '../../widgets/daily_path_widget.dart';
+import '../../widgets/world_xp_header.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_modules_screen.dart';
 
@@ -156,7 +157,11 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
             children: [
               // ── Hero Section (PRESERVED, lines 78-165 original) ──
               _buildHeroSection(),
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
+
+              // FEATURE (V1): Level + XP + Streak sichtbar.
+              const WorldXpHeader(world: 'vorhang', accent: Color(0xFFC9A84C)),
+              const SizedBox(height: 20),
 
               // ── 🧠 KI-Mentor Button (PRESERVED, lines 167-239 original) ──
               Text(
