@@ -90,8 +90,6 @@ dependencies:
   speech_to_text: ^7.0.0    # Spracherkennung für Voice Search
   permission_handler: ^11.3.1  # Mikrofon-Berechtigungen
   connectivity_plus: ^6.1.2  # Offline-Mode Detection
-  # 💓 v5.44.1: Direkt-BLE Heart-Rate (Polar/Wahoo/Garmin/Galaxy Watch ohne Health Connect)
-  flutter_blue_plus: ^1.32.12  # BLE-Direktverbindung zu HR-Geräten
   # record: ^5.1.2            # ❌ DEAKTIVIERT für Android Build (record_linux Kompatibilitätsproblem)
   flutter_cache_manager: ^3.3.0  # 🆕 Offline Cache Management
   # pdfx entfernt – kein PdfView/PdfController-Import gefunden
@@ -120,8 +118,6 @@ dependencies:
   flutter_tts: ^4.0.0               # Text-to-Speech
   geolocator: ^13.0.1               # GPS Location für AR
   web_socket_channel: ^3.0.3
-  health: ^13.1.4                   # 🆕 Apple HealthKit + Android Health Connect (HRV/HR Biometric Feedback) — v11.x kollidiert mit intl 0.20.2
-  
   # 🔍 Epstein Files Research Tool
   webview_flutter: 4.10.0           # WebView – pinned for Dart 3.5 / Flutter 3.24 compatibility
   # html entfernt – kein package:html Import gefunden

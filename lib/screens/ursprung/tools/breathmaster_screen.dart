@@ -1,17 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../services/biometric_service.dart';
-import '../../../widgets/health/health_diagnosis_dialog.dart';
-import '../../../widgets/health/live_hr_indicator.dart';
-import '../../shared/biometric_result_sheet.dart';
 
-/// 🌬️ Atemmeister — HeartMath / CIA Resonant Tuning Breathing
+/// Atemmeister -- HeartMath / CIA Resonant Tuning Breathing
 ///
 /// 4 Techniken:
-///   • Resonant Tuning — 5 s ein / 5 s aus (Kohärenz-Atmung)
-///   • Coherent Breathing — 6 s / 6 s
-///   • Energy Gathering — 4 s ein / 4 s halten / 8 s aus
-///   • Click-Out — 7 s ein / 4 s halten / 8 s aus
+///   - Resonant Tuning -- 5 s ein / 5 s aus (Kohärenz-Atmung)
+///   - Coherent Breathing -- 6 s / 6 s
+///   - Energy Gathering -- 4 s ein / 4 s halten / 8 s aus
+///   - Click-Out -- 7 s ein / 4 s halten / 8 s aus
 class BreathmasterScreen extends StatefulWidget {
   const BreathmasterScreen({super.key});
 
@@ -67,12 +63,6 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
   Timer? _timer;
   late final AnimationController _scaleCtrl;
 
-  // ── Biometric Feedback ─────────────────────────────────────
-  final BiometricService _bio = BiometricService();
-  bool _biometricEnabled = false;
-  bool _measuringBaseline = false;
-  DateTime? _sessionStartedAt;
-
   @override
   void initState() {
     super.initState();
@@ -89,80 +79,13 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
     super.dispose();
   }
 
-  Future<void> _askBiometric() async {
-    final res = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF080818),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: _cyan.withValues(alpha: 0.30)),
-        ),
-        title: const Text(
-          'Biometrisches Feedback?',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'Möchtest du HRV + Herzfrequenz vor und nach der Atem-Session messen, '
-          'um den Wirkungs-Score zu berechnen?\n\n'
-          'Erfordert Apple Health bzw. Health Connect mit verbundener '
-          'Herzfrequenz-Quelle.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ohne', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _cyan,
-              foregroundColor: _bgDeep,
-            ),
-            child: const Text('Aktivieren'),
-          ),
-        ],
-      ),
-    );
-    if (res != true) {
-      _start(biometric: false);
-      return;
-    }
-    final granted = await _bio.requestPermissions();
-    if (!mounted) return;
-    if (!granted) {
-      // v5.44: HealthDiagnosisDialog mit auto-Diagnose + kontextueller Fix-Action
-      final resolved =
-          await HealthDiagnosisDialog.showAndResolve(context, _bio);
-      if (!mounted) return;
-      if (resolved) {
-        setState(() => _measuringBaseline = true);
-        await Future<void>.delayed(const Duration(seconds: 1));
-        if (!mounted) return;
-        setState(() => _measuringBaseline = false);
-        _start(biometric: true);
-        return;
-      }
-      _start(biometric: false);
-      return;
-    }
-    setState(() => _measuringBaseline = true);
-    await Future<void>.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() => _measuringBaseline = false);
-    _start(biometric: true);
-  }
-
-  void _start({required bool biometric}) {
+  void _start() {
     final pattern = _patterns[_patternIdx];
     setState(() {
       _running = true;
       _stepIdx = 0;
       _cycleCount = 0;
       _stepRemaining = pattern.steps[0].seconds;
-      _biometricEnabled = biometric;
-      _sessionStartedAt = DateTime.now();
     });
     _animateStep();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -202,47 +125,6 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
     _timer?.cancel();
     _scaleCtrl.stop();
     setState(() => _running = false);
-    if (_biometricEnabled) {
-      // Fire-and-forget biometric finish flow.
-      unawaited(_finishBiometric());
-    }
-  }
-
-  Future<void> _finishBiometric() async {
-    final pattern = _patterns[_patternIdx];
-    final sessionStart = _sessionStartedAt ?? DateTime.now();
-    final sessionEnd = DateTime.now();
-    final durationMin = sessionEnd.difference(sessionStart).inSeconds ~/ 60;
-    final cycles = _cycleCount;
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: _cyan.withValues(alpha: 0.9),
-        content: const Text(
-            'Atem-Session abgeschlossen — biometrische Nachher-Messung läuft …'),
-      ),
-    );
-
-    final comparison = await _bio.measureSessionEffect(
-      sessionStart: sessionStart,
-      sessionEnd: sessionEnd,
-    );
-    await _bio.saveReading(
-      sessionType: 'breathmaster',
-      sessionWorld: 'ursprung',
-      data: comparison,
-      durationMinutes: durationMin,
-      notes: '${pattern.name} · $cycles Zyklen',
-    );
-    if (!mounted) return;
-    await BiometricResultSheet.show(
-      context,
-      comparison: comparison,
-      sessionType: 'breathmaster',
-      sessionWorld: 'ursprung',
-      durationMinutes: durationMin,
-    );
   }
 
   @override
@@ -327,14 +209,6 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
                 ),
               ),
               if (_running) ...[
-                // ✨ v5.44: Live-Herzfrequenz (nur wenn Biometrie aktiv)
-                if (_biometricEnabled) ...[
-                  LiveHrIndicator(
-                    service: _bio,
-                    accentColor: const Color(0xFFE91E63),
-                  ),
-                  const SizedBox(height: 12),
-                ],
                 Text(
                   'Zyklus $_cycleCount',
                   textAlign: TextAlign.center,
@@ -432,7 +306,7 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
                 }),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: _measuringBaseline ? null : _askBiometric,
+                  onPressed: _start,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _cyan,
                     foregroundColor: _bgDeep,
@@ -441,9 +315,9 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: Text(
-                    _measuringBaseline ? 'BASELINE MESSUNG …' : 'STARTE ATMUNG',
-                    style: const TextStyle(
+                  child: const Text(
+                    'STARTE ATMUNG',
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 3.0,
                     ),
