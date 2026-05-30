@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_world_orb.dart';
+import '../../widgets/cinematic/wb_stagger_reveal.dart';
 import '../../services/mentor_service.dart';
 import '../../widgets/mentor_hero_card.dart';
 import '../shared/mentor_chat_screen.dart';
@@ -189,7 +190,15 @@ class UrsprungHomeTab extends StatelessWidget {
 
             const SizedBox(height: 32),
             _buildCiaFooter(),
-          ],
+          ]
+              .asMap()
+              .entries
+              .map((e) => WBStaggerReveal(
+                    index: e.key,
+                    staggerStep: const Duration(milliseconds: 40),
+                    child: e.value,
+                  ))
+              .toList(),
         ),
       ),
     );
