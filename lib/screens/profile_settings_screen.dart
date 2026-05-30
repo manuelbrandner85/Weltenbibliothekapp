@@ -22,6 +22,7 @@ import '../widgets/theme_toggle_widget.dart';
 import 'shared/profile_editor_screen.dart'; // 🆕 NEW EDITOR
 import 'shared/secret_library_screen.dart'; // 📚 Geheime Bibliothek
 import '../services/gamification_service.dart';
+import '../widgets/cross_world_overview_card.dart';
 
 /// **PROFIL-EINSTELLUNGEN**
 ///
@@ -286,6 +287,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             worldColor: const Color(0xFF7C4DFF),
                             onCreateTap: _editEnergieProfile,
                           ),
+
+                        const SizedBox(height: 32),
+
+                        // A2: CROSS-WORLD-UEBERSICHT
+                        _buildSectionHeader(
+                            '🌌 WELTEN-FORTSCHRITT', Colors.amber),
+                        const SizedBox(height: 12),
+                        const CrossWorldOverviewCard(),
 
                         const SizedBox(height: 32),
 
