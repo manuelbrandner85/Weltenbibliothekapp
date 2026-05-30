@@ -124,10 +124,35 @@ class _UrsprungResearchTabState extends State<UrsprungResearchTab> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${_topics.length} Themengebiete${_usedFallback ? " - Offline" : ""}',
+            '${_topics.length} Themengebiete',
             style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
           ),
+          // FEATURE (U3): deutlicher Offline-Hinweis wenn Fallback-Daten
+          // statt Live-Supabase verwendet werden.
+          if (_usedFallback) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border:
+                    Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.cloud_off_rounded,
+                      color: Colors.orangeAccent, size: 15),
+                  SizedBox(width: 6),
+                  Text('Offline-Daten — Live-Themen nicht erreichbar',
+                      style: TextStyle(
+                          color: Colors.orangeAccent, fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/community_post.dart';
 import '../../services/community_service.dart';
 import '../../widgets/community_actions_bar.dart';
+import '../../widgets/wb_skeleton.dart';
 
 class VorhangCommunityTab extends StatefulWidget {
   const VorhangCommunityTab({super.key});
@@ -192,8 +193,17 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
             SliverToBoxAdapter(child: _buildHeader()),
             SliverToBoxAdapter(child: _buildPillSwitcher()),
             if (_loading)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator(color: _gold)),
+              // FEATURE (P4): Skeleton statt Spinner -- Premium-Feel.
+              const SliverToBoxAdapter(
+                child: Column(
+                  children: [
+                    WBSkeletonListTile(accent: _gold),
+                    WBSkeletonListTile(accent: _gold),
+                    WBSkeletonListTile(accent: _gold),
+                    WBSkeletonListTile(accent: _gold),
+                    WBSkeletonListTile(accent: _gold),
+                  ],
+                ),
               )
             else if (_displayed.isEmpty)
               SliverFillRemaining(
