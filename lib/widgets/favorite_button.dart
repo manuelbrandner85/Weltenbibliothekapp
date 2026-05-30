@@ -17,6 +17,10 @@ class FavoriteButton extends StatefulWidget {
   final Color? inactiveColor;
   final double size;
 
+  /// Optional: wird mit dem neuen Favoriten-Status aufgerufen, nachdem der
+  /// Nutzer getoggelt hat. Erlaubt dem Parent ein Refresh (z.B. Favoriten-Filter).
+  final ValueChanged<bool>? onChanged;
+
   const FavoriteButton({
     super.key,
     required this.itemId,
@@ -28,6 +32,7 @@ class FavoriteButton extends StatefulWidget {
     this.activeColor,
     this.inactiveColor,
     this.size = 24.0,
+    this.onChanged,
   });
 
   @override
@@ -98,6 +103,7 @@ class _FavoriteButtonState extends State<FavoriteButton>
         }
 
         setState(() => _isFavorite = false);
+        widget.onChanged?.call(false);
       } else {
         // 📳 Haptic Feedback - Add (Success Pattern)
         await HapticFeedbackService().success();
@@ -115,6 +121,7 @@ class _FavoriteButtonState extends State<FavoriteButton>
 
         await FavoritesService.addFavorite(favorite);
         setState(() => _isFavorite = true);
+        widget.onChanged?.call(true);
 
         // Trigger animation
         _controller.forward().then((_) => _controller.reverse());

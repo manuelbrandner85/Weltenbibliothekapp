@@ -849,8 +849,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
     }
   }
 
+  // E2: stabiler Favoriten-Key pro Tool (identisch zur FavoriteButton-itemId).
+  String _toolFavId(Map<String, dynamic> tool) => 'spirit_tool_${tool['title']}';
+
   List<Map<String, dynamic>> get _filteredTools {
     if (_selectedCategory == 'all') return _allTools;
+    if (_selectedCategory == 'favorites') {
+      return _allTools
+          .where((tool) => FavoritesService.isFavorite(_toolFavId(tool)))
+          .toList();
+    }
     return _allTools
         .where((tool) => tool['category'] == _selectedCategory)
         .toList();
@@ -858,6 +866,11 @@ class _SpiritTabModernState extends State<SpiritTabModern>
 
   int _getCategoryCount(String category) {
     if (category == 'all') return _allTools.length;
+    if (category == 'favorites') {
+      return _allTools
+          .where((tool) => FavoritesService.isFavorite(_toolFavId(tool)))
+          .length;
+    }
     return _allTools.where((tool) => tool['category'] == category).length;
   }
 
@@ -1124,6 +1137,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
               child: Row(children: [
                 for (final cat in const [
                   ['all', '✨ Alle'],
+                  ['favorites', '⭐ Favoriten'],
                   ['core', '⭐ Kern'],
                   ['advanced', '🚀 Erweitert'],
                   ['meta', '🌌 Meta'],
@@ -1145,6 +1159,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
 
   Color _chipColor(String cat) => switch (cat) {
         'all' => _purple,
+        'favorites' => _gold,
         'core' => _teal,
         'advanced' => _pink,
         'meta' => _gold,
@@ -1384,6 +1399,10 @@ class _SpiritTabModernState extends State<SpiritTabModern>
                         itemTitle: tool['title'] as String,
                         itemDescription: tool['subtitle'] as String?,
                         size: 20,
+                        // E2: Favoriten-Filter + Counts live aktualisieren
+                        onChanged: (_) {
+                          if (mounted) setState(() {});
+                        },
                       ),
                     ],
                   ),
