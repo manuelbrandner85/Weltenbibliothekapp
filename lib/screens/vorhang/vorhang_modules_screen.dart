@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/branch_boss_test_service.dart'; // 👑 I3 Boss-Test
 import '../../services/gamification_service.dart';
+import '../../services/new_unlock_tracker.dart';
 import '../../services/storage_service.dart';
 import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
@@ -43,6 +44,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
   // V1: Modul-Suche
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+
+  // A3: neu freigeschaltete Module (seit letztem Besuch)
+  Set<String> _newModuleCodes = {};
 
   // Branche → Icon
   static const Map<String, IconData> _branchIcons = {
@@ -131,11 +135,37 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         _completedCount = (data['completed'] as num?)?.toInt() ?? 0;
         _loading = false;
       });
+      await _detectNewUnlocks(mapped);
     } catch (e) {
       setState(() {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  /// A3: Findet freigeschaltete, nicht abgeschlossene Module, die der Nutzer
+  /// noch nicht gesehen hat, und markiert sie danach als gesehen.
+  Future<void> _detectNewUnlocks(
+      Map<String, List<Map<String, dynamic>>> mapped) async {
+    final unlockedCodes = <String>[];
+    for (final list in mapped.values) {
+      for (final m in list) {
+        if (m['is_unlocked'] == true && m['is_completed'] != true) {
+          final code = m['module_code'] as String?;
+          if (code != null) unlockedCodes.add(code);
+        }
+      }
+    }
+    final fresh = <String>{};
+    for (final code in unlockedCodes) {
+      if (await NewUnlockTracker.instance.isNew('vorhang', code)) {
+        fresh.add(code);
+      }
+    }
+    await NewUnlockTracker.instance.markSeen('vorhang', unlockedCodes);
+    if (mounted && fresh.isNotEmpty) {
+      setState(() => _newModuleCodes = fresh);
     }
   }
 
@@ -592,6 +622,27 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                                 fontSize: 9,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                        // A3: NEU-Badge fuer frisch freigeschaltete Module
+                        if (_newModuleCodes.contains(code)) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CAF50),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              '✨ NEU',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
