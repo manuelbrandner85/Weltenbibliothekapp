@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/wb_cinematic_tokens.dart';
 
 /// 🎨 ENHANCED APP THEMES - UI/UX POLISH UPDATE
@@ -96,35 +97,42 @@ class EnhancedAppThemes {
   static const double space64 = 64.0;
 
   // ════════════════════════════════════════════════════════════
-  // TYPOGRAPHY SCALE
+  // TYPOGRAPHY SCALE — Inter (Google Fonts)
   // ════════════════════════════════════════════════════════════
 
-  static const TextTheme textTheme = TextTheme(
-    displayLarge: TextStyle(
-        fontSize: 57, fontWeight: FontWeight.w400, letterSpacing: -0.25),
-    displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400),
-    displaySmall: TextStyle(fontSize: 36, fontWeight: FontWeight.w400),
-    headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w600),
-    headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
-    headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
-    titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-    titleMedium: TextStyle(
-        fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.15),
-    titleSmall: TextStyle(
-        fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.1),
-    bodyLarge: TextStyle(
-        fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.5),
-    bodyMedium: TextStyle(
-        fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: 0.25),
-    bodySmall: TextStyle(
-        fontSize: 12, fontWeight: FontWeight.w400, letterSpacing: 0.4),
-    labelLarge: TextStyle(
-        fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.1),
-    labelMedium: TextStyle(
-        fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-    labelSmall: TextStyle(
-        fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.5),
-  );
+  static TextTheme get textTheme => GoogleFonts.interTextTheme(
+        const TextTheme(
+          displayLarge: TextStyle(
+              fontSize: 57, fontWeight: FontWeight.w400, letterSpacing: -0.25),
+          displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400),
+          displaySmall: TextStyle(
+              fontSize: 36, fontWeight: FontWeight.w400, letterSpacing: -0.3),
+          headlineLarge: TextStyle(
+              fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+          headlineMedium: TextStyle(
+              fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.4),
+          headlineSmall: TextStyle(
+              fontSize: 24, fontWeight: FontWeight.w600, letterSpacing: -0.3),
+          titleLarge: TextStyle(
+              fontSize: 22, fontWeight: FontWeight.w600, letterSpacing: -0.2),
+          titleMedium: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.1),
+          titleSmall: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.05),
+          bodyLarge: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.3),
+          bodyMedium: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: 0.2),
+          bodySmall: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w400, letterSpacing: 0.3),
+          labelLarge: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.05),
+          labelMedium: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0.4),
+          labelSmall: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w500, letterSpacing: 0.5),
+        ),
+      );
 
   // ════════════════════════════════════════════════════════════
   // LIGHT THEME - ENHANCED
@@ -153,47 +161,91 @@ class EnhancedAppThemes {
       // Scaffold
       scaffoldBackgroundColor: lightBackground,
 
-      // Typography
+      // Typography — Inter via Google Fonts
       textTheme: textTheme.apply(
         bodyColor: lightOnBackground,
         displayColor: lightOnBackground,
       ),
 
-      // AppBar
-      appBarTheme: const AppBarTheme(
+      // AppBar — transparent, borderless
+      appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
+        scrolledUnderElevation: 0,
         backgroundColor: lightSurface,
         foregroundColor: lightOnSurface,
-        titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 19,
+          fontWeight: FontWeight.w700,
           color: lightOnSurface,
-          letterSpacing: 0.15,
+          letterSpacing: -0.3,
         ),
       ),
 
-      // Card
-      cardTheme: const CardThemeData(
-        elevation: 1,
+      // Card — tighter radius, subtle shadow
+      cardTheme: CardThemeData(
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFF0F0F0), width: 1),
         ),
         color: lightSurface,
+        shadowColor: Colors.transparent,
+      ),
+
+      // Dialog — premium rounded
+      dialogTheme: DialogTheme(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 8,
+        backgroundColor: lightSurface,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: lightOnSurface,
+          letterSpacing: -0.2,
+        ),
+      ),
+
+      // BottomSheet — pill handle, smooth radius
+      bottomSheetTheme: const BottomSheetThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        showDragHandle: true,
+        dragHandleColor: Color(0xFFBDBDBD),
+        elevation: 0,
+        modalElevation: 0,
+        backgroundColor: lightSurface,
+        surfaceTintColor: Colors.transparent,
+      ),
+
+      // SnackBar — floating + rounded
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        backgroundColor: const Color(0xFF1A1A2E),
+        contentTextStyle: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+        elevation: 8,
       ),
 
       // Elevated Button
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          elevation: 2,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
+            letterSpacing: 0.3,
           ),
         ),
       ),
@@ -201,11 +253,11 @@ class EnhancedAppThemes {
       // Text Button
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.1,
@@ -214,64 +266,65 @@ class EnhancedAppThemes {
       ),
 
       // Input Decoration (Light)
-      // BUG-FIX v5.27.0: errorBorder + disabledBorder hinzugefügt, kein gelber Unterstrich
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: lightSurface,
+        fillColor: const Color(0xFFF7F7F9),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: lightPrimary, width: 2),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: lightPrimary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: lightError, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: lightError, width: 2),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: lightError, width: 1.5),
         ),
         disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFBDBDBD), width: 1),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
-        hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
+        hintStyle: const TextStyle(
+            color: Color(0xFF9E9E9E), fontWeight: FontWeight.w400),
         labelStyle: const TextStyle(color: Color(0xFF757575)),
         floatingLabelStyle: const TextStyle(color: lightPrimary),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       ),
 
       // Divider
       dividerTheme: const DividerThemeData(
-        thickness: 1,
+        thickness: 0.5,
         space: 1,
-        color: Color(0xFFE0E0E0),
+        color: Color(0xFFEEEEEE),
       ),
 
       // Bottom Navigation Bar
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        elevation: 8,
+        elevation: 0,
         backgroundColor: lightSurface,
         selectedItemColor: lightPrimary,
-        unselectedItemColor: Color(0xFF757575),
+        unselectedItemColor: Color(0xFF9E9E9E),
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle:
-            TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
         unselectedLabelStyle:
-            TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
       ),
 
       // Floating Action Button
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         elevation: 4,
+        highlightElevation: 8,
         shape: CircleBorder(),
         backgroundColor: lightPrimary,
         foregroundColor: lightOnPrimary,
@@ -312,47 +365,91 @@ class EnhancedAppThemes {
       // Scaffold
       scaffoldBackgroundColor: darkBackground,
 
-      // Typography
+      // Typography — Inter via Google Fonts
       textTheme: textTheme.apply(
         bodyColor: darkOnBackground,
         displayColor: darkOnBackground,
       ),
 
-      // AppBar
-      appBarTheme: const AppBarTheme(
+      // AppBar — transparent, borderless for cinematic screens
+      appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
+        scrolledUnderElevation: 0,
         backgroundColor: darkSurface,
         foregroundColor: darkOnSurface,
-        titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 19,
+          fontWeight: FontWeight.w700,
           color: darkOnSurface,
-          letterSpacing: 0.15,
+          letterSpacing: -0.3,
         ),
       ),
 
-      // Card
+      // Card — flat glass-style
       cardTheme: const CardThemeData(
-        elevation: 2,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+          side: BorderSide(color: Color(0xFF2A2A2A), width: 1),
         ),
         color: darkSurface,
+        shadowColor: Colors.transparent,
+      ),
+
+      // Dialog — premium rounded
+      dialogTheme: DialogTheme(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+        backgroundColor: const Color(0xFF1A1A2E),
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: darkOnSurface,
+          letterSpacing: -0.2,
+        ),
+      ),
+
+      // BottomSheet — pill handle, smooth radius
+      bottomSheetTheme: const BottomSheetThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        showDragHandle: true,
+        dragHandleColor: Color(0xFF555555),
+        elevation: 0,
+        modalElevation: 0,
+        backgroundColor: Color(0xFF0D0A1A),
+        surfaceTintColor: Colors.transparent,
+      ),
+
+      // SnackBar — floating + rounded, cinematic
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        backgroundColor: const Color(0xFF1E1E2E),
+        contentTextStyle: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+        elevation: 8,
       ),
 
       // Elevated Button
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          elevation: 2,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.1,
+            letterSpacing: 0.3,
           ),
         ),
       ),
@@ -360,11 +457,11 @@ class EnhancedAppThemes {
       // Text Button
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.1,
@@ -373,64 +470,65 @@ class EnhancedAppThemes {
       ),
 
       // Input Decoration (Dark)
-      // BUG-FIX v5.27.0: errorBorder + disabledBorder hinzugefügt, kein gelber Unterstrich
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: darkSurface,
+        fillColor: const Color(0xFF1A1A2E),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF424242)),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF2A2A3E), width: 1),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF424242)),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF2A2A3E), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: darkPrimary, width: 2),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: darkPrimary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFEF9A9A), width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFEF9A9A), width: 2),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFEF9A9A), width: 1.5),
         ),
         disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF303030), width: 1),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFF222222), width: 1),
         ),
-        hintStyle: const TextStyle(color: Color(0xFF757575)),
+        hintStyle: const TextStyle(
+            color: Color(0xFF555566), fontWeight: FontWeight.w400),
         labelStyle: const TextStyle(color: Color(0xFF9E9E9E)),
-        floatingLabelStyle: TextStyle(color: darkPrimary),
+        floatingLabelStyle: const TextStyle(color: darkPrimary),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       ),
 
-      // Divider
+      // Divider — very subtle
       dividerTheme: const DividerThemeData(
-        thickness: 1,
+        thickness: 0.5,
         space: 1,
-        color: Color(0xFF424242),
+        color: Color(0xFF2A2A2A),
       ),
 
       // Bottom Navigation Bar
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        elevation: 8,
+        elevation: 0,
         backgroundColor: darkSurface,
         selectedItemColor: darkPrimary,
-        unselectedItemColor: Color(0xFF9E9E9E),
+        unselectedItemColor: Color(0xFF666666),
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle:
-            TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
         unselectedLabelStyle:
-            TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+            TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
       ),
 
       // Floating Action Button
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         elevation: 4,
+        highlightElevation: 8,
         shape: CircleBorder(),
         backgroundColor: darkPrimary,
         foregroundColor: darkOnPrimary,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Welt-Identität für cinematic Komponenten.
 enum WBWorld { materie, energie, vorhang, ursprung, neutral }
@@ -321,58 +322,49 @@ class WBMotion {
   static const Duration reveal = Duration(milliseconds: 1200);
 }
 
-/// Cinematic Text-Hierarchie (verwendet Inter & Cormorant Garamond).
+/// Cinematic Text-Hierarchie (Inter via Google Fonts, Cormorant Garamond serif).
 class WBType {
-  static const String _inter = 'Inter';
-  static const String _serif = 'Cormorant Garamond';
+  static TextStyle get title => GoogleFonts.inter(
+        fontWeight: FontWeight.w200,
+        fontSize: 22,
+        letterSpacing: 5.0,
+        color: Colors.white,
+        height: 1.0,
+      );
 
-  static const TextStyle title = TextStyle(
-    fontFamily: _inter,
-    fontWeight: FontWeight.w200,
-    fontSize: 22,
-    letterSpacing: 5.0,
-    color: Colors.white,
-    height: 1.0,
-  );
+  static TextStyle get hero => GoogleFonts.inter(
+        fontWeight: FontWeight.w200,
+        fontSize: 38,
+        letterSpacing: 10.0,
+        color: Colors.white,
+        height: 1.0,
+      );
 
-  static const TextStyle hero = TextStyle(
-    fontFamily: _inter,
-    fontWeight: FontWeight.w200,
-    fontSize: 38,
-    letterSpacing: 10.0,
-    color: Colors.white,
-    height: 1.0,
-  );
+  static TextStyle get body => GoogleFonts.inter(
+        fontWeight: FontWeight.w400,
+        fontSize: 14,
+        letterSpacing: 0.2,
+        color: const Color(0xE6FFFFFF),
+      );
 
-  static const TextStyle body = TextStyle(
-    fontFamily: _inter,
-    fontWeight: FontWeight.w400,
-    fontSize: 14,
-    letterSpacing: 0.2,
-    color: Color(0xE6FFFFFF),
-  );
+  static TextStyle get eyebrow => GoogleFonts.inter(
+        fontWeight: FontWeight.w600,
+        fontSize: 9,
+        letterSpacing: 4.0,
+      );
 
-  static const TextStyle eyebrow = TextStyle(
-    fontFamily: _inter,
-    fontWeight: FontWeight.w600,
-    fontSize: 9,
-    letterSpacing: 4.0,
-  );
+  static TextStyle get serif => GoogleFonts.cormorantGaramond(
+        fontStyle: FontStyle.italic,
+        fontWeight: FontWeight.w300,
+        fontSize: 13,
+        letterSpacing: 1.8,
+        color: const Color(0x75FFFFFF),
+      );
 
-  static const TextStyle serif = TextStyle(
-    fontFamily: _serif,
-    fontStyle: FontStyle.italic,
-    fontWeight: FontWeight.w300,
-    fontSize: 13,
-    letterSpacing: 1.8,
-    color: Color(0x75FFFFFF),
-  );
-
-  static const TextStyle micro = TextStyle(
-    fontFamily: _inter,
-    fontWeight: FontWeight.w500,
-    fontSize: 10,
-    letterSpacing: 4.2,
-    color: Color(0x6BFFFFFF),
-  );
+  static TextStyle get micro => GoogleFonts.inter(
+        fontWeight: FontWeight.w500,
+        fontSize: 10,
+        letterSpacing: 4.2,
+        color: const Color(0x6BFFFFFF),
+      );
 }
