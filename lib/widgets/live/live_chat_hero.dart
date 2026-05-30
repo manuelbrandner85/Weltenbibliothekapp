@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
 
@@ -358,8 +359,7 @@ class _LiveChatHeroState extends State<LiveChatHero>
           call.topic,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -378,8 +378,7 @@ class _LiveChatHeroState extends State<LiveChatHero>
             Flexible(
               child: Text(
                 runningLabel,
-                style: TextStyle(
-                  fontFamily: 'Inter',
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   color: Colors.white.withValues(alpha: 0.65),
                   letterSpacing: 0.4,
@@ -438,8 +437,7 @@ class _LiveChatHeroState extends State<LiveChatHero>
         const SizedBox(height: WBSpace.xs),
         Text(
           'Naechster Live-Talk:',
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontSize: 11,
             color: Colors.white.withValues(alpha: 0.55),
             letterSpacing: 0.4,
@@ -450,8 +448,7 @@ class _LiveChatHeroState extends State<LiveChatHero>
           '"${widget.scheduledTopic ?? ''}" - $hint',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: palette.highlight,
@@ -502,8 +499,7 @@ class _LiveChatHeroState extends State<LiveChatHero>
           'Stille gerade. Magst du etwas starten?',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontSize: 13,
             color: Colors.white.withValues(alpha: 0.75),
             height: 1.25,
@@ -602,8 +598,7 @@ class _HeaderRow extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '$onlineCount online',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
+                style: GoogleFonts.inter(
                   fontSize: 10,
                   color: Colors.white,
                   letterSpacing: 0.4,
@@ -718,8 +713,7 @@ class _AvatarStack extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '+$extra',
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontSize: 11,
                 color: Colors.white.withValues(alpha: 0.75),
                 fontWeight: FontWeight.w600,
@@ -810,8 +804,7 @@ class _PrimaryButton extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: const TextStyle(
-              fontFamily: 'Inter',
+            style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -859,8 +852,7 @@ class _SecondaryButton extends StatelessWidget {
               const SizedBox(width: 5),
               Text(
                 label,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
+                style: GoogleFonts.inter(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,

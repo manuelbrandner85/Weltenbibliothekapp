@@ -22,6 +22,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../config/api_config.dart';
 import '../../theme/wb_cinematic_tokens.dart';
@@ -442,10 +443,9 @@ class _LiveReplayLibraryScreenState extends State<LiveReplayLibraryScreen> {
             Icon(Icons.live_tv_rounded,
                 size: 16, color: _theme.primary.withValues(alpha: 0.9)),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'LIVE  ARCHIV',
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
                 letterSpacing: 4.0,
@@ -708,8 +708,7 @@ class _FilterChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             fontSize: 12,
             letterSpacing: 0.4,
@@ -831,8 +830,7 @@ class _ReplayCard extends StatelessWidget {
                 recording.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
+                style: GoogleFonts.inter(
                   fontWeight: FontWeight.w800,
                   fontSize: 15,
                   height: 1.25,
@@ -847,8 +845,7 @@ class _ReplayCard extends StatelessWidget {
           recording.hostName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: theme.primary.withValues(alpha: 0.95),
@@ -872,8 +869,7 @@ class _ReplayCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Weitersehen ab ${_formatTimestamp(resumeSeconds!)}',
-            style: TextStyle(
-              fontFamily: 'Inter',
+            style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.4,
@@ -1018,8 +1014,7 @@ class _AvatarFallback extends StatelessWidget {
     return Center(
       child: Text(
         initials,
-        style: TextStyle(
-          fontFamily: 'Inter',
+        style: GoogleFonts.inter(
           fontWeight: FontWeight.w800,
           fontSize: 22,
           color: Colors.white.withValues(alpha: 0.85),
@@ -1049,8 +1044,7 @@ class _MetaPill extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontSize: 11,
             fontWeight: FontWeight.w500,
             color: Colors.white.withValues(alpha: 0.7),
@@ -1235,11 +1229,10 @@ class _EmptyState extends StatelessWidget {
               style: TextStyle(fontSize: 96),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Noch keine Aufzeichnungen',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 20,
                 color: Colors.white,
@@ -1250,8 +1243,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               'Live-Sessions werden hier archiviert sobald welche stattfinden.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontSize: 14,
                 color: Colors.white.withValues(alpha: 0.7),
                 height: 1.4,
@@ -1307,10 +1299,9 @@ class _NoMatchState extends StatelessWidget {
             Icon(Icons.search_off_rounded,
                 size: 64, color: theme.primary.withValues(alpha: 0.6)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Keine Treffer',
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
                 color: Colors.white,
@@ -1320,8 +1311,7 @@ class _NoMatchState extends StatelessWidget {
             Text(
               'Probiere eine andere Suche oder andere Filter.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontSize: 13,
                 color: Colors.white.withValues(alpha: 0.65),
               ),
@@ -1370,8 +1360,7 @@ class _GlowButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             fontSize: 13,
             letterSpacing: 1.4,
@@ -1619,8 +1608,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
         world: theme.wbWorld,
         titleWidget: Text(
           'REPLAY',
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
             fontSize: 12,
             letterSpacing: 4.0,
@@ -1791,8 +1779,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
       children: [
         Text(
           rec.title,
-          style: const TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w800,
             fontSize: 22,
             color: Colors.white,
@@ -1802,8 +1789,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
         const SizedBox(height: 6),
         Text(
           'mit ${rec.hostName}',
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w500,
             fontSize: 13,
             color: widget.theme.primary.withValues(alpha: 0.95),
@@ -1862,8 +1848,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                     children: [
                       Text(
                         _formatTimestamp(h.timestampSec),
-                        style: TextStyle(
-                          fontFamily: 'Inter',
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w800,
                           fontSize: 12,
                           letterSpacing: 0.4,
@@ -1877,8 +1862,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                           h.text,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             color: Colors.white,
                             height: 1.2,
@@ -1995,8 +1979,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                         filteredText.isEmpty
                             ? 'Keine Treffer fuer "$query".'
                             : filteredText,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
+                        style: GoogleFonts.inter(
                           fontSize: 13,
                           height: 1.5,
                           color: Colors.white,
@@ -2039,8 +2022,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                       _summaryLoading
                           ? 'Mentor schreibt...'
                           : 'Session in 5 Bullet-Points zusammenfassen',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                         color: Colors.white,
@@ -2078,8 +2060,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                     const SizedBox(width: 6),
                     Text(
                       'Mentor-Heiler',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 11,
                         letterSpacing: 1.5,
@@ -2091,8 +2072,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                 const SizedBox(height: 8),
                 SelectableText(
                   _summaryText!,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     height: 1.5,
                     color: Colors.white,
@@ -2104,8 +2084,7 @@ class _ReplayDetailScreenState extends State<_ReplayDetailScreen> {
                   behavior: HitTestBehavior.opaque,
                   child: Text(
                     'Neu generieren',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
+                    style: GoogleFonts.inter(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.0,
@@ -2145,8 +2124,7 @@ class _SectionLabel extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           text,
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             fontSize: 10,
             letterSpacing: 3.6,
@@ -2182,8 +2160,7 @@ class _PlayerStub extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
                 color: Colors.white,
@@ -2193,8 +2170,7 @@ class _PlayerStub extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Inter',
+              style: GoogleFonts.inter(
                 fontSize: 12,
                 color: Colors.white.withValues(alpha: 0.7),
               ),

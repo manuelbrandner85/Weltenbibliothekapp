@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/mentor_service.dart';
@@ -289,10 +290,9 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'VORHANG',
-            style: TextStyle(
-              fontFamily: 'Inter',
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w200,
               fontSize: 32,
               letterSpacing: 8.0,

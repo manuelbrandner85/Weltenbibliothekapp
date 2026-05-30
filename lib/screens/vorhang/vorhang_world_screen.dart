@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'vorhang_home_tab.dart';
 import 'vorhang_research_tab.dart';
 import 'vorhang_community_tab.dart';
@@ -87,10 +88,9 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
       appBar: WBGlassAppBar(
         world: WBWorld.vorhang,
         showWorldSwitcher: true,
-        titleWidget: const Text(
+        titleWidget: Text(
           'VORHANG',
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w300,
             fontSize: 18,
             letterSpacing: 4.0,

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'energie/home_tab_v5.dart';
 import 'energie/spirit_tab_modern.dart';
 import 'energie/energie_community_tab_modern.dart';
@@ -87,10 +88,9 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         showWorldSwitcher: true,
-        titleWidget: const Text(
+        titleWidget: Text(
           'ENERGIE',
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w300,
             fontSize: 18,
             letterSpacing: 4.0,

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'materie/home_tab_v5.dart';
 import 'materie/kaninchenbau/kaninchenbau_screen.dart';
 import 'materie/community_tab_modern.dart';
@@ -86,10 +87,9 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         showWorldSwitcher: true,
-        titleWidget: const Text(
+        titleWidget: Text(
           'MATERIE',
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontWeight: FontWeight.w300,
             fontSize: 18,
             letterSpacing: 4.0,

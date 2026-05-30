@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../world_switcher_pill.dart';
 
@@ -104,8 +105,7 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
                                       ? const SizedBox.shrink()
                                       : Text(
                                           title!,
-                                          style: TextStyle(
-                                            fontFamily: 'Inter',
+                                          style: GoogleFonts.inter(
                                             fontWeight: FontWeight.w400,
                                             fontSize: 16,
                                             letterSpacing: 0.4,

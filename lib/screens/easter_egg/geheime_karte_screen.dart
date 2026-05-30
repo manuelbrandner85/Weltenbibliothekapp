@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_ambient_particles.dart';
@@ -429,10 +430,9 @@ class _GeheimeKarteScreenState extends State<GeheimeKarteScreen>
           shaderCallback: (rect) => const LinearGradient(
             colors: [_kHeiligColor, Color(0xFF8AA3FF)],
           ).createShader(rect),
-          child: const Text(
+          child: Text(
             'MYSTISCHE ORTE',
-            style: TextStyle(
-              fontFamily: 'Inter',
+            style: GoogleFonts.inter(
               fontWeight: FontWeight.w300,
               fontSize: 16,
               letterSpacing: 4.0,
@@ -516,8 +516,7 @@ class _GeheimeKarteScreenState extends State<GeheimeKarteScreen>
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: const TextStyle(
-                  fontFamily: 'Inter',
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   color: Colors.white70,
                   letterSpacing: 1.2,
@@ -564,10 +563,9 @@ class _GeheimeKarteScreenState extends State<GeheimeKarteScreen>
                   border: Border.all(
                       color: Colors.white.withValues(alpha: 0.15), width: 1),
                 ),
-                child: const Text(
+                child: Text(
                   'RESET',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
+                  style: GoogleFonts.inter(
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
                     color: Colors.white54,
@@ -653,8 +651,7 @@ class _GeheimeKarteScreenState extends State<GeheimeKarteScreen>
         alignment: Alignment.center,
         child: Text(
           label.toUpperCase(),
-          style: TextStyle(
-            fontFamily: 'Inter',
+          style: GoogleFonts.inter(
             fontSize: 10,
             fontWeight: FontWeight.w600,
             letterSpacing: 2.0,
@@ -767,8 +764,7 @@ class _PlaceCard extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 place.name,
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
+                                style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.white,
@@ -789,10 +785,9 @@ class _PlaceCard extends StatelessWidget {
                                     width: 1,
                                   ),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   '✓ BESUCHT',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
+                                  style: GoogleFonts.inter(
                                     fontSize: 8,
                                     fontWeight: FontWeight.w700,
                                     color: _kNaturColor,
@@ -805,8 +800,7 @@ class _PlaceCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           place.region.toUpperCase(),
-                          style: TextStyle(
-                            fontFamily: 'Inter',
+                          style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: accent.withValues(alpha: 0.95),
@@ -818,8 +812,7 @@ class _PlaceCard extends StatelessWidget {
                           place.description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
                             color: Colors.white70,
@@ -890,8 +883,7 @@ class _PlaceCard extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Inter',
+                style: GoogleFonts.inter(
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   color: color,
