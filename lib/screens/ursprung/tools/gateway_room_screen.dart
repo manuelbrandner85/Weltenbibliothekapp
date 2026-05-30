@@ -184,6 +184,18 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
           'Gateway-Kammer',
           style: TextStyle(color: _cyan, letterSpacing: 2.0, fontSize: 16),
         ),
+        actions: [
+          // U2: Session-Verlauf
+          IconButton(
+            tooltip: 'Session-Verlauf',
+            icon: const Icon(Icons.history_rounded, color: _cyan),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const _GatewayHistoryScreen(),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -557,4 +569,189 @@ class _GuidePrompt {
   final int atSecond;
   final String text;
   const _GuidePrompt(this.atSecond, this.text);
+}
+
+/// U2: Verlauf der letzten Gateway-Sessions (aus `ursprung_gateway_sessions`).
+class _GatewayHistoryScreen extends StatefulWidget {
+  const _GatewayHistoryScreen();
+
+  @override
+  State<_GatewayHistoryScreen> createState() => _GatewayHistoryScreenState();
+}
+
+class _GatewayHistoryScreenState extends State<_GatewayHistoryScreen> {
+  static const _cyan = Color(0xFF00D4AA);
+  static const _bgDeep = Color(0xFF050510);
+
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _sessions = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        setState(() {
+          _sessions = const [];
+          _loading = false;
+        });
+        return;
+      }
+      final rows = await Supabase.instance.client
+          .from('ursprung_gateway_sessions')
+          .select()
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false)
+          .limit(20);
+      if (!mounted) return;
+      setState(() {
+        _sessions = (rows as List).cast<Map<String, dynamic>>();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  String _formatDate(String? iso) {
+    final d = DateTime.tryParse(iso ?? '');
+    if (d == null) return '';
+    final l = d.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(l.day)}.${two(l.month)}.${l.year} · ${two(l.hour)}:${two(l.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bgDeep,
+      appBar: AppBar(
+        backgroundColor: _bgDeep,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: _cyan),
+        title: const Text(
+          'Gateway-Verlauf',
+          style: TextStyle(color: _cyan, letterSpacing: 1.5, fontSize: 15),
+        ),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _cyan))
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Verlauf konnte nicht geladen werden.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6)),
+                    ),
+                  ),
+                )
+              : _sessions.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.self_improvement,
+                                color: _cyan.withValues(alpha: 0.5), size: 56),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Noch keine Gateway-Sessions.\n'
+                              'Öffne dein erstes Gateway, um den Verlauf zu starten.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _sessions.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, i) {
+                        final s = _sessions[i];
+                        final level =
+                            s['focus_level_reached'] as String? ?? 'Focus';
+                        final mins =
+                            (s['duration_minutes'] as num?)?.toInt() ?? 0;
+                        return Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF080818),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                                color: _cyan.withValues(alpha: 0.25)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: _cyan.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.blur_on,
+                                    color: _cyan, size: 22),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      level,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _formatDate(s['created_at'] as String?),
+                                      style: TextStyle(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.5),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '$mins min',
+                                style: TextStyle(
+                                  color: _cyan.withValues(alpha: 0.9),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+    );
+  }
 }
