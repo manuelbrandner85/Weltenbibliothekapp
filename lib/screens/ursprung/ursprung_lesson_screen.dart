@@ -11,6 +11,10 @@ import '../../services/ursprung_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/wb_cached_image.dart';
+import 'tools/gateway_room_screen.dart';
+import 'tools/breathmaster_screen.dart';
+import 'tools/reality_architect_screen.dart';
+import 'tools/rv_trainer_screen.dart';
 
 /// 🌀 URSPRUNG Lesson Screen
 ///
@@ -425,8 +429,69 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
             ],
           ),
         ),
+        // U1: Verknüpfung Modul -> passendes Praxis-Tool
+        ..._buildToolLink(),
       ],
     );
+  }
+
+  /// U1: Mappt die Branch eines Moduls auf das passende Praxis-Tool.
+  ({String label, IconData icon, Widget Function() build})? _toolForBranch() {
+    final branch = (_module?['branch'] as String?) ?? '';
+    switch (branch) {
+      case 'gateway_foundation':
+      case 'focus_levels':
+        return (
+          label: 'In der Gateway-Kammer üben',
+          icon: Icons.blur_on,
+          build: () => const GatewayRoomScreen(),
+        );
+      case 'energy_tools':
+        return (
+          label: 'Mit dem Atemmeister üben',
+          icon: Icons.spa_rounded,
+          build: () => const BreathmasterScreen(),
+        );
+      case 'patterning_manifestation':
+        return (
+          label: 'Im Realitäts-Architekt üben',
+          icon: Icons.auto_fix_high,
+          build: () => const RealityArchitectScreen(),
+        );
+      case 'remote_viewing':
+        return (
+          label: 'Im RV-Trainer üben',
+          icon: Icons.remove_red_eye,
+          build: () => const RvTrainerScreen(),
+        );
+    }
+    return null;
+  }
+
+  List<Widget> _buildToolLink() {
+    final tool = _toolForBranch();
+    if (tool == null) return const [];
+    return [
+      const SizedBox(height: 16),
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => tool.build()),
+          ),
+          icon: Icon(tool.icon, size: 20),
+          label: Text(tool.label),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _gold,
+            foregroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 
   // ── Tab 4: Test ───────────────────────────────────────────────
