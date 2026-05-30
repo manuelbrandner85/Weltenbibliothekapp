@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/thread.dart';
 import '../widgets/kb_design.dart';
+import '../../../../models/favorite.dart';
+import '../../../../widgets/favorite_button.dart';
 
 class SourcesCard extends StatefulWidget {
   final List<SourceItem> sources;
@@ -192,6 +194,16 @@ class _SourceTile extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  // M1: Quelle als Lesezeichen speichern
+                  FavoriteButton(
+                    itemId: 'kb_source_${item.url}',
+                    itemType: FavoriteType.source,
+                    itemTitle: item.title,
+                    itemDescription: item.snippet,
+                    itemUrl: item.url,
+                    size: 16,
+                    activeColor: color,
                   ),
                 ],
               ),
