@@ -318,12 +318,25 @@ class UrsprungHomeTab extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: _surface.withValues(alpha: 0.85),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _surface.withValues(alpha: 0.95),
+              Color.lerp(_surface, color, 0.07)!.withValues(alpha: 0.9),
+            ],
+          ),
           border: Border.all(color: color.withValues(alpha: 0.30)),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.08),
-              blurRadius: 20,
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: color.withValues(alpha: 0.16),
+              blurRadius: 24,
+              spreadRadius: -2,
               offset: const Offset(0, 4),
             ),
           ],
@@ -403,8 +416,28 @@ class UrsprungHomeTab extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: _surface.withValues(alpha: 0.7),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _surface.withValues(alpha: 0.9),
+              Color.lerp(_surface, _cyan, 0.06)!.withValues(alpha: 0.85),
+            ],
+          ),
           border: Border.all(color: _cyan.withValues(alpha: 0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
+            ),
+            BoxShadow(
+              color: _cyan.withValues(alpha: 0.12),
+              blurRadius: 20,
+              spreadRadius: -2,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [

@@ -432,13 +432,34 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                   width: 150,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    color: _surface.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        _surface.withValues(alpha: 0.95),
+                        Color.lerp(_surface, _gold, 0.07)!
+                            .withValues(alpha: 0.9),
+                      ],
+                    ),
                     border: Border.all(
                       color: allDone
                           ? _gold.withValues(alpha: 0.55)
                           : _gold.withValues(alpha: 0.18),
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: _gold.withValues(alpha: allDone ? 0.22 : 0.10),
+                        blurRadius: 22,
+                        spreadRadius: -2,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
