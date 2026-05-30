@@ -519,13 +519,30 @@ class UrsprungHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _sectionLabel(String s) => Text(
-        s,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 4.0,
-          color: _cyan.withValues(alpha: 0.8),
-        ),
+  Widget _sectionLabel(String s) => Row(
+        children: [
+          Container(
+            width: 3,
+            height: 13,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [_cyanAccent, Color(0x3300D4AA)],
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            s,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 4.0,
+              color: _cyan.withValues(alpha: 0.9),
+            ),
+          ),
+        ],
       );
 }

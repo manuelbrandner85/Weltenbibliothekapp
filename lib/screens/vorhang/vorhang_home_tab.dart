@@ -227,6 +227,44 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
   }
 
   // ── PRESERVED: Hero Section ──
+  /// Section-Label mit Gold-Accent-Bar (premium Rhythmus, wie Materie/Energie).
+  Widget _sectionLabel(String s, {String? trailing}) => Row(
+        children: [
+          Container(
+            width: 3,
+            height: 13,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFE0C872), Color(0x33C9A84C)],
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            s,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 4.0,
+              color: _gold.withValues(alpha: 0.85),
+            ),
+          ),
+          if (trailing != null) ...[
+            const Spacer(),
+            Text(
+              trailing,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ],
+      );
+
   Widget _buildHeroSection() {
     final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
     return Container(
@@ -372,27 +410,7 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'BRANCHEN',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 4.0,
-                color: _gold.withValues(alpha: 0.7),
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '6 Pfade · 30 Module',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
+        _sectionLabel('BRANCHEN', trailing: '6 Pfade · 30 Module'),
         const SizedBox(height: 14),
         SizedBox(
           height: 130,
@@ -509,15 +527,7 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'NÄCHSTES MODUL',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 4.0,
-            color: _gold.withValues(alpha: 0.7),
-          ),
-        ),
+        _sectionLabel('NÄCHSTES MODUL'),
         const SizedBox(height: 14),
         GestureDetector(
           onTap: () => _openLesson(code),
@@ -665,15 +675,7 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'ZULETZT ABGESCHLOSSEN',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 4.0,
-            color: _gold.withValues(alpha: 0.7),
-          ),
-        ),
+        _sectionLabel('ZULETZT ABGESCHLOSSEN'),
         const SizedBox(height: 14),
         for (final m in list)
           Padding(
