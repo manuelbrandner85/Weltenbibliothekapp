@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_world_orb.dart';
 import '../../services/mentor_service.dart';
 import '../../widgets/mentor_hero_card.dart';
 import '../shared/mentor_chat_screen.dart';
@@ -196,7 +198,6 @@ class UrsprungHomeTab extends StatelessWidget {
   // ────────────────────────────────────────────────────────────
   Widget _buildHeroSection() {
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
@@ -217,10 +218,27 @@ class UrsprungHomeTab extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // Ambient Welt-Orb als Lichtanker (hinter dem Content).
+            Positioned(
+              top: -34,
+              right: -24,
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.42,
+                  child: WBWorldOrb(world: WBWorld.ursprung, size: 130),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
             children: [
               Container(
                 padding:
@@ -276,7 +294,11 @@ class UrsprungHomeTab extends StatelessWidget {
               height: 1.6,
             ),
           ),
-        ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_world_orb.dart';
+
 import '../../services/mentor_service.dart';
 import '../../widgets/mentor_hero_card.dart';
 import '../../services/vorhang_service.dart';
@@ -268,7 +271,6 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
   Widget _buildHeroSection() {
     final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
@@ -292,15 +294,32 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // Ambient Welt-Orb als Lichtanker (hinter dem Content).
+            Positioned(
+              top: -34,
+              right: -24,
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.40,
+                  child: WBWorldOrb(world: WBWorld.vorhang, size: 130),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
                   color: _gold.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: _gold.withValues(alpha: 0.4)),
@@ -378,7 +397,11 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
               ),
             ),
           ],
-        ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
