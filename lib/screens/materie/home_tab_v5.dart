@@ -7,6 +7,8 @@ import '../../services/openclaw_dashboard_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/materie_profile.dart';
 import '../../models/energie_profile.dart';
+import '../../models/favorite.dart';
+import '../../widgets/favorite_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 import 'materie_live_chat_screen.dart';
@@ -1615,6 +1617,16 @@ class _FeaturedArticleCard extends StatelessWidget {
                 Text(_formatDate(date),
                     style:
                         const TextStyle(color: Colors.white38, fontSize: 11)),
+              // M4: Top-Artikel speichern
+              FavoriteButton(
+                itemId: (article['id'] ?? article['url'] ?? title).toString(),
+                itemType: FavoriteType.research,
+                itemTitle: title,
+                itemDescription: source,
+                itemUrl: article['url']?.toString(),
+                size: 18,
+                activeColor: accent,
+              ),
             ]),
             const SizedBox(height: 12),
             // Title
@@ -1749,9 +1761,17 @@ class _ArticleCard extends StatelessWidget {
               ]),
             ]),
           ),
-          const SizedBox(width: 8),
-          Icon(Icons.arrow_forward_ios_rounded,
-              color: Colors.white24, size: 13),
+          const SizedBox(width: 4),
+          // M4: Artikel als Leseliste/Lesezeichen speichern
+          FavoriteButton(
+            itemId: (article['id'] ?? article['url'] ?? title).toString(),
+            itemType: FavoriteType.research,
+            itemTitle: title,
+            itemDescription: source,
+            itemUrl: article['url']?.toString(),
+            size: 18,
+            activeColor: accent,
+          ),
         ]),
       ),
     );

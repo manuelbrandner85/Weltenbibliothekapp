@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/map_clustering_helper.dart'; // 🗺️ MARKER-CLUSTERING
 import '../../models/materie_location_detail.dart'; // ✅ MODEL
+import '../../models/favorite.dart'; // ⭐ M2: Orte speichern
+import '../../services/favorites_service.dart';
 import '../../models/location_category.dart'; // ✅ ENUM
 import '../../data/materie_locations.dart'; // ✅ DATA
 import '../../services/live_map_pins_service.dart'; // 📍 B7: Live-Pins
@@ -689,6 +691,53 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                           ],
                         ),
                       ),
+                      // M2: Ort als Favorit speichern/entfernen
+                      Builder(builder: (ctx) {
+                        final favId = 'map_${location.name}';
+                        final isSaved = FavoritesService.isFavorite(favId);
+                        return IconButton(
+                          tooltip: isSaved
+                              ? 'Ort aus Favoriten entfernen'
+                              : 'Ort speichern',
+                          icon: Icon(
+                            isSaved
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
+                            color: _getCategoryColor(location.category),
+                          ),
+                          onPressed: () async {
+                            if (isSaved) {
+                              await FavoritesService.deleteFavorite(favId);
+                            } else {
+                              await FavoritesService.addFavorite(Favorite(
+                                id: favId,
+                                type: FavoriteType.source,
+                                title: location.name,
+                                description: location.description,
+                                url: location.sources.isNotEmpty
+                                    ? location.sources.first
+                                    : null,
+                                createdAt: DateTime.now(),
+                                metadata: {
+                                  'lat': location.position.latitude,
+                                  'lng': location.position.longitude,
+                                  'category': location.category.toString(),
+                                },
+                              ));
+                            }
+                            if (!ctx.mounted) return;
+                            setState(() {});
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                duration: const Duration(seconds: 2),
+                                content: Text(isSaved
+                                    ? 'Ort aus Favoriten entfernt'
+                                    : '${location.name} gespeichert'),
+                              ),
+                            );
+                          },
+                        );
+                      }),
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.white),
                         onPressed: () {
