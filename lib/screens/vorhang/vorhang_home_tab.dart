@@ -13,6 +13,7 @@ import '../shared/mentor_chat_screen.dart';
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
+import '../../widgets/daily_practice_card.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_modules_screen.dart';
 
@@ -171,6 +172,13 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
 
               // FEATURE (V2): Tägliche Enthüllung -- Macht-Prinzip des Tages.
               const DailyRevelationCard(accent: Color(0xFFC9A84C)),
+              const SizedBox(height: 12),
+
+              // V5: Tägliche Praxis-Challenge -- konkrete Mikro-Übung.
+              const DailyPracticeCard(
+                accent: Color(0xFFC9A84C),
+                practices: DailyPracticeCard.vorhangPractices,
+              ),
               const SizedBox(height: 20),
 
               // ── 🧠 KI-Mentor Button (PRESERVED, lines 167-239 original) ──
