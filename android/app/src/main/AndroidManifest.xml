@@ -3,64 +3,42 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    
+
     <!-- 🎤 MICROPHONE PERMISSION (Voice Messages + LiveKit Group-Call) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
-    <!-- 📍 LOCATION (Wetter + Karten — COARSE reicht für Stadt-Level) -->
+    <!-- 📍 LOCATION (Wetter + Karten -- COARSE reicht fuer Stadt-Level) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <!-- 🎥 LIVEKIT PERMISSIONS (Camera + Audio + Bluetooth + Foreground-Service) -->
+    <!-- 🎥 LIVEKIT PERMISSIONS (Camera + Audio + Foreground-Service) -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- 💓 v5.44.1: BLUETOOTH_SCAN fuer flutter_blue_plus BLE-Scan (Android 12+) -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-                     android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <!-- Foreground-Service-Typen für Android 14+ (Screen-Share + Voice-Call) -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <!-- Foreground-Service-Typen fuer Android 14+ (Voice-Call + Camera) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
-    
+
     <!-- Audio Focus (Android 8.0+) -->
     <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
-    
+
     <!-- Storage Permissions -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
                      android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
                      android:maxSdkVersion="32" />
-    
+
     <!-- Media Permissions (Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
-    <!-- 📲 In-App APK-Update: User muss APK installieren können (Android 8+) -->
+    <!-- 📲 In-App APK-Update: User muss APK installieren koennen (Android 8+) -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- 🔔 Push-Benachrichtigungen (Android 13+, runtime permission) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- 💓 HEALTH CONNECT (Android Health Connect, API 26+) - Biometric Feedback
-         Required for HRV + Heart Rate readings before/after meditation sessions
-         AND continuous live HR display during Gateway/Breathmaster sessions. -->
-    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
-    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
-    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
-    <uses-permission android:name="android.permission.health.READ_STEPS" />
-    <uses-permission android:name="android.permission.health.READ_SLEEP" />
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    <!-- Direct sensor access (Wear OS paired devices write into BODY_SENSORS).
-         BODY_SENSORS_BACKGROUND ist Android 13+ Pflicht fuer Foreground-Service. -->
-    <uses-permission android:name="android.permission.BODY_SENSORS" />
-    <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND" />
-    <!-- Android 14+: Foreground-Service-Typ fuer Health (Live-HR-Indicator). -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
 
     <application
         android:label="Weltenbibliothek"
@@ -91,22 +69,7 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- 💓 Health Connect: Privacy-Policy-Intent (verpflichtend ab Android 14) -->
-            <intent-filter>
-                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
-            </intent-filter>
         </activity>
-        <!-- 💓 Health Connect: Alias-Activity für Privacy-Policy-Ziel auf älteren Android-Versionen -->
-        <activity-alias
-            android:name="ViewPermissionUsageActivity"
-            android:exported="true"
-            android:targetActivity=".MainActivity"
-            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
-                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
-            </intent-filter>
-        </activity-alias>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -126,7 +89,7 @@
             android:foregroundServiceType="microphone"
             android:exported="false" />
 
-        <!-- 📲 FileProvider für In-App-APK-Install (Android 7+ braucht content:// URIs) -->
+        <!-- 📲 FileProvider fuer In-App-APK-Install (Android 7+ braucht content:// URIs) -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -147,27 +110,10 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- APK-Installer-Intent (für open_filex) -->
+        <!-- APK-Installer-Intent (fuer open_filex) -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:mimeType="application/vnd.android.package-archive" />
         </intent>
-        <!-- 💓 Health Connect: Package-Visibility-Query (Android 11+) -->
-        <package android:name="com.google.android.apps.healthdata" />
-        <!-- Fitness-/Watch-Apps: erlauben canLaunchUrl() Checks im Health-Settings-Wizard. -->
-        <package android:name="com.sec.android.app.shealth" />        <!-- Samsung Health -->
-        <package android:name="com.google.android.apps.fitness" />     <!-- Google Fit -->
-        <package android:name="com.fitbit.FitbitMobile" />             <!-- Fitbit -->
-        <package android:name="com.garmin.android.apps.connectmobile" /> <!-- Garmin Connect -->
-        <package android:name="fi.polar.polarflow" />                  <!-- Polar Flow -->
-        <package android:name="com.google.android.wearable.app" />     <!-- Wear OS -->
-        <package android:name="com.samsung.android.app.watchmanager" /> <!-- Samsung Galaxy Wearable -->
     </queries>
 </manifest>
-
-
-
-
-
-
-
