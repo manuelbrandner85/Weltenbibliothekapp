@@ -1828,41 +1828,56 @@ class _CineOrb extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════
 // 🥁 DRUM-BIBLIOTHEK · 5 BPM-Beats für Trommel-Reisen
 // ═══════════════════════════════════════════════════════════
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _DrumBeat {
+  final String name;
+  final int bpm;
+  final String desc;
+  final String use;
+  final String emoji;
+  const _DrumBeat({
+    required this.name,
+    required this.bpm,
+    required this.desc,
+    required this.use,
+    required this.emoji,
+  });
+}
+
 class _DrumLibraryTab extends StatelessWidget {
   const _DrumLibraryTab();
 
-  static final List<
-          ({String name, int bpm, String desc, String use, String emoji})>
+  static final List<_DrumBeat>
       _drums = [
-    (
+    _DrumBeat(
       emoji: '🐢',
       name: 'Slow Theta',
       bpm: 180,
       desc: '3 Schläge/Sek — tiefste Theta-Synchronisation',
       use: 'Untere Welt, tiefe Trance, Krafttier-Suche',
     ),
-    (
+    _DrumBeat(
       emoji: '🦌',
       name: 'Klassisch',
       bpm: 210,
       desc: '3.5 Schläge/Sek — Standard-Trommel-Reise',
       use: 'Mittlere Welt, Heilarbeit, Geistführer treffen',
     ),
-    (
+    _DrumBeat(
       emoji: '🦅',
       name: 'Aktive Reise',
       bpm: 240,
       desc: '4 Schläge/Sek — schnellere Reisen',
       use: 'Obere Welt, Vision-Quest, Klärung',
     ),
-    (
+    _DrumBeat(
       emoji: '🐺',
       name: 'Hochfrequent',
       bpm: 270,
       desc: '4.5 Schläge/Sek — energetisch aktivierend',
       use: 'Extraktion, Lichtkörper, Schamanen-Tanz',
     ),
-    (
+    _DrumBeat(
       emoji: '🔥',
       name: 'Trance-Drumming',
       bpm: 300,
@@ -1955,152 +1970,165 @@ class _DrumLibraryTab extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════
 // 🐺 KRAFTTIER-LEXIKON · 24 archetypische Krafttiere
 // ═══════════════════════════════════════════════════════════
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _AnimalPower {
+  final String name;
+  final String emoji;
+  final String quality;
+  final String teaching;
+  const _AnimalPower({
+    required this.name,
+    required this.emoji,
+    required this.quality,
+    required this.teaching,
+  });
+}
+
 class _PowerAnimalsTab extends StatelessWidget {
   const _PowerAnimalsTab();
 
-  static final List<
-          ({String name, String emoji, String quality, String teaching})>
+  static final List<_AnimalPower>
       _animals = [
-    (
+    _AnimalPower(
       emoji: '🐺',
       name: 'Wolf',
       quality: 'Lehrer · Loyalität · Instinkt',
       teaching:
           'Folge deinem Bauchgefühl. Gemeinschaft ist Stärke. Bewege dich in Familie.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦅',
       name: 'Adler',
       quality: 'Vision · Übersicht · Botschaft',
       teaching: 'Steig auf, schau weit. Klarheit kommt aus der Höhe.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦉',
       name: 'Eule',
       quality: 'Weisheit · Nachtsicht · Geheimnis',
       teaching: 'Was im Dunkel ist, wird sichtbar wenn du still wirst.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐻',
       name: 'Bär',
       quality: 'Kraft · Rückzug · Heilung',
       teaching: 'Rückzug ist nicht Schwäche. Im Winter regeneriert das Tiefste.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦌',
       name: 'Hirsch',
       quality: 'Anmut · Sanftmut · Schnelligkeit',
       teaching: 'Sanft sein und dennoch klar. Sprünge wagen.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐍',
       name: 'Schlange',
       quality: 'Transformation · Heilung · Häutung',
       teaching: 'Was abgelegt werden muss, fällt von allein. Kundalini-Energie.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦋',
       name: 'Schmetterling',
       quality: 'Wandlung · Leichtigkeit',
       teaching: 'Die Verpuppung ist nötig. Du wirst nicht wer du warst.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐎',
       name: 'Pferd',
       quality: 'Freiheit · Reise · Power',
       teaching: 'Lass dich tragen, aber zähme nicht. Vertrauen ins Tempo.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦁',
       name: 'Löwe',
       quality: 'Mut · Würde · Souveränität',
       teaching: 'Brülle, wenn nötig. Sonne dich, wenn möglich. Sei König.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐯',
       name: 'Tiger',
       quality: 'Stärke · Einsamkeit · Spannung',
       teaching: 'Spannung halten ist Kunst. Allein-sein ist nicht einsam.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐘',
       name: 'Elefant',
       quality: 'Erinnerung · Familie · Geduld',
       teaching: 'Was du erinnerst, gibst du weiter. Die Ahnen tragen dich.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐢',
       name: 'Schildkröte',
       quality: 'Beharrlichkeit · Erde · langes Leben',
       teaching: 'Langsam siegt. Trage dein Haus immer mit dir.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦊',
       name: 'Fuchs',
       quality: 'Listigkeit · Anpassung · Stille',
       teaching: 'Sei klug, nicht groß. Wechsle den Pfad ohne Aufsehen.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐦',
       name: 'Kolibri',
       quality: 'Freude · Liebe · Süßes',
       teaching: 'Bleib in Bewegung. Das Süße ist überall, wenn du nippst.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐬',
       name: 'Delfin',
       quality: 'Spiel · Schwarm · Atem',
       teaching: 'Atme bewusst. Spielen ist heilig. Höre die Frequenzen.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐋',
       name: 'Wal',
       quality: 'Tiefe · Ahnenlied · Universum',
       teaching: 'Tauche in alte Erinnerung. Singe was du nicht in Worte fasst.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦂',
       name: 'Skorpion',
       quality: 'Transformation · Dunkelheit · Tod-Rebirth',
       teaching: 'Im Schatten liegt Wahrheit. Stachel ist Schutz, nicht Angriff.'
     ),
-    (
+    _AnimalPower(
       emoji: '🕷️',
       name: 'Spinne',
       quality: 'Weberin · Schöpferin · Schicksal',
       teaching: 'Du webst deine Wirklichkeit. Geduldig, Faden um Faden.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐝',
       name: 'Biene',
       quality: 'Fleiß · Gemeinschaft · Süße',
       teaching: 'Sammle, was nährt. Gib zurück, was du erhältst.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦌',
       name: 'Reh',
       quality: 'Sanftheit · Aufmerksamkeit',
       teaching: 'Lausche zuerst. Verletzlich-sein ist Stärke.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦝',
       name: 'Waschbär',
       quality: 'Neugier · Geschick · Maske',
       teaching: 'Hinter jeder Maske ist eine Wahrheit. Spiel mit ihr.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦆',
       name: 'Ente',
       quality: 'Wasser-Erde-Luft · Anpassung',
       teaching: 'Drei Elemente meistern. Wasser abprallen lassen.'
     ),
-    (
+    _AnimalPower(
       emoji: '🦔',
       name: 'Igel',
       quality: 'Schutz · Selbst-Verteidigung',
       teaching: 'Stachel raus, wenn Grenze gebraucht. Sonst weich bleiben.'
     ),
-    (
+    _AnimalPower(
       emoji: '🐇',
       name: 'Hase',
       quality: 'Fruchtbarkeit · Schnelligkeit · Furcht',
