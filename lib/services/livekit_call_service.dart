@@ -185,6 +185,7 @@ class LiveKitCallService extends ChangeNotifier {
 
   bool get micEnabled => _micEnabled;
   bool get cameraEnabled => _cameraEnabled;
+  bool get cameraToggleInFlight => _cameraToggleInFlight;
   bool get screenShareEnabled => _screenShareEnabled;
   bool get handRaised => _handRaised;
 
@@ -1217,6 +1218,11 @@ class LiveKitCallService extends ChangeNotifier {
         }
       }
 
+      // Optimistic update: set state before async so event-driven notifyListeners()
+      // (TrackUnpublishedEvent) sees consistent camera state and spinner is shown.
+      _cameraEnabled = target;
+      notifyListeners();
+
       if (kDebugMode) {
         debugPrint('📷 setCameraEnabled($target) …');
       }
@@ -1262,19 +1268,20 @@ class LiveKitCallService extends ChangeNotifier {
       }
 
       if (timedOut || partialFailure) {
+        _cameraEnabled = !target; // rollback optimistic update
         _errorMessage = target
             ? 'Kamera konnte nicht aktiviert werden. Bitte erneut versuchen.'
             : 'Kamera-Stream konnte nicht gestoppt werden. Bitte erneut versuchen.';
         notifyListeners();
         return;
       }
-      _errorMessage = null; // Erfolg → alte Fehler löschen
-      _cameraEnabled = target;
+      _errorMessage = null; // success -> clear errors
       if (kDebugMode) {
         debugPrint('📷 Camera ist jetzt ${target ? "AN" : "AUS"}');
       }
       notifyListeners();
     } catch (e) {
+      _cameraEnabled = !target; // rollback optimistic update
       if (kDebugMode) {
         debugPrint('⚠️ toggleCamera error: $e');
       }
@@ -1282,6 +1289,7 @@ class LiveKitCallService extends ChangeNotifier {
       notifyListeners();
     } finally {
       _cameraToggleInFlight = false;
+      notifyListeners(); // ensure spinner dismisses in all paths
     }
   }
 

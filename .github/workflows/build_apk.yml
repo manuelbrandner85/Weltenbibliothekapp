@@ -317,8 +317,17 @@ jobs:
 
       - name: 📝 APK umbenennen
         run: |
-          mv build/app/outputs/flutter-apk/app-release.apk \
-             build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
+          set -euo pipefail
+          # Shorebird/Gradle may output APK to flutter-apk/ or apk/release/ depending on version.
+          APK_SRC=$(find build/app/outputs -name "app-release.apk" -type f 2>/dev/null | head -1)
+          if [ -z "$APK_SRC" ]; then
+            echo "APK nicht gefunden. Verfuegbare APK-Dateien:"
+            find build/app/outputs -name "*.apk" -type f 2>/dev/null | head -20 || echo "(keine APKs gefunden)"
+            exit 1
+          fi
+          echo "APK gefunden: $APK_SRC"
+          mkdir -p build/app/outputs/flutter-apk
+          mv "$APK_SRC" "build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}"
 
       - name: 📤 APK Artefakt
         uses: actions/upload-artifact@v4

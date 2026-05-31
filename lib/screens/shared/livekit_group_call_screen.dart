@@ -329,11 +329,13 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
               fit: StackFit.expand,
               children: [
                 // 🎨 B10.6: Raumstimmung — Hintergrund wechselt je nach Theme
-                _AnimatedBackground(
-                  world: widget.world,
-                  animation: _bgAnimation,
-                  accent: accent,
-                  theme: theme,
+                RepaintBoundary(
+                  child: _AnimatedBackground(
+                    world: widget.world,
+                    animation: _bgAnimation,
+                    accent: accent,
+                    theme: theme,
+                  ),
                 ),
                 child!,
                 // 💖 Bundle 4: Floating-Reactions-Overlay liegt ÜBER allem
@@ -584,6 +586,7 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
               roomName: widget.roomName,
               isModerator: _isModerator,
               moderatorUsername: _moderatorUsername,
+              cameraInFlight: svc.cameraToggleInFlight,
             );
           },
         );
@@ -2202,6 +2205,8 @@ class _ParticipantGrid extends StatelessWidget {
   final String? roomName;
   final bool isModerator;
   final String moderatorUsername;
+  // Bug 3: Kamera-Toggle in Bearbeitung (zeigt Spinner auf lokalem Tile)
+  final bool cameraInFlight;
 
   const _ParticipantGrid({
     required this.world,
@@ -2224,6 +2229,7 @@ class _ParticipantGrid extends StatelessWidget {
     this.roomName,
     this.isModerator = false,
     this.moderatorUsername = '',
+    this.cameraInFlight = false,
   });
 
   /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
@@ -2276,6 +2282,7 @@ class _ParticipantGrid extends StatelessWidget {
           isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
           quality:
               id.isEmpty ? LiveKitParticipantQuality.unknown : qualityFor(id),
+          cameraInFlight: cameraInFlight && cameraEnabled && info.video == null,
         ),
       );
     }
@@ -2330,6 +2337,8 @@ class _ParticipantGrid extends StatelessWidget {
           quality:
               id.isEmpty ? LiveKitParticipantQuality.unknown : qualityFor(id),
           onLongPress: spotlight,
+          cameraInFlight:
+              isLocal && cameraInFlight && cameraEnabled && info.video == null,
         ),
       );
     });
@@ -2372,6 +2381,8 @@ class _ParticipantTile extends StatefulWidget {
   final bool isActiveSpeaker;
   // 🔦 B11: Long-Press → Spotlight-Aktion
   final VoidCallback? onLongPress;
+  // Bug 3: Kamera-Ladeindikator — true wenn Kamera gerade eingeschaltet wird
+  final bool cameraInFlight;
 
   const _ParticipantTile({
     required this.name,
@@ -2386,6 +2397,7 @@ class _ParticipantTile extends StatefulWidget {
     this.quality = LiveKitParticipantQuality.unknown,
     this.isActiveSpeaker = false,
     this.onLongPress,
+    this.cameraInFlight = false,
   });
 
   @override
@@ -2449,8 +2461,27 @@ class _ParticipantTileState extends State<_ParticipantTile>
     final isMaterie = widget.world == 'materie';
     final hasVideo = widget.videoTrack != null;
 
-    final tileBody = _buildTileBody(
+    Widget tileBody = _buildTileBody(
         context, initials, avatarSize, fontSize, isMaterie, hasVideo);
+
+    // Bug 3: spinner overlay while local camera is turning on (no video yet)
+    if (widget.isLocal && widget.cameraInFlight && !hasVideo) {
+      tileBody = Stack(
+        fit: StackFit.expand,
+        children: [
+          tileBody,
+          const ColoredBox(
+            color: Color(0x66000000),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.5,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     // 📶 B2: Quality-Punkt overlay oben rechts auf das Tile
     final tileWithQuality = Stack(
@@ -2778,6 +2809,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
             child: lk.VideoTrackRenderer(
               widget.videoTrack!,
               fit: lk.VideoViewFit.cover,
+              mirror: widget.isLocal,
             ),
           ),
           // Bottom overlay: Name + Mic-Status
