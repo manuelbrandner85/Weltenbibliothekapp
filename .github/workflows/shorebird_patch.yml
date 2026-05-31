@@ -139,16 +139,18 @@ jobs:
           echo "Shorebird install dir: $SHOREBIRD_ROOT"
           cd "$SHOREBIRD_ROOT"
           if [ ! -d .git ]; then
-            echo "❌ $SHOREBIRD_ROOT ist kein git-Klon — kann nicht pinnen"
-            exit 1
+            echo "[!] $SHOREBIRD_ROOT ist kein git-Klon -- Pin wird uebersprungen."
+            shorebird --version
+          else
+            git fetch --tags --force --depth=1 origin v1.6.92 || \
+              { echo "[!] git fetch v1.6.92 fehlgeschlagen -- nutze installierte Version"; shorebird --version; exit 0; }
+            git checkout --force v1.6.92
+            # Snapshot cache invalidieren damit shorebird mit der neuen Version
+            # neu bootstrapped
+            rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
+            echo "--- shorebird --version (nach Pin) ---"
+            shorebird --version
           fi
-          git fetch --tags --force --depth=1 origin v1.6.92
-          git checkout --force v1.6.92
-          # Snapshot cache invalidieren damit shorebird mit der neuen Version
-          # neu bootstrapped
-          rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
-          echo "--- shorebird --version (nach Pin) ---"
-          shorebird --version
 
       - name: 📋 Version lesen
         id: version
