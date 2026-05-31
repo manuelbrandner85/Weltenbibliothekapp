@@ -54,9 +54,14 @@ jobs:
           BUILD_NUMBER=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # Release-Entscheidung.
-          # Kein Release vorhanden -> immer bauen (Retry nach fehlgeschlagenem Build).
-          # Release vorhanden -> ueberspringen (verhindert Doppel-Builds).
+          # Release-Entscheidung. WICHTIG (Anti-"CI-staendig-rot"):
+          # Ein voller Shorebird-RELEASE-Build ist teuer (60 min) und gehoert laut
+          # CLAUDE.md Regel #5 NUR zu einem bewussten Versions-Bump. Reine Dart/UI-
+          # Aenderungen laufen ueber Shorebird OTA-Patch, nicht ueber diesen Workflow.
+          # Frueher triggerte JEDER Push auf main diesen Build -> schlug der Release-
+          # Build fehl, entstand kein Release, also baute der naechste Push erneut
+          # -> Dauerrot. Jetzt baut ein main-Push nur, wenn die `version:`-Zeile in
+          # genau diesem Push geaendert wurde (= absichtlicher Release).
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             echo "[OK] Tag-Push -> bauen (expliziter Release-Wunsch)"
             SHOULD_BUILD=true
@@ -296,7 +301,9 @@ jobs:
       - name: 🏗️ Shorebird Release (arm64 + arm32)
         # Exit-Code 70: Release auf Shorebird-Server bereits registriert.
         # In diesem Fall baut Shorebird den APK NICHT neu. Deshalb: bei exit 70
-        # direkt flutter build apk ausfuehren, damit der APK-Artefakt existiert.
+        # "shorebird flutter build apk" verwenden -- das nutzt Shorebirds
+        # gebundelte Flutter-Engine (garantiert in PATH, da setup-shorebird nur
+        # "shorebird" aber kein standalone "flutter" binary exponiert).
         run: |
           set +e
           shorebird release android \
@@ -309,17 +316,18 @@ jobs:
             "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
           EXIT_CODE=$?
           set -e
+          echo "shorebird release exit code: $EXIT_CODE"
           if [ "$EXIT_CODE" -eq 70 ]; then
             echo "[!] Shorebird: Release v${{ steps.version.outputs.version }} bereits registriert (exit 70)."
-            echo "    Flutter-APK-Fallback-Build wird gestartet..."
-            flutter build apk --release \
+            echo "    shorebird flutter APK-Fallback-Build wird gestartet..."
+            shorebird flutter build apk --release \
               "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
               "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
               "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
               "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
               "--dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}" \
               "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
-            echo "[OK] Flutter APK-Fallback-Build abgeschlossen."
+            echo "[OK] shorebird flutter APK-Fallback-Build abgeschlossen."
           elif [ "$EXIT_CODE" -ne 0 ]; then
             echo "Shorebird Release fehlgeschlagen (exit $EXIT_CODE)"
             exit $EXIT_CODE
@@ -400,7 +408,7 @@ jobs:
             --arg notes "$NOTES_URL" \
             '{platform:"android", latest_version:$lv, min_version:$mv, apk_download_url:$url, changelog:$cl, release_notes_url:$notes}')
 
-          echo "→ UPSERT app_config: latest=$VERSION min=$MIN_VERSION"
+          echo "-> UPSERT app_config: latest=$VERSION min=$MIN_VERSION"
           # ?on_conflict=platform: PostgREST-UPSERT auf UNIQUE-Spalte (nicht PK).
           HTTP_CODE=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
             -X POST "${SUPABASE_URL}/rest/v1/app_config?on_conflict=platform" \
