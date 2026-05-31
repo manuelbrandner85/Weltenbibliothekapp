@@ -617,6 +617,13 @@ final Map<String, _GodExtra> _godExtra = {
   ),
 };
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _ChatMsg {
+  final String role;
+  final String content;
+  const _ChatMsg({required this.role, required this.content});
+}
+
 // ═══════════════════════════════════════════════════════════
 // Chat-View mit einem ausgewählten Gott
 // ═══════════════════════════════════════════════════════════
@@ -636,14 +643,14 @@ class _GodChatViewState extends State<_GodChatView> {
 
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
-  final List<({String role, String content})> _messages = [];
+  final List<_ChatMsg> _messages = [];
   bool _loading = false;
 
   Future<void> _send() async {
     final text = _inputCtrl.text.trim();
     if (text.isEmpty || _loading) return;
     setState(() {
-      _messages.add((role: 'user', content: text));
+      _messages.add(_ChatMsg(role: 'user', content: text));
       _loading = true;
       _inputCtrl.clear();
     });

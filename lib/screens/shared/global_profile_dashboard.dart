@@ -13,6 +13,15 @@ import '../../services/achievement_service.dart';
 import '../../services/gamification_service.dart';
 import '../../services/user_service.dart';
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _WorldMeta {
+  final String label;
+  final String emoji;
+  final Color color;
+  const _WorldMeta(
+      {required this.label, required this.emoji, required this.color});
+}
+
 class GlobalProfileDashboard extends StatefulWidget {
   const GlobalProfileDashboard({super.key});
 
@@ -24,11 +33,15 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
   final _gam = GamificationService();
   final _ach = AchievementService();
 
-  static const _worldMeta = <String, ({String label, String emoji, Color color})>{
-    'materie': (label: 'Materie', emoji: '🌍', color: Color(0xFF2979FF)),
-    'energie': (label: 'Energie', emoji: '✨', color: Color(0xFF9B51E0)),
-    'vorhang': (label: 'Vorhang', emoji: '🎭', color: Color(0xFFC9A84C)),
-    'ursprung': (label: 'Ursprung', emoji: '🌌', color: Color(0xFF00D4AA)),
+  static const _worldMeta = <String, _WorldMeta>{
+    'materie':
+        _WorldMeta(label: 'Materie', emoji: '🌍', color: Color(0xFF2979FF)),
+    'energie':
+        _WorldMeta(label: 'Energie', emoji: '✨', color: Color(0xFF9B51E0)),
+    'vorhang':
+        _WorldMeta(label: 'Vorhang', emoji: '🎭', color: Color(0xFFC9A84C)),
+    'ursprung':
+        _WorldMeta(label: 'Ursprung', emoji: '🌌', color: Color(0xFF00D4AA)),
   };
 
   @override
@@ -202,8 +215,7 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
     );
   }
 
-  Widget _worldRow(
-      String world, ({String label, String emoji, Color color}) meta) {
+  Widget _worldRow(String world, _WorldMeta meta) {
     final p = _gam.getProgress(world);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
