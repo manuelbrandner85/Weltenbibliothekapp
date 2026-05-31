@@ -8,6 +8,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _BodyScanStep {
+  final String body;
+  final String emoji;
+  final String script;
+  const _BodyScanStep(
+      {required this.body, required this.emoji, required this.script});
+}
+
 class AudioBodyScanScreen extends StatefulWidget {
   const AudioBodyScanScreen({super.key});
 
@@ -27,122 +36,122 @@ class _AudioBodyScanScreenState extends State<AudioBodyScanScreen> {
   int _remainingSec = 0;
 
   // 20 Schritte × 30 Sek = 10 Min. Jede Region einmal 30s.
-  static final List<({String body, String emoji, String script})> _steps = [
-    (
+  static final List<_BodyScanStep> _steps = [
+    _BodyScanStep(
       emoji: '🦶',
       body: 'Linker Fuß',
       script:
           'Lenke deine Aufmerksamkeit zum linken Fuß. Spüre die Sohle, die Zehen, die Ferse. Beobachte einfach, was da ist — Wärme, Druck, Kribbeln oder Stille.'
     ),
-    (
+    _BodyScanStep(
       emoji: '🦶',
       body: 'Rechter Fuß',
       script:
           'Nun zum rechten Fuß. Dieselbe sanfte Aufmerksamkeit. Was bemerkst du, was du sonst übergehst?'
     ),
-    (
+    _BodyScanStep(
       emoji: '🦵',
       body: 'Linkes Bein',
       script:
           'Wandere zum linken Unterschenkel, Knie, Oberschenkel. Lass den Atem durch das ganze Bein fließen. Atme ein in das Bein. Atme aus durch das Bein.'
     ),
-    (
+    _BodyScanStep(
       emoji: '🦵',
       body: 'Rechtes Bein',
       script:
           'Jetzt das rechte Bein. Spüre, wie es auf der Unterlage ruht. Schwer oder leicht? Warm oder kühl?'
     ),
-    (
+    _BodyScanStep(
       emoji: '🪨',
       body: 'Becken & Hüften',
       script:
           'Becken und Hüften. Dieser Bereich speichert oft alte Spannung. Lass den Atem hier länger verweilen.'
     ),
-    (
+    _BodyScanStep(
       emoji: '⬇️',
       body: 'Unterer Rücken',
       script:
           'Der untere Rücken — Lendenwirbelsäule. Beobachte ohne zu beurteilen. Bei jedem Ausatmen: weicher werden.'
     ),
-    (
+    _BodyScanStep(
       emoji: '🫃',
       body: 'Bauch',
       script:
           'Der Bauch — der Sitz vieler Emotionen. Lege wenn nötig eine Hand darauf. Wie hebt und senkt er sich beim Atmen?'
     ),
-    (
+    _BodyScanStep(
       emoji: '🫀',
       body: 'Brustkorb',
       script:
           'Der Brustkorb. Spüre wie er sich beim Einatmen weitet, beim Ausatmen sinkt. Vielleicht das Herz darin schlagen.'
     ),
-    (
+    _BodyScanStep(
       emoji: '⬆️',
       body: 'Oberer Rücken',
       script:
           'Der obere Rücken zwischen den Schulterblättern. Diese Stelle, die du selten siehst, aber die dich täglich trägt.'
     ),
-    (
+    _BodyScanStep(
       emoji: '🧥',
       body: 'Schultern',
       script:
           'Die Schultern. Lass sie sinken, ein paar Zentimeter tiefer. Was haben sie heute alles getragen?'
     ),
-    (
+    _BodyScanStep(
       emoji: '💪',
       body: 'Linker Arm',
       script:
           'Der linke Arm. Vom Oberarm über den Ellbogen, Unterarm, bis zur Hand.'
     ),
-    (
+    _BodyScanStep(
       emoji: '💪',
       body: 'Rechter Arm',
       script:
           'Der rechte Arm. Spüre die Finger einzeln nacheinander. Kribbelt etwas? Pulsiert etwas?'
     ),
-    (
+    _BodyScanStep(
       emoji: '🫶',
       body: 'Hände',
       script:
           'Beide Hände gleichzeitig. Die Werkzeuge des Tages. Lass sie schwer werden.'
     ),
-    (
+    _BodyScanStep(
       emoji: '🧠',
       body: 'Nacken',
       script:
           'Der Nacken — die Brücke zwischen Kopf und Körper. Lass den Kiefer locker werden, die Zunge hinter den Zähnen ruhen.'
     ),
-    (
+    _BodyScanStep(
       emoji: '😶',
       body: 'Gesicht',
       script:
           'Das Gesicht. Lass die Stirn glatt werden, die Augenlider schwer, die Wangen weich.'
     ),
-    (
+    _BodyScanStep(
       emoji: '👁️',
       body: 'Augen',
       script:
           'Die Augen, hinter den geschlossenen Lidern. Lass die Augäpfel sanft in den Höhlen ruhen.'
     ),
-    (
+    _BodyScanStep(
       emoji: '🧠',
       body: 'Kopf & Stirn',
       script:
           'Die Stirn, die Schläfen, der ganze Schädel. Beobachte ob Gedanken auftauchen — lass sie ziehen wie Wolken.'
     ),
-    (
+    _BodyScanStep(
       emoji: '👑',
       body: 'Kopfkrone',
       script:
           'Der Scheitel, die Krone. Stell dir vor, ein sanftes Licht strömt von oben in den Körper hinein.'
     ),
-    (
+    _BodyScanStep(
       emoji: '🌟',
       body: 'Ganzer Körper',
       script:
           'Spüre nun den ganzen Körper auf einmal. Als ein einziges atmendes Wesen. Jede Zelle.'
     ),
-    (
+    _BodyScanStep(
       emoji: '🙏',
       body: 'Abschluss',
       script:
