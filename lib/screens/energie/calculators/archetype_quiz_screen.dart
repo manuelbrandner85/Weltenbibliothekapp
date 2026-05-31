@@ -5,6 +5,34 @@
 
 import 'package:flutter/material.dart';
 
+// dart2js-Bug-Workaround: Named/positional Records kompilieren nicht zuverlaessig.
+class _Archetype {
+  final String name;
+  final String emoji;
+  final String trait;
+  final String shadow;
+  final Color color;
+  const _Archetype({
+    required this.name,
+    required this.emoji,
+    required this.trait,
+    required this.shadow,
+    required this.color,
+  });
+}
+
+class _Answer {
+  final String text;
+  final int archIdx;
+  const _Answer(this.text, this.archIdx);
+}
+
+class _Question {
+  final String q;
+  final List<_Answer> a;
+  const _Question({required this.q, required this.a});
+}
+
 class ArchetypeQuizScreen extends StatefulWidget {
   const ArchetypeQuizScreen({super.key});
 
@@ -21,84 +49,84 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   // 0=Unschuldiger 1=Gewöhnlicher 2=Held 3=Fürsorger 4=Suchender 5=Liebender
   // 6=Rebell 7=Schöpfer 8=Herrscher 9=Magier 10=Weise 11=Narr
   static final _archetypes = [
-    (
+    _Archetype(
       name: 'Unschuldiger',
       emoji: '🤍',
       trait: 'Vertrauen · Sehnsucht nach Paradies',
       shadow: 'Naivität, Realitätsverleugnung',
       color: Color(0xFFE0F2F1),
     ),
-    (
+    _Archetype(
       name: 'Gewöhnlicher',
       emoji: '🧑‍🤝‍🧑',
       trait: 'Bodenständigkeit · Zugehörigkeit',
       shadow: 'Anpassung um jeden Preis',
       color: Color(0xFF8D6E63),
     ),
-    (
+    _Archetype(
       name: 'Held',
       emoji: '🦸',
       trait: 'Mut · Wettbewerb · Sieg',
       shadow: 'Arroganz, Burnout',
       color: Color(0xFFE53935),
     ),
-    (
+    _Archetype(
       name: 'Fürsorger',
       emoji: '💕',
       trait: 'Mitgefühl · Schutz',
       shadow: 'Märtyrertum, Burnout durch Geben',
       color: Color(0xFFE91E63),
     ),
-    (
+    _Archetype(
       name: 'Suchender',
       emoji: '🔍',
       trait: 'Freiheit · Reise · Authentizität',
       shadow: 'Entwurzelung, Bindungsunfähigkeit',
       color: Color(0xFFFB8C00),
     ),
-    (
+    _Archetype(
       name: 'Liebender',
       emoji: '❤️',
       trait: 'Hingabe · Schönheit · Sinnlichkeit',
       shadow: 'Eifersucht, Selbst-Verlust',
       color: Color(0xFFC2185B),
     ),
-    (
+    _Archetype(
       name: 'Rebell',
       emoji: '⚔️',
       trait: 'Befreiung · Disruption',
       shadow: 'Wut als Identität',
       color: Color(0xFF263238),
     ),
-    (
+    _Archetype(
       name: 'Schöpfer',
       emoji: '🎨',
       trait: 'Vision · Kreation',
       shadow: 'Perfektionismus, blockierte Vision',
       color: Color(0xFF9C27B0),
     ),
-    (
+    _Archetype(
       name: 'Herrscher',
       emoji: '👑',
       trait: 'Verantwortung · Souveränität',
       shadow: 'Kontrolle, Tyrannei',
       color: Color(0xFFFFB300),
     ),
-    (
+    _Archetype(
       name: 'Magier',
       emoji: '✨',
       trait: 'Transformation · Vision-zu-Realität',
       shadow: 'Manipulation, Macht-Missbrauch',
       color: Color(0xFF7C4DFF),
     ),
-    (
+    _Archetype(
       name: 'Weise',
       emoji: '🧙',
       trait: 'Wahrheit · Klarheit',
       shadow: 'Lebens-Vermeidung durch Denken',
       color: Color(0xFF1E88E5),
     ),
-    (
+    _Archetype(
       name: 'Narr',
       emoji: '🃏',
       trait: 'Freude · Heiligkeit des Augenblicks',
@@ -108,112 +136,112 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   ];
 
   static final _questions = [
-    (
+    _Question(
       q: 'Sonntagabend mit unverplanter Zeit — was tust du?',
       a: [
-        ('Spazierengehen, einfach sein', 0),
-        ('Mit Freunden treffen', 1),
-        ('Sport oder Wettkampf', 2),
-        ('Für jemanden kochen', 3),
+        _Answer('Spazierengehen, einfach sein', 0),
+        _Answer('Mit Freunden treffen', 1),
+        _Answer('Sport oder Wettkampf', 2),
+        _Answer('Für jemanden kochen', 3),
       ]
     ),
-    (
+    _Question(
       q: 'Im Job suchst du vor allem...',
       a: [
-        ('Sicherheit und Routine', 0),
-        ('Sinn und Wirkung', 9),
-        ('Aufstieg und Anerkennung', 8),
-        ('Kreative Freiheit', 7),
+        _Answer('Sicherheit und Routine', 0),
+        _Answer('Sinn und Wirkung', 9),
+        _Answer('Aufstieg und Anerkennung', 8),
+        _Answer('Kreative Freiheit', 7),
       ]
     ),
-    (
+    _Question(
       q: 'In Konflikten...',
       a: [
-        ('Suche ich Harmonie', 0),
-        ('Setze ich klare Grenzen', 2),
-        ('Versuche zu vermitteln', 3),
-        ('Sage ich was Sache ist, koste es was es wolle', 6),
+        _Answer('Suche ich Harmonie', 0),
+        _Answer('Setze ich klare Grenzen', 2),
+        _Answer('Versuche zu vermitteln', 3),
+        _Answer('Sage ich was Sache ist, koste es was es wolle', 6),
       ]
     ),
-    (
+    _Question(
       q: 'Mein Lieblings-Genre in Büchern/Filmen?',
       a: [
-        ('Romance, Drama', 5),
-        ('Action, Abenteuer', 4),
-        ('Mystery, Sci-Fi', 9),
-        ('Sachbücher, Philosophie', 10),
+        _Answer('Romance, Drama', 5),
+        _Answer('Action, Abenteuer', 4),
+        _Answer('Mystery, Sci-Fi', 9),
+        _Answer('Sachbücher, Philosophie', 10),
       ]
     ),
-    (
+    _Question(
       q: 'Was ist dir wichtiger?',
       a: [
-        ('Aufrichtigkeit', 0),
-        ('Erfolg', 2),
-        ('Tiefe Verbindungen', 5),
-        ('Freiheit', 4),
+        _Answer('Aufrichtigkeit', 0),
+        _Answer('Erfolg', 2),
+        _Answer('Tiefe Verbindungen', 5),
+        _Answer('Freiheit', 4),
       ]
     ),
-    (
+    _Question(
       q: 'Wenn du eine Schwäche zugeben müsstest...',
       a: [
-        ('Zu vertrauensselig', 0),
-        ('Zu kritisch mit mir', 7),
-        ('Zu viel zugleich wollen', 9),
-        ('Zu wenig auf mich achten', 3),
+        _Answer('Zu vertrauensselig', 0),
+        _Answer('Zu kritisch mit mir', 7),
+        _Answer('Zu viel zugleich wollen', 9),
+        _Answer('Zu wenig auf mich achten', 3),
       ]
     ),
-    (
+    _Question(
       q: 'In sozialer Runde bist du eher...',
       a: [
-        ('Der Comedian', 11),
-        ('Der Tiefgründige', 10),
-        ('Der Organisator', 8),
-        ('Der Außenseiter', 6),
+        _Answer('Der Comedian', 11),
+        _Answer('Der Tiefgründige', 10),
+        _Answer('Der Organisator', 8),
+        _Answer('Der Außenseiter', 6),
       ]
     ),
-    (
+    _Question(
       q: 'Welcher Satz beschreibt dich?',
       a: [
-        ('Ich liebe Menschen.', 3),
-        ('Ich liebe Schönheit.', 5),
-        ('Ich liebe Wahrheit.', 10),
-        ('Ich liebe das Spiel.', 11),
+        _Answer('Ich liebe Menschen.', 3),
+        _Answer('Ich liebe Schönheit.', 5),
+        _Answer('Ich liebe Wahrheit.', 10),
+        _Answer('Ich liebe das Spiel.', 11),
       ]
     ),
-    (
+    _Question(
       q: 'Bei einer Reise willst du am liebsten...',
       a: [
-        ('Etwas Authentisches erleben', 4),
-        ('Tief in eine Kultur eintauchen', 10),
-        ('Adrenalin und Abenteuer', 2),
-        ('Etwas Lokales mit Insidern entdecken', 11),
+        _Answer('Etwas Authentisches erleben', 4),
+        _Answer('Tief in eine Kultur eintauchen', 10),
+        _Answer('Adrenalin und Abenteuer', 2),
+        _Answer('Etwas Lokales mit Insidern entdecken', 11),
       ]
     ),
-    (
+    _Question(
       q: 'Was treibt dich an, morgens aufzustehen?',
       a: [
-        ('Verantwortung für andere', 3),
-        ('Mein nächstes Werk', 7),
-        ('Veränderung in der Welt', 6),
-        ('Pure Lebensfreude', 11),
+        _Answer('Verantwortung für andere', 3),
+        _Answer('Mein nächstes Werk', 7),
+        _Answer('Veränderung in der Welt', 6),
+        _Answer('Pure Lebensfreude', 11),
       ]
     ),
-    (
+    _Question(
       q: 'Welche Krise wäre für dich am schlimmsten?',
       a: [
-        ('Verlust der Liebe', 5),
-        ('Verlust der Macht', 8),
-        ('Verlust der Freiheit', 4),
-        ('Verlust der Bedeutung', 10),
+        _Answer('Verlust der Liebe', 5),
+        _Answer('Verlust der Macht', 8),
+        _Answer('Verlust der Freiheit', 4),
+        _Answer('Verlust der Bedeutung', 10),
       ]
     ),
-    (
+    _Question(
       q: 'Wie willst du in Erinnerung bleiben?',
       a: [
-        ('Als jemand, der Großes vollbracht hat', 2),
-        ('Als jemand, der die Welt verändert hat', 9),
-        ('Als jemand, der wahrhaftig gelebt hat', 4),
-        ('Als jemand, der die Welt schöner gemacht hat', 7),
+        _Answer('Als jemand, der Großes vollbracht hat', 2),
+        _Answer('Als jemand, der die Welt verändert hat', 9),
+        _Answer('Als jemand, der wahrhaftig gelebt hat', 4),
+        _Answer('Als jemand, der die Welt schöner gemacht hat', 7),
       ]
     ),
   ];
@@ -224,7 +252,7 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   List<int> _scores() {
     final scores = List<int>.filled(_archetypes.length, 0);
     _answers.forEach((qIdx, aIdx) {
-      final archIdx = _questions[qIdx].a[aIdx].$2;
+      final archIdx = _questions[qIdx].a[aIdx].archIdx;
       scores[archIdx] += 1;
     });
     return scores;
@@ -356,7 +384,7 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(q.a[j].$1,
+                    child: Text(q.a[j].text,
                         style: TextStyle(
                           color:
                               _answers[i] == j ? Colors.white : Colors.white70,
@@ -474,9 +502,7 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
     );
   }
 
-  Widget _buildSecondary(
-      ({String name, String emoji, String trait, String shadow, Color color}) a,
-      int score) {
+  Widget _buildSecondary(_Archetype a, int score) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -509,10 +535,7 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
     );
   }
 
-  Widget _buildScoreBar(
-      ({String name, String emoji, String trait, String shadow, Color color}) a,
-      int score,
-      int maxScore) {
+  Widget _buildScoreBar(_Archetype a, int score, int maxScore) {
     final percent = maxScore == 0 ? 0.0 : score / maxScore;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
