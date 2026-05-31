@@ -687,17 +687,18 @@ class _GodChatViewState extends State<_GodChatView> {
             (data['message'] as String?) ??
             (data['reply'] as String?) ??
             'Antwort vorerst nicht verfügbar.';
-        setState(() => _messages.add((role: 'assistant', content: reply)));
+        setState(
+            () => _messages.add(_ChatMsg(role: 'assistant', content: reply)));
       } else {
-        setState(() => _messages.add((
+        setState(() => _messages.add(_ChatMsg(
               role: 'assistant',
               content:
-                  '(Worker-Fehler ${res.statusCode} — bitte später probieren)'
+                  '(Worker-Fehler ${res.statusCode} — bitte später probieren)',
             )));
       }
     } catch (e) {
-      setState(() =>
-          _messages.add((role: 'assistant', content: '(Netzwerk-Fehler: $e)')));
+      setState(() => _messages
+          .add(_ChatMsg(role: 'assistant', content: '(Netzwerk-Fehler: $e)')));
     } finally {
       if (mounted) setState(() => _loading = false);
       _scrollToBottom();
