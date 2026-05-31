@@ -54,17 +54,35 @@ jobs:
           BUILD_NUMBER=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # Bei Tag-Push IMMER bauen (expliziter Release-Wunsch).
+          # Release-Entscheidung. WICHTIG (Anti-"CI-staendig-rot"):
+          # Ein voller Shorebird-RELEASE-Build ist teuer (60 min) und gehoert laut
+          # CLAUDE.md Regel #5 NUR zu einem bewussten Versions-Bump. Reine Dart/UI-
+          # Aenderungen laufen ueber Shorebird OTA-Patch, nicht ueber diesen Workflow.
+          # Frueher triggerte JEDER Push auf main diesen Build -> schlug der Release-
+          # Build fehl, entstand kein Release, also baute der naechste Push erneut
+          # -> Dauerrot. Jetzt baut ein main-Push nur, wenn die `version:`-Zeile in
+          # genau diesem Push geaendert wurde (= absichtlicher Release).
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            echo "✅ Tag-Push → bauen"
+            echo "[OK] Tag-Push -> bauen (expliziter Release-Wunsch)"
             SHOULD_BUILD=true
+          elif [ "${GITHUB_EVENT_NAME:-}" = "workflow_dispatch" ]; then
+            echo "[OK] workflow_dispatch -> bauen (manueller Trigger)"
+            SHOULD_BUILD=true
+          elif gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "[skip] Release v$VERSION existiert bereits -> skip"
+            SHOULD_BUILD=false
           else
-            # Bei main-Push / workflow_dispatch: nur bauen wenn GitHub-Release noch fehlt.
-            if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-              echo "⏭️  Release v$VERSION existiert bereits — skip"
+            # Branch-Push: nur bauen, wenn sich die version:-Zeile geaendert hat.
+            CURR_VLINE=$(grep '^version:' pubspec.yaml || echo "")
+            PREV_VLINE=$(git show HEAD~1:pubspec.yaml 2>/dev/null | grep '^version:' || echo "")
+            if [ "$CURR_VLINE" = "$PREV_VLINE" ]; then
+              echo "[skip] Kein Versions-Bump in diesem Push (version: unveraendert) -> skip"
+              echo "       Dart/UI-Aenderungen bitte via Shorebird OTA-Patch ausliefern."
+              echo "       Vollen Release erzwingen: version: in pubspec.yaml bumpen"
+              echo "       oder diesen Workflow manuell via 'Run workflow' starten."
               SHOULD_BUILD=false
             else
-              echo "✅ Kein Release für v$VERSION → bauen"
+              echo "[OK] Versions-Bump erkannt ($PREV_VLINE -> $CURR_VLINE) -> bauen"
               SHOULD_BUILD=true
             fi
           fi
