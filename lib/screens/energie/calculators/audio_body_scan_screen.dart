@@ -8,18 +8,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
-class _BodyScanStep {
-  final String body;
-  final String emoji;
-  final String script;
-  const _BodyScanStep({
-    required this.body,
-    required this.emoji,
-    required this.script,
-  });
-}
-
 class AudioBodyScanScreen extends StatefulWidget {
   const AudioBodyScanScreen({super.key});
 

@@ -5,22 +5,6 @@
 
 import 'package:flutter/material.dart';
 
-// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
-class _ArchetypeData {
-  final String name;
-  final String emoji;
-  final String trait;
-  final String shadow;
-  final Color color;
-  const _ArchetypeData({
-    required this.name,
-    required this.emoji,
-    required this.trait,
-    required this.shadow,
-    required this.color,
-  });
-}
-
 class ArchetypeQuizScreen extends StatefulWidget {
   const ArchetypeQuizScreen({super.key});
 
@@ -37,84 +21,84 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   // 0=Unschuldiger 1=Gewöhnlicher 2=Held 3=Fürsorger 4=Suchender 5=Liebender
   // 6=Rebell 7=Schöpfer 8=Herrscher 9=Magier 10=Weise 11=Narr
   static final _archetypes = [
-    _ArchetypeData(
+    (
       name: 'Unschuldiger',
       emoji: '🤍',
       trait: 'Vertrauen · Sehnsucht nach Paradies',
       shadow: 'Naivität, Realitätsverleugnung',
       color: Color(0xFFE0F2F1),
     ),
-    _ArchetypeData(
+    (
       name: 'Gewöhnlicher',
       emoji: '🧑‍🤝‍🧑',
       trait: 'Bodenständigkeit · Zugehörigkeit',
       shadow: 'Anpassung um jeden Preis',
       color: Color(0xFF8D6E63),
     ),
-    _ArchetypeData(
+    (
       name: 'Held',
       emoji: '🦸',
       trait: 'Mut · Wettbewerb · Sieg',
       shadow: 'Arroganz, Burnout',
       color: Color(0xFFE53935),
     ),
-    _ArchetypeData(
+    (
       name: 'Fürsorger',
       emoji: '💕',
       trait: 'Mitgefühl · Schutz',
       shadow: 'Märtyrertum, Burnout durch Geben',
       color: Color(0xFFE91E63),
     ),
-    _ArchetypeData(
+    (
       name: 'Suchender',
       emoji: '🔍',
       trait: 'Freiheit · Reise · Authentizität',
       shadow: 'Entwurzelung, Bindungsunfähigkeit',
       color: Color(0xFFFB8C00),
     ),
-    _ArchetypeData(
+    (
       name: 'Liebender',
       emoji: '❤️',
       trait: 'Hingabe · Schönheit · Sinnlichkeit',
       shadow: 'Eifersucht, Selbst-Verlust',
       color: Color(0xFFC2185B),
     ),
-    _ArchetypeData(
+    (
       name: 'Rebell',
       emoji: '⚔️',
       trait: 'Befreiung · Disruption',
       shadow: 'Wut als Identität',
       color: Color(0xFF263238),
     ),
-    _ArchetypeData(
+    (
       name: 'Schöpfer',
       emoji: '🎨',
       trait: 'Vision · Kreation',
       shadow: 'Perfektionismus, blockierte Vision',
       color: Color(0xFF9C27B0),
     ),
-    _ArchetypeData(
+    (
       name: 'Herrscher',
       emoji: '👑',
       trait: 'Verantwortung · Souveränität',
       shadow: 'Kontrolle, Tyrannei',
       color: Color(0xFFFFB300),
     ),
-    _ArchetypeData(
+    (
       name: 'Magier',
       emoji: '✨',
       trait: 'Transformation · Vision-zu-Realität',
       shadow: 'Manipulation, Macht-Missbrauch',
       color: Color(0xFF7C4DFF),
     ),
-    _ArchetypeData(
+    (
       name: 'Weise',
       emoji: '🧙',
       trait: 'Wahrheit · Klarheit',
       shadow: 'Lebens-Vermeidung durch Denken',
       color: Color(0xFF1E88E5),
     ),
-    _ArchetypeData(
+    (
       name: 'Narr',
       emoji: '🃏',
       trait: 'Freude · Heiligkeit des Augenblicks',
@@ -491,7 +475,7 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   }
 
   Widget _buildSecondary(
-      _ArchetypeData a,
+      ({String name, String emoji, String trait, String shadow, Color color}) a,
       int score) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -526,7 +510,7 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   }
 
   Widget _buildScoreBar(
-      _ArchetypeData a,
+      ({String name, String emoji, String trait, String shadow, Color color}) a,
       int score,
       int maxScore) {
     final percent = maxScore == 0 ? 0.0 : score / maxScore;

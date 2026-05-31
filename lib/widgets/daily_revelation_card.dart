@@ -9,11 +9,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class Principle {
+  final String title;
+  final String body;
+  const Principle({required this.title, required this.body});
+}
+
 class DailyRevelationCard extends StatelessWidget {
   final Color accent;
   final String emoji;
   final String label;
-  final List<({String title, String body})>? principles;
+  final List<Principle>? principles;
 
   const DailyRevelationCard({
     super.key,
@@ -24,160 +31,160 @@ class DailyRevelationCard extends StatelessWidget {
   });
 
   /// Bewusstseins-/Quanten-Impulse fuer die Ursprung-Welt.
-  static const List<({String title, String body})> ursprungInsights = [
-    (
+  static const List<Principle> ursprungInsights = [
+    Principle(
       title: 'Beobachtung formt Realitaet',
       body:
           'In der Quantenphysik kollabiert die Wellenfunktion erst durch '
               'Messung. Deine Aufmerksamkeit ist kein passiver Akt -- sie '
-              'gestaltet mit.'
+              'gestaltet mit.',
     ),
-    (
+    Principle(
       title: 'Focus 10 -- Koerper schlaeft, Geist wach',
       body:
           'Der erste Gateway-Zustand: tiefe koerperliche Entspannung bei '
-              'voll wachem Bewusstsein. Das Tor zu allen weiteren Ebenen.'
+              'voll wachem Bewusstsein. Das Tor zu allen weiteren Ebenen.',
     ),
-    (
+    Principle(
       title: 'Resonanz',
       body:
           'Gleiche Frequenzen verstaerken sich. Was du innerlich kultivierst, '
-              'zieht im Aussen Entsprechendes an -- Schwingung sucht Schwingung.'
+              'zieht im Aussen Entsprechendes an -- Schwingung sucht Schwingung.',
     ),
-    (
+    Principle(
       title: 'Der Beobachter hinter dem Denken',
       body:
           'Du bist nicht deine Gedanken -- du bist das Gewahrsein, das sie '
-              'bemerkt. In diesem Raum liegt deine eigentliche Freiheit.'
+              'bemerkt. In diesem Raum liegt deine eigentliche Freiheit.',
     ),
-    (
+    Principle(
       title: 'Nichtlokalitaet',
       body:
           'Verschraenkte Teilchen reagieren ueber jede Distanz hinweg '
-              'augenblicklich. Bewusstsein kennt moeglicherweise keinen Raum.'
+              'augenblicklich. Bewusstsein kennt moeglicherweise keinen Raum.',
     ),
-    (
+    Principle(
       title: 'Kohaerenz von Herz und Hirn',
       body:
           'Ein ruhiger, gleichmaessiger Herzrhythmus synchronisiert die '
-              'Gehirnwellen. Kohaerenz ist messbar -- und trainierbar.'
+              'Gehirnwellen. Kohaerenz ist messbar -- und trainierbar.',
     ),
-    (
+    Principle(
       title: 'Die Schwelle der Stille',
       body:
           'Zwischen zwei Gedanken liegt eine Luecke. Wer sie weitet, betritt '
-              'den Ursprungsraum, aus dem alle Form entsteht.'
+              'den Ursprungsraum, aus dem alle Form entsteht.',
     ),
-    (
+    Principle(
       title: 'Intention als Saat',
       body:
           'Klar formulierte Absicht wirkt wie ein Same im Feld der '
-              'Moeglichkeiten. Patterning macht aus Wunsch gerichtete Energie.'
+              'Moeglichkeiten. Patterning macht aus Wunsch gerichtete Energie.',
     ),
-    (
+    Principle(
       title: 'Theta -- das Tor zum Unbewussten',
       body:
           '4-7 Hz: die Frequenz tiefer Meditation und Heilung. Hier '
-              'reorganisiert sich, was im Wachzustand verschlossen bleibt.'
+              'reorganisiert sich, was im Wachzustand verschlossen bleibt.',
     ),
-    (
+    Principle(
       title: 'Du bist mehr als dein Koerper',
       body:
           'Das Gateway-Experiment postuliert: Bewusstsein nutzt das Gehirn, '
-              'ist aber nicht darauf beschraenkt. Erfahre es selbst.'
+              'ist aber nicht darauf beschraenkt. Erfahre es selbst.',
     ),
   ];
 
   // Kuratierte Macht-Prinzipien (Kurzform, inspiriert von Greene/Cialdini/
   // Sun Tzu). Erweiterbar.
-  static const List<({String title, String body})> _principles = [
-    (
+  static const List<Principle> _principles = [
+    Principle(
       title: 'Verberge deine Absichten',
       body:
           'Halte Menschen im Unklaren, und sie koennen sich nicht verteidigen. '
-              'Was sie nicht kommen sehen, koennen sie nicht abwehren.'
+              'Was sie nicht kommen sehen, koennen sie nicht abwehren.',
     ),
-    (
+    Principle(
       title: 'Rede nie mehr als noetig',
       body:
           'Wer viel sagt, sagt Banales -- und gibt Angriffsflaeche. Schweigen '
-              'wirkt machtvoller und laesst andere sich offenbaren.'
+              'wirkt machtvoller und laesst andere sich offenbaren.',
     ),
-    (
+    Principle(
       title: 'Reziprozitaet',
       body:
           'Ein kleiner Gefallen erzeugt das Beduerfnis, ihn zu erwidern. Wer '
-              'zuerst gibt, kontrolliert oft den naechsten Zug.'
+              'zuerst gibt, kontrolliert oft den naechsten Zug.',
     ),
-    (
+    Principle(
       title: 'Sozialer Beweis',
       body:
           'Menschen orientieren sich am Verhalten anderer. Zeige, dass viele '
-              'etwas tun -- und der Einzelne folgt fast automatisch.'
+              'etwas tun -- und der Einzelne folgt fast automatisch.',
     ),
-    (
+    Principle(
       title: 'Knappheit',
       body:
           'Was selten ist, wirkt wertvoller. Verfuegbarkeit zu begrenzen '
-              'steigert Begehrlichkeit staerker als jedes Argument.'
+              'steigert Begehrlichkeit staerker als jedes Argument.',
     ),
-    (
+    Principle(
       title: 'Framing',
       body:
           'Nicht die Fakten entscheiden, sondern ihr Rahmen. Wer den Kontext '
-              'setzt, bestimmt, wie die gleiche Information gedeutet wird.'
+              'setzt, bestimmt, wie die gleiche Information gedeutet wird.',
     ),
-    (
+    Principle(
       title: 'Ankereffekt',
       body:
           'Die erste Zahl im Raum praegt alle folgenden Urteile. Wer zuerst '
-              'ankert, verschiebt die gesamte Verhandlung.'
+              'ankert, verschiebt die gesamte Verhandlung.',
     ),
-    (
+    Principle(
       title: 'Spiegle, um zu binden',
       body:
           'Subtiles Angleichen von Sprache und Koerperhaltung erzeugt '
-              'unbewusstes Vertrauen. Aehnlichkeit schafft Naehe.'
+              'unbewusstes Vertrauen. Aehnlichkeit schafft Naehe.',
     ),
-    (
+    Principle(
       title: 'Lass andere die Arbeit tun',
       body:
           'Nutze fremde Kompetenz und Energie fuer deine Ziele -- aber sorge '
-              'dafuer, dass der Verdienst dir zugeschrieben wird.'
+              'dafuer, dass der Verdienst dir zugeschrieben wird.',
     ),
-    (
+    Principle(
       title: 'Kenne das Spielfeld',
       body:
           'Sun Tzu: Wer sich selbst und den Gegner kennt, muss hundert '
-              'Schlachten nicht fuerchten. Aufklaerung schlaegt Staerke.'
+              'Schlachten nicht fuerchten. Aufklaerung schlaegt Staerke.',
     ),
-    (
+    Principle(
       title: 'Kontrolliere die Optionen',
       body:
           'Lass andere waehlen -- aber zwischen Alternativen, die DU gesetzt '
-              'hast. Die Illusion der Wahl ist machtvoller als Zwang.'
+              'hast. Die Illusion der Wahl ist machtvoller als Zwang.',
     ),
-    (
+    Principle(
       title: 'Geduld als Waffe',
       body:
           'Wer warten kann, diktiert das Tempo. Ungeduld ist eine Schwaeche, '
-              'die der Geduldige gegen den Hastigen ausspielt.'
+              'die der Geduldige gegen den Hastigen ausspielt.',
     ),
-    (
+    Principle(
       title: 'Erzeuge Abhaengigkeit',
       body:
           'Mache dich unverzichtbar. Solange andere dich brauchen, bist du '
-              'sicher -- Loyalitaet folgt dem Eigeninteresse.'
+              'sicher -- Loyalitaet folgt dem Eigeninteresse.',
     ),
-    (
+    Principle(
       title: 'Das Gesetz der Verknappung von Lob',
       body:
           'Selten verteiltes Lob wiegt schwerer. Wer staendig lobt, entwertet '
-              'die eigene Anerkennung.'
+              'die eigene Anerkennung.',
     ),
   ];
 
-  ({String title, String body}) get _today {
+  Principle get _today {
     final set = principles ?? _principles;
     final now = DateTime.now();
     final dayOfYear = now.difference(DateTime(now.year)).inDays;
