@@ -54,14 +54,9 @@ jobs:
           BUILD_NUMBER=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # Release-Entscheidung. WICHTIG (Anti-"CI-staendig-rot"):
-          # Ein voller Shorebird-RELEASE-Build ist teuer (60 min) und gehoert laut
-          # CLAUDE.md Regel #5 NUR zu einem bewussten Versions-Bump. Reine Dart/UI-
-          # Aenderungen laufen ueber Shorebird OTA-Patch, nicht ueber diesen Workflow.
-          # Frueher triggerte JEDER Push auf main diesen Build -> schlug der Release-
-          # Build fehl, entstand kein Release, also baute der naechste Push erneut
-          # -> Dauerrot. Jetzt baut ein main-Push nur, wenn die `version:`-Zeile in
-          # genau diesem Push geaendert wurde (= absichtlicher Release).
+          # Release-Entscheidung.
+          # Kein Release vorhanden -> immer bauen (Retry nach fehlgeschlagenem Build).
+          # Release vorhanden -> ueberspringen (verhindert Doppel-Builds).
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             echo "[OK] Tag-Push -> bauen (expliziter Release-Wunsch)"
             SHOULD_BUILD=true
@@ -72,19 +67,17 @@ jobs:
             echo "[skip] Release v$VERSION existiert bereits -> skip"
             SHOULD_BUILD=false
           else
-            # Branch-Push: nur bauen, wenn sich die version:-Zeile geaendert hat.
+            # Kein GitHub-Release fuer diese Version vorhanden.
+            # Immer bauen -- egal ob Versions-Bump oder nicht.
+            # Beim naechsten Push greift dann der "existiert bereits"-Check oben.
             CURR_VLINE=$(grep '^version:' pubspec.yaml || echo "")
             PREV_VLINE=$(git show HEAD~1:pubspec.yaml 2>/dev/null | grep '^version:' || echo "")
             if [ "$CURR_VLINE" = "$PREV_VLINE" ]; then
-              echo "[skip] Kein Versions-Bump in diesem Push (version: unveraendert) -> skip"
-              echo "       Dart/UI-Aenderungen bitte via Shorebird OTA-Patch ausliefern."
-              echo "       Vollen Release erzwingen: version: in pubspec.yaml bumpen"
-              echo "       oder diesen Workflow manuell via 'Run workflow' starten."
-              SHOULD_BUILD=false
+              echo "[OK] Kein Release v$VERSION gefunden, Version unveraendert -> Retry-Build"
             else
-              echo "[OK] Versions-Bump erkannt ($PREV_VLINE -> $CURR_VLINE) -> bauen"
-              SHOULD_BUILD=true
+              echo "[OK] Versions-Bump erkannt ($PREV_VLINE -> $CURR_VLINE) -> Release-Build"
             fi
+            SHOULD_BUILD=true
           fi
           echo "should_build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
 
