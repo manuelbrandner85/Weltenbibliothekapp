@@ -1222,6 +1222,14 @@ class _CineOrb extends StatelessWidget {
 // Nutzt PlanetCalculator aus planetary_transit_screen.dart.
 // Zeigt jeden klassischen Planeten mit aktueller Position + Sternzeichen.
 // ═══════════════════════════════════════════════════════════
+
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _SignInfo {
+  final String name;
+  final String emoji;
+  const _SignInfo({required this.name, required this.emoji});
+}
+
 class _TransitTodayTab extends StatelessWidget {
   const _TransitTodayTab();
 
@@ -1319,9 +1327,9 @@ class _TransitTodayTab extends StatelessWidget {
     return longitude < 0 ? longitude + 360 : longitude;
   }
 
-  ({String name, String emoji}) _signFor(double longitude) {
+  _SignInfo _signFor(double longitude) {
     final idx = (longitude / 30).floor().clamp(0, 11);
-    return (name: _signs[idx], emoji: _signEmoji[idx]);
+    return _SignInfo(name: _signs[idx], emoji: _signEmoji[idx]);
   }
 
   @override

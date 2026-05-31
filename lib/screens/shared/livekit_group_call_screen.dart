@@ -41,6 +41,12 @@ import '../../widgets/pip_overlay.dart';
 import '../../widgets/wb_cached_image.dart';
 
 // Per-Track-Info als Klasse statt Named-Record (dart2js-Bug-Workaround).
+class _StripEntry {
+  final String id;
+  final bool local;
+  const _StripEntry({required this.id, required this.local});
+}
+
 class _TrackInfo {
   final lk.VideoTrack? video;
   final bool mic;
@@ -4165,12 +4171,12 @@ class _SpeakerView extends StatelessWidget {
       }
     }
 
-    final stripIds = <({String id, bool local})>[];
+    final stripIds = <_StripEntry>[];
     if (!mainIsLocal && (localIdentity?.isNotEmpty ?? false)) {
-      stripIds.add((id: localIdentity!, local: true));
+      stripIds.add(_StripEntry(id: localIdentity!, local: true));
     }
     for (final id in remoteIds) {
-      if (id != mainId) stripIds.add((id: id, local: false));
+      if (id != mainId) stripIds.add(_StripEntry(id: id, local: false));
     }
 
     String mainName;

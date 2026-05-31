@@ -17,6 +17,13 @@ class EdgeConfidence {
   });
 }
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _EdgePair {
+  final String a;
+  final String b;
+  const _EdgePair(this.a, this.b);
+}
+
 class EdgeConfidenceService {
   EdgeConfidenceService._();
   static final instance = EdgeConfidenceService._();
@@ -24,8 +31,8 @@ class EdgeConfidenceService {
   SupabaseClient get _s => Supabase.instance.client;
 
   /// Normalisiert das Node-Paar: alphabetisch sortiert.
-  ({String a, String b}) _normalize(String a, String b) {
-    return a.compareTo(b) <= 0 ? (a: a, b: b) : (a: b, b: a);
+  _EdgePair _normalize(String a, String b) {
+    return a.compareTo(b) <= 0 ? _EdgePair(a, b) : _EdgePair(b, a);
   }
 
   Future<EdgeConfidence?> getForUser({

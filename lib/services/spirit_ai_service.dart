@@ -7,14 +7,20 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class SpiritInput {
+  final String tool;
+  final String summary;
+  const SpiritInput({required this.tool, required this.summary});
+}
+
 class SpiritAIService {
   SpiritAIService._();
   static final instance = SpiritAIService._();
 
   /// G2: nimmt eine Liste von Tool-Ergebnissen (jeweils tool + summary) und
   /// fordert vom Worker eine kurze Gesamtsynthese.
-  Future<String?> synthesize(
-      List<({String tool, String summary})> readings) async {
+  Future<String?> synthesize(List<SpiritInput> readings) async {
     if (readings.isEmpty) return null;
     try {
       final res = await http

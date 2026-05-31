@@ -18,12 +18,24 @@ class ConnectSuggestion {
   });
 }
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class KnowledgeNode {
+  final String id;
+  final String label;
+  final String? description;
+  const KnowledgeNode({
+    required this.id,
+    required this.label,
+    this.description,
+  });
+}
+
 class KnowledgeConnectService {
   KnowledgeConnectService._();
   static final instance = KnowledgeConnectService._();
 
   Future<List<ConnectSuggestion>> suggest(
-    List<({String id, String label, String? description})> nodes,
+    List<KnowledgeNode> nodes,
   ) async {
     if (nodes.length < 2) return const [];
     try {

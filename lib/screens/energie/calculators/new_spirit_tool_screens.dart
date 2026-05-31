@@ -3681,6 +3681,13 @@ class _SacredGeometryScreenState extends State<SacredGeometryScreen> {
 }
 
 // 11. Erdung-Übungen
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _GroundingRating {
+  final int score;
+  final String recommendation;
+  const _GroundingRating({required this.score, required this.recommendation});
+}
+
 class GroundingExercisesScreen extends StatefulWidget {
   const GroundingExercisesScreen({super.key});
 
@@ -4083,7 +4090,7 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
     return '🌍';
   }
 
-  ({int score, String recommendation}) _groundingRating(_WeatherSnapshot w) {
+  _GroundingRating _groundingRating(_WeatherSnapshot w) {
     var score = 100;
     var msg = 'Optimal für Barfuß-Earthing draußen!';
     if (w.precipMm > 0.5) {
@@ -4103,7 +4110,7 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
       score -= 15;
       msg = 'Stürmisch — drinnen erden, Wind-Praxis (Tag 7) anders nutzen.';
     }
-    return (score: score.clamp(0, 100), recommendation: msg);
+    return _GroundingRating(score: score.clamp(0, 100), recommendation: msg);
   }
 }
 
