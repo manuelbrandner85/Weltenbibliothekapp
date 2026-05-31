@@ -436,31 +436,31 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
   }
 
   /// U1: Mappt die Branch eines Moduls auf das passende Praxis-Tool.
-  ({String label, IconData icon, Widget Function() build})? _toolForBranch() {
+  _ToolLink? _toolForBranch() {
     final branch = (_module?['branch'] as String?) ?? '';
     switch (branch) {
       case 'gateway_foundation':
       case 'focus_levels':
-        return (
-          label: 'In der Gateway-Kammer üben',
+        return _ToolLink(
+          label: 'In der Gateway-Kammer ueben',
           icon: Icons.blur_on,
           build: () => const GatewayRoomScreen(),
         );
       case 'energy_tools':
-        return (
-          label: 'Mit dem Atemmeister üben',
+        return _ToolLink(
+          label: 'Mit dem Atemmeister ueben',
           icon: Icons.spa_rounded,
           build: () => const BreathmasterScreen(),
         );
       case 'patterning_manifestation':
-        return (
-          label: 'Im Realitäts-Architekt üben',
+        return _ToolLink(
+          label: 'Im Realitaets-Architekt ueben',
           icon: Icons.auto_fix_high,
           build: () => const RealityArchitectScreen(),
         );
       case 'remote_viewing':
-        return (
-          label: 'Im RV-Trainer üben',
+        return _ToolLink(
+          label: 'Im RV-Trainer ueben',
           icon: Icons.remove_red_eye,
           build: () => const RvTrainerScreen(),
         );
@@ -1188,4 +1188,16 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
       ),
     );
   }
+}
+
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _ToolLink {
+  final String label;
+  final IconData icon;
+  final Widget Function() build;
+  const _ToolLink({
+    required this.label,
+    required this.icon,
+    required this.build,
+  });
 }

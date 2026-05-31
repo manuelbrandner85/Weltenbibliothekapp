@@ -410,11 +410,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   }
 
   /// E6: Mondphasen-basierte Tagesempfehlung.
-  ({String theme, String tool, String hint, IconData icon}) get _dailyRecommendation {
+  _DailyRec get _dailyRecommendation {
     final now = DateTime.now();
     final daysSinceNew = now.difference(DateTime(2000, 1, 6)).inDays % 29;
     if (daysSinceNew < 4) {
-      return (
+      return _DailyRec(
         theme: 'Neubeginn & Intention',
         tool: 'Numerologie & Tarot',
         hint: 'Der Neumond eignet sich, um Absichten zu setzen.',
@@ -422,22 +422,22 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       );
     }
     if (daysSinceNew < 11) {
-      return (
+      return _DailyRec(
         theme: 'Wachstum & Aufbau',
         tool: 'Chakren & Affirmationen',
-        hint: 'Zunehmender Mond -- Energie aufbauen und nähren.',
+        hint: 'Zunehmender Mond -- Energie aufbauen und naehren.',
         icon: Icons.spa_rounded,
       );
     }
     if (daysSinceNew < 19) {
-      return (
+      return _DailyRec(
         theme: 'Manifestation & Klarheit',
         tool: 'Meditation & Frequenzen',
-        hint: 'Vollmond -- Höhepunkt der Energie, ideal zum Manifestieren.',
+        hint: 'Vollmond -- Hoehepunkt der Energie, ideal zum Manifestieren.',
         icon: Icons.brightness_7,
       );
     }
-    return (
+    return _DailyRec(
       theme: 'Loslassen & Reinigung',
       tool: 'Schattenarbeit & Atem',
       hint: 'Abnehmender Mond -- bewusst loslassen, was nicht mehr dient.',
@@ -2869,4 +2869,18 @@ class _ToolMeta {
   final String label;
   final Color color;
   const _ToolMeta(this.emoji, this.label, this.color);
+}
+
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _DailyRec {
+  final String theme;
+  final String tool;
+  final String hint;
+  final IconData icon;
+  const _DailyRec({
+    required this.theme,
+    required this.tool,
+    required this.hint,
+    required this.icon,
+  });
 }
