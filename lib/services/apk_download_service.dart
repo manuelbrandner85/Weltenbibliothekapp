@@ -17,7 +17,8 @@ import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:open_filex/open_filex.dart';
+import 'package:open_filex/open_filex.dart'
+    if (dart.library.html) '../stubs/open_filex_stub.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Fortschrittsinfo für den Download-Callback.
