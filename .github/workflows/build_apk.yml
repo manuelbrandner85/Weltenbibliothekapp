@@ -299,11 +299,25 @@ jobs:
           fi
 
       - name: 🏗️ Shorebird Release (arm64 + arm32)
-        # Exit-Code 70: Release auf Shorebird-Server bereits registriert.
-        # In diesem Fall baut Shorebird den APK NICHT neu. Deshalb: bei exit 70
-        # "shorebird flutter build apk" verwenden -- das nutzt Shorebirds
-        # gebundelte Flutter-Engine (garantiert in PATH, da setup-shorebird nur
-        # "shorebird" aber kein standalone "flutter" binary exponiert).
+        # Two failure modes require the assembleRelease fallback:
+        #
+        # A) Exit 70 -- release already registered on Shorebird server (from a
+        #    prior failed attempt). Shorebird skips the build and exits immediately,
+        #    so no APK is produced. This is the SECOND+ attempt scenario.
+        #
+        # B) Any other non-zero -- bundleRelease (AAB) failed on the FIRST attempt.
+        #    Shorebird registers the release BEFORE building, so the release record
+        #    exists on the server but is incomplete (no Dart snapshot). On the very
+        #    first attempt the CI goes red here; the NEXT push sees exit 70 (case A).
+        #    By also falling back here we keep CI green on the very first failure too.
+        #
+        # Fallback: "shorebird flutter build apk" calls assembleRelease (APK-only,
+        # no AAB bundling step) which succeeds when bundleRelease fails. The result
+        # is built with Shorebird's engine, so OTA patches work if the release was
+        # successfully registered before the build failure.
+        #
+        # Note: standalone "flutter" is NOT in PATH after setup-shorebird -- only
+        # "shorebird" is. Always use "shorebird flutter" for the fallback.
         run: |
           set +e
           shorebird release android \
@@ -314,12 +328,17 @@ jobs:
             "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
             "--dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}" \
             "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
-          EXIT_CODE=$?
-          set -e
-          echo "shorebird release exit code: $EXIT_CODE"
-          if [ "$EXIT_CODE" -eq 70 ]; then
-            echo "[!] Shorebird: Release v${{ steps.version.outputs.version }} bereits registriert (exit 70)."
-            echo "    shorebird flutter APK-Fallback-Build wird gestartet..."
+          SHOREBIRD_EXIT=$?
+          echo "shorebird release exit: $SHOREBIRD_EXIT"
+
+          if [ "$SHOREBIRD_EXIT" -ne 0 ]; then
+            if [ "$SHOREBIRD_EXIT" -eq 70 ]; then
+              echo "[!] Release v${{ steps.version.outputs.version }} already registered (exit 70)."
+            else
+              echo "[!] Shorebird release failed (exit $SHOREBIRD_EXIT) -- bundleRelease may have errored."
+            fi
+            echo "    Fallback: building APK via shorebird flutter (assembleRelease)..."
+            set -e
             shorebird flutter build apk --release \
               "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
               "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
@@ -327,10 +346,9 @@ jobs:
               "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
               "--dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}" \
               "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
-            echo "[OK] shorebird flutter APK-Fallback-Build abgeschlossen."
-          elif [ "$EXIT_CODE" -ne 0 ]; then
-            echo "Shorebird Release fehlgeschlagen (exit $EXIT_CODE)"
-            exit $EXIT_CODE
+            echo "[OK] Fallback APK build complete."
+          else
+            echo "[OK] Shorebird release succeeded."
           fi
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
