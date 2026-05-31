@@ -704,7 +704,7 @@ class _UrsprungMapTabState extends State<UrsprungMapTab>
     }
     return Column(
       children: _ytVideos!.map((v) {
-        final playing = _ytPlaying?.id == v.id;
+        final playing = _ytPlaying?.videoId == v.videoId;
         return playing
             ? YoutubePlayerInline(
                 video: v,
@@ -715,7 +715,7 @@ class _UrsprungMapTabState extends State<UrsprungMapTab>
                     const EdgeInsets.symmetric(vertical: 4),
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: WbCachedImage(v.thumbnailUrl,
+                  child: WbCachedImage(v.thumbnail,
                       width: 80, height: 54, fit: BoxFit.cover),
                 ),
                 title: Text(v.title,
