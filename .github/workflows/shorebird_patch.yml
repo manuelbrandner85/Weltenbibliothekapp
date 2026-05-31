@@ -14,12 +14,22 @@ on:
         description: 'Branch mit dem zu patchenden Code'
         required: false
         default: 'main'
-  # Auto-Patch bei JEDEM Push auf main — kein paths-Filter.
-  # Shorebird patcht immer den aktuellen Dart-Stand; doppelte Patches (gleicher Code)
-  # sind harmlos und werden vom Client einfach ignoriert.
+  # Auto-Patch nur bei tatsaechlichen App-Code-Aenderungen.
+  # WICHTIG (Anti-"CI-staendig-rot"): Frueher triggerte JEDER Push auf main einen
+  # 60-min OTA-Patch -- auch reine Doc-/CI-/Workflow-Commits. Solche Patch-Laeufe
+  # koennen aus Umgebungsgruenden (Engine-Drift, nicht registriertes Release)
+  # fehlschlagen und faerben die CI rot, obwohl sich am Dart-Code nichts geaendert
+  # hat. Bei einer Doku-Aenderung gibt es ohnehin nichts zu patchen. Daher: nur
+  # ausloesen wenn lib/, assets/ oder pubspec angefasst wurden. Manueller Patch
+  # jederzeit ueber workflow_dispatch moeglich.
   push:
     branches:
       - main
+    paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
 
 permissions:
   contents: read
