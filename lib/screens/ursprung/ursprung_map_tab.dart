@@ -11,6 +11,13 @@ import '../../utils/map_clustering_helper.dart';
 import '../../widgets/wb_cached_image.dart';
 import '../../widgets/youtube_player_inline.dart';
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _CategoryInfo {
+  final String label;
+  final String emoji;
+  const _CategoryInfo({required this.label, required this.emoji});
+}
+
 class UrsprungMapTab extends StatefulWidget {
   const UrsprungMapTab({super.key});
 
@@ -45,14 +52,14 @@ class _UrsprungMapTabState extends State<UrsprungMapTab>
   String _wikiLocationName = '';
   int _detailTabIndex = 0;
 
-  static const Map<String, ({String label, String emoji})> _categories = {
-    'all': (label: 'Alle', emoji: '🌐'),
-    'consciousness': (label: 'Bewusstsein', emoji: '🧠'),
-    'rv': (label: 'Remote Viewing', emoji: '👁️'),
-    'ufo': (label: 'UFO/Anomalien', emoji: '🛸'),
-    'archaeology': (label: 'Archäologie', emoji: '🏛️'),
-    'tradition': (label: 'Traditionen', emoji: '📜'),
-    'cymatics': (label: 'Kymatik', emoji: '🌊'),
+  static const Map<String, _CategoryInfo> _categories = {
+    'all': _CategoryInfo(label: 'Alle', emoji: '🌐'),
+    'consciousness': _CategoryInfo(label: 'Bewusstsein', emoji: '🧠'),
+    'rv': _CategoryInfo(label: 'Remote Viewing', emoji: '👁️'),
+    'ufo': _CategoryInfo(label: 'UFO/Anomalien', emoji: '🛸'),
+    'archaeology': _CategoryInfo(label: 'Archäologie', emoji: '🏛️'),
+    'tradition': _CategoryInfo(label: 'Traditionen', emoji: '📜'),
+    'cymatics': _CategoryInfo(label: 'Kymatik', emoji: '🌊'),
   };
 
   static Color _accentFor(String cat) {

@@ -11,6 +11,13 @@ import '../../utils/map_clustering_helper.dart';
 import '../../widgets/wb_cached_image.dart';
 import '../../widgets/youtube_player_inline.dart';
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _CategoryInfo {
+  final String label;
+  final String emoji;
+  const _CategoryInfo({required this.label, required this.emoji});
+}
+
 class VorhangMapTab extends StatefulWidget {
   const VorhangMapTab({super.key});
 
@@ -45,16 +52,16 @@ class _VorhangMapTabState extends State<VorhangMapTab>
   String _wikiLocationName = '';
   int _detailTabIndex = 0;
 
-  static const Map<String, ({String label, String emoji})> _categories = {
-    'all': (label: 'Alle', emoji: '🌐'),
-    'thinktank': (label: 'Think-Tanks', emoji: '🧠'),
-    'finance': (label: 'Finanz', emoji: '💰'),
-    'intel': (label: 'Geheimdienste', emoji: '🕵️'),
-    'secret': (label: 'Geheimbünde', emoji: '🔺'),
-    'media': (label: 'Medien', emoji: '📡'),
-    'tech': (label: 'Tech', emoji: '💻'),
-    'edu': (label: 'Bildung', emoji: '🎓'),
-    'religion': (label: 'Religion', emoji: '⛪'),
+  static const Map<String, _CategoryInfo> _categories = {
+    'all': _CategoryInfo(label: 'Alle', emoji: '🌐'),
+    'thinktank': _CategoryInfo(label: 'Think-Tanks', emoji: '🧠'),
+    'finance': _CategoryInfo(label: 'Finanz', emoji: '💰'),
+    'intel': _CategoryInfo(label: 'Geheimdienste', emoji: '🕵️'),
+    'secret': _CategoryInfo(label: 'Geheimbünde', emoji: '🔺'),
+    'media': _CategoryInfo(label: 'Medien', emoji: '📡'),
+    'tech': _CategoryInfo(label: 'Tech', emoji: '💻'),
+    'edu': _CategoryInfo(label: 'Bildung', emoji: '🎓'),
+    'religion': _CategoryInfo(label: 'Religion', emoji: '⛪'),
   };
 
   static Color _accentFor(String cat) {
