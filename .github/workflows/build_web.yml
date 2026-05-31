@@ -76,6 +76,25 @@ jobs:
             echo "SUPABASE_ANON_KEY=" >> $GITHUB_ENV
           fi
 
+      - name: 🚫 Dart2js Named-Record Guard
+        run: |
+          set -euo pipefail
+          # Named Dart 3 record TYPE annotations ({Type field, ...}) crash dart2js.
+          # Positional records (.$1 / .$2) and named parameters ({String? x}) are fine.
+          # This check fails fast before the expensive flutter build web step.
+          HITS=$(grep -rEn --include="*.dart" "\(\{[A-Z][A-Za-z_]*\?? [a-z]" lib/ \
+            | grep -vE "(required this\.|this\.)" \
+            | grep -vE "^\s*//" \
+            || true)
+          if [ -n "$HITS" ]; then
+            echo "FATAL: Named Dart 3 record types found - these crash dart2js web compilation."
+            echo "Replace each ({Type field, ...}) annotation with a plain Dart class."
+            echo "---"
+            echo "$HITS"
+            exit 1
+          fi
+          echo "OK: No dart2js-incompatible named record types found."
+
       - name: 🌐 Flutter Web Build
         run: |
           # Fallbacks: URL und anon key sind für Web öffentlich (kein Geheimnis).

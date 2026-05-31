@@ -28,6 +28,12 @@ flutter build apk --release \
 5. **OTA-first:** `shorebird patch` ist Default für jede Dart/UI/Logik-Änderung; `shorebird release` nur nach expliziter Absprache. Pro Commit angeben: ✓ "Patch-kompatibel" oder ⚠️ "Neuer Release nötig".
 6. **RLS Pflicht** auf allen Supabase-Tabellen. `service_role`-Key nur im Worker, nicht im Client.
 7. **Deutsche UI-Texte**, englische technische Code-Kommentare. User-freundliche Fehler-SnackBars statt rohe Exception-Texte.
+8. **NIEMALS Named Dart 3 Record Types** in lib/ verwenden — diese crashen dart2js (Flutter Web Build).
+   - VERBOTEN: `({String name, int count})` als Typannotation, Feldtyp, Rückgabetyp oder Generics.
+   - ERLAUBT: Positionale Records `(String, int)` mit `.$1`/`.$2` (kompilieren problemlos).
+   - ERLAUBT: Named Parameter `{String? foo}` in Methodensignaturen (sind keine Records).
+   - FIX: Statt Record-Typ immer eine plain Dart class mit `final`-Feldern und `const`-Konstruktor anlegen.
+   - CI-Guard in `build_web.yml` fängt Verstösse automatisch ab (schlägt fehl bevor dart2js startet).
 
 ## 🔀 Commits
 
