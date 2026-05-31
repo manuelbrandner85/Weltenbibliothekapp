@@ -301,21 +301,11 @@ jobs:
           fi
 
       - name: 🏗️ Shorebird Release (arm64 + arm32)
-        # Exit-Code 70 bedeutet: Release für diese Version ist auf dem Shorebird-Server
-        # bereits registriert (passiert bei Workflow-Re-Run nach partiellem Fehler).
-        # Der APK-Build ist trotzdem fertig (Flutter assembleRelease läuft VOR der
-        # Server-Registrierung). Wir fangen Code 70 ab und fahren fort — alle
-        # folgenden Schritte (GitHub Release, Supabase, History) laufen dann normal.
+        # Exit-Code 70: Release auf Shorebird-Server bereits registriert.
+        # In diesem Fall baut Shorebird den APK NICHT neu. Deshalb: bei exit 70
+        # direkt flutter build apk ausfuehren, damit der APK-Artefakt existiert.
         run: |
           set +e
-          # Quoting der --dart-define-Werte damit Secrets mit Leerzeichen
-          # (z.B. versehentlich gespeicherte Befehlszeile) nicht zu Shell-
-          # Split fuehrt. Jede --dart-define=KEY=VALUE Kombi muss eine
-          # ARG sein.
-          # --target-platform WEG -- Shorebird haengt es intern an
-          # (Default arm+arm64+x64). 2x dranklatschen erzeugt Gradle
-          # 'libapp.so duplicate' Fehler. abiFilters in build.gradle.kts
-          # strippt x64 schon zur Build-Zeit.
           shorebird release android \
             --artifact=apk \
             "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
@@ -325,11 +315,20 @@ jobs:
             "--dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}" \
             "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
           EXIT_CODE=$?
+          set -e
           if [ "$EXIT_CODE" -eq 70 ]; then
-            echo "⚠️  Shorebird: Release v${{ steps.version.outputs.version }} ist bereits auf dem Server registriert."
-            echo "    APK wurde trotzdem gebaut → weiter mit GitHub Release + Supabase."
+            echo "[!] Shorebird: Release v${{ steps.version.outputs.version }} bereits registriert (exit 70)."
+            echo "    Flutter-APK-Fallback-Build wird gestartet..."
+            flutter build apk --release \
+              "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
+              "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
+              "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
+              "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
+              "--dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}" \
+              "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
+            echo "[OK] Flutter APK-Fallback-Build abgeschlossen."
           elif [ "$EXIT_CODE" -ne 0 ]; then
-            echo "❌ Shorebird Release fehlgeschlagen (exit $EXIT_CODE)"
+            echo "Shorebird Release fehlgeschlagen (exit $EXIT_CODE)"
             exit $EXIT_CODE
           fi
         env:
