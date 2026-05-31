@@ -58,16 +58,30 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.source_branch || github.sha }}
-          fetch-depth: 2
+          fetch-depth: 0  # volle History + Tags fuer Release-Vergleich
       - id: check
         run: |
           set -euo pipefail
-          CUR=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
-          PREV=$(git show HEAD~1:pubspec.yaml 2>/dev/null | grep '^version:' | sed 's/version: //' | tr -d '[:space:]' || echo "")
-          echo "Aktuelle Version: $CUR"
-          echo "Vorherige Version: $PREV"
-          if [ -n "$PREV" ] && [ "$CUR" != "$PREV" ]; then
-            echo "::notice::Version-Bump $PREV -> $CUR -- ueberspringe Patch (shorebird_release.yml uebernimmt via Tag-Push)"
+          git fetch --tags --force --depth=1 origin 2>/dev/null || true
+          # Nur die Versions-NAME vergleichen (ohne +build-number).
+          CUR=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//' | tr -d '[:space:]')
+          # Letzter veroeffentlichter Release-Tag (vN.N.N), neueste zuerst.
+          LATEST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "")
+          LATEST_VER=$(echo "$LATEST_TAG" | sed 's/^v//')
+          echo "Pubspec-Version : $CUR"
+          echo "Letztes Release : ${LATEST_VER:-<keins>}"
+          # Kernregel: Ein Patch kann NUR auf eine bereits released Version gehen,
+          # und nur wenn der aktuelle Code zu dieser Version gehoert (= reine
+          # Dart-Aenderungen, keine nativen/Dependency-Aenderungen). Liegt die
+          # pubspec-Version VOR dem letzten Release (z.B. 5.55.0 waehrend nur
+          # 5.54.0 released ist), gibt es unveroeffentlichte -- moeglicherweise
+          # native -- Aenderungen. Shorebird kann die nicht patchen
+          # (IncompatibleChangeException) -> Patch sauber ueberspringen statt rot
+          # scheitern. Ausgeliefert wird so eine Version per shorebird_release.yml.
+          if [ -n "$LATEST_VER" ] && [ "$CUR" != "$LATEST_VER" ]; then
+            echo "::notice::Version $CUR ist noch nicht released (letztes Release: $LATEST_VER)."
+            echo "::notice::Unveroeffentlichte (evtl. native) Aenderungen -> Patch wird uebersprungen."
+            echo "::notice::Ausliefern: shorebird_release.yml manuell triggern und v$CUR releasen."
             echo "should_patch=false" >> $GITHUB_OUTPUT
           else
             echo "should_patch=true" >> $GITHUB_OUTPUT
