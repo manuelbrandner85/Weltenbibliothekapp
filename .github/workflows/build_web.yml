@@ -82,8 +82,11 @@ jobs:
           # Named Dart 3 record TYPE annotations ({Type field, ...}) crash dart2js.
           # Positional records (.$1 / .$2) and named parameters ({String? x}) are fine.
           # This check fails fast before the expensive flutter build web step.
-          HITS=$(grep -rEn --include="*.dart" "\(\{[A-Z][A-Za-z_]*\?? [a-z]" lib/ \
-            | grep -vE "(required this\.|this\.)" \
+          # Use Perl regex with negative lookbehind: exclude ({  preceded by a word
+          # character (those are method named-parameter lists, not record types).
+          # Only flags ({Type field}) in type-annotation positions (generics, return
+          # types, field types) which are the only ones that crash dart2js.
+          HITS=$(grep -rPn --include="*.dart" "(?<![a-zA-Z_0-9])\(\{[A-Z][A-Za-z_]+\?? [a-z]" lib/ \
             | grep -vE "^\s*//" \
             || true)
           if [ -n "$HITS" ]; then
