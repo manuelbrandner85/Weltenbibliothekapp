@@ -19,6 +19,15 @@ import '../../../services/moon_recommendations.dart';
 const _kPrimary = Color(0xFF90CAF9); // Mondblau
 const _kSecondary = Color(0xFF7C4DFF); // Lila
 
+// dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
+class _SignTrigon {
+  final String trigon;
+  final String typ;
+  final String practice;
+  const _SignTrigon(
+      {required this.trigon, required this.typ, required this.practice});
+}
+
 class MoonCalendarToolScreen extends StatefulWidget {
   const MoonCalendarToolScreen({super.key});
 
@@ -175,64 +184,63 @@ class _GardeningTab extends StatelessWidget {
   // Sternzeichen-Trigone (Maria Thun)
   // 'static final' statt 'static const' — dart2js (Flutter Web) hat
   // einen Bug mit const Maps die Records als Werte halten.
-  static final Map<String, ({String trigon, String typ, String practice})>
-      _signTrigon = {
-    'Widder': (
+  static final Map<String, _SignTrigon> _signTrigon = {
+    'Widder': _SignTrigon(
       trigon: 'Feuer-Trigon',
       typ: 'Frucht-Tag',
       practice: 'Tomaten, Paprika, Zucchini, Mais — alles was Frucht trägt.'
     ),
-    'Stier': (
+    'Stier': _SignTrigon(
       trigon: 'Erde-Trigon',
       typ: 'Wurzel-Tag',
       practice: 'Möhren, Kartoffeln, Sellerie, Rote Bete säen/ernten.'
     ),
-    'Zwillinge': (
+    'Zwillinge': _SignTrigon(
       trigon: 'Luft-Trigon',
       typ: 'Blüten-Tag',
       practice: 'Blumen säen, schneiden. Lavendel, Rosen, Kamille.'
     ),
-    'Krebs': (
+    'Krebs': _SignTrigon(
       trigon: 'Wasser-Trigon',
       typ: 'Blatt-Tag',
       practice: 'Salate, Spinat, Kohl, Kräuter. Gießen ideal.'
     ),
-    'Löwe': (
+    'Löwe': _SignTrigon(
       trigon: 'Feuer-Trigon',
       typ: 'Frucht-Tag',
       practice: 'Frucht-Pflanzen. Beeren, Tomaten, Trauben.'
     ),
-    'Jungfrau': (
+    'Jungfrau': _SignTrigon(
       trigon: 'Erde-Trigon',
       typ: 'Wurzel-Tag',
       practice: 'Wurzelernte. Lagerung. Boden bearbeiten.'
     ),
-    'Waage': (
+    'Waage': _SignTrigon(
       trigon: 'Luft-Trigon',
       typ: 'Blüten-Tag',
       practice: 'Blühpflanzen säen. Brokkoli, Blumenkohl.'
     ),
-    'Skorpion': (
+    'Skorpion': _SignTrigon(
       trigon: 'Wasser-Trigon',
       typ: 'Blatt-Tag',
       practice: 'Blattgewächse, Heilkräuter. Wassergaben gut aufgenommen.'
     ),
-    'Schütze': (
+    'Schütze': _SignTrigon(
       trigon: 'Feuer-Trigon',
       typ: 'Frucht-Tag',
       practice: 'Frucht-Pflanzen, Getreide. Ernte für Vorrat.'
     ),
-    'Steinbock': (
+    'Steinbock': _SignTrigon(
       trigon: 'Erde-Trigon',
       typ: 'Wurzel-Tag',
       practice: 'Wurzelarbeit, Umsetzen. Boden tief lockern.'
     ),
-    'Wassermann': (
+    'Wassermann': _SignTrigon(
       trigon: 'Luft-Trigon',
       typ: 'Blüten-Tag',
       practice: 'Blumen, Zierpflanzen. Wenig gießen.'
     ),
-    'Fische': (
+    'Fische': _SignTrigon(
       trigon: 'Wasser-Trigon',
       typ: 'Blatt-Tag',
       practice: 'Salate, Kohl, Spinat. Optimal für Blattfrüchte.'
