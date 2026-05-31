@@ -37,6 +37,22 @@ class SocketException implements IOException {
   String toString() => 'SocketException: $message';
 }
 
+class TlsException implements IOException {
+  @override
+  final String message;
+  TlsException([this.message = '']);
+  @override
+  String toString() => 'TlsException: $message';
+}
+
+class HandshakeException extends TlsException {
+  HandshakeException([super.message]);
+}
+
+class CertificateException extends TlsException {
+  CertificateException([super.message]);
+}
+
 class HttpException implements IOException {
   @override
   final String message;

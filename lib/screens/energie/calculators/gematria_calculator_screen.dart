@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../../../stubs/dart_io_stub.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';

@@ -12,7 +12,7 @@
 //   }
 
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 
 import '../services/admin_api_client.dart';
 

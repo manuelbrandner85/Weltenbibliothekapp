@@ -1,5 +1,5 @@
 // Mobile-Implementation: echtes dart:io File → Image.file.
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 
 import 'package:flutter/material.dart';
 
