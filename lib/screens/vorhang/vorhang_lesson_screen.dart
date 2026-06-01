@@ -52,6 +52,9 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   bool _quizPassed = false;
   bool _submittingProgress = false;
 
+  // Theory-Tab: Inhaltsverzeichnis ein-/ausgeklappt.
+  bool _tocExpanded = false;
+
   @override
   void initState() {
     super.initState();
@@ -338,7 +341,160 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   Widget _buildTheoryTab() {
     final text = (_module?['theory_content'] as String?) ?? '';
     return _buildRichTextScroll(text,
-        padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
+        padding: const EdgeInsets.fromLTRB(20, 110, 20, 32), showMeta: true);
+  }
+
+  /// Estimates reading time in minutes from word count (~200 wpm, min 1).
+  int _estimateReadingMinutes(String text) {
+    final words = text.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+    return (words.length / 200).ceil().clamp(1, 99);
+  }
+
+  /// Extracts `#`/`##` headings as (level, title) for the table of contents.
+  List<MapEntry<int, String>> _extractHeadings(String text) {
+    final result = <MapEntry<int, String>>[];
+    for (final raw in text.split('\n')) {
+      final line = raw.trimRight();
+      if (line.startsWith('## ')) {
+        result.add(MapEntry(2, line.substring(3).trim()));
+      } else if (line.startsWith('# ')) {
+        result.add(MapEntry(1, line.substring(2).trim()));
+      }
+    }
+    return result;
+  }
+
+  /// Reading-time chip + collapsible table of contents for the Theory tab.
+  Widget _buildTheoryMeta(String text) {
+    final minutes = _estimateReadingMinutes(text);
+    final headings = _extractHeadings(text);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Reading-time + section count row
+          Row(
+            children: [
+              Icon(Icons.schedule,
+                  size: 14, color: _gold.withValues(alpha: 0.8)),
+              const SizedBox(width: 6),
+              Text(
+                '$minutes Min Lesezeit',
+                style: TextStyle(
+                  color: _gold.withValues(alpha: 0.85),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (headings.isNotEmpty) ...[
+                const SizedBox(width: 14),
+                Icon(Icons.list_alt,
+                    size: 14, color: _gold.withValues(alpha: 0.8)),
+                const SizedBox(width: 6),
+                Text(
+                  '${headings.length} Abschnitte',
+                  style: TextStyle(
+                    color: _gold.withValues(alpha: 0.85),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (headings.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            // Collapsible TOC
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: _gold.withValues(alpha: 0.05),
+                border: Border.all(color: _gold.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InkWell(
+                    onTap: () => setState(() => _tocExpanded = !_tocExpanded),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.menu_book, color: _gold, size: 16),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'INHALTSVERZEICHNIS',
+                              style: TextStyle(
+                                color: _gold,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            _tocExpanded
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: _gold.withValues(alpha: 0.8),
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_tocExpanded)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < headings.length; i++)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: 6,
+                                left: headings[i].key == 2 ? 16.0 : 0.0,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${i + 1}.',
+                                    style: TextStyle(
+                                      color: _gold.withValues(alpha: 0.7),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      headings[i].value,
+                                      style: TextStyle(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.8),
+                                        fontSize: 13,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   // ── Tab 2: Case Study ─────────────────────────────────────────
@@ -958,7 +1114,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   }
 
   // ── Markdown-ish RichText renderer (NO flutter_markdown) ──────
-  Widget _buildRichTextScroll(String text, {required EdgeInsets padding}) {
+  Widget _buildRichTextScroll(String text,
+      {required EdgeInsets padding, bool showMeta = false}) {
     final lines = text.split('\n');
     final spans = <Widget>[];
     for (final raw in lines) {
@@ -1107,6 +1264,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               ),
             ),
           ),
+        // Theory-only: reading time + collapsible table of contents.
+        if (showMeta) _buildTheoryMeta(text),
         ...spans,
       ],
     );
@@ -1463,8 +1622,8 @@ class _QuickReviewScreenState extends State<_QuickReviewScreen> {
                               Text(
                                 'ANTWORT',
                                 style: TextStyle(
-                                  color: Colors.greenAccent
-                                      .withValues(alpha: 0.9),
+                                  color:
+                                      Colors.greenAccent.withValues(alpha: 0.9),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 2.0,
