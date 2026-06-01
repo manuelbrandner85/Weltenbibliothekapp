@@ -299,28 +299,23 @@ jobs:
           fi
 
       - name: 🏗️ Shorebird Release (arm64 + arm32)
-        # Zwei Fehlermodi erfordern den assembleRelease-Fallback:
+        # "shorebird release android" baut intern via "flutter build appbundle".
+        # Schlaegt dieser AAB-Build fehl, exitet shorebird non-zero (oft 70 =
+        # EX_SOFTWARE, NICHT "schon registriert"). Fuer einen sideload-faehigen
+        # APK reicht uns aber "flutter build apk" (assembleRelease) -- dieser
+        # Pfad ueberspringt den AAB-Bundling-Schritt der fehlschlug.
         #
-        # A) Exit 70 -- Release bereits auf Shorebird-Server registriert (von
-        #    einem frueheren fehlgeschlagenen Versuch). Shorebird ueberspringt
-        #    den Build; keine APK produziert.
-        #
-        # B) Jeder andere Nicht-Null-Exit -- Build-Fehler auf dem ersten Versuch.
-        #    Der Release IST auf dem Server registriert (Registrierung passiert
-        #    vor dem Build), aber der Build selbst schlug fehl.
-        #
-        # Fallback: Shorebirds eigene gebundelte Flutter-Binary direkt nutzen.
-        # "shorebird flutter" hat nur config/versions Unterbefehle -- es ist KEIN
-        # Flutter-Proxy. Das echte Flutter SDK liegt unter:
-        #   <shorebird_root>/bin/cache/flutter/bin/flutter
-        # Diese Binary enthaelt Shorebirds gepatchten Engine, sodass OTA-Patches
-        # fuer den erstellten APK weiterhin funktionieren.
-        # "flutter" standalone ist nach setup-shorebird NICHT im PATH.
+        # WICHTIG: Wir nutzen Shorebirds EIGENES gebundeltes Flutter, damit der
+        # Engine zu den OTA-Patches passt. "shorebird flutter" ist KEIN Proxy
+        # (nur config/versions). Das echte SDK liegt unter:
+        #   <shorebird_root>/bin/cache/flutter/<revision>/bin/flutter
+        # -- mit einem <revision>-Hash-Verzeichnis dazwischen, daher robustes
+        # find statt hartem Pfad. "flutter" standalone ist nach setup-shorebird
+        # NICHT im PATH.
         run: |
           set +e
           shorebird release android \
             --no-confirm \
-            --artifact apk \
             -- \
             "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
             "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
@@ -332,26 +327,28 @@ jobs:
           echo "shorebird release exit: $SHOREBIRD_EXIT"
 
           if [ "$SHOREBIRD_EXIT" -ne 0 ]; then
-            if [ "$SHOREBIRD_EXIT" -eq 70 ]; then
-              echo "[!] Release v${{ steps.version.outputs.version }} bereits registriert (exit 70)."
-            else
-              echo "[!] Shorebird release fehlgeschlagen (exit $SHOREBIRD_EXIT)."
-            fi
-            echo "    Fallback: APK via Shorebird-bundled Flutter bauen (assembleRelease)..."
+            echo "[!] Shorebird release exit $SHOREBIRD_EXIT -- Fallback: flutter build apk (assembleRelease)."
 
-            # Shorebirds gebundeltes Flutter SDK finden (wird beim ersten shorebird-Aufruf heruntergeladen).
+            # Shorebirds gebundeltes Flutter SDK finden. Struktur:
+            #   <root>/bin/cache/flutter/<revision-hash>/bin/flutter
             SHOREBIRD_BIN=$(command -v shorebird)
             SHOREBIRD_ROOT=$(cd "$(dirname "$SHOREBIRD_BIN")/.." && pwd -P)
-            FLUTTER_BIN="$SHOREBIRD_ROOT/bin/cache/flutter/bin/flutter"
-            if [ ! -x "$FLUTTER_BIN" ]; then
-              FLUTTER_BIN=$(find "$SHOREBIRD_ROOT" -path "*/cache/flutter/bin/flutter" -type f 2>/dev/null | head -1 || echo "")
+            echo "Shorebird root: $SHOREBIRD_ROOT"
+
+            FLUTTER_BIN=$(find "$SHOREBIRD_ROOT/bin/cache/flutter" -maxdepth 3 -type f -path "*/bin/flutter" 2>/dev/null | head -1)
+            if [ -z "$FLUTTER_BIN" ]; then
+              # Breitere Suche falls Cache-Layout abweicht.
+              FLUTTER_BIN=$(find "$SHOREBIRD_ROOT" -type f -path "*/bin/flutter" 2>/dev/null | head -1)
             fi
-            if [ -z "$FLUTTER_BIN" ] || [ ! -x "$FLUTTER_BIN" ]; then
+            if [ -z "$FLUTTER_BIN" ] || [ ! -f "$FLUTTER_BIN" ]; then
               echo "FATAL: Shorebird-gebundeltes Flutter nicht gefunden unter $SHOREBIRD_ROOT"
-              echo "Inhalt $SHOREBIRD_ROOT/bin/cache/:"
-              ls -la "$SHOREBIRD_ROOT/bin/cache/" 2>/dev/null || echo "(nicht gefunden)"
+              echo "--- find */bin/flutter ---"
+              find "$SHOREBIRD_ROOT" -type f -name flutter 2>/dev/null || true
+              echo "--- ls bin/cache/flutter ---"
+              ls -la "$SHOREBIRD_ROOT/bin/cache/flutter/" 2>/dev/null || echo "(nicht gefunden)"
               exit 1
             fi
+            chmod +x "$FLUTTER_BIN" 2>/dev/null || true
             echo "Flutter binary: $FLUTTER_BIN"
             set -e
             "$FLUTTER_BIN" build apk --release \
