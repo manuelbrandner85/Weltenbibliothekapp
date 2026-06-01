@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../services/storage_service.dart';
 import '../../services/favorites_service.dart';
+import '../../services/recent_tools_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../widgets/favorite_button.dart';
 import '../../models/favorite.dart';
@@ -105,6 +106,9 @@ class _SpiritTabModernState extends State<SpiritTabModern>
 
   late final List<Map<String, dynamic>> _allTools;
 
+  // "Zuletzt benutzt": geordnete Tool-IDs (most-recent-first).
+  List<String> _recentToolIds = [];
+
   @override
   void initState() {
     super.initState();
@@ -121,6 +125,13 @@ class _SpiritTabModernState extends State<SpiritTabModern>
     _entryCtrl.forward();
     _initializeTools();
     _loadProfile();
+    _loadRecentTools();
+  }
+
+  Future<void> _loadRecentTools() async {
+    await RecentToolsService.instance.init();
+    if (!mounted) return;
+    setState(() => _recentToolIds = RecentToolsService.instance.recent);
   }
 
   @override
@@ -851,7 +862,18 @@ class _SpiritTabModernState extends State<SpiritTabModern>
   }
 
   // E2: stabiler Favoriten-Key pro Tool (identisch zur FavoriteButton-itemId).
-  String _toolFavId(Map<String, dynamic> tool) => 'spirit_tool_${tool['title']}';
+  String _toolFavId(Map<String, dynamic> tool) =>
+      'spirit_tool_${tool['title']}';
+
+  /// Records a tool open so it surfaces under the "Zuletzt benutzt" filter.
+  void _recordToolUsage(Map<String, dynamic> tool) {
+    final id = _toolFavId(tool);
+    RecentToolsService.instance.record(id).then((_) {
+      if (mounted) {
+        setState(() => _recentToolIds = RecentToolsService.instance.recent);
+      }
+    });
+  }
 
   List<Map<String, dynamic>> get _filteredTools {
     if (_selectedCategory == 'all') return _allTools;
@@ -859,6 +881,14 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       return _allTools
           .where((tool) => FavoritesService.isFavorite(_toolFavId(tool)))
           .toList();
+    }
+    if (_selectedCategory == 'recent') {
+      // Order tools by recency using the stored ID list.
+      final byId = {for (final t in _allTools) _toolFavId(t): t};
+      return [
+        for (final id in _recentToolIds)
+          if (byId[id] != null) byId[id]!,
+      ];
     }
     return _allTools
         .where((tool) => tool['category'] == _selectedCategory)
@@ -871,6 +901,10 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       return _allTools
           .where((tool) => FavoritesService.isFavorite(_toolFavId(tool)))
           .length;
+    }
+    if (category == 'recent') {
+      final ids = _allTools.map(_toolFavId).toSet();
+      return _recentToolIds.where(ids.contains).length;
     }
     return _allTools.where((tool) => tool['category'] == category).length;
   }
@@ -1138,6 +1172,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
               child: Row(children: [
                 for (final cat in const [
                   ['all', '✨ Alle'],
+                  ['recent', '🕐 Zuletzt'],
                   ['favorites', '⭐ Favoriten'],
                   ['core', '⭐ Kern'],
                   ['advanced', '🚀 Erweitert'],
@@ -1160,6 +1195,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
 
   Color _chipColor(String cat) => switch (cat) {
         'all' => _purple,
+        'recent' => _teal,
         'favorites' => _gold,
         'core' => _teal,
         'advanced' => _pink,
@@ -1324,6 +1360,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
     final color = tool['color'] as Color;
     return GestureDetector(
       onTap: () {
+        _recordToolUsage(tool);
         final screen = tool['screen'] as Widget?;
         final builder = tool['screenBuilder'] as Widget Function()?;
         if (screen != null) {
