@@ -302,22 +302,18 @@ jobs:
         # Two failure modes require the assembleRelease fallback:
         #
         # A) Exit 70 -- release already registered on Shorebird server (from a
-        #    prior failed attempt). Shorebird skips the build and exits immediately,
-        #    so no APK is produced. This is the SECOND+ attempt scenario.
+        #    prior failed attempt). Shorebird skips the build; no APK produced.
         #
-        # B) Any other non-zero -- bundleRelease (AAB) failed on the FIRST attempt.
-        #    Shorebird registers the release BEFORE building, so the release record
-        #    exists on the server but is incomplete (no Dart snapshot). On the very
-        #    first attempt the CI goes red here; the NEXT push sees exit 70 (case A).
-        #    By also falling back here we keep CI green on the very first failure too.
+        # B) Any other non-zero -- bundleRelease (AAB) failed on first attempt.
+        #    The release IS registered on the server (registration happens before
+        #    the build), but the build itself failed.
         #
-        # Fallback: "shorebird flutter build apk" calls assembleRelease (APK-only,
-        # no AAB bundling step) which succeeds when bundleRelease fails. The result
-        # is built with Shorebird's engine, so OTA patches work if the release was
-        # successfully registered before the build failure.
-        #
-        # Note: standalone "flutter" is NOT in PATH after setup-shorebird -- only
-        # "shorebird" is. Always use "shorebird flutter" for the fallback.
+        # Fallback: use Shorebird's own bundled Flutter binary directly.
+        # "shorebird flutter" only has config/versions subcommands -- it is NOT
+        # a flutter proxy. The actual Flutter SDK is at:
+        #   <shorebird_root>/bin/cache/flutter/bin/flutter
+        # which Shorebird downloads during its first run.
+        # "flutter" standalone is NOT in PATH after setup-shorebird.
         run: |
           set +e
           shorebird release android \
@@ -335,11 +331,27 @@ jobs:
             if [ "$SHOREBIRD_EXIT" -eq 70 ]; then
               echo "[!] Release v${{ steps.version.outputs.version }} already registered (exit 70)."
             else
-              echo "[!] Shorebird release failed (exit $SHOREBIRD_EXIT) -- bundleRelease may have errored."
+              echo "[!] Shorebird release failed (exit $SHOREBIRD_EXIT)."
             fi
-            echo "    Fallback: building APK via shorebird flutter (assembleRelease)..."
+            echo "    Fallback: direct flutter build apk via Shorebird-bundled Flutter..."
+
+            # Locate Shorebird's bundled Flutter SDK (downloaded during bootstrap)
+            SHOREBIRD_BIN=$(command -v shorebird)
+            SHOREBIRD_ROOT=$(cd "$(dirname "$SHOREBIRD_BIN")/.." && pwd -P)
+            FLUTTER_BIN="$SHOREBIRD_ROOT/bin/cache/flutter/bin/flutter"
+            if [ ! -x "$FLUTTER_BIN" ]; then
+              # Search for it if the expected path doesn't exist
+              FLUTTER_BIN=$(find "$SHOREBIRD_ROOT" -path "*/cache/flutter/bin/flutter" -type f 2>/dev/null | head -1 || echo "")
+            fi
+            if [ -z "$FLUTTER_BIN" ] || [ ! -x "$FLUTTER_BIN" ]; then
+              echo "FATAL: Shorebird-bundled Flutter not found under $SHOREBIRD_ROOT"
+              echo "Listing $SHOREBIRD_ROOT/bin/cache/:"
+              ls -la "$SHOREBIRD_ROOT/bin/cache/" 2>/dev/null || echo "(not found)"
+              exit 1
+            fi
+            echo "Flutter binary: $FLUTTER_BIN"
             set -e
-            shorebird flutter build apk --release \
+            "$FLUTTER_BIN" build apk --release \
               "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
               "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
               "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
