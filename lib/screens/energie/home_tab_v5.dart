@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../services/free_api_service.dart';
 import '../../services/openclaw_dashboard_service.dart';
 import '../../services/storage_service.dart';
+import '../../services/numerology_service.dart';
 import '../../models/energie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../materie/kaninchenbau/kaninchenbau_screen.dart';
@@ -475,7 +477,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     color: purple.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(rec.icon, color: const Color(0xFFCE93D8), size: 26),
+                  child:
+                      Icon(rec.icon, color: const Color(0xFFCE93D8), size: 26),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -1000,6 +1003,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                       Expanded(child: _buildSunCard()),
                     ],
                   ),
+                  // Numerologische Tagesenergie-Zahl
+                  const SizedBox(height: 10),
+                  _buildDayEnergyCard(),
                   // NASA DONKI Sonnenstürme
                   if (_donkiEvents.isNotEmpty) ...[
                     const SizedBox(height: 10),
@@ -1009,6 +1015,135 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               ),
       ),
     );
+  }
+
+  // ── TAGESENERGIE (numerologische Tageszahl) ─────────────────────────────
+  /// Reduces today's date to a single numerology digit (1-9) and surfaces its
+  /// meaning. Complements the moon/sun cards in the cosmic-energy section.
+  Widget _buildDayEnergyCard() {
+    final number = NumerologyService().calculateLifePath(DateTime.now());
+    final meaning = NumerologyService().getLifePathMeaning(number);
+    // Headline = first part before the dash, detail = remainder.
+    final dashIdx = meaning.indexOf(' - ');
+    final headline = dashIdx > 0 ? meaning.substring(0, dashIdx) : meaning;
+    final detail = dashIdx > 0 ? meaning.substring(dashIdx + 3) : '';
+
+    return AnimatedBuilder(
+      animation: _auraCtrl,
+      builder: (_, __) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _indigo.withValues(alpha: 0.35),
+              _purpleD.withValues(alpha: 0.5 + _auraCtrl.value * 0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _gold.withValues(alpha: 0.22)),
+        ),
+        child: Row(
+          children: [
+            // Big number disc
+            Container(
+              width: 54,
+              height: 54,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    _gold.withValues(alpha: 0.9),
+                    _purpleL.withValues(alpha: 0.9),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _gold.withValues(alpha: 0.3 + _auraCtrl.value * 0.2),
+                    blurRadius: 12,
+                  ),
+                ],
+              ),
+              child: Text(
+                '$number',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'TAGESENERGIE',
+                    style: TextStyle(
+                      color: _gold,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    headline,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (detail.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      detail,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 11,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Tagesenergie teilen',
+              icon: Icon(Icons.ios_share,
+                  color: _gold.withValues(alpha: 0.85), size: 20),
+              onPressed: () => _shareDayEnergy(number, headline, detail),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareDayEnergy(int number, String headline, String detail) {
+    final moon = _moonPhaseData ?? _freeApi.calcMoonPhase();
+    final buffer = StringBuffer()
+      ..writeln('🌌 Meine Energie des Tages')
+      ..writeln()
+      ..writeln('🔢 Tagesenergie $number — $headline')
+      ..writeln(detail);
+    buffer
+      ..writeln()
+      ..writeln(
+          '${moon.emoji} ${moon.name} · ${moon.illuminationPercent}% beleuchtet');
+    if (_dailyQuote != null) {
+      buffer
+        ..writeln()
+        ..writeln('✨ "${_dailyQuote!.content}" — ${_dailyQuote!.author}');
+    }
+    buffer
+      ..writeln()
+      ..write('— Weltenbibliothek');
+    Share.share(buffer.toString().trim(), subject: 'Meine Energie des Tages');
   }
 
   Widget _buildMoonCard() {
