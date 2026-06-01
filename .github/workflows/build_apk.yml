@@ -299,24 +299,26 @@ jobs:
           fi
 
       - name: 🏗️ Shorebird Release (arm64 + arm32)
-        # "shorebird release android" baut intern via "flutter build appbundle".
-        # Schlaegt dieser AAB-Build fehl, exitet shorebird non-zero (oft 70 =
-        # EX_SOFTWARE, NICHT "schon registriert"). Fuer einen sideload-faehigen
-        # APK reicht uns aber "flutter build apk" (assembleRelease) -- dieser
-        # Pfad ueberspringt den AAB-Bundling-Schritt der fehlschlug.
+        # PRIMAERPFAD: "shorebird release android --artifact=apk" baut direkt ein
+        # APK (assembleRelease) UND registriert den OTA-Release. Das "="-Zeichen
+        # ist Pflicht -- "--artifact apk" (Leerzeichen) wird in v1.6.92 NICHT
+        # erkannt, dann faellt shorebird auf appbundle (AAB) zurueck und es
+        # entsteht kein .apk. Kein "--"-Separator: shorebird reicht unbekannte
+        # --dart-define-Args selbst an flutter durch (so lief v5.54.0 gruen).
         #
-        # WICHTIG: Wir nutzen Shorebirds EIGENES gebundeltes Flutter, damit der
-        # Engine zu den OTA-Patches passt. "shorebird flutter" ist KEIN Proxy
-        # (nur config/versions). Das echte SDK liegt unter:
-        #   <shorebird_root>/bin/cache/flutter/<revision>/bin/flutter
-        # -- mit einem <revision>-Hash-Verzeichnis dazwischen, daher robustes
-        # find statt hartem Pfad. "flutter" standalone ist nach setup-shorebird
-        # NICHT im PATH.
+        # ROBUSTHEIT: Nach dem Lauf pruefen wir explizit ob ein app-release.apk
+        # existiert -- unabhaengig vom Exit-Code (exit 70 = Release schon auf
+        # Server registriert, APK aber meist trotzdem gebaut). Fehlt das APK,
+        # bauen wir es via Shorebirds EIGENEM gebundelten Flutter (Engine passt
+        # dann zu OTA-Patches). Das SDK liegt unter:
+        #   <root>/bin/cache/flutter/<revision-hash>/bin/flutter
+        # -- mit Hash-Verzeichnis dazwischen, daher robustes find. "flutter"
+        # standalone ist nach setup-shorebird NICHT im PATH.
         run: |
           set +e
           shorebird release android \
+            --artifact=apk \
             --no-confirm \
-            -- \
             "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
             "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
             "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
@@ -326,18 +328,19 @@ jobs:
           SHOREBIRD_EXIT=$?
           echo "shorebird release exit: $SHOREBIRD_EXIT"
 
-          if [ "$SHOREBIRD_EXIT" -ne 0 ]; then
-            echo "[!] Shorebird release exit $SHOREBIRD_EXIT -- Fallback: flutter build apk (assembleRelease)."
+          # Hat shorebird ein APK produziert?
+          APK=$(find build/app/outputs -name "app-release.apk" -type f 2>/dev/null | head -1)
 
-            # Shorebirds gebundeltes Flutter SDK finden. Struktur:
-            #   <root>/bin/cache/flutter/<revision-hash>/bin/flutter
+          if [ -z "$APK" ]; then
+            echo "[!] Kein APK von shorebird (exit $SHOREBIRD_EXIT) -- Fallback: flutter build apk."
+
+            # Shorebirds gebundeltes Flutter SDK finden.
             SHOREBIRD_BIN=$(command -v shorebird)
             SHOREBIRD_ROOT=$(cd "$(dirname "$SHOREBIRD_BIN")/.." && pwd -P)
             echo "Shorebird root: $SHOREBIRD_ROOT"
 
             FLUTTER_BIN=$(find "$SHOREBIRD_ROOT/bin/cache/flutter" -maxdepth 3 -type f -path "*/bin/flutter" 2>/dev/null | head -1)
             if [ -z "$FLUTTER_BIN" ]; then
-              # Breitere Suche falls Cache-Layout abweicht.
               FLUTTER_BIN=$(find "$SHOREBIRD_ROOT" -type f -path "*/bin/flutter" 2>/dev/null | head -1)
             fi
             if [ -z "$FLUTTER_BIN" ] || [ ! -f "$FLUTTER_BIN" ]; then
@@ -360,7 +363,7 @@ jobs:
               "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
             echo "[OK] Fallback APK-Build abgeschlossen."
           else
-            echo "[OK] Shorebird Release erfolgreich."
+            echo "[OK] APK von shorebird vorhanden: $APK"
           fi
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
