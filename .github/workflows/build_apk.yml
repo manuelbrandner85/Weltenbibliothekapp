@@ -299,25 +299,29 @@ jobs:
           fi
 
       - name: 🏗️ Shorebird Release (arm64 + arm32)
-        # Two failure modes require the assembleRelease fallback:
+        # Zwei Fehlermodi erfordern den assembleRelease-Fallback:
         #
-        # A) Exit 70 -- release already registered on Shorebird server (from a
-        #    prior failed attempt). Shorebird skips the build; no APK produced.
+        # A) Exit 70 -- Release bereits auf Shorebird-Server registriert (von
+        #    einem frueheren fehlgeschlagenen Versuch). Shorebird ueberspringt
+        #    den Build; keine APK produziert.
         #
-        # B) Any other non-zero -- bundleRelease (AAB) failed on first attempt.
-        #    The release IS registered on the server (registration happens before
-        #    the build), but the build itself failed.
+        # B) Jeder andere Nicht-Null-Exit -- Build-Fehler auf dem ersten Versuch.
+        #    Der Release IST auf dem Server registriert (Registrierung passiert
+        #    vor dem Build), aber der Build selbst schlug fehl.
         #
-        # Fallback: use Shorebird's own bundled Flutter binary directly.
-        # "shorebird flutter" only has config/versions subcommands -- it is NOT
-        # a flutter proxy. The actual Flutter SDK is at:
+        # Fallback: Shorebirds eigene gebundelte Flutter-Binary direkt nutzen.
+        # "shorebird flutter" hat nur config/versions Unterbefehle -- es ist KEIN
+        # Flutter-Proxy. Das echte Flutter SDK liegt unter:
         #   <shorebird_root>/bin/cache/flutter/bin/flutter
-        # which Shorebird downloads during its first run.
-        # "flutter" standalone is NOT in PATH after setup-shorebird.
+        # Diese Binary enthaelt Shorebirds gepatchten Engine, sodass OTA-Patches
+        # fuer den erstellten APK weiterhin funktionieren.
+        # "flutter" standalone ist nach setup-shorebird NICHT im PATH.
         run: |
           set +e
           shorebird release android \
-            --artifact=apk \
+            --no-confirm \
+            --artifact apk \
+            -- \
             "--dart-define=APP_VERSION=${{ steps.version.outputs.version }}" \
             "--dart-define=SUPABASE_URL=$SUPABASE_URL" \
             "--dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" \
@@ -329,24 +333,23 @@ jobs:
 
           if [ "$SHOREBIRD_EXIT" -ne 0 ]; then
             if [ "$SHOREBIRD_EXIT" -eq 70 ]; then
-              echo "[!] Release v${{ steps.version.outputs.version }} already registered (exit 70)."
+              echo "[!] Release v${{ steps.version.outputs.version }} bereits registriert (exit 70)."
             else
-              echo "[!] Shorebird release failed (exit $SHOREBIRD_EXIT)."
+              echo "[!] Shorebird release fehlgeschlagen (exit $SHOREBIRD_EXIT)."
             fi
-            echo "    Fallback: direct flutter build apk via Shorebird-bundled Flutter..."
+            echo "    Fallback: APK via Shorebird-bundled Flutter bauen (assembleRelease)..."
 
-            # Locate Shorebird's bundled Flutter SDK (downloaded during bootstrap)
+            # Shorebirds gebundeltes Flutter SDK finden (wird beim ersten shorebird-Aufruf heruntergeladen).
             SHOREBIRD_BIN=$(command -v shorebird)
             SHOREBIRD_ROOT=$(cd "$(dirname "$SHOREBIRD_BIN")/.." && pwd -P)
             FLUTTER_BIN="$SHOREBIRD_ROOT/bin/cache/flutter/bin/flutter"
             if [ ! -x "$FLUTTER_BIN" ]; then
-              # Search for it if the expected path doesn't exist
               FLUTTER_BIN=$(find "$SHOREBIRD_ROOT" -path "*/cache/flutter/bin/flutter" -type f 2>/dev/null | head -1 || echo "")
             fi
             if [ -z "$FLUTTER_BIN" ] || [ ! -x "$FLUTTER_BIN" ]; then
-              echo "FATAL: Shorebird-bundled Flutter not found under $SHOREBIRD_ROOT"
-              echo "Listing $SHOREBIRD_ROOT/bin/cache/:"
-              ls -la "$SHOREBIRD_ROOT/bin/cache/" 2>/dev/null || echo "(not found)"
+              echo "FATAL: Shorebird-gebundeltes Flutter nicht gefunden unter $SHOREBIRD_ROOT"
+              echo "Inhalt $SHOREBIRD_ROOT/bin/cache/:"
+              ls -la "$SHOREBIRD_ROOT/bin/cache/" 2>/dev/null || echo "(nicht gefunden)"
               exit 1
             fi
             echo "Flutter binary: $FLUTTER_BIN"
@@ -358,9 +361,9 @@ jobs:
               "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
               "--dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}" \
               "--dart-define=ADMIN_AUTH_SECRET=${{ secrets.ADMIN_AUTH_SECRET }}"
-            echo "[OK] Fallback APK build complete."
+            echo "[OK] Fallback APK-Build abgeschlossen."
           else
-            echo "[OK] Shorebird release succeeded."
+            echo "[OK] Shorebird Release erfolgreich."
           fi
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
@@ -438,7 +441,7 @@ jobs:
             --arg notes "$NOTES_URL" \
             '{platform:"android", latest_version:$lv, min_version:$mv, apk_download_url:$url, changelog:$cl, release_notes_url:$notes}')
 
-          echo "-> UPSERT app_config: latest=$VERSION min=$MIN_VERSION"
+          echo "→ UPSERT app_config: latest=$VERSION min=$MIN_VERSION"
           # ?on_conflict=platform: PostgREST-UPSERT auf UNIQUE-Spalte (nicht PK).
           HTTP_CODE=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
             -X POST "${SUPABASE_URL}/rest/v1/app_config?on_conflict=platform" \
@@ -460,7 +463,7 @@ jobs:
         env:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
-          CHANGELOG: ${{ steps.version.outputs.changelog }}
+          CHANGELOG: ${{ needs.check.outputs.changelog }}
         run: |
           if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
             echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt — kein History-Eintrag"
