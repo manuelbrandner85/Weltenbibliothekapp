@@ -148,6 +148,211 @@ class _RvTrainerScreenState extends State<RvTrainerScreen> {
     }
   }
 
+  /// Loads the user's past RV sessions and shows aggregate stats + history.
+  Future<void> _showStats() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte zuerst anmelden')),
+      );
+      return;
+    }
+
+    List<Map<String, dynamic>> sessions = [];
+    String? loadError;
+    try {
+      final res = await client
+          .from('rv_sessions')
+          .select('score_percent,created_at,duration_seconds')
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false)
+          .limit(50);
+      sessions = (res as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      loadError = e.toString();
+    }
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _bgDeep,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _buildStatsSheet(sessions, loadError),
+    );
+  }
+
+  Widget _buildStatsSheet(
+      List<Map<String, dynamic>> sessions, String? loadError) {
+    final scores = sessions
+        .map((s) => (s['score_percent'] as num?)?.toInt() ?? 0)
+        .toList();
+    final count = scores.length;
+    final avg =
+        count == 0 ? 0 : (scores.reduce((a, b) => a + b) / count).round();
+    final best = count == 0 ? 0 : scores.reduce((a, b) => a > b ? a : b);
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      builder: (_, scrollCtrl) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+        child: ListView(
+          controller: scrollCtrl,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: _cyan.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'STATISTIK & VERLAUF',
+              style: TextStyle(
+                color: _cyan,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (loadError != null)
+              Text(
+                'Verlauf konnte nicht geladen werden.',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+              )
+            else if (count == 0)
+              Text(
+                'Noch keine RV-Sessions. Schliesse einen Durchgang ab, '
+                'um deine Trefferquote zu verfolgen.',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6), height: 1.5),
+              )
+            else ...[
+              Row(
+                children: [
+                  _statTile('$count', 'Sessions'),
+                  const SizedBox(width: 10),
+                  _statTile('$avg%', 'Ø Trefferquote'),
+                  const SizedBox(width: 10),
+                  _statTile('$best%', 'Bester Wert'),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'LETZTE VERSUCHE',
+                style: TextStyle(
+                  color: _cyan.withValues(alpha: 0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const SizedBox(height: 10),
+              for (final s in sessions) _historyRow(s),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statTile(String value, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _cyan.withValues(alpha: 0.25)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_cyan.withValues(alpha: 0.1), _bgDeep],
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _historyRow(Map<String, dynamic> s) {
+    final score = (s['score_percent'] as num?)?.toInt() ?? 0;
+    final createdRaw = s['created_at'] as String?;
+    final created = createdRaw != null ? DateTime.tryParse(createdRaw) : null;
+    final dateStr = created != null
+        ? '${created.day.toString().padLeft(2, '0')}.'
+            '${created.month.toString().padLeft(2, '0')}.${created.year}'
+        : '—';
+    // Color the score: green high, amber mid, red low.
+    final Color scoreColor = score >= 60
+        ? const Color(0xFF66BB6A)
+        : score >= 30
+            ? const Color(0xFFFFB74D)
+            : const Color(0xFFEF5350);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(Icons.remove_red_eye,
+              size: 16, color: _cyan.withValues(alpha: 0.6)),
+          const SizedBox(width: 10),
+          Text(
+            dateStr,
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.75), fontSize: 13),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: scoreColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$score%',
+              style: TextStyle(
+                color: scoreColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,6 +366,11 @@ class _RvTrainerScreenState extends State<RvTrainerScreen> {
           style: TextStyle(color: _cyan, letterSpacing: 2.0, fontSize: 16),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Statistik & Verlauf',
+            icon: const Icon(Icons.insights_rounded, color: _cyan),
+            onPressed: _showStats,
+          ),
           if (_stage == 4)
             IconButton(
               icon: const Icon(Icons.refresh, color: _cyan),
