@@ -2815,7 +2815,11 @@ class _ParticipantTileState extends State<_ParticipantTile>
             child: lk.VideoTrackRenderer(
               widget.videoTrack!,
               fit: lk.VideoViewFit.cover,
-              mirror: widget.isLocal,
+              // livekit_client 2.5.4: mirroring via mirrorMode (VideoViewMirrorMode),
+              // not a bool `mirror`. Local camera tracks are mirrored like a selfie.
+              mirrorMode: widget.isLocal
+                  ? lk.VideoViewMirrorMode.mirror
+                  : lk.VideoViewMirrorMode.off,
             ),
           ),
           // Bottom overlay: Name + Mic-Status
