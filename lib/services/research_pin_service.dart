@@ -112,24 +112,12 @@ class ResearchPinService {
   }) async {
     try {
       // Upsert vote — pkey (pin_id, user_id) sorgt für Wechsel.
+      // DB-Trigger trg_recompute_pin_votes recomputes upvotes/downvotes automatically.
       await _s.from('user_research_pin_votes').upsert({
         'pin_id': pinId,
         'user_id': userId,
         'vote': direction,
       }, onConflict: 'pin_id,user_id');
-
-      // Aggregat-Sync — selektiver +1/-1 ist racy, daher Re-Count:
-      final votes = await _s
-          .from('user_research_pin_votes')
-          .select('vote')
-          .eq('pin_id', pinId);
-      final up = (votes as List).where((v) => (v as Map)['vote'] == 1).length;
-      final down = votes.where((v) => (v as Map)['vote'] == -1).length;
-      await _s.from('user_research_pins').update({
-        'upvotes': up,
-        'downvotes': down,
-        'updated_at': DateTime.now().toIso8601String(),
-      }).eq('id', pinId);
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ ResearchPin vote: $e');
