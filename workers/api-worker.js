@@ -9818,6 +9818,138 @@ Wichtig:
 
     }
 
+    // ── R-X10: Konflikt-Datenbank (ACLED) ────────────────────────────────────
+    // GET /api/intel/conflict?country=Ukraine&limit=50
+    if (path === '/api/intel/conflict' && method === 'GET') {
+      if (!env.ACLED_ACCESS_TOKEN || !env.ACLED_EMAIL) {
+        return jsonResponse({ key_missing: true, events: [] });
+      }
+      const country = url.searchParams.get('country') || '';
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
+      try {
+        const params = new URLSearchParams({
+          key: env.ACLED_ACCESS_TOKEN,
+          email: env.ACLED_EMAIL,
+          limit: String(limit),
+          fields: 'event_date|event_type|sub_event_type|country|location|latitude|longitude|fatalities|notes',
+          'order': 'event_date:desc',
+        });
+        if (country) params.set('country', country);
+        const r = await fetch(`https://api.acleddata.com/acled/read?${params}`, {
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!r.ok) return jsonResponse({ error: `ACLED HTTP ${r.status}`, events: [] });
+        const data = await r.json();
+        return jsonResponse({ events: data.data || [], count: data.count || 0 });
+      } catch (e) {
+        return errorResponse(`ACLED-Abfrage fehlgeschlagen: ${e.message}`, 502);
+      }
+    }
+
+    // ── R-X11: Waldbrand-Satelliten (NASA FIRMS) ─────────────────────────────
+    // GET /api/intel/wildfires?days=1&region=world
+    if (path === '/api/intel/wildfires' && method === 'GET') {
+      if (!env.NASA_FIRMS_API_KEY) {
+        return jsonResponse({ key_missing: true, fires: [] });
+      }
+      const days = Math.min(parseInt(url.searchParams.get('days') || '1'), 7);
+      const region = url.searchParams.get('region') || 'world';
+      try {
+        const csvUrl = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${env.NASA_FIRMS_API_KEY}/VIIRS_SNPP_NRT/${region}/${days}`;
+        const r = await fetch(csvUrl, { signal: AbortSignal.timeout(12000) });
+        if (!r.ok) return jsonResponse({ error: `FIRMS HTTP ${r.status}`, fires: [] });
+        const text = await r.text();
+        const lines = text.trim().split('\n');
+        if (lines.length < 2) return jsonResponse({ fires: [], count: 0 });
+        const headers = lines[0].split(',').map(h => h.trim());
+        const fires = [];
+        for (let i = 1; i < Math.min(lines.length, 301); i++) {
+          const cols = lines[i].split(',');
+          if (cols.length < headers.length) continue;
+          const entry = {};
+          headers.forEach((h, idx) => { entry[h] = cols[idx]?.trim() || ''; });
+          fires.push(entry);
+        }
+        return jsonResponse({ fires, count: fires.length, totalRows: lines.length - 1 });
+      } catch (e) {
+        return errorResponse(`FIRMS-Abfrage fehlgeschlagen: ${e.message}`, 502);
+      }
+    }
+
+    // ── R-X12: Luftqualitaet (OpenAQ) ────────────────────────────────────────
+    // GET /api/intel/airquality?city=Berlin&limit=20
+    if (path === '/api/intel/airquality' && method === 'GET') {
+      if (!env.OPENAQ_API_KEY) {
+        return jsonResponse({ key_missing: true, results: [] });
+      }
+      const city = url.searchParams.get('city') || '';
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+      try {
+        const params = new URLSearchParams({ limit: String(limit), order_by: 'lastUpdated', sort_order: 'desc' });
+        if (city) params.set('city', city);
+        const r = await fetch(`https://api.openaq.org/v3/locations?${params}`, {
+          headers: { 'X-API-Key': env.OPENAQ_API_KEY },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!r.ok) return jsonResponse({ error: `OpenAQ HTTP ${r.status}`, results: [] });
+        const data = await r.json();
+        // Normalize: keep name, city, country, coordinates, lastUpdated, sensors
+        const results = (data.results || []).map(loc => ({
+          id: loc.id,
+          name: loc.name,
+          city: loc.locality || loc.city || '',
+          country: loc.country?.code || '',
+          lat: loc.coordinates?.latitude,
+          lon: loc.coordinates?.longitude,
+          lastUpdated: loc.datetimeLast?.local || loc.lastUpdated || '',
+          sensors: (loc.sensors || []).map(s => ({
+            name: s.name,
+            parameter: s.parameter?.name || '',
+            unit: s.parameter?.units || '',
+          })),
+        }));
+        return jsonResponse({ results, count: results.length });
+      } catch (e) {
+        return errorResponse(`OpenAQ-Abfrage fehlgeschlagen: ${e.message}`, 502);
+      }
+    }
+
+    // ── R-X13: Internet-Ausfaelle (Cloudflare Radar) ─────────────────────────
+    // GET /api/intel/outages?limit=20
+    if (path === '/api/intel/outages' && method === 'GET') {
+      if (!env.CLOUDFLARE_RADAR_API_TOKEN) {
+        return jsonResponse({ key_missing: true, outages: [] });
+      }
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+      try {
+        const params = new URLSearchParams({ limit: String(limit), format: 'json' });
+        const r = await fetch(`https://api.cloudflare.com/client/v4/radar/annotations/outages?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${env.CLOUDFLARE_RADAR_API_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!r.ok) return jsonResponse({ error: `CF Radar HTTP ${r.status}`, outages: [] });
+        const data = await r.json();
+        const outages = (data.result?.annotations || []).map(a => ({
+          id: a.id,
+          asn: a.asn,
+          asnName: a.asnName || '',
+          location: a.locationName || '',
+          country: a.countryCode || '',
+          startDate: a.startDate || '',
+          endDate: a.endDate || '',
+          description: a.description || '',
+          scope: a.scope || '',
+          eventType: a.eventType || '',
+        }));
+        return jsonResponse({ outages, count: outages.length });
+      } catch (e) {
+        return errorResponse(`CF-Radar-Abfrage fehlgeschlagen: ${e.message}`, 502);
+      }
+    }
+
     // ── 404 ───────────────────────────────────────────────────
     return errorResponse(`Endpoint '${path}' nicht gefunden`, 404);
   },

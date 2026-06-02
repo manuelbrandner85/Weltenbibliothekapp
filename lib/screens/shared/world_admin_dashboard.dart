@@ -1359,6 +1359,7 @@ class _UsersTabState extends State<_UsersTab> {
         userId: u.userId,
         reason: 'Admin-Aktion',
         adminUserId: widget.admin.username);
+    if (!mounted) return;
     setState(() => _processing = false);
     _snack(ok ? '🚫 ${u.username} wurde gesperrt' : '❌ Fehler beim Sperren',
         color: ok ? Colors.red.shade700 : Colors.orange);
@@ -1376,6 +1377,7 @@ class _UsersTabState extends State<_UsersTab> {
     setState(() => _processing = true);
     final ok = await WorldAdminServiceV162.unbanUser(
         userId: u.userId, adminUserId: widget.admin.username ?? 'admin');
+    if (!mounted) return;
     setState(() => _processing = false);
     _snack(ok ? '✅ ${u.username} wurde entsperrt' : '❌ Fehler',
         color: ok ? Colors.teal : Colors.orange);
@@ -1394,6 +1396,7 @@ class _UsersTabState extends State<_UsersTab> {
     final ok = await WorldAdminService.promoteUser(
         u.world ?? widget.world, u.userId,
         role: widget.admin.isRootAdmin ? 'root_admin' : 'admin');
+    if (!mounted) return;
     setState(() => _processing = false);
     _snack(ok ? '⬆️ ${u.username} ist jetzt Admin' : '❌ Fehler',
         color: ok ? Colors.green : Colors.orange);
@@ -1475,6 +1478,7 @@ class _UsersTabState extends State<_UsersTab> {
     final ok = await WorldAdminService.demoteUser(
         u.world ?? widget.world, u.userId,
         role: widget.admin.isRootAdmin ? 'root_admin' : 'admin');
+    if (!mounted) return;
     setState(() => _processing = false);
     _snack(ok ? '⬇️ ${u.username} degradiert' : '❌ Fehler',
         color: ok ? Colors.orange : Colors.red);
@@ -1818,6 +1822,7 @@ class _UsersTabState extends State<_UsersTab> {
       reason: reason,
       adminUsername: widget.admin.username,
     );
+    if (!mounted) return;
     setState(() => _processing = false);
     if (res != null && (res['success'] == true)) {
       final newXp = res['new_xp'];
@@ -4840,6 +4845,7 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                   '${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'),
               headers: headers)
           .timeout(const Duration(seconds: 10));
+      if (!mounted) return;
       if (res.statusCode != 200) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('❌ Modul laden: HTTP ${res.statusCode}'),

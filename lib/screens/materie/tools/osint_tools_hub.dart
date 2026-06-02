@@ -5,15 +5,26 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../../services/osint_history_service.dart'; // 🕰️ D1
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import 'air_quality_screen.dart';
+import 'conflict_database_screen.dart';
 import 'country_compare_tool.dart';
+import 'cyber_threat_feed_screen.dart';
+import 'economic_indicators_screen.dart';
 import 'email_osint_tool.dart';
 import 'eu_parliament_tracker_screen.dart';
+import 'flight_tracker_screen.dart';
+import 'gdelt_tone_screen.dart';
+import 'internet_outages_screen.dart';
 import 'ip_osint_tool.dart';
 import 'person_osint_tool.dart';
 import 'power_network_explorer_screen.dart';
+import 'prediction_markets_screen.dart';
 import 'propaganda_compare_screen.dart';
 import 'study_analyst_screen.dart';
+import 'travel_advisories_screen.dart';
 import 'version_watcher_screen.dart';
+import 'wildfire_screen.dart';
+import 'world_event_radar_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OSINT Datenbanken Hub — 7 direkte Datenbank-Zugänge via WebView
@@ -159,6 +170,156 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
           'Zwei Artikel zum selben Thema parallel analysieren und Bias, '
           'Niveau und Techniken Seite an Seite vergleichen.',
       customScreenBuilder: () => const PropagandaCompareScreen(),
+    ),
+    // ── R-X: WorldMonitor-Quellen (kostenlos, ohne API-Key) ──────────────────
+    _DbDef(
+      icon: Icons.public_rounded,
+      label: 'Welt-Ereignis-Radar',
+      sub: 'Erdbeben, Katastrophen, Naturereignisse',
+      color: const Color(0xFFE53935),
+      url: '',
+      description:
+          'Live aus drei offiziellen Quellen: Erdbeben ab M4.5 (USGS), UN-'
+          'Katastrophen-Alerts (GDACS) und offene Naturereignisse (NASA EONET).',
+      customScreenBuilder: () => const WorldEventRadarScreen(),
+    ),
+    _DbDef(
+      icon: Icons.insights_rounded,
+      label: 'Medien-Tonalitaet',
+      sub: 'GDELT: wie berichtet die Weltpresse',
+      color: const Color(0xFFFF7043),
+      url: '',
+      description:
+          'Stichwort eingeben -> weltweite Schlagzeilen plus durchschnittliche '
+          'Tonalitaet (negativ bis positiv) aus der GDELT-Datenbank. Stark fuer '
+          'Propaganda- und Framing-Analyse.',
+      customScreenBuilder: () => const GdeltToneScreen(),
+    ),
+    _DbDef(
+      icon: Icons.trending_up_rounded,
+      label: 'Prognose-Maerkte',
+      sub: 'Polymarket: was wettet die Crowd',
+      color: const Color(0xFF7E57C2),
+      url: '',
+      description:
+          'Aktive Wett-Maerkte zu Wahlen, Konflikten und Krisen mit Crowd-'
+          'Wahrscheinlichkeit und Handelsvolumen. Quelle: Polymarket.',
+      customScreenBuilder: () => const PredictionMarketsScreen(),
+    ),
+    _DbDef(
+      icon: Icons.gpp_maybe_rounded,
+      label: 'Cyber-Bedrohungen',
+      sub: 'Ransomware-Opfer + C2-Server',
+      color: const Color(0xFFE53935),
+      url: '',
+      description:
+          'Aktuelle Ransomware-Opfer (ransomware.live) und aktive Botnet-C2-'
+          'Server (abuse.ch Feodo Tracker). Reine Beobachtungsdaten.',
+      customScreenBuilder: () => const CyberThreatFeedScreen(),
+    ),
+    _DbDef(
+      icon: Icons.flight_rounded,
+      label: 'Flugverfolgung',
+      sub: 'Live-Flugzeuge via OpenSky',
+      color: const Color(0xFF42A5F5),
+      url: '',
+      description:
+          'Flugzeuge mit ADS-B-Transponder live in einer waehlbaren Region. '
+          'Quelle: oeffentliches OpenSky-Network (begrenztes Rate-Limit).',
+      customScreenBuilder: () => const FlightTrackerScreen(),
+    ),
+    _DbDef(
+      icon: Icons.travel_explore_rounded,
+      label: 'Reisewarnungen',
+      sub: 'Sicherheits-Level pro Land',
+      color: const Color(0xFFFFB300),
+      url: '',
+      description:
+          'Offizielle Laender-Sicherheitseinstufungen (Level 1-4) des US-Aussen'
+          'ministeriums mit Filter und Volltextsuche.',
+      customScreenBuilder: () => const TravelAdvisoriesScreen(),
+    ),
+    _DbDef(
+      icon: Icons.query_stats_rounded,
+      label: 'Wirtschafts-Indikatoren',
+      sub: 'Inflation, BIP, Arbeitslosigkeit',
+      color: const Color(0xFF26C6DA),
+      url: '',
+      description:
+          'Kern-Wirtschaftsdaten pro Land aus der Weltbank-Datenbank: Inflation, '
+          'BIP, BIP pro Kopf, Arbeitslosigkeit, Bevoelkerung, Lebenserwartung.',
+      customScreenBuilder: () => const EconomicIndicatorsScreen(),
+    ),
+    _DbDef(
+      icon: Icons.satellite_alt_rounded,
+      label: 'GPS-Stoerungen',
+      sub: 'Jamming-Karte (gpsjam.org)',
+      color: const Color(0xFFFF7043),
+      url: 'https://gpsjam.org',
+      description:
+          'Weltkarte der GPS-Stoerungen/Jamming - oft ein Frueh-Indikator fuer '
+          'militaerische Aktivitaet in Konfliktgebieten. Interaktive Karte von '
+          'gpsjam.org.',
+    ),
+    _DbDef(
+      icon: Icons.cable_rounded,
+      label: 'Seekabel-Karte',
+      sub: 'Kritische Internet-Infrastruktur',
+      color: const Color(0xFF26C6DA),
+      url: 'https://www.submarinecablemap.com',
+      description:
+          'Das globale Unterseekabel-Netz, ueber das fast der gesamte '
+          'internationale Internet-Verkehr laeuft. Interaktive Karte von '
+          'TeleGeography.',
+    ),
+    // ── Gruppe B (ueber Worker, mit Secrets) ─────────────────────────────────
+    _DbDef(
+      icon: Icons.shield_outlined,
+      label: 'Konflikt-Datenbank',
+      sub: 'ACLED: Konflikte, Proteste, Unruhen',
+      color: const Color(0xFFE53935),
+      url: '',
+      description:
+          'Bewaffnete Konflikte, Proteste und zivile Unruhen weltweit nach Land '
+          'filtern. Daten vom Armed Conflict Location & Event Data Project (ACLED). '
+          'Benoetigt ACLED_ACCESS_TOKEN + ACLED_EMAIL als Wrangler-Secrets.',
+      customScreenBuilder: () => const ConflictDatabaseScreen(),
+    ),
+    _DbDef(
+      icon: Icons.local_fire_department_rounded,
+      label: 'Waldbrand-Radar',
+      sub: 'NASA FIRMS: Thermische Hotspots live',
+      color: const Color(0xFFFF6F00),
+      url: '',
+      description:
+          'Aktive Brandherde weltweit via NASA FIRMS VIIRS Near Real-Time. '
+          'Zeitraum 24h/48h/7 Tage waehlbar, sortiert nach Fire Radiative Power. '
+          'Benoetigt NASA_FIRMS_API_KEY als Wrangler-Secret.',
+      customScreenBuilder: () => const WildfireScreen(),
+    ),
+    _DbDef(
+      icon: Icons.air_rounded,
+      label: 'Luftqualitaet',
+      sub: 'OpenAQ: PM2.5, NO2, Ozon weltweit',
+      color: const Color(0xFF66BB6A),
+      url: '',
+      description:
+          'Messstationen und Sensorwerte aus der OpenAQ-Plattform nach Stadt '
+          'durchsuchen. Zeigt Feinstaubwerte, Stickoxide und weitere Parameter. '
+          'Benoetigt OPENAQ_API_KEY als Wrangler-Secret.',
+      customScreenBuilder: () => const AirQualityScreen(),
+    ),
+    _DbDef(
+      icon: Icons.wifi_off_rounded,
+      label: 'Internet-Ausfaelle',
+      sub: 'Cloudflare Radar: Netz-Stoerungen',
+      color: const Color(0xFF42A5F5),
+      url: '',
+      description:
+          'Dokumentierte Internet-Ausfaelle und Traffic-Anomalien nach Land und '
+          'Provider. Indikator fuer staatliche Sperren oder grosse Infrastruktur-'
+          'Stoerungen. Benoetigt CLOUDFLARE_RADAR_API_TOKEN als Wrangler-Secret.',
+      customScreenBuilder: () => const InternetOutagesScreen(),
     ),
   ];
 
