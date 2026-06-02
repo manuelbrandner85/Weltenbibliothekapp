@@ -681,72 +681,6 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
     }
   }
 
-  // F — Share: formatierten Text in Zwischenablage kopieren
-  void _shareThread(_ThreadState s) {
-    final buf = StringBuffer();
-    buf.writeln('🐇 KANINCHENBAU — ${s.topic.toUpperCase()}');
-    buf.writeln('');
-    if (s.identityData != null) {
-      buf.writeln('📌 ${s.identityData!['label'] ?? s.topic}');
-      final desc = s.identityData!['description'];
-      if (desc != null && (desc as String).isNotEmpty) buf.writeln(desc);
-      buf.writeln('');
-    }
-    if (s.networkNodes.isNotEmpty) {
-      final names = s.networkNodes
-          .where((n) => n.id != 'center')
-          .map((n) => n.label)
-          .take(6)
-          .join(', ');
-      if (names.isNotEmpty) buf.writeln('🕸️ Netzwerk: $names');
-    }
-    if (s.keyPersons.isNotEmpty) {
-      buf.writeln(
-          '👤 Schlüsselpersonen: ${s.keyPersons.take(4).map((p) => p.name).join(', ')}');
-    }
-    if (s.rssItems.isNotEmpty) {
-      buf.writeln('');
-      buf.writeln('📰 Aktuelle Berichte:');
-      for (final item in s.rssItems.take(3)) {
-        buf.writeln('• ${item.title}');
-      }
-    }
-    if (s.skandale.isNotEmpty) {
-      buf.writeln('');
-      buf.writeln('🚨 Kontrovers: ${s.skandale.first.title}');
-    }
-    if (s.aiInsight != null && s.aiInsight!.isNotEmpty) {
-      buf.writeln('');
-      buf.writeln(
-          '🤖 Virgil: ${s.aiInsight!.substring(0, math.min(200, s.aiInsight!.length))}…');
-    }
-    buf.writeln('');
-    buf.writeln('— via Weltenbibliothek App');
-
-    Clipboard.setData(ClipboardData(text: buf.toString()));
-    HapticFeedback.mediumImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
-            SizedBox(width: 8),
-            Text('Summary in Zwischenablage'),
-          ],
-        ),
-        action: SnackBarAction(
-          label: 'Voller Export',
-          textColor: Colors.white,
-          onPressed: () => _exportMarkdown(s),
-        ),
-        backgroundColor: KbDesign.neonRed.withValues(alpha: 0.9),
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
   // 📄 C1: Voller Markdown-Export einer Investigation
   Future<void> _exportMarkdown(_ThreadState s) async {
     final md = KaninchenbauMarkdownExport.toMarkdown(
@@ -784,7 +718,72 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       moneyFlow: const <Map<String, dynamic>>[],
     );
     if (!mounted) return;
-    await KaninchenbauMarkdownExport.copyToClipboard(context, md);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1A0000),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.ios_share, color: Colors.white70, size: 18),
+              const SizedBox(width: 8),
+              Text('Recherche exportieren: ${s.topic}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14),
+                  overflow: TextOverflow.ellipsis),
+            ]),
+            const SizedBox(height: 4),
+            Text(
+              '${md.split('\n').length} Zeilen Markdown',
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.copy_rounded, size: 16),
+                  label: const Text('Kopieren'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await KaninchenbauMarkdownExport.copyToClipboard(
+                        context, md);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.share_rounded, size: 16),
+                  label: const Text('Teilen'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: KbDesign.neonRed,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    await KaninchenbauMarkdownExport.shareMarkdown(
+                        context, md, s.topic);
+                  },
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -815,6 +814,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
               onClose: _close,
               saved: _savedTopics.contains(s.topic.toLowerCase()),
               onSave: () => _saveCurrentThread(s),
+              onExport: () => _exportMarkdown(s),
             ),
             Expanded(
               // B — AnimatedSwitcher: Loading-Overlay → Karten
