@@ -63,7 +63,14 @@ class AdminResolver {
           if (kDebugMode) {
             debugPrint('🔐 [AdminResolver] Supabase-Session: role=$role');
           }
-          return role;
+          // AUTH-REFACTOR-FIX: Nur eine ECHTE Admin-Rolle aus der Supabase-
+          // Session beendet die Aufloesung. Die anonyme Geraete-Session
+          // (signInAnonymously -> role='user') darf eine lokal etablierte
+          // Admin-Identitaet NICHT ueberschatten -- sonst faellt der Owner
+          // faelschlich auf 'user' und der Worker lehnt Admin-Calls mit 403 ab.
+          if (AppRoles.isAdmin(role)) {
+            return role;
+          }
         }
       }
     } catch (e) {
@@ -72,11 +79,12 @@ class AdminResolver {
       }
     }
 
-    // 2. Mobile-App via InvisibleAuth → Username aus lokalem Profil
+    // 2. Mobile-App via InvisibleAuth → Username/Cache-Rolle aus lokalem Profil
     try {
       final storage = StorageService();
-      final localUsername = storage.getMaterieProfile()?.username ??
-          storage.getEnergieProfile()?.username;
+      final mProfile = storage.getMaterieProfile();
+      final eProfile = storage.getEnergieProfile();
+      final localUsername = mProfile?.username ?? eProfile?.username;
       if (localUsername != null && localUsername.isNotEmpty) {
         if (AppRoles.isRootAdminByUsername(localUsername)) {
           if (kDebugMode) {
@@ -93,10 +101,28 @@ class AdminResolver {
           await _persistUnifiedRole(localUsername, AppRoles.contentEditor);
           return AppRoles.contentEditor;
         }
+      }
 
-        // v104: Auch fuer Nicht-Admin-User den Username in
-        // UnifiedStorageService persistieren damit AdminStateNotifier
-        // Schritt 2 beim naechsten Aufruf sofort trifft.
+      // AUTH-REFACTOR-FIX: Lokal gecachte Admin-Rolle ehren. Nach dem Refactor
+      // laeuft das Geraet auf einer anonymen Supabase-Session (role='user'),
+      // waehrend die zuvor aufgeloeste Admin-Rolle des Owners lokal im Profil
+      // gecacht ist (gleiche Quelle die das Dashboard via _resolveLocalFallback
+      // und AdminState Schritt 2 nutzen). Ohne dies wuerde die anon-Session den
+      // Owner auf 'user' downgraden und Admin-Worker-Calls mit 403 brechen.
+      for (final cachedRole in [mProfile?.role, eProfile?.role]) {
+        if (cachedRole != null &&
+            cachedRole.isNotEmpty &&
+            AppRoles.isAdmin(cachedRole)) {
+          if (kDebugMode) {
+            debugPrint('🔐 [AdminResolver] Lokale Cache-Rolle: $cachedRole');
+          }
+          return cachedRole;
+        }
+      }
+
+      // v104: Auch fuer Nicht-Admin-User den Username persistieren damit
+      // AdminStateNotifier Schritt 2 beim naechsten Aufruf sofort trifft.
+      if (localUsername != null && localUsername.isNotEmpty) {
         await _persistUnifiedRole(localUsername, AppRoles.user);
       }
     } catch (e) {

@@ -48,7 +48,7 @@ class AdminAuthService {
       final role = await AdminResolver.resolveCurrentRole();
       if (!_isAdminRole(role)) return const {};
 
-      final username = await _currentUsername();
+      final username = await _currentUsername(role);
       if (username == null || username.isEmpty) return const {};
       if (_secret.isEmpty) {
         if (kDebugMode) {
@@ -92,7 +92,7 @@ class AdminAuthService {
   ///   3. SharedPreferences 'web_user_name' (Web-Login Fallback)
   ///   4. Erster non-'user_'-prefix Storage-Username
   ///   5. (last resort): erster non-empty Storage-Username
-  Future<String?> _currentUsername() async {
+  Future<String?> _currentUsername(String role) async {
     try {
       final storage = StorageService();
       final unified = UnifiedStorageService();
@@ -116,7 +116,15 @@ class AdminAuthService {
               .maybeSingle()
               .timeout(const Duration(seconds: 4));
           final dbUsername = row?['username'] as String?;
-          if (dbUsername != null && dbUsername.trim().isNotEmpty) {
+          final dbRole = row?['role'] as String?;
+          // AUTH-REFACTOR-FIX: Den Session-Usernamen nur senden, wenn DIESES
+          // Profil selbst eine Admin-Rolle hat (echter Web-Admin oder lokal
+          // promoteter User). Die anonyme Geraete-Session (role='user') darf
+          // NICHT als Admin-Username gesendet werden -- sonst lehnt der Worker
+          // mit 403 ab (er liest profiles.role live).
+          if (dbUsername != null &&
+              dbUsername.trim().isNotEmpty &&
+              _isAdminRole(dbRole ?? '')) {
             return dbUsername.trim();
           }
         }
@@ -135,6 +143,13 @@ class AdminAuthService {
           return AppRoles.contentEditorUsername;
         }
       }
+
+      // AUTH-REFACTOR-FIX: Wenn die effektive Rolle ein kanonischer Admin-
+      // Account ist, der echte Admin-Username lokal aber nicht (mehr) auffindbar
+      // ist (anon-Session hat ihn ueberschattet), den kanonischen Username
+      // senden. Der Worker autorisiert dann live ueber profiles(username).role.
+      if (AppRoles.isRootAdmin(role)) return AppRoles.rootAdminUsername;
+      if (AppRoles.isContentEditor(role)) return AppRoles.contentEditorUsername;
 
       // Prio 3: SharedPreferences (Web-Auth-Gate fallback)
       try {
