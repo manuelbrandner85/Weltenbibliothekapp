@@ -48,19 +48,6 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
   Future<void> _saveDream() async {
     if (_titleController.text.isEmpty) return;
 
-    // TODO: Use dream entry or remove
-    /*
-    final dream = DreamEntry(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      date: DateTime.now(),
-      title: _titleController.text,
-      content: _contentController.text,
-      category: _selectedCategory,
-      clarity: _clarity,
-      isLucid: _isLucid,
-    );
-    */
-
     // Save to storage
     _titleController.clear();
     _contentController.clear();

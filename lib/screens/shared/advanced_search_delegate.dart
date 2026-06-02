@@ -312,13 +312,6 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
   }
 
   Widget _buildResultTile(BuildContext context, KnowledgeEntry entry) {
-    // TODO: Use worldColor or remove
-    /*
-    final worldColor = world == 'materie' 
-        ? const Color(0xFF1E88E5) 
-        : const Color(0xFF7E57C2);
-    */
-
     return ListTile(
       leading: Container(
         width: 40,
