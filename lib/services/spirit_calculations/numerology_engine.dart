@@ -292,28 +292,21 @@ class NumerologyEngine {
   /// Prüfe auf Meisterzahlen im Namen oder Geburtsdatum
   static List<int> findMasterNumbers(
       String firstName, String lastName, DateTime birthDate) {
-    final masterNumbers = <int>[];
+    final found = <int>{};
 
-    // Check in name
-    final fullName = '$firstName $lastName'.toUpperCase();
-    int sum = 0;
-    for (int i = 0; i < fullName.length; i++) {
-      final char = fullName[i];
-      if (_pythagoreanValues.containsKey(char)) {
-        sum += _pythagoreanValues[char]!;
-        if (_masterNumbers.contains(sum)) {
-          if (!masterNumbers.contains(sum)) masterNumbers.add(sum);
-        }
-      }
-    }
+    // Life path from birth date (uses proper digit-reduction preserving masters)
+    final lp = calculateLifePath(birthDate);
+    if (_masterNumbers.contains(lp)) found.add(lp);
 
-    // Check in birthdate
-    final dateSum = birthDate.day + birthDate.month + birthDate.year;
-    if (_masterNumbers.contains(dateSum)) {
-      if (!masterNumbers.contains(dateSum)) masterNumbers.add(dateSum);
-    }
+    // Expression number (all letters, already reduces correctly)
+    final expr = calculateExpressionNumber(firstName, lastName);
+    if (_masterNumbers.contains(expr)) found.add(expr);
 
-    return masterNumbers;
+    // Soul urge (vowels only, already reduces correctly)
+    final soul = calculateSoulNumber(firstName, lastName);
+    if (_masterNumbers.contains(soul)) found.add(soul);
+
+    return found.toList()..sort();
   }
 
   /// Prüfe auf Karma-Zahlen

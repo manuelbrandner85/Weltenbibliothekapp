@@ -5,6 +5,7 @@ import '../../../services/storage_service.dart';
 import '../../../services/spirit_calculations/all_spirit_tools_engine.dart';
 import '../../../models/spirit_tool_results.dart';
 import '../../../widgets/profile_required_widget.dart';
+import '../../../widgets/chat/chat_markdown_text.dart';
 
 /// Universal Spirit-Tool Screen
 /// Funktioniert für alle 10 neuen Tools
@@ -566,7 +567,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
+              ChatMarkdownText(
                 _getInterpretation(),
                 style: const TextStyle(
                   color: Colors.white70,
@@ -896,7 +897,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                ChatMarkdownText(
                   value,
                   style: const TextStyle(
                     color: Colors.white,
@@ -954,7 +955,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
                     Icon(Icons.check_circle, color: widget.toolColor, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
+                      child: ChatMarkdownText(
                         item,
                         style: const TextStyle(
                           color: Colors.white70,
