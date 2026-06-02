@@ -21,8 +21,42 @@ const _kText = Colors.white;
 const _kMuted = Color(0xFFB0A0A0);
 const _kBorder = Color(0x33E53935);
 
-class OsintToolsHub extends StatelessWidget {
+class OsintToolsHub extends StatefulWidget {
   const OsintToolsHub({super.key});
+
+  @override
+  State<OsintToolsHub> createState() => _OsintToolsHubState();
+}
+
+class _OsintToolsHubState extends State<OsintToolsHub> {
+  List<(String, String, String)> _starred = []; // (tool, label, query)
+
+  static const _toolMeta = [
+    ('domain_osint', '🌐'),
+    ('phone_osint', '📞'),
+    ('crypto_tracker', '₿'),
+    ('image_analysis', '🖼️'),
+    ('ai_detector', '🤖'),
+    ('geo_analysis', '🗺️'),
+    ('data_leak', '⚠️'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStarred();
+  }
+
+  Future<void> _loadStarred() async {
+    final result = <(String, String, String)>[];
+    for (final (toolId, emoji) in _toolMeta) {
+      final entries = await OsintHistoryService.instance.list(toolId);
+      for (final e in entries.where((e) => e.starred)) {
+        result.add((toolId, emoji, e.query));
+      }
+    }
+    if (mounted) setState(() => _starred = result);
+  }
 
   static final _tools = [
     _DbDef(
@@ -97,12 +131,13 @@ class OsintToolsHub extends StatelessWidget {
       ),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
           child: Text(
             '${_tools.length} Recherche-Tools · Power-Network kombiniert 8 Datenbanken in einer Suche.',
             style: const TextStyle(color: _kMuted, fontSize: 13),
           ),
         ),
+        if (_starred.isNotEmpty) _buildBookmarkStrip(context),
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.all(12),
@@ -117,6 +152,80 @@ class OsintToolsHub extends StatelessWidget {
           ),
         ),
       ]),
+    );
+  }
+
+  Widget _buildBookmarkStrip(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.star_rounded, color: Colors.amber, size: 14),
+            const SizedBox(width: 6),
+            const Text('Lesezeichen',
+                style: TextStyle(
+                    color: Colors.amber,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4)),
+            const Spacer(),
+            GestureDetector(
+              onTap: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const _OsintHistoryScreen()),
+                );
+                await _loadStarred();
+              },
+              child: const Text('Alle',
+                  style: TextStyle(color: _kAccent, fontSize: 11)),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: _starred.map((s) {
+              final (_, emoji, query) = s;
+              return GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: query));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Kopiert: $query'),
+                      duration: const Duration(seconds: 1),
+                      backgroundColor: _kSurface,
+                    ),
+                  );
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border:
+                        Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                  ),
+                  child: Text('$emoji $query',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 11),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 }
