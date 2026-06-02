@@ -550,7 +550,7 @@ class _UploadTabState extends State<_UploadTab> {
     });
     try {
       final client = supabase;
-      final legacy = InvisibleAuthService().userId;
+      final legacy = InvisibleAuthService().legacyUserId;
       await client.from('research_documents').insert({
         'title': _titleCtrl.text.trim().isEmpty
             ? (_fileName ?? 'Untitled')

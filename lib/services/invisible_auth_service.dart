@@ -10,6 +10,9 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+// Prefix vermeidet Symbol-Kollision: supabase_flutter exportiert ebenfalls
+// AuthException/TimeoutException, die hier aus specialized_exceptions kommen.
+import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 import '../core/exceptions/exception_guard.dart';
 import '../core/exceptions/specialized_exceptions.dart';
 
@@ -178,14 +181,45 @@ class InvisibleAuthService {
     return 'wb_${hash.toString()}';
   }
 
-  String? get userId => _userId;
+  /// AUTH-REFACTOR: Die kanonische User-Identitaet ist ab jetzt die UUID
+  /// der anonymen Supabase-Session (auth.uid()). Diese wird serverseitig
+  /// validiert und ist die Grundlage fuer RLS-Policies (auth.uid()=user_id).
+  ///
+  /// Die alte client-generierte `user_<ts>_<rand>`-ID war nicht
+  /// server-validierbar und ermoeglichte Impersonation. Sie bleibt nur noch
+  /// als Migrations-Fallback erhalten (siehe [legacyUserId]) -- z.B. wenn die
+  /// Supabase-Session beim App-Start noch nicht steht (offline / Race).
+  String? get userId {
+    final supaId = _supabaseUid();
+    if (supaId != null && supaId.isNotEmpty) return supaId;
+    return _userId;
+  }
+
+  /// Die historische client-generierte ID (`user_<ts>_<rand>`). Nur fuer
+  /// Daten-Migration: Altdatensaetze, die unter dieser ID gespeichert wurden,
+  /// koennen so weiterhin der aktuellen Supabase-UUID zugeordnet werden.
+  String? get legacyUserId => _userId;
+
+  /// Liest die UUID der aktiven anonymen Supabase-Session. Gibt null zurueck
+  /// wenn Supabase noch nicht initialisiert ist oder keine Session besteht --
+  /// dann faellt [userId] auf die Legacy-ID zurueck.
+  String? _supabaseUid() {
+    try {
+      return supa.Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      // Supabase noch nicht initialisiert -- best effort.
+      return null;
+    }
+  }
+
   String? get deviceId => _deviceId;
   String? get authToken => _authToken;
 
   Map<String, String> authHeaders({String? world, String? role}) => {
-        'Authorization': 'Bearer $_authToken',
-        'X-User-ID': _userId!,
-        'X-Device-ID': _deviceId!,
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+        // Kanonische Identitaet (Supabase-UUID falls vorhanden, sonst Legacy).
+        'X-User-ID': userId ?? '',
+        if (_deviceId != null) 'X-Device-ID': _deviceId!,
         if (world != null) 'X-World': world,
         if (role != null) 'X-Role': role,
       };
