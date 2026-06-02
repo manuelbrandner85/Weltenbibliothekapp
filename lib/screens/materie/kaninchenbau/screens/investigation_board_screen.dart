@@ -247,7 +247,7 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
     setState(() => _saving = true);
     try {
       final client = supabase;
-      final legacy = InvisibleAuthService().userId;
+      final legacy = InvisibleAuthService().legacyUserId;
       final payload = {
         'title': _title,
         'description': _description,
