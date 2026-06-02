@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/materie/osint_source_banner.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A — Bildanalyse
@@ -165,6 +166,16 @@ class _ImageAnalysisToolState extends State<ImageAnalysisTool> {
             ),
           ])),
 
+          OsintSourceBanner(
+            source: 'Bild-Metadaten und KI-/Manipulations-Hinweise ueber den '
+                'Weltenbibliothek-Worker. Reverse-Suche extern verlinkt. ',
+            accent: _kAccent,
+            sources: [
+              OsintSource('TinEye', 'https://tineye.com/search'),
+              OsintSource(
+                  'Google Lens', 'https://www.google.com/searchbyimage'),
+            ],
+          ),
           if (_error != null)
             _card(Row(children: [
               const Icon(Icons.error_outline, color: _kAccent, size: 18),

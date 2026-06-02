@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/materie/osint_source_banner.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // F — KI-Content-Detektor
@@ -176,6 +177,12 @@ class _AiDetectorToolState extends State<AiDetectorTool> {
               ),
             ),
           ])),
+          OsintSourceBanner(
+            source: 'Wahrscheinlichkeits-Schaetzung ob Text KI-generiert '
+                'ist, ueber den Weltenbibliothek-Worker. Ergebnis ist '
+                'statistisch, kein Beweis. ',
+            accent: _kAccent,
+          ),
           if (_error != null)
             _card(Row(children: [
               const Icon(Icons.error_outline, color: _kAccent, size: 18),

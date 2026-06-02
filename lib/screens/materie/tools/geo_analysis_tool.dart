@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/materie/osint_source_banner.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // G — Geo-Analyse
@@ -193,6 +194,15 @@ class _GeoAnalysisToolState extends State<GeoAnalysisTool> {
                 ),
               ),
             ]),
+          ),
+          const OsintSourceBanner(
+            source: 'Geo-Koordinaten und Ortsinfos ueber den '
+                'Weltenbibliothek-Worker. Karten extern verlinkt.',
+            accent: _kAccent,
+            sources: [
+              OsintSource('OpenStreetMap', 'https://www.openstreetmap.org'),
+              OsintSource('Wikipedia', 'https://de.wikipedia.org'),
+            ],
           ),
           if (_error != null)
             Container(
