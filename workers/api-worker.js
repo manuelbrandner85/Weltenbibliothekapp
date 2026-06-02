@@ -9163,8 +9163,19 @@ Antworte in exakt diesem JSON-Format:
       if (path === '/api/ursprung/progress' && method === 'POST') {
         try {
           const body = await request.json().catch(() => ({}));
-          const { userId, moduleCode, theoryRead, caseStudyRead, exerciseCompleted, exerciseNotes, testScore, testPassed } = body || {};
-          if (!userId || !moduleCode) return errorResponse('userId und moduleCode erforderlich', 400);
+          // BUGFIX: Client sends snake_case (user_id, module_code, test_*). Accept
+          // both naming conventions, identical to the working Vorhang endpoint.
+          // Previously only camelCase was read -> userId/moduleCode were undefined
+          // -> 400 -> completed_at never written -> next module never unlocked.
+          const userId = body.user_id || body.userId;
+          const moduleCode = body.module_code || body.moduleCode;
+          const theoryRead = body.theory_read ?? body.theoryRead;
+          const caseStudyRead = body.case_study_read ?? body.caseStudyRead;
+          const exerciseCompleted = body.exercise_completed ?? body.exerciseCompleted;
+          const exerciseNotes = body.exercise_notes ?? body.exerciseNotes;
+          const testScore = body.test_score ?? body.testScore;
+          const testPassed = body.test_passed ?? body.testPassed;
+          if (!userId || !moduleCode) return errorResponse('user_id und module_code sind Pflichtfelder', 400, 'MISSING_PARAMS');
 
           const modRes = await fetch(
             `${SUPABASE_URL}/rest/v1/ursprung_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=id,xp_reward,is_boss_module&limit=1`,
@@ -9185,7 +9196,9 @@ Antworte in exakt diesem JSON-Format:
             const arr = await exRes.json();
             if (Array.isArray(arr) && arr.length > 0) existing = arr[0];
           }
-          const wasComplete = !!(existing && existing.test_passed);
+          // "already completed" is based on completed_at presence (consistent with
+          // Vorhang and with the unlock computation in ursprung_service.dart).
+          const alreadyCompleted = !!(existing && existing.completed_at);
 
           const row = {
             user_id: userId,
@@ -9198,7 +9211,9 @@ Antworte in exakt diesem JSON-Format:
             test_score: testScore ?? existing?.test_score ?? null,
             test_passed: testPassed ?? existing?.test_passed ?? false,
           };
-          if (row.test_passed && !existing?.completed_at) row.completed_at = new Date().toISOString();
+          const shouldComplete = row.test_passed && !alreadyCompleted;
+          if (shouldComplete) row.completed_at = new Date().toISOString();
+          else if (existing?.completed_at) row.completed_at = existing.completed_at;
 
           const upRes = await fetch(
             `${SUPABASE_URL}/rest/v1/user_ursprung_progress?on_conflict=user_id,module_code`,
@@ -9212,19 +9227,30 @@ Antworte in exakt diesem JSON-Format:
             const txt = await upRes.text().catch(() => '');
             return errorResponse(`Progress Upsert fehlgeschlagen: ${txt}`, upRes.status);
           }
+          const upData = await upRes.json().catch(() => null);
+          const progressRow = Array.isArray(upData) ? upData[0] : upData;
 
           let xpAwarded = 0;
-          if (row.test_passed && !wasComplete) {
+          if (shouldComplete) {
             xpAwarded = xpReward;
+            // BUGFIX: RPC is add_user_xp (add_xp_to_user does not exist). Same
+            // signature the Vorhang endpoint uses.
             try {
-              await fetch(`${SUPABASE_URL}/rest/v1/rpc/add_xp_to_user`, {
+              await fetch(`${SUPABASE_URL}/rest/v1/rpc/add_user_xp`, {
                 method: 'POST',
                 headers: sbHeaders,
                 body: JSON.stringify({ p_user_id: userId, p_amount: xpReward, p_reason: `ursprung_module:${moduleCode}` }),
               });
             } catch (_) { /* non-fatal */ }
           }
-          return jsonResponse({ success: true, xpAwarded });
+          // BUGFIX: return xp_awarded + already_completed (snake_case) which the
+          // client reads (ursprung_lesson_screen.dart).
+          return jsonResponse({
+            success: true,
+            progress: progressRow,
+            xp_awarded: xpAwarded,
+            already_completed: alreadyCompleted,
+          });
         } catch (e) {
           return errorResponse(`Ursprung-Progress Fehler: ${e.message}`);
         }
