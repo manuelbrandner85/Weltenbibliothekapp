@@ -347,8 +347,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2>
             Navigator.of(ctx).pop();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                    'Voice Note aufgenommen (${duration.inSeconds}s)'),
+                content:
+                    Text('Voice Note aufgenommen (${duration.inSeconds}s)'),
               ),
             );
           },
@@ -490,8 +490,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2>
     List<String> mentions,
   ) async {
     // Create extended post with all features
+    // ignore: unused_local_variable
     final extendedPost = CommunityPostExtended(
-      // ignore: unused_local_variable
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       authorUsername: user.username,
       authorAvatar: user.avatar,

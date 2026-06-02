@@ -221,7 +221,6 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
   }
 
   Future<bool> _confirmLeave() async {
-    final accent = WbDesign.accent(widget.world);
     final result = await showDialog<bool>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.75),
@@ -1858,8 +1857,7 @@ class _TopBar extends StatelessWidget {
                     Navigator.of(context).pop();
                   }
                 },
-                constraints:
-                    const BoxConstraints(minWidth: 40, minHeight: 40),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 padding: EdgeInsets.zero,
               ),
               const SizedBox(width: 4),

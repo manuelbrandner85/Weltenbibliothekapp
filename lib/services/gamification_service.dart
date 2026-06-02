@@ -977,21 +977,24 @@ class GamificationService {
 
   /// Server-Sync für XP (async, kein await im Hauptfluss).
   void _syncXpToServer(String world, int amount, String? reason) {
-    _client
-        .post(
-          Uri.parse('$_baseUrl/api/gamification/add-xp'),
-          headers: _headers,
-          body: jsonEncode({
-            'world': world,
-            'amount': amount,
-            'reason': reason ?? 'activity',
-            'userId': _userId,
-          }),
-        )
-        .timeout(const Duration(seconds: 10))
-        .catchError((e) {
-      if (kDebugMode) debugPrint('⚠️ XP-Sync fehlgeschlagen: $e');
-    });
+    () async {
+      try {
+        await _client
+            .post(
+              Uri.parse('$_baseUrl/api/gamification/add-xp'),
+              headers: _headers,
+              body: jsonEncode({
+                'world': world,
+                'amount': amount,
+                'reason': reason ?? 'activity',
+                'userId': _userId,
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ XP-Sync fehlgeschlagen: $e');
+      }
+    }();
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -1372,22 +1375,25 @@ class GamificationService {
   }
 
   void _syncCardToServer(DestinyCard card) {
-    _client
-        .post(
-          Uri.parse('$_baseUrl/api/gamification/draw-card'),
-          headers: _headers,
-          body: jsonEncode({
-            'userId': _userId,
-            'cardType': card.type.name,
-            'cardIndex': card.cardIndex,
-            'titleDe': card.titleDe,
-            'messageDe': card.messageDe,
-          }),
-        )
-        .timeout(const Duration(seconds: 10))
-        .catchError((e) {
-      if (kDebugMode) debugPrint('⚠️ Card-Sync fehlgeschlagen: $e');
-    });
+    () async {
+      try {
+        await _client
+            .post(
+              Uri.parse('$_baseUrl/api/gamification/draw-card'),
+              headers: _headers,
+              body: jsonEncode({
+                'userId': _userId,
+                'cardType': card.type.name,
+                'cardIndex': card.cardIndex,
+                'titleDe': card.titleDe,
+                'messageDe': card.messageDe,
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Card-Sync fehlgeschlagen: $e');
+      }
+    }();
   }
 
   String _todayKey() {

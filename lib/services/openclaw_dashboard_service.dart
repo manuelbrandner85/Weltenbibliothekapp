@@ -164,9 +164,6 @@ class OpenClawDashboardService {
       // Echtes Trending: Artikel sortiert nach Engagement (likes + views + comments)
       final supabase = Supabase.instance.client;
       final now = DateTime.now();
-      final since24h = now
-          .subtract(const Duration(hours: 24))
-          .toIso8601String(); // ignore: unused_local_variable
 
       // Artikel der letzten 7 Tage, sortiert nach Engagement-Score
       final articles = await supabase
@@ -326,9 +323,7 @@ class OpenClawDashboardService {
         supabase.from('bookmarks').select('id'),
         // Likes total
         supabase.from('likes').select('id'),
-        // ignore: invalid_return_type_for_catch_error
-      ], eagerError: false)
-          .catchError((_) => [[], [], [], [], []]);
+      ], eagerError: false);
 
       final articles = (results[0] as List?) ?? [];
       final chatMessages = (results[1] as List?) ?? [];
