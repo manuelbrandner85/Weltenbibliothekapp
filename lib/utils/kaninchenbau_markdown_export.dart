@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'wb_toast.dart';
 
@@ -157,5 +158,20 @@ class KaninchenbauMarkdownExport {
     if (context.mounted) {
       WBToast.success(context, '📋 Markdown in Zwischenablage');
     }
+  }
+
+  /// Oeffnet nativen Share-Sheet mit Markdown-Text.
+  static Future<void> shareMarkdown(
+    BuildContext context,
+    String markdown,
+    String topic,
+  ) async {
+    final box = context.findRenderObject() as RenderBox?;
+    await Share.share(
+      markdown,
+      subject: 'Kaninchenbau: $topic',
+      sharePositionOrigin:
+          box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+    );
   }
 }

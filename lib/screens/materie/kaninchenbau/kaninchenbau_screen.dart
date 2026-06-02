@@ -681,72 +681,6 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
     }
   }
 
-  // F — Share: formatierten Text in Zwischenablage kopieren
-  void _shareThread(_ThreadState s) {
-    final buf = StringBuffer();
-    buf.writeln('🐇 KANINCHENBAU — ${s.topic.toUpperCase()}');
-    buf.writeln('');
-    if (s.identityData != null) {
-      buf.writeln('📌 ${s.identityData!['label'] ?? s.topic}');
-      final desc = s.identityData!['description'];
-      if (desc != null && (desc as String).isNotEmpty) buf.writeln(desc);
-      buf.writeln('');
-    }
-    if (s.networkNodes.isNotEmpty) {
-      final names = s.networkNodes
-          .where((n) => n.id != 'center')
-          .map((n) => n.label)
-          .take(6)
-          .join(', ');
-      if (names.isNotEmpty) buf.writeln('🕸️ Netzwerk: $names');
-    }
-    if (s.keyPersons.isNotEmpty) {
-      buf.writeln(
-          '👤 Schlüsselpersonen: ${s.keyPersons.take(4).map((p) => p.name).join(', ')}');
-    }
-    if (s.rssItems.isNotEmpty) {
-      buf.writeln('');
-      buf.writeln('📰 Aktuelle Berichte:');
-      for (final item in s.rssItems.take(3)) {
-        buf.writeln('• ${item.title}');
-      }
-    }
-    if (s.skandale.isNotEmpty) {
-      buf.writeln('');
-      buf.writeln('🚨 Kontrovers: ${s.skandale.first.title}');
-    }
-    if (s.aiInsight != null && s.aiInsight!.isNotEmpty) {
-      buf.writeln('');
-      buf.writeln(
-          '🤖 Virgil: ${s.aiInsight!.substring(0, math.min(200, s.aiInsight!.length))}…');
-    }
-    buf.writeln('');
-    buf.writeln('— via Weltenbibliothek App');
-
-    Clipboard.setData(ClipboardData(text: buf.toString()));
-    HapticFeedback.mediumImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
-            SizedBox(width: 8),
-            Text('Summary in Zwischenablage'),
-          ],
-        ),
-        action: SnackBarAction(
-          label: 'Voller Export',
-          textColor: Colors.white,
-          onPressed: () => _exportMarkdown(s),
-        ),
-        backgroundColor: KbDesign.neonRed.withValues(alpha: 0.9),
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
   // 📄 C1: Voller Markdown-Export einer Investigation
   Future<void> _exportMarkdown(_ThreadState s) async {
     final md = KaninchenbauMarkdownExport.toMarkdown(
@@ -784,7 +718,72 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       moneyFlow: const <Map<String, dynamic>>[],
     );
     if (!mounted) return;
-    await KaninchenbauMarkdownExport.copyToClipboard(context, md);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1A0000),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.ios_share, color: Colors.white70, size: 18),
+              const SizedBox(width: 8),
+              Text('Recherche exportieren: ${s.topic}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14),
+                  overflow: TextOverflow.ellipsis),
+            ]),
+            const SizedBox(height: 4),
+            Text(
+              '${md.split('\n').length} Zeilen Markdown',
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            Row(children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.copy_rounded, size: 16),
+                  label: const Text('Kopieren'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await KaninchenbauMarkdownExport.copyToClipboard(
+                        context, md);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.share_rounded, size: 16),
+                  label: const Text('Teilen'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: KbDesign.neonRed,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    if (!mounted) return;
+                    await KaninchenbauMarkdownExport.shareMarkdown(
+                        context, md, s.topic);
+                  },
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -815,6 +814,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
               onClose: _close,
               saved: _savedTopics.contains(s.topic.toLowerCase()),
               onSave: () => _saveCurrentThread(s),
+              onExport: () => _exportMarkdown(s),
             ),
             Expanded(
               // B — AnimatedSwitcher: Loading-Overlay → Karten
@@ -909,6 +909,119 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
     return parts.join(' || ');
   }
 
+  Widget _buildDossierCard(_ThreadState s) {
+    final items = <(String, int, IconData)>[
+      (
+        'Netzwerk',
+        s.networkNodes.where((n) => n.id != 'center').length,
+        Icons.hub_rounded
+      ),
+      ('Personen', s.keyPersons.length, Icons.people_rounded),
+      ('Nachrichten', s.rssItems.length, Icons.feed_rounded),
+      (
+        'Sanktionen',
+        s.sanctions.length + s.openSanctions.length,
+        Icons.gavel_rounded
+      ),
+      (
+        'Urteile',
+        s.courtCases.length + s.courtListener.length,
+        Icons.account_balance_rounded
+      ),
+      (
+        'Dokumente',
+        s.documents.length +
+            s.documentCloud.length +
+            s.wikiLeaks.length +
+            s.ciaCrest.length,
+        Icons.description_rounded
+      ),
+      ('Lobbying', s.lobbyEntries.length, Icons.handshake_rounded),
+      (
+        'Studien',
+        s.academicPapers.length +
+            s.pubmedPapers.length +
+            s.semanticPapers.length,
+        Icons.biotech_rounded
+      ),
+    ].where((e) => e.$2 > 0).toList();
+
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0000),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: KbDesign.neonRed.withValues(alpha: 0.25)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            KbDesign.neonRed.withValues(alpha: 0.06),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.folder_special_rounded,
+                color: KbDesign.neonRed, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              'Dossier: ${s.topic}',
+              style: const TextStyle(
+                color: KbDesign.neonRed,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: items.map((e) {
+              final (label, count, icon) = e;
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(20),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 12, color: Colors.white54),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$count',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(label,
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 11)),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildScrollContent(_ThreadState s) {
     return LayoutBuilder(
       builder: (_, c) {
@@ -926,6 +1039,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                 controller: _scroll,
                 padding: const EdgeInsets.only(top: 16, bottom: 130),
                 children: [
+                  if (!s.showLoadingOverlay) _buildDossierCard(s),
                   // ── C: ABSCHNITT 1 — ÜBERSICHT ──────────────────────────
                   const _SectionHeader(
                     label: 'ÜBERSICHT',

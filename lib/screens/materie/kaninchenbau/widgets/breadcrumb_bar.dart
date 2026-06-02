@@ -11,6 +11,7 @@ class BreadcrumbBar extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback? onSave;
   final bool saved;
+  final VoidCallback? onExport;
 
   const BreadcrumbBar({
     super.key,
@@ -19,6 +20,7 @@ class BreadcrumbBar extends StatelessWidget {
     required this.onClose,
     this.onSave,
     this.saved = false,
+    this.onExport,
   });
 
   @override
@@ -101,6 +103,13 @@ class BreadcrumbBar extends StatelessWidget {
               ),
             ),
           ),
+          if (onExport != null)
+            IconButton(
+              icon:
+                  const Icon(Icons.ios_share, color: Colors.white70, size: 20),
+              tooltip: 'Recherche exportieren / teilen',
+              onPressed: onExport,
+            ),
           if (onSave != null)
             IconButton(
               icon: Icon(
