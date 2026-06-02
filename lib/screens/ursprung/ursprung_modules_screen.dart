@@ -169,6 +169,23 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
     await NewUnlockTracker.instance.markSeen('ursprung', unlockedCodes);
     if (mounted && fresh.isNotEmpty) {
       setState(() => _newModuleCodes = fresh);
+      // B1: Sofort-Feedback -- zeigt welche Module gerade freigeschaltet wurden.
+      final titles = <String>[];
+      for (final list in mapped.values) {
+        for (final m in list) {
+          if (fresh.contains(m['module_code'])) {
+            titles.add(
+                (m['title'] as String?) ?? (m['module_code'] as String? ?? ''));
+          }
+        }
+      }
+      if (titles.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('🔓 Neu freigeschaltet: ${titles.join(', ')}'),
+          backgroundColor: const Color(0xFF4CAF50),
+          duration: const Duration(seconds: 4),
+        ));
+      }
     }
   }
 
