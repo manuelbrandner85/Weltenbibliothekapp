@@ -9,7 +9,9 @@ import 'country_compare_tool.dart';
 import 'email_osint_tool.dart';
 import 'eu_parliament_tracker_screen.dart';
 import 'ip_osint_tool.dart';
+import 'person_osint_tool.dart';
 import 'power_network_explorer_screen.dart';
+import 'propaganda_compare_screen.dart';
 import 'study_analyst_screen.dart';
 import 'version_watcher_screen.dart';
 
@@ -134,6 +136,29 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
           'Zwei Laender Seite an Seite: Bevoelkerung, Flaeche, Dichte, '
           'Gini-Index, Hauptstadt, Waehrung und Sprachen. Via restcountries.com.',
       customScreenBuilder: () => const CountryCompareTool(),
+    ),
+    _DbDef(
+      icon: Icons.person_search_rounded,
+      label: 'Personen-Recherche',
+      sub: 'Wikipedia / oeffentliche Quellen',
+      color: const Color(0xFFAB47BC),
+      url: '',
+      description:
+          'Name, Organisation oder Begriff -> oeffentlicher Wissens-Eintrag '
+          '(Beschreibung, Zusammenfassung, Bild, Quelle). Nur bekannte '
+          'Entitaeten, kein Zugriff auf private Daten. Via Wikipedia.',
+      customScreenBuilder: () => const PersonOsintTool(),
+    ),
+    _DbDef(
+      icon: Icons.compare_rounded,
+      label: 'Propaganda-Vergleich',
+      sub: 'Zwei Quellen gegenueberstellen',
+      color: const Color(0xFFFF7043),
+      url: '',
+      description:
+          'Zwei Artikel zum selben Thema parallel analysieren und Bias, '
+          'Niveau und Techniken Seite an Seite vergleichen.',
+      customScreenBuilder: () => const PropagandaCompareScreen(),
     ),
   ];
 
