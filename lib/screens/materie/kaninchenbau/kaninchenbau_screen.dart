@@ -909,6 +909,119 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
     return parts.join(' || ');
   }
 
+  Widget _buildDossierCard(_ThreadState s) {
+    final items = <(String, int, IconData)>[
+      (
+        'Netzwerk',
+        s.networkNodes.where((n) => n.id != 'center').length,
+        Icons.hub_rounded
+      ),
+      ('Personen', s.keyPersons.length, Icons.people_rounded),
+      ('Nachrichten', s.rssItems.length, Icons.feed_rounded),
+      (
+        'Sanktionen',
+        s.sanctions.length + s.openSanctions.length,
+        Icons.gavel_rounded
+      ),
+      (
+        'Urteile',
+        s.courtCases.length + s.courtListener.length,
+        Icons.account_balance_rounded
+      ),
+      (
+        'Dokumente',
+        s.documents.length +
+            s.documentCloud.length +
+            s.wikiLeaks.length +
+            s.ciaCrest.length,
+        Icons.description_rounded
+      ),
+      ('Lobbying', s.lobbyEntries.length, Icons.handshake_rounded),
+      (
+        'Studien',
+        s.academicPapers.length +
+            s.pubmedPapers.length +
+            s.semanticPapers.length,
+        Icons.biotech_rounded
+      ),
+    ].where((e) => e.$2 > 0).toList();
+
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0000),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: KbDesign.neonRed.withValues(alpha: 0.25)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            KbDesign.neonRed.withValues(alpha: 0.06),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.folder_special_rounded,
+                color: KbDesign.neonRed, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              'Dossier: ${s.topic}',
+              style: const TextStyle(
+                color: KbDesign.neonRed,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: items.map((e) {
+              final (label, count, icon) = e;
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(20),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 12, color: Colors.white54),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$count',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(label,
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 11)),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildScrollContent(_ThreadState s) {
     return LayoutBuilder(
       builder: (_, c) {
@@ -926,6 +1039,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                 controller: _scroll,
                 padding: const EdgeInsets.only(top: 16, bottom: 130),
                 children: [
+                  if (!s.showLoadingOverlay) _buildDossierCard(s),
                   // ── C: ABSCHNITT 1 — ÜBERSICHT ──────────────────────────
                   const _SectionHeader(
                     label: 'ÜBERSICHT',
