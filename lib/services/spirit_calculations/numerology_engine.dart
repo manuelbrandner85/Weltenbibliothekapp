@@ -872,6 +872,87 @@ class NumerologyEngine {
     ],
   };
 
+  // ════════════════════════════════════════════════════════════════════
+  // 🔍 BERECHNUNGSWEG-ERKLAERUNG (Transparenz: "So wird gerechnet")
+  // Liefert nachvollziehbare Schritt-Strings fuer die UI.
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Reduziert [number] und liefert die einzelnen Quersummen-Schritte als
+  /// lesbaren String, z.B. "23 -> 2+3 = 5". Meisterzahlen stoppen frueh.
+  static String _explainReduce(int number, {bool keepMaster = true}) {
+    if (number <= 9) return '$number';
+    if (keepMaster && _masterNumbers.contains(number)) {
+      return '$number (Meisterzahl, bleibt erhalten)';
+    }
+    final steps = <String>[];
+    while (number > 9) {
+      final digits = number.toString().split('').map(int.parse).toList();
+      final sum = digits.reduce((a, b) => a + b);
+      steps.add('${digits.join('+')} = $sum');
+      number = sum;
+      if (keepMaster && _masterNumbers.contains(number)) {
+        return '${steps.join(' -> ')} (Meisterzahl)';
+      }
+    }
+    return steps.join(' -> ');
+  }
+
+  /// Erklaert die Lebenszahl-Berechnung Schritt fuer Schritt.
+  static String explainLifePath(DateTime birthDate) {
+    final d = _reduceToSingleDigit(birthDate.day, keepMaster: true);
+    final m = _reduceToSingleDigit(birthDate.month, keepMaster: true);
+    final y = _reduceToSingleDigit(birthDate.year, keepMaster: true);
+    final sum = d + m + y;
+    final result = _reduceToSingleDigit(sum, keepMaster: true);
+    final buf = StringBuffer();
+    buf.writeln('Geburtsdatum: '
+        '${birthDate.day}.${birthDate.month}.${birthDate.year}');
+    buf.writeln('Tag ${birthDate.day} -> ${_explainReduce(birthDate.day)}');
+    buf.writeln(
+        'Monat ${birthDate.month} -> ${_explainReduce(birthDate.month)}');
+    buf.writeln('Jahr ${birthDate.year} -> ${_explainReduce(birthDate.year)}');
+    buf.writeln('Summe: $d + $m + $y = $sum');
+    if (sum != result) buf.writeln('Reduktion: ${_explainReduce(sum)}');
+    buf.write('Lebenszahl = $result');
+    return buf.toString();
+  }
+
+  /// Erklaert eine namensbasierte Zahl (Ausdruck/Seele/Persoenlichkeit).
+  /// [filter]: null = alle Buchstaben, true = nur Vokale, false = nur Konsonanten.
+  static String explainNameNumber(
+    String firstName,
+    String lastName, {
+    bool? vowelsOnly,
+    required String label,
+  }) {
+    final fullName = '$firstName $lastName'.toUpperCase();
+    final parts = <String>[];
+    int sum = 0;
+    for (int i = 0; i < fullName.length; i++) {
+      final char = fullName[i];
+      if (!_pythagoreanValues.containsKey(char)) continue;
+      final isVowel = _vowels.contains(char);
+      if (vowelsOnly == true && !isVowel) continue;
+      if (vowelsOnly == false && isVowel) continue;
+      final v = _pythagoreanValues[char]!;
+      parts.add('$char=$v');
+      sum += v;
+    }
+    final result = _reduceToSingleDigit(sum, keepMaster: true);
+    final buf = StringBuffer();
+    final scope = vowelsOnly == true
+        ? 'Vokale'
+        : vowelsOnly == false
+            ? 'Konsonanten'
+            : 'alle Buchstaben';
+    buf.writeln('$label ($scope von "$firstName $lastName")');
+    buf.writeln(parts.join(' + '));
+    buf.writeln('Summe = $sum');
+    if (sum != result) buf.writeln('Reduktion: ${_explainReduce(sum)}');
+    buf.write('$label = $result');
+    return buf.toString();
+  }
+
   /// Hilfsfunktion: Reduziere auf einzelne Ziffer
   static int _reduceToSingleDigit(int number, {bool keepMaster = false}) {
     // Meisterzahlen beibehalten wenn gewünscht

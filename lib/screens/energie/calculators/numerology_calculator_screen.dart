@@ -413,6 +413,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             ),
             const Color(0xFFE91E63),
             Icons.my_location,
+            calculation: _profile != null
+                ? NumerologyEngine.explainLifePath(_profile!.birthDate)
+                : null,
           ),
           const SizedBox(height: 12),
           _buildNumberCard(
@@ -425,6 +428,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             ),
             const Color(0xFF9C27B0),
             Icons.favorite,
+            calculation: _profile != null
+                ? NumerologyEngine.explainNameNumber(
+                    _profile!.firstName, _profile!.lastName,
+                    vowelsOnly: true, label: 'Seelenzahl')
+                : null,
           ),
           const SizedBox(height: 12),
           _buildNumberCard(
@@ -437,6 +445,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             ),
             const Color(0xFF673AB7),
             Icons.stars,
+            calculation: _profile != null
+                ? NumerologyEngine.explainNameNumber(
+                    _profile!.firstName, _profile!.lastName,
+                    vowelsOnly: null, label: 'Ausdruckszahl')
+                : null,
           ),
           const SizedBox(height: 12),
           _buildNumberCard(
@@ -449,6 +462,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             ),
             const Color(0xFF7B1FA2),
             Icons.person,
+            calculation: _profile != null
+                ? NumerologyEngine.explainNameNumber(
+                    _profile!.firstName, _profile!.lastName,
+                    vowelsOnly: false, label: 'Persoenlichkeitszahl')
+                : null,
           ),
           if (_chaldeanMode) ...[
             const SizedBox(height: 12),
@@ -1496,8 +1514,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     );
   }
 
-  Widget _buildNumberCard(String title, int number, String description,
-      Color color, IconData icon) {
+  Widget _buildNumberCard(
+      String title, int number, String description, Color color, IconData icon,
+      {String? calculation}) {
     return HoverGlowCard(
       glowColor: color,
       child: ClipRRect(
@@ -1646,10 +1665,61 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                     ],
                   ),
                 ),
+                if (calculation != null && calculation.isNotEmpty)
+                  _buildCalculationExpander(calculation, color),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // E1: Aufklappbarer "So wird gerechnet"-Block fuer Transparenz.
+  Widget _buildCalculationExpander(String calculation, Color color) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(top: 4, bottom: 8),
+        iconColor: color,
+        collapsedIconColor: color.withValues(alpha: 0.7),
+        title: Row(
+          children: [
+            Icon(Icons.calculate_outlined,
+                size: 16, color: color.withValues(alpha: 0.85)),
+            const SizedBox(width: 8),
+            Text(
+              'So wird gerechnet',
+              style: TextStyle(
+                fontSize: 12,
+                color: color.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+            ),
+            child: Text(
+              calculation,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                fontFamily: 'monospace',
+                color: Colors.white70,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
