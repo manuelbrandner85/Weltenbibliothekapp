@@ -15,6 +15,7 @@ import 'ursprung_modules_screen.dart';
 import 'tools/gateway_room_screen.dart';
 import 'tools/frequency_generator_screen.dart';
 import 'tools/breathmaster_screen.dart';
+import 'tools/breath_hold_timer_screen.dart';
 import 'tools/reality_architect_screen.dart';
 import 'tools/rv_trainer_screen.dart';
 
@@ -145,7 +146,7 @@ class UrsprungHomeTab extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // ── 5 Tools ──
+            // ── 6 Tools ──
             _sectionLabel('INTERAKTIVE WERKZEUGE'),
             const SizedBox(height: 12),
             _buildToolCard(
@@ -170,6 +171,14 @@ class UrsprungHomeTab extends StatelessWidget {
               title: 'Atemmeister',
               subtitle: 'Resonant Tuning · Coherent · Energy · Click-Out',
               builder: (_) => const BreathmasterScreen(),
+            ),
+            const SizedBox(height: 10),
+            _buildToolCard(
+              context: context,
+              emoji: '🫁',
+              title: 'CO2-Toleranz-Timer',
+              subtitle: 'Atemhalte-Training · Bestzeit · Verlauf',
+              builder: (_) => const BreathHoldTimerScreen(),
             ),
             const SizedBox(height: 10),
             _buildToolCard(
