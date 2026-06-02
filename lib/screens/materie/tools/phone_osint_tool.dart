@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/materie/osint_source_banner.dart';
+import '../../../utils/osint_result_share.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // E — Telefon-OSINT
@@ -103,6 +105,15 @@ class _PhoneOsintToolState extends State<PhoneOsintTool> {
           const Text('Telefon-OSINT',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          OsintResultShare.actionButton(
+            context,
+            toolName: 'Telefon-OSINT',
+            query: _phoneCtrl.text,
+            result: _result,
+            color: _kAccent,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -161,6 +172,11 @@ class _PhoneOsintToolState extends State<PhoneOsintTool> {
               ),
             ),
           ])),
+          const OsintSourceBanner(
+            source: 'Rufnummern-Analyse (Land, Carrier, Typ) ueber den '
+                'Weltenbibliothek-Worker. Keine Klarnamen-Aufloesung.',
+            accent: _kAccent,
+          ),
           if (_error != null)
             _card(Row(children: [
               const Icon(Icons.error_outline, color: _kAccent, size: 18),

@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/materie/osint_source_banner.dart';
+import '../../../utils/osint_result_share.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // D — Domain-OSINT
@@ -145,6 +147,15 @@ class _DomainOsintToolState extends State<DomainOsintTool> {
           const Text('Domain-OSINT',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          OsintResultShare.actionButton(
+            context,
+            toolName: 'Domain-OSINT',
+            query: _domainCtrl.text,
+            result: _result,
+            color: _kAccent,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -206,6 +217,15 @@ class _DomainOsintToolState extends State<DomainOsintTool> {
                 ),
               ),
             ]),
+          ),
+          const OsintSourceBanner(
+            source: 'Live-Abfrage von WHOIS- und DNS-Records ueber den '
+                'Weltenbibliothek-Worker.',
+            accent: _kAccent,
+            sources: [
+              OsintSource('ICANN WHOIS', 'https://lookup.icann.org'),
+              OsintSource('DNS (Google)', 'https://dns.google'),
+            ],
           ),
           if (_error != null)
             Container(

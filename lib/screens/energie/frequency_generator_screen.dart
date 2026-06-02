@@ -220,7 +220,8 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Audio konnte nicht geladen werden: $e'),
+            content: Text(
+                '❌ Audio konnte nicht geladen werden. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

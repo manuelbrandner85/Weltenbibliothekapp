@@ -105,7 +105,8 @@ class _RealityArchitectScreenState extends State<RealityArchitectScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler: $e')),
+        SnackBar(
+            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);

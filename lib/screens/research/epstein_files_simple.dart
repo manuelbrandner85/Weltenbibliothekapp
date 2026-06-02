@@ -263,7 +263,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler beim PDF-Laden: $e'),
+            content: Text('❌ Fehler beim PDF-Laden. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
@@ -350,7 +350,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Übersetzungsfehler: $e'),
+            content: Text('❌ Übersetzungsfehler. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
             action: SnackBarAction(
               label: 'RETRY',

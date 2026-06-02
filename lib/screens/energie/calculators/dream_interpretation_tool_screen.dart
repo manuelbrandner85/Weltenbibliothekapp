@@ -206,7 +206,8 @@ class _NewDreamTabState extends State<_NewDreamTab> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Fehler: $e')),
+        SnackBar(
+            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')),
       );
     }
   }
@@ -803,8 +804,8 @@ class _JournalTabState extends State<_JournalTab> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')));
     }
   }
 

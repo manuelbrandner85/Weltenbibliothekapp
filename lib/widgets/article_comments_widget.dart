@@ -54,7 +54,7 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Laden: $e'),
+            content: Text('Fehler beim Laden. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -105,7 +105,7 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler: $e'),
+            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

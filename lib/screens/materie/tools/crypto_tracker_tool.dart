@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/materie/osint_source_banner.dart';
+import '../../../utils/osint_result_share.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // C — Krypto-Verfolger
@@ -125,6 +127,15 @@ class _CryptoTrackerToolState extends State<CryptoTrackerTool> {
           const Text('Krypto-Verfolger',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          OsintResultShare.actionButton(
+            context,
+            toolName: 'Krypto-Verfolger',
+            query: _addrCtrl.text,
+            result: _result,
+            color: _kAccent,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -200,6 +211,16 @@ class _CryptoTrackerToolState extends State<CryptoTrackerTool> {
               ),
             ),
           ])),
+          OsintSourceBanner(
+            source: 'Wallet-/Transaktions-Daten ueber oeffentliche '
+                'Blockchain-Explorer (via Weltenbibliothek-Worker). ',
+            accent: _kAccent,
+            sources: [
+              OsintSource(
+                  'Blockchain.com', 'https://www.blockchain.com/explorer'),
+              OsintSource('Etherscan', 'https://etherscan.io'),
+            ],
+          ),
           if (_error != null)
             _card(Row(children: [
               const Icon(Icons.error_outline, color: _kAccent, size: 18),

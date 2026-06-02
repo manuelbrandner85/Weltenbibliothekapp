@@ -560,10 +560,9 @@ class _ScanTabState extends State<_ScanTab> {
                             } catch (e) {
                               if (!sheetCtx2.mounted) return;
                               setSheet(() => saving = false);
-                              ScaffoldMessenger.of(sheetCtx2).showSnackBar(
-                                  SnackBar(
-                                      content:
-                                          Text('Fehler beim Speichern: $e')));
+                              ScaffoldMessenger.of(sheetCtx2).showSnackBar(SnackBar(
+                                  content: Text(
+                                      'Fehler beim Speichern. Bitte erneut versuchen.')));
                             }
                           },
                     icon: saving
@@ -754,8 +753,8 @@ class _HistoryTabState extends State<_HistoryTab> {
           .showSnackBar(const SnackBar(content: Text('Scan gelöscht')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')));
     }
   }
 

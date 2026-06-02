@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../services/bookmark_collection_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/wb_empty_state.dart';
 
 class BookmarkCollectionsScreen extends StatefulWidget {
   const BookmarkCollectionsScreen({super.key});
@@ -246,24 +247,11 @@ class _BookmarkCollectionsScreenState extends State<BookmarkCollectionsScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _accent))
           : _collections.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('📁', style: TextStyle(fontSize: 56)),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Noch keine Sammlungen.\nTippe + um eine anzulegen.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              height: 1.5),
-                        ),
-                      ],
-                    ),
-                  ),
+              ? const WBEmptyState(
+                  icon: Icons.folder_open_rounded,
+                  title: 'Noch keine Sammlungen',
+                  message: 'Tippe auf + um deine erste anzulegen.',
+                  accent: _accent,
                 )
               : GridView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),

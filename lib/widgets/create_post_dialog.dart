@@ -108,7 +108,7 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Upload fehlgeschlagen: $e'),
+            content: Text('❌ Upload fehlgeschlagen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -254,7 +254,9 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
       if (mounted) {
         setState(() => _isPosting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Fehler: $e')),
+          SnackBar(
+              content:
+                  Text('❌ Etwas ist schiefgelaufen. Bitte erneut versuchen.')),
         );
       }
     }

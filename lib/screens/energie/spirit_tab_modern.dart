@@ -151,7 +151,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Numerologie',
         'subtitle': 'Zahlen deines Lebens',
         'color': const Color(0xFF9C27B0),
-        'category': 'core',
+        'category': 'numerologie',
         'screen': const NumerologyCalculatorScreen(),
       },
       // 🎓 Numerologie-Quiz -- Wissens-Check mit Gamification
@@ -161,7 +161,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Numerologie-Quiz',
         'subtitle': '30 Fragen, 3 Levels',
         'color': const Color(0xFFCE93D8),
-        'category': 'core',
+        'category': 'numerologie',
         'screen': const NumerologyQuizScreen(),
       },
       // 🏠 Alltags-Numerologie -- Adresse, Telefon, Kennzeichen
@@ -171,7 +171,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Alltags-Numerologie',
         'subtitle': 'Adresse, Telefon, Kennzeichen',
         'color': const Color(0xFF7C4DFF),
-        'category': 'core',
+        'category': 'numerologie',
         'screen': const EverydayNumerologyScreen(),
       },
       // 💕 Beziehungs-Numerologie — Synastrie aus zwei Profilen
@@ -181,7 +181,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Beziehungs-Numerologie',
         'subtitle': 'Synastrie zweier Lebenszahlen',
         'color': const Color(0xFFE91E63),
-        'category': 'core',
+        'category': 'numerologie',
         'screen': const RelationshipNumerologyScreen(),
       },
       {
@@ -190,7 +190,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Archetypen',
         'subtitle': 'Deine inneren Muster',
         'color': const Color(0xFF673AB7),
-        'category': 'core',
+        'category': 'psyche',
         'screen': const ArchetypeCalculatorScreen(),
       },
       // 🧠 Archetypen-Quiz — Pearson-12-Test mit Szenario-Fragen
@@ -200,7 +200,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Archetypen-Quiz',
         'subtitle': '12 Szenario-Fragen → dein Archetyp',
         'color': const Color(0xFF673AB7),
-        'category': 'core',
+        'category': 'psyche',
         'screen': const ArchetypeQuizScreen(),
       },
       {
@@ -209,7 +209,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Chakren',
         'subtitle': 'Energiezentren',
         'color': const Color(0xFFE91E63),
-        'category': 'core',
+        'category': 'energie',
         'screen': const ChakraCalculatorScreen(),
       },
       {
@@ -218,7 +218,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Kabbala',
         'subtitle': 'Lebensbaum-Analyse',
         'color': const Color(0xFF00BCD4),
-        'category': 'core',
+        'category': 'numerologie',
         'screen': const KabbalahCalculatorScreen(),
       },
       {
@@ -227,7 +227,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Hermetik',
         'subtitle': 'Hermetische Gesetze',
         'color': const Color(0xFFFF9800),
-        'category': 'core',
+        'category': 'psyche',
         'screen': const HermeticCalculatorScreen(),
       },
       // ✨ Reality-Check — Erweiterung zu Hermetik: aktuelle Lebenssituation
@@ -238,7 +238,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Reality-Check',
         'subtitle': '7 hermetische Prinzipien auf deine Situation',
         'color': const Color(0xFFFF9800),
-        'category': 'core',
+        'category': 'psyche',
         'screen': const HermeticRealityCheckScreen(),
       },
       {
@@ -247,7 +247,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Gematria',
         'subtitle': 'Zahlen-Buchstaben',
         'color': const Color(0xFF4CAF50),
-        'category': 'core',
+        'category': 'numerologie',
         'screen': const GematriaCalculatorScreen(),
       },
 
@@ -261,7 +261,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Lernreihen',
         'subtitle': 'Tagesweise Lernpfade · 17 Reihen aktiv',
         'color': const Color(0xFF4DB6AC),
-        'category': 'core',
+        'category': 'wissen',
         'screen': const LernreihenIndexScreen(),
       },
 
@@ -275,7 +275,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Spirit-Profil',
         'subtitle': '10 Analysen in einem Bericht',
         'color': const Color(0xFF9C27B0),
-        'category': 'core',
+        'category': 'psyche',
         'screen': const SpiritProfileScreen(),
       },
 
@@ -290,7 +290,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Mondkalender',
         'subtitle': 'Lebe im Einklang mit dem Mond',
         'color': const Color(0xFF37474F),
-        'category': 'new',
+        'category': 'astro',
         'screen': const MoonCalendarToolScreen(),
       },
 
@@ -301,7 +301,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Tarot',
         'subtitle': 'Tägliche Kartenziehung',
         'color': const Color(0xFF4A148C),
-        'category': 'new',
+        'category': 'orakel',
         'screen': const TarotDailyDrawScreen(),
       },
 
@@ -312,7 +312,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Kristalle',
         'subtitle': '50+ Heilsteine',
         'color': const Color(0xFF1976D2),
-        'category': 'new',
+        'category': 'energie',
         'screen': const CrystalDatabaseScreen(),
       },
       // 💎 Kristall-Foto-Erkennung — Cloudflare Workers AI Vision
@@ -322,7 +322,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Kristall-Foto-KI',
         'subtitle': 'KI identifiziert deinen Stein',
         'color': const Color(0xFF1976D2),
-        'category': 'new',
+        'category': 'energie',
         'screen': const CrystalPhotoIdScreen(),
       },
 
@@ -333,7 +333,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Meditation',
         'subtitle': 'Timer & Gongs',
         'color': const Color(0xFF4527A0),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const MeditationTimerScreen(),
       },
       // 🧘 Audio-Meditationen — 5 TTS-geleitete Sessions (5-10 Min)
@@ -344,7 +344,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'subtitle':
             '5 geführte Sessions (Atem · Metta · Berg · Vergebung · Dank)',
         'color': const Color(0xFF4527A0),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const AudioMeditationScreen(),
       },
 
@@ -355,7 +355,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Aura-Quiz',
         'subtitle': '12 Fragen → deine Aura-Farbe',
         'color': const Color(0xFFAD1457),
-        'category': 'new',
+        'category': 'energie',
         'screen': const AuraQuizScreen(),
       },
 
@@ -366,7 +366,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Epigenetik',
         'subtitle': '12 Praktiken für Gen-Expression',
         'color': const Color(0xFF00695C),
-        'category': 'new',
+        'category': 'psyche',
         'screen': const EpigenetikCoachScreen(),
       },
 
@@ -377,7 +377,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Frequenzen',
         'subtitle': 'Solfeggio & Binaural',
         'color': const Color(0xFFD32F2F),
-        'category': 'new',
+        'category': 'energie',
         'screen': null, // Create on tap (not const-constructable)
         'screenBuilder': () => const FrequencyGeneratorScreen(),
       },
@@ -389,7 +389,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Akasha-Chronik',
         'subtitle': 'Journal · AI-Reflexion · 30-Tage-Mood · Streak',
         'color': const Color(0xFF7C4DFF),
-        'category': 'new',
+        'category': 'orakel',
         'screen': const AkashaChronicleScreen(),
       },
 
@@ -400,7 +400,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Mantras',
         'subtitle': '30+ Sanskrit-Mantras',
         'color': const Color(0xFFE65100),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const MantraLibraryScreen(),
       },
       // 🕉️ Mantra-Guide (v95) -- einsteigerfreundlich
@@ -410,7 +410,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Mantra-Guide',
         'subtitle': 'Was, Wofuer, Wie · 12 Mantras · 21-Tage · Journal',
         'color': const Color(0xFF9C27B0),
-        'category': 'core',
+        'category': 'meditation',
         'screen': const MantraGuideScreen(),
       },
       // 🕉️ Mantra-Praxis (advanced) — Audio + 108-Mala + Tagesmantra
@@ -420,7 +420,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Mantra-Praxis',
         'subtitle': 'Audio · 108-Mala-Zaehler (Fortgeschritten)',
         'color': const Color(0xFFFFB300),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const MantraPracticeScreen(),
       },
 
@@ -431,7 +431,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Heilige Geometrie',
         'subtitle': '6 Stufen · Touch-Konstruktor',
         'color': const Color(0xFF00838F),
-        'category': 'new',
+        'category': 'energie',
         'screen': const SacredGeometryConstructorScreen(),
       },
       // 🌀 Animierte Geometrie — Live-Stroke-Animation der 8 Hauptformen
@@ -441,7 +441,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Animierte Geometrie',
         'subtitle': '8 Formen · Live-Stroke-Animation',
         'color': const Color(0xFF00ACC1),
-        'category': 'new',
+        'category': 'energie',
         'screen': const AnimatedSacredGeometryScreen(),
       },
 
@@ -452,7 +452,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Erdung',
         'subtitle': '10 Grounding-Übungen',
         'color': const Color(0xFF558B2F),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const GroundingExercisesScreen(),
       },
 
@@ -463,7 +463,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Transformation',
         'subtitle': '5 Dimensionen · Chart · Streak · Korrelationen',
         'color': const Color(0xFFFF7043),
-        'category': 'new',
+        'category': 'psyche',
         'screen': const TransformationJourneyScreen(),
       },
       // 📸 Vor/Nach-Foto — Body/Mind/Soul Timeline mit Vergleich
@@ -473,7 +473,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Vor/Nach-Foto',
         'subtitle': 'Foto-Timeline · Side-by-Side-Vergleich',
         'color': const Color(0xFFF57C00),
-        'category': 'new',
+        'category': 'wissen',
         'screen': const PhotoProgressScreen(),
       },
 
@@ -485,7 +485,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Heilige Symbole',
         'subtitle': 'Multikulturelle Sakralsymbole',
         'color': const Color(0xFFFDD835),
-        'category': 'new',
+        'category': 'energie',
         'screen': const SacredSymbolsScreen(),
       },
 
@@ -496,7 +496,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Yoga Asanas',
         'subtitle': '50+ Übungen',
         'color': const Color(0xFF00695C),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const YogaAsanaGuideScreen(),
       },
 
@@ -507,7 +507,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Götter-Orakel',
         'subtitle': '30+ Archetypen',
         'color': const Color(0xFF6A1B9A),
-        'category': 'new',
+        'category': 'orakel',
         'screen': const GoddessOracleScreen(),
       },
       // 🏛️ Götter-KI-Dialog — chatte mit der Persona eines gewählten Gottes
@@ -517,7 +517,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Götter-Dialog',
         'subtitle': 'KI-Chat mit 17 Pantheons',
         'color': const Color(0xFF6A1B9A),
-        'category': 'new',
+        'category': 'orakel',
         'screen': const GodOracleChatScreen(),
       },
 
@@ -532,7 +532,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Traumdeutung',
         'subtitle': 'Symbole deuten & Muster erkennen',
         'color': const Color(0xFF1A237E),
-        'category': 'new',
+        'category': 'psyche',
         'screen': const DreamInterpretationToolScreen(),
       },
       // 💭 Traum-Muster — KI-Jungianische Analyse über die letzten 60 Träume
@@ -542,7 +542,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Traum-Muster KI',
         'subtitle': 'Jung-Analyse aller Träume',
         'color': const Color(0xFF1A237E),
-        'category': 'new',
+        'category': 'psyche',
         'screen': const DreamPatternAnalysisScreen(),
       },
 
@@ -553,7 +553,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Körperscan',
         'subtitle': 'Symptome → Chakra-Blockaden',
         'color': const Color(0xFFE91E63),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const BodyScanToolScreen(),
       },
       // 🧘 Audio-Körperscan — 10 Min TTS-geführte Vipassana
@@ -563,7 +563,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Audio-Körperscan',
         'subtitle': '10 Min · 20 Regionen · deutsche TTS',
         'color': const Color(0xFFE91E63),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const AudioBodyScanScreen(),
       },
 
@@ -574,7 +574,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Stammbaum',
         'subtitle': '3 Generationen · lokal',
         'color': const Color(0xFFD4A24C),
-        'category': 'new',
+        'category': 'wissen',
         'screen': const FamilyTreeScreen(),
       },
 
@@ -585,7 +585,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Tarot-Orakel',
         'subtitle': 'Shuffle-Animation · 3 Spreads · AI-Lesung · Verlauf',
         'color': const Color(0xFF8E5AE2),
-        'category': 'new',
+        'category': 'orakel',
         'screen': const TarotOracleScreen(),
       },
       // 📚 Tarot-Lexikon -- alle 78 Karten browsebar (v95)
@@ -595,7 +595,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Tarot-Lexikon',
         'subtitle': '78 Karten · Filter · Suche · Detail-Lesungen',
         'color': const Color(0xFFCE93D8),
-        'category': 'core',
+        'category': 'orakel',
         'screen': const TarotLexiconScreen(),
       },
 
@@ -606,7 +606,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Ahnenarbeit',
         'subtitle': 'Ahnen, Muster & Heil-Rituale',
         'color': const Color(0xFFD4A24C),
-        'category': 'new',
+        'category': 'wissen',
         'screen': const AncestralWorkToolScreen(),
       },
 
@@ -617,7 +617,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Schamanen-Reise',
         'subtitle': '3 Welten · AI-Narration · Theta-Pulse · Safety',
         'color': const Color(0xFF6D4C41),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const ShamanicGuidedJourneyScreen(),
       },
       // 🥁 Klassische Trommel-Reise (Timer + Manuelles Journal)
@@ -627,7 +627,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Trommel-Timer',
         'subtitle': 'Trommel-BPM-Library · Manuelles Journal',
         'color': const Color(0xFF8E5AE2),
-        'category': 'new',
+        'category': 'meditation',
         'screen': const ShamanicJourneyToolScreen(),
       },
 
@@ -638,7 +638,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Geburtshoroskop 360°',
         'subtitle': 'Zodiac-Rad · 10 Planeten · 5 Aspekte · Transits',
         'color': const Color(0xFF7E57C2),
-        'category': 'new',
+        'category': 'astro',
         'screen': const BirthChart360Screen(),
       },
       // ♓ Geburtshoroskop klassisch (v25 – Meeus-Astrologie + Lexikon)
@@ -648,7 +648,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Horoskop-Lexikon',
         'subtitle': 'Verlauf · Planeten · Zeichen-Lexikon',
         'color': const Color(0xFF6C63FF),
-        'category': 'new',
+        'category': 'astro',
         'screen': const NatalChartToolScreen(),
       },
 
@@ -659,7 +659,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Human Design',
         'subtitle': '9 Zentren · Visual · 5 Typen · Strategie',
         'color': const Color(0xFF00ACC1),
-        'category': 'new',
+        'category': 'astro',
         'screen': const HumanDesignBodyGraphScreen(),
       },
       // 🌀 Human Design klassisch (Tabs mit Tor-Liste + Lexikon)
@@ -669,7 +669,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'HD-Lexikon',
         'subtitle': 'Tor-Listen · Profil-Lexikon · Channels',
         'color': const Color(0xFF26C6DA),
-        'category': 'new',
+        'category': 'astro',
         'screen': const HumanDesignToolScreen(),
       },
 
@@ -680,7 +680,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Runen-Orakel',
         'subtitle': '24 Elder Futhark · Cast · AI · Bind-Rune',
         'color': const Color(0xFF1B5E20),
-        'category': 'new',
+        'category': 'orakel',
         'screen': const RunesOracleScreen(),
       },
       // ᚠ Galdr-Meditation -- Runen-Gesang (v95)
@@ -690,7 +690,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Galdr-Meditation',
         'subtitle': '24 Runen-Gesaenge · Atem · 3/5/9 min',
         'color': const Color(0xFFC9A84C),
-        'category': 'core',
+        'category': 'meditation',
         'screen': const GaldrMeditationScreen(),
       },
       // 🪬 Bind-Rune (v95)
@@ -700,7 +700,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Bind-Rune',
         'subtitle': '2-3 Runen kombinieren · Intention setzen',
         'color': const Color(0xFFC9A84C),
-        'category': 'core',
+        'category': 'orakel',
         'screen': const BindRuneScreen(),
       },
       // 💎 Kristall-Finder (v95)
@@ -710,7 +710,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Kristall-Finder',
         'subtitle': '3-Fragen-Wizard · Top-3 Empfehlung',
         'color': const Color(0xFF9C27B0),
-        'category': 'core',
+        'category': 'energie',
         'screen': const CrystalFinderScreen(),
       },
       // 🪨 Kristall-Kombi (v95)
@@ -720,7 +720,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Kristall-Kombi',
         'subtitle': '2 Kristalle · Synergie-Analyse',
         'color': const Color(0xFFCE93D8),
-        'category': 'core',
+        'category': 'energie',
         'screen': const CrystalCombinerScreen(),
       },
       // 🎂 Geburtsstein-Matcher (v95)
@@ -730,7 +730,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Geburtsstein-Matcher',
         'subtitle': 'Monat + Sternzeichen + Lebenszahl',
         'color': const Color(0xFFC9A84C),
-        'category': 'core',
+        'category': 'energie',
         'screen': const BirthstoneMatcherScreen(),
       },
 
@@ -741,7 +741,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Meine Kristalle',
         'subtitle': 'Persoenliche Sammlung mit Stats',
         'color': const Color(0xFFC9A84C),
-        'category': 'core',
+        'category': 'energie',
         'screen': const MyCrystalsScreen(),
       },
 
@@ -752,7 +752,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Synastrie-Chart',
         'subtitle': 'Astrologie Partner-Vergleich · 5 Aspekte',
         'color': const Color(0xFFEC407A),
-        'category': 'core',
+        'category': 'astro',
         'screen': const SynastryChartScreen(),
       },
 
@@ -763,7 +763,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Affirmationen',
         'subtitle': 'AI · 9 Kategorien · TTS · Sets',
         'color': const Color(0xFFE91E63),
-        'category': 'new',
+        'category': 'psyche',
         'screen': const AffirmationsStudioScreen(),
       },
       // 💫 Voice-Affirmationen — eigene Stimme aufnehmen + loopen
@@ -773,7 +773,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Voice-Affirmation',
         'subtitle': 'Selbstsuggestion mit eigener Stimme (Coué)',
         'color': const Color(0xFFE91E63),
-        'category': 'new',
+        'category': 'psyche',
         'screen': const VoiceAffirmationScreen(),
       },
 
@@ -784,7 +784,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Biorhythmus',
         'subtitle': '6 Zyklen · 90-Tage-Chart · Critical Days · Mondphase',
         'color': const Color(0xFF26C6DA),
-        'category': 'new',
+        'category': 'astro',
         'screen': const BiorhythmChartScreen(),
       },
       // 📊 Biorhythmus-Kompatibilität — zwei Geburtsdaten vergleichen
@@ -794,7 +794,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Biorhythmus-Kompat',
         'subtitle': 'Zwei Personen heute vergleichen',
         'color': const Color(0xFF00897B),
-        'category': 'new',
+        'category': 'astro',
         'screen': const BiorhythmCompatibilityScreen(),
       },
 
@@ -806,7 +806,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'I-Ging Münzwurf',
         'subtitle': 'Wandlungs-Lesung mit AI · Verlauf',
         'color': const Color(0xFF7C4DFF),
-        'category': 'new',
+        'category': 'orakel',
         'screen': const IChingOracleScreen(),
       },
 
@@ -821,7 +821,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Planeten & Transite',
         'subtitle': 'Kosmische Einflüsse heute',
         'color': const Color(0xFF1A237E),
-        'category': 'cosmos',
+        'category': 'astro',
         'screen': const PlanetaryTransitScreen(),
       },
 
@@ -832,7 +832,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'title': 'Spirituelle Recherche',
         'subtitle': 'Bücher, Studien & Wissen',
         'color': const Color(0xFF4A148C),
-        'category': 'cosmos',
+        'category': 'wissen',
         'screen': const EnergieRechercheScreen(),
       },
     ];
@@ -1174,11 +1174,13 @@ class _SpiritTabModernState extends State<SpiritTabModern>
                   ['all', '✨ Alle'],
                   ['recent', '🕐 Zuletzt'],
                   ['favorites', '⭐ Favoriten'],
-                  ['core', '⭐ Kern'],
-                  ['advanced', '🚀 Erweitert'],
-                  ['meta', '🌌 Meta'],
-                  ['new', '🆕 Neu'],
-                  ['cosmos', '🌌 Kosmos'],
+                  ['numerologie', '🔢 Numerologie'],
+                  ['astro', '🪐 Astrologie'],
+                  ['orakel', '🔮 Orakel'],
+                  ['energie', '💎 Energie'],
+                  ['meditation', '🧘 Meditation'],
+                  ['psyche', '🧠 Psyche'],
+                  ['wissen', '📚 Wissen'],
                 ])
                   if (_getCategoryCount(cat[0]) > 0) ...[
                     _buildCategoryChip(cat[0], cat[1], _chipColor(cat[0]),
@@ -1197,11 +1199,13 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'all' => _purple,
         'recent' => _teal,
         'favorites' => _gold,
-        'core' => _teal,
-        'advanced' => _pink,
-        'meta' => _gold,
-        'new' => _green,
-        'cosmos' => const Color(0xFF1A237E),
+        'numerologie' => _purple,
+        'astro' => const Color(0xFF1A237E),
+        'orakel' => _pink,
+        'energie' => _teal,
+        'meditation' => _green,
+        'psyche' => const Color(0xFF673AB7),
+        'wissen' => _gold,
         _ => _purple,
       };
 

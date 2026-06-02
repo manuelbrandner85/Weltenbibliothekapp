@@ -114,7 +114,7 @@ class _WebAdminPanelState extends State<WebAdminPanel>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Fehler: $e'),
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
           backgroundColor: Colors.red.shade700,
         ));
       }
@@ -164,7 +164,7 @@ class _WebAdminPanelState extends State<WebAdminPanel>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Fehler: $e'),
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
           backgroundColor: Colors.red.shade700,
         ));
       }

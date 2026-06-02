@@ -4,6 +4,7 @@ import '../../services/cloudflare_api_service.dart';
 import '../../core/storage/unified_storage_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/wb_empty_state.dart';
 
 /// 👤 Enhanced User Profile Screen
 /// Features:
@@ -382,8 +383,10 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen>
 
   Widget _buildActivityTab() {
     if (_activities.isEmpty) {
-      return const Center(
-        child: Text('Noch keine Aktivitäten'),
+      return const WBEmptyState(
+        icon: Icons.timeline_rounded,
+        title: 'Noch keine Aktivitäten',
+        message: 'Deine letzten Aktionen erscheinen hier.',
       );
     }
 
@@ -406,8 +409,10 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen>
 
   Widget _buildCollectionsTab() {
     if (_collections.isEmpty) {
-      return const Center(
-        child: Text('Noch keine Sammlungen'),
+      return const WBEmptyState(
+        icon: Icons.folder_open_rounded,
+        title: 'Noch keine Sammlungen',
+        message: 'Gespeicherte Sammlungen erscheinen hier.',
       );
     }
 

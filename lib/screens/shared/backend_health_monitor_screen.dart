@@ -55,7 +55,7 @@ class _BackendHealthMonitorScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Health-Check: $e'),
+            content: Text('Fehler beim Health-Check. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

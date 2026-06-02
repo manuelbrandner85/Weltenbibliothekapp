@@ -90,7 +90,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Laden der Profile: $e')),
+          SnackBar(
+              content: Text(
+                  'Fehler beim Laden der Profile. Bitte erneut versuchen.')),
         );
       }
     }
@@ -1258,7 +1260,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Sync-Fehler: $e'),
+            content: Text('❌ Sync-Fehler. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1345,7 +1347,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Restore-Fehler: $e'),
+            content: Text('❌ Restore-Fehler. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

@@ -383,7 +383,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler beim Laden des Bildes: $e'),
+            content:
+                Text('❌ Fehler beim Laden des Bildes. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -729,7 +730,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Netzwerk-Fehler: $e'),
+        content: Text('Netzwerk-Fehler. Bitte erneut versuchen.'),
         backgroundColor: Colors.redAccent,
       ));
     }
@@ -1080,7 +1081,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler: $e'),
+            content:
+                Text('❌ Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

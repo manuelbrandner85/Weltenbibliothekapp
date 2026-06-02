@@ -186,65 +186,53 @@ class _GardeningTab extends StatelessWidget {
   // einen Bug mit const Maps die Records als Werte halten.
   static final Map<String, _SignTrigon> _signTrigon = {
     'Widder': _SignTrigon(
-      trigon: 'Feuer-Trigon',
-      typ: 'Frucht-Tag',
-      practice: 'Tomaten, Paprika, Zucchini, Mais — alles was Frucht trägt.'
-    ),
+        trigon: 'Feuer-Trigon',
+        typ: 'Frucht-Tag',
+        practice: 'Tomaten, Paprika, Zucchini, Mais — alles was Frucht trägt.'),
     'Stier': _SignTrigon(
-      trigon: 'Erde-Trigon',
-      typ: 'Wurzel-Tag',
-      practice: 'Möhren, Kartoffeln, Sellerie, Rote Bete säen/ernten.'
-    ),
+        trigon: 'Erde-Trigon',
+        typ: 'Wurzel-Tag',
+        practice: 'Möhren, Kartoffeln, Sellerie, Rote Bete säen/ernten.'),
     'Zwillinge': _SignTrigon(
-      trigon: 'Luft-Trigon',
-      typ: 'Blüten-Tag',
-      practice: 'Blumen säen, schneiden. Lavendel, Rosen, Kamille.'
-    ),
+        trigon: 'Luft-Trigon',
+        typ: 'Blüten-Tag',
+        practice: 'Blumen säen, schneiden. Lavendel, Rosen, Kamille.'),
     'Krebs': _SignTrigon(
-      trigon: 'Wasser-Trigon',
-      typ: 'Blatt-Tag',
-      practice: 'Salate, Spinat, Kohl, Kräuter. Gießen ideal.'
-    ),
+        trigon: 'Wasser-Trigon',
+        typ: 'Blatt-Tag',
+        practice: 'Salate, Spinat, Kohl, Kräuter. Gießen ideal.'),
     'Löwe': _SignTrigon(
-      trigon: 'Feuer-Trigon',
-      typ: 'Frucht-Tag',
-      practice: 'Frucht-Pflanzen. Beeren, Tomaten, Trauben.'
-    ),
+        trigon: 'Feuer-Trigon',
+        typ: 'Frucht-Tag',
+        practice: 'Frucht-Pflanzen. Beeren, Tomaten, Trauben.'),
     'Jungfrau': _SignTrigon(
-      trigon: 'Erde-Trigon',
-      typ: 'Wurzel-Tag',
-      practice: 'Wurzelernte. Lagerung. Boden bearbeiten.'
-    ),
+        trigon: 'Erde-Trigon',
+        typ: 'Wurzel-Tag',
+        practice: 'Wurzelernte. Lagerung. Boden bearbeiten.'),
     'Waage': _SignTrigon(
-      trigon: 'Luft-Trigon',
-      typ: 'Blüten-Tag',
-      practice: 'Blühpflanzen säen. Brokkoli, Blumenkohl.'
-    ),
+        trigon: 'Luft-Trigon',
+        typ: 'Blüten-Tag',
+        practice: 'Blühpflanzen säen. Brokkoli, Blumenkohl.'),
     'Skorpion': _SignTrigon(
-      trigon: 'Wasser-Trigon',
-      typ: 'Blatt-Tag',
-      practice: 'Blattgewächse, Heilkräuter. Wassergaben gut aufgenommen.'
-    ),
+        trigon: 'Wasser-Trigon',
+        typ: 'Blatt-Tag',
+        practice: 'Blattgewächse, Heilkräuter. Wassergaben gut aufgenommen.'),
     'Schütze': _SignTrigon(
-      trigon: 'Feuer-Trigon',
-      typ: 'Frucht-Tag',
-      practice: 'Frucht-Pflanzen, Getreide. Ernte für Vorrat.'
-    ),
+        trigon: 'Feuer-Trigon',
+        typ: 'Frucht-Tag',
+        practice: 'Frucht-Pflanzen, Getreide. Ernte für Vorrat.'),
     'Steinbock': _SignTrigon(
-      trigon: 'Erde-Trigon',
-      typ: 'Wurzel-Tag',
-      practice: 'Wurzelarbeit, Umsetzen. Boden tief lockern.'
-    ),
+        trigon: 'Erde-Trigon',
+        typ: 'Wurzel-Tag',
+        practice: 'Wurzelarbeit, Umsetzen. Boden tief lockern.'),
     'Wassermann': _SignTrigon(
-      trigon: 'Luft-Trigon',
-      typ: 'Blüten-Tag',
-      practice: 'Blumen, Zierpflanzen. Wenig gießen.'
-    ),
+        trigon: 'Luft-Trigon',
+        typ: 'Blüten-Tag',
+        practice: 'Blumen, Zierpflanzen. Wenig gießen.'),
     'Fische': _SignTrigon(
-      trigon: 'Wasser-Trigon',
-      typ: 'Blatt-Tag',
-      practice: 'Salate, Kohl, Spinat. Optimal für Blattfrüchte.'
-    ),
+        trigon: 'Wasser-Trigon',
+        typ: 'Blatt-Tag',
+        practice: 'Salate, Kohl, Spinat. Optimal für Blattfrüchte.'),
   };
 
   @override
@@ -1396,7 +1384,7 @@ class _JournalTabState extends State<_JournalTab> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Löschen fehlgeschlagen: $e'),
+          content: Text('Löschen fehlgeschlagen. Bitte erneut versuchen.'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -1724,7 +1712,7 @@ class _NewEntrySheetState extends State<_NewEntrySheet> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Speichern fehlgeschlagen: $e'),
+          content: Text('Speichern fehlgeschlagen. Bitte erneut versuchen.'),
           backgroundColor: Colors.redAccent,
         ),
       );

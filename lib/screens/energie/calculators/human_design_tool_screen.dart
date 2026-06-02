@@ -277,7 +277,7 @@ class _NewHdTabState extends State<_NewHdTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Fehler: $e'),
+        content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
         backgroundColor: Colors.red,
       ));
     } finally {
@@ -641,7 +641,7 @@ class _HdHistoryTabState extends State<_HdHistoryTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Löschen fehlgeschlagen: $e'),
+        content: Text('Löschen fehlgeschlagen. Bitte erneut versuchen.'),
         backgroundColor: Colors.red,
       ));
     }

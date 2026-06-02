@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/materie/osint_source_banner.dart';
+import '../../../utils/osint_result_share.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // B — Datenleck-Prüfer
@@ -104,6 +106,15 @@ class _DataLeakToolState extends State<DataLeakTool> {
           const Text('Datenleck-Prüfer',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          OsintResultShare.actionButton(
+            context,
+            toolName: 'Datenleck-Pruefer',
+            query: _emailCtrl.text,
+            result: _result,
+            color: _kAccent,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -157,6 +168,15 @@ class _DataLeakToolState extends State<DataLeakTool> {
               ),
             ),
           ])),
+          OsintSourceBanner(
+            source: 'Pruefung gegen bekannte Datenleck-Sammlungen ueber den '
+                'Weltenbibliothek-Worker. Passwoerter werden nie im '
+                'Klartext gesendet. ',
+            accent: _kAccent,
+            sources: [
+              OsintSource('Have I Been Pwned', 'https://haveibeenpwned.com'),
+            ],
+          ),
           if (_error != null)
             _card(Row(children: [
               const Icon(Icons.error_outline, color: _kAccent, size: 18),

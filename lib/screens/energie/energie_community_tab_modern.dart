@@ -1511,7 +1511,10 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content:
+                  Text('❌ Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
+              backgroundColor: Colors.red),
         );
       }
     }

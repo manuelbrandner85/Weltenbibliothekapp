@@ -166,8 +166,8 @@ class _NewContractTabState extends State<_NewContractTab> {
       );
       setState(() => _result = r);
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Berechnungs-Fehler: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Berechnungs-Fehler. Bitte erneut versuchen.')));
     }
   }
 
@@ -464,7 +464,9 @@ class _NewContractTabState extends State<_NewContractTab> {
                                   if (!sheetCtx2.mounted) return;
                                   setSheet(() => saving = false);
                                   ScaffoldMessenger.of(sheetCtx2).showSnackBar(
-                                      SnackBar(content: Text('Fehler: $e')));
+                                      SnackBar(
+                                          content: Text(
+                                              'Etwas ist schiefgelaufen. Bitte erneut versuchen.')));
                                 }
                               },
                         icon: saving
@@ -705,8 +707,8 @@ class _HistoryTabState extends State<_HistoryTab> {
           .showSnackBar(const SnackBar(content: Text('Vertrag gelöscht')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')));
     }
   }
 

@@ -286,7 +286,8 @@ class ShareResearchWidget extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Erstellen des PDFs: $e'),
+            content:
+                Text('Fehler beim Erstellen des PDFs. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

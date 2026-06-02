@@ -36,9 +36,15 @@ class UrsprungService {
   static Future<Map<String, dynamic>> fetchModules({String? userId}) async {
     final supa = Supabase.instance.client;
 
+    // U2: nur Metadaten laden (kein theory_content/case_study/
+    // exercise_description/test_questions). Voller Inhalt wird bei Tap auf
+    // ein Modul via fetchModule(code) lazy nachgeladen.
     final modulesRaw = await supa
         .from('ursprung_modules')
-        .select()
+        .select(
+          'id,module_code,branch,branch_order,title,subtitle,'
+          'is_boss_module,xp_reward,prerequisites',
+        )
         .order('branch_order', ascending: true)
         .order('module_code', ascending: true);
     final modules = (modulesRaw as List).cast<Map<String, dynamic>>();

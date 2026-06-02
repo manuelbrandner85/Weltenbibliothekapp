@@ -101,7 +101,7 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler beim Abspielen: $e'),
+            content: Text('❌ Fehler beim Abspielen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

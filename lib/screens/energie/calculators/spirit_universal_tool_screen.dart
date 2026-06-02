@@ -180,7 +180,9 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
           _isCalculating = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler bei der Berechnung: $e')),
+          SnackBar(
+              content:
+                  Text('Fehler bei der Berechnung. Bitte erneut versuchen.')),
         );
       }
     }

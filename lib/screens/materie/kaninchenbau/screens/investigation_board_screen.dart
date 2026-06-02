@@ -281,7 +281,8 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Speichern fehlgeschlagen: $e')),
+        SnackBar(
+            content: Text('Speichern fehlgeschlagen. Bitte erneut versuchen.')),
       );
     }
   }
@@ -506,7 +507,8 @@ class _InvestigationBoardScreenState extends State<InvestigationBoardScreen> {
       if (kDebugMode) debugPrint('⚠️ Export: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export fehlgeschlagen: $e')),
+        SnackBar(
+            content: Text('Export fehlgeschlagen. Bitte erneut versuchen.')),
       );
     }
   }

@@ -26,7 +26,13 @@ class SearchHistoryService {
       }
     }
     _loaded = true;
+    _purgeInvalid();
     await _cleanupOldEntries();
+  }
+
+  /// M3: Entfernt leere/Whitespace-only Eintraege aus Altbestaenden.
+  static void _purgeInvalid() {
+    _entries.removeWhere((e) => e.query.trim().isEmpty);
   }
 
   static Future<void> _persist() async {
@@ -47,6 +53,10 @@ class SearchHistoryService {
     Map<String, dynamic>? metadata,
   }) async {
     if (!_loaded) await init();
+    // M3: leere/Whitespace-Queries nicht speichern.
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    query = trimmed;
     _entries.removeWhere((e) => e.query.toLowerCase() == query.toLowerCase());
 
     final entry = SearchHistoryEntry(

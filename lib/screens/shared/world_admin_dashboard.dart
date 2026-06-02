@@ -1178,7 +1178,8 @@ class _UsersTabState extends State<_UsersTab> {
             schema: 'public',
             table: 'profiles',
             callback: (_) {
-              if (kDebugMode) debugPrint('🔄 profiles change → reload (debounced)');
+              if (kDebugMode)
+                debugPrint('🔄 profiles change → reload (debounced)');
               // AUDIT-FIX B11: Debounce damit ein Schwall von Profile-
               // Aenderungen (z.B. 10 User joinen gleichzeitig) nicht 10
               // Reloads ausloest. 800ms Quiet-Period.
@@ -1218,17 +1219,14 @@ class _UsersTabState extends State<_UsersTab> {
                 .reversed
                 .firstOrNull;
             if (lastCall != null && lastCall.statusCode >= 400) {
-              _errorMessage =
-                  'Worker-Fehler: HTTP ${lastCall.statusCode}\n'
+              _errorMessage = 'Worker-Fehler: HTTP ${lastCall.statusCode}\n'
                   '${lastCall.message}\n\n'
                   'Tipp: Tap auf "Diagnose" in der Uebersicht fuer Details.';
             } else if (lastCall != null && lastCall.statusCode == 0) {
-              _errorMessage =
-                  'Netzwerk-Fehler: ${lastCall.message}\n\n'
+              _errorMessage = 'Netzwerk-Fehler: ${lastCall.message}\n\n'
                   'Tipp: Internet pruefen + Diagnose-Button in der Uebersicht.';
             } else {
-              _errorMessage =
-                  'Keine Nutzer gefunden.\n\n'
+              _errorMessage = 'Keine Nutzer gefunden.\n\n'
                   'Falls das nicht stimmt, tap auf "Diagnose" in der '
                   'Uebersicht um die Worker-Verbindung zu pruefen.';
             }
@@ -2542,9 +2540,7 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
         ? 'Chat-Moderation'
         : 'Chat-Moderation: ${reasonCtrl.text.trim()}';
     final ok = await WorldAdminServiceV162.banUser(
-        userId: userId,
-        reason: reason,
-        adminUserId: widget.admin.username);
+        userId: userId, reason: reason, adminUserId: widget.admin.username);
     _snack(ok ? '🚫 @$username gesperrt ($reason)' : '❌ Fehler beim Sperren',
         color: ok ? Colors.red.shade700 : Colors.orange);
   }
@@ -4819,7 +4815,8 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
         });
       } else if (mounted) {
         setState(() {
-          _error = 'HTTP ${res.statusCode}: ${res.body.length > 120 ? res.body.substring(0, 120) : res.body}';
+          _error =
+              'HTTP ${res.statusCode}: ${res.body.length > 120 ? res.body.substring(0, 120) : res.body}';
           _loading = false;
         });
       }
@@ -4858,7 +4855,7 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Netzwerk: $e'),
+        content: Text('Netzwerk. Bitte erneut versuchen.'),
         backgroundColor: Colors.redAccent,
       ));
     }
@@ -5032,7 +5029,8 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                             } catch (e) {
                               setSheet(() => saving = false);
                               ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                                content: Text('Netzwerk: $e'),
+                                content:
+                                    Text('Netzwerk. Bitte erneut versuchen.'),
                                 backgroundColor: Colors.redAccent,
                               ));
                             }
@@ -5377,7 +5375,8 @@ class _SpiritStatsTabState extends State<_SpiritStatsTab> {
       } else {
         if (mounted) {
           setState(() {
-            _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
+            _error =
+                'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
             _loading = false;
           });
         }
@@ -5738,7 +5737,8 @@ class _ModuleProgressTabState extends State<_ModuleProgressTab>
       } else {
         if (mounted) {
           setState(() {
-            _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
+            _error =
+                'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
             _loading = false;
           });
         }
@@ -6169,11 +6169,10 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
         // sendPushToUser direkt an alle aktiven Subscriptions.
         // Fire-and-forget, blockiert die UI nicht.
         if (_target == 'all') {
-          final adminName =
-              StorageService().getMaterieProfile()?.username ??
-                  StorageService().getEnergieProfile()?.username ??
-                  supabase.auth.currentUser?.email ??
-                  'admin';
+          final adminName = StorageService().getMaterieProfile()?.username ??
+              StorageService().getEnergieProfile()?.username ??
+              supabase.auth.currentUser?.email ??
+              'admin';
           PushNotificationHelper.instance
               .sendBroadcast(
                 title: _title.text.trim(),
@@ -6207,7 +6206,7 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Netzwerk: $e'),
+          content: Text('Netzwerk. Bitte erneut versuchen.'),
           backgroundColor: Colors.redAccent,
         ));
       }
@@ -6635,8 +6634,9 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         'limit': '100',
       });
       final headers = await AdminAuthService.instance.headers();
-      final res =
-          await http.get(uri, headers: headers).timeout(const Duration(seconds: 12));
+      final res = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 12));
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {
@@ -6652,7 +6652,8 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         });
       } else if (mounted) {
         setState(() {
-          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
+          _error =
+              'HTTP ${res.statusCode}: ${res.body.substring(0, res.body.length > 120 ? 120 : res.body.length)}';
           _loading = false;
         });
       }
@@ -6700,7 +6701,7 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Netzwerk: $e'),
+        content: Text('Netzwerk. Bitte erneut versuchen.'),
         backgroundColor: Colors.redAccent,
       ));
     }

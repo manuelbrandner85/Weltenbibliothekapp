@@ -223,7 +223,8 @@ class MultimediaSection extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler beim Öffnen der URL: $e'),
+            content:
+                Text('❌ Fehler beim Öffnen der URL. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

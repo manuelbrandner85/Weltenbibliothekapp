@@ -427,7 +427,9 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
                 // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text('Fehler: $e'), backgroundColor: Colors.red),
+                      content: Text(
+                          'Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
+                      backgroundColor: Colors.red),
                 );
               }
             },
