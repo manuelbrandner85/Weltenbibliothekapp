@@ -8975,8 +8975,14 @@ Antworte in exakt diesem JSON-Format:
       if (path === '/api/vorhang/modules' && method === 'GET') {
         try {
           const userId = url.searchParams.get('user_id');
+          // U2: nur Metadaten laden (kein theory_content/case_study/
+          // exercise_description/test_questions) -> Payload 264 KB -> ~35 KB.
+          // Voller Inhalt wird lazy via /api/vorhang/module/:id nachgeladen.
+          const listColumns =
+            'id,module_code,branch,branch_order,title,subtitle,' +
+            'xp_reward,is_boss_module,prerequisites';
           const modRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/vorhang_modules?select=*&order=branch_order.asc,module_code.asc`,
+            `${SUPABASE_URL}/rest/v1/vorhang_modules?select=${listColumns}&order=branch_order.asc,module_code.asc`,
             { headers: sbHeaders }
           );
           if (!modRes.ok) {
@@ -9275,8 +9281,14 @@ Antworte in exakt diesem JSON-Format:
       if (path === '/api/ursprung/modules' && method === 'GET') {
         try {
           const userId = url.searchParams.get('user_id');
+          // U2: nur Metadaten laden (kein theory_content/case_study/
+          // exercise_description/test_questions) -> kleinere Payload.
+          // Voller Inhalt wird lazy via /api/ursprung/module/:id nachgeladen.
+          const ursprungListColumns =
+            'id,module_code,branch,branch_order,title,subtitle,' +
+            'xp_reward,is_boss_module,prerequisites';
           const modRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/ursprung_modules?select=*&order=branch_order.asc,module_code.asc`,
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?select=${ursprungListColumns}&order=branch_order.asc,module_code.asc`,
             { headers: sbHeaders }
           );
           if (!modRes.ok) {
