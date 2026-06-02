@@ -636,6 +636,37 @@ class PushNotificationManager with WidgetsBindingObserver {
         payload: payload);
   }
 
+  // ── E-X3: Taegliche Tarot-Erinnerung ────────────────────────────────────────
+  static const int dailyTarotNotifId = 778801;
+
+  /// Plant eine taegliche lokale Erinnerung, die zur Tarot-Tageskarte fuehrt.
+  Future<void> scheduleDailyTarot() async {
+    try {
+      await _localPlugin.periodicallyShow(
+        dailyTarotNotifId,
+        '🔮 Deine Tarot-Tageskarte',
+        'Ziehe jetzt deine Karte des Tages und lass dich inspirieren.',
+        RepeatInterval.daily,
+        _systemDetails(
+            body: 'Ziehe jetzt deine Karte des Tages und lass dich '
+                'inspirieren.'),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: jsonEncode({'type': 'daily_tarot', 'route': 'tarot_daily'}),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ scheduleDailyTarot fehlgeschlagen: $e');
+    }
+  }
+
+  /// Hebt die taegliche Tarot-Erinnerung wieder auf.
+  Future<void> cancelDailyTarot() async {
+    try {
+      await _localPlugin.cancel(dailyTarotNotifId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ cancelDailyTarot fehlgeschlagen: $e');
+    }
+  }
+
   // ── FCM Foreground / Opened ──────────────────────────────────────────────────
 
   void _onFcmForeground(RemoteMessage message) {

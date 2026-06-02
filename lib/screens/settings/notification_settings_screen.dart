@@ -8,6 +8,7 @@ import '../../core/storage/unified_storage_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
+import '../../widgets/daily_tarot_reminder_tile.dart';
 
 /// 🔔 Enhanced Notification Settings Screen
 /// Features:
@@ -196,6 +197,11 @@ class _NotificationSettingsScreenState
                   ),
                 ),
               ),
+
+              const SizedBox(height: 8),
+
+              // ⭐ E-X3: Taegliche Tarot-Erinnerung
+              const DailyTarotReminderTile(),
 
               const SizedBox(height: 24),
 
