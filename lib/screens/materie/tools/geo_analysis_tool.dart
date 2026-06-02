@@ -6,6 +6,7 @@ import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/materie/osint_source_banner.dart';
+import '../../../utils/osint_result_share.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // G — Geo-Analyse
@@ -131,6 +132,15 @@ class _GeoAnalysisToolState extends State<GeoAnalysisTool> {
           const Text('Geo-Analyse',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          OsintResultShare.actionButton(
+            context,
+            toolName: 'Geo-Analyse',
+            query: _queryCtrl.text,
+            result: _result,
+            color: _kAccent,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -6,6 +6,7 @@ import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/materie/osint_source_banner.dart';
+import '../../../utils/osint_result_share.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // F — KI-Content-Detektor
@@ -116,6 +117,15 @@ class _AiDetectorToolState extends State<AiDetectorTool> {
           const Text('KI-Content-Detektor',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          OsintResultShare.actionButton(
+            context,
+            toolName: 'KI-Content-Detektor',
+            query: _textCtrl.text,
+            result: _result,
+            color: _kAccent,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

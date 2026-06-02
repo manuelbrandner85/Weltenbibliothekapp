@@ -5,6 +5,7 @@ import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/materie/osint_source_banner.dart';
+import '../../../utils/osint_result_share.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // C — Krypto-Verfolger
@@ -126,6 +127,15 @@ class _CryptoTrackerToolState extends State<CryptoTrackerTool> {
           const Text('Krypto-Verfolger',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
+        actions: [
+          OsintResultShare.actionButton(
+            context,
+            toolName: 'Krypto-Verfolger',
+            query: _addrCtrl.text,
+            result: _result,
+            color: _kAccent,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
