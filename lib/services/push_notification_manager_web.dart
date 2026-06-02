@@ -236,6 +236,10 @@ class PushNotificationManager {
     await _subscribe();
   }
 
+  // E-X3: No-Op auf Web (keine lokalen Scheduled-Notifications).
+  Future<void> scheduleDailyTarot() async {}
+  Future<void> cancelDailyTarot() async {}
+
   Future<void> dispose() async {
     _pollTimer?.cancel();
     _pollTimer = null;

@@ -5,8 +5,13 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../../services/osint_history_service.dart'; // 🕰️ D1
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import 'country_compare_tool.dart';
+import 'email_osint_tool.dart';
 import 'eu_parliament_tracker_screen.dart';
+import 'ip_osint_tool.dart';
+import 'person_osint_tool.dart';
 import 'power_network_explorer_screen.dart';
+import 'propaganda_compare_screen.dart';
 import 'study_analyst_screen.dart';
 import 'version_watcher_screen.dart';
 
@@ -98,6 +103,62 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
       description:
           'Letzte Plenar-Abstimmungen mit Result + Stimmen-Verteilung. 👍/👎-Markierung pro Vote baut deine Werte-Karte. MEP-Browser mit Country-Filter.',
       customScreenBuilder: () => const EuParliamentTrackerScreen(),
+    ),
+    _DbDef(
+      icon: Icons.travel_explore_rounded,
+      label: 'IP / ASN-Lookup',
+      sub: 'Geolocation, ISP, ASN',
+      color: const Color(0xFFE53935),
+      url: '',
+      description:
+          'IP-Adresse oder Domain eingeben -> Land, Stadt, Koordinaten, '
+          'Provider (ISP), Organisation und ASN. Live ueber ipwho.is, kostenlos.',
+      customScreenBuilder: () => const IpOsintTool(),
+    ),
+    _DbDef(
+      icon: Icons.mark_email_unread_rounded,
+      label: 'E-Mail Leak-Check',
+      sub: 'Datenleck-Pruefung',
+      color: const Color(0xFFEF5350),
+      url: '',
+      description:
+          'E-Mail-Adresse gegen oeffentlich bekannte Datenlecks pruefen. '
+          'Zeigt betroffene Dienste. Live ueber XposedOrNot, kostenlos.',
+      customScreenBuilder: () => const EmailOsintTool(),
+    ),
+    _DbDef(
+      icon: Icons.public_rounded,
+      label: 'Laender-Vergleich',
+      sub: 'Bevoelkerung, Gini, Sprachen',
+      color: const Color(0xFF26C6DA),
+      url: '',
+      description:
+          'Zwei Laender Seite an Seite: Bevoelkerung, Flaeche, Dichte, '
+          'Gini-Index, Hauptstadt, Waehrung und Sprachen. Via restcountries.com.',
+      customScreenBuilder: () => const CountryCompareTool(),
+    ),
+    _DbDef(
+      icon: Icons.person_search_rounded,
+      label: 'Personen-Recherche',
+      sub: 'Wikipedia / oeffentliche Quellen',
+      color: const Color(0xFFAB47BC),
+      url: '',
+      description:
+          'Name, Organisation oder Begriff -> oeffentlicher Wissens-Eintrag '
+          '(Beschreibung, Zusammenfassung, Bild, Quelle). Nur bekannte '
+          'Entitaeten, kein Zugriff auf private Daten. Via Wikipedia.',
+      customScreenBuilder: () => const PersonOsintTool(),
+    ),
+    _DbDef(
+      icon: Icons.compare_rounded,
+      label: 'Propaganda-Vergleich',
+      sub: 'Zwei Quellen gegenueberstellen',
+      color: const Color(0xFFFF7043),
+      url: '',
+      description:
+          'Zwei Artikel zum selben Thema parallel analysieren und Bias, '
+          'Niveau und Techniken Seite an Seite vergleichen.',
+      customScreenBuilder: () => const PropagandaCompareScreen(),
     ),
   ];
 

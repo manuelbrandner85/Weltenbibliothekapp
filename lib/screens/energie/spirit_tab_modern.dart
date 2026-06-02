@@ -31,6 +31,7 @@ import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
 import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
 import 'calculators/tarot_lexicon_screen.dart'; // 📚 78-Karten-Lexikon
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
+import 'calculators/pendulum_oracle_screen.dart'; // 🪀 Pendel Ja/Nein-Orakel
 import 'calculators/galdr_meditation_screen.dart'; // ᚠ Galdr-Gesang
 import 'calculators/synastry_chart_screen.dart'; // 💞 Astrologie-Synastrie
 import 'calculators/bind_rune_screen.dart'; // 🪬 Bind-Rune
@@ -303,6 +304,17 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF4A148C),
         'category': 'orakel',
         'screen': const TarotDailyDrawScreen(),
+      },
+
+      // 🪀 Pendel-Orakel
+      {
+        'icon': Icons.touch_app,
+        'iconEmoji': '🪀',
+        'title': 'Pendel',
+        'subtitle': 'Ja/Nein-Befragung',
+        'color': const Color(0xFF8E5BD0),
+        'category': 'orakel',
+        'screen': const PendulumOracleScreen(),
       },
 
       // 💎 Kristall-Datenbank

@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/api_config.dart';
 import '../../services/gamification_service.dart';
+import '../../services/module_rating_service.dart'; // ⭐ V-X5
 import '../../services/storage_service.dart'; // 📝 I1
 import '../../services/vorhang_lesson_notes_service.dart'; // 📝 I1
 import '../../services/vorhang_service.dart';
@@ -771,6 +772,12 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
           ),
+
+        // ⭐ V-X5: Modul-Bewertung nach bestandenem Test
+        if (_quizSubmitted && _quizPassed) ...[
+          const SizedBox(height: 16),
+          _ModuleRatingCard(moduleCode: widget.moduleCode, accent: _gold),
+        ],
       ],
     );
   }
@@ -1697,6 +1704,98 @@ class _QuickReviewScreenState extends State<_QuickReviewScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ⭐ V-X5: Modul-Bewertung (lokal, 1-5 Sterne)
+class _ModuleRatingCard extends StatefulWidget {
+  final String moduleCode;
+  final Color accent;
+  const _ModuleRatingCard({required this.moduleCode, required this.accent});
+
+  @override
+  State<_ModuleRatingCard> createState() => _ModuleRatingCardState();
+}
+
+class _ModuleRatingCardState extends State<_ModuleRatingCard> {
+  int? _rating;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final r = await ModuleRatingService.instance.getRating(widget.moduleCode);
+    if (mounted) {
+      setState(() {
+        _rating = r;
+        _loaded = true;
+      });
+    }
+  }
+
+  Future<void> _set(int stars) async {
+    setState(() => _rating = stars);
+    await ModuleRatingService.instance.setRating(widget.moduleCode, stars);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Danke fuer deine Bewertung: $stars/5'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: const Color(0xFF1A1230),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_loaded) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFF160C24).withValues(alpha: 0.6),
+        border: Border.all(color: widget.accent.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _rating == null
+                ? 'Wie hat dir dieses Modul gefallen?'
+                : 'Deine Bewertung',
+            style: TextStyle(
+              color: widget.accent,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 1; i <= 5; i++)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    (_rating ?? 0) >= i
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: widget.accent,
+                    size: 32,
+                  ),
+                  onPressed: () => _set(i),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
