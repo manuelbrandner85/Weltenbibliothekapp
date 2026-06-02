@@ -1215,7 +1215,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF-Fehler: $e')),
+        SnackBar(content: Text('PDF-Fehler. Bitte erneut versuchen.')),
       );
     }
   }
@@ -3857,7 +3857,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Laden: $e'),
+            content: Text('Fehler beim Laden. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

@@ -374,7 +374,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$emoji $name aktiviert!'),
+            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
             backgroundColor: color1,
             duration: const Duration(seconds: 2),
           ),

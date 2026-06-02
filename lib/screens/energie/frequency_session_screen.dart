@@ -113,7 +113,7 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Fehler beim Laden: $e'),
+              content: Text('Fehler beim Laden. Bitte erneut versuchen.'),
               backgroundColor: Colors.red),
         );
       }
@@ -313,7 +313,10 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
       // FIX v5.28.0: mounted-Check nach async gap
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
+        SnackBar(
+            content:
+                Text('❌ Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
+            backgroundColor: Colors.red),
       );
     }
   }
@@ -441,9 +444,8 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
                           Icons.play_circle_filled,
                           color: Colors.amber,
                         ),
-                        onTap: () => _showFrequencyPlayer(
-                            context, freq, freqData,
-                            session['duration_minutes']),
+                        onTap: () => _showFrequencyPlayer(context, freq,
+                            freqData, session['duration_minutes']),
                       ),
                     );
                   },

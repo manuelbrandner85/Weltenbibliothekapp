@@ -221,7 +221,7 @@ class _EnhancedSourceCardState extends State<EnhancedSourceCard> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler beim Öffnen: $e'),
+            content: Text('❌ Fehler beim Öffnen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

@@ -69,7 +69,9 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen>
       setState(() => _isAnalyzing = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')),
+          SnackBar(
+              content:
+                  Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')),
         );
       }
     }

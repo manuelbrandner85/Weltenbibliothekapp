@@ -92,7 +92,9 @@ class _PostActionsRowState extends State<PostActionsRow> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Fehler: $e')),
+          SnackBar(
+              content:
+                  Text('❌ Etwas ist schiefgelaufen. Bitte erneut versuchen.')),
         );
       }
     }
@@ -164,7 +166,8 @@ class _PostActionsRowState extends State<PostActionsRow> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Fehler beim Teilen: $e')),
+          SnackBar(
+              content: Text('❌ Fehler beim Teilen. Bitte erneut versuchen.')),
         );
       }
     }

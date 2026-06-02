@@ -1098,7 +1098,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
     // Dynamisch basierend auf Numerologie UND Gematria
     final String karmaInsight = _getKarmaInsight(_lifePathNumber);
     final String soulOrigin = _getSoulOrigin(_soulNumber);
-    final String pastLifePattern = _getPastLifePattern(vibration, _destinyNumber);
+    final String pastLifePattern =
+        _getPastLifePattern(vibration, _destinyNumber);
 
     return '$name, dein Name trägt die Schwingung $vibration – ${_getVibrationQuality(vibration)}. Diese Frequenz ist dein kosmischer Fingerabdruck, eingeprägt seit Äonen.\n\n$soulOrigin\n\n$pastLifePattern\n\n$karmaInsight\n\nAls Kind spürtest du wahrscheinlich manchmal, dass du "anders" bist. ${_getChildhoodMemoryPattern(_personalityNumber)} Das ist die Erinnerung deiner Seele. Dein Name ruft diese alte Weisheit wach.';
   }
@@ -1106,7 +1107,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
   String _getChildhoodText(String name, int number) {
     final String soulLessons = _getSoulNumberChildhoodLessons(number);
     final String earlyTraits = _getEarlyPersonalityTraits(_personalityNumber);
-    final String familyDynamics = _getFamilyKarmaPattern(_lifePathNumber, number);
+    final String familyDynamics =
+        _getFamilyKarmaPattern(_lifePathNumber, number);
 
     return '$name, deine Kindheit wurde von der Seelen-Zahl $number geprägt – ${_getNumberQuality(number)}. Diese Phase war fundamental.\n\n$soulLessons\n\n$earlyTraits\n\n$familyDynamics\n\nSchau zurück: Erkennst du das Muster? Jede Freude, jeder Schmerz formte dich genau so, wie du sein solltest.';
   }
@@ -1116,13 +1118,15 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
         _getDestinyUnfoldingPattern(number, _expressionNumber);
     final String relationshipKarma =
         _getRelationshipKarmaPattern(_soulNumber, _destinyNumber);
-    final String careerSeeds = _getCareerSeedsPattern(_lifePathNumber, _personalYear);
+    final String careerSeeds =
+        _getCareerSeedsPattern(_lifePathNumber, _personalYear);
 
     return '$name, zwischen 21 und 35 Jahren begann deine Schicksals-Zahl $number sich zu manifestieren – ${_getNumberQuality(number)}. Dies war deine Experimentier-Phase.\n\n$destinyUnfolding\n\n$relationshipKarma\n\n$careerSeeds\n\nALLES war Teil des Plans. Jeder "Fehler" war ein notwendiger Schritt.';
   }
 
   String _getPresentStoryText(String name, int age, int vibration) {
-    final String currentPhaseEnergy = _getCurrentPhaseEnergy(age, _personalYear);
+    final String currentPhaseEnergy =
+        _getCurrentPhaseEnergy(age, _personalYear);
     final String activationCode =
         _getActivationCode(_soulNumber, _destinyNumber, _lifePathNumber);
     final String nowMoment =
@@ -1134,7 +1138,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
   String _getCurrentMissionText(String name, int soul, int destiny) {
     final String missionBlueprint =
         _getMissionBluedebugPrint(soul, destiny, _lifePathNumber);
-    final String uniqueGift = _getUniqueGiftPattern(_expressionNumber, _personalYear);
+    final String uniqueGift =
+        _getUniqueGiftPattern(_expressionNumber, _personalYear);
     final String worldImpact = _getWorldImpactVision(soul, destiny);
 
     return '$name, deine Lebensaufgabe ist in den Zahlen kodiert: Seelen-Zahl $soul (${_getNumberQuality(soul)}) + Schicksals-Zahl $destiny (${_getNumberQuality(destiny)}) = deine Mission.\n\n$missionBlueprint\n\n$uniqueGift\n\n$worldImpact\n\nHöre auf, dich klein zu machen – es ist Zeit, zu strahlen!';
@@ -1143,15 +1148,19 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
   String _getHiddenTalentsText(String name, int vibration) {
     final String dormantAbilities =
         _getDormantAbilities(_expressionNumber, _personalityNumber);
-    final String intuitiveGifts = _getIntuitiveGifts(_soulNumber, _lifePathNumber);
-    final String creativeChannels = _getCreativeChannels(vibration, _personalYear);
+    final String intuitiveGifts =
+        _getIntuitiveGifts(_soulNumber, _lifePathNumber);
+    final String creativeChannels =
+        _getCreativeChannels(vibration, _personalYear);
 
     return '$name, tief in dir schlummern Fähigkeiten. Die Gematria-Zahl $vibration (${_getVibrationQuality(vibration)}) ist dein Tresorschlüssel.\n\n$dormantAbilities\n\n$intuitiveGifts\n\n$creativeChannels\n\nHör auf deine Intuition – sie wird dich zu deinen verborgenen Talenten führen.';
   }
 
   String _getFutureStoryText(String name, int vibration) {
-    final String timelineVision = _getTimelineVision(_personalYear, _lifePathNumber);
-    final String upcomingLessons = _getUpcomingLessons(_destinyNumber, _soulNumber);
+    final String timelineVision =
+        _getTimelineVision(_personalYear, _lifePathNumber);
+    final String upcomingLessons =
+        _getUpcomingLessons(_destinyNumber, _soulNumber);
     final String manifestationPath =
         _getManifestationPath(vibration, _expressionNumber);
 
@@ -4054,8 +4063,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
         return;
       }
       final dir = await getTemporaryDirectory();
-      final fileName =
-          'gematria_${DateTime.now().millisecondsSinceEpoch}.png';
+      final fileName = 'gematria_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = await File('${dir.path}/$fileName').writeAsBytes(png);
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
@@ -4065,7 +4073,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
     } catch (e) {
       if (kDebugMode) debugPrint('Gematria-Export-Fehler: $e');
       messenger.showSnackBar(SnackBar(
-        content: Text('Export fehlgeschlagen: $e'),
+        content: Text('Export fehlgeschlagen. Bitte erneut versuchen.'),
       ));
     }
   }
@@ -4084,8 +4092,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
       );
     canvas.drawRect(const Rect.fromLTWH(0, 0, w, h), bgPaint);
 
-    _drawText(canvas, 'WELTENBIBLIOTHEK', w / 2,
-        80, color: const Color(0xFFFFD700), size: 28, bold: true);
+    _drawText(canvas, 'WELTENBIBLIOTHEK', w / 2, 80,
+        color: const Color(0xFFFFD700), size: 28, bold: true);
     _drawText(canvas, 'GEMATRIA-KARTE', w / 2, 130,
         color: Colors.white, size: 44, bold: true);
 
@@ -4104,11 +4112,11 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
 
     _drawBigNumber(canvas, 'SEELE', _soulNumber.toString(), w / 2 - 260, 680,
         const Color(0xFF9C27B0));
-    _drawBigNumber(canvas, 'SCHICKSAL', _destinyNumber.toString(),
-        w / 2 + 260, 680, const Color(0xFF2196F3));
+    _drawBigNumber(canvas, 'SCHICKSAL', _destinyNumber.toString(), w / 2 + 260,
+        680, const Color(0xFF2196F3));
 
-    _drawBigNumber(canvas, 'LEBENSWEG', _lifePathNumber.toString(),
-        w / 2 - 260, 1000, const Color(0xFF00BCD4));
+    _drawBigNumber(canvas, 'LEBENSWEG', _lifePathNumber.toString(), w / 2 - 260,
+        1000, const Color(0xFF00BCD4));
     _drawBigNumber(canvas, 'AUSDRUCK', _expressionNumber.toString(),
         w / 2 + 260, 1000, const Color(0xFF4CAF50));
 
@@ -4122,9 +4130,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
   }
 
   void _drawText(Canvas c, String text, double cx, double cy,
-      {required Color color,
-      required double size,
-      bool bold = false}) {
+      {required Color color, required double size, bool bold = false}) {
     final tp = TextPainter(
       text: TextSpan(
         text: text,
@@ -4144,7 +4150,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
   void _drawBigNumber(
       Canvas c, String label, String value, double cx, double cy, Color color) {
     final boxPaint = Paint()..color = color.withValues(alpha: 0.18);
-    final rect = Rect.fromCenter(center: Offset(cx, cy), width: 380, height: 240);
+    final rect =
+        Rect.fromCenter(center: Offset(cx, cy), width: 380, height: 240);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(24));
     c.drawRRect(rrect, boxPaint);
     final border = Paint()
@@ -4152,7 +4159,8 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen>
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
     c.drawRRect(rrect, border);
-    _drawText(c, label, cx, cy - 70, color: Colors.white70, size: 22, bold: true);
+    _drawText(c, label, cx, cy - 70,
+        color: Colors.white70, size: 22, bold: true);
     _drawText(c, value, cx, cy + 20, color: color, size: 86, bold: true);
   }
 }

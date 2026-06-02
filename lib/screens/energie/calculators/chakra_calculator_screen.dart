@@ -1265,7 +1265,7 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Laden: $e'),
+            content: Text('Fehler beim Laden. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

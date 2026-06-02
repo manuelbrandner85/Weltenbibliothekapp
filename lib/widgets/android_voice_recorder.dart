@@ -77,7 +77,8 @@ class _AndroidVoiceRecorderState extends State<AndroidVoiceRecorder>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler beim Initialisieren: $e'),
+            content:
+                Text('❌ Fehler beim Initialisieren. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -129,7 +130,7 @@ class _AndroidVoiceRecorderState extends State<AndroidVoiceRecorder>
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Aufnahme-Fehler: $e'),
+          content: Text('❌ Aufnahme-Fehler. Bitte erneut versuchen.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -170,7 +171,7 @@ class _AndroidVoiceRecorderState extends State<AndroidVoiceRecorder>
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Fehler beim Stoppen: $e'),
+          content: Text('❌ Fehler beim Stoppen. Bitte erneut versuchen.'),
           backgroundColor: Colors.red,
         ),
       );

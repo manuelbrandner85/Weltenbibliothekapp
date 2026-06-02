@@ -479,16 +479,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.calendar_today,
                             color: Colors.white70),
-                        label: Text(
-                            '${when.day}.${when.month}.${when.year}',
+                        label: Text('${when.day}.${when.month}.${when.year}',
                             style: const TextStyle(color: Colors.white)),
                         onPressed: () async {
                           final picked = await showDatePicker(
                             context: ctx,
                             initialDate: when,
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now()
-                                .add(const Duration(days: 365)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
                           );
                           if (picked != null) {
                             setLocal(() => when = DateTime(
@@ -504,20 +503,24 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        icon:
-                            const Icon(Icons.access_time, color: Colors.white70),
+                        icon: const Icon(Icons.access_time,
+                            color: Colors.white70),
                         label: Text(
                             '${when.hour.toString().padLeft(2, '0')}:${when.minute.toString().padLeft(2, '0')}',
                             style: const TextStyle(color: Colors.white)),
                         onPressed: () async {
                           final picked = await showTimePicker(
                             context: ctx,
-                            initialTime: TimeOfDay(
-                                hour: when.hour, minute: when.minute),
+                            initialTime:
+                                TimeOfDay(hour: when.hour, minute: when.minute),
                           );
                           if (picked != null) {
-                            setLocal(() => when = DateTime(when.year, when.month,
-                                when.day, picked.hour, picked.minute));
+                            setLocal(() => when = DateTime(
+                                when.year,
+                                when.month,
+                                when.day,
+                                picked.hour,
+                                picked.minute));
                           }
                         },
                       ),
@@ -563,8 +566,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
       return;
     }
     final schedule = LiveSchedule(when: when, topic: topicCtrl.text.trim());
-    await LiveScheduleService.instance
-        .save('energie', _selectedRoom, schedule);
+    await LiveScheduleService.instance.save('energie', _selectedRoom, schedule);
     if (!mounted) return;
     setState(() {
       _scheduledAt = schedule.when;
@@ -1038,7 +1040,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler beim Senden: $e'),
+            content: Text('❌ Fehler beim Senden. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1121,7 +1123,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
               // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('❌ Upload fehlgeschlagen: $e'),
+                  content:
+                      Text('❌ Upload fehlgeschlagen. Bitte erneut versuchen.'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -3622,7 +3625,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('❌ Fehler: $e'),
+              content:
+                  Text('❌ Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 3),
             ),
@@ -4722,8 +4726,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                   Expanded(
                     child: RadioListTile<String>(
                       title: const Text('24 Stunden',
-                          style:
-                              TextStyle(color: Colors.white, fontSize: 14)),
+                          style: TextStyle(color: Colors.white, fontSize: 14)),
                       value: '24h',
                       groupValue: muteType,
                       onChanged: (value) {

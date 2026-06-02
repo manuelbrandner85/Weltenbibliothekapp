@@ -721,7 +721,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Speichern: $e'),
+            content: Text('Fehler beim Speichern. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

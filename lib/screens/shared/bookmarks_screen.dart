@@ -104,7 +104,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Löschen: $e'),
+            content: Text('Fehler beim Löschen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -119,7 +119,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${exported.length} Bookmarks exportiert'),
+            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
             backgroundColor: Colors.green,
             action: SnackBarAction(
               label: 'Kopieren',
@@ -137,7 +137,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Export fehlgeschlagen: $e'),
+            content: Text('Export fehlgeschlagen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

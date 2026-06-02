@@ -309,7 +309,7 @@ class _NewChartTabState extends State<_NewChartTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Fehler: $e'),
+        content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
         backgroundColor: Colors.red,
       ));
     } finally {
@@ -628,7 +628,7 @@ class _HistoryTabState extends State<_HistoryTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Löschen fehlgeschlagen: $e'),
+        content: Text('Löschen fehlgeschlagen. Bitte erneut versuchen.'),
         backgroundColor: Colors.red,
       ));
     }

@@ -465,16 +465,15 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.calendar_today,
                             color: Colors.white70),
-                        label: Text(
-                            '${when.day}.${when.month}.${when.year}',
+                        label: Text('${when.day}.${when.month}.${when.year}',
                             style: const TextStyle(color: Colors.white)),
                         onPressed: () async {
                           final picked = await showDatePicker(
                             context: ctx,
                             initialDate: when,
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now()
-                                .add(const Duration(days: 365)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
                           );
                           if (picked != null) {
                             setLocal(() => when = DateTime(
@@ -490,20 +489,24 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        icon:
-                            const Icon(Icons.access_time, color: Colors.white70),
+                        icon: const Icon(Icons.access_time,
+                            color: Colors.white70),
                         label: Text(
                             '${when.hour.toString().padLeft(2, '0')}:${when.minute.toString().padLeft(2, '0')}',
                             style: const TextStyle(color: Colors.white)),
                         onPressed: () async {
                           final picked = await showTimePicker(
                             context: ctx,
-                            initialTime: TimeOfDay(
-                                hour: when.hour, minute: when.minute),
+                            initialTime:
+                                TimeOfDay(hour: when.hour, minute: when.minute),
                           );
                           if (picked != null) {
-                            setLocal(() => when = DateTime(when.year, when.month,
-                                when.day, picked.hour, picked.minute));
+                            setLocal(() => when = DateTime(
+                                when.year,
+                                when.month,
+                                when.day,
+                                picked.hour,
+                                picked.minute));
                           }
                         },
                       ),
@@ -525,8 +528,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
               child: const Text('Abbrechen'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
               onPressed: () {
                 if (topicCtrl.text.trim().isEmpty) return;
                 Navigator.of(ctx).pop(true);
@@ -549,8 +551,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
       return;
     }
     final schedule = LiveSchedule(when: when, topic: topicCtrl.text.trim());
-    await LiveScheduleService.instance
-        .save('materie', _selectedRoom, schedule);
+    await LiveScheduleService.instance.save('materie', _selectedRoom, schedule);
     if (!mounted) return;
     setState(() {
       _scheduledAt = schedule.when;
@@ -1262,7 +1263,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Senden: $e'),
+            content: Text('Fehler beim Senden. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1345,7 +1346,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
               // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('❌ Upload fehlgeschlagen: $e'),
+                  content:
+                      Text('❌ Upload fehlgeschlagen. Bitte erneut versuchen.'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -4538,8 +4540,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
                   Expanded(
                     child: RadioListTile<String>(
                       title: const Text('24 Stunden',
-                          style:
-                              TextStyle(color: Colors.white, fontSize: 14)),
+                          style: TextStyle(color: Colors.white, fontSize: 14)),
                       value: '24h',
                       groupValue: muteType,
                       onChanged: (value) {

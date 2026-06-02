@@ -167,7 +167,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Fehler beim Laden: $e'),
+          content: Text('Fehler beim Laden. Bitte erneut versuchen.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -685,7 +685,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler: $e'),
+            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

@@ -242,8 +242,8 @@ class _AncestorsTabState extends State<_AncestorsTab> {
           .showSnackBar(const SnackBar(content: Text('Ahn_in gelöscht')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')));
     }
   }
 
@@ -511,8 +511,8 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')));
     }
   }
 
@@ -805,8 +805,8 @@ class _PatternsTabState extends State<_PatternsTab> {
           .showSnackBar(const SnackBar(content: Text('Muster gelöscht')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')));
     }
   }
 
@@ -1065,8 +1065,8 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Fehler: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.')));
     }
   }
 

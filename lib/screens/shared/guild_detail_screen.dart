@@ -241,7 +241,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Beitritt fehlgeschlagen: $e'),
+            content: Text('Beitritt fehlgeschlagen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -314,7 +314,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler: $e'),
+            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -481,7 +481,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Erstellen: $e'),
+            content: Text('Fehler beim Erstellen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

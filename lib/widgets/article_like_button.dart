@@ -121,7 +121,7 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler: $e'),
+            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 2),
           ),

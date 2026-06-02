@@ -88,7 +88,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler: $e'),
+            content:
+                Text('❌ Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );

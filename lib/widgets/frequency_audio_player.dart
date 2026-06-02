@@ -156,7 +156,7 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler beim Abspielen: $e'),
+            content: Text('❌ Fehler beim Abspielen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
         );
