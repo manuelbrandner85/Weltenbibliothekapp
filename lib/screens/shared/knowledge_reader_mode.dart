@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/knowledge_extended_models.dart';
 import '../../services/annotation_service.dart'; // 🖍️ L3 Highlight + Notiz
+import '../../widgets/chat/chat_markdown_text.dart';
 import '../../services/storage_service.dart';
 import '../../services/unified_knowledge_service.dart';
 import 'package:share_plus/share_plus.dart';
@@ -405,15 +406,19 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   sliver: SliverToBoxAdapter(
-                    child: SelectableText(
-                      widget.entry.fullContent,
-                      style: TextStyle(
-                        fontSize: _fontSize,
-                        height: 1.8,
-                        fontFamily: _getFontFamily(),
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.9)
-                            : Colors.black87,
+                    child: SelectableText.rich(
+                      TextSpan(
+                        children: ChatMarkdownText.buildSpans(
+                          widget.entry.fullContent,
+                          TextStyle(
+                            fontSize: _fontSize,
+                            height: 1.8,
+                            fontFamily: _getFontFamily(),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.9)
+                                : Colors.black87,
+                          ),
+                        ),
                       ),
                       // 🖍️ L3: Highlight + Annotate. Tap "Notiz" im
                       // Selection-Toolbar speichert die markierte Textstelle

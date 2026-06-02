@@ -29,6 +29,17 @@ class ChatMarkdownText extends StatelessWidget {
   final int? maxLines;
   final TextOverflow? overflow;
 
+  /// Parses [text] into styled [InlineSpan] children.
+  /// Useful for [SelectableText.rich] where the caller builds the root span.
+  static List<InlineSpan> buildSpans(
+    String text,
+    TextStyle base, {
+    Color? linkColor,
+  }) {
+    final link = linkColor ?? const Color(0xFF80D8FF);
+    return _parse(text, base, link);
+  }
+
   @override
   Widget build(BuildContext context) {
     final base = style ??
@@ -53,7 +64,8 @@ class ChatMarkdownText extends StatelessWidget {
       RegExp(r'__([^_]+)__|(?<![\w_])_([^_\s][^_]*?)_(?![\w_])');
   static final _strikeRe = RegExp(r'~~([^~]+)~~');
 
-  List<InlineSpan> _parse(String input, TextStyle base, Color linkColor) {
+  static List<InlineSpan> _parse(
+      String input, TextStyle base, Color linkColor) {
     // 1) URLs rausziehen, Placeholder einsetzen.
     final urlHits = <_Hit>[];
     input.replaceAllMapped(_urlRe, (m) {
@@ -63,7 +75,7 @@ class ChatMarkdownText extends StatelessWidget {
     return _splitAndStyle(input, base, linkColor, urlHits);
   }
 
-  List<InlineSpan> _splitAndStyle(
+  static List<InlineSpan> _splitAndStyle(
     String input,
     TextStyle base,
     Color linkColor,
@@ -111,7 +123,7 @@ class ChatMarkdownText extends StatelessWidget {
     return spans;
   }
 
-  InlineSpan _buildSpan(_Hit h, TextStyle base, Color linkColor) {
+  static InlineSpan _buildSpan(_Hit h, TextStyle base, Color linkColor) {
     switch (h.type) {
       case _HitType.url:
         return TextSpan(
