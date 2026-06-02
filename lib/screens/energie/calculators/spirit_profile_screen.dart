@@ -9,6 +9,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../widgets/chat/chat_markdown_text.dart';
 import '../../../models/energie_profile.dart';
 import '../../../services/mentor_service.dart';
 import '../../../services/spirit_calculations/all_spirit_tools_engine.dart';
@@ -190,7 +191,7 @@ class _InterpretationView extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: accent.withValues(alpha: 0.35)),
         ),
-        child: SelectableText(
+        child: ChatMarkdownText(
           interpretation,
           style: const TextStyle(
             color: Colors.white,
