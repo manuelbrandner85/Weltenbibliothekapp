@@ -11,6 +11,7 @@ import '../../models/favorite.dart';
 import '../../widgets/favorite_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
+import 'kaninchenbau/screens/my_investigations_screen.dart';
 import 'materie_live_chat_screen.dart';
 // HistoryTimelineScreen ersetzt durch Kaninchenbau (Zeitlinie ist jetzt eine Card im Kaninchenbau)
 import '../../services/chat/recent_rooms_service.dart';
@@ -357,6 +358,18 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     } else {
       _go(const KaninchenbauScreen());
     }
+  }
+
+  /// Oeffnet den Kaninchenbau direkt mit einem vorausgefuellten Thema
+  /// (z.B. via Trending-Chip). Pusht immer einen eigenen Screen, damit
+  /// das Thema garantiert geladen wird.
+  void _openTopic(String topic) {
+    final t = topic.trim();
+    if (t.isEmpty) {
+      _openRechercheTab();
+      return;
+    }
+    _go(KaninchenbauScreen(initialTopic: t));
   }
 
   void _goArticle(Map<String, dynamic> a) {
@@ -920,6 +933,18 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         badge: 0,
         onTap: () => _go(const OsintToolsHub()),
       ),
+      _TileDef(
+        icon: Icons.folder_special_rounded,
+        label: 'Meine Recherchen',
+        sub: 'Gespeicherte Fälle',
+        gradient: [
+          const Color(0xFF311B92),
+          const Color(0xFF512DA8),
+          const Color(0xFF7C4DFF)
+        ],
+        badge: 0,
+        onTap: () => _go(const MyInvestigationsScreen()),
+      ),
     ];
 
     return SliverToBoxAdapter(
@@ -946,7 +971,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
               Row(children: [
                 _buildActionTile(tiles[4]),
                 const SizedBox(width: 10),
-                const Expanded(child: SizedBox()),
+                _buildActionTile(tiles[5]),
               ]),
             ]),
           ),
@@ -1237,7 +1262,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             final topic = topics[i];
             final c = chipColors[i % chipColors.length];
             return GestureDetector(
-              onTap: _openRechercheTab,
+              onTap: () => _openTopic(topic),
               child: Container(
                 margin: const EdgeInsets.only(right: 10),
                 padding:
@@ -1247,9 +1272,14 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(color: c.withValues(alpha: 0.3)),
                 ),
-                child: Text(topic,
-                    style: TextStyle(
-                        color: c, fontSize: 13, fontWeight: FontWeight.w600)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.search_rounded,
+                      color: c.withValues(alpha: 0.7), size: 13),
+                  const SizedBox(width: 5),
+                  Text(topic,
+                      style: TextStyle(
+                          color: c, fontSize: 13, fontWeight: FontWeight.w600)),
+                ]),
               ),
             );
           },
