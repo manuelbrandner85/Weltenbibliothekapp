@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
+import '../../services/account_service.dart';
+import '../../services/unified_profile_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // NOTIFICATION CENTER — Echtzeit-Benachrichtigungen
@@ -146,6 +148,63 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           .update({'read_at': DateTime.now().toIso8601String()}).eq('id', id);
       // Realtime UPDATE event aktualisiert die Liste automatisch
     } catch (_) {}
+  }
+
+  /// Loescht eine Notification ueber den Worker (InvisibleAuth-tauglich).
+  /// Gibt true zurueck wenn die Kachel weggewischt werden darf.
+  Future<bool> _deleteNotification(String id) async {
+    final uid = _supabase.auth.currentUser?.id ??
+        UnifiedProfileService.instance.userId;
+    if (uid == null) return false;
+    final ok =
+        await AccountService.instance.deleteNotification(id: id, userId: uid);
+    if (ok && mounted) {
+      setState(() => _notifs.removeWhere((n) => n['id'] == id));
+    } else if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Loeschen fehlgeschlagen.')),
+      );
+    }
+    return ok;
+  }
+
+  /// Loescht ALLE Notifications des Users.
+  Future<void> _deleteAll() async {
+    final uid = _supabase.auth.currentUser?.id ??
+        UnifiedProfileService.instance.userId;
+    if (uid == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _card,
+        title: const Text('Alle loeschen?',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Alle Benachrichtigungen werden unwiderruflich entfernt.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child:
+                const Text('Loeschen', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ok = await AccountService.instance.deleteAllNotifications(userId: uid);
+    if (ok && mounted) {
+      setState(() => _notifs = []);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Loeschen fehlgeschlagen.')),
+      );
+    }
   }
 
   Future<void> _markAllRead() async {
@@ -302,6 +361,13 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                 style: TextStyle(color: _accentLight, fontSize: 13),
               ),
             ),
+          if (_notifs.isNotEmpty)
+            IconButton(
+              tooltip: 'Alle loeschen',
+              onPressed: _deleteAll,
+              icon: Icon(Icons.delete_sweep_outlined,
+                  color: _accentLight, size: 20),
+            ),
         ],
       ),
       body: Stack(
@@ -366,8 +432,10 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         color: Colors.red.shade800,
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
-      confirmDismiss: (_) async =>
-          false, // Read-only dismiss animation, no actual delete
+      confirmDismiss: (_) async {
+        if (id == null) return false;
+        return _deleteNotification(id);
+      },
       child: GestureDetector(
         onTap: () {
           if (!read && id != null) _markAsRead(id);

@@ -1724,4 +1724,141 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return null;
     }
   }
+
+  // ════════════════════════════════════════════════════════════════════
+  // v117: Granulare Sperren (user_restrictions)
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Liefert die aktiven + historischen Sperren eines Users.
+  static Future<List<Map<String, dynamic>>> getRestrictions(
+      String userId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/users/$userId/restrictions');
+      final list = data['restrictions'];
+      if (list is List) return list.cast<Map<String, dynamic>>();
+      return [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getRestrictions: $e');
+      return [];
+    }
+  }
+
+  /// Sperrt einen User in den angegebenen [scopes]. [durationHours] <= 0
+  /// bedeutet permanent. 'all' => Vollsperre (spiegelt is_banned).
+  static Future<bool> restrictUser({
+    required String userId,
+    required List<String> scopes,
+    String reason = 'Admin-Sperre',
+    int durationHours = 0,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/restrict',
+        body: {
+          'scopes': scopes,
+          'reason': reason,
+          'duration_h': durationHours,
+        },
+      );
+      AdminApiClient.instance.invalidateCache('/api/admin/users');
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ restrictUser: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ restrictUser: $e');
+      return false;
+    }
+  }
+
+  /// Hebt Sperren auf. Leere [scopes] oder ['all'] => alle Sperren aufheben.
+  static Future<bool> unrestrictUser({
+    required String userId,
+    List<String> scopes = const [],
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/unrestrict',
+        body: {'scopes': scopes},
+      );
+      AdminApiClient.instance.invalidateCache('/api/admin/users');
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ unrestrictUser: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ unrestrictUser: $e');
+      return false;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // v117: Antrags-Inbox + Loesch-Blacklist
+  // ════════════════════════════════════════════════════════════════════
+
+  /// Laedt Antraege (Reaktivierung / Einspruch / Selbstloeschung).
+  /// [status] ∈ 'pending'|'approved'|'rejected'|'all'
+  static Future<List<Map<String, dynamic>>> getAccountRequests(
+      {String status = 'pending'}) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/account-requests?status=$status');
+      final list = data['requests'];
+      if (list is List) return list.cast<Map<String, dynamic>>();
+      return [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getAccountRequests: $e');
+      return [];
+    }
+  }
+
+  /// Bearbeitet einen Antrag. [approve] true = annehmen, false = ablehnen.
+  static Future<bool> resolveAccountRequest({
+    required String requestId,
+    required bool approve,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/account-requests/$requestId/resolve',
+        body: {'action': approve ? 'approve' : 'reject'},
+      );
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ resolveAccountRequest: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ resolveAccountRequest: $e');
+      return false;
+    }
+  }
+
+  /// Laedt die Loesch-Blacklist (geloeschte Identitaeten).
+  static Future<List<Map<String, dynamic>>> getDeletedIdentities() async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/deleted-identities');
+      final list = data['identities'];
+      if (list is List) return list.cast<Map<String, dynamic>>();
+      return [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getDeletedIdentities: $e');
+      return [];
+    }
+  }
+
+  /// Entfernt einen Blacklist-Eintrag (gibt Neuanmeldung wieder frei).
+  static Future<bool> removeDeletedIdentity(String id) async {
+    try {
+      final data = await AdminApiClient.instance
+          .deleteJson('/api/admin/deleted-identities/$id');
+      return data['success'] as bool? ?? true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ removeDeletedIdentity: $e');
+      return false;
+    }
+  }
 }
