@@ -4347,6 +4347,55 @@ export default {
         } catch (e) { return errorResponse(`Audit-Fehler: ${e.message}`); }
       }
 
+      // ── DELETE /api/admin/audit/:world ──────────────────────
+      // Loescht Audit-/Log-Eintraege. NUR root_admin.
+      //   ?id=audit_<uuid>  -> einzelnen Eintrag loeschen
+      //   ?all=true         -> alle Eintraege loeschen (world!='all' -> nur
+      //                        dieser World + welt-lose Eintraege)
+      // edit_/del_-Eintraege stammen aus chat_messages und sind hier nicht
+      // loeschbar (nur das echte admin_audit_log).
+      if (method === 'DELETE' && path.match(/\/api\/admin\/audit\/\w+/)) {
+        try {
+          if (caller.role !== 'root_admin') {
+            return errorResponse('Nur Root-Admin darf Audit-Logs loeschen', 403, 'insufficient_privilege');
+          }
+          const world = path.split('/')[4];
+          const rawId = url.searchParams.get('id');
+          const clearAll = url.searchParams.get('all') === 'true';
+
+          if (rawId) {
+            // Prefix 'audit_' entfernen -> echte admin_audit_log.id.
+            const realId = rawId.startsWith('audit_') ? rawId.slice(6) : rawId;
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/admin_audit_log?id=eq.${encodeURIComponent(realId)}`,
+              { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+            if (!r.ok) {
+              const t = await r.text().catch(() => '');
+              return errorResponse(`Audit-Delete-Fehler: ${r.status} ${t.slice(0, 200)}`);
+            }
+            logAudit(svcHeaders, { admin_username: caller.username, action: 'audit_delete_one', target_id: realId, details: {} });
+            return jsonResponse({ success: true, action: 'deleted', id: realId });
+          }
+
+          if (clearAll) {
+            const isAllWorlds = world === 'all';
+            const filter = isAllWorlds
+              ? 'id=not.is.null'
+              : `or=(world.eq.${encodeURIComponent(world)},world.is.null)`;
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/admin_audit_log?${filter}`,
+              { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+            if (!r.ok) {
+              const t = await r.text().catch(() => '');
+              return errorResponse(`Audit-Clear-Fehler: ${r.status} ${t.slice(0, 200)}`);
+            }
+            return jsonResponse({ success: true, action: 'cleared', world });
+          }
+
+          return errorResponse('id oder all=true erforderlich', 400);
+        } catch (e) { return errorResponse(`Audit-Delete-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/voice-calls/:world ───────────────────
       if (method === 'GET' && path.includes('/voice-calls')) {
         return jsonResponse({ success: true, world: path.split('/')[4] || '', calls: [] });
@@ -4442,6 +4491,46 @@ export default {
           }).catch(() => {});
           return jsonResponse({ success: true });
         } catch (e) { return errorResponse(`Reports-PATCH-Fehler: ${e.message}`); }
+      }
+
+      // ── DELETE /api/admin/reports[/:id]  (Meldungen loeschen) ──
+      // NUR root_admin.  /api/admin/reports/:id -> einzeln
+      //                  /api/admin/reports?all=true -> alle (opt. ?status=)
+      if (method === 'DELETE' && path.startsWith('/api/admin/reports')) {
+        try {
+          if (caller.role !== 'root_admin') {
+            return errorResponse('Nur Root-Admin darf Meldungen loeschen', 403, 'insufficient_privilege');
+          }
+          const parts = path.split('/');
+          const reportId = parts[4]; // undefined bei /api/admin/reports
+          if (reportId) {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_reports?id=eq.${encodeURIComponent(reportId)}`,
+              { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+            if (!r.ok) {
+              const t = await r.text().catch(() => '');
+              return errorResponse(`Report-Delete-Fehler: ${r.status} ${t.slice(0, 200)}`);
+            }
+            logAudit(svcHeaders, { admin_username: caller.username, action: 'report_delete_one', target_id: reportId, details: {} });
+            return jsonResponse({ success: true, action: 'deleted', id: reportId });
+          }
+          if (url.searchParams.get('all') === 'true') {
+            const status = url.searchParams.get('status');
+            const filter = (status && status !== 'all')
+              ? `status=eq.${encodeURIComponent(status)}`
+              : 'id=not.is.null';
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_reports?${filter}`,
+              { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+            if (!r.ok) {
+              const t = await r.text().catch(() => '');
+              return errorResponse(`Reports-Clear-Fehler: ${r.status} ${t.slice(0, 200)}`);
+            }
+            logAudit(svcHeaders, { admin_username: caller.username, action: 'report_clear', target_id: status || 'all', details: {} });
+            return jsonResponse({ success: true, action: 'cleared' });
+          }
+          return errorResponse('reportId oder all=true erforderlich', 400);
+        } catch (e) { return errorResponse(`Report-Delete-Fehler: ${e.message}`); }
       }
 
       // ── PATCH /api/admin/module/:type/:code  (Modul-Felder editieren) ──

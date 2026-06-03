@@ -1582,6 +1582,84 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// Loescht eine einzelne Meldung/Report. NUR root_admin (Worker prueft Rolle).
+  static Future<bool> deleteReport(String reportId,
+      {String role = 'root_admin'}) async {
+    try {
+      await AdminApiClient.instance
+          .deleteJson('/api/admin/reports/$reportId', role: role);
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ deleteReport: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ deleteReport: $e');
+      return false;
+    }
+  }
+
+  /// Loescht ALLE Meldungen (optional gefiltert nach status). NUR root_admin.
+  static Future<bool> clearReports(
+      {String? status, String role = 'root_admin'}) async {
+    try {
+      final q = (status != null && status != 'all') ? '&status=$status' : '';
+      await AdminApiClient.instance
+          .deleteJson('/api/admin/reports?all=true$q', role: role);
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ clearReports: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ clearReports: $e');
+      return false;
+    }
+  }
+
+  /// Loescht einen einzelnen Audit-/Log-Eintrag (log_id, z.B. "audit_<uuid>").
+  /// NUR root_admin. edit_/del_-Eintraege (Chat-Historie) sind nicht loeschbar.
+  static Future<bool> deleteAuditEntry({
+    required String world,
+    required String logId,
+    String role = 'root_admin',
+  }) async {
+    try {
+      await AdminApiClient.instance.deleteJson(
+        '/api/admin/audit/$world?id=${Uri.encodeQueryComponent(logId)}',
+        role: role,
+      );
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ deleteAuditEntry: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ deleteAuditEntry: $e');
+      return false;
+    }
+  }
+
+  /// Loescht ALLE Audit-/Log-Eintraege (world!='all' -> nur diese Welt +
+  /// welt-lose). NUR root_admin.
+  static Future<bool> clearAuditLog({
+    required String world,
+    String role = 'root_admin',
+  }) async {
+    try {
+      await AdminApiClient.instance
+          .deleteJson('/api/admin/audit/$world?all=true', role: role);
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ clearAuditLog: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ clearAuditLog: $e');
+      return false;
+    }
+  }
+
   /// Liest app_config (Update-Versionskonfiguration). Nur root_admin.
   /// Returns Liste der Plattform-Zeilen (android, ios).
   static Future<List<Map<String, dynamic>>?> getAppConfig() async {

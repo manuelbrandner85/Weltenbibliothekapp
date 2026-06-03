@@ -411,7 +411,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
       case 'audit':
         return _AuditReportsWrapper(
-            world: 'all', accent: _accent, accentBright: _accentBright);
+            world: 'all',
+            accent: _accent,
+            accentBright: _accentBright,
+            isRootAdmin: admin.isRootAdmin);
       case 'system':
         return _SystemTab(
             accent: _accent, accentBright: _accentBright, admin: admin);
@@ -2944,7 +2947,8 @@ class _UsersTabState extends State<_UsersTab> {
 
   Future<void> _viewDetail(WorldUser u) async {
     if (u.isWebOnly) {
-      _toast('Noch kein vollstaendiges Profil -- Detail nicht verfuegbar.');
+      _snack('Noch kein vollstaendiges Profil -- Detail nicht verfuegbar.',
+          color: Colors.orange);
       return;
     }
     showModalBottomSheet<void>(
@@ -8861,10 +8865,12 @@ class _AuditReportsWrapper extends StatefulWidget {
   final String world;
   final Color accent;
   final Color accentBright;
+  final bool isRootAdmin;
   const _AuditReportsWrapper({
     required this.world,
     required this.accent,
     required this.accentBright,
+    this.isRootAdmin = false,
   });
 
   @override
@@ -9000,10 +9006,12 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
             _AuditLogTab(
                 world: widget.world,
                 accent: widget.accent,
-                accentBright: widget.accentBright),
+                accentBright: widget.accentBright,
+                isRootAdmin: widget.isRootAdmin),
             _ReportsInboxTab(
               accent: widget.accent,
               accentBright: widget.accentBright,
+              isRootAdmin: widget.isRootAdmin,
               onChanged: _loadReportsCount,
             ),
             _UsernameRequestsTab(
@@ -9026,10 +9034,12 @@ class _ReportsInboxTab extends StatefulWidget {
   final Color accent;
   final Color accentBright;
   final VoidCallback onChanged;
+  final bool isRootAdmin;
   const _ReportsInboxTab({
     required this.accent,
     required this.accentBright,
     required this.onChanged,
+    this.isRootAdmin = false,
   });
 
   @override
@@ -9134,6 +9144,63 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         content: Text('Netzwerk. Bitte erneut versuchen.'),
         backgroundColor: Colors.redAccent,
       ));
+    }
+  }
+
+  // Meldung loeschen (nur root_admin -- Worker prueft Rolle zusaetzlich).
+  Future<void> _deleteReport(Map<String, dynamic> report) async {
+    final id = report['id'] as String?;
+    if (id == null) return;
+    final ok = await WorldAdminServiceV162.deleteReport(id);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _reports.removeWhere((e) => e['id'] == id));
+      widget.onChanged();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Meldung geloescht'), backgroundColor: Colors.green));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Loeschen fehlgeschlagen'),
+          backgroundColor: Colors.redAccent));
+    }
+  }
+
+  Future<void> _clearReports() async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF12121E),
+            title: const Text('Meldungen leeren',
+                style: TextStyle(color: Colors.white)),
+            content: Text(
+                _filterStatus == 'all'
+                    ? 'Wirklich ALLE Meldungen unwiderruflich loeschen?'
+                    : 'Wirklich alle Meldungen mit Status "$_filterStatus" loeschen?',
+                style: const TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Abbrechen')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Loeschen',
+                      style: TextStyle(color: Colors.redAccent))),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+    final ok = await WorldAdminServiceV162.clearReports(status: _filterStatus);
+    if (!mounted) return;
+    if (ok) {
+      widget.onChanged();
+      _load();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Meldungen geleert'), backgroundColor: Colors.green));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Leeren fehlgeschlagen'),
+          backgroundColor: Colors.redAccent));
     }
   }
 
@@ -9297,6 +9364,18 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                     backgroundColor: Colors.blueGrey,
                     foregroundColor: Colors.white),
               ),
+              if (widget.isRootAdmin)
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _deleteReport(r);
+                  },
+                  icon: const Icon(Icons.delete_forever_rounded, size: 16),
+                  label: const Text('Loeschen'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade900,
+                      foregroundColor: Colors.white),
+                ),
             ]),
           ],
         ),
@@ -9550,6 +9629,24 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                     }),
                   ],
                 )),
+            // Root-Admin: alle (gefilterten) Meldungen loeschen.
+            if (widget.isRootAdmin && _reports.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _clearReports,
+                  icon: const Icon(Icons.delete_sweep_rounded,
+                      size: 16, color: Colors.redAccent),
+                  label: Text(
+                      _filterStatus == 'all'
+                          ? 'Alle Meldungen loeschen'
+                          : 'Gefilterte loeschen',
+                      style: const TextStyle(
+                          color: Colors.redAccent, fontSize: 12)),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -9604,7 +9701,7 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                           itemCount: _reports.length,
                           itemBuilder: (_, i) {
                             final r = _reports[i];
-                            return Padding(
+                            final card = Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: Material(
                                 color: Colors.transparent,
@@ -9665,6 +9762,26 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                                 ),
                               ),
                             );
+                            if (!widget.isRootAdmin) return card;
+                            final id = r['id'] as String?;
+                            if (id == null) return card;
+                            // Root-Admin: per Swipe loeschbar.
+                            return Dismissible(
+                              key: ValueKey('report_$id'),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding:
+                                    const EdgeInsets.only(right: 20, bottom: 8),
+                                child: const Icon(Icons.delete_forever_rounded,
+                                    color: Colors.redAccent),
+                              ),
+                              confirmDismiss: (_) async {
+                                await _deleteReport(r);
+                                return false; // _deleteReport pflegt Liste selbst.
+                              },
+                              child: card,
+                            );
                           },
                         ),
                       ),
@@ -9677,8 +9794,12 @@ class _AuditLogTab extends StatefulWidget {
   final String world;
   final Color accent;
   final Color accentBright;
+  final bool isRootAdmin;
   const _AuditLogTab(
-      {required this.world, required this.accent, required this.accentBright});
+      {required this.world,
+      required this.accent,
+      required this.accentBright,
+      this.isRootAdmin = false});
 
   @override
   State<_AuditLogTab> createState() => _AuditLogTabState();
@@ -9773,6 +9894,65 @@ class _AuditLogTabState extends State<_AuditLogTab> {
     }).toList();
   }
 
+  void _toast(String m, {Color? color}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(m), backgroundColor: color));
+  }
+
+  // Einzelnen Audit-Eintrag loeschen (nur root_admin). edit_/del_-Eintraege
+  // stammen aus chat_messages und sind hier nicht loeschbar.
+  Future<void> _deleteEntry(Map<String, dynamic> l) async {
+    final logId = (l['log_id'] as String?) ?? '';
+    if (!logId.startsWith('audit_')) {
+      _toast('Dieser Eintrag (Chat-Historie) ist nicht loeschbar.',
+          color: Colors.orange);
+      return;
+    }
+    final ok = await WorldAdminServiceV162.deleteAuditEntry(
+        world: widget.world, logId: logId);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _logs.removeWhere((e) => e['log_id'] == logId));
+      _toast('Eintrag geloescht', color: Colors.green);
+    } else {
+      _toast('Loeschen fehlgeschlagen', color: Colors.red);
+    }
+  }
+
+  Future<void> _clearAll() async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF12121E),
+            title: const Text('Audit-Log leeren',
+                style: TextStyle(color: Colors.white)),
+            content: const Text(
+                'Wirklich ALLE Audit-/Log-Eintraege unwiderruflich loeschen?',
+                style: TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Abbrechen')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Alles loeschen',
+                      style: TextStyle(color: Colors.redAccent))),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+    final ok = await WorldAdminServiceV162.clearAuditLog(world: widget.world);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _logs.clear());
+      _toast('Audit-Log geleert', color: Colors.green);
+    } else {
+      _toast('Leeren fehlgeschlagen', color: Colors.red);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final actions = {
@@ -9795,6 +9975,12 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                     letterSpacing: 2,
                     fontWeight: FontWeight.bold)),
             const Spacer(),
+            if (widget.isRootAdmin && _logs.isNotEmpty)
+              IconButton(
+                  tooltip: 'Audit-Log leeren',
+                  icon: const Icon(Icons.delete_sweep_rounded,
+                      color: Colors.redAccent),
+                  onPressed: _clearAll),
             IconButton(
                 icon: Icon(Icons.refresh, color: widget.accent),
                 onPressed: _load),
@@ -9956,7 +10142,27 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                       itemCount: _filtered.length,
                       itemBuilder: (_, i) {
                         final l = _filtered[i];
-                        return _buildLogRow(l);
+                        if (!widget.isRootAdmin) return _buildLogRow(l);
+                        // Root-Admin: per Swipe loeschbar (nur audit_-Eintraege).
+                        final logId = (l['log_id'] as String?) ?? '';
+                        final deletable = logId.startsWith('audit_');
+                        if (!deletable) return _buildLogRow(l);
+                        return Dismissible(
+                          key: ValueKey(logId),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding:
+                                const EdgeInsets.only(right: 20, bottom: 6),
+                            child: const Icon(Icons.delete_forever_rounded,
+                                color: Colors.redAccent),
+                          ),
+                          confirmDismiss: (_) async {
+                            await _deleteEntry(l);
+                            return false; // _deleteEntry pflegt die Liste selbst.
+                          },
+                          child: _buildLogRow(l),
+                        );
                       },
                     ),
         ),
