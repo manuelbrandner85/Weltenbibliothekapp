@@ -1437,6 +1437,81 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }
 
   // ════════════════════════════════════════════════════════════
+  // v116: Admin-gesteuerte Modul-Freischaltung / -Sperre
+  // ════════════════════════════════════════════════════════════
+
+  /// Liefert alle Modul-Overrides (grant/block) fuer einen User.
+  static Future<List<Map<String, dynamic>>> getModuleAccess(
+      String userId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/users/$userId/module-access');
+      final list = (data['overrides'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ getModuleAccess: ${e.statusCode} ${e.bodySnippet}');
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getModuleAccess: $e');
+      return const [];
+    }
+  }
+
+  /// Setzt einen Modul-Override (Force-Unlock oder Force-Block).
+  /// [isGranted]=true → Modul immer freigeschaltet, unabhaengig von Voraussetzungen.
+  /// [isGranted]=false → Modul gesperrt, auch wenn Voraussetzungen erfuellt.
+  static Future<bool> setModuleAccess({
+    required String userId,
+    required String moduleCode,
+    required String moduleType,
+    required bool isGranted,
+    String? reason,
+  }) async {
+    try {
+      await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/module-access',
+        body: {
+          'module_code': moduleCode,
+          'module_type': moduleType,
+          'is_granted': isGranted,
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+        },
+      );
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ setModuleAccess: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ setModuleAccess: $e');
+      return false;
+    }
+  }
+
+  /// Entfernt einen Modul-Override; der User faellt zurueck auf die normale
+  /// Prerequisite-Logik.
+  static Future<bool> removeModuleAccess({
+    required String userId,
+    required String moduleCode,
+  }) async {
+    try {
+      await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/module-access',
+        body: {'module_code': moduleCode, 'action': 'remove'},
+      );
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ removeModuleAccess: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ removeModuleAccess: $e');
+      return false;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
   // v115 Feature E: Moderations-Queue (User-Reports)
   // ════════════════════════════════════════════════════════════
 

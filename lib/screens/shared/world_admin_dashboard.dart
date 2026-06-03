@@ -1825,6 +1825,23 @@ class _UsersTabState extends State<_UsersTab> {
     );
   }
 
+  // v116: Modul-Freischaltungs-Sheet
+  Future<void> _showModuleAccess(WorldUser u) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF12121E),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _ModuleAccessSheet(
+        user: u,
+        accent: widget.accent,
+        adminUsername: widget.admin.username ?? '',
+      ),
+    );
+  }
+
   // Feiner-granularer Rollenwechsel (v5.44.3+): erlaubt user|moderator|
   // content_editor|admin|root_admin. Promote/Demote bleiben fuer
   // Rueckwaerts-Kompatibilitaet bestehen.
@@ -2582,6 +2599,10 @@ class _UsersTabState extends State<_UsersTab> {
                                         : null,
                                     onWarn: () => _warn(u),
                                     onNotes: () => _showNotes(u),
+                                    onModuleAccess: AppRoles.canBanUsers(
+                                            widget.admin.role)
+                                        ? () => _showModuleAccess(u)
+                                        : null,
                                     onChangeRole: AppRoles.canPromoteDemote(
                                             widget.admin.role)
                                         ? (newRole) => _changeRole(u, newRole)
@@ -4177,6 +4198,416 @@ class _ModerationSheetState extends State<_ModerationSheet> {
   }
 }
 
+// ── Modul-Zugangs-Sheet (v116) ────────────────────────────────────────────
+// Zeigt alle Vorhang- und Ursprung-Module fuer einen User mit den aktuellen
+// Admin-Overrides. Admins koennen einzelne Module freischalten (Force-Unlock)
+// oder sperren (Force-Block), unabhaengig vom normalen Prerequisite-System.
+class _ModuleAccessSheet extends StatefulWidget {
+  final WorldUser user;
+  final Color accent;
+  final String adminUsername;
+  const _ModuleAccessSheet({
+    required this.user,
+    required this.accent,
+    required this.adminUsername,
+  });
+  @override
+  State<_ModuleAccessSheet> createState() => _ModuleAccessSheetState();
+}
+
+class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs;
+  bool _loading = true;
+
+  // Alle Module aus DB (map: module_code -> row)
+  List<Map<String, dynamic>> _vorhangModules = [];
+  List<Map<String, dynamic>> _ursprungModules = [];
+
+  // Admin-Overrides (map: module_code -> is_granted bool)
+  final Map<String, bool> _overrides = {};
+
+  // Laufende Aktionen
+  final Set<String> _busy = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 2, vsync: this);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final supa = Supabase.instance.client;
+
+    // Module + aktuelle Overrides parallel laden
+    final vorhangFuture = supa
+        .from('vorhang_modules')
+        .select('module_code,branch,title,is_boss_module,prerequisites')
+        .order('module_code', ascending: true);
+    final ursprungFuture = supa
+        .from('ursprung_modules')
+        .select('module_code,branch,title,is_boss_module,prerequisites')
+        .order('module_code', ascending: true);
+    final overrideFuture =
+        WorldAdminServiceV162.getModuleAccess(widget.user.userId);
+
+    final vorhangRaw =
+        ((await vorhangFuture) as List).cast<Map<String, dynamic>>();
+    final ursprungRaw =
+        ((await ursprungFuture) as List).cast<Map<String, dynamic>>();
+    final overrideList = await overrideFuture;
+
+    if (!mounted) return;
+
+    final overrides = <String, bool>{};
+    for (final o in overrideList) {
+      final code = o['module_code'] as String?;
+      final granted = o['is_granted'] as bool?;
+      if (code != null && granted != null) overrides[code] = granted;
+    }
+
+    setState(() {
+      _vorhangModules = vorhangRaw;
+      _ursprungModules = ursprungRaw;
+      _overrides
+        ..clear()
+        ..addAll(overrides);
+      _loading = false;
+    });
+  }
+
+  Future<void> _setAccess(
+      String moduleCode, String moduleType, bool isGranted) async {
+    setState(() => _busy.add(moduleCode));
+    final ok = await WorldAdminServiceV162.setModuleAccess(
+      userId: widget.user.userId,
+      moduleCode: moduleCode,
+      moduleType: moduleType,
+      isGranted: isGranted,
+    );
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _overrides[moduleCode] = isGranted);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aktion fehlgeschlagen')),
+      );
+    }
+    setState(() => _busy.remove(moduleCode));
+  }
+
+  Future<void> _removeAccess(String moduleCode) async {
+    setState(() => _busy.add(moduleCode));
+    final ok = await WorldAdminServiceV162.removeModuleAccess(
+      userId: widget.user.userId,
+      moduleCode: moduleCode,
+    );
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _overrides.remove(moduleCode));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aktion fehlgeschlagen')),
+      );
+    }
+    setState(() => _busy.remove(moduleCode));
+  }
+
+  Widget _buildModuleList(
+      List<Map<String, dynamic>> modules, String moduleType) {
+    if (modules.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('Keine Module gefunden',
+              style: TextStyle(color: Colors.white38)),
+        ),
+      );
+    }
+
+    // Module nach Branch gruppieren
+    final byBranch = <String, List<Map<String, dynamic>>>{};
+    for (final m in modules) {
+      final branch = (m['branch'] as String?) ?? 'Weitere';
+      byBranch.putIfAbsent(branch, () => []).add(m);
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        for (final entry in byBranch.entries) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 14, bottom: 6),
+            child: Text(
+              entry.key,
+              style: TextStyle(
+                color: widget.accent,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          for (final m in entry.value)
+            _buildModuleRow(m, moduleType),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildModuleRow(Map<String, dynamic> m, String moduleType) {
+    final code = m['module_code'] as String;
+    final title = m['title'] as String? ?? code;
+    final isBoss = m['is_boss_module'] as bool? ?? false;
+    final prereqs = (m['prerequisites'] as List?)?.cast<String>() ?? [];
+    final override = _overrides[code]; // null = kein Override
+    final isBusy = _busy.contains(code);
+
+    Color statusColor;
+    String statusLabel;
+    IconData statusIcon;
+    if (override == true) {
+      statusColor = Colors.green;
+      statusLabel = 'Freigeschaltet';
+      statusIcon = Icons.lock_open_rounded;
+    } else if (override == false) {
+      statusColor = Colors.red;
+      statusLabel = 'Gesperrt';
+      statusIcon = Icons.lock_rounded;
+    } else {
+      statusColor = Colors.white24;
+      statusLabel = prereqs.isEmpty ? 'Immer offen' : 'Voraussetzungen';
+      statusIcon = Icons.hdr_auto_rounded;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: override == null
+              ? Colors.white10
+              : (override ? Colors.green : Colors.red).withValues(alpha: 0.35),
+        ),
+      ),
+      child: ListTile(
+        dense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        leading: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isBoss
+                ? Colors.amber.withValues(alpha: 0.15)
+                : Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isBoss ? Colors.amber.withValues(alpha: 0.4) : Colors.white10,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              isBoss ? '⭐' : code.split('-').last,
+              style: TextStyle(
+                fontSize: isBoss ? 14 : 10,
+                color: Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Row(children: [
+          Icon(statusIcon, size: 10, color: statusColor),
+          const SizedBox(width: 4),
+          Text(statusLabel,
+              style: TextStyle(color: statusColor, fontSize: 10)),
+        ]),
+        trailing: isBusy
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.white38))
+            : PopupMenuButton<String>(
+                color: const Color(0xFF1A1A30),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                tooltip: 'Zugang steuern',
+                itemBuilder: (_) => [
+                  if (override != true)
+                    PopupMenuItem(
+                      value: 'grant',
+                      child: Row(children: [
+                        const Icon(Icons.lock_open_rounded,
+                            size: 14, color: Colors.green),
+                        const SizedBox(width: 8),
+                        const Text('Freischalten',
+                            style: TextStyle(color: Colors.white, fontSize: 13)),
+                      ]),
+                    ),
+                  if (override != false)
+                    PopupMenuItem(
+                      value: 'block',
+                      child: Row(children: [
+                        const Icon(Icons.lock_rounded,
+                            size: 14, color: Colors.red),
+                        const SizedBox(width: 8),
+                        const Text('Sperren',
+                            style: TextStyle(color: Colors.white, fontSize: 13)),
+                      ]),
+                    ),
+                  if (override != null)
+                    PopupMenuItem(
+                      value: 'reset',
+                      child: Row(children: [
+                        const Icon(Icons.restart_alt_rounded,
+                            size: 14, color: Colors.white54),
+                        const SizedBox(width: 8),
+                        const Text('Zuruecksetzen (Standard)',
+                            style:
+                                TextStyle(color: Colors.white54, fontSize: 13)),
+                      ]),
+                    ),
+                ],
+                onSelected: (action) {
+                  if (action == 'grant') {
+                    _setAccess(code, moduleType, true);
+                  } else if (action == 'block') {
+                    _setAccess(code, moduleType, false);
+                  } else if (action == 'reset') {
+                    _removeAccess(code);
+                  }
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.more_vert_rounded,
+                      size: 14, color: Colors.white54),
+                ),
+              ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final overrideCount = _overrides.length;
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      builder: (ctx, scrollCtrl) => Column(
+        children: [
+          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF26C6DA).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: const Color(0xFF26C6DA).withValues(alpha: 0.4)),
+                ),
+                child: const Icon(Icons.school_rounded,
+                    color: Color(0xFF26C6DA), size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Modul-Zugang',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16)),
+                    Text(
+                      '@${widget.user.username}'
+                      '${overrideCount > 0 ? ' · $overrideCount Override${overrideCount != 1 ? "s" : ""}' : ''}',
+                      style: TextStyle(
+                          color: widget.accent.withValues(alpha: 0.8),
+                          fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              if (_loading)
+                const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white38)),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          TabBar(
+            controller: _tabs,
+            indicatorColor: const Color(0xFF26C6DA),
+            labelColor: const Color(0xFF26C6DA),
+            unselectedLabelColor: Colors.white38,
+            indicatorSize: TabBarIndicatorSize.tab,
+            tabs: [
+              Tab(
+                  text:
+                      'Vorhang${_vorhangModules.isNotEmpty ? " (${_vorhangModules.length})" : ""}'),
+              Tab(
+                  text:
+                      'Ursprung${_ursprungModules.isNotEmpty ? " (${_ursprungModules.length})" : ""}'),
+            ],
+          ),
+          const Divider(color: Colors.white10, height: 1),
+          Expanded(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF26C6DA)))
+                : TabBarView(
+                    controller: _tabs,
+                    children: [
+                      _buildModuleList(_vorhangModules, 'vorhang'),
+                      _buildModuleList(_ursprungModules, 'ursprung'),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Nutzer-Kachel ─────────────────────────────────────────────────────────
 class _UserTile extends StatelessWidget {
   final WorldUser user;
@@ -4192,6 +4623,8 @@ class _UserTile extends StatelessWidget {
   // v115 Feature B/C: Verwarnen + interne Notizen.
   final VoidCallback? onWarn;
   final VoidCallback? onNotes;
+  // v116: Modul-Freischaltung / -Sperre.
+  final VoidCallback? onModuleAccess;
   // Additiv (v5.44.3+): feinere Rollen-Auswahl via PopupMenuButton.
   // Bleibt optional, damit andere Caller nicht brechen.
   final void Function(String newRole)? onChangeRole;
@@ -4209,6 +4642,7 @@ class _UserTile extends StatelessWidget {
     this.onDelete,
     this.onWarn,
     this.onNotes,
+    this.onModuleAccess,
     this.onChangeRole,
   });
 
@@ -4439,6 +4873,10 @@ class _UserTile extends StatelessWidget {
                   if (onNotes != null && AppRoles.canViewUserList(actorRole))
                     _ActionBtn(Icons.sticky_note_2_rounded, 'Notizen',
                         const Color(0xFF9575CD), onNotes!),
+                  if (onModuleAccess != null &&
+                      AppRoles.canBanUsers(actorRole))
+                    _ActionBtn(Icons.school_rounded, 'Module',
+                        const Color(0xFF26C6DA), onModuleAccess!),
                   if (onGrantXp != null)
                     _ActionBtn(Icons.auto_awesome_rounded, 'XP vergeben',
                         const Color(0xFFFFC107), onGrantXp!),

@@ -10072,6 +10072,100 @@ Wichtig:
       }
     }
 
+    // ── GET /api/admin/users/:userId/module-access ───────────────────────────
+    // Liefert alle Admin-Overrides (grant/block) fuer einen User.
+    // Response: { success, overrides: [{ module_code, module_type, is_granted, granted_by, reason, created_at }] }
+    if (method === 'GET' && path.includes('/users/') && path.endsWith('/module-access')) {
+      try {
+        const userId = path.split('/')[4];
+        if (!userId) return errorResponse('userId fehlt', 400);
+        const r = await fetch(
+          `${SUPABASE_URL}/rest/v1/admin_module_access?user_id=eq.${encodeURIComponent(userId)}&select=module_code,module_type,is_granted,granted_by,reason,created_at&order=created_at.desc`,
+          { headers: svcHeaders },
+        );
+        const rows = r.ok ? await r.json().catch(() => []) : [];
+        return jsonResponse({ success: true, overrides: Array.isArray(rows) ? rows : [] });
+      } catch (e) { return errorResponse(`module-access GET Fehler: ${e.message}`); }
+    }
+
+    // ── POST /api/admin/users/:userId/module-access ──────────────────────────
+    // Setzt oder entfernt einen Modul-Override fuer einen User.
+    // Body fuer setzen:   { module_code, module_type, is_granted, reason? }
+    //   is_granted=true  → Force-Unlock (Prerequisites ignorieren)
+    //   is_granted=false → Force-Block  (auch wenn Prerequisites erfuellt)
+    // Body fuer entfernen: { module_code, action: 'remove' }
+    if (method === 'POST' && path.includes('/users/') && path.endsWith('/module-access')) {
+      try {
+        const userId = path.split('/')[4];
+        if (!userId) return errorResponse('userId fehlt', 400);
+
+        // Nur Admin+ darf Modul-Overrides setzen (Moderatoren nicht).
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Keine Berechtigung: Modul-Overrides erfordern Admin-Rolle', 403);
+        }
+
+        let body = {};
+        try { body = await request.clone().json(); } catch (_) {}
+        const moduleCode = String(body?.module_code || '').trim().toUpperCase();
+        if (!moduleCode) return errorResponse('module_code fehlt', 400);
+
+        // Remove-Aktion: Override loeschen, User faellt zurueck auf Prerequisite-Logik.
+        if (body?.action === 'remove') {
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/admin_module_access?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}`,
+            { method: 'DELETE', headers: svcHeaders },
+          );
+          await logAudit(env, caller.username, 'module_access_remove', userId, '', null, {
+            module_code: moduleCode,
+          });
+          return jsonResponse({ success: true, action: 'removed', module_code: moduleCode });
+        }
+
+        // Setzen: is_granted + module_type pflicht.
+        const moduleType = String(body?.module_type || '').toLowerCase();
+        if (!['vorhang', 'ursprung'].includes(moduleType)) {
+          return errorResponse('module_type muss "vorhang" oder "ursprung" sein', 400);
+        }
+        if (typeof body?.is_granted !== 'boolean') {
+          return errorResponse('is_granted (boolean) fehlt', 400);
+        }
+        const isGranted = body.is_granted;
+        const reason = String(body?.reason || '').trim().slice(0, 300) || null;
+
+        // UPSERT: vorhandenen Override aktualisieren oder neu anlegen.
+        const upsertRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/admin_module_access?on_conflict=user_id,module_code`,
+          {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+            body: JSON.stringify({
+              user_id: userId,
+              module_code: moduleCode,
+              module_type: moduleType,
+              is_granted: isGranted,
+              granted_by: caller.username,
+              reason,
+              created_at: new Date().toISOString(),
+            }),
+          },
+        );
+        if (!upsertRes.ok) {
+          const t = await upsertRes.text().catch(() => '');
+          return errorResponse(`module-access UPSERT Fehler: ${upsertRes.status} ${t.slice(0, 200)}`);
+        }
+
+        await logAudit(env, caller.username, isGranted ? 'module_access_grant' : 'module_access_block',
+          userId, '', null, { module_code: moduleCode, module_type: moduleType, reason });
+
+        return jsonResponse({
+          success: true,
+          action: isGranted ? 'granted' : 'blocked',
+          module_code: moduleCode,
+          module_type: moduleType,
+        });
+      } catch (e) { return errorResponse(`module-access POST Fehler: ${e.message}`); }
+    }
+
     // ── 404 ───────────────────────────────────────────────────
     return errorResponse(`Endpoint '${path}' nicht gefunden`, 404);
   },

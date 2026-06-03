@@ -89,6 +89,23 @@ class VorhangService {
         .map((p) => p['module_code'] as String)
         .toSet();
 
+    // Admin-Overrides laden (best-effort, kein Fehler bei Fehlen der Tabelle)
+    final adminOverrides = <String, bool>{};
+    if (userId != null && userId.isNotEmpty) {
+      try {
+        final overrideRaw = await supa
+            .from('admin_module_access')
+            .select('module_code,is_granted')
+            .eq('user_id', userId)
+            .eq('module_type', 'vorhang');
+        for (final o in (overrideRaw as List).cast<Map<String, dynamic>>()) {
+          final code = o['module_code'] as String?;
+          final granted = o['is_granted'] as bool?;
+          if (code != null && granted != null) adminOverrides[code] = granted;
+        }
+      } catch (_) {}
+    }
+
     var completedCount = 0;
     for (final list in branches.values) {
       for (final m in list) {
@@ -97,7 +114,13 @@ class VorhangService {
         final prereqs = (prereqsRaw is List)
             ? prereqsRaw.whereType<String>().where((c) => c != code).toList()
             : const <String>[];
-        m['is_unlocked'] = prereqs.every(completedCodes.contains);
+
+        // Admin-Override hat Vorrang vor normaler Prerequisite-Logik
+        if (adminOverrides.containsKey(code)) {
+          m['is_unlocked'] = adminOverrides[code];
+        } else {
+          m['is_unlocked'] = prereqs.every(completedCodes.contains);
+        }
         m['is_completed'] = progressMap[code]?['completed_at'] != null;
         if (m['is_completed'] == true) completedCount++;
       }
