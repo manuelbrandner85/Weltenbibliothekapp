@@ -1905,6 +1905,42 @@ export default {
           delete body.user_id;
           delete body.id;
 
+          // v118 KRITISCH: Body gegen die echten profiles-Spalten sanitisieren.
+          // Frueher sendete der Materie-Client das Feld 'name' -- das gibt es
+          // in profiles NICHT -> PostgREST lehnte den INSERT mit 42703 ab und
+          // das Profil persistierte NIE (verlorene User). Wir mappen bekannte
+          // Aliasse und verwerfen alles, was keine echte Spalte ist.
+          {
+            const ALIAS = {
+              name: 'display_name', displayName: 'display_name',
+              fullName: 'full_name', firstName: 'birth_first_name',
+              lastName: 'birth_last_name', avatarUrl: 'avatar_url',
+              avatarEmoji: 'avatar_emoji', birthDate: 'birth_date',
+              birthPlace: 'birth_place', birthTime: 'birth_time',
+            };
+            for (const [from, to] of Object.entries(ALIAS)) {
+              if (body[from] !== undefined) {
+                if (body[to] === undefined || body[to] === null) body[to] = body[from];
+                delete body[from];
+              }
+            }
+            const PROFILE_COLS = new Set([
+              'username', 'display_name', 'avatar_url', 'avatar_emoji', 'bio',
+              'world', 'world_preference', 'role', 'full_name', 'birth_date',
+              'birth_time', 'birth_place', 'birth_latitude', 'birth_longitude',
+              'timezone_offset_hours', 'birth_time_unknown', 'gender',
+              'birth_first_name', 'birth_middle_names', 'birth_last_name',
+              'numerology_push_enabled', 'legacy_user_id', 'is_banned',
+            ]);
+            for (const k of Object.keys(body)) {
+              if (!PROFILE_COLS.has(k)) delete body[k];
+            }
+            // role NIE vom Client uebernehmen (Privilege-Escalation). Die
+            // INSERT-Branch setzt role='user' explizit; bestehende Profile
+            // behalten ihre Rolle (PATCH ohne role).
+            delete body.role;
+          }
+
           const anonKey = env.SUPABASE_ANON_KEY || '';
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
 
@@ -1980,6 +2016,8 @@ export default {
             // INSERT: neuer User, alles inkl. username erlaubt.
             const insertBody = { ...body };
             if (legacyUserId) insertBody.legacy_user_id = legacyUserId;
+            // Neue Profile bekommen explizit role='user'.
+            insertBody.role = 'user';
             res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
               method: 'POST',
               headers: {
@@ -2130,9 +2168,12 @@ export default {
       }
 
       // GET: Profil nach Username
+      // v118: select=* damit ALLE Felder (full_name, birth_*, gender, ...)
+      // zurueckkommen -- frueher fehlten sie -> Energie-Profil wurde
+      // unvollstaendig (ohne Geburtsdaten) abgerufen.
       const username = parts[4];
       if (username) {
-        const supaPath = `/rest/v1/profiles?select=id,username,display_name,avatar_url,bio,world,role,is_banned&username=eq.${encodeURIComponent(username)}&limit=1`;
+        const supaPath = `/rest/v1/profiles?select=*&username=eq.${encodeURIComponent(username)}&limit=1`;
         return proxyToSupabase(request, env, supaPath, 'GET');
       }
 
