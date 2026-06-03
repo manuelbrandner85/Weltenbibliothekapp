@@ -2706,6 +2706,7 @@ class _UsersTabState extends State<_UsersTab> {
               onDemote: _bulkDemote,
               onBan: _bulkBan,
               onUnban: _bulkUnban,
+              onDelete: widget.admin.isRootAdmin ? _bulkDelete : null,
               onClear: () => setState(_selectedIds.clear),
             ),
           ),
@@ -2800,6 +2801,53 @@ class _UsersTabState extends State<_UsersTab> {
           adminUserId: widget.admin.username,
         ),
       );
+
+  // Hard-Delete der aktuell ausgewaehlten Nutzer (root_admin only).
+  // Separate Methode statt _bulkApply weil Loeschen destruktiv ist und einen
+  // roten Bestaetigungs-Dialog braucht.
+  Future<void> _bulkDelete() async {
+    if (!widget.admin.isRootAdmin) return;
+    final targets =
+        _all.where((u) => _selectedIds.contains(u.userId)).toList();
+    if (targets.isEmpty) return;
+    final confirmed = await _confirm(
+      'Nutzer loeschen',
+      '${targets.length} Nutzer werden unwiderruflich geloescht.\n\n'
+          'Profil, Fortschritt und alle zugehoerigen Daten gehen verloren.',
+      confirmColor: Colors.red,
+    );
+    if (!confirmed) return;
+
+    setState(() => _processing = true);
+    int deleted = 0, failed = 0;
+    for (final u in targets) {
+      try {
+        if (await WorldAdminServiceV162.deleteUser(
+          userId: u.userId,
+          reason: 'Bulk-Loeschung',
+          adminUsername: widget.admin.username,
+        )) {
+          deleted++;
+        } else {
+          failed++;
+        }
+      } catch (_) {
+        failed++;
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _processing = false;
+      _selectedIds.clear();
+    });
+    _snack(
+      failed == 0
+          ? '🗑️ $deleted Nutzer geloescht'
+          : '🗑️ $deleted geloescht, $failed fehlgeschlagen',
+      color: deleted > 0 ? Colors.orange : Colors.red,
+    );
+    _load();
+  }
 
   // Hard-Delete aller uebergebenen Ghost-Profile nach Bestaetigungs-Dialog.
   Future<void> _bulkDeleteGhosts(List<WorldUser> ghosts) async {
@@ -5321,6 +5369,7 @@ class _BulkActionBar extends StatelessWidget {
   final VoidCallback onUnban;
   final VoidCallback onClear;
   final VoidCallback? onSelectAll;
+  final VoidCallback? onDelete;
   const _BulkActionBar({
     required this.count,
     required this.accent,
@@ -5331,6 +5380,7 @@ class _BulkActionBar extends StatelessWidget {
     required this.onUnban,
     required this.onClear,
     this.onSelectAll,
+    this.onDelete,
   });
 
   @override
@@ -5392,6 +5442,11 @@ class _BulkActionBar extends StatelessWidget {
             _ActionBtn(Icons.block, 'Bannen', Colors.red, onBan),
             const SizedBox(width: 6),
             _ActionBtn(Icons.lock_open, 'Entbannen', Colors.teal, onUnban),
+            if (onDelete != null) ...[
+              const SizedBox(width: 6),
+              _ActionBtn(
+                  Icons.delete_forever, 'Löschen', Colors.redAccent, onDelete!),
+            ],
             const SizedBox(width: 10),
             IconButton(
               tooltip: 'Auswahl aufheben',
