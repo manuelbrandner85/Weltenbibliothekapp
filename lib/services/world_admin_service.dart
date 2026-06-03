@@ -1660,4 +1660,68 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return false;
     }
   }
+
+  /// Laedt alle Artikel (global, optional gefiltert nach [world] und [status]).
+  /// [status] ∈ 'all'|'published'|'unpublished'
+  static Future<List<Map<String, dynamic>>?> getArticles({
+    String? world,
+    String status = 'all',
+    int limit = 100,
+  }) async {
+    try {
+      final qp = <String, String>{'status': status, 'limit': '$limit'};
+      if (world != null) qp['world'] = world;
+      final data = await AdminApiClient.instance.getJson(
+        '/api/admin/articles?${Uri(queryParameters: qp).query}',
+      );
+      final articles = data['articles'];
+      if (articles is List) return articles.cast<Map<String, dynamic>>();
+      return [];
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ getArticles: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getArticles: $e');
+      return null;
+    }
+  }
+
+  /// Aktualisiert Felder eines Artikels. [fields] darf
+  /// title, content, excerpt, is_published, is_featured enthalten.
+  static Future<bool> updateArticle({
+    required String articleId,
+    required Map<String, dynamic> fields,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.patchJson(
+        '/api/admin/articles/$articleId',
+        body: fields,
+      );
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ updateArticle: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ updateArticle: $e');
+      return false;
+    }
+  }
+
+  /// Laedt Zustellstatistiken der notification_queue (letzte 7 Tage).
+  static Future<Map<String, dynamic>?> getPushStats() async {
+    try {
+      final data =
+          await AdminApiClient.instance.getJson('/api/admin/push/stats');
+      return data;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ getPushStats: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getPushStats: $e');
+      return null;
+    }
+  }
 }

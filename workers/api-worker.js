@@ -3399,6 +3399,111 @@ export default {
         ]);
       };
 
+      // ── GET /api/admin/articles  (globale Artikel-Liste fuer Admin) ──
+      // ?world=materie|energie|vorhang|ursprung  optional Filter
+      // ?status=published|unpublished|all  (default: all)
+      // ?limit=100
+      if (method === 'GET' && path === '/api/admin/articles') {
+        try {
+          const world = url.searchParams.get('world');
+          const status = url.searchParams.get('status') || 'all';
+          const limit = Math.min(200, parseInt(url.searchParams.get('limit') || '100'));
+          let filter = '';
+          if (world && ['materie','energie','vorhang','ursprung'].includes(world)) {
+            filter += `&world=eq.${world}`;
+          }
+          if (status === 'published') filter += '&is_published=eq.true';
+          else if (status === 'unpublished') filter += '&is_published=eq.false';
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/articles?select=id,title,content,world,is_published,is_featured,created_at,updated_at,author_id,profiles(username)${filter}&order=created_at.desc&limit=${limit}`,
+            { headers: svcHeaders }
+          );
+          if (!res.ok) return errorResponse(`Supabase ${res.status}`, res.status);
+          const rows = await res.json().catch(() => []);
+          return jsonResponse({ success: true, articles: Array.isArray(rows) ? rows : [] });
+        } catch (e) { return errorResponse(`articles-Fehler: ${e.message}`); }
+      }
+
+      // ── PATCH /api/admin/articles/:id  (Artikel-Felder editieren) ──
+      // Body: { title?, content?, excerpt?, is_published?, is_featured? }
+      if (method === 'PATCH' && /^\/api\/admin\/articles\/[^/]+$/.test(path)) {
+        try {
+          const articleId = path.split('/')[4];
+          if (!articleId) return errorResponse('articleId fehlt', 400);
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const allowed = ['title', 'content', 'excerpt', 'is_published', 'is_featured'];
+          const patch = {};
+          for (const k of allowed) {
+            if (k in body) patch[k] = body[k];
+          }
+          if (Object.keys(patch).length === 0) return errorResponse('Keine Felder zum Aktualisieren', 400);
+          patch.updated_at = new Date().toISOString();
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/articles?id=eq.${encodeURIComponent(articleId)}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify(patch),
+            }
+          );
+          if (!res.ok) {
+            const err = await res.text().catch(() => '');
+            return errorResponse(`Update fehlgeschlagen: ${err}`, res.status);
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'article_edit',
+            target_id: articleId,
+            details: { fields: Object.keys(patch).filter(k => k !== 'updated_at') },
+          });
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`article-PATCH-Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/push/stats  (Zustellstatistiken notification_queue) ──
+      if (method === 'GET' && path === '/api/admin/push/stats') {
+        try {
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+          const svcH = { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Prefer': 'count=exact' };
+          const [sentRes, failedRes, pendingRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/notification_queue?status=eq.sent&select=id`, { headers: svcH }),
+            fetch(`${SUPABASE_URL}/rest/v1/notification_queue?status=eq.failed&select=id`, { headers: svcH }),
+            fetch(`${SUPABASE_URL}/rest/v1/notification_queue?status=eq.pending&select=id`, { headers: svcH }),
+          ]);
+          const getCount = (res) => {
+            const h = res.headers.get('content-range');
+            if (h) { const m = h.match(/\/(\d+)/); if (m) return parseInt(m[1]); }
+            return 0;
+          };
+          const since7d = new Date(Date.now() - 7 * 86400000).toISOString();
+          const recentRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue?created_at=gte.${since7d}&select=status,created_at`,
+            { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+          );
+          const recentRows = recentRes.ok ? await recentRes.json().catch(() => []) : [];
+          const byDay = {};
+          for (const r of (Array.isArray(recentRows) ? recentRows : [])) {
+            const d = (r.created_at || '').substring(0, 10);
+            if (!d) continue;
+            byDay[d] = byDay[d] || { sent: 0, failed: 0, pending: 0 };
+            byDay[d][r.status] = (byDay[d][r.status] || 0) + 1;
+          }
+          const daily = [];
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date(Date.now() - i * 86400000).toISOString().substring(0, 10);
+            daily.push({ date: d, ...(byDay[d] || { sent: 0, failed: 0, pending: 0 }) });
+          }
+          return jsonResponse({
+            success: true,
+            total_sent: getCount(sentRes),
+            total_failed: getCount(failedRes),
+            total_pending: getCount(pendingRes),
+            daily,
+          });
+        } catch (e) { return errorResponse(`push-stats-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/content/:world ───────────────────────
       if (method === 'GET' && path.includes('/content/')) {
         try {
@@ -3917,7 +4022,7 @@ export default {
           // Whitelist editierbare Felder
           const allowed = ['title', 'subtitle', 'theory_content', 'case_study',
             'exercise_description', 'exercise_duration_minutes', 'xp_reward',
-            'youtube_search_query', 'audio_frequency_hz'];
+            'youtube_search_query', 'audio_frequency_hz', 'test_questions'];
           const patch = {};
           for (const k of allowed) {
             if (k in body) patch[k] = body[k];

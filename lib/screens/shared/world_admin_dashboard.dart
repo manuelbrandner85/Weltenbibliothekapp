@@ -6407,8 +6407,7 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
   @override
   void initState() {
     super.initState();
-    // v103 Phase 4d: 4. Sub-Tab fuer Community-Post-Reports.
-    _ctrl = TabController(length: 3, vsync: this);
+    _ctrl = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -6436,6 +6435,7 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
                 text: 'Fortschritt'),
             Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Editor'),
             Tab(icon: Icon(Icons.report_rounded, size: 16), text: 'Meldungen'),
+            Tab(icon: Icon(Icons.article_rounded, size: 16), text: 'Artikel'),
           ],
         ),
       ),
@@ -6449,8 +6449,358 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
                 accent: widget.accent, accentBright: widget.accentBright),
             _PostReportsTab(
                 accent: widget.accent, accentBright: widget.accentBright),
+            _ArticleManagerTab(
+                accent: widget.accent, accentBright: widget.accentBright),
           ],
         ),
+      ),
+    ]);
+  }
+}
+
+// =============================================================================
+// SUB-TAB – ARTIKEL-MANAGER (Content-Tab)
+// =============================================================================
+class _ArticleManagerTab extends StatefulWidget {
+  final Color accent, accentBright;
+  const _ArticleManagerTab({required this.accent, required this.accentBright});
+  @override
+  State<_ArticleManagerTab> createState() => _ArticleManagerTabState();
+}
+
+class _ArticleManagerTabState extends State<_ArticleManagerTab> {
+  List<Map<String, dynamic>>? _articles;
+  bool _loading = true;
+  String _worldFilter = 'all';
+  String _statusFilter = 'all';
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+    final rows = await WorldAdminServiceV162.getArticles(
+      world: _worldFilter == 'all' ? null : _worldFilter,
+      status: _statusFilter,
+      limit: 100,
+    );
+    if (mounted)
+      setState(() {
+        _articles = rows;
+        _loading = false;
+      });
+  }
+
+  void _snack(String msg, {Color? color}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: color ?? const Color(0xFF1A1A2E),
+    ));
+  }
+
+  String _fmtDate(dynamic v) {
+    if (v == null) return '–';
+    try {
+      final dt = DateTime.parse(v.toString()).toLocal();
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
+    } catch (_) {
+      return '–';
+    }
+  }
+
+  Future<void> _togglePublished(Map<String, dynamic> article) async {
+    final id = article['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    final cur = article['is_published'] as bool? ?? false;
+    final ok = await WorldAdminServiceV162.updateArticle(
+      articleId: id,
+      fields: {'is_published': !cur},
+    );
+    _snack(
+        ok ? (cur ? 'Artikel depubliziert' : 'Artikel publiziert') : '❌ Fehler',
+        color: ok ? Colors.green : Colors.orange);
+    if (ok) _load();
+  }
+
+  Future<void> _toggleFeatured(Map<String, dynamic> article) async {
+    final id = article['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    final cur = article['is_featured'] as bool? ?? false;
+    final ok = await WorldAdminServiceV162.updateArticle(
+      articleId: id,
+      fields: {'is_featured': !cur},
+    );
+    _snack(
+        ok ? (cur ? 'Featured entfernt' : 'Als Featured markiert') : '❌ Fehler',
+        color: ok ? Colors.teal : Colors.orange);
+    if (ok) _load();
+  }
+
+  Future<void> _editArticle(Map<String, dynamic> article) async {
+    final id = article['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    final titleCtrl =
+        TextEditingController(text: article['title'] as String? ?? '');
+    final contentCtrl =
+        TextEditingController(text: article['content'] as String? ?? '');
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(children: [
+          Icon(Icons.edit_rounded, color: widget.accent, size: 18),
+          const SizedBox(width: 8),
+          const Expanded(
+              child: Text('Artikel bearbeiten',
+                  style: TextStyle(color: Colors.white, fontSize: 15))),
+        ]),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(
+                controller: titleCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Titel',
+                  labelStyle: const TextStyle(color: Colors.white54),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: contentCtrl,
+                maxLines: 12,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                decoration: InputDecoration(
+                  labelText: 'Content (Markdown)',
+                  labelStyle: const TextStyle(color: Colors.white54),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12)),
+                ),
+              ),
+            ]),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+              child: const Text('Speichern',
+                  style: TextStyle(color: Colors.white))),
+        ],
+      ),
+    );
+    if (saved != true || !mounted) return;
+    final ok = await WorldAdminServiceV162.updateArticle(
+      articleId: id,
+      fields: {
+        'title': titleCtrl.text.trim(),
+        'content': contentCtrl.text.trim(),
+      },
+    );
+    _snack(ok ? '✅ Artikel gespeichert' : '❌ Speichern fehlgeschlagen',
+        color: ok ? Colors.green : Colors.orange);
+    if (ok) _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final articles = _articles ?? [];
+    return Column(children: [
+      // Filter-Leiste
+      Container(
+        color: const Color(0xFF0D0D1A),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(children: [
+          // World-Filter
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _worldFilter,
+              dropdownColor: const Color(0xFF1A1A2E),
+              iconEnabledColor: Colors.white54,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+              isDense: true,
+              items: const [
+                DropdownMenuItem(value: 'all', child: Text('Alle Welten')),
+                DropdownMenuItem(value: 'materie', child: Text('Materie')),
+                DropdownMenuItem(value: 'energie', child: Text('Energie')),
+                DropdownMenuItem(value: 'vorhang', child: Text('Vorhang')),
+                DropdownMenuItem(value: 'ursprung', child: Text('Ursprung')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _worldFilter = v);
+                _load();
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Status-Filter
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _statusFilter,
+              dropdownColor: const Color(0xFF1A1A2E),
+              iconEnabledColor: Colors.white54,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+              isDense: true,
+              items: const [
+                DropdownMenuItem(value: 'all', child: Text('Alle')),
+                DropdownMenuItem(value: 'published', child: Text('Publiziert')),
+                DropdownMenuItem(value: 'unpublished', child: Text('Entwurf')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _statusFilter = v);
+                _load();
+              },
+            ),
+          ),
+          const Spacer(),
+          Text('${articles.length} Artikel',
+              style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: widget.accent, size: 18),
+            onPressed: _load,
+            tooltip: 'Aktualisieren',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ]),
+      ),
+      // Liste
+      Expanded(
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: widget.accent))
+            : _articles == null
+                ? const _EmptyHint(
+                    'Laden fehlgeschlagen. Ziehe zum Aktualisieren.')
+                : articles.isEmpty
+                    ? const _EmptyHint('Keine Artikel gefunden.')
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        color: widget.accent,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: articles.length,
+                          itemBuilder: (ctx, i) {
+                            final a = articles[i];
+                            final title = a['title'] as String? ?? '–';
+                            final world = a['world'] as String? ?? '–';
+                            final author = (a['profiles'] as Map?)?['username']
+                                    as String? ??
+                                '–';
+                            final published =
+                                a['is_published'] as bool? ?? false;
+                            final featured = a['is_featured'] as bool? ?? false;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF12121E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.06)),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
+                                title: Text(title,
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Row(children: [
+                                    _MiniPill(
+                                        label: world,
+                                        color: widget.accent
+                                            .withValues(alpha: 0.8)),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                        '@$author · ${_fmtDate(a['created_at'])}',
+                                        style: const TextStyle(
+                                            color: Colors.white38,
+                                            fontSize: 10)),
+                                  ]),
+                                ),
+                                trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Featured toggle
+                                      IconButton(
+                                        icon: Icon(
+                                          featured
+                                              ? Icons.star_rounded
+                                              : Icons.star_border_rounded,
+                                          color: featured
+                                              ? Colors.amber
+                                              : Colors.white24,
+                                          size: 18,
+                                        ),
+                                        tooltip: featured
+                                            ? 'Featured entfernen'
+                                            : 'Als Featured markieren',
+                                        onPressed: () => _toggleFeatured(a),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                            minWidth: 32, minHeight: 32),
+                                      ),
+                                      // Published toggle
+                                      IconButton(
+                                        icon: Icon(
+                                          published
+                                              ? Icons.visibility_rounded
+                                              : Icons.visibility_off_rounded,
+                                          color: published
+                                              ? Colors.green
+                                              : Colors.white24,
+                                          size: 18,
+                                        ),
+                                        tooltip: published
+                                            ? 'Depublizieren'
+                                            : 'Publizieren',
+                                        onPressed: () => _togglePublished(a),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                            minWidth: 32, minHeight: 32),
+                                      ),
+                                      // Edit
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_rounded,
+                                            color: Colors.white38, size: 16),
+                                        tooltip: 'Bearbeiten',
+                                        onPressed: () => _editArticle(a),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                            minWidth: 32, minHeight: 32),
+                                      ),
+                                    ]),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
       ),
     ]);
   }
@@ -6573,6 +6923,14 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
         text: module['youtube_search_query']?.toString() ?? '');
     final freq = TextEditingController(
         text: module['audio_frequency_hz']?.toString() ?? '');
+    // test_questions als formatiertes JSON (Array)
+    final testQraw = module['test_questions'];
+    final testQJson = testQraw == null
+        ? '[]'
+        : (testQraw is String
+            ? testQraw
+            : const JsonEncoder.withIndent('  ').convert(testQraw));
+    final testQ = TextEditingController(text: testQJson);
 
     bool saving = false;
 
@@ -6649,6 +7007,14 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
               _editorField('YouTube-Suchquery', youtube),
               _editorField('Audio-Frequenz Hz (z.B. 432)', freq,
                   keyboardType: TextInputType.number),
+              const SizedBox(height: 8),
+              _editorField(
+                'Test-Fragen (JSON-Array)',
+                testQ,
+                maxLines: 10,
+                hint:
+                    '[{"question":"...","options":["A","B","C"],"correct_index":0}]',
+              ),
               const SizedBox(height: 22),
               Row(children: [
                 Expanded(
@@ -6687,6 +7053,15 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                             if (x != null) payload['xp_reward'] = x;
                             final f = double.tryParse(freq.text.trim());
                             if (f != null) payload['audio_frequency_hz'] = f;
+                            // test_questions: parse JSON, fallback to raw string
+                            final tqRaw = testQ.text.trim();
+                            if (tqRaw.isNotEmpty) {
+                              try {
+                                payload['test_questions'] = jsonDecode(tqRaw);
+                              } catch (_) {
+                                payload['test_questions'] = tqRaw;
+                              }
+                            }
 
                             try {
                               final adminHeaders =
@@ -6752,17 +7127,20 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
   }
 
   Widget _editorField(String label, TextEditingController ctrl,
-      {int maxLines = 1, TextInputType? keyboardType}) {
+      {int maxLines = 1, TextInputType? keyboardType, String? hint}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextField(
         controller: ctrl,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white, fontSize: 13),
+        style: const TextStyle(
+            color: Colors.white, fontSize: 13, fontFamily: 'monospace'),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(color: Colors.white60, fontSize: 12),
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.white24, fontSize: 11),
           isDense: true,
           filled: true,
           fillColor: Colors.white.withValues(alpha: 0.04),
@@ -7794,10 +8172,26 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
   final _directBody = TextEditingController();
   bool _sendingDirect = false;
 
+  // Push delivery stats
+  Map<String, dynamic>? _pushStats;
+  bool _loadingStats = true;
+
   @override
   void initState() {
     super.initState();
     _loadHistory();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    if (!mounted) return;
+    setState(() => _loadingStats = true);
+    final stats = await WorldAdminServiceV162.getPushStats();
+    if (mounted)
+      setState(() {
+        _pushStats = stats;
+        _loadingStats = false;
+      });
   }
 
   @override
@@ -8009,11 +8403,32 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
 
   @override
   Widget build(BuildContext context) {
+    final stats = _pushStats;
+    final totalSent = stats?['total_sent'] as int? ?? 0;
+    final totalFailed = stats?['total_failed'] as int? ?? 0;
+    final totalPending = stats?['total_pending'] as int? ?? 0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── Push-Zustellstatistik ─────────────────────────────────
+          Row(children: [
+            Expanded(
+                child: _PushStatCard('Zugestellt', totalSent.toString(),
+                    Icons.check_circle_rounded, Colors.green, widget.accent)),
+            const SizedBox(width: 8),
+            Expanded(
+                child: _PushStatCard('Fehlgeschlagen', totalFailed.toString(),
+                    Icons.error_rounded, Colors.red, widget.accent)),
+            const SizedBox(width: 8),
+            Expanded(
+                child: _PushStatCard('Ausstehend', totalPending.toString(),
+                    Icons.schedule_rounded, Colors.orange, widget.accent)),
+          ]),
+          const SizedBox(height: 14),
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -8027,7 +8442,7 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('🔔 PUSH BROADCAST',
+                const Text('PUSH BROADCAST',
                     style: TextStyle(
                         color: Colors.white70,
                         fontSize: 11,
@@ -10465,6 +10880,34 @@ class _DetailRow extends StatelessWidget {
                 style: const TextStyle(color: Colors.white60, fontSize: 11),
                 overflow: TextOverflow.ellipsis),
           ),
+        ]),
+      );
+}
+
+class _PushStatCard extends StatelessWidget {
+  final String label, value;
+  final IconData icon;
+  final Color color, accent;
+  const _PushStatCard(
+      this.label, this.value, this.icon, this.color, this.accent);
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(label,
+              style: const TextStyle(color: Colors.white38, fontSize: 9),
+              textAlign: TextAlign.center),
         ]),
       );
 }
