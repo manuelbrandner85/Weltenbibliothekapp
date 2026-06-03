@@ -1460,6 +1460,22 @@ class _UsersTabState extends State<_UsersTab> {
     }
   }
 
+  /// v117: Granulare Bereichs-Sperren -- oeffnet einen Scope-Picker.
+  Future<void> _restrict(WorldUser u) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RestrictionSheet(
+        user: u,
+        accent: widget.accent,
+        accentBright: widget.accentBright,
+        adminUsername: widget.admin.username ?? '',
+        onChanged: _load,
+      ),
+    );
+  }
+
   /// Shows a dialog to pick ban reason and duration.
   /// Returns {'reason': String, 'expiresAt': String?, 'durationLabel': String}
   /// or null if cancelled.
@@ -2607,6 +2623,46 @@ class _UsersTabState extends State<_UsersTab> {
             );
           }),
 
+          // ── Antrags-Inbox (Reaktivierung/Einspruch/Selbstloesch) ──────
+          if (AppRoles.canBanUsers(widget.admin.role))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: GestureDetector(
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => _AccountRequestsSheet(
+                    accent: widget.accent,
+                    accentBright: widget.accentBright,
+                  ),
+                ),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: widget.accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: widget.accent.withValues(alpha: 0.3), width: 1),
+                  ),
+                  child: Row(children: [
+                    Icon(Icons.inbox_rounded,
+                        color: widget.accentBright, size: 15),
+                    const SizedBox(width: 6),
+                    Text('Antraege (Reaktivierung / Einspruch / Loeschung)',
+                        style: TextStyle(
+                            color: widget.accentBright,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right,
+                        color: Colors.white38, size: 16),
+                  ]),
+                ),
+              ),
+            ),
+
           // ── User List ─────────────────────────────────────────────
           Expanded(
             child: _loading
@@ -2676,6 +2732,10 @@ class _UsersTabState extends State<_UsersTab> {
                                         ? (newRole) => _changeRole(u, newRole)
                                         : null,
                                     onViewDetail: () => _viewDetail(u),
+                                    onRestrict:
+                                        AppRoles.canBanUsers(widget.admin.role)
+                                            ? () => _restrict(u)
+                                            : null,
                                   ),
                                 ),
                               ]);
@@ -5027,6 +5087,8 @@ class _UserTile extends StatelessWidget {
   // Bleibt optional, damit andere Caller nicht brechen.
   final void Function(String newRole)? onChangeRole;
   final VoidCallback? onViewDetail;
+  // v117: Granulare Bereichs-Sperren.
+  final VoidCallback? onRestrict;
   const _UserTile({
     required this.user,
     required this.isRootAdmin,
@@ -5044,6 +5106,7 @@ class _UserTile extends StatelessWidget {
     this.onModuleAccess,
     this.onChangeRole,
     this.onViewDetail,
+    this.onRestrict,
   });
 
   Color get _roleColor => switch (user.role) {
@@ -5265,6 +5328,10 @@ class _UserTile extends StatelessWidget {
                   if (AppRoles.canBanUsers(actorRole))
                     _ActionBtn(Icons.check_circle_outline_rounded, 'Entsperren',
                         Colors.teal, onUnban),
+                  // v117: Granulare Bereichs-Sperren (Chat/Live/XP ...).
+                  if (onRestrict != null && AppRoles.canBanUsers(actorRole))
+                    _ActionBtn(Icons.tune_rounded, 'Bereiche',
+                        const Color(0xFFEF6C9A), onRestrict!),
                   // v115 (Feature B): Verwarnen -- Moderator+.
                   if (onWarn != null && AppRoles.canBanUsers(actorRole))
                     _ActionBtn(Icons.warning_amber_rounded, 'Verwarnen',
@@ -10965,4 +11032,646 @@ class _PushStatCard extends StatelessWidget {
               textAlign: TextAlign.center),
         ]),
       );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// v117: RESTRICTION-SHEET -- granulare Bereichs-Sperren waehlen
+// ═════════════════════════════════════════════════════════════════════════════
+
+// Kategorien -> Scopes. Reihenfolge bestimmt die Anzeige.
+const Map<String, List<List<String>>> _kRestrictionCategories = {
+  'Kommunikation': [
+    ['chat', 'Chat', '💬'],
+    ['livestream', 'Livestream', '🎥'],
+    ['direct_messages', 'Direktnachrichten', '✉️'],
+    ['shadow_mute', 'Shadow-Mute', '👻'],
+  ],
+  'Content': [
+    ['create_articles', 'Artikel erstellen', '📝'],
+    ['create_pins', 'Pins erstellen', '📍'],
+    ['comment', 'Kommentieren', '💭'],
+  ],
+  'Gamification': [
+    ['earn_xp', 'XP verdienen', '⭐'],
+  ],
+};
+
+class _RestrictionSheet extends StatefulWidget {
+  final WorldUser user;
+  final Color accent, accentBright;
+  final String adminUsername;
+  final VoidCallback onChanged;
+  const _RestrictionSheet({
+    required this.user,
+    required this.accent,
+    required this.accentBright,
+    required this.adminUsername,
+    required this.onChanged,
+  });
+
+  @override
+  State<_RestrictionSheet> createState() => _RestrictionSheetState();
+}
+
+class _RestrictionSheetState extends State<_RestrictionSheet> {
+  final Set<String> _selected = {};
+  final Map<String, Map<String, dynamic>> _active = {}; // scope -> row
+  final _reasonCtrl = TextEditingController(text: 'Regelverstoss');
+  bool _loading = true;
+  bool _busy = false;
+  int _durationIdx = 2; // default 24h
+  bool _all = false;
+
+  static const _durLabels = ['1 Std', '24 Std', '7 Tage', '30 Tage', 'Permanent'];
+  static const _durHours = [1, 24, 168, 720, 0];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _reasonCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final rows = await WorldAdminServiceV162.getRestrictions(widget.user.userId);
+    if (!mounted) return;
+    setState(() {
+      _active.clear();
+      for (final r in rows) {
+        final scope = r['scope'] as String?;
+        if (scope != null) _active[scope] = r;
+      }
+      _all = _active.containsKey('all');
+      _loading = false;
+    });
+  }
+
+  String _expiryLabel(Map<String, dynamic> row) {
+    if (row['is_permanent'] == true || row['expires_at'] == null) {
+      return 'permanent';
+    }
+    final exp = DateTime.tryParse(row['expires_at'] as String? ?? '');
+    if (exp == null) return '';
+    final diff = exp.difference(DateTime.now());
+    if (diff.isNegative) return 'abgelaufen';
+    if (diff.inDays > 0) return 'noch ${diff.inDays}d';
+    if (diff.inHours > 0) return 'noch ${diff.inHours}h';
+    return 'noch ${diff.inMinutes}min';
+  }
+
+  Future<void> _applyNew() async {
+    final scopes = _all ? ['all'] : _selected.toList();
+    if (scopes.isEmpty) {
+      _toast('Keine Bereiche ausgewaehlt');
+      return;
+    }
+    setState(() => _busy = true);
+    final ok = await WorldAdminServiceV162.restrictUser(
+      userId: widget.user.userId,
+      scopes: scopes,
+      reason: _reasonCtrl.text.trim().isEmpty
+          ? 'Admin-Sperre'
+          : _reasonCtrl.text.trim(),
+      durationHours: _durHours[_durationIdx],
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) {
+      _toast('Bereiche gesperrt');
+      _selected.clear();
+      widget.onChanged();
+      await _load();
+    } else {
+      _toast('Sperren fehlgeschlagen');
+    }
+  }
+
+  Future<void> _lift(String scope) async {
+    setState(() => _busy = true);
+    final ok = await WorldAdminServiceV162.unrestrictUser(
+      userId: widget.user.userId,
+      scopes: scope == 'all' ? const [] : [scope],
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) {
+      widget.onChanged();
+      await _load();
+    } else {
+      _toast('Aufheben fehlgeschlagen');
+    }
+  }
+
+  void _toast(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(m), duration: const Duration(seconds: 2)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (ctx, scroll) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF0B0817),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: widget.accent))
+            : ListView(
+                controller: scroll,
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 32),
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(children: [
+                    Icon(Icons.tune_rounded, color: widget.accentBright),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('Bereiche sperren - @${widget.user.username}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Waehle einzelne Bereiche oder Vollsperrung. Bestehende '
+                    'Sperren werden mit Ablauf angezeigt und koennen aufgehoben '
+                    'werden.',
+                    style: TextStyle(color: Colors.white38, fontSize: 11),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Vollsperrung-Toggle
+                  _buildAllToggle(),
+                  const SizedBox(height: 8),
+
+                  if (!_all)
+                    for (final entry in _kRestrictionCategories.entries) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 4),
+                        child: Text(entry.key.toUpperCase(),
+                            style: TextStyle(
+                                color: widget.accentBright,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5)),
+                      ),
+                      for (final scope in entry.value) _buildScopeRow(scope),
+                    ],
+
+                  const SizedBox(height: 18),
+                  if (!_all || !_active.containsKey('all')) ...[
+                    const Text('Grund',
+                        style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _reasonCtrl,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: const Color(0xFF15111F),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Dauer',
+                        style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      children: [
+                        for (int i = 0; i < _durLabels.length; i++)
+                          ChoiceChip(
+                            label: Text(_durLabels[i],
+                                style: const TextStyle(fontSize: 11)),
+                            selected: _durationIdx == i,
+                            onSelected: (_) =>
+                                setState(() => _durationIdx = i),
+                            selectedColor: widget.accent.withValues(alpha: 0.4),
+                            backgroundColor: const Color(0xFF15111F),
+                            labelStyle: TextStyle(
+                                color: _durationIdx == i
+                                    ? Colors.white
+                                    : Colors.white54),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _busy ? null : _applyNew,
+                        icon: const Icon(Icons.lock_outline, size: 18),
+                        label: Text(_all
+                            ? 'Vollsperrung anwenden'
+                            : 'Ausgewaehlte sperren'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF6C9A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (_active.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: _busy ? null : () => _lift('all'),
+                      icon: const Icon(Icons.lock_open_rounded,
+                          size: 18, color: Colors.tealAccent),
+                      label: const Text('Alle Sperren aufheben',
+                          style: TextStyle(color: Colors.tealAccent)),
+                    ),
+                  ],
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildAllToggle() {
+    final active = _active.containsKey('all');
+    return Container(
+      decoration: BoxDecoration(
+        color: _all
+            ? Colors.red.withValues(alpha: 0.14)
+            : const Color(0xFF15111F),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+            color: _all
+                ? Colors.red.withValues(alpha: 0.5)
+                : Colors.white12),
+      ),
+      child: SwitchListTile(
+        value: _all,
+        onChanged: (v) => setState(() => _all = v),
+        activeColor: Colors.red,
+        title: const Text('🚫 Vollsperrung (alles)',
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+        subtitle: Text(
+          active
+              ? 'Aktiv - ${_expiryLabel(_active['all']!)}'
+              : 'Sperrt saemtliche Funktionen (klassischer Ban)',
+          style: TextStyle(
+              color: active ? Colors.redAccent : Colors.white38, fontSize: 11),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScopeRow(List<String> scope) {
+    final key = scope[0];
+    final label = scope[1];
+    final emoji = scope[2];
+    final active = _active.containsKey(key);
+    final checked = _selected.contains(key);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      decoration: BoxDecoration(
+        color: active
+            ? Colors.orange.withValues(alpha: 0.1)
+            : const Color(0xFF12101C),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: active
+                ? Colors.orange.withValues(alpha: 0.4)
+                : Colors.white10),
+      ),
+      child: ListTile(
+        dense: true,
+        leading: Text(emoji, style: const TextStyle(fontSize: 18)),
+        title: Text(label,
+            style: const TextStyle(color: Colors.white, fontSize: 13)),
+        subtitle: active
+            ? Text('Aktiv - ${_expiryLabel(_active[key]!)}',
+                style: const TextStyle(color: Colors.orangeAccent, fontSize: 10))
+            : null,
+        trailing: active
+            ? TextButton(
+                onPressed: _busy ? null : () => _lift(key),
+                child: const Text('Aufheben',
+                    style: TextStyle(color: Colors.tealAccent, fontSize: 12)),
+              )
+            : Checkbox(
+                value: checked,
+                onChanged: (v) => setState(() {
+                  if (v == true) {
+                    _selected.add(key);
+                  } else {
+                    _selected.remove(key);
+                  }
+                }),
+                activeColor: const Color(0xFFEF6C9A),
+              ),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// v117: ACCOUNT-REQUESTS-SHEET -- Antraege + Loesch-Blacklist verwalten
+// ═════════════════════════════════════════════════════════════════════════════
+class _AccountRequestsSheet extends StatefulWidget {
+  final Color accent, accentBright;
+  const _AccountRequestsSheet(
+      {required this.accent, required this.accentBright});
+
+  @override
+  State<_AccountRequestsSheet> createState() => _AccountRequestsSheetState();
+}
+
+class _AccountRequestsSheetState extends State<_AccountRequestsSheet> {
+  List<Map<String, dynamic>> _requests = [];
+  List<Map<String, dynamic>> _blacklist = [];
+  bool _loading = true;
+  bool _busy = false;
+  int _tab = 0; // 0 = Antraege, 1 = Blacklist
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final reqs =
+        await WorldAdminServiceV162.getAccountRequests(status: 'pending');
+    final bl = await WorldAdminServiceV162.getDeletedIdentities();
+    if (!mounted) return;
+    setState(() {
+      _requests = reqs;
+      _blacklist = bl;
+      _loading = false;
+    });
+  }
+
+  Future<void> _resolve(Map<String, dynamic> req, bool approve) async {
+    final id = req['id'] as String?;
+    if (id == null) return;
+    setState(() => _busy = true);
+    final ok = await WorldAdminServiceV162.resolveAccountRequest(
+        requestId: id, approve: approve);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) {
+      _toast(approve ? 'Angenommen' : 'Abgelehnt');
+      await _load();
+    } else {
+      _toast('Fehlgeschlagen');
+    }
+  }
+
+  Future<void> _freeBlacklist(Map<String, dynamic> row) async {
+    final id = row['id'] as String?;
+    if (id == null) return;
+    setState(() => _busy = true);
+    final ok = await WorldAdminServiceV162.removeDeletedIdentity(id);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (ok) {
+      _toast('Freigegeben');
+      await _load();
+    } else {
+      _toast('Fehlgeschlagen');
+    }
+  }
+
+  void _toast(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(m), duration: const Duration(seconds: 2)));
+  }
+
+  String _typeLabel(String? t) => switch (t) {
+        'reactivation' => '🔓 Reaktivierung',
+        'appeal' => '⚖️ Einspruch',
+        'self_deletion' => '🗑️ Selbst-Loeschung',
+        _ => t ?? '?',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (ctx, scroll) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF0B0817),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _tabChip('Antraege (${_requests.length})', 0),
+                const SizedBox(width: 8),
+                _tabChip('Blacklist (${_blacklist.length})', 1),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: _loading
+                  ? Center(
+                      child:
+                          CircularProgressIndicator(color: widget.accent))
+                  : _tab == 0
+                      ? _buildRequests(scroll)
+                      : _buildBlacklist(scroll),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tabChip(String label, int idx) => ChoiceChip(
+        label: Text(label, style: const TextStyle(fontSize: 12)),
+        selected: _tab == idx,
+        onSelected: (_) => setState(() => _tab = idx),
+        selectedColor: widget.accent.withValues(alpha: 0.4),
+        backgroundColor: const Color(0xFF15111F),
+        labelStyle: TextStyle(
+            color: _tab == idx ? Colors.white : Colors.white54),
+      );
+
+  Widget _buildRequests(ScrollController scroll) {
+    if (_requests.isEmpty) {
+      return const Center(
+        child: Text('Keine offenen Antraege.',
+            style: TextStyle(color: Colors.white38)),
+      );
+    }
+    return ListView.builder(
+      controller: scroll,
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 28),
+      itemCount: _requests.length,
+      itemBuilder: (ctx, i) {
+        final r = _requests[i];
+        final msg = (r['message'] as String?) ?? '';
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 5),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF12101C),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Text(_typeLabel(r['type'] as String?),
+                    style: TextStyle(
+                        color: widget.accentBright,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13)),
+                const Spacer(),
+                Text('@${r['username'] ?? r['user_id'] ?? '?'}',
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 11)),
+              ]),
+              if (r['restriction_scope'] != null) ...[
+                const SizedBox(height: 3),
+                Text('Bereich: ${r['restriction_scope']}',
+                    style:
+                        const TextStyle(color: Colors.white38, fontSize: 10)),
+              ],
+              if (msg.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(msg,
+                    style:
+                        const TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _busy ? null : () => _resolve(r, false),
+                    icon: const Icon(Icons.close, size: 16),
+                    label: const Text('Ablehnen'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _busy ? null : () => _resolve(r, true),
+                    icon: const Icon(Icons.check, size: 16),
+                    label: const Text('Annehmen'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+              ]),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBlacklist(ScrollController scroll) {
+    if (_blacklist.isEmpty) {
+      return const Center(
+        child: Text('Blacklist ist leer.',
+            style: TextStyle(color: Colors.white38)),
+      );
+    }
+    return ListView.builder(
+      controller: scroll,
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 28),
+      itemCount: _blacklist.length,
+      itemBuilder: (ctx, i) {
+        final b = _blacklist[i];
+        final status = (b['reactivation_status'] as String?) ?? 'blocked';
+        final statusColor = status == 'requested'
+            ? Colors.orangeAccent
+            : status == 'approved'
+                ? Colors.greenAccent
+                : Colors.white38;
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 5),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF12101C),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Row(children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('@${b['username_lower'] ?? '?'}',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 13)),
+                  const SizedBox(height: 2),
+                  Text('Status: $status',
+                      style: TextStyle(color: statusColor, fontSize: 10)),
+                  if (b['reason'] != null)
+                    Text('Grund: ${b['reason']}',
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 10)),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: _busy ? null : () => _freeBlacklist(b),
+              child: const Text('Freigeben',
+                  style: TextStyle(color: Colors.tealAccent, fontSize: 12)),
+            ),
+          ]),
+        );
+      },
+    );
+  }
 }
