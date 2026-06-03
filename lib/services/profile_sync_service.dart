@@ -51,9 +51,12 @@ class ProfileSyncService {
       final invisibleId = await UnifiedStorageService().getCurrentUserId();
 
       // ✅ Build request body (additiv)
+      // v118: 'display_name' (echte profiles-Spalte) statt 'name' -- 'name'
+      // existiert in profiles NICHT und liess den INSERT mit 42703 scheitern,
+      // wodurch Materie-Profile nie persistierten.
       final body = <String, dynamic>{
         'username': profile.username,
-        'name': profile.name,
+        'display_name': profile.name,
         'avatar_url': profile.avatarUrl,
         'avatar_emoji': profile.avatarEmoji,
         'bio': profile.bio,
@@ -131,21 +134,31 @@ class ProfileSyncService {
         uri: url,
         headers: {},
         parseResponse: (body) {
-          final data = jsonDecode(body);
-          if (data['success'] == true && data['profile'] != null) {
-            final profileData = data['profile'];
-
-            return MaterieProfile(
-              username: profileData['username'] as String,
-              userId: profileData['user_id'] as String?, // ✅ Backend userId
-              role: profileData['role'] as String?, // ✅ Backend role
-              name: profileData['name'] as String?,
-              avatarUrl: profileData['avatar_url'] as String?,
-              avatarEmoji: profileData['avatar_emoji'] as String?,
-              bio: profileData['bio'] as String?,
-            );
+          // v118: Der Worker proxied roh zu Supabase -> Antwort ist ein ARRAY
+          // [{...}] (nicht {success, profile}). Beide Formen tolerieren.
+          final decoded = jsonDecode(body);
+          Map<String, dynamic>? profileData;
+          if (decoded is List && decoded.isNotEmpty) {
+            profileData = decoded.first as Map<String, dynamic>;
+          } else if (decoded is Map && decoded['profile'] != null) {
+            profileData = decoded['profile'] as Map<String, dynamic>;
+          } else if (decoded is Map && decoded['username'] != null) {
+            profileData = decoded.cast<String, dynamic>();
           }
-          return null;
+          if (profileData == null) return null;
+
+          return MaterieProfile(
+            username: profileData['username'] as String,
+            // Backend userId: profiles.id (UUID).
+            userId: (profileData['id'] ?? profileData['user_id']) as String?,
+            role: profileData['role'] as String?,
+            // Spalte heisst display_name (frueher faelschlich 'name').
+            name: (profileData['display_name'] ?? profileData['name'])
+                as String?,
+            avatarUrl: profileData['avatar_url'] as String?,
+            avatarEmoji: profileData['avatar_emoji'] as String?,
+            bio: profileData['bio'] as String?,
+          );
         },
       );
     } catch (e) {
@@ -310,10 +323,17 @@ class ProfileSyncService {
         uri: url,
         headers: {},
         parseResponse: (body) {
-          final data = jsonDecode(body);
-          if (data['success'] == true && data['profile'] != null) {
-            final p = data['profile'];
-
+          // v118: Worker proxied roh zu Supabase -> Antwort ist ein ARRAY.
+          final decoded = jsonDecode(body);
+          Map<String, dynamic>? p;
+          if (decoded is List && decoded.isNotEmpty) {
+            p = decoded.first as Map<String, dynamic>;
+          } else if (decoded is Map && decoded['profile'] != null) {
+            p = (decoded['profile'] as Map).cast<String, dynamic>();
+          } else if (decoded is Map && decoded['username'] != null) {
+            p = decoded.cast<String, dynamic>();
+          }
+          if (p != null) {
             // v93: full_name aufsplitten in first/last (Convention: erstes Wort = first)
             final fullName = (p['full_name'] as String?) ?? '';
             final nameParts = fullName.split(' ');

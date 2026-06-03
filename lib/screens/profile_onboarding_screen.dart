@@ -789,6 +789,11 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       }
     }
 
+    // v118: verfolgt, ob das Profil tatsaechlich in Supabase persistiert
+    // wurde (Backend-Sync + Rueck-GET erfolgreich). Bei false wird der User
+    // gewarnt statt still nur lokal zu speichern.
+    bool backendOk = false;
+
     try {
       if (_isMaterie) {
         // Materie-Profil speichern
@@ -805,6 +810,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
             await syncService.saveMaterieProfileAndGetUpdated(profile);
 
         if (syncedProfile != null) {
+          backendOk = true;
           await _storage.saveMaterieProfile(syncedProfile);
           // 🔄 Für spätere Neuinstallation registrieren
           await ProfileRestoreService()
@@ -812,13 +818,10 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           if (kDebugMode) {
             debugPrint(
                 '✅ Materie-Profil gespeichert mit Backend-Sync: ${syncedProfile.username}');
-            debugPrint('   User ID: ${syncedProfile.userId}');
-            debugPrint('   Role: ${syncedProfile.role}');
           }
         } else {
-          // Fallback: Lokales Profil speichern
+          // Fallback: Lokales Profil speichern (Cloud-Sync fehlgeschlagen)
           await _storage.saveMaterieProfile(profile);
-          // 🔄 Auch bei Offline-Save registrieren
           await ProfileRestoreService()
               .registerProfileForRestore('materie', profile.username);
           if (kDebugMode) {
@@ -845,6 +848,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
             await syncService.saveEnergieProfileAndGetUpdated(profile);
 
         if (syncedProfile != null) {
+          backendOk = true;
           await _storage.saveEnergieProfile(syncedProfile);
           // 🔄 Für spätere Neuinstallation registrieren
           await ProfileRestoreService()
@@ -852,19 +856,54 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           if (kDebugMode) {
             debugPrint(
                 '✅ Energie-Profil gespeichert mit Backend-Sync: ${syncedProfile.fullName}');
-            debugPrint('   User ID: ${syncedProfile.userId}');
-            debugPrint('   Role: ${syncedProfile.role}');
           }
         } else {
-          // Fallback: Lokales Profil speichern
+          // Fallback: Lokales Profil speichern (Cloud-Sync fehlgeschlagen)
           await _storage.saveEnergieProfile(profile);
-          // 🔄 Auch bei Offline-Save registrieren
           await ProfileRestoreService()
               .registerProfileForRestore('energie', profile.username);
           if (kDebugMode) {
             debugPrint(
                 '⚠️ Energie-Profil lokal gespeichert (Backend-Sync fehlgeschlagen)');
           }
+        }
+      }
+
+      // v118: Wenn das Profil NICHT in der Cloud landete, klar warnen und
+      // Erneut-Versuch anbieten statt den User mit einem reinen Offline-
+      // Profil weiterzuschicken (genau das fuehrte zu "fehlenden" Profilen).
+      if (!backendOk && mounted) {
+        final retry = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF12101C),
+            title: const Text('Cloud-Speicherung fehlgeschlagen',
+                style: TextStyle(color: Colors.white)),
+            content: const Text(
+              'Dein Profil konnte gerade nicht in der Datenbank gespeichert '
+              'werden (Internetverbindung?). Es wurde nur lokal abgelegt.\n\n'
+              'Bitte erneut versuchen, damit dein Profil dauerhaft gesichert '
+              'und auf anderen Geraeten abrufbar ist.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Trotzdem fortfahren',
+                    style: TextStyle(color: Colors.white54)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Erneut versuchen',
+                    style: TextStyle(color: Colors.tealAccent)),
+              ),
+            ],
+          ),
+        );
+        if (retry == true) {
+          // Nicht navigieren -- User tippt Speichern erneut.
+          if (mounted) setState(() => _isLoading = false);
+          return;
         }
       }
 
