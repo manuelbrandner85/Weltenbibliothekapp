@@ -262,6 +262,67 @@ async function checkAdminRateLimit(env, adminId, action, { perMinute = 30 } = {}
   }
 }
 
+/**
+ * Schreibt eine Zeile ins admin_audit_log -- mit dem TATSAECHLICHEN
+ * Tabellen-Schema (admin_username, action, target_identity, target_username,
+ * world, room_name, details jsonb).
+ *
+ * Frueherer Code schrieb actor_id/target_type/target_id/payload -- diese
+ * Spalten existieren NICHT, daher schlugen alle Audit-Inserts (ban, unban,
+ * promote, delete, role-change...) silent fehl (fire-and-forget .catch).
+ * Diese Helper-Funktion normalisiert auf das echte Schema.
+ *
+ * Fire-and-forget: gibt kein await zurueck, Fehler werden geschluckt.
+ */
+function logAudit(svcHeaders, fields) {
+  try {
+    fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+      method: 'POST',
+      headers: {
+        ...svcHeaders,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        admin_username: fields.admin_username || 'unknown',
+        action: fields.action || 'unknown',
+        target_identity:
+          fields.target_id != null ? String(fields.target_id) : null,
+        target_username: fields.target_username || null,
+        world: fields.world || null,
+        room_name: fields.room_name || null,
+        details: fields.details || {},
+      }),
+    }).catch(() => {});
+  } catch (_) { /* never throw from audit logging */ }
+}
+
+/**
+ * v115: Enqueued eine Push-Notification (In-App + FCM-Queue) ausserhalb des
+ * fetch-Handlers (z.B. im Cron). Spiegelt die pushNotif-Closure-Logik:
+ * InvisibleAuth-IDs (user_*) -> legacy_user_id, sonst user_id.
+ * Fire-and-forget, schluckt Fehler.
+ */
+async function enqueuePush(pushAuth, userId, type, title, body, data = {}) {
+  if (!userId) return;
+  const h = { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+  const isLegacy = String(userId).startsWith('user_');
+  const queueRow = isLegacy
+    ? { legacy_user_id: userId, title, body, data, status: 'pending' }
+    : { user_id: userId, title, body, data, status: 'pending' };
+  const notifRow = isLegacy
+    ? { legacy_user_id: userId, type, title, body, data }
+    : { user_id: userId, type, title, body, data };
+  await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+      method: 'POST', headers: h, body: JSON.stringify(notifRow),
+    }).catch(() => {}),
+    fetch(`${SUPABASE_URL}/rest/v1/notification_queue`, {
+      method: 'POST', headers: h, body: JSON.stringify(queueRow),
+    }).catch(() => {}),
+  ]);
+}
+
 /** Convenience: 403 wenn nicht-admin, sonst null. */
 async function requireAdmin(request, env, { needHighPrivilege = false, needRootAdmin = false } = {}) {
   const caller = await verifyAdminCaller(request, env);
@@ -954,6 +1015,56 @@ export default {
       }
     } catch (e) {
       console.error('cron queue-cleanup failed:', e.message);
+    }
+
+    // ⏳ v115 (Feature A): Auto-Expiry befristeter Bans. Jeder Cron-Tick
+    // (alle 5 min) sucht abgelaufene, NICHT-permanente Bans und hebt sie auf:
+    //   1. profiles.is_banned = false
+    //   2. admin_bans-Zeile loeschen
+    //   3. Push an den User + Audit-Log
+    try {
+      const nowIso = new Date().toISOString();
+      const expRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/admin_bans?is_permanent=eq.false&expires_at=not.is.null&expires_at=lte.${encodeURIComponent(nowIso)}&select=id,user_id,username&limit=100`,
+        { headers: pushAuth },
+      );
+      const expired = expRes.ok ? await expRes.json().catch(() => []) : [];
+      if (Array.isArray(expired) && expired.length > 0) {
+        for (const ban of expired) {
+          const uid = ban.user_id;
+          if (!uid) continue;
+          // 1. Profil entsperren
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(uid)}`,
+            {
+              method: 'PATCH',
+              headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+              body: JSON.stringify({ is_banned: false }),
+            },
+          ).catch(() => {});
+          // 2. Ban-Zeile entfernen
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/admin_bans?id=eq.${encodeURIComponent(ban.id)}`,
+            { method: 'DELETE', headers: pushAuth },
+          ).catch(() => {});
+          // 3. Push + Audit
+          try {
+            await enqueuePush(pushAuth, uid, 'system', '✅ Sperre abgelaufen',
+              'Deine befristete Kontosperre ist abgelaufen. Du kannst wieder teilnehmen.',
+              { type: 'unbanned', auto: true });
+          } catch (_) {}
+          logAudit(pushAuth, {
+            admin_username: 'system',
+            action: 'ban_expired',
+            target_id: uid,
+            target_username: ban.username || null,
+            details: { auto: true },
+          });
+        }
+        console.log('cron ban-expiry:', expired.length, 'bans aufgehoben');
+      }
+    } catch (e) {
+      console.error('cron ban-expiry failed:', e.message);
     }
 
     // 💡 v103 (1.5) Daily Wisdom -- 08:00 UTC each day. Picks one of 30
@@ -2429,20 +2540,13 @@ export default {
             const txt = await insRes.text().catch(() => '');
             return errorResponse(`Enqueue ${insRes.status}: ${txt.slice(0, 200)}`);
           }
-          // Audit log (best-effort). AUDIT-FIX B1: echte actor_id aus
-          // verifiziertem Caller-Profile.
-          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
-            method: 'POST',
-            headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-              actor_id: pushCaller.userId,
-              admin_username: adminUsername,
-              action: 'push_broadcast',
-              target_type: 'all',
-              target_id: 'all',
-              payload: { title, body: msgBody, recipients: userIds.length },
-            }),
-          }).catch(() => {});
+          // Audit log (best-effort, v115: korrektes Schema via logAudit).
+          logAudit(pushAuth, {
+            admin_username: adminUsername,
+            action: 'push_broadcast',
+            target_id: 'all',
+            details: { title, body: msgBody, recipients: userIds.length },
+          });
           try { await dispatchPushQueue(env, pushAuth); } catch (_) {}
           return jsonResponse({ success: true, sent: userIds.length, failed: 0 });
         } catch (e) {
@@ -3505,6 +3609,23 @@ export default {
           const totalHeader = res.headers.get('Content-Range') || '';
           const all = await res.json().catch(() => []);
           const list = Array.isArray(all) ? all : [];
+
+          // v115 (Feature B): Verwarnungs-Counts pro User aggregieren --
+          // eine einzige Query statt N. Wird ins User-Tile als Badge gezeigt.
+          const warnCounts = {};
+          try {
+            const wRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/admin_warnings?select=user_id&limit=5000`,
+              { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } },
+            );
+            if (wRes.ok) {
+              const wRows = await wRes.json().catch(() => []);
+              for (const w of (Array.isArray(wRows) ? wRows : [])) {
+                if (w.user_id) warnCounts[w.user_id] = (warnCounts[w.user_id] || 0) + 1;
+              }
+            }
+          } catch (_) { /* best-effort, Counts sind optional */ }
+
           // v5.44.7 KEINE Filterung mehr nach role='system' weil das echte
           // User mit administrativen Rollen ausschloss. NUR System-Profile
           // (id 00000000-...) bleiben gefiltert.
@@ -3525,6 +3646,7 @@ export default {
               last_seen_at: u.last_seen_at || null,
               xp: u.xp || 0,
               full_name: u.full_name || null,
+              warning_count: warnCounts[u.id] || 0,
             }));
           return jsonResponse({
             success: true,
@@ -3537,7 +3659,10 @@ export default {
       }
 
       // ── GET /api/admin/users/:world ─────────────────────────
-      if (method === 'GET' && path.match(/\/api\/admin\/users\/\w+/) && !path.includes('/status')) {
+      // v115: Regex anchored auf genau EIN Segment nach /users/ damit
+      // Sub-Routen wie /users/:id/warnings|notes|status NICHT faelschlich
+      // hier landen (die werden weiter unten spezifisch behandelt).
+      if (method === 'GET' && /^\/api\/admin\/users\/[^/]+\/?$/.test(path) && !path.includes('/status')) {
         try {
           const world = path.split('/')[4];
           const anonKey = env.SUPABASE_ANON_KEY || '';
@@ -4037,19 +4162,13 @@ export default {
             await pushNotif(userId, 'system', `🌟 Neue Rolle: ${friendly}`,
               `Ein Administrator hat dich zu ${friendly} befördert.`,
               { type: 'promoted', new_role: targetRole });
-            // AUDIT-FIX B1: Audit-Log mit echter actor_id
-            fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
-              method: 'POST',
-              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
-              body: JSON.stringify({
-                actor_id: caller.userId,
-                admin_username: caller.username,
-                action: 'role_promote',
-                target_type: 'user',
-                target_id: userId,
-                payload: { new_role: targetRole, caller_role: caller.role },
-              }),
-            }).catch(() => {});
+            // AUDIT-FIX B1: Audit-Log (v115: korrektes Schema via logAudit)
+            logAudit(svcHeaders, {
+              admin_username: caller.username,
+              action: 'role_promote',
+              target_id: userId,
+              details: { new_role: targetRole, caller_role: caller.role },
+            });
           }
           return jsonResponse({
             success: res.ok,
@@ -4147,21 +4266,21 @@ export default {
             } catch (_) { /* auth-delete ist best-effort */ }
           }
 
-          // Audit-Log
-          try {
-            await fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
-              method: 'POST',
-              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
-              body: JSON.stringify({
-                actor_id: caller.userId,
-                admin_username: caller.username,
-                action: 'user_hard_delete',
-                target_type: 'profile',
-                target_id: userId,
-                payload: { auth_deleted: authDeleted, looks_like_uuid: looksLikeUuid },
-              }),
+          // Audit-Log (v115: korrektes Schema via logAudit)
+          // AUDIT-FIX B13: Grund aus Query-Param mit ins Audit-Log.
+          {
+            const delReason = url.searchParams.get('reason') || null;
+            logAudit(svcHeaders, {
+              admin_username: caller.username,
+              action: 'user_hard_delete',
+              target_id: userId,
+              details: {
+                auth_deleted: authDeleted,
+                looks_like_uuid: looksLikeUuid,
+                reason: delReason,
+              },
             });
-          } catch (_) {}
+          }
 
           return jsonResponse({
             success: delProfile.ok,
@@ -4363,13 +4482,18 @@ export default {
           try { body = await request.clone().json(); } catch (_) {}
           const reason = String(body?.reason || 'Admin-Ban').slice(0, 500);
           const expiresAt = body?.expires_at || null;
+          // v115: kein expires_at -> permanenter Ban. Der Cron-Expiry-Scan
+          // hebt nur befristete Bans (is_permanent=false) nach Ablauf auf.
+          const isPermanent = !expiresAt;
           fetch(`${SUPABASE_URL}/rest/v1/admin_bans`, {
             method: 'POST',
             headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
             body: JSON.stringify({
               user_id: userId,
-              banned_by: caller.userId,
+              username: updated[0]?.username || null,
+              banned_by: caller.username,
               reason,
+              is_permanent: isPermanent,
               expires_at: expiresAt,
               created_at: new Date().toISOString(),
             }),
@@ -4379,17 +4503,14 @@ export default {
             `Dein Konto wurde gesperrt. Grund: ${reason}`,
             { type: 'banned', reason });
 
-          // AUDIT-FIX B1: Audit-Log mit echter actor_id + admin_username
-          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
-            method: 'POST',
-            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-              actor_id: caller.userId,
-              admin_username: caller.username,
-              action: 'ban', target_type: 'profile', target_id: userId,
-              payload: { username: updated[0]?.username || null, reason, expires_at: expiresAt },
-            }),
-          }).catch(() => {});
+          // AUDIT-FIX B1: Audit-Log (v115: korrektes Schema via logAudit)
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'ban',
+            target_id: userId,
+            target_username: updated[0]?.username || null,
+            details: { reason, expires_at: expiresAt },
+          });
           return jsonResponse({ success: true, action: 'banned', user_id: userId });
         } catch (e) { return errorResponse(`Ban-Fehler: ${e.message}`); }
       }
@@ -4425,16 +4546,12 @@ export default {
           await pushNotif(userId, 'system', '✅ Sperre aufgehoben',
             'Deine Kontosperre wurde von einem Administrator aufgehoben.',
             { type: 'unbanned' });
-          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
-            method: 'POST',
-            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-              actor_id: caller.userId,
-              admin_username: caller.username,
-              action: 'unban', target_type: 'profile', target_id: userId,
-              payload: { username: updated[0]?.username || null },
-            }),
-          }).catch(() => {});
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'unban',
+            target_id: userId,
+            target_username: updated[0]?.username || null,
+          });
           return jsonResponse({ success: true, action: 'unbanned', user_id: userId });
         } catch (e) { return errorResponse(`Unban-Fehler: ${e.message}`); }
       }
@@ -4471,16 +4588,12 @@ export default {
             `Du wurdest fuer ${durationH}h stummgeschaltet. Grund: ${reason}`,
             { type: 'muted', reason, expires_at: expiresAt });
 
-          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
-            method: 'POST',
-            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-              actor_id: caller.userId,
-              admin_username: caller.username,
-              action: 'mute', target_type: 'profile', target_id: userId,
-              payload: { reason, duration_h: durationH, expires_at: expiresAt },
-            }),
-          }).catch(() => {});
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'mute',
+            target_id: userId,
+            details: { reason, duration_h: durationH, expires_at: expiresAt },
+          });
 
           return jsonResponse({ success: true, action: 'muted', user_id: userId, expires_at: expiresAt });
         } catch (e) { return errorResponse(`Mute-Fehler: ${e.message}`); }
@@ -4500,18 +4613,213 @@ export default {
             'Du kannst wieder im Chat schreiben.',
             { type: 'unmuted' });
 
-          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
-            method: 'POST',
-            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
-            body: JSON.stringify({
-              actor_id: caller.userId,
-              admin_username: caller.username,
-              action: 'unmute', target_type: 'profile', target_id: userId,
-            }),
-          }).catch(() => {});
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'unmute',
+            target_id: userId,
+          });
 
           return jsonResponse({ success: true, action: 'unmuted', user_id: userId });
         } catch (e) { return errorResponse(`Unmute-Fehler: ${e.message}`); }
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // v115 Feature B: Verwarnungssystem (3 Verwarnungen = Auto-Ban)
+      // ════════════════════════════════════════════════════════════════
+
+      // ── GET /api/admin/users/:userId/warnings ───────────────────────
+      // Liefert alle Verwarnungen eines Users + Count.
+      if (method === 'GET' && path.includes('/users/') && path.endsWith('/warnings')) {
+        try {
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/admin_warnings?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc&limit=50`,
+            { headers: svcHeaders },
+          );
+          const rows = r.ok ? await r.json().catch(() => []) : [];
+          return jsonResponse({
+            success: true,
+            warnings: Array.isArray(rows) ? rows : [],
+            count: Array.isArray(rows) ? rows.length : 0,
+          });
+        } catch (e) { return errorResponse(`Warnings-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/:userId/warn ──────────────────────────
+      // Body: { reason: string }. Legt eine Verwarnung an. Bei der 3.
+      // Verwarnung wird der User automatisch fuer 7 Tage gebannt.
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/warn')) {
+        try {
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          if (String(userId) === String(caller.userId)) {
+            return errorResponse('Selbst-Verwarnung ist nicht erlaubt', 403);
+          }
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const reason = String(body?.reason || '').trim().slice(0, 500);
+          if (reason.length < 3) {
+            return errorResponse('Grund (min. 3 Zeichen) ist Pflicht', 400);
+          }
+
+          // Ziel-Username + bisherige Verwarnungen holen.
+          const tgtRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=username&limit=1`,
+            { headers: svcHeaders },
+          );
+          const tgtRows = tgtRes.ok ? await tgtRes.json().catch(() => []) : [];
+          if (tgtRows.length === 0) return errorResponse('User nicht gefunden', 404);
+          const targetUsername = tgtRows[0]?.username || null;
+
+          // Verwarnung anlegen.
+          const insRes = await fetch(`${SUPABASE_URL}/rest/v1/admin_warnings`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              user_id: userId,
+              username: targetUsername,
+              warned_by: caller.username,
+              reason,
+              created_at: new Date().toISOString(),
+            }),
+          });
+          if (!insRes.ok) {
+            const t = await insRes.text().catch(() => '');
+            return errorResponse(`Verwarnung-Fehler: ${insRes.status} ${t.slice(0, 200)}`);
+          }
+
+          // Aktuelle Anzahl ermitteln (count=exact via Range-Header).
+          const cntRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/admin_warnings?user_id=eq.${encodeURIComponent(userId)}&select=id`,
+            { headers: { ...svcHeaders, 'Prefer': 'count=exact', 'Range': '0-0' } },
+          );
+          const warnCount = parseInt(
+            cntRes.headers.get('content-range')?.split('/')[1] || '1', 10);
+
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'warning',
+            target_id: userId,
+            target_username: targetUsername,
+            details: { reason, warning_count: warnCount },
+          });
+
+          // 3-Strike: ab der 3. Verwarnung Auto-Ban (7 Tage).
+          let autoBanned = false;
+          if (warnCount >= 3) {
+            const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+              {
+                method: 'PATCH',
+                headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+                body: JSON.stringify({ is_banned: true }),
+              },
+            ).catch(() => {});
+            fetch(`${SUPABASE_URL}/rest/v1/admin_bans`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+              body: JSON.stringify({
+                user_id: userId,
+                username: targetUsername,
+                banned_by: 'system',
+                reason: `Auto-Ban nach ${warnCount} Verwarnungen`,
+                is_permanent: false,
+                expires_at: expiresAt,
+                created_at: new Date().toISOString(),
+              }),
+            }).catch(() => {});
+            autoBanned = true;
+            logAudit(svcHeaders, {
+              admin_username: 'system',
+              action: 'ban',
+              target_id: userId,
+              target_username: targetUsername,
+              details: { reason: `Auto-Ban nach ${warnCount} Verwarnungen`, expires_at: expiresAt, auto: true },
+            });
+            await pushNotif(userId, 'system', '🚫 Konto gesperrt',
+              `Du wurdest nach ${warnCount} Verwarnungen automatisch fuer 7 Tage gesperrt.`,
+              { type: 'banned', auto: true });
+          } else {
+            await pushNotif(userId, 'system', '⚠️ Verwarnung',
+              `Du wurdest verwarnt (${warnCount}/3). Grund: ${reason}`,
+              { type: 'warning', count: warnCount, reason });
+          }
+
+          return jsonResponse({
+            success: true,
+            warning_count: warnCount,
+            auto_banned: autoBanned,
+          });
+        } catch (e) { return errorResponse(`Verwarnung-Fehler: ${e.message}`); }
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // v115 Feature C: Interne Admin-Notizen pro User
+      // ════════════════════════════════════════════════════════════════
+
+      // ── GET /api/admin/users/:userId/notes ──────────────────────────
+      if (method === 'GET' && path.includes('/users/') && path.endsWith('/notes')) {
+        try {
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/admin_user_notes?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc&limit=100`,
+            { headers: svcHeaders },
+          );
+          const rows = r.ok ? await r.json().catch(() => []) : [];
+          return jsonResponse({
+            success: true,
+            notes: Array.isArray(rows) ? rows : [],
+          });
+        } catch (e) { return errorResponse(`Notes-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/:userId/notes ─────────────────────────
+      // Body: { note: string }
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/notes')) {
+        try {
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const note = String(body?.note || '').trim().slice(0, 1000);
+          if (note.length < 1) return errorResponse('Notiz darf nicht leer sein', 400);
+          const insRes = await fetch(`${SUPABASE_URL}/rest/v1/admin_user_notes`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify({
+              user_id: userId,
+              note,
+              author_username: caller.username,
+              created_at: new Date().toISOString(),
+            }),
+          });
+          if (!insRes.ok) {
+            const t = await insRes.text().catch(() => '');
+            return errorResponse(`Notes-Fehler: ${insRes.status} ${t.slice(0, 200)}`);
+          }
+          const created = await insRes.json().catch(() => []);
+          return jsonResponse({
+            success: true,
+            note: Array.isArray(created) ? created[0] : created,
+          });
+        } catch (e) { return errorResponse(`Notes-Fehler: ${e.message}`); }
+      }
+
+      // ── DELETE /api/admin/users/:userId/notes/:noteId ───────────────
+      if (method === 'DELETE' && path.includes('/users/') && path.includes('/notes/')) {
+        try {
+          const parts = path.split('/');
+          const noteId = parts[parts.length - 1];
+          if (!noteId) return errorResponse('noteId fehlt', 400);
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/admin_user_notes?id=eq.${encodeURIComponent(noteId)}`,
+            { method: 'DELETE', headers: svcHeaders },
+          );
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`Notes-Delete-Fehler: ${e.message}`); }
       }
 
       // ── POST /api/admin/users/:userId/xp  (Admin vergibt XP manuell) ──
@@ -4774,29 +5082,13 @@ export default {
             return errorResponse('User nicht gefunden', 404);
           }
 
-          // Audit-Log: zusaetzlich noch admin-username eintragen (v91 trigger
-          // log automatisch, aber kennt actor_username nicht).
-          try {
-            await fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
-              },
-              body: JSON.stringify({
-                actor_id: caller.userId,
-                admin_username: caller.username,
-                action: 'role_change_explicit',
-                target_type: 'profile',
-                target_id: userId,
-                payload: {
-                  new_role: newRole,
-                  source: 'api/admin/users/role',
-                },
-              }),
-            });
-          } catch (_) { /* audit ist non-fatal */ }
+          // Audit-Log (v115: korrektes Schema via logAudit).
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'role_change_explicit',
+            target_id: userId,
+            details: { new_role: newRole, source: 'api/admin/users/role' },
+          });
 
           return jsonResponse({
             success: true,
