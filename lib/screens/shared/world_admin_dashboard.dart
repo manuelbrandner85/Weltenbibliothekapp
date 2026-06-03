@@ -1347,29 +1347,213 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _ban(WorldUser u) async {
-    final confirmed = await _confirm(
-      '🚫 Nutzer sperren',
-      'Soll @${u.username} wirklich für 24 Stunden gesperrt werden?\n\nDer Nutzer kann danach nicht mehr chatten.',
-      confirmColor: Colors.red,
-    );
-    if (!confirmed) return;
+    final result = await _showBanDialog(u.username);
+    if (result == null) return;
 
     setState(() => _processing = true);
     final ok = await WorldAdminServiceV162.banUser(
-        userId: u.userId,
-        reason: 'Admin-Aktion',
-        adminUserId: widget.admin.username);
+      userId: u.userId,
+      reason: result['reason'] as String,
+      expiresAt: result['expiresAt'] as String?,
+      adminUserId: widget.admin.username,
+    );
     if (!mounted) return;
     setState(() => _processing = false);
-    _snack(ok ? '🚫 ${u.username} wurde gesperrt' : '❌ Fehler beim Sperren',
-        color: ok ? Colors.red.shade700 : Colors.orange);
-    if (ok) _load();
+    if (ok) {
+      final label = result['durationLabel'] as String;
+      _snack('🚫 @${u.username} gesperrt ($label)', color: Colors.red.shade700);
+      _load();
+    } else {
+      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
+          ? AdminApiClient.instance.diagLog.last.message
+          : 'Unbekannter Fehler';
+      _snack('❌ Sperren fehlgeschlagen: $errMsg', color: Colors.orange);
+    }
+  }
+
+  /// Shows a dialog to pick ban reason and duration.
+  /// Returns {'reason': String, 'expiresAt': String?, 'durationLabel': String}
+  /// or null if cancelled.
+  Future<Map<String, Object?>?> _showBanDialog(String username) async {
+    final reasonCtrl = TextEditingController(text: 'Regelverstoß');
+    int selectedIdx = 2; // default: 24h
+    const durationLabels = [
+      '1 Stunde',
+      '6 Stunden',
+      '24 Stunden',
+      '7 Tage',
+      'Permanent'
+    ];
+    const durationHours = [1, 6, 24, 168, 0]; // 0 = permanent
+
+    return showDialog<Map<String, Object?>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setDs) => AlertDialog(
+          backgroundColor: const Color(0xFF12121E),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+              ),
+              child: const Icon(Icons.block_rounded,
+                  color: Colors.redAccent, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Nutzer sperren',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16)),
+                  Text('@$username',
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 12)),
+                ],
+              ),
+            ),
+          ]),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Dauer',
+                    style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
+                        letterSpacing: 1.2)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: List.generate(durationLabels.length, (i) {
+                    final sel = selectedIdx == i;
+                    final isPerm = durationHours[i] == 0;
+                    return GestureDetector(
+                      onTap: () => setDs(() => selectedIdx = i),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? (isPerm ? Colors.red : Colors.orange)
+                                  .withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: sel
+                                ? (isPerm ? Colors.red : Colors.orange)
+                                    .withValues(alpha: 0.7)
+                                : Colors.white12,
+                          ),
+                        ),
+                        child: Text(
+                          durationLabels[i],
+                          style: TextStyle(
+                            color: sel
+                                ? (isPerm
+                                    ? Colors.red.shade200
+                                    : Colors.orange.shade200)
+                                : Colors.white70,
+                            fontSize: 12,
+                            fontWeight:
+                                sel ? FontWeight.w700 : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: reasonCtrl,
+                  maxLength: 200,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    labelText: 'Grund (fuer Audit-Log + Push)',
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    counterStyle:
+                        const TextStyle(color: Colors.white24, fontSize: 10),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                          color: Colors.redAccent.withValues(alpha: 0.6)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Ban wird im Audit-Log protokolliert und an den Nutzer gesendet.',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                final reason = reasonCtrl.text.trim().isEmpty
+                    ? 'Regelverstoß'
+                    : reasonCtrl.text.trim();
+                final hours = durationHours[selectedIdx];
+                String? expiresAt;
+                if (hours > 0) {
+                  expiresAt = DateTime.now()
+                      .add(Duration(hours: hours))
+                      .toUtc()
+                      .toIso8601String();
+                }
+                Navigator.pop<Map<String, Object?>>(ctx, {
+                  'reason': reason,
+                  'expiresAt': expiresAt,
+                  'durationLabel': durationLabels[selectedIdx],
+                });
+              },
+              icon: const Icon(Icons.block_rounded,
+                  color: Colors.white, size: 16),
+              label:
+                  const Text('Sperren', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _unban(WorldUser u) async {
     final confirmed = await _confirm(
-      '✅ Sperre aufheben',
-      'Soll die Sperre für @${u.username} wirklich aufgehoben werden?',
+      'Sperre aufheben',
+      'Soll die Sperre fuer @${u.username} wirklich aufgehoben werden?',
       confirmColor: Colors.teal,
     );
     if (!confirmed) return;
@@ -1379,9 +1563,15 @@ class _UsersTabState extends State<_UsersTab> {
         userId: u.userId, adminUserId: widget.admin.username ?? 'admin');
     if (!mounted) return;
     setState(() => _processing = false);
-    _snack(ok ? '✅ ${u.username} wurde entsperrt' : '❌ Fehler',
-        color: ok ? Colors.teal : Colors.orange);
-    if (ok) _load();
+    if (ok) {
+      _snack('✅ @${u.username} wurde entsperrt', color: Colors.teal);
+      _load();
+    } else {
+      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
+          ? AdminApiClient.instance.diagLog.last.message
+          : 'Unbekannter Fehler';
+      _snack('❌ Entsperren fehlgeschlagen: $errMsg', color: Colors.orange);
+    }
   }
 
   Future<void> _promote(WorldUser u) async {
@@ -1448,13 +1638,15 @@ class _UsersTabState extends State<_UsersTab> {
     );
     if (!mounted) return;
     setState(() => _processing = false);
-    _snack(
-      ok
-          ? '🛡️ @${u.username} ist jetzt $pretty'
-          : '❌ Rollenwechsel fehlgeschlagen',
-      color: ok ? Colors.green : Colors.orange,
-    );
-    if (ok) _load();
+    if (ok) {
+      _snack('🛡️ @${u.username} ist jetzt $pretty', color: Colors.green);
+      _load();
+    } else {
+      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
+          ? AdminApiClient.instance.diagLog.last.message
+          : 'Unbekannter Fehler';
+      _snack('❌ Rollenwechsel fehlgeschlagen: $errMsg', color: Colors.orange);
+    }
   }
 
   String _prettyRole(String r) => switch (r) {
@@ -1599,11 +1791,15 @@ class _UsersTabState extends State<_UsersTab> {
     );
     if (!mounted) return;
     setState(() => _processing = false);
-    _snack(
-      success ? '🗑️ @${u.username} geloescht' : '❌ Loeschen fehlgeschlagen',
-      color: success ? Colors.red : Colors.orange,
-    );
-    if (success) _load();
+    if (success) {
+      _snack('🗑️ @${u.username} geloescht', color: Colors.red);
+      _load();
+    } else {
+      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
+          ? AdminApiClient.instance.diagLog.last.message
+          : 'Unbekannter Fehler';
+      _snack('❌ Loeschen fehlgeschlagen: $errMsg', color: Colors.orange);
+    }
   }
 
   // v98: Sync-Endpoint -- backfillt fehlende profiles aus auth.users.
@@ -2546,8 +2742,14 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
         : 'Chat-Moderation: ${reasonCtrl.text.trim()}';
     final ok = await WorldAdminServiceV162.banUser(
         userId: userId, reason: reason, adminUserId: widget.admin.username);
-    _snack(ok ? '🚫 @$username gesperrt ($reason)' : '❌ Fehler beim Sperren',
-        color: ok ? Colors.red.shade700 : Colors.orange);
+    if (ok) {
+      _snack('🚫 @$username gesperrt', color: Colors.red.shade700);
+    } else {
+      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
+          ? AdminApiClient.instance.diagLog.last.message
+          : 'Unbekannter Fehler';
+      _snack('❌ Sperren fehlgeschlagen: $errMsg', color: Colors.orange);
+    }
   }
 
   @override

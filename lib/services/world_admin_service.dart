@@ -232,10 +232,12 @@ class WorldAdminService {
       // PHASE-1 FIX: HMAC-Header (deprecated getUsersByWorld -- aber falls
       // noch genutzt, soll es auch funktionieren).
       final url = Uri.parse('$_baseUrl/api/admin/users/$world');
-      final response = await http.get(
-        url,
-        headers: await _adminAuthHeaders(role: role),
-      ).timeout(_timeout);
+      final response = await http
+          .get(
+            url,
+            headers: await _adminAuthHeaders(role: role),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -290,7 +292,8 @@ class WorldAdminService {
       raw = null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('⚠️ Worker /api/admin/users failed: $e -- Fallback Supabase');
+        debugPrint(
+            '⚠️ Worker /api/admin/users failed: $e -- Fallback Supabase');
       }
       raw = null;
     }
@@ -791,32 +794,32 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<Map<String, String>> get _h async =>
       WorldAdminService._adminAuthHeaders(role: 'root_admin');
 
+  /// Ban a user. [expiresAt] is an ISO-8601 timestamp stored in admin_bans
+  /// for display; Worker sets profiles.is_banned=true regardless.
+  /// Null expiresAt = permanent ban (no auto-unban).
   static Future<bool> banUser({
     required String userId,
     required String reason,
     int durationHours = 24,
+    String? expiresAt,
     String? adminUserId,
   }) async {
     try {
-      final url = Uri.parse(
-          '${WorldAdminService._baseUrl}/api/admin/users/$userId/ban');
-      final response = await http
-          .post(
-            url,
-            headers: await _h,
-            body:
-                jsonEncode({'reason': reason, 'durationHours': durationHours}),
-          )
-          .timeout(WorldAdminService._timeout);
-      if (response.statusCode == 200) {
-        // Cache leeren damit Nutzer-Tab den Ban sofort sieht.
-        AdminApiClient.instance.invalidateCache('/api/admin/users');
-        final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
-        return data['success'] as bool? ?? true;
-      }
-      if (kDebugMode) debugPrint('❌ Ban failed: HTTP ${response.statusCode}');
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/ban',
+        body: {
+          'reason': reason,
+          'durationHours': durationHours,
+          if (expiresAt != null) 'expires_at': expiresAt,
+        },
+      );
+      AdminApiClient.instance.invalidateCache('/api/admin/users');
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ banUser: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
+      if (kDebugMode) debugPrint('❌ banUser: $e');
       return false;
     }
   }
@@ -824,12 +827,17 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<bool> unbanUser(
       {required String userId, String? adminUserId}) async {
     try {
-      final url = Uri.parse(
-          '${WorldAdminService._baseUrl}/api/admin/users/$userId/unban');
-      final response =
-          await http.post(url, headers: await _h).timeout(WorldAdminService._timeout);
-      return response.statusCode == 200;
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/unban',
+      );
+      AdminApiClient.instance.invalidateCache('/api/admin/users');
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ unbanUser: ${e.statusCode} ${e.bodySnippet}');
+      return false;
     } catch (e) {
+      if (kDebugMode) debugPrint('❌ unbanUser: $e');
       return false;
     }
   }
@@ -848,39 +856,30 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUsername,
   }) async {
     try {
-      final url = Uri.parse(
-          '${WorldAdminService._baseUrl}/api/admin/users/$userId/role');
-      final response = await http
-          .put(
-            url,
-            headers: {...await _h, 'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'role': newRole,
-              if (adminUsername != null) 'admin': adminUsername,
-            }),
-          )
-          .timeout(WorldAdminService._timeout);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
-        // v103 (4.5): Push an den User mit der neuen Rolle. Fire-and-forget.
+      final data = await AdminApiClient.instance.putJson(
+        '/api/admin/users/$userId/role',
+        body: {
+          'role': newRole,
+          if (adminUsername != null) 'admin': adminUsername,
+        },
+      );
+      if (data['success'] == true) {
         PushNotificationHelper.instance.sendToUser(
           targetUserId: userId,
           type: 'admin_role_change',
-          title: '🛡️ Rolle geändert',
-          body:
-              'Deine Rolle wurde zu "${_prettyRoleName(newRole)}" geändert.',
+          title: 'Rolle geaendert',
+          body: 'Deine Rolle wurde zu "${_prettyRoleName(newRole)}" geaendert.',
           data: {
             'action': 'role_change',
             'new_role': newRole,
             'admin': adminUsername,
           },
         ).ignore();
-        return data['success'] as bool? ?? true;
       }
-      if (kDebugMode) {
-        debugPrint(
-            '❌ changeUserRole failed: HTTP ${response.statusCode} ${response.body}');
-      }
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ changeUserRole: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ changeUserRole exception: $e');
@@ -914,18 +913,17 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUserId,
   }) async {
     try {
-      final url = Uri.parse(
-          '${WorldAdminService._baseUrl}/api/admin/users/$userId/mute');
-      final response = await http
-          .post(
-            url,
-            headers: await _h,
-            body: jsonEncode(
-                {'reason': reason, 'durationMinutes': durationMinutes}),
-          )
-          .timeout(WorldAdminService._timeout);
-      return response.statusCode == 200;
+      await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/mute',
+        body: {'reason': reason, 'durationMinutes': durationMinutes},
+      );
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ muteUser: ${e.statusCode} ${e.bodySnippet}');
+      return false;
     } catch (e) {
+      if (kDebugMode) debugPrint('❌ muteUser: $e');
       return false;
     }
   }
@@ -938,23 +936,16 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? reason,
   }) async {
     try {
-      // AUDIT-FIX B13: Grund als Query-Param mitschicken -- Worker
-      // schreibt ihn ins admin_audit_log.
       final qp = reason != null && reason.isNotEmpty
           ? '?reason=${Uri.encodeQueryComponent(reason)}'
           : '';
-      final url = Uri.parse(
-          '${WorldAdminService._baseUrl}/api/admin/users/$userId$qp');
-      final response = await http
-          .delete(url, headers: await _h)
-          .timeout(WorldAdminService._timeout);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
-        return data['success'] as bool? ?? true;
-      }
-      if (kDebugMode) {
-        debugPrint('❌ deleteUser failed: HTTP ${response.statusCode}');
-      }
+      final data = await AdminApiClient.instance.deleteJson(
+        '/api/admin/users/$userId$qp',
+      );
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ deleteUser: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ deleteUser exception: $e');
@@ -997,31 +988,17 @@ extension WorldAdminServiceV162 on WorldAdminService {
     String? adminUsername,
   }) async {
     try {
-      // PHASE-1 FIX: HMAC-Header via _h (vorher fehlten sie,
-      // XP-Vergeben schlug silent fehl).
-      final url =
-          Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/xp');
-      final adminHeaders = await _h;
-      final response = await http
-          .post(
-            url,
-            headers: {
-              ...adminHeaders,
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'amount': amount,
-              'reason': reason,
-              'admin': adminUsername ?? 'admin',
-            }),
-          )
-          .timeout(WorldAdminService._timeout);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      }
-      if (kDebugMode) {
-        debugPrint('❌ grantXp HTTP ${response.statusCode}: ${response.body}');
-      }
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/xp',
+        body: {
+          'amount': amount,
+          'reason': reason,
+          'admin': adminUsername ?? 'admin',
+        },
+      );
+      return data;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ grantXp: ${e.statusCode} ${e.bodySnippet}');
       return null;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ grantXp: $e');
@@ -1032,12 +1009,16 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<bool> unmuteUser(
       {required String userId, String? adminUserId}) async {
     try {
-      final url = Uri.parse(
-          '${WorldAdminService._baseUrl}/api/admin/users/$userId/unmute');
-      final response =
-          await http.post(url, headers: await _h).timeout(WorldAdminService._timeout);
-      return response.statusCode == 200;
+      await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/unmute',
+      );
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ unmuteUser: ${e.statusCode} ${e.bodySnippet}');
+      return false;
     } catch (e) {
+      if (kDebugMode) debugPrint('❌ unmuteUser: $e');
       return false;
     }
   }
@@ -1051,10 +1032,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
       // PHASE-1 FIX: HMAC-Header
       final url = Uri.parse(
           '${WorldAdminService._baseUrl}/api/admin/users/$userId/status');
-      final response = await http.get(
-        url,
-        headers: await _h,
-      ).timeout(WorldAdminService._timeout);
+      final response = await http
+          .get(
+            url,
+            headers: await _h,
+          )
+          .timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -1077,10 +1060,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
       // PHASE-1 FIX: HMAC-Header
       final url =
           Uri.parse('${WorldAdminService._baseUrl}/api/admin/dashboard');
-      final response = await http.get(
-        url,
-        headers: await _h,
-      ).timeout(WorldAdminService._timeout);
+      final response = await http
+          .get(
+            url,
+            headers: await _h,
+          )
+          .timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -1101,10 +1086,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
       // PHASE-1 FIX: HMAC-Header
       final url = Uri.parse(
           '${WorldAdminService._baseUrl}/api/admin/analytics/$realm?days=$days');
-      final response = await http.get(
-        url,
-        headers: await _h,
-      ).timeout(WorldAdminService._timeout);
+      final response = await http
+          .get(
+            url,
+            headers: await _h,
+          )
+          .timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -1152,10 +1139,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
       }
 
       // PHASE-1 FIX: HMAC-Header (war Legacy _adminHeaders ohne HMAC)
-      final response = await http.get(
-        url,
-        headers: await _h,
-      ).timeout(WorldAdminService._timeout);
+      final response = await http
+          .get(
+            url,
+            headers: await _h,
+          )
+          .timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1222,10 +1211,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
       }
 
       // PHASE-1 FIX: HMAC-Header
-      final response = await http.get(
-        url,
-        headers: await _h,
-      ).timeout(WorldAdminService._timeout);
+      final response = await http
+          .get(
+            url,
+            headers: await _h,
+          )
+          .timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1292,10 +1283,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
       }
 
       // PHASE-1 FIX: HMAC-Header
-      final response = await http.get(
-        url,
-        headers: await _h,
-      ).timeout(WorldAdminService._timeout);
+      final response = await http
+          .get(
+            url,
+            headers: await _h,
+          )
+          .timeout(WorldAdminService._timeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
