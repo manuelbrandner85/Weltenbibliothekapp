@@ -5201,7 +5201,14 @@ class _UserTile extends StatelessWidget {
                       user.world == 'materie' ? 'Materie-Welt' : 'Energie-Welt',
                 ),
               // 🔑 Herkunfts-Badge: Web (Supabase-Auth) vs. App (InvisibleAuth)
-              if (user.source == 'web')
+              if (user.isWebOnly)
+                const _MiniPill(
+                  label: '🌐 Web-Antrag',
+                  color: Color(0xFFC9A84C),
+                  tooltip: 'Web-Zugang genehmigt, noch kein vollstaendiges '
+                      'Profil. User-Aktionen greifen hier nicht.',
+                )
+              else if (user.source == 'web')
                 const _MiniPill(
                   label: '🌐 Web',
                   color: Color(0xFF4FC3F7),

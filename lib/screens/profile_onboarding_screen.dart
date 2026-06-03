@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 // OpenClaw v2.0
 import '../services/storage_service.dart';
@@ -6,6 +7,7 @@ import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
 import '../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../services/profile_restore_service.dart'; // 🔄 PROFIL-RESTORE REGISTRIERUNG
+import '../services/account_service.dart'; // v117: Auto-Fill + Reaktivierung
 import '../widgets/responsive_web_container.dart';
 
 /// Profil-Onboarding-Screen - Zeigt beim ersten App-Start ODER zum Bearbeiten
@@ -46,6 +48,11 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
 
   bool _isLoading = false;
 
+  // v117: Auto-Fill Username anhand Vor+Nachname (debounced Lookup).
+  Timer? _nameLookupDebounce;
+  bool _autoFilledUsername = false;
+  bool _usernameManuallyEdited = false;
+
   bool get _isEditMode => _isMaterie
       ? widget.existingMaterieProfile != null
       : widget.existingEnergieProfile != null;
@@ -77,6 +84,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
 
   @override
   void dispose() {
+    _nameLookupDebounce?.cancel();
     _materieUsernameController.dispose();
     _materieNameController.dispose();
     _energieUsernameController.dispose();
@@ -286,6 +294,10 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           controller: _energieUsernameController,
           hint: 'z.B. Licht_Arbeiter',
           icon: Icons.person,
+          onChanged: (_) {
+            _usernameManuallyEdited = true;
+            if (_autoFilledUsername) setState(() => _autoFilledUsername = false);
+          },
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Bitte Benutzernamen eingeben';
@@ -303,6 +315,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           controller: _firstNameController,
           hint: 'Dein Vorname',
           icon: Icons.person_outline,
+          onChanged: (_) => _onNameChanged(),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Bitte Vornamen eingeben';
@@ -320,6 +333,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           controller: _lastNameController,
           hint: 'Dein Nachname',
           icon: Icons.person_outline,
+          onChanged: (_) => _onNameChanged(),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Bitte Nachnamen eingeben';
@@ -330,6 +344,23 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
             return null;
           },
         ),
+        if (_autoFilledUsername)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(children: [
+              const Icon(Icons.auto_awesome,
+                  color: Colors.purpleAccent, size: 14),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Benutzername automatisch erkannt und uebernommen.',
+                  style: TextStyle(
+                      color: Colors.purpleAccent.withValues(alpha: 0.9),
+                      fontSize: 11),
+                ),
+              ),
+            ]),
+          ),
         const SizedBox(height: 20),
         _buildFieldLabel('Geburtsdatum *', 'Pflichtfeld'),
         const SizedBox(height: 8),
@@ -393,9 +424,11 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
     required String hint,
     required IconData icon,
     String? Function(String?)? validator,
+    void Function(String)? onChanged,
   }) {
     return TextFormField(
       controller: controller,
+      onChanged: onChanged,
       style: const TextStyle(color: Colors.white, fontSize: 16),
       decoration: InputDecoration(
         hintText: hint,
@@ -577,6 +610,110 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
     );
   }
 
+  /// v117: Bei Aenderung von Vor-/Nachname den hinterlegten Benutzernamen
+  /// suchen und (falls der User den Username noch nicht selbst getippt hat)
+  /// automatisch uebernehmen. Debounced (500ms) gegen Request-Spam.
+  void _onNameChanged() {
+    _nameLookupDebounce?.cancel();
+    _nameLookupDebounce = Timer(const Duration(milliseconds: 500), () async {
+      final first = _firstNameController.text.trim();
+      final last = _lastNameController.text.trim();
+      if (first.length < 2 || last.length < 2) return;
+      if (_usernameManuallyEdited &&
+          _energieUsernameController.text.trim().isNotEmpty) {
+        return;
+      }
+      final res = await AccountService.instance.identityLookup(
+        firstName: first,
+        lastName: last,
+        birthPlace: _birthPlaceController.text.trim().isEmpty
+            ? null
+            : _birthPlaceController.text.trim(),
+        birthDate: _selectedBirthDate
+            ?.toIso8601String()
+            .split('T')
+            .first,
+      );
+      final matched = res['matched_username'] as String?;
+      if (!mounted) return;
+      if (matched != null &&
+          matched.isNotEmpty &&
+          !_usernameManuallyEdited) {
+        setState(() {
+          _energieUsernameController.text = matched;
+          _autoFilledUsername = true;
+        });
+      }
+    });
+  }
+
+  /// v117: Prueft vor dem Speichern die Loesch-Blacklist. Liefert true wenn
+  /// die Identitaet gesperrt ist (und bietet einen Reaktivierungs-Antrag an).
+  Future<bool> _checkBlacklistAndOfferReactivation({
+    required String username,
+    required String fullName,
+    String? birthDate,
+    String? birthPlace,
+  }) async {
+    final res = await AccountService.instance.identityLookup(
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      username: username,
+      birthDate: birthDate,
+      birthPlace: birthPlace,
+    );
+    final blocked = res['blacklisted'] == true;
+    if (!blocked) return false;
+    if (!mounted) return true;
+    final status = res['reactivation_status'] as String?;
+    final alreadyRequested = status == 'requested';
+    final wantsRequest = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12101C),
+        title: const Text('Konto gesperrt',
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+          alreadyRequested
+              ? 'Dieses Konto wurde geloescht. Dein Reaktivierungs-Antrag '
+                  'liegt bereits einem Admin vor.'
+              : 'Dieses Konto wurde geloescht. Eine Neuanmeldung mit diesen '
+                  'Daten ist gesperrt. Moechtest du eine Freischaltung '
+                  'beantragen?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Schliessen'),
+          ),
+          if (!alreadyRequested)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Freischaltung beantragen',
+                  style: TextStyle(color: Colors.tealAccent)),
+            ),
+        ],
+      ),
+    );
+    if (wantsRequest == true) {
+      final sent = await AccountService.instance.requestReactivation(
+        username: username,
+        fullName: fullName,
+        birthDate: birthDate,
+        birthPlace: birthPlace,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(sent
+              ? 'Antrag gesendet. Ein Admin prueft deine Freischaltung.'
+              : 'Antrag konnte nicht gesendet werden.'),
+        ));
+      }
+    }
+    return true;
+  }
+
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -626,6 +763,31 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
     }
 
     setState(() => _isLoading = true);
+
+    // v117: Bei Neu-Anmeldung gegen die Loesch-Blacklist pruefen. Nicht im
+    // Edit-Modus (bestehendes Profil wird nur aktualisiert).
+    if (!_isEditMode) {
+      final username = _isMaterie
+          ? _materieUsernameController.text.trim()
+          : _energieUsernameController.text.trim();
+      final fullName = _isMaterie
+          ? _materieNameController.text.trim()
+          : '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
+              .trim();
+      final blocked = await _checkBlacklistAndOfferReactivation(
+        username: username,
+        fullName: fullName,
+        birthDate:
+            _selectedBirthDate?.toIso8601String().split('T').first,
+        birthPlace: _birthPlaceController.text.trim().isEmpty
+            ? null
+            : _birthPlaceController.text.trim(),
+      );
+      if (blocked) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+    }
 
     try {
       if (_isMaterie) {

@@ -52,6 +52,41 @@ class AccountService {
     }
   }
 
+  // ── Identitaets-Lookup (Auto-Fill Username + Blacklist-Vorabpruefung) ───
+
+  /// Findet zu Vor+Nachname den hinterlegten Username und prueft die
+  /// Loesch-Blacklist. Returns z.B.
+  /// { matched_username, matched_world, blacklisted, reactivation_status }.
+  Future<Map<String, dynamic>> identityLookup({
+    required String firstName,
+    required String lastName,
+    String? username,
+    String? birthDate,
+    String? birthPlace,
+  }) async {
+    try {
+      final qp = <String, String>{
+        'firstName': firstName,
+        'lastName': lastName,
+      };
+      if (username != null && username.isNotEmpty) qp['username'] = username;
+      if (birthDate != null && birthDate.isNotEmpty) qp['birthDate'] = birthDate;
+      if (birthPlace != null && birthPlace.isNotEmpty) {
+        qp['birthPlace'] = birthPlace;
+      }
+      final res = await http
+          .get(_u('/api/account/identity-lookup?${Uri(queryParameters: qp).query}'))
+          .timeout(_timeout);
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return {};
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ identityLookup: $e');
+      return {};
+    }
+  }
+
   // ── Eigene Sperren ─────────────────────────────────────────────────────
 
   /// Liefert { scopes: [...], restrictions: [{scope, reason, expires_at}] }

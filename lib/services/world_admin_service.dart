@@ -660,6 +660,12 @@ class WorldUser {
   final String? legacyUserId;
   // v115: Anzahl Verwarnungen (aus admin_warnings-Aggregat im Worker).
   final int warningCount;
+  // v117: Herkunft direkt vom Worker ('app'|'web'). Authoritative -- der
+  // frueher client-seitig geratene Wert war fuer alle 'web' (profiles.id
+  // ist immer UUID). null wenn Worker (noch) kein source liefert.
+  final String? sourceFromServer;
+  // v117: Web-Zugangs-Antrag ohne echtes Profil -- User-Aktionen greifen nicht.
+  final bool isWebOnly;
 
   WorldUser({
     required this.profileId,
@@ -676,6 +682,8 @@ class WorldUser {
     this.lastSeenAt,
     this.legacyUserId,
     this.warningCount = 0,
+    this.sourceFromServer,
+    this.isWebOnly = false,
   });
 
   factory WorldUser.fromJson(Map<String, dynamic> json) {
@@ -707,6 +715,8 @@ class WorldUser {
           json['last_seen_at'] as String? ?? json['lastSeenAt'] as String?,
       legacyUserId: legacy,
       warningCount: (json['warning_count'] as num?)?.toInt() ?? 0,
+      sourceFromServer: json['source'] as String?,
+      isWebOnly: json['is_web_only'] as bool? ?? false,
     );
   }
 
@@ -718,15 +728,18 @@ class WorldUser {
   bool get isGhostUser =>
       username.startsWith('user_') && RegExp(r'^user_\d+$').hasMatch(username);
 
-  /// Herkunft des Profils: 'web' wenn ueber Supabase-Auth (UUID id),
-  /// 'app' wenn nur InvisibleAuth-Legacy-ID, 'unknown' fallback.
+  /// Herkunft des Profils: 'app' (InvisibleAuth, hat legacy_user_id) oder
+  /// 'web' (Supabase-Auth/Web-Login). v117: Worker liefert 'source'
+  /// authoritative; Fallback auf legacy_user_id (NICHT mehr auf die id-Form,
+  /// da profiles.id immer eine UUID ist -> sonst war alles faelschlich 'web').
   String get source {
-    final hasUuid = profileId.length >= 32 && profileId.contains('-');
-    if (hasUuid) return 'web';
+    if (sourceFromServer == 'app' || sourceFromServer == 'web') {
+      return sourceFromServer!;
+    }
     if ((legacyUserId ?? '').isNotEmpty || profileId.startsWith('user_')) {
       return 'app';
     }
-    return 'unknown';
+    return 'web';
   }
 
   /// World label for display (v103: alle 4 Welten unterstuetzt).
