@@ -11076,6 +11076,10 @@ const Map<String, List<List<String>>> _kRestrictionCategories = {
   'Gamification': [
     ['earn_xp', 'XP verdienen', '⭐'],
   ],
+  'Werkzeuge': [
+    ['spirit_tools', 'Spirit-Tools (alle)', '🔮'],
+    ['research_tools', 'Recherche-Tools (alle)', '🔍'],
+  ],
 };
 
 class _RestrictionSheet extends StatefulWidget {

@@ -5391,13 +5391,16 @@ export default {
       // ════════════════════════════════════════════════════════════════
       const RESTRICTION_SCOPES = [
         'chat', 'livestream', 'direct_messages', 'shadow_mute',
-        'create_articles', 'create_pins', 'comment', 'earn_xp', 'all',
+        'create_articles', 'create_pins', 'comment', 'earn_xp',
+        'spirit_tools', 'research_tools', 'all',
       ];
       const SCOPE_LABELS = {
         chat: 'Chat', livestream: 'Livestream', direct_messages: 'Direktnachrichten',
         shadow_mute: 'Shadow-Mute', create_articles: 'Artikel erstellen',
         create_pins: 'Pins erstellen', comment: 'Kommentieren',
-        earn_xp: 'XP verdienen', all: 'Vollsperrung',
+        earn_xp: 'XP verdienen',
+        spirit_tools: 'Spirit-Tools', research_tools: 'Recherche-Tools',
+        all: 'Vollsperrung',
       };
 
       // ── GET /api/admin/users/:userId/restrictions ───────────────────

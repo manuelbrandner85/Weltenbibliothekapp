@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../widgets/restriction_gate.dart';
 import '../../services/storage_service.dart';
 import '../../services/favorites_service.dart';
 import '../../services/recent_tools_service.dart';
@@ -933,28 +934,33 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       ),
       child: Scaffold(
         backgroundColor: _bg,
-        body: _isLoading
-            ? _buildLoadingState()
-            : _error != null
-                ? _buildErrorState()
-                : RefreshIndicator(
-                    onRefresh: _loadProfile,
-                    color: _purple,
-                    backgroundColor: _cardB,
-                    displacement: 60,
-                    child: CustomScrollView(
-                      physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics()),
-                      slivers: [
-                        _buildHeroHeader(),
-                        _buildCategoryFilterSliver(),
-                        _buildDailyInspirationSliver(),
-                        _buildToolsGrid(),
-                        const SliverPadding(
-                            padding: EdgeInsets.only(bottom: 120)),
-                      ],
+        // v119: Spirit-Tools koennen vom Admin komplett gesperrt werden.
+        body: RestrictionGate(
+          scope: 'spirit_tools',
+          toolLabel: 'Spirit-Tools',
+          child: _isLoading
+              ? _buildLoadingState()
+              : _error != null
+                  ? _buildErrorState()
+                  : RefreshIndicator(
+                      onRefresh: _loadProfile,
+                      color: _purple,
+                      backgroundColor: _cardB,
+                      displacement: 60,
+                      child: CustomScrollView(
+                        physics: const BouncingScrollPhysics(
+                            parent: AlwaysScrollableScrollPhysics()),
+                        slivers: [
+                          _buildHeroHeader(),
+                          _buildCategoryFilterSliver(),
+                          _buildDailyInspirationSliver(),
+                          _buildToolsGrid(),
+                          const SliverPadding(
+                              padding: EdgeInsets.only(bottom: 120)),
+                        ],
+                      ),
                     ),
-                  ),
+        ),
       ),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/restriction_gate.dart';
+
 class VorhangResearchTab extends StatelessWidget {
   const VorhangResearchTab({super.key});
 
@@ -300,15 +302,20 @@ class VorhangResearchTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: _bg,
-      child: ListView.builder(
-        padding: const EdgeInsets.only(top: 8, bottom: 80),
-        itemCount: _categories.length + 1,
-        itemBuilder: (context, i) {
-          if (i == 0) return _buildHeader();
-          return _CategoryCard(category: _categories[i - 1]);
-        },
+    // v119: Recherche-Tools koennen vom Admin komplett gesperrt werden.
+    return RestrictionGate(
+      scope: 'research_tools',
+      toolLabel: 'Recherche-Tools',
+      child: Container(
+        color: _bg,
+        child: ListView.builder(
+          padding: const EdgeInsets.only(top: 8, bottom: 80),
+          itemCount: _categories.length + 1,
+          itemBuilder: (context, i) {
+            if (i == 0) return _buildHeader();
+            return _CategoryCard(category: _categories[i - 1]);
+          },
+        ),
       ),
     );
   }
@@ -430,8 +437,7 @@ class _CategoryCardState extends State<_CategoryCard> {
               children: [
                 Divider(color: _gold.withValues(alpha: 0.15), height: 1),
                 ...widget.category.concepts
-                    .map((c) => _ConceptTile(concept: c))
-                    ,
+                    .map((c) => _ConceptTile(concept: c)),
               ],
             ),
           ),

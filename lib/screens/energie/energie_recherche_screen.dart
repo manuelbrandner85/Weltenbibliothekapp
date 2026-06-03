@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../../widgets/restriction_gate.dart';
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MODELLE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -414,20 +416,26 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    // v119: Recherche-Tools koennen vom Admin komplett gesperrt werden.
     return Scaffold(
       backgroundColor: _bg,
-      body: Stack(children: [
-        _buildStarfieldBg(),
-        SafeArea(
-          child: Column(children: [
-            _buildHeader(),
-            Expanded(
-              child:
-                  _currentQuery == null ? _buildEmptyState() : _buildResults(),
-            ),
-          ]),
-        ),
-      ]),
+      body: RestrictionGate(
+        scope: 'research_tools',
+        toolLabel: 'Recherche-Tools',
+        child: Stack(children: [
+          _buildStarfieldBg(),
+          SafeArea(
+            child: Column(children: [
+              _buildHeader(),
+              Expanded(
+                child: _currentQuery == null
+                    ? _buildEmptyState()
+                    : _buildResults(),
+              ),
+            ]),
+          ),
+        ]),
+      ),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/mentor_service.dart';
 import '../../services/ursprung_topics_service.dart';
+import '../../widgets/restriction_gate.dart';
 import '../shared/mentor_chat_screen.dart';
 import 'ursprung_modules_screen.dart';
 
@@ -63,43 +64,49 @@ class _UrsprungResearchTabState extends State<UrsprungResearchTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: _bg,
-      child: RefreshIndicator(
-        color: _cyan,
-        backgroundColor: _surface,
-        onRefresh: _refresh,
-        child: ListView.builder(
-          padding: const EdgeInsets.only(top: 0, bottom: 80),
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: _topics.length + 3,
-          itemBuilder: (context, i) {
-            if (i == 0) return _buildHeader();
-            if (i == 1) return _buildSearchBar();
-            if (i == _topics.length + 2) return _buildFooter(context);
-            if (_loading && _topics.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: CircularProgressIndicator(color: _cyan)),
+    // v119: Recherche-Tools koennen vom Admin komplett gesperrt werden.
+    return RestrictionGate(
+      scope: 'research_tools',
+      toolLabel: 'Recherche-Tools',
+      child: Container(
+        color: _bg,
+        child: RefreshIndicator(
+          color: _cyan,
+          backgroundColor: _surface,
+          onRefresh: _refresh,
+          child: ListView.builder(
+            padding: const EdgeInsets.only(top: 0, bottom: 80),
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: _topics.length + 3,
+            itemBuilder: (context, i) {
+              if (i == 0) return _buildHeader();
+              if (i == 1) return _buildSearchBar();
+              if (i == _topics.length + 2) return _buildFooter(context);
+              if (_loading && _topics.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: CircularProgressIndicator(color: _cyan)),
+                );
+              }
+              if (_topics.isEmpty) {
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+                  child: Text(
+                    'Keine Themen gefunden.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 13),
+                  ),
+                );
+              }
+              return _TopicCard(
+                topic: _topics[i - 2],
+                onTap: () => _showDetail(_topics[i - 2]),
               );
-            }
-            if (_topics.isEmpty) {
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-                child: Text(
-                  'Keine Themen gefunden.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
-                ),
-              );
-            }
-            return _TopicCard(
-              topic: _topics[i - 2],
-              onTap: () => _showDetail(_topics[i - 2]),
-            );
-          },
+            },
+          ),
         ),
       ),
     );
@@ -137,8 +144,7 @@ class _UrsprungResearchTabState extends State<UrsprungResearchTab> {
               decoration: BoxDecoration(
                 color: Colors.orange.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -147,8 +153,8 @@ class _UrsprungResearchTabState extends State<UrsprungResearchTab> {
                       color: Colors.orangeAccent, size: 15),
                   SizedBox(width: 6),
                   Text('Offline-Daten — Live-Themen nicht erreichbar',
-                      style: TextStyle(
-                          color: Colors.orangeAccent, fontSize: 11)),
+                      style:
+                          TextStyle(color: Colors.orangeAccent, fontSize: 11)),
                 ],
               ),
             ),
