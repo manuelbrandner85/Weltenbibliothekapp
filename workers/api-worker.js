@@ -319,6 +319,104 @@ async function resolveProfileUuid(userId, svcHeaders) {
 }
 
 /**
+ * v117: Liefert die aktiven Restriction-Scopes eines Users.
+ * Sucht in user_restrictions per user_id ODER username (InvisibleAuth-User
+ * haben keine UUID-Identitaet im Chat-POST, daher Match auch ueber username).
+ * Abgelaufene befristete Sperren (expires_at < now, !is_permanent) zaehlen NICHT.
+ * Gibt ein Set-aehnliches Array eindeutiger scope-Strings zurueck.
+ */
+async function getActiveRestrictionScopes(svcHeaders, { userId, username } = {}) {
+  const ors = [];
+  if (userId) ors.push(`user_id.eq.${encodeURIComponent(userId)}`);
+  if (username) ors.push(`username.eq.${encodeURIComponent(username)}`);
+  if (ors.length === 0) return [];
+  try {
+    const nowIso = new Date().toISOString();
+    // expires_at IS NULL (permanent) ODER expires_at > now (noch aktiv).
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_restrictions?or=(${ors.join(',')})` +
+        `&or=(is_permanent.eq.true,expires_at.is.null,expires_at.gt.${nowIso})` +
+        `&select=scope`,
+      { headers: svcHeaders },
+    );
+    if (!res.ok) return [];
+    const rows = await res.json().catch(() => []);
+    if (!Array.isArray(rows)) return [];
+    return [...new Set(rows.map((r) => r.scope).filter(Boolean))];
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * v117: SHA-256-Hex einer normalisierten Identitaet (username|name|gebdatum|gebort),
+ * lowercased + getrimmt. Dient als Match-Schluessel fuer die Loesch-Blacklist
+ * (deleted_identities). Gleiche Person -> gleicher Hash, auch ohne PII im Klartext.
+ */
+async function identityHash({ username, fullName, birthDate, birthPlace } = {}) {
+  const norm = (s) => String(s || '').trim().toLowerCase();
+  const material = [norm(username), norm(fullName), norm(birthDate), norm(birthPlace)].join('|');
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(material));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * v117: Prueft ob eine Anmelde-Identitaet auf der Loesch-Blacklist steht.
+ * Match per username (exakt, lowercased) ODER kombiniertem identity_hash.
+ * Eintraege mit reactivation_status='approved' blockieren NICHT mehr.
+ * Gibt das blockierende deleted_identities-Row zurueck oder null.
+ */
+async function findBlacklistedIdentity(svcHeaders, { username, fullName, birthDate, birthPlace } = {}) {
+  try {
+    const hash = await identityHash({ username, fullName, birthDate, birthPlace });
+    const unameLower = String(username || '').trim().toLowerCase();
+    const ors = [`identity_hash.eq.${encodeURIComponent(hash)}`];
+    if (unameLower) ors.push(`username_lower.eq.${encodeURIComponent(unameLower)}`);
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/deleted_identities?or=(${ors.join(',')})` +
+        `&reactivation_status=neq.approved&select=id,username_lower,reactivation_status&limit=1`,
+      { headers: svcHeaders },
+    );
+    if (!res.ok) return null;
+    const rows = await res.json().catch(() => []);
+    return (Array.isArray(rows) && rows.length > 0) ? rows[0] : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * v117: Benachrichtigt alle Admins/Root-Admins (In-App + FCM-Queue) ueber ein
+ * Ereignis (z.B. neuer Reaktivierungs-/Einspruchs-Antrag). Fire-and-forget.
+ */
+async function notifyAdmins(svcHeaders, title, body, data = {}) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?role=in.(admin,root_admin,root-admin)&select=id&limit=50`,
+      { headers: svcHeaders },
+    );
+    if (!res.ok) return;
+    const admins = await res.json().catch(() => []);
+    if (!Array.isArray(admins)) return;
+    await Promise.all(admins.flatMap((a) => {
+      if (!a.id) return [];
+      const notifRow = { user_id: a.id, type: 'admin_alert', title, body, data };
+      const queueRow = { user_id: a.id, title, body, data, status: 'pending' };
+      return [
+        fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify(notifRow),
+        }).catch(() => {}),
+        fetch(`${SUPABASE_URL}/rest/v1/notification_queue`, {
+          method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify(queueRow),
+        }).catch(() => {}),
+      ];
+    }));
+  } catch (_) { /* best-effort */ }
+}
+
+/**
  * v115: Enqueued eine Push-Notification (In-App + FCM-Queue) ausserhalb des
  * fetch-Handlers (z.B. im Cron). Spiegelt die pushNotif-Closure-Logik:
  * InvisibleAuth-IDs (user_*) -> legacy_user_id, sonst user_id.
@@ -1495,6 +1593,35 @@ export default {
           // Only use UUID if it's a valid format; null is allowed (user_id is nullable in DB)
           const finalUserId = isUUID ? rawUserId : null;
 
+          // v117: Chat-Sperren durchsetzen. Scopes 'chat'/'all' -> ablehnen.
+          // 'shadow_mute' -> Erfolg vortaeuschen, aber NICHT speichern (nur der
+          // Sender glaubt er postet; niemand sonst sieht die Nachricht).
+          {
+            const chatSvcKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+            const chatHeaders = {
+              'Content-Type': 'application/json',
+              'apikey': chatSvcKey, 'Authorization': `Bearer ${chatSvcKey}`,
+            };
+            const uname = body.username || null;
+            const scopes = await getActiveRestrictionScopes(chatHeaders, { userId: rawUserId, username: uname });
+            if (scopes.includes('all') || scopes.includes('chat')) {
+              return jsonResponse(
+                { success: false, error: 'Du bist aktuell vom Chat gesperrt.', code: 'chat_restricted' },
+                403);
+            }
+            if (scopes.includes('shadow_mute')) {
+              // Optimistisches Echo zurueckgeben, aber nichts persistieren.
+              return jsonResponse({ success: true, message: {
+                id: `shadow-${Date.now()}`,
+                room_id: body.roomId || body.room_id || '',
+                user_id: finalUserId, username: uname || 'Anonym',
+                content: body.message || body.content || '',
+                message: body.message || body.content || '',
+                created_at: new Date().toISOString(),
+              } });
+            }
+          }
+
           const replyToId      = body.replyToId || body.reply_to_id || null;
           const replyToContent = body.replyToContent || body.reply_to_content || null;
           const replyToSender  = body.replyToSenderName || body.reply_to_sender_name || null;
@@ -1802,6 +1929,30 @@ export default {
             );
             const arr = await lookup.json().catch(() => []);
             if (Array.isArray(arr) && arr.length > 0) existing = arr[0];
+          }
+
+          // v117: Neu-Registrierung gegen die Loesch-Blacklist pruefen.
+          // Nur bei echtem INSERT (kein existing) und nicht fuer den Root-Admin.
+          if (!existing && body.username &&
+              body.username.toLowerCase() !== ADMIN_USERNAME) {
+            const blHeaders = { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` };
+            const hit = await findBlacklistedIdentity(blHeaders, {
+              username: body.username,
+              fullName: body.full_name || body.fullName ||
+                [body.first_name, body.last_name].filter(Boolean).join(' '),
+              birthDate: body.birth_date || body.birthDate,
+              birthPlace: body.birth_place || body.birthPlace,
+            });
+            if (hit) {
+              return jsonResponse({
+                success: false,
+                code: 'identity_blocked',
+                error: 'Dieser Account wurde geloescht. Eine Neuanmeldung mit ' +
+                       'diesen Daten ist gesperrt. Du kannst eine Freischaltung ' +
+                       'beantragen.',
+                reactivation_status: hit.reactivation_status || 'blocked',
+              }, 403);
+            }
           }
 
           let res;
@@ -3350,6 +3501,143 @@ export default {
       }
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // v117: Oeffentliche User-Endpoints (Notification-Loeschen + Antraege).
+    // Kein Admin-Gate. InvisibleAuth-tauglich: userId kann UUID oder
+    // legacy user_<ts> sein. Schreiben via service_role (RLS-Bypass), aber
+    // streng auf die mitgelieferte Identitaet beschraenkt.
+    // ════════════════════════════════════════════════════════════════
+    if (path.startsWith('/api/notifications') || path.startsWith('/api/account/')) {
+      const pubKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+      const pubHeaders = {
+        'Content-Type': 'application/json',
+        'apikey': pubKey,
+        'Authorization': `Bearer ${pubKey}`,
+      };
+
+      // Helper: notifications-Filter fuer eine (Invisible)Auth-Identitaet.
+      const notifIdentityFilter = (uid) => String(uid).startsWith('user_')
+        ? `legacy_user_id=eq.${encodeURIComponent(uid)}`
+        : `user_id=eq.${encodeURIComponent(uid)}`;
+
+      // ── DELETE /api/notifications/all?userId=X  (alle loeschen) ──────
+      if (method === 'DELETE' && path === '/api/notifications/all') {
+        const uid = url.searchParams.get('userId');
+        if (!uid) return errorResponse('userId fehlt', 400);
+        await fetch(`${SUPABASE_URL}/rest/v1/notifications?${notifIdentityFilter(uid)}`,
+          { method: 'DELETE', headers: pubHeaders }).catch(() => {});
+        return jsonResponse({ success: true });
+      }
+
+      // ── DELETE /api/notifications/:id?userId=X  (eine loeschen) ──────
+      if (method === 'DELETE' && /^\/api\/notifications\/[^/]+\/?$/.test(path)) {
+        const id = path.split('/')[3];
+        const uid = url.searchParams.get('userId');
+        if (!id || !uid) return errorResponse('id/userId fehlt', 400);
+        // Nur loeschen wenn die Notification der mitgelieferten Identitaet gehoert.
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/notifications?id=eq.${encodeURIComponent(id)}&${notifIdentityFilter(uid)}`,
+          { method: 'DELETE', headers: { ...pubHeaders, 'Prefer': 'return=minimal' } });
+        return jsonResponse({ success: res.ok });
+      }
+
+      // ── GET /api/account/restrictions?userId=X  (eigene Sperren) ─────
+      if (method === 'GET' && path === '/api/account/restrictions') {
+        const uid = url.searchParams.get('userId');
+        const uname = url.searchParams.get('username');
+        if (!uid && !uname) return jsonResponse({ success: true, restrictions: [] });
+        const resolved = uid ? (await resolveProfileUuid(uid, pubHeaders) ?? uid) : null;
+        const scopes = await getActiveRestrictionScopes(pubHeaders, { userId: resolved, username: uname });
+        // Detail-Zeilen (Grund + Ablauf) fuer die Anzeige.
+        const ors = [];
+        if (resolved) ors.push(`user_id.eq.${encodeURIComponent(resolved)}`);
+        if (uname) ors.push(`username.eq.${encodeURIComponent(uname)}`);
+        let rows = [];
+        if (ors.length) {
+          const nowIso = new Date().toISOString();
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_restrictions?or=(${ors.join(',')})` +
+              `&or=(is_permanent.eq.true,expires_at.is.null,expires_at.gt.${nowIso})` +
+              `&select=scope,reason,is_permanent,expires_at,created_at`,
+            { headers: pubHeaders });
+          rows = r.ok ? await r.json().catch(() => []) : [];
+        }
+        return jsonResponse({ success: true, scopes, restrictions: rows });
+      }
+
+      // ── POST /api/account/reactivation-request ──────────────────────
+      // Body: { username, full_name?, birth_date?, birth_place?, message? }
+      if (method === 'POST' && path === '/api/account/reactivation-request') {
+        let body = {};
+        try { body = await request.json(); } catch (_) {}
+        const username = String(body?.username || '').trim();
+        if (!username) return errorResponse('username fehlt', 400);
+        await fetch(`${SUPABASE_URL}/rest/v1/account_requests`, {
+          method: 'POST', headers: { ...pubHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            type: 'reactivation', username,
+            full_name: body?.full_name || null, birth_date: body?.birth_date || null,
+            birth_place: body?.birth_place || null,
+            message: String(body?.message || '').slice(0, 1000), status: 'pending',
+          }),
+        }).catch(() => {});
+        // Blacklist-Eintrag(e) auf 'requested' setzen (sichtbar fuer Admin).
+        const unameLower = username.toLowerCase();
+        fetch(`${SUPABASE_URL}/rest/v1/deleted_identities?username_lower=eq.${encodeURIComponent(unameLower)}&reactivation_status=eq.blocked`, {
+          method: 'PATCH', headers: pubHeaders,
+          body: JSON.stringify({ reactivation_status: 'requested' }),
+        }).catch(() => {});
+        await notifyAdmins(pubHeaders, '🔓 Reaktivierungs-Antrag',
+          `${username} moechte das geloeschte Konto reaktivieren.`,
+          { type: 'reactivation_request', username });
+        return jsonResponse({ success: true });
+      }
+
+      // ── POST /api/account/appeal  (Einspruch gegen Sperre) ──────────
+      // Body: { userId, username?, scope?, message }
+      if (method === 'POST' && path === '/api/account/appeal') {
+        let body = {};
+        try { body = await request.json(); } catch (_) {}
+        const userId = String(body?.userId || '').trim();
+        if (!userId) return errorResponse('userId fehlt', 400);
+        await fetch(`${SUPABASE_URL}/rest/v1/account_requests`, {
+          method: 'POST', headers: { ...pubHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            type: 'appeal', user_id: userId, username: body?.username || null,
+            restriction_scope: body?.scope || null,
+            message: String(body?.message || '').slice(0, 1000), status: 'pending',
+          }),
+        }).catch(() => {});
+        await notifyAdmins(pubHeaders, '⚖️ Einspruch eingegangen',
+          `${body?.username || userId} legt Einspruch gegen eine Sperre ein.`,
+          { type: 'appeal_request', user_id: userId });
+        return jsonResponse({ success: true });
+      }
+
+      // ── POST /api/account/self-delete-request  (Selbst-Loeschung) ───
+      // Body: { userId, username?, full_name?, birth_date?, birth_place?, message? }
+      if (method === 'POST' && path === '/api/account/self-delete-request') {
+        let body = {};
+        try { body = await request.json(); } catch (_) {}
+        const userId = String(body?.userId || '').trim();
+        if (!userId) return errorResponse('userId fehlt', 400);
+        await fetch(`${SUPABASE_URL}/rest/v1/account_requests`, {
+          method: 'POST', headers: { ...pubHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            type: 'self_deletion', user_id: userId, username: body?.username || null,
+            full_name: body?.full_name || null, birth_date: body?.birth_date || null,
+            birth_place: body?.birth_place || null,
+            message: String(body?.message || '').slice(0, 1000), status: 'pending',
+          }),
+        }).catch(() => {});
+        await notifyAdmins(pubHeaders, '🗑️ Loeschungs-Antrag',
+          `${body?.username || userId} beantragt die Loeschung des eigenen Kontos.`,
+          { type: 'self_deletion_request', user_id: userId });
+        return jsonResponse({ success: true });
+      }
+      // Faellt durch zu 404 wenn kein public-Endpoint matched.
+    }
+
     // ── Admin Benutzer-Aktionen ───────────────────────────────
     if (path.startsWith('/api/admin/')) {
       // AUDIT-FIX A1: Auth-Bypass geschlossen. Jeder /api/admin/*-Call muss
@@ -4529,6 +4817,42 @@ export default {
           if (!rawUserId) return errorResponse('userId fehlt', 400);
           // Resolve legacy 'user_*' IDs to the real profiles.id UUID.
           const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
+          const delReason = url.searchParams.get('reason') || null;
+
+          // v117: Vor dem Loeschen Identitaet auf die Blacklist (deleted_identities)
+          // schreiben -- verhindert Neuanmeldung mit gleichem Username/Name/
+          // Geburtsdatum/-ort. Best-effort; blockiert das Loeschen nicht.
+          let blProfile = null;
+          try {
+            const prof = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}` +
+                `&select=username,full_name,birth_date,birth_place,legacy_user_id&limit=1`,
+              { headers: svcHeaders });
+            const profRows = prof.ok ? await prof.json().catch(() => []) : [];
+            blProfile = profRows[0] || null;
+          } catch (_) {}
+          if (blProfile) {
+            const norm = (s) => String(s || '').trim().toLowerCase() || null;
+            const ih = await identityHash({
+              username: blProfile.username, fullName: blProfile.full_name,
+              birthDate: blProfile.birth_date, birthPlace: blProfile.birth_place,
+            });
+            fetch(`${SUPABASE_URL}/rest/v1/deleted_identities`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                username_lower: norm(blProfile.username),
+                full_name_lower: norm(blProfile.full_name),
+                birth_date: blProfile.birth_date || null,
+                birth_place_lower: norm(blProfile.birth_place),
+                identity_hash: ih,
+                original_user_id: blProfile.legacy_user_id || userId,
+                deleted_by: caller.username,
+                reason: delReason,
+                reactivation_status: 'blocked',
+              }),
+            }).catch(() => {});
+          }
 
           // 1. Profile-Zeile loeschen.
           const delProfile = await fetch(
@@ -4555,7 +4879,6 @@ export default {
           // Audit-Log (v115: korrektes Schema via logAudit)
           // AUDIT-FIX B13: Grund aus Query-Param mit ins Audit-Log.
           {
-            const delReason = url.searchParams.get('reason') || null;
             logAudit(svcHeaders, {
               admin_username: caller.username,
               action: 'user_hard_delete',
@@ -4564,6 +4887,7 @@ export default {
                 auth_deleted: authDeleted,
                 looks_like_uuid: looksLikeUuid,
                 reason: delReason,
+                blacklisted: !!blProfile,
               },
             });
           }
@@ -4914,6 +5238,287 @@ export default {
       }
 
       // ════════════════════════════════════════════════════════════════
+      // v117 Feature: Granulare, kategorisierte Sperren (user_restrictions)
+      // ════════════════════════════════════════════════════════════════
+      const RESTRICTION_SCOPES = [
+        'chat', 'livestream', 'direct_messages', 'shadow_mute',
+        'create_articles', 'create_pins', 'comment', 'earn_xp', 'all',
+      ];
+      const SCOPE_LABELS = {
+        chat: 'Chat', livestream: 'Livestream', direct_messages: 'Direktnachrichten',
+        shadow_mute: 'Shadow-Mute', create_articles: 'Artikel erstellen',
+        create_pins: 'Pins erstellen', comment: 'Kommentieren',
+        earn_xp: 'XP verdienen', all: 'Vollsperrung',
+      };
+
+      // ── GET /api/admin/users/:userId/restrictions ───────────────────
+      if (method === 'GET' && path.includes('/users/') && path.endsWith('/restrictions')) {
+        try {
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_restrictions?user_id=eq.${encodeURIComponent(userId)}` +
+              `&select=id,scope,reason,is_permanent,expires_at,created_by,created_at&order=created_at.desc`,
+            { headers: svcHeaders },
+          );
+          const rows = res.ok ? await res.json().catch(() => []) : [];
+          return jsonResponse({ success: true, restrictions: rows });
+        } catch (e) { return errorResponse(`Restrictions-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/:userId/restrict ──────────────────────
+      // Body: { scopes: string[], reason?, duration_h? }  (duration_h null/0 = permanent)
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/restrict')) {
+        try {
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
+          if (String(userId) === String(caller.userId)) {
+            return errorResponse('Selbst-Sperre ist nicht erlaubt', 403);
+          }
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          let scopes = Array.isArray(body?.scopes) ? body.scopes : [];
+          // 'all' impliziert Vollsperre -> nur diesen einen Scope speichern.
+          if (scopes.includes('all')) scopes = ['all'];
+          scopes = [...new Set(scopes.filter((s) => RESTRICTION_SCOPES.includes(s)))];
+          if (scopes.length === 0) return errorResponse('Keine gueltigen scopes angegeben', 400);
+
+          const reason = String(body?.reason || 'Admin-Sperre').slice(0, 500);
+          const durationH = Number(body?.duration_h) || 0;
+          const isPermanent = durationH <= 0;
+          const expiresAt = isPermanent
+            ? null
+            : new Date(Date.now() + Math.min(8760, durationH) * 3600 * 1000).toISOString();
+
+          // Username fuer Restriction-Match (InvisibleAuth-Chat-Posts) mitspeichern.
+          let username = null;
+          try {
+            const pr = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=username&limit=1`,
+              { headers: svcHeaders });
+            const prRows = pr.ok ? await pr.json().catch(() => []) : [];
+            username = prRows[0]?.username || null;
+          } catch (_) {}
+
+          const rowsToUpsert = scopes.map((scope) => ({
+            user_id: userId, username, scope, reason,
+            created_by: caller.username, is_permanent: isPermanent,
+            expires_at: expiresAt, created_at: new Date().toISOString(),
+          }));
+          const upRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_restrictions?on_conflict=user_id,scope`,
+            {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+              body: JSON.stringify(rowsToUpsert),
+            });
+          if (!upRes.ok) {
+            const t = await upRes.text().catch(() => '');
+            return errorResponse(`Sperr-Fehler: ${upRes.status} ${t.slice(0, 200)}`);
+          }
+
+          // 'all' spiegelt sich zusaetzlich in profiles.is_banned + admin_bans
+          // (Backwards-Compat mit bestehendem Ban-System / Admin-Gate).
+          if (scopes.includes('all')) {
+            fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
+              method: 'PATCH', headers: svcHeaders,
+              body: JSON.stringify({ is_banned: true }),
+            }).catch(() => {});
+            fetch(`${SUPABASE_URL}/rest/v1/admin_bans?on_conflict=user_id`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+              body: JSON.stringify({
+                user_id: userId, username, banned_by: caller.username, reason,
+                is_permanent: isPermanent, expires_at: expiresAt,
+                created_at: new Date().toISOString(),
+              }),
+            }).catch(() => {});
+          }
+
+          const labels = scopes.map((s) => SCOPE_LABELS[s] || s).join(', ');
+          const durTxt = isPermanent ? 'dauerhaft' : `fuer ${durationH}h`;
+          // Shadow-Mute NICHT dem User mitteilen (sonst kein Shadow mehr).
+          if (!(scopes.length === 1 && scopes[0] === 'shadow_mute')) {
+            await pushNotif(userId, 'system', '🚫 Bereich gesperrt',
+              `Folgende Bereiche wurden ${durTxt} gesperrt: ${labels}. Grund: ${reason}`,
+              { type: 'restricted', scopes, reason, expires_at: expiresAt });
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username, action: 'restrict', target_id: userId,
+            target_username: username, details: { scopes, reason, duration_h: durationH, expires_at: expiresAt },
+          });
+          return jsonResponse({ success: true, action: 'restricted', user_id: userId, scopes, expires_at: expiresAt });
+        } catch (e) { return errorResponse(`Sperr-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/:userId/unrestrict ────────────────────
+      // Body: { scopes: string[] }  -- leer/['all'] = alle Sperren aufheben
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/unrestrict')) {
+        try {
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          let scopes = Array.isArray(body?.scopes) ? body.scopes : [];
+          scopes = [...new Set(scopes.filter((s) => RESTRICTION_SCOPES.includes(s)))];
+
+          const liftAll = scopes.length === 0 || scopes.includes('all');
+          if (liftAll) {
+            await fetch(`${SUPABASE_URL}/rest/v1/user_restrictions?user_id=eq.${encodeURIComponent(userId)}`,
+              { method: 'DELETE', headers: svcHeaders }).catch(() => {});
+            // Vollsperre aufheben -> is_banned zuruecksetzen + admin_bans loeschen.
+            fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
+              method: 'PATCH', headers: svcHeaders, body: JSON.stringify({ is_banned: false }),
+            }).catch(() => {});
+            fetch(`${SUPABASE_URL}/rest/v1/admin_bans?user_id=eq.${encodeURIComponent(userId)}`,
+              { method: 'DELETE', headers: svcHeaders }).catch(() => {});
+          } else {
+            const inList = scopes.map((s) => encodeURIComponent(s)).join(',');
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/user_restrictions?user_id=eq.${encodeURIComponent(userId)}&scope=in.(${inList})`,
+              { method: 'DELETE', headers: svcHeaders }).catch(() => {});
+          }
+
+          await pushNotif(userId, 'system', '✅ Sperre aufgehoben',
+            liftAll ? 'Alle Bereichs-Sperren wurden aufgehoben.'
+                    : `Sperre aufgehoben fuer: ${scopes.map((s) => SCOPE_LABELS[s] || s).join(', ')}`,
+            { type: 'unrestricted', scopes });
+          logAudit(svcHeaders, {
+            admin_username: caller.username, action: 'unrestrict', target_id: userId,
+            details: { scopes: liftAll ? ['all'] : scopes },
+          });
+          return jsonResponse({ success: true, action: 'unrestricted', user_id: userId });
+        } catch (e) { return errorResponse(`Entsperr-Fehler: ${e.message}`); }
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // v117 Feature: Antrags-Inbox (Reaktivierung / Einspruch / Selbstloesch)
+      // ════════════════════════════════════════════════════════════════
+
+      // ── GET /api/admin/account-requests?status=pending ──────────────
+      if (method === 'GET' && path === '/api/admin/account-requests') {
+        try {
+          const status = url.searchParams.get('status') || 'pending';
+          const statusFilter = status === 'all' ? '' : `&status=eq.${encodeURIComponent(status)}`;
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/account_requests?select=*${statusFilter}&order=created_at.desc&limit=200`,
+            { headers: svcHeaders });
+          const rows = res.ok ? await res.json().catch(() => []) : [];
+          return jsonResponse({ success: true, requests: rows });
+        } catch (e) { return errorResponse(`Antrags-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/account-requests/:id/resolve ────────────────
+      // Body: { action: 'approve' | 'reject' }
+      if (method === 'POST' && /^\/api\/admin\/account-requests\/[^/]+\/resolve\/?$/.test(path)) {
+        try {
+          const reqId = path.split('/')[4];
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const action = body?.action === 'approve' ? 'approve' : 'reject';
+
+          const getRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/account_requests?id=eq.${encodeURIComponent(reqId)}&select=*&limit=1`,
+            { headers: svcHeaders });
+          const reqRows = getRes.ok ? await getRes.json().catch(() => []) : [];
+          if (reqRows.length === 0) return errorResponse('Antrag nicht gefunden', 404);
+          const req = reqRows[0];
+
+          if (action === 'approve') {
+            if (req.type === 'reactivation') {
+              // Blacklist-Eintrag(e) auf 'approved' setzen -> Neuanmeldung erlaubt.
+              const ih = await identityHash({
+                username: req.username, fullName: req.full_name,
+                birthDate: req.birth_date, birthPlace: req.birth_place });
+              const unameLower = String(req.username || '').trim().toLowerCase();
+              const ors = [`identity_hash.eq.${encodeURIComponent(ih)}`];
+              if (unameLower) ors.push(`username_lower.eq.${encodeURIComponent(unameLower)}`);
+              fetch(`${SUPABASE_URL}/rest/v1/deleted_identities?or=(${ors.join(',')})`, {
+                method: 'PATCH', headers: svcHeaders,
+                body: JSON.stringify({ reactivation_status: 'approved' }),
+              }).catch(() => {});
+            } else if (req.type === 'appeal' && req.user_id) {
+              // Sperre aufheben (gezielter Scope oder alle).
+              if (req.restriction_scope && req.restriction_scope !== 'all') {
+                fetch(`${SUPABASE_URL}/rest/v1/user_restrictions?user_id=eq.${encodeURIComponent(req.user_id)}&scope=eq.${encodeURIComponent(req.restriction_scope)}`,
+                  { method: 'DELETE', headers: svcHeaders }).catch(() => {});
+              } else {
+                fetch(`${SUPABASE_URL}/rest/v1/user_restrictions?user_id=eq.${encodeURIComponent(req.user_id)}`,
+                  { method: 'DELETE', headers: svcHeaders }).catch(() => {});
+                fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(req.user_id)}`,
+                  { method: 'PATCH', headers: svcHeaders, body: JSON.stringify({ is_banned: false }) }).catch(() => {});
+                fetch(`${SUPABASE_URL}/rest/v1/admin_bans?user_id=eq.${encodeURIComponent(req.user_id)}`,
+                  { method: 'DELETE', headers: svcHeaders }).catch(() => {});
+              }
+              await pushNotif(req.user_id, 'system', '✅ Einspruch angenommen',
+                'Dein Einspruch wurde angenommen, die Sperre wurde aufgehoben.',
+                { type: 'appeal_approved' });
+            } else if (req.type === 'self_deletion' && req.user_id) {
+              // Eigenes Konto auf Wunsch loeschen (inkl. Blacklist-Eintrag).
+              const uid = await resolveProfileUuid(req.user_id, svcHeaders) ?? req.user_id;
+              const ih = await identityHash({
+                username: req.username, fullName: req.full_name,
+                birthDate: req.birth_date, birthPlace: req.birth_place });
+              const norm = (s) => String(s || '').trim().toLowerCase() || null;
+              fetch(`${SUPABASE_URL}/rest/v1/deleted_identities`, {
+                method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+                body: JSON.stringify({
+                  username_lower: norm(req.username), full_name_lower: norm(req.full_name),
+                  birth_date: req.birth_date || null, birth_place_lower: norm(req.birth_place),
+                  identity_hash: ih, original_user_id: req.user_id,
+                  deleted_by: caller.username, reason: 'Selbst-Loeschung',
+                  reactivation_status: 'blocked',
+                }),
+              }).catch(() => {});
+              fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(uid)}`,
+                { method: 'DELETE', headers: svcHeaders }).catch(() => {});
+            }
+          }
+
+          await fetch(`${SUPABASE_URL}/rest/v1/account_requests?id=eq.${encodeURIComponent(reqId)}`, {
+            method: 'PATCH', headers: svcHeaders,
+            body: JSON.stringify({
+              status: action === 'approve' ? 'approved' : 'rejected',
+              handled_by: caller.username, handled_at: new Date().toISOString(),
+            }),
+          }).catch(() => {});
+
+          logAudit(svcHeaders, {
+            admin_username: caller.username, action: `account_request_${action}`,
+            target_id: req.user_id || req.username, details: { type: req.type, request_id: reqId },
+          });
+          return jsonResponse({ success: true, action, type: req.type });
+        } catch (e) { return errorResponse(`Antrags-Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/deleted-identities ───────────────────────────
+      if (method === 'GET' && path === '/api/admin/deleted-identities') {
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/deleted_identities?select=*&order=deleted_at.desc&limit=200`,
+            { headers: svcHeaders });
+          const rows = res.ok ? await res.json().catch(() => []) : [];
+          return jsonResponse({ success: true, identities: rows });
+        } catch (e) { return errorResponse(`Blacklist-Fehler: ${e.message}`); }
+      }
+
+      // ── DELETE /api/admin/deleted-identities/:id  (Freigabe) ────────
+      if (method === 'DELETE' && /^\/api\/admin\/deleted-identities\/[^/]+\/?$/.test(path)) {
+        try {
+          const id = path.split('/')[4];
+          await fetch(`${SUPABASE_URL}/rest/v1/deleted_identities?id=eq.${encodeURIComponent(id)}`,
+            { method: 'DELETE', headers: svcHeaders }).catch(() => {});
+          logAudit(svcHeaders, {
+            admin_username: caller.username, action: 'blacklist_remove', target_id: id,
+          });
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`Blacklist-Fehler: ${e.message}`); }
+      }
+
+      // ════════════════════════════════════════════════════════════════
       // v115 Feature B: Verwarnungssystem (3 Verwarnungen = Auto-Ban)
       // ════════════════════════════════════════════════════════════════
 
@@ -5032,6 +5637,22 @@ export default {
             await pushNotif(userId, 'system', '🚫 Konto gesperrt',
               `Du wurdest nach ${warnCount} Verwarnungen automatisch fuer 7 Tage gesperrt.`,
               { type: 'banned', auto: true });
+          } else if (warnCount === 2) {
+            // v117 Eskalation: 2. Verwarnung -> automatisch 24h Chat-Sperre.
+            const chatExpires = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+            fetch(`${SUPABASE_URL}/rest/v1/user_restrictions?on_conflict=user_id,scope`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+              body: JSON.stringify({
+                user_id: userId, username: targetUsername, scope: 'chat',
+                reason: `Auto-Chatsperre nach ${warnCount} Verwarnungen`,
+                created_by: 'system', is_permanent: false,
+                expires_at: chatExpires, created_at: new Date().toISOString(),
+              }),
+            }).catch(() => {});
+            await pushNotif(userId, 'system', '⚠️ Verwarnung + Chat-Sperre',
+              `Du wurdest verwarnt (${warnCount}/3) und fuer 24h vom Chat gesperrt. Grund: ${reason}`,
+              { type: 'warning', count: warnCount, reason, auto_chat_block: true });
           } else {
             await pushNotif(userId, 'system', '⚠️ Verwarnung',
               `Du wurdest verwarnt (${warnCount}/3). Grund: ${reason}`,
