@@ -351,9 +351,13 @@ class WorldAdminService {
           // System-Profile (00000000-...) ausfiltern. KEINE Filterung mehr
           // nach role='system' weil das echte User mit administrativen Rollen
           // ausschloss (matched Worker-Verhalten seit v5.44.7).
-          .where((u) => !(u['id'] as String? ?? '').startsWith('00000000-'))
-          .map((u) {
-        final id = (u['id'] as String?) ?? '';
+          .where((u) {
+        final rawId =
+            (u['id'] as String?) ?? (u['profile_id'] as String?) ?? '';
+        return !rawId.startsWith('00000000-');
+      }).map((u) {
+        // Worker response uses 'profile_id'; Supabase direct uses 'id'.
+        final id = (u['id'] as String?) ?? (u['profile_id'] as String?) ?? '';
         final legacy = u['legacy_user_id'] as String?;
         final username = (u['username'] as String?)?.trim().isNotEmpty == true
             ? u['username'] as String
@@ -708,6 +712,11 @@ class WorldUser {
 
   bool get isAdmin => role == 'admin' || role == 'root_admin';
   bool get isRootAdmin => role == 'root_admin';
+
+  /// True for auto-generated InvisibleAuth accounts that never set a real
+  /// username (pattern: 'user_' followed only by digits).
+  bool get isGhostUser =>
+      username.startsWith('user_') && RegExp(r'^user_\d+$').hasMatch(username);
 
   /// Herkunft des Profils: 'web' wenn ueber Supabase-Auth (UUID id),
   /// 'app' wenn nur InvisibleAuth-Legacy-ID, 'unknown' fallback.

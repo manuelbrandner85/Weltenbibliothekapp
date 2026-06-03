@@ -298,6 +298,27 @@ function logAudit(svcHeaders, fields) {
 }
 
 /**
+ * Resolves any user ID to the profiles.id UUID.
+ * Legacy InvisibleAuth IDs ('user_*') are stored in profiles.legacy_user_id.
+ * Returns the UUID string, or null if no matching profile found.
+ * Used by all admin action endpoints so that legacy IDs work transparently.
+ */
+async function resolveProfileUuid(userId, svcHeaders) {
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    return userId;
+  }
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?legacy_user_id=eq.${encodeURIComponent(userId)}&select=id&limit=1`,
+      { headers: svcHeaders },
+    );
+    if (!res.ok) return null;
+    const rows = await res.json().catch(() => []);
+    return (Array.isArray(rows) && rows.length > 0) ? rows[0].id : null;
+  } catch (_) { return null; }
+}
+
+/**
  * v115: Enqueued eine Push-Notification (In-App + FCM-Queue) ausserhalb des
  * fetch-Handlers (z.B. im Cron). Spiegelt die pushNotif-Closure-Logik:
  * InvisibleAuth-IDs (user_*) -> legacy_user_id, sonst user_id.
@@ -4262,8 +4283,10 @@ export default {
           if (!env.SUPABASE_SERVICE_ROLE_KEY) {
             return errorResponse('SUPABASE_SERVICE_ROLE_KEY fehlt', 503);
           }
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          // Resolve legacy 'user_*' IDs to the real profiles.id UUID.
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
 
           // 1. Profile-Zeile loeschen.
           const delProfile = await fetch(
@@ -4435,8 +4458,9 @@ export default {
       // Zeile id=eq.ban und Ban schlug silent fehl. Jetzt [4] = userId.
       if (method === 'POST' && path.includes('/users/') && path.endsWith('/ban')) {
         try {
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
 
           // AUDIT-FIX B14: Rate-Limit -- 30 Bans/min/Admin reicht fuer
           // legitime Bedienung, blockiert Spray-Ban-Attacken.
@@ -4539,8 +4563,9 @@ export default {
       // ── POST /api/admin/users/:userId/unban ─────────────────
       if (method === 'POST' && path.includes('/users/') && path.endsWith('/unban')) {
         try {
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
           const res = await fetch(
             `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
             {
@@ -4582,8 +4607,9 @@ export default {
       // in admin_mutes via v106-Migration. Body: { reason?, duration_h? }
       if (method === 'POST' && path.includes('/mute') && !path.includes('/unmute')) {
         try {
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
           if (String(userId) === String(caller.userId)) {
             return errorResponse('Selbst-Mute ist nicht erlaubt', 403);
           }
@@ -4623,8 +4649,9 @@ export default {
       // ── POST /api/admin/users/:userId/unmute ────────────────
       if (method === 'POST' && path.includes('/unmute')) {
         try {
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
           fetch(`${SUPABASE_URL}/rest/v1/admin_mutes?user_id=eq.${encodeURIComponent(userId)}`, {
             method: 'DELETE',
             headers: svcHeaders,
@@ -4672,8 +4699,9 @@ export default {
       // Verwarnung wird der User automatisch fuer 7 Tage gebannt.
       if (method === 'POST' && path.includes('/users/') && path.endsWith('/warn')) {
         try {
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
           if (String(userId) === String(caller.userId)) {
             return errorResponse('Selbst-Verwarnung ist nicht erlaubt', 403);
           }
@@ -4850,8 +4878,9 @@ export default {
       // Schreibt admin_audit_log und sendet In-App + Push-Benachrichtigung.
       if (method === 'POST' && path.includes('/users/') && path.endsWith('/xp')) {
         try {
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
           const body = await request.json().catch(() => ({}));
           const amountRaw = Number(body.amount);
           if (!Number.isFinite(amountRaw) || amountRaw === 0) {
@@ -5049,8 +5078,9 @@ export default {
       // admin_audit_log via v91 trigger profiles_role_change_audit.
       if ((method === 'PUT' || method === 'POST') && path.includes('/users/') && path.endsWith('/role')) {
         try {
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
           const body = await request.json().catch(() => ({}));
           const newRole = String(body.role || '').toLowerCase().replace('-', '_');
           const allowedRoles = ['user', 'moderator', 'admin', 'content_editor', 'root_admin'];

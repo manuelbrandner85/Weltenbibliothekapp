@@ -1227,6 +1227,7 @@ class _UsersTabState extends State<_UsersTab> {
   String _roleFilter = 'all';
   String _sourceFilter = 'all'; // 'all' | 'web' | 'app'
   String _sortMode = 'role'; // 'role' | 'newest' | 'oldest' | 'az' | 'online'
+  bool _hideGhosts = true; // hide auto-generated user_* accounts
   final _searchCtrl = TextEditingController();
 
   // Bulk-Selection — UserIDs der angehakten User. Bulk-Action-Bar erscheint
@@ -1331,6 +1332,9 @@ class _UsersTabState extends State<_UsersTab> {
 
   void _applyFilter() {
     var list = _all;
+    if (_hideGhosts) {
+      list = list.where((u) => !u.isGhostUser).toList();
+    }
     if (_roleFilter == 'banned') {
       list = list.where((u) => u.isSuspended).toList();
     } else if (_roleFilter != 'all') {
@@ -2044,9 +2048,14 @@ class _UsersTabState extends State<_UsersTab> {
       _snack('🗑️ @${u.username} geloescht', color: Colors.red);
       _load();
     } else {
-      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
-          ? AdminApiClient.instance.diagLog.last.message
-          : 'Unbekannter Fehler';
+      final last = AdminApiClient.instance.diagLog
+          .where((e) => e.path.contains('/admin/users/'))
+          .toList()
+          .reversed
+          .firstOrNull;
+      final errMsg = (last != null && last.message != 'ok')
+          ? last.message
+          : 'Nutzer nicht gefunden oder Datenbankfehler';
       _snack('❌ Loeschen fehlgeschlagen: $errMsg', color: Colors.orange);
     }
   }
@@ -2464,8 +2473,41 @@ class _UsersTabState extends State<_UsersTab> {
                 ),
               ),
               const SizedBox(height: 6),
-              // Sort-Dropdown (Source-Filter entfernt -- bei 35 Nutzern nicht noetig)
+              // Ghost-User toggle + Sort-Dropdown
               Row(children: [
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _hideGhosts = !_hideGhosts;
+                    _applyFilter();
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: _hideGhosts
+                          ? Colors.orange.withValues(alpha: 0.15)
+                          : Colors.white.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: _hideGhosts
+                              ? Colors.orange.withValues(alpha: 0.5)
+                              : Colors.transparent,
+                          width: 1.5),
+                    ),
+                    child: Text(
+                      _hideGhosts ? '👥 Echte Profile' : '👻 Alle inkl. Ghosts',
+                      style: TextStyle(
+                          color: _hideGhosts
+                              ? Colors.orange.shade200
+                              : Colors.white54,
+                          fontSize: 11,
+                          fontWeight: _hideGhosts
+                              ? FontWeight.bold
+                              : FontWeight.normal),
+                    ),
+                  ),
+                ),
                 const Spacer(),
                 // Sort-Dropdown
                 Container(
@@ -2567,10 +2609,10 @@ class _UsersTabState extends State<_UsersTab> {
                                         : null,
                                     onWarn: () => _warn(u),
                                     onNotes: () => _showNotes(u),
-                                    onModuleAccess: AppRoles.canBanUsers(
-                                            widget.admin.role)
-                                        ? () => _showModuleAccess(u)
-                                        : null,
+                                    onModuleAccess:
+                                        AppRoles.canBanUsers(widget.admin.role)
+                                            ? () => _showModuleAccess(u)
+                                            : null,
                                     onChangeRole: AppRoles.canPromoteDemote(
                                             widget.admin.role)
                                         ? (newRole) => _changeRole(u, newRole)
@@ -4324,8 +4366,7 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
               ),
             ),
           ),
-          for (final m in entry.value)
-            _buildModuleRow(m, moduleType),
+          for (final m in entry.value) _buildModuleRow(m, moduleType),
         ],
       ],
     );
@@ -4369,8 +4410,7 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
       ),
       child: ListTile(
         dense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         leading: Container(
           width: 32,
           height: 32,
@@ -4380,7 +4420,8 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
                 : Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isBoss ? Colors.amber.withValues(alpha: 0.4) : Colors.white10,
+              color:
+                  isBoss ? Colors.amber.withValues(alpha: 0.4) : Colors.white10,
             ),
           ),
           child: Center(
@@ -4403,8 +4444,7 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
         subtitle: Row(children: [
           Icon(statusIcon, size: 10, color: statusColor),
           const SizedBox(width: 4),
-          Text(statusLabel,
-              style: TextStyle(color: statusColor, fontSize: 10)),
+          Text(statusLabel, style: TextStyle(color: statusColor, fontSize: 10)),
         ]),
         trailing: isBusy
             ? const SizedBox(
@@ -4426,7 +4466,8 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
                             size: 14, color: Colors.green),
                         const SizedBox(width: 8),
                         const Text('Freischalten',
-                            style: TextStyle(color: Colors.white, fontSize: 13)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 13)),
                       ]),
                     ),
                   if (override != false)
@@ -4437,7 +4478,8 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
                             size: 14, color: Colors.red),
                         const SizedBox(width: 8),
                         const Text('Sperren',
-                            style: TextStyle(color: Colors.white, fontSize: 13)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 13)),
                       ]),
                     ),
                   if (override != null)
@@ -4841,8 +4883,7 @@ class _UserTile extends StatelessWidget {
                   if (onNotes != null && AppRoles.canViewUserList(actorRole))
                     _ActionBtn(Icons.sticky_note_2_rounded, 'Notizen',
                         const Color(0xFF9575CD), onNotes!),
-                  if (onModuleAccess != null &&
-                      AppRoles.canBanUsers(actorRole))
+                  if (onModuleAccess != null && AppRoles.canBanUsers(actorRole))
                     _ActionBtn(Icons.school_rounded, 'Module',
                         const Color(0xFF26C6DA), onModuleAccess!),
                   if (onGrantXp != null)
@@ -6045,7 +6086,9 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
           labelStyle:
               const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
           tabs: const [
-            Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Fortschritt'),
+            Tab(
+                icon: Icon(Icons.school_rounded, size: 16),
+                text: 'Fortschritt'),
             Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Editor'),
             Tab(icon: Icon(Icons.report_rounded, size: 16), text: 'Meldungen'),
           ],
@@ -7453,7 +7496,8 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -7686,7 +7730,8 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
                 onPressed: _clearHistory,
                 icon: const Icon(Icons.delete_sweep_rounded, size: 14),
                 label: const Text('Leeren', style: TextStyle(fontSize: 11)),
-                style: TextButton.styleFrom(foregroundColor: Colors.red.shade300),
+                style:
+                    TextButton.styleFrom(foregroundColor: Colors.red.shade300),
               ),
             IconButton(
               icon: Icon(Icons.refresh, color: widget.accent),
