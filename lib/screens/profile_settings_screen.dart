@@ -18,6 +18,8 @@ import '../services/supabase_service.dart'; // 🔥 Supabase Auth
 import '../services/haptic_service.dart';
 import '../services/haptic_feedback_service.dart'; // 📳 NEW: Haptic Feedback
 import '../services/privacy_mode_service.dart'; // 🛡️ D3
+import '../services/account_service.dart'; // ⚠️ v117 Konto-Verwaltung
+import '../services/unified_profile_service.dart'; // v117 Identitaet
 import '../widgets/theme_toggle_widget.dart';
 import 'shared/profile_editor_screen.dart'; // 🆕 NEW EDITOR
 import 'shared/secret_library_screen.dart'; // 📚 Geheime Bibliothek
@@ -341,6 +343,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             '🤝 GEMEINSCHAFT', const Color(0xFF26A69A)),
                         const SizedBox(height: 12),
                         _buildMensaenaCard(),
+
+                        const SizedBox(height: 32),
+
+                        // ⚠️ KONTO — Einspruch + Selbst-Loeschung (v117)
+                        _buildSectionHeader('⚠️ KONTO', Colors.redAccent),
+                        const SizedBox(height: 12),
+                        _buildAccountCard(),
                       ],
                     ),
                   ),
@@ -348,6 +357,144 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ],
       ),
     );
+  }
+
+  /// v117: Konto-Verwaltung -- Einspruch gegen Sperre + Selbst-Loeschung.
+  Widget _buildAccountCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF12101C),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.25)),
+      ),
+      child: Column(children: [
+        ListTile(
+          leading: const Icon(Icons.gavel_rounded, color: Colors.orangeAccent),
+          title: const Text('Einspruch gegen Sperre',
+              style: TextStyle(color: Colors.white, fontSize: 14)),
+          subtitle: const Text(
+              'Wenn du gesperrt wurdest, kannst du hier Einspruch einlegen.',
+              style: TextStyle(color: Colors.white38, fontSize: 11)),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+          onTap: _showAppealDialog,
+        ),
+        const Divider(height: 1, color: Colors.white10),
+        ListTile(
+          leading:
+              const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
+          title: const Text('Konto-Loeschung beantragen',
+              style: TextStyle(color: Colors.white, fontSize: 14)),
+          subtitle: const Text(
+              'Ein Admin prueft und loescht dein Konto endgueltig.',
+              style: TextStyle(color: Colors.white38, fontSize: 11)),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+          onTap: _showSelfDeleteDialog,
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _showAppealDialog() async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12101C),
+        title: const Text('Einspruch einlegen',
+            style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 4,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Beschreibe, warum die Sperre aufgehoben werden soll...',
+            hintStyle: TextStyle(color: Colors.white30),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Senden',
+                  style: TextStyle(color: Colors.orangeAccent))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final uid = UnifiedProfileService.instance.userId;
+    if (uid == null) return;
+    final sent = await AccountService.instance.submitAppeal(
+      userId: uid,
+      username: UnifiedProfileService.instance.username,
+      message: ctrl.text.trim(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(sent
+          ? 'Einspruch gesendet. Ein Admin prueft ihn.'
+          : 'Senden fehlgeschlagen.'),
+    ));
+  }
+
+  Future<void> _showSelfDeleteDialog() async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12101C),
+        title: const Text('Konto-Loeschung',
+            style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Dein Antrag wird an einen Admin geschickt. Nach Bestaetigung '
+              'wird dein Konto endgueltig geloescht und eine Neuanmeldung mit '
+              'denselben Daten ist gesperrt.',
+              style: TextStyle(color: Colors.white60, fontSize: 12),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              maxLines: 2,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: 'Grund (optional)',
+                hintStyle: TextStyle(color: Colors.white30),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Loeschung beantragen',
+                  style: TextStyle(color: Colors.redAccent))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final ups = UnifiedProfileService.instance;
+    if (ups.userId == null) return;
+    final sent = await AccountService.instance.requestSelfDeletion(
+      userId: ups.userId!,
+      username: ups.username,
+      fullName: ups.displayName,
+      birthDate: ups.birthDate?.toIso8601String().split('T').first,
+      birthPlace: ups.birthPlace,
+      message: ctrl.text.trim(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(sent
+          ? 'Loeschungs-Antrag gesendet.'
+          : 'Senden fehlgeschlagen.'),
+    ));
   }
 
   /// Section-Header mit Gradient-Bar
