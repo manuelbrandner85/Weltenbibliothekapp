@@ -4039,6 +4039,64 @@ export default {
         } catch (e) { return errorResponse(`Spirit-Stats-Fehler: ${e.message}`); }
       }
 
+      // ── GET /api/admin/app-config ─────────────────────────
+      // Liest app_config (Update-Konfiguration). Nur root_admin.
+      if (method === 'GET' && path === '/api/admin/app-config') {
+        if (!caller.isRootAdmin) return errorResponse('Nur Root-Admin', 403);
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/app_config?select=*&order=platform.asc`,
+            { headers: svcHeaders }
+          );
+          if (!res.ok) return errorResponse('Supabase-Fehler', res.status);
+          const rows = await res.json().catch(() => []);
+          return jsonResponse({ success: true, rows });
+        } catch (e) { return errorResponse(`app-config-Fehler: ${e.message}`); }
+      }
+
+      // ── PATCH /api/admin/app-config ───────────────────────
+      // Aktualisiert app_config-Zeile fuer eine Plattform. Nur root_admin.
+      // Body: { platform, latest_version?, min_version?, apk_download_url?,
+      //         changelog?, patch_changelog?, release_notes_url? }
+      if (method === 'PATCH' && path === '/api/admin/app-config') {
+        if (!caller.isRootAdmin) return errorResponse('Nur Root-Admin', 403);
+        try {
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const platform = (body.platform || 'android').toLowerCase();
+          if (!['android', 'ios'].includes(platform)) {
+            return errorResponse('platform muss android oder ios sein', 400);
+          }
+          const allowed = ['latest_version','min_version','apk_download_url','changelog','patch_changelog','release_notes_url'];
+          const updates = {};
+          for (const k of allowed) {
+            if (k in body && body[k] !== undefined) updates[k] = body[k];
+          }
+          if (Object.keys(updates).length === 0) {
+            return errorResponse('Keine Felder zum Aktualisieren', 400);
+          }
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/app_config?platform=eq.${platform}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify(updates),
+            }
+          );
+          if (!res.ok) {
+            const err = await res.text().catch(() => 'Fehler');
+            return errorResponse(`Update fehlgeschlagen: ${err}`, res.status);
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'app_config_update',
+            target_id: platform,
+            details: updates,
+          });
+          return jsonResponse({ success: true, platform, updated: updates });
+        } catch (e) { return errorResponse(`app-config-Update-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/progress ─────────────────────────────
       // Aggregierte Modul-Fortschritte für Vorhang + Ursprung.
       // Pro Branch: total_modules, users_started, users_completed_all,
@@ -4165,7 +4223,8 @@ export default {
       if (method === 'POST' && path.includes('/promote')) {
         try {
           const parts = path.split('/');
-          const userId = parts[parts.length - 1];
+          const rawUserId = parts[parts.length - 1];
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
           let body = {};
           try { body = await request.clone().json(); } catch (_) {}
           const allowed = ['user','moderator','content_editor','admin','root_admin'];
@@ -4227,7 +4286,8 @@ export default {
       if (method === 'POST' && path.includes('/demote')) {
         try {
           const parts = path.split('/');
-          const userId = parts[parts.length - 1];
+          const rawUserId = parts[parts.length - 1];
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
           let body = {};
           try { body = await request.clone().json(); } catch (_) {}
           const allowed = ['user','moderator','content_editor','admin'];

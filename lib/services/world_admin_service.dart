@@ -1568,4 +1568,48 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return false;
     }
   }
+
+  /// Liest app_config (Update-Versionskonfiguration). Nur root_admin.
+  /// Returns Liste der Plattform-Zeilen (android, ios).
+  static Future<List<Map<String, dynamic>>?> getAppConfig() async {
+    try {
+      final data =
+          await AdminApiClient.instance.getJson('/api/admin/app-config');
+      final rows = data['rows'];
+      if (rows is List) {
+        return rows.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ getAppConfig: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getAppConfig: $e');
+      return null;
+    }
+  }
+
+  /// Aktualisiert app_config-Felder fuer eine Plattform.
+  /// [updates] darf latest_version, min_version, apk_download_url,
+  /// changelog, patch_changelog, release_notes_url enthalten.
+  static Future<bool> updateAppConfig({
+    required String platform,
+    required Map<String, dynamic> updates,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.patchJson(
+        '/api/admin/app-config',
+        body: {'platform': platform, ...updates},
+      );
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ updateAppConfig: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ updateAppConfig: $e');
+      return false;
+    }
+  }
 }

@@ -413,7 +413,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         return _AuditReportsWrapper(
             world: 'all', accent: _accent, accentBright: _accentBright);
       case 'system':
-        return _SystemTab(accent: _accent, accentBright: _accentBright);
+        return _SystemTab(
+            accent: _accent, accentBright: _accentBright, admin: admin);
       default:
         return const SizedBox.shrink();
     }
@@ -1663,22 +1664,32 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _promote(WorldUser u) async {
+    final targetRole = widget.admin.isRootAdmin ? 'root_admin' : 'admin';
     final confirmed = await _confirm(
-      '⬆️ Zum Admin befördern',
-      'Soll @${u.username} wirklich zum Admin befördert werden?\n\nDer Nutzer erhält Zugriff auf das Admin-Dashboard.',
+      'Zum Admin befoerdern',
+      'Soll @${u.username} wirklich befördert werden?\n\nNeue Rolle: ${_prettyRole(targetRole)}',
       confirmColor: Colors.green,
     );
     if (!confirmed) return;
 
     setState(() => _processing = true);
-    final ok = await WorldAdminService.promoteUser(
-        u.world ?? widget.world, u.userId,
-        role: widget.admin.isRootAdmin ? 'root_admin' : 'admin');
+    final ok = await WorldAdminServiceV162.changeUserRole(
+      userId: u.userId,
+      newRole: targetRole,
+      adminUsername: widget.admin.username,
+    );
     if (!mounted) return;
     setState(() => _processing = false);
-    _snack(ok ? '⬆️ ${u.username} ist jetzt Admin' : '❌ Fehler',
-        color: ok ? Colors.green : Colors.orange);
-    if (ok) _load();
+    if (ok) {
+      _snack('⬆️ @${u.username} ist jetzt ${_prettyRole(targetRole)}',
+          color: Colors.green);
+      _load();
+    } else {
+      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
+          ? AdminApiClient.instance.diagLog.last.message
+          : 'Unbekannter Fehler';
+      _snack('❌ Befoerdern fehlgeschlagen: $errMsg', color: Colors.orange);
+    }
   }
 
   // v115 (Feature B): Verwarnung aussprechen. Dialog mit Grund-Feld.
@@ -1913,21 +1924,29 @@ class _UsersTabState extends State<_UsersTab> {
 
   Future<void> _demote(WorldUser u) async {
     final confirmed = await _confirm(
-      '⬇️ Degradieren',
-      'Soll @${u.username} wirklich degradiert werden?\n\nDer Admin-Zugriff wird entzogen.',
+      'Degradieren',
+      'Soll @${u.username} wirklich degradiert werden?\n\nRolle wird auf "User" zurueckgesetzt.',
       confirmColor: Colors.orange,
     );
     if (!confirmed) return;
 
     setState(() => _processing = true);
-    final ok = await WorldAdminService.demoteUser(
-        u.world ?? widget.world, u.userId,
-        role: widget.admin.isRootAdmin ? 'root_admin' : 'admin');
+    final ok = await WorldAdminServiceV162.changeUserRole(
+      userId: u.userId,
+      newRole: 'user',
+      adminUsername: widget.admin.username,
+    );
     if (!mounted) return;
     setState(() => _processing = false);
-    _snack(ok ? '⬇️ ${u.username} degradiert' : '❌ Fehler',
-        color: ok ? Colors.orange : Colors.red);
-    if (ok) _load();
+    if (ok) {
+      _snack('⬇️ @${u.username} degradiert', color: Colors.orange);
+      _load();
+    } else {
+      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
+          ? AdminApiClient.instance.diagLog.last.message
+          : 'Unbekannter Fehler';
+      _snack('❌ Degradieren fehlgeschlagen: $errMsg', color: Colors.red);
+    }
   }
 
   // v98: Hard-Delete eines Users. Nur Root-Admin. Verlangt Eingabe des
@@ -2549,6 +2568,46 @@ class _UsersTabState extends State<_UsersTab> {
             ]),
           ),
 
+          // ── Ghost-Bereinigung (root_admin only, nur wenn Ghosts vorhanden) ──
+          Builder(builder: (ctx) {
+            final ghosts = _all.where((u) => u.isGhostUser).toList();
+            if (!widget.admin.isRootAdmin || ghosts.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: GestureDetector(
+                onTap: () => _bulkDeleteGhosts(ghosts),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.3), width: 1),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.delete_sweep_rounded,
+                        color: Colors.redAccent, size: 15),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${ghosts.length} Ghost-Profile bereinigen',
+                      style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    const Text('(Hard-Delete)',
+                        style:
+                            TextStyle(color: Colors.red, fontSize: 10)),
+                  ]),
+                ),
+              ),
+            );
+          }),
+
           // ── User List ─────────────────────────────────────────────
           Expanded(
             child: _loading
@@ -2711,19 +2770,19 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _bulkPromote() => _bulkApply(
-        label: 'Befördern (Bulk)',
-        action: (u) async => WorldAdminService.promoteUser(
-          u.world ?? widget.world,
-          u.userId,
-          role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+        label: 'Befoerdern (Bulk)',
+        action: (u) async => WorldAdminServiceV162.changeUserRole(
+          userId: u.userId,
+          newRole: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+          adminUsername: widget.admin.username,
         ),
       );
   Future<void> _bulkDemote() => _bulkApply(
         label: 'Degradieren (Bulk)',
-        action: (u) async => WorldAdminService.demoteUser(
-          u.world ?? widget.world,
-          u.userId,
-          role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+        action: (u) async => WorldAdminServiceV162.changeUserRole(
+          userId: u.userId,
+          newRole: 'user',
+          adminUsername: widget.admin.username,
         ),
       );
   Future<void> _bulkBan() => _bulkApply(
@@ -2741,6 +2800,39 @@ class _UsersTabState extends State<_UsersTab> {
           adminUserId: widget.admin.username,
         ),
       );
+
+  // Hard-Delete aller uebergebenen Ghost-Profile nach Bestaetigungs-Dialog.
+  Future<void> _bulkDeleteGhosts(List<WorldUser> ghosts) async {
+    if (!widget.admin.isRootAdmin) return;
+    final confirmed = await _confirm(
+      'Ghost-Profile loeschen',
+      '${ghosts.length} automatisch generierte Profile (user_<ts>) werden '
+          'unwiderruflich geloescht.\n\nDiese Nutzer haben sich nie '
+          'eingeloggt / kein echtes Profil angelegt.',
+      confirmColor: Colors.red,
+    );
+    if (!confirmed) return;
+
+    setState(() => _processing = true);
+    int deleted = 0;
+    for (final u in ghosts) {
+      final ok = await WorldAdminServiceV162.deleteUser(
+        userId: u.userId,
+        reason: 'Bulk Ghost-Bereinigung',
+        adminUsername: widget.admin.username,
+      );
+      if (ok) deleted++;
+    }
+    if (!mounted) return;
+    setState(() => _processing = false);
+    _snack(
+      deleted == ghosts.length
+          ? '🗑️ $deleted Ghost-Profile geloescht'
+          : '🗑️ $deleted/${ghosts.length} geloescht (${ghosts.length - deleted} Fehler)',
+      color: deleted > 0 ? Colors.orange : Colors.red,
+    );
+    _load();
+  }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -3153,7 +3245,11 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
 // ═════════════════════════════════════════════════════════════════════════════
 class _SystemTab extends StatefulWidget {
   final Color accent, accentBright;
-  const _SystemTab({required this.accent, required this.accentBright});
+  final AdminState admin;
+  const _SystemTab(
+      {required this.accent,
+      required this.accentBright,
+      required this.admin});
   @override
   State<_SystemTab> createState() => _SystemTabState();
 }
@@ -3163,6 +3259,10 @@ class _SystemTabState extends State<_SystemTab> {
   bool _ready = false;
   bool _checking = false;
 
+  // App-Config state
+  List<Map<String, dynamic>>? _appConfigRows;
+  bool _appConfigLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -3171,6 +3271,7 @@ class _SystemTabState extends State<_SystemTab> {
     // Rebuilds/Stunde, Akku-Drain) hoeren wir auf den ChangeNotifier.
     // Rebuild nur wenn sich der Health-Status tatsaechlich aendert.
     _health.addListener(_onHealthChanged);
+    if (widget.admin.isRootAdmin) _loadAppConfig();
   }
 
   void _onHealthChanged() {
@@ -3181,6 +3282,132 @@ class _SystemTabState extends State<_SystemTab> {
     await _health.initialize();
     _health.startMonitoring(interval: const Duration(seconds: 30));
     if (mounted) setState(() => _ready = true);
+  }
+
+  Future<void> _loadAppConfig() async {
+    if (!mounted) return;
+    setState(() => _appConfigLoading = true);
+    final rows = await WorldAdminServiceV162.getAppConfig();
+    if (mounted) setState(() {
+      _appConfigRows = rows;
+      _appConfigLoading = false;
+    });
+  }
+
+  Future<void> _editAppConfig(Map<String, dynamic> row) async {
+    final platform = row['platform'] as String? ?? 'android';
+    final latestCtrl =
+        TextEditingController(text: row['latest_version'] as String? ?? '');
+    final minCtrl =
+        TextEditingController(text: row['min_version'] as String? ?? '');
+    final urlCtrl =
+        TextEditingController(text: row['apk_download_url'] as String? ?? '');
+    final changelogCtrl =
+        TextEditingController(text: row['changelog'] as String? ?? '');
+    final patchCtrl =
+        TextEditingController(text: row['patch_changelog'] as String? ?? '');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(children: [
+          Icon(Icons.system_update_rounded, color: widget.accent, size: 20),
+          const SizedBox(width: 8),
+          Text('App-Config ($platform)',
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)),
+        ]),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildConfigField(latestCtrl, 'Aktuelle Version (latest_version)',
+                  '1.0.0', Icons.new_releases_rounded),
+              const SizedBox(height: 10),
+              _buildConfigField(minCtrl, 'Mindestversion (min_version)',
+                  '0.9.0', Icons.block_rounded),
+              const SizedBox(height: 10),
+              _buildConfigField(urlCtrl, 'APK-Download-URL', 'https://',
+                  Icons.download_rounded),
+              const SizedBox(height: 10),
+              _buildConfigField(changelogCtrl, 'Changelog (Release)',
+                  'Was ist neu?', Icons.notes_rounded,
+                  maxLines: 4),
+              const SizedBox(height: 10),
+              _buildConfigField(patchCtrl, 'Patch-Changelog (OTA)',
+                  'Bugfixes...', Icons.auto_fix_high_rounded,
+                  maxLines: 3),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+            child: const Text('Speichern',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true || !mounted) return;
+
+    setState(() => _appConfigLoading = true);
+    final ok = await WorldAdminServiceV162.updateAppConfig(
+      platform: platform,
+      updates: {
+        'latest_version': latestCtrl.text.trim(),
+        'min_version': minCtrl.text.trim(),
+        'apk_download_url': urlCtrl.text.trim(),
+        'changelog': changelogCtrl.text.trim(),
+        'patch_changelog': patchCtrl.text.trim(),
+      },
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(ok
+          ? '✅ app_config ($platform) gespeichert'
+          : '❌ Speichern fehlgeschlagen'),
+      backgroundColor: ok ? Colors.green : Colors.orange,
+    ));
+    _loadAppConfig();
+  }
+
+  Widget _buildConfigField(TextEditingController ctrl, String label,
+      String hint, IconData icon,
+      {int maxLines = 1}) {
+    return TextField(
+      controller: ctrl,
+      maxLines: maxLines,
+      style: const TextStyle(color: Colors.white, fontSize: 13),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white24),
+        prefixIcon: Icon(icon, color: Colors.white38, size: 16),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.white12),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.white12),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+    );
   }
 
   Future<void> _checkAll() async {
@@ -3445,6 +3672,83 @@ class _SystemTabState extends State<_SystemTab> {
               ),
             ),
           ),
+
+          const SizedBox(height: 16),
+
+          // ── App-Update-Konfiguration (nur root_admin) ─────────────
+          if (widget.admin.isRootAdmin) ...[
+            _SectionLabel(
+                'App-Update-Konfiguration',
+                Icons.system_update_rounded,
+                widget.accent),
+            const SizedBox(height: 10),
+            if (_appConfigLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_appConfigRows == null)
+              _EmptyHint('Fehler beim Laden. Zum Aktualisieren nach unten ziehen.')
+            else if (_appConfigRows!.isEmpty)
+              _EmptyHint('Keine app_config-Eintraege gefunden.\nTabelle evtl. leer.')
+            else
+              ..._appConfigRows!.map((row) {
+                final platform = row['platform'] as String? ?? '?';
+                final latest = row['latest_version'] as String? ?? '-';
+                final minV = row['min_version'] as String? ?? '-';
+                final url = (row['apk_download_url'] as String? ?? '').isNotEmpty;
+                return GestureDetector(
+                  onTap: () => _editAppConfig(row),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: widget.accent.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: widget.accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          platform == 'android'
+                              ? Icons.android_rounded
+                              : Icons.apple_rounded,
+                          color: widget.accent,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              platform.toUpperCase(),
+                              style: TextStyle(
+                                  color: widget.accentBright,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Aktuell: $latest  |  Min: $minV  |  APK: ${url ? "gesetzt" : "fehlt"}',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.edit_rounded,
+                          color: Colors.white38, size: 16),
+                    ]),
+                  ),
+                );
+              }),
+            const SizedBox(height: 8),
+          ],
 
           const SizedBox(height: 16),
         ],
