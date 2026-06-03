@@ -1612,4 +1612,52 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return false;
     }
   }
+
+  /// Laedt vollstaendiges Nutzerprofil mit Modul-Fortschritt, Warnungen
+  /// und letzten Admin-Aktionen. Returns null bei Fehler/404.
+  static Future<Map<String, dynamic>?> getUserDetail(String userId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/users/$userId/detail');
+      return data;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ getUserDetail: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getUserDetail: $e');
+      return null;
+    }
+  }
+
+  /// Sendet eine Push-Benachrichtigung direkt an einen einzelnen Nutzer.
+  /// Entweder [userId] oder [username] muss angegeben werden.
+  static Future<bool> sendDirectPush({
+    String? userId,
+    String? username,
+    required String title,
+    required String body,
+    String type = 'admin_message',
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/push/user',
+        body: {
+          if (userId != null) 'userId': userId,
+          if (username != null) 'username': username,
+          'title': title,
+          'body': body,
+          'type': type,
+        },
+      );
+      return data['success'] as bool? ?? true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ sendDirectPush: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ sendDirectPush: $e');
+      return false;
+    }
+  }
 }

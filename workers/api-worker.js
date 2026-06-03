@@ -4202,6 +4202,83 @@ export default {
         } catch (e) { return errorResponse(`Progress-Fehler: ${e.message}`); }
       }
 
+      // ── GET /api/admin/users/:userId/detail ─────────────────
+      // Aggregiert Profil, Modul-Fortschritt, Warnungen, Admin-Aktionen.
+      if (method === 'GET' && /^\/api\/admin\/users\/[^/]+\/detail$/.test(path)) {
+        try {
+          const rawUserId = path.split('/')[4];
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
+
+          const [profileRes, progressRes, warningsRes, actionsRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=*&limit=1`,
+              { headers: svcHeaders }),
+            fetch(`${SUPABASE_URL}/rest/v1/user_vorhang_progress?user_id=eq.${encodeURIComponent(userId)}&select=module_code,completed_at,exercise_completed,test_passed&order=completed_at.desc`,
+              { headers: svcHeaders }),
+            fetch(`${SUPABASE_URL}/rest/v1/admin_warnings?user_id=eq.${encodeURIComponent(userId)}&select=id,reason,created_at,admin_username&order=created_at.desc&limit=10`,
+              { headers: svcHeaders }),
+            fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log?target_id=eq.${encodeURIComponent(userId)}&select=action,details,created_at,admin_username&order=created_at.desc&limit=10`,
+              { headers: svcHeaders }),
+          ]);
+
+          const profileData = profileRes.ok ? await profileRes.json().catch(() => []) : [];
+          const profile = Array.isArray(profileData) ? profileData[0] || null : null;
+          const progress = progressRes.ok ? await progressRes.json().catch(() => []) : [];
+          const warnings = warningsRes.ok ? await warningsRes.json().catch(() => []) : [];
+          const actions = actionsRes.ok ? await actionsRes.json().catch(() => []) : [];
+
+          if (!profile) return errorResponse('Nutzer nicht gefunden', 404);
+
+          const completedModules = (Array.isArray(progress) ? progress : []).filter(p => p.completed_at).length;
+          const startedModules = Array.isArray(progress) ? progress.length : 0;
+
+          return jsonResponse({
+            success: true,
+            profile,
+            progress_summary: {
+              started_modules: startedModules,
+              completed_modules: completedModules,
+              modules: progress,
+            },
+            warnings: Array.isArray(warnings) ? warnings : [],
+            recent_actions: Array.isArray(actions) ? actions : [],
+          });
+        } catch (e) { return errorResponse(`Detail-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/push/user ───────────────────────────
+      // Sendet Push-Benachrichtigung an einen einzelnen Nutzer.
+      // Body: { username?, userId?, title, body, type? }
+      if (method === 'POST' && path === '/api/admin/push/user') {
+        try {
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const title = String(body.title || '').trim();
+          const msgBody = String(body.body || '').trim();
+          if (!title || !msgBody) return errorResponse('title und body pflicht', 400);
+
+          let userId = body.userId;
+          if (!userId && body.username) {
+            const res = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?username=eq.${encodeURIComponent(body.username)}&select=id&limit=1`,
+              { headers: svcHeaders }
+            );
+            const rows = res.ok ? await res.json().catch(() => []) : [];
+            userId = Array.isArray(rows) && rows.length > 0 ? rows[0].id : null;
+          }
+          if (!userId) return errorResponse('Nutzer nicht gefunden', 404);
+
+          await pushNotif(userId, body.type || 'admin_message', title, msgBody,
+            { source: 'admin_direct', admin: caller.username });
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'direct_push',
+            target_id: userId,
+            details: { title, body: msgBody, username: body.username || userId },
+          });
+          return jsonResponse({ success: true, userId });
+        } catch (e) { return errorResponse(`Push-User-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/users/:userId/status ─────────────────
       if (method === 'GET' && path.includes('/status')) {
         try {
