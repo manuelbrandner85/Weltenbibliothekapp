@@ -505,6 +505,8 @@ class _OverviewTabState extends State<_OverviewTab> {
   bool _loading = true;
   String? _loadError; // FIX (#6): Fehler im Overview-Tab sichtbar machen
   RealtimeChannel? _channel;
+  // v115 (Feature E): Anzahl offener User-Reports fuer die Moderationsqueue.
+  int _openReports = 0;
 
   @override
   void initState() {
@@ -710,10 +712,17 @@ class _OverviewTabState extends State<_OverviewTab> {
         limit: 15,
         role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
       );
+      // v115 (Feature E): offene Reports-Anzahl fuer die Moderationsqueue.
+      final reportsData =
+          await WorldAdminServiceV162.getReports(status: 'open', limit: 1);
+      final openReports = reportsData == null
+          ? 0
+          : ((reportsData['counts'] as Map?)?['open'] as num?)?.toInt() ?? 0;
       if (mounted) {
         setState(() {
           _stats = stats;
           _activity = logs;
+          _openReports = openReports;
           _loading = false;
           // FIX (#6): bei 'error'-Feld in stats den Fehler anzeigen.
           final statErr = stats['error'];
@@ -958,6 +967,81 @@ class _OverviewTabState extends State<_OverviewTab> {
                     onTap: () =>
                         _showStatsDetail('Interaktionen', interactions))),
           ]),
+
+          const SizedBox(height: 24),
+
+          // ── v115 (Feature E): Moderationsqueue ──────────────────────
+          _SectionLabel('Moderation', Icons.gpp_maybe_rounded, widget.accent),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: const Color(0xFF12121E),
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              builder: (_) => _ModerationSheet(accent: widget.accent),
+            ).then((_) => _load()),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: _openReports > 0
+                      ? [
+                          Colors.red.withValues(alpha: 0.18),
+                          Colors.orange.withValues(alpha: 0.10),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.05),
+                          Colors.white.withValues(alpha: 0.02),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _openReports > 0
+                      ? Colors.redAccent.withValues(alpha: 0.4)
+                      : Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (_openReports > 0 ? Colors.redAccent : widget.accent)
+                        .withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.flag_rounded,
+                      color:
+                          _openReports > 0 ? Colors.redAccent : widget.accent,
+                      size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _openReports > 0
+                            ? '$_openReports offene Meldung${_openReports == 1 ? '' : 'en'}'
+                            : 'Keine offenen Meldungen',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text('User-Reports pruefen + bearbeiten',
+                          style:
+                              TextStyle(color: Colors.white54, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+              ]),
+            ),
+          ),
 
           const SizedBox(height: 24),
 
@@ -1593,6 +1677,154 @@ class _UsersTabState extends State<_UsersTab> {
     if (ok) _load();
   }
 
+  // v115 (Feature B): Verwarnung aussprechen. Dialog mit Grund-Feld.
+  // Bei der 3. Verwarnung bannt der Worker automatisch fuer 7 Tage.
+  Future<void> _warn(WorldUser u) async {
+    final reasonCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF12121E),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: Colors.orangeAccent, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Verwarnen (${u.warningCount}/3)',
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ]),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '@${u.username} verwarnen. Ab der 3. Verwarnung wird der '
+                  'Nutzer automatisch fuer 7 Tage gesperrt.',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: reasonCtrl,
+                  autofocus: true,
+                  maxLength: 200,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Grund (Pflicht, min. 3 Zeichen)',
+                    labelStyle: TextStyle(color: Colors.white54),
+                    counterStyle: TextStyle(color: Colors.white38),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (reasonCtrl.text.trim().length < 3) return;
+                  Navigator.pop(ctx, true);
+                },
+                icon: const Icon(Icons.warning_amber_rounded,
+                    color: Colors.white, size: 16),
+                label: const Text('Verwarnen',
+                    style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange.shade800,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+
+    setState(() => _processing = true);
+    final res = await WorldAdminServiceV162.warnUser(
+      userId: u.userId,
+      reason: reasonCtrl.text.trim(),
+    );
+    if (!mounted) return;
+    setState(() => _processing = false);
+    if (res != null && res['success'] == true) {
+      final count = res['warning_count'] ?? 0;
+      final autoBanned = res['auto_banned'] == true;
+      _snack(
+        autoBanned
+            ? '🚫 @${u.username}: $count. Verwarnung -> Auto-Ban (7 Tage)'
+            : '⚠️ @${u.username} verwarnt ($count/3)',
+        color: autoBanned ? Colors.red.shade700 : Colors.orange,
+      );
+      _load();
+    } else {
+      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
+          ? AdminApiClient.instance.diagLog.last.message
+          : 'Unbekannter Fehler';
+      _snack('❌ Verwarnung fehlgeschlagen: $errMsg', color: Colors.orange);
+    }
+  }
+
+  // v115 (Feature D): CSV-Export der aktuell gefilterten Nutzerliste.
+  // Baut einen RFC-4180-konformen CSV-String und kopiert ihn in die
+  // Zwischenablage (kein Datei-IO noetig -> funktioniert auf Web + App).
+  Future<void> _exportCsv() async {
+    final rows = _filtered.isEmpty ? _all : _filtered;
+    if (rows.isEmpty) {
+      _snack('Keine Nutzer zum Exportieren');
+      return;
+    }
+    String esc(String? v) {
+      final s = (v ?? '').replaceAll('"', '""');
+      return '"$s"';
+    }
+
+    final buf = StringBuffer();
+    buf.writeln(
+        'username,display_name,role,banned,warnings,source,created_at,last_seen,user_id');
+    for (final u in rows) {
+      buf.writeln([
+        esc(u.username),
+        esc(u.displayName),
+        esc(u.role),
+        esc(u.isSuspended ? 'ja' : 'nein'),
+        esc('${u.warningCount}'),
+        esc(u.source),
+        esc(u.createdAt),
+        esc(u.lastSeenAt ?? ''),
+        esc(u.userId),
+      ].join(','));
+    }
+    await Clipboard.setData(ClipboardData(text: buf.toString()));
+    if (!mounted) return;
+    _snack('📋 ${rows.length} Nutzer als CSV in Zwischenablage kopiert',
+        color: Colors.green.shade700);
+  }
+
+  // v115 (Feature C): Interne Admin-Notizen. BottomSheet mit Liste +
+  // Eingabefeld. Notizen sind NUR fuer Admins sichtbar (RLS-geschuetzt).
+  Future<void> _showNotes(WorldUser u) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF12121E),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _NotesSheet(
+        user: u,
+        accent: widget.accent,
+      ),
+    );
+  }
+
   // Feiner-granularer Rollenwechsel (v5.44.3+): erlaubt user|moderator|
   // content_editor|admin|root_admin. Promote/Demote bleiben fuer
   // Rueckwaerts-Kompatibilitaet bestehen.
@@ -2095,6 +2327,19 @@ class _UsersTabState extends State<_UsersTab> {
                             color: Colors.white38, fontSize: 10),
                       ),
                     const SizedBox(width: 8),
+                    // v115 (Feature D): CSV-Export der (gefilterten) Liste.
+                    GestureDetector(
+                      onTap: _exportCsv,
+                      child: Row(children: [
+                        const Icon(Icons.download_rounded,
+                            color: Colors.white54, size: 14),
+                        const SizedBox(width: 3),
+                        const Text('Export',
+                            style:
+                                TextStyle(color: Colors.white54, fontSize: 11)),
+                      ]),
+                    ),
+                    const SizedBox(width: 10),
                     GestureDetector(
                       onTap: _load,
                       child: Row(children: [
@@ -2335,6 +2580,8 @@ class _UsersTabState extends State<_UsersTab> {
                                             widget.admin.role)
                                         ? () => _deleteUser(u)
                                         : null,
+                                    onWarn: () => _warn(u),
+                                    onNotes: () => _showNotes(u),
                                     onChangeRole: AppRoles.canPromoteDemote(
                                             widget.admin.role)
                                         ? (newRole) => _changeRole(u, newRole)
@@ -3509,6 +3756,427 @@ class _ActivityTile extends StatelessWidget {
   }
 }
 
+// ── v115 (Feature C): Admin-Notizen-Sheet ────────────────────────────────
+class _NotesSheet extends StatefulWidget {
+  final WorldUser user;
+  final Color accent;
+  const _NotesSheet({required this.user, required this.accent});
+
+  @override
+  State<_NotesSheet> createState() => _NotesSheetState();
+}
+
+class _NotesSheetState extends State<_NotesSheet> {
+  List<Map<String, dynamic>> _notes = [];
+  bool _loading = true;
+  bool _saving = false;
+  final _ctrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final notes = await WorldAdminServiceV162.getNotes(widget.user.userId);
+    if (!mounted) return;
+    setState(() {
+      _notes = notes;
+      _loading = false;
+    });
+  }
+
+  Future<void> _add() async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _saving = true);
+    final ok = await WorldAdminServiceV162.addNote(
+        userId: widget.user.userId, note: text);
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (ok) {
+      _ctrl.clear();
+      _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notiz konnte nicht gespeichert werden')),
+      );
+    }
+  }
+
+  Future<void> _delete(String noteId) async {
+    final ok = await WorldAdminServiceV162.deleteNote(
+        userId: widget.user.userId, noteId: noteId);
+    if (!mounted) return;
+    if (ok) _load();
+  }
+
+  String _fmt(String ts) {
+    try {
+      final dt = DateTime.parse(ts).toLocal();
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year} '
+          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return ts;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.75,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.sticky_note_2_rounded,
+                  color: Color(0xFF9575CD), size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Notizen zu @${widget.user.username}',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded, color: Colors.white54),
+              ),
+            ]),
+            const Text('Nur fuer Admins sichtbar -- der Nutzer sieht das nie.',
+                style: TextStyle(color: Colors.white38, fontSize: 11)),
+            const SizedBox(height: 12),
+            Flexible(
+              child: _loading
+                  ? const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  : _notes.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Text('Noch keine Notizen.',
+                              style: TextStyle(color: Colors.white38)),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: _notes.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (ctx, i) {
+                            final n = _notes[i];
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.04),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.08)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(n['note']?.toString() ?? '',
+                                      style: const TextStyle(
+                                          color: Colors.white, fontSize: 13)),
+                                  const SizedBox(height: 6),
+                                  Row(children: [
+                                    Expanded(
+                                      child: Text(
+                                        '${n['author_username'] ?? 'admin'} · ${_fmt(n['created_at']?.toString() ?? '')}',
+                                        style: const TextStyle(
+                                            color: Colors.white38,
+                                            fontSize: 10),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () =>
+                                          _delete(n['id']?.toString() ?? ''),
+                                      child: const Icon(Icons.delete_outline,
+                                          size: 16, color: Colors.white38),
+                                    ),
+                                  ]),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+            ),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  controller: _ctrl,
+                  maxLength: 1000,
+                  minLines: 1,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Neue Notiz...',
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    counterText: '',
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: _saving ? null : _add,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.send_rounded, color: Color(0xFF9575CD)),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── v115 (Feature E): Moderationsqueue-Sheet ─────────────────────────────
+class _ModerationSheet extends StatefulWidget {
+  final Color accent;
+  const _ModerationSheet({required this.accent});
+
+  @override
+  State<_ModerationSheet> createState() => _ModerationSheetState();
+}
+
+class _ModerationSheetState extends State<_ModerationSheet> {
+  List<Map<String, dynamic>> _reports = [];
+  bool _loading = true;
+  String _statusFilter = 'open';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final data = await WorldAdminServiceV162.getReports(
+        status: _statusFilter, limit: 100);
+    if (!mounted) return;
+    setState(() {
+      _reports = data == null
+          ? []
+          : ((data['reports'] as List?) ?? const [])
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+      _loading = false;
+    });
+  }
+
+  Future<void> _resolve(String id, String status) async {
+    final ok =
+        await WorldAdminServiceV162.updateReport(reportId: id, status: status);
+    if (!mounted) return;
+    if (ok) {
+      _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aktion fehlgeschlagen')),
+      );
+    }
+  }
+
+  String _fmt(String ts) {
+    try {
+      final dt = DateTime.parse(ts).toLocal();
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')} '
+          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return ts;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.flag_rounded, color: Colors.redAccent, size: 20),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('Moderationsqueue',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16)),
+            ),
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close_rounded, color: Colors.white54),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          // Status-Filter
+          SizedBox(
+            height: 34,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final s in const [
+                  ('open', 'Offen'),
+                  ('reviewing', 'In Pruefung'),
+                  ('resolved', 'Erledigt'),
+                  ('dismissed', 'Verworfen'),
+                  ('all', 'Alle'),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(s.$2, style: const TextStyle(fontSize: 11)),
+                      selected: _statusFilter == s.$1,
+                      onSelected: (_) {
+                        setState(() => _statusFilter = s.$1);
+                        _load();
+                      },
+                      selectedColor: widget.accent,
+                      backgroundColor: const Color(0xFF1A1A26),
+                      labelStyle: TextStyle(
+                        color: _statusFilter == s.$1
+                            ? Colors.white
+                            : Colors.white70,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Flexible(
+            child: _loading
+                ? const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                : _reports.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text('Keine Meldungen in dieser Kategorie.',
+                              style: TextStyle(color: Colors.white38)),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: _reports.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (ctx, i) {
+                          final r = _reports[i];
+                          final id = r['id']?.toString() ?? '';
+                          final type = r['type']?.toString() ?? 'report';
+                          final title =
+                              r['title']?.toString() ?? '(ohne Titel)';
+                          final body = r['body']?.toString() ?? '';
+                          final reporter = r['username']?.toString() ?? '?';
+                          final status = r['status']?.toString() ?? 'open';
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  _MiniPill(
+                                    label: type,
+                                    color: widget.accent,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(title,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13),
+                                        overflow: TextOverflow.ellipsis),
+                                  ),
+                                ]),
+                                if (body.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Text(body,
+                                      style: const TextStyle(
+                                          color: Colors.white70, fontSize: 12),
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis),
+                                ],
+                                const SizedBox(height: 6),
+                                Text(
+                                  'von @$reporter · ${_fmt(r['created_at']?.toString() ?? '')}',
+                                  style: const TextStyle(
+                                      color: Colors.white38, fontSize: 10),
+                                ),
+                                if (status == 'open' ||
+                                    status == 'reviewing') ...[
+                                  const SizedBox(height: 8),
+                                  Row(children: [
+                                    _ActionBtn(
+                                        Icons.check_circle_rounded,
+                                        'Erledigt',
+                                        Colors.green,
+                                        () => _resolve(id, 'resolved')),
+                                    const SizedBox(width: 8),
+                                    _ActionBtn(
+                                        Icons.cancel_rounded,
+                                        'Verwerfen',
+                                        Colors.white38,
+                                        () => _resolve(id, 'dismissed')),
+                                  ]),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Nutzer-Kachel ─────────────────────────────────────────────────────────
 class _UserTile extends StatelessWidget {
   final WorldUser user;
@@ -3521,6 +4189,9 @@ class _UserTile extends StatelessWidget {
   final VoidCallback? onGrantXp;
   // v98: Hard-Delete -- nur Root-Admin sieht den Button.
   final VoidCallback? onDelete;
+  // v115 Feature B/C: Verwarnen + interne Notizen.
+  final VoidCallback? onWarn;
+  final VoidCallback? onNotes;
   // Additiv (v5.44.3+): feinere Rollen-Auswahl via PopupMenuButton.
   // Bleibt optional, damit andere Caller nicht brechen.
   final void Function(String newRole)? onChangeRole;
@@ -3536,6 +4207,8 @@ class _UserTile extends StatelessWidget {
     required this.onDemote,
     this.onGrantXp,
     this.onDelete,
+    this.onWarn,
+    this.onNotes,
     this.onChangeRole,
   });
 
@@ -3643,6 +4316,21 @@ class _UserTile extends StatelessWidget {
                   color: Color(0xFF81C784),
                   tooltip: 'Profil ueber die Flutter-App erstellt',
                 ),
+              // v115: Gesperrt-Badge
+              if (user.isSuspended)
+                const _MiniPill(
+                  label: '🚫 Gesperrt',
+                  color: Colors.redAccent,
+                  tooltip: 'Dieser Nutzer ist aktuell gesperrt',
+                ),
+              // v115 (Feature B): Verwarnungs-Badge mit Count
+              if (user.warningCount > 0)
+                _MiniPill(
+                  label: '⚠️ ${user.warningCount}/3',
+                  color:
+                      user.warningCount >= 3 ? Colors.red : Colors.orangeAccent,
+                  tooltip: '${user.warningCount} Verwarnung(en)',
+                ),
             ],
           ),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -3743,6 +4431,14 @@ class _UserTile extends StatelessWidget {
                   if (AppRoles.canBanUsers(actorRole))
                     _ActionBtn(Icons.check_circle_outline_rounded, 'Entsperren',
                         Colors.teal, onUnban),
+                  // v115 (Feature B): Verwarnen -- Moderator+.
+                  if (onWarn != null && AppRoles.canBanUsers(actorRole))
+                    _ActionBtn(Icons.warning_amber_rounded, 'Verwarnen',
+                        Colors.orangeAccent, onWarn!),
+                  // v115 (Feature C): Interne Notizen -- Moderator+.
+                  if (onNotes != null && AppRoles.canViewUserList(actorRole))
+                    _ActionBtn(Icons.sticky_note_2_rounded, 'Notizen',
+                        const Color(0xFF9575CD), onNotes!),
                   if (onGrantXp != null)
                     _ActionBtn(Icons.auto_awesome_rounded, 'XP vergeben',
                         const Color(0xFFFFC107), onGrantXp!),
@@ -7656,6 +8352,40 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                     selected: _filterRange == r.$1,
                     onSelected: (_) => setState(() => _filterRange = r.$1),
                     selectedColor: widget.accentBright,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // v115 (Feature F): Kategorie-Schnellfilter. Setzt _filterAction auf
+        // einen Substring, der via .contains() mehrere Aktionstypen matcht
+        // (z.B. 'role' -> role_promote + role_change_explicit).
+        SizedBox(
+          height: 32,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            children: [
+              for (final c in const [
+                ('all', '📋 Alle'),
+                ('role', '🛡️ Rollen'),
+                ('ban', '🚫 Bans'),
+                ('warning', '⚠️ Verwarnungen'),
+                ('message', '💬 Nachrichten'),
+                ('xp', '✨ XP'),
+              ])
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(c.$2, style: const TextStyle(fontSize: 10)),
+                    selected: _filterAction == c.$1,
+                    onSelected: (_) => setState(() => _filterAction = c.$1),
+                    selectedColor: widget.accentBright,
+                    backgroundColor: const Color(0xFF1A1A26),
+                    labelStyle: TextStyle(
+                      color:
+                          _filterAction == c.$1 ? Colors.black : Colors.white70,
+                    ),
                   ),
                 ),
             ],

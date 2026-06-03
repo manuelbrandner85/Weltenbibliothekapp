@@ -373,6 +373,7 @@ class WorldAdminService {
           lastSeenAt: hasLastSeen ? u['last_seen_at'] as String? : null,
           legacyUserId: legacy,
           isSuspended: u['is_banned'] as bool? ?? false,
+          warningCount: (u['warning_count'] as num?)?.toInt() ?? 0,
         )..world =
             (u['world'] as String?) ?? (u['world_preference'] as String?);
       }).toList();
@@ -653,6 +654,8 @@ class WorldUser {
   // 🔑 InvisibleAuth legacy ID (client-generated `user_<ts>_<rand>`).
   // null wenn User ueber Supabase Auth (Web) registriert wurde.
   final String? legacyUserId;
+  // v115: Anzahl Verwarnungen (aus admin_warnings-Aggregat im Worker).
+  final int warningCount;
 
   WorldUser({
     required this.profileId,
@@ -668,6 +671,7 @@ class WorldUser {
     this.suspensionReason,
     this.lastSeenAt,
     this.legacyUserId,
+    this.warningCount = 0,
   });
 
   factory WorldUser.fromJson(Map<String, dynamic> json) {
@@ -698,6 +702,7 @@ class WorldUser {
       lastSeenAt:
           json['last_seen_at'] as String? ?? json['lastSeenAt'] as String?,
       legacyUserId: legacy,
+      warningCount: (json['warning_count'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -1324,6 +1329,159 @@ extension WorldAdminServiceV162 on WorldAdminService {
         debugPrint('❌ Error fetching user profile: $e');
       }
       throw Exception('Failed to fetch user profile: $e');
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // v115 Feature B: Verwarnungen
+  // ════════════════════════════════════════════════════════════
+
+  /// Liefert alle Verwarnungen eines Users. Returns leere Liste bei Fehler.
+  static Future<List<Map<String, dynamic>>> getWarnings(String userId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/users/$userId/warnings');
+      final list = (data['warnings'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ getWarnings: ${e.statusCode} ${e.bodySnippet}');
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getWarnings: $e');
+      return const [];
+    }
+  }
+
+  /// Verwarnt einen User. Bei der 3. Verwarnung erfolgt automatischer Ban.
+  /// Returns { success, warning_count, auto_banned } oder null bei Fehler.
+  static Future<Map<String, dynamic>?> warnUser({
+    required String userId,
+    required String reason,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/warn',
+        body: {'reason': reason},
+      );
+      AdminApiClient.instance.invalidateCache('/api/admin/users');
+      return data;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ warnUser: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ warnUser: $e');
+      return null;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // v115 Feature C: Admin-Notizen
+  // ════════════════════════════════════════════════════════════
+
+  /// Liefert alle internen Notizen zu einem User.
+  static Future<List<Map<String, dynamic>>> getNotes(String userId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/users/$userId/notes');
+      final list = (data['notes'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ getNotes: ${e.statusCode} ${e.bodySnippet}');
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getNotes: $e');
+      return const [];
+    }
+  }
+
+  /// Fuegt eine interne Notiz zu einem User hinzu.
+  static Future<bool> addNote({
+    required String userId,
+    required String note,
+  }) async {
+    try {
+      await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/notes',
+        body: {'note': note},
+      );
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ addNote: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ addNote: $e');
+      return false;
+    }
+  }
+
+  /// Loescht eine interne Notiz.
+  static Future<bool> deleteNote({
+    required String userId,
+    required String noteId,
+  }) async {
+    try {
+      await AdminApiClient.instance
+          .deleteJson('/api/admin/users/$userId/notes/$noteId');
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ deleteNote: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ deleteNote: $e');
+      return false;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // v115 Feature E: Moderations-Queue (User-Reports)
+  // ════════════════════════════════════════════════════════════
+
+  /// Liefert offene User-Reports + Counts. status: open|reviewing|resolved|
+  /// dismissed|all. Returns { reports, counts, by_type } oder null bei Fehler.
+  static Future<Map<String, dynamic>?> getReports({
+    String status = 'open',
+    int limit = 50,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/reports?status=$status&limit=$limit');
+      return data;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ getReports: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getReports: $e');
+      return null;
+    }
+  }
+
+  /// Setzt den Status eines Reports (open|reviewing|resolved|dismissed).
+  static Future<bool> updateReport({
+    required String reportId,
+    required String status,
+    String? resolutionNote,
+  }) async {
+    try {
+      await AdminApiClient.instance.patchJson(
+        '/api/admin/reports/$reportId',
+        body: {
+          'status': status,
+          if (resolutionNote != null) 'resolution_note': resolutionNote,
+        },
+      );
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ updateReport: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ updateReport: $e');
+      return false;
     }
   }
 }
