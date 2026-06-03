@@ -3541,6 +3541,60 @@ export default {
         return jsonResponse({ success: res.ok });
       }
 
+      // ── GET /api/account/identity-lookup ────────────────────────────
+      // Auto-Fill: findet zu Vor+Nachname den bereits hinterlegten Username.
+      // Zusaetzlich Blacklist-Vorabpruefung fuer die Registrierung.
+      // Query: firstName, lastName [, username, birthDate, birthPlace]
+      if (method === 'GET' && path === '/api/account/identity-lookup') {
+        const firstName = (url.searchParams.get('firstName') || '').trim();
+        const lastName = (url.searchParams.get('lastName') || '').trim();
+        const username = (url.searchParams.get('username') || '').trim();
+        const birthDate = (url.searchParams.get('birthDate') || '').trim();
+        const birthPlace = (url.searchParams.get('birthPlace') || '').trim();
+        const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+        let matchedUsername = null;
+        let matchedWorld = null;
+        if (fullName.length >= 3) {
+          try {
+            // Case-insensitive Exakt-Match auf full_name.
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?full_name=ilike.${encodeURIComponent(fullName)}` +
+                `&select=username,world&limit=1`,
+              { headers: pubHeaders });
+            if (r.ok) {
+              const rows = await r.json().catch(() => []);
+              if (Array.isArray(rows) && rows.length > 0) {
+                matchedUsername = rows[0].username || null;
+                matchedWorld = rows[0].world || null;
+              }
+            }
+          } catch (_) {}
+        }
+
+        // Blacklist-Check (geloeschte Identitaet).
+        let blacklisted = false;
+        let reactivationStatus = null;
+        if (fullName.length >= 3 || username.length >= 3) {
+          const hit = await findBlacklistedIdentity(pubHeaders, {
+            username: username || matchedUsername,
+            fullName, birthDate, birthPlace,
+          });
+          if (hit) {
+            blacklisted = true;
+            reactivationStatus = hit.reactivation_status || 'blocked';
+          }
+        }
+
+        return jsonResponse({
+          success: true,
+          matched_username: matchedUsername,
+          matched_world: matchedWorld,
+          blacklisted,
+          reactivation_status: reactivationStatus,
+        });
+      }
+
       // ── GET /api/account/restrictions?userId=X  (eigene Sperren) ─────
       if (method === 'GET' && path === '/api/account/restrictions') {
         const uid = url.searchParams.get('userId');
@@ -4064,6 +4118,10 @@ export default {
           // v5.44.7 KEINE Filterung mehr nach role='system' weil das echte
           // User mit administrativen Rollen ausschloss. NUR System-Profile
           // (id 00000000-...) bleiben gefiltert.
+          // v117: 'source' wird server-seitig bestimmt -- legacy_user_id
+          // vorhanden = App (InvisibleAuth), sonst = Web (Supabase-Auth).
+          // Frueher riet der Client anhand der id-Form, aber profiles.id ist
+          // IMMER eine UUID -> dadurch wurde JEDER als 'web' angezeigt.
           const filtered = list
             .filter(u => !(u.id || '').startsWith('00000000-'))
             .map(u => ({
@@ -4082,13 +4140,63 @@ export default {
               xp: u.xp || 0,
               full_name: u.full_name || null,
               warning_count: warnCounts[u.id] || 0,
+              source: (u.legacy_user_id && String(u.legacy_user_id).length > 0)
+                ? 'app' : 'web',
             }));
+
+          // v117: Genehmigte Web-Zugangs-Antraege (web_access_requests) als
+          // Web-User mit anzeigen. Diese registrieren sich ueber die Web-App
+          // und haben (noch) keine profiles-Zeile -> tauchten bisher gar
+          // nicht im Dashboard auf. is_web_only=true markiert sie, damit die
+          // UI weiss dass User-Aktionen (Ban/Delete) hier nicht greifen.
+          let webUsers = [];
+          try {
+            const profileUsernames = new Set(
+              list.map(u => (u.username || '').toLowerCase()).filter(Boolean));
+            const webRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/web_access_requests?status=eq.approved` +
+                `&select=id,display_name,requested_at,last_login_at&order=requested_at.desc&limit=1000`,
+              { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } });
+            if (webRes.ok) {
+              const webRows = await webRes.json().catch(() => []);
+              webUsers = (Array.isArray(webRows) ? webRows : [])
+                // Wer schon ein echtes Profil mit gleichem Namen hat, nicht doppeln.
+                .filter(w => !profileUsernames.has((w.display_name || '').toLowerCase()))
+                .map(w => ({
+                  profile_id: w.id,
+                  user_id: w.id,
+                  legacy_user_id: null,
+                  username: w.display_name || '(Web-User)',
+                  display_name: w.display_name || '',
+                  role: 'user',
+                  is_banned: false,
+                  avatar_url: null,
+                  avatar_emoji: null,
+                  created_at: w.requested_at || '',
+                  world: null,
+                  last_seen_at: w.last_login_at || null,
+                  xp: 0,
+                  full_name: null,
+                  warning_count: 0,
+                  source: 'web',
+                  is_web_only: true,
+                }));
+            }
+          } catch (_) { /* best-effort */ }
+
+          const merged = [...filtered, ...webUsers];
           return jsonResponse({
             success: true,
-            users: filtered,
-            total: filtered.length,
+            users: merged,
+            total: merged.length,
             total_in_db: totalHeader,
-            debug: { loaded: list.length, filtered_out: list.length - filtered.length },
+            debug: {
+              loaded: list.length,
+              profiles: filtered.length,
+              web_only: webUsers.length,
+              app: filtered.filter(u => u.source === 'app').length,
+              web: filtered.filter(u => u.source === 'web').length,
+            },
           });
         } catch (e) { return errorResponse(`Users-Fehler: ${e.message}`); }
       }
