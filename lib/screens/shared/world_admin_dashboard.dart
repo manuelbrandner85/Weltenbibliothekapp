@@ -8,7 +8,7 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart'
-    show RealtimeChannel, PostgresChangeEvent;
+    show RealtimeChannel, PostgresChangeEvent, Supabase;
 
 import '../../config/api_config.dart';
 import '../../core/constants/roles.dart';
@@ -2464,40 +2464,8 @@ class _UsersTabState extends State<_UsersTab> {
                 ),
               ),
               const SizedBox(height: 6),
-              // Source filter (Web / App) + Sort-Dropdown
+              // Sort-Dropdown (Source-Filter entfernt -- bei 35 Nutzern nicht noetig)
               Row(children: [
-                _ToggleChip(
-                  label: 'Alle',
-                  selected: _sourceFilter == 'all',
-                  accent: widget.accent,
-                  accentBright: widget.accentBright,
-                  onTap: () => setState(() {
-                    _sourceFilter = 'all';
-                    _applyFilter();
-                  }),
-                ),
-                const SizedBox(width: 6),
-                _ToggleChip(
-                  label: '🌐 Web',
-                  selected: _sourceFilter == 'web',
-                  accent: widget.accent,
-                  accentBright: widget.accentBright,
-                  onTap: () => setState(() {
-                    _sourceFilter = 'web';
-                    _applyFilter();
-                  }),
-                ),
-                const SizedBox(width: 6),
-                _ToggleChip(
-                  label: '📱 App',
-                  selected: _sourceFilter == 'app',
-                  accent: widget.accent,
-                  accentBright: widget.accentBright,
-                  onTap: () => setState(() {
-                    _sourceFilter = 'app';
-                    _applyFilter();
-                  }),
-                ),
                 const Spacer(),
                 // Sort-Dropdown
                 Container(
@@ -6054,7 +6022,7 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
   void initState() {
     super.initState();
     // v103 Phase 4d: 4. Sub-Tab fuer Community-Post-Reports.
-    _ctrl = TabController(length: 4, vsync: this);
+    _ctrl = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -6077,12 +6045,9 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
           labelStyle:
               const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
           tabs: const [
-            Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Progress'),
-            Tab(
-                icon: Icon(Icons.auto_awesome_rounded, size: 16),
-                text: 'Spirit'),
+            Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Fortschritt'),
             Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Editor'),
-            Tab(icon: Icon(Icons.report_rounded, size: 16), text: 'Reports'),
+            Tab(icon: Icon(Icons.report_rounded, size: 16), text: 'Meldungen'),
           ],
         ),
       ),
@@ -6091,8 +6056,6 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
           controller: _ctrl,
           children: [
             _ModuleProgressTab(
-                accent: widget.accent, accentBright: widget.accentBright),
-            _SpiritStatsTab(
                 accent: widget.accent, accentBright: widget.accentBright),
             _ModuleEditorTab(
                 accent: widget.accent, accentBright: widget.accentBright),
@@ -7476,6 +7439,64 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
     }
   }
 
+  Future<void> _clearHistory() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Verlauf leeren',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+            'Alle gesendeten Broadcasts aus dem Verlauf loeschen?\nDie Nachrichten wurden bereits zugestellt.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Leeren', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      final adminHeaders = await AdminAuthService.instance.headers();
+      final res = await http
+          .delete(
+            Uri.parse('${ApiConfig.workerUrl}/api/admin/push/history'),
+            headers: adminHeaders,
+          )
+          .timeout(const Duration(seconds: 15));
+      if (mounted) {
+        if (res.statusCode == 200) {
+          setState(() => _history = []);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text('Verlauf geleert'),
+            backgroundColor: widget.accent,
+          ));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Fehler ${res.statusCode}'),
+            backgroundColor: Colors.redAccent,
+          ));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Netzwerkfehler'),
+          backgroundColor: Colors.redAccent,
+        ));
+      }
+    }
+  }
+
   Future<void> _send() async {
     if (_title.text.trim().isEmpty || _body.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -7653,13 +7674,20 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
           ),
           const SizedBox(height: 18),
           Row(children: [
-            Text('VERLAUF · letzte ${_history.length}',
+            Text('VERLAUF · ${_history.length} Broadcasts',
                 style: TextStyle(
                     color: widget.accentBright,
                     fontSize: 11,
                     letterSpacing: 2,
                     fontWeight: FontWeight.bold)),
             const Spacer(),
+            if (_history.isNotEmpty)
+              TextButton.icon(
+                onPressed: _clearHistory,
+                icon: const Icon(Icons.delete_sweep_rounded, size: 14),
+                label: const Text('Leeren', style: TextStyle(fontSize: 11)),
+                style: TextButton.styleFrom(foregroundColor: Colors.red.shade300),
+              ),
             IconButton(
               icon: Icon(Icons.refresh, color: widget.accent),
               onPressed: _loadHistory,

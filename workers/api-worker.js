@@ -3521,6 +3521,27 @@ export default {
         } catch (e) { return errorResponse(`Broadcast-Fehler: ${e.message}`); }
       }
 
+      // ── DELETE /api/admin/push/history  (Verlauf loeschen, nur Admin+) ──
+      if (method === 'DELETE' && path === '/api/admin/push/history') {
+        try {
+          if (!['admin', 'root_admin'].includes(caller.role)) {
+            return errorResponse('Keine Berechtigung', 403);
+          }
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+          const svcH = { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` };
+          // Loescht alle Eintraege mit source=admin_broadcast aus der Queue
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue?data->>source=eq.admin_broadcast`,
+            { method: 'DELETE', headers: svcH },
+          );
+          if (!res.ok && res.status !== 204) {
+            return errorResponse(`Loeschen fehlgeschlagen: ${res.status}`);
+          }
+          await logAudit(env, caller.username, 'push_history_clear', null, '', null, {});
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`History-Delete-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/push/history  (letzte 50 broadcast-Aktionen) ──
       if (method === 'GET' && path === '/api/admin/push/history') {
         try {
