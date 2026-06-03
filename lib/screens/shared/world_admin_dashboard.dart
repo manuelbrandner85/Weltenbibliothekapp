@@ -1680,7 +1680,8 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _promote(WorldUser u) async {
-    final targetRole = widget.admin.isRootAdmin ? 'root_admin' : 'admin';
+    // Always target 'admin'; root_admin can only be set via manual DB/dedicated action.
+    const targetRole = 'admin';
     final confirmed = await _confirm(
       'Zum Admin befoerdern',
       'Soll @${u.username} wirklich befördert werden?\n\nNeue Rolle: ${_prettyRole(targetRole)}',
@@ -2834,7 +2835,7 @@ class _UsersTabState extends State<_UsersTab> {
         label: 'Befoerdern (Bulk)',
         action: (u) async => WorldAdminServiceV162.changeUserRole(
           userId: u.userId,
-          newRole: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+          newRole: 'admin',
           adminUsername: widget.admin.username,
         ),
       );
@@ -2867,8 +2868,7 @@ class _UsersTabState extends State<_UsersTab> {
   // roten Bestaetigungs-Dialog braucht.
   Future<void> _bulkDelete() async {
     if (!widget.admin.isRootAdmin) return;
-    final targets =
-        _all.where((u) => _selectedIds.contains(u.userId)).toList();
+    final targets = _all.where((u) => _selectedIds.contains(u.userId)).toList();
     if (targets.isEmpty) return;
     final confirmed = await _confirm(
       'Nutzer loeschen',
@@ -2943,6 +2943,10 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _viewDetail(WorldUser u) async {
+    if (u.isWebOnly) {
+      _toast('Noch kein vollstaendiges Profil -- Detail nicht verfuegbar.');
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -5238,7 +5242,7 @@ class _UserTile extends StatelessWidget {
             ],
           ),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (onChangeRole != null)
+            if (onChangeRole != null && !user.isWebOnly)
               PopupMenuButton<String>(
                 tooltip: 'Rolle aendern',
                 color: const Color(0xFF12121E),
@@ -5318,48 +5322,59 @@ class _UserTile extends StatelessWidget {
                 _InfoRow(Icons.fingerprint_rounded,
                     'ID: ${user.userId.isEmpty ? "Unbekannt" : user.userId}'),
                 const SizedBox(height: 12),
-                Wrap(spacing: 8, runSpacing: 8, children: [
-                  // v100: Promote/Demote nur fuer Admin+ (canPromoteDemote).
-                  if (AppRoles.canPromoteDemote(actorRole) && !user.isAdmin)
-                    _ActionBtn(Icons.arrow_upward_rounded, 'Befoerdern',
-                        Colors.green, onPromote),
-                  if (AppRoles.canPromoteDemote(actorRole) &&
-                      user.isAdmin &&
-                      !user.isRootAdmin)
-                    _ActionBtn(Icons.arrow_downward_rounded, 'Degradieren',
-                        Colors.orange, onDemote),
-                  // Ban/Unban fuer Moderator+.
-                  if (AppRoles.canBanUsers(actorRole))
-                    _ActionBtn(
-                        Icons.block_rounded, 'Sperren', Colors.red, onBan),
-                  if (AppRoles.canBanUsers(actorRole))
-                    _ActionBtn(Icons.check_circle_outline_rounded, 'Entsperren',
-                        Colors.teal, onUnban),
-                  // v117: Granulare Bereichs-Sperren (Chat/Live/XP ...).
-                  if (onRestrict != null && AppRoles.canBanUsers(actorRole))
-                    _ActionBtn(Icons.tune_rounded, 'Bereiche',
-                        const Color(0xFFEF6C9A), onRestrict!),
-                  // v115 (Feature B): Verwarnen -- Moderator+.
-                  if (onWarn != null && AppRoles.canBanUsers(actorRole))
-                    _ActionBtn(Icons.warning_amber_rounded, 'Verwarnen',
-                        Colors.orangeAccent, onWarn!),
-                  // v115 (Feature C): Interne Notizen -- Moderator+.
-                  if (onNotes != null && AppRoles.canViewUserList(actorRole))
-                    _ActionBtn(Icons.sticky_note_2_rounded, 'Notizen',
-                        const Color(0xFF9575CD), onNotes!),
-                  if (onModuleAccess != null && AppRoles.canBanUsers(actorRole))
-                    _ActionBtn(Icons.school_rounded, 'Module',
-                        const Color(0xFF26C6DA), onModuleAccess!),
-                  if (onGrantXp != null)
-                    _ActionBtn(Icons.auto_awesome_rounded, 'XP vergeben',
-                        const Color(0xFFFFC107), onGrantXp!),
-                  if (onViewDetail != null)
-                    _ActionBtn(Icons.person_search_rounded, 'Detail',
-                        const Color(0xFF42A5F5), onViewDetail!),
-                  if (onDelete != null)
-                    _ActionBtn(Icons.delete_forever_rounded, 'Loeschen',
-                        Colors.redAccent, onDelete!),
-                ]),
+                if (user.isWebOnly)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Web-Zugangs-Antrag -- noch kein vollstaendiges Profil erstellt.\nAktionen sind nicht verfuegbar.',
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                else
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    // v100: Promote/Demote nur fuer Admin+ (canPromoteDemote).
+                    if (AppRoles.canPromoteDemote(actorRole) && !user.isAdmin)
+                      _ActionBtn(Icons.arrow_upward_rounded, 'Befoerdern',
+                          Colors.green, onPromote),
+                    if (AppRoles.canPromoteDemote(actorRole) &&
+                        user.isAdmin &&
+                        !user.isRootAdmin)
+                      _ActionBtn(Icons.arrow_downward_rounded, 'Degradieren',
+                          Colors.orange, onDemote),
+                    // Ban/Unban fuer Moderator+.
+                    if (AppRoles.canBanUsers(actorRole))
+                      _ActionBtn(
+                          Icons.block_rounded, 'Sperren', Colors.red, onBan),
+                    if (AppRoles.canBanUsers(actorRole))
+                      _ActionBtn(Icons.check_circle_outline_rounded,
+                          'Entsperren', Colors.teal, onUnban),
+                    // v117: Granulare Bereichs-Sperren (Chat/Live/XP ...).
+                    if (onRestrict != null && AppRoles.canBanUsers(actorRole))
+                      _ActionBtn(Icons.tune_rounded, 'Bereiche',
+                          const Color(0xFFEF6C9A), onRestrict!),
+                    // v115 (Feature B): Verwarnen -- Moderator+.
+                    if (onWarn != null && AppRoles.canBanUsers(actorRole))
+                      _ActionBtn(Icons.warning_amber_rounded, 'Verwarnen',
+                          Colors.orangeAccent, onWarn!),
+                    // v115 (Feature C): Interne Notizen -- Moderator+.
+                    if (onNotes != null && AppRoles.canViewUserList(actorRole))
+                      _ActionBtn(Icons.sticky_note_2_rounded, 'Notizen',
+                          const Color(0xFF9575CD), onNotes!),
+                    if (onModuleAccess != null &&
+                        AppRoles.canBanUsers(actorRole))
+                      _ActionBtn(Icons.school_rounded, 'Module',
+                          const Color(0xFF26C6DA), onModuleAccess!),
+                    if (onGrantXp != null)
+                      _ActionBtn(Icons.auto_awesome_rounded, 'XP vergeben',
+                          const Color(0xFFFFC107), onGrantXp!),
+                    if (onViewDetail != null)
+                      _ActionBtn(Icons.person_search_rounded, 'Detail',
+                          const Color(0xFF42A5F5), onViewDetail!),
+                    if (onDelete != null)
+                      _ActionBtn(Icons.delete_forever_rounded, 'Loeschen',
+                          Colors.redAccent, onDelete!),
+                  ]),
               ]),
             ),
           ],
@@ -11089,7 +11104,13 @@ class _RestrictionSheetState extends State<_RestrictionSheet> {
   int _durationIdx = 2; // default 24h
   bool _all = false;
 
-  static const _durLabels = ['1 Std', '24 Std', '7 Tage', '30 Tage', 'Permanent'];
+  static const _durLabels = [
+    '1 Std',
+    '24 Std',
+    '7 Tage',
+    '30 Tage',
+    'Permanent'
+  ];
   static const _durHours = [1, 24, 168, 720, 0];
 
   @override
@@ -11105,7 +11126,8 @@ class _RestrictionSheetState extends State<_RestrictionSheet> {
   }
 
   Future<void> _load() async {
-    final rows = await WorldAdminServiceV162.getRestrictions(widget.user.userId);
+    final rows =
+        await WorldAdminServiceV162.getRestrictions(widget.user.userId);
     if (!mounted) return;
     setState(() {
       _active.clear();
@@ -11176,8 +11198,8 @@ class _RestrictionSheetState extends State<_RestrictionSheet> {
 
   void _toast(String m) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(m), duration: const Duration(seconds: 2)));
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(m), duration: const Duration(seconds: 2)));
   }
 
   @override
@@ -11279,8 +11301,7 @@ class _RestrictionSheetState extends State<_RestrictionSheet> {
                             label: Text(_durLabels[i],
                                 style: const TextStyle(fontSize: 11)),
                             selected: _durationIdx == i,
-                            onSelected: (_) =>
-                                setState(() => _durationIdx = i),
+                            onSelected: (_) => setState(() => _durationIdx = i),
                             selectedColor: widget.accent.withValues(alpha: 0.4),
                             backgroundColor: const Color(0xFF15111F),
                             labelStyle: TextStyle(
@@ -11327,14 +11348,11 @@ class _RestrictionSheetState extends State<_RestrictionSheet> {
     final active = _active.containsKey('all');
     return Container(
       decoration: BoxDecoration(
-        color: _all
-            ? Colors.red.withValues(alpha: 0.14)
-            : const Color(0xFF15111F),
+        color:
+            _all ? Colors.red.withValues(alpha: 0.14) : const Color(0xFF15111F),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: _all
-                ? Colors.red.withValues(alpha: 0.5)
-                : Colors.white12),
+            color: _all ? Colors.red.withValues(alpha: 0.5) : Colors.white12),
       ),
       child: SwitchListTile(
         value: _all,
@@ -11342,7 +11360,9 @@ class _RestrictionSheetState extends State<_RestrictionSheet> {
         activeColor: Colors.red,
         title: const Text('🚫 Vollsperrung (alles)',
             style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14)),
         subtitle: Text(
           active
               ? 'Aktiv - ${_expiryLabel(_active['all']!)}'
@@ -11368,9 +11388,8 @@ class _RestrictionSheetState extends State<_RestrictionSheet> {
             : const Color(0xFF12101C),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-            color: active
-                ? Colors.orange.withValues(alpha: 0.4)
-                : Colors.white10),
+            color:
+                active ? Colors.orange.withValues(alpha: 0.4) : Colors.white10),
       ),
       child: ListTile(
         dense: true,
@@ -11379,7 +11398,8 @@ class _RestrictionSheetState extends State<_RestrictionSheet> {
             style: const TextStyle(color: Colors.white, fontSize: 13)),
         subtitle: active
             ? Text('Aktiv - ${_expiryLabel(_active[key]!)}',
-                style: const TextStyle(color: Colors.orangeAccent, fontSize: 10))
+                style:
+                    const TextStyle(color: Colors.orangeAccent, fontSize: 10))
             : null,
         trailing: active
             ? TextButton(
@@ -11521,8 +11541,7 @@ class _AccountRequestsSheetState extends State<_AccountRequestsSheet> {
             Expanded(
               child: _loading
                   ? Center(
-                      child:
-                          CircularProgressIndicator(color: widget.accent))
+                      child: CircularProgressIndicator(color: widget.accent))
                   : _tab == 0
                       ? _buildRequests(scroll)
                       : _buildBlacklist(scroll),
@@ -11539,8 +11558,8 @@ class _AccountRequestsSheetState extends State<_AccountRequestsSheet> {
         onSelected: (_) => setState(() => _tab = idx),
         selectedColor: widget.accent.withValues(alpha: 0.4),
         backgroundColor: const Color(0xFF15111F),
-        labelStyle: TextStyle(
-            color: _tab == idx ? Colors.white : Colors.white54),
+        labelStyle:
+            TextStyle(color: _tab == idx ? Colors.white : Colors.white54),
       );
 
   Widget _buildRequests(ScrollController scroll) {
@@ -11659,8 +11678,8 @@ class _AccountRequestsSheetState extends State<_AccountRequestsSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('@${b['username_lower'] ?? '?'}',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 13)),
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 13)),
                   const SizedBox(height: 2),
                   Text('Status: $status',
                       style: TextStyle(color: statusColor, fontSize: 10)),
