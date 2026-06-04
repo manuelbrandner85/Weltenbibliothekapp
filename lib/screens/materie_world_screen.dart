@@ -8,6 +8,7 @@ import 'materie/community_tab_modern.dart';
 import 'materie/materie_karte_tab_pro.dart';
 import 'shared/unified_knowledge_tab.dart';
 import 'shared/stats_dashboard_screen.dart';
+import 'shared/unified_world_map_screen.dart';
 import '../widgets/admin_dashboard_button.dart';
 import '../services/haptic_service.dart';
 import '../features/admin/state/admin_state.dart';
@@ -156,6 +157,21 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
         onPressed: () => GlobalSearchSheet.open(context),
       ),
       const NotificationCenterButton(accent: Color(0xFF2979FF)),
+      // Vier-Welten-Karte (Erweiterung 3): gemeinsame Layer-Karte
+      IconButton(
+        tooltip: 'Vier-Welten-Karte',
+        icon: const Icon(Icons.layers_outlined, color: Color(0xFF7DA7FF)),
+        iconSize: 22,
+        onPressed: () {
+          HapticService.selectionClick();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const UnifiedWorldMapScreen(world: 'materie'),
+            ),
+          );
+        },
+      ),
       // Portal-Wechsel
       IconButton(
         icon: const Icon(Icons.swap_horiz, color: Color(0xFF7DA7FF)),

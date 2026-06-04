@@ -17,6 +17,7 @@ import '../../widgets/cinematic/wb_floating_nav.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
 import '../../widgets/cinematic/wb_ambient_particles.dart';
 import '../profile_settings_screen.dart';
+import '../shared/unified_world_map_screen.dart';
 import '../../widgets/global_search_sheet.dart';
 import '../../widgets/notification_center_button.dart';
 
@@ -156,6 +157,21 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
         onPressed: () => GlobalSearchSheet.open(context),
       ),
       const NotificationCenterButton(accent: Color(0xFFC9A84C)),
+      // Vier-Welten-Karte (Erweiterung 3): gemeinsame Layer-Karte
+      IconButton(
+        tooltip: 'Vier-Welten-Karte',
+        icon: const Icon(Icons.layers_outlined, color: Color(0xFFC9A84C)),
+        iconSize: 22,
+        onPressed: () {
+          HapticService.selectionClick();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const UnifiedWorldMapScreen(world: 'vorhang'),
+            ),
+          );
+        },
+      ),
       // Portal-Wechsel
       IconButton(
         icon: const Icon(Icons.swap_horiz, color: Color(0xFFC9A84C)),

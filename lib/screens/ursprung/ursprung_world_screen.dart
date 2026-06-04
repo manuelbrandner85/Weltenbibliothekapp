@@ -8,6 +8,7 @@ import 'ursprung_community_tab.dart';
 import 'ursprung_map_tab.dart';
 import '../shared/unified_knowledge_tab.dart';
 import '../shared/stats_dashboard_screen.dart';
+import '../shared/unified_world_map_screen.dart';
 import '../../widgets/admin_dashboard_button.dart';
 import '../../services/haptic_service.dart';
 import '../../features/admin/state/admin_state.dart';
@@ -158,6 +159,21 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
         onPressed: () => GlobalSearchSheet.open(context),
       ),
       const NotificationCenterButton(accent: Color(0xFF00D4AA)),
+      // Vier-Welten-Karte (Erweiterung 3): gemeinsame Layer-Karte
+      IconButton(
+        tooltip: 'Vier-Welten-Karte',
+        icon: const Icon(Icons.layers_outlined, color: Color(0xFF00D4AA)),
+        iconSize: 22,
+        onPressed: () {
+          HapticService.selectionClick();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const UnifiedWorldMapScreen(world: 'ursprung'),
+            ),
+          );
+        },
+      ),
       // Portal-Wechsel
       IconButton(
         icon: const Icon(Icons.swap_horiz, color: Color(0xFF00D4AA)),
