@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
+import '../../services/cross_world_topics_service.dart';
+import 'vier_linsen_screen.dart';
 import 'knowledge_reader_mode.dart';
 import '../wissen/cinematic_book_reader_screen.dart'; // v5.44.6 Buecher
 import '../../widgets/wissen/bookshelf_3d_view.dart'; // v5.44.7 Bookshelf
@@ -30,6 +32,8 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
 
   List<KnowledgeEntry> _all = [];
   List<KnowledgeEntry> _filtered = [];
+  // Erweiterung 2 "Vier Linsen": cross-world topics (world-agnostic).
+  List<CrossWorldTopic> _crossTopics = [];
   Map<String, int> _stats = {};
   bool _isLoading = true;
   String _cat = 'all';
@@ -111,10 +115,12 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
     try {
       final entries = await _svc.getAllEntries(world: widget.world);
       final stats = await _svc.getStatistics(widget.world);
+      final crossTopics = await CrossWorldTopicsService.instance.fetch();
       if (mounted) {
         setState(() {
           _all = entries;
           _filtered = entries;
+          _crossTopics = crossTopics;
           _stats = stats;
           _isLoading = false;
         });
@@ -529,6 +535,12 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildViewModeBar()),
+          // Erweiterung 2: Vier-Linsen-Themen (welt-uebergreifend)
+          if (_crossTopics.isNotEmpty) ...[
+            SliverToBoxAdapter(
+                child: _sectionHeader('VIER LINSEN', Icons.lens_blur)),
+            SliverToBoxAdapter(child: _buildVierLinsenRow()),
+          ],
           // Featured horizontal row
           if (featured.isNotEmpty) ...[
             SliverToBoxAdapter(
@@ -599,6 +611,91 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
             onTap: () => setState(() => _bookshelfView = true),
           ),
         ],
+      ),
+    );
+  }
+
+  // Erweiterung 2: horizontal row of cross-world topics. Each card opens the
+  // "Vier Linsen" view -- the same topic seen through all four worlds.
+  Widget _buildVierLinsenRow() {
+    return SizedBox(
+      height: 124,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        itemCount: _crossTopics.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) {
+          final t = _crossTopics[i];
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => VierLinsenScreen(topic: t)),
+              );
+            },
+            child: Container(
+              width: 168,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFF0B0D1A),
+                border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                boxShadow: [
+                  BoxShadow(
+                      color: _primary.withValues(alpha: 0.12), blurRadius: 16),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(t.emoji ?? '🔆',
+                          style: const TextStyle(fontSize: 22)),
+                      const Spacer(),
+                      // Four small world dots hint at the four lenses.
+                      ...[
+                        const Color(0xFF3B82F6),
+                        const Color(0xFFA855F7),
+                        const Color(0xFFC9A84C),
+                        const Color(0xFF00D4AA),
+                      ].map((c) => Container(
+                            width: 7,
+                            height: 7,
+                            margin: const EdgeInsets.only(left: 3),
+                            decoration:
+                                BoxDecoration(color: c, shape: BoxShape.circle),
+                          )),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    t.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Vier Linsen ansehen',
+                    style: TextStyle(
+                      color: _primarySoft,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
