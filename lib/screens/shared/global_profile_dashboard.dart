@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/achievement_service.dart';
 import '../../services/gamification_service.dart';
+import '../../services/unified_knowledge_service.dart';
 import '../../services/user_service.dart';
 
 // dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
@@ -32,6 +33,32 @@ class GlobalProfileDashboard extends StatefulWidget {
 class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
   final _gam = GamificationService();
   final _ach = AchievementService();
+  final _knowledge = UnifiedKnowledgeService();
+
+  // Erweiterung 5 "Mein Pfad": read/open knowledge stats per world.
+  // Keyed by world -> {'total','read','unread',...}. Loaded async in initState.
+  final Map<String, Map<String, int>> _kStats = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadKnowledgeStats();
+  }
+
+  Future<void> _loadKnowledgeStats() async {
+    for (final w in GamificationService.allWorlds) {
+      try {
+        _kStats[w] = await _knowledge.getStatistics(w);
+      } catch (_) {
+        // Best-effort -- a missing stat just hides the read/open line.
+      }
+    }
+    if (mounted) setState(() {});
+  }
+
+  int get _totalRead => _kStats.values.fold(0, (s, m) => s + (m['read'] ?? 0));
+  int get _totalOpen =>
+      _kStats.values.fold(0, (s, m) => s + (m['unread'] ?? 0));
 
   static const _worldMeta = <String, _WorldMeta>{
     'materie':
@@ -64,7 +91,7 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Mein Fortschritt'),
+        title: const Text('Mein Pfad'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -128,7 +155,7 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
           ),
           const SizedBox(height: 16),
 
-          // ── Stat-Kacheln: Streak + Achievements ──
+          // ── Stat-Kacheln: Streak + Achievements + gelesene Inhalte ──
           Row(
             children: [
               Expanded(
@@ -148,8 +175,42 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
                   color: const Color(0xFFFFD54F),
                 ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _statTile(
+                  emoji: '📖',
+                  value: '$_totalRead',
+                  label: 'Gelesen',
+                  color: const Color(0xFF34D399),
+                ),
+              ),
             ],
           ),
+          const SizedBox(height: 10),
+          // Offene Themen ueber alle Welten (gesamt noch ungelesen).
+          if (_kStats.isNotEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Row(
+                children: [
+                  const Text('🧭', style: TextStyle(fontSize: 18)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Noch $_totalOpen offene Themen warten auf dich.',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 24),
 
           // ── Fortschritt pro Welt ──
@@ -177,9 +238,8 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: _ach.unlockedAchievements
-                  .map((a) => _achBadge(a))
-                  .toList(),
+              children:
+                  _ach.unlockedAchievements.map((a) => _achBadge(a)).toList(),
             ),
           ],
           const SizedBox(height: 40),
@@ -256,6 +316,22 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
               ],
             ),
           ),
+          // Erweiterung 5: gelesene Inhalte + offene Themen pro Welt.
+          if (_kStats[world] != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.menu_book_rounded,
+                    size: 13, color: meta.color.withValues(alpha: 0.8)),
+                const SizedBox(width: 6),
+                Text(
+                  'Gelesen ${_kStats[world]!['read'] ?? 0}/${_kStats[world]!['total'] ?? 0}'
+                  '  ·  ${_kStats[world]!['unread'] ?? 0} offen',
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -268,7 +344,8 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
