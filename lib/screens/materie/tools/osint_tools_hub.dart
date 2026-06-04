@@ -5,18 +5,25 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../../services/osint_history_service.dart'; // 🕰️ D1
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import 'ai_detector_tool.dart';
 import 'air_quality_screen.dart';
 import 'conflict_database_screen.dart';
 import 'country_compare_tool.dart';
+import 'crypto_tracker_tool.dart';
 import 'cyber_threat_feed_screen.dart';
+import 'data_leak_tool.dart';
+import 'domain_osint_tool.dart';
 import 'economic_indicators_screen.dart';
 import 'email_osint_tool.dart';
 import 'eu_parliament_tracker_screen.dart';
 import 'flight_tracker_screen.dart';
 import 'gdelt_tone_screen.dart';
+import 'geo_analysis_tool.dart';
+import 'image_analysis_tool.dart';
 import 'internet_outages_screen.dart';
 import 'ip_osint_tool.dart';
 import 'person_osint_tool.dart';
+import 'phone_osint_tool.dart';
 import 'power_network_explorer_screen.dart';
 import 'prediction_markets_screen.dart';
 import 'propaganda_compare_screen.dart';
@@ -319,6 +326,84 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
           'Provider. Indikator fuer staatliche Sperren oder grosse Infrastruktur-'
           'Stoerungen. Benoetigt CLOUDFLARE_RADAR_API_TOKEN als Wrangler-Secret.',
       customScreenBuilder: () => const InternetOutagesScreen(),
+    ),
+    // ── Gruppe C: Manuelle OSINT-Einzelabfragen ──────────────────────────────
+    _DbDef(
+      icon: Icons.domain_rounded,
+      label: 'Domain-Recherche',
+      sub: 'Registrar, Alter, DNS, Infos',
+      color: const Color(0xFF26C6DA),
+      url: '',
+      description:
+          'Domain eingeben -> Registrar, Erstellungsdatum, Nameserver und '
+          'weitere WHOIS-Daten. Nuetzlich um Fake-Seiten oder neue Domains zu identifizieren.',
+      customScreenBuilder: () => const DomainOsintTool(),
+    ),
+    _DbDef(
+      icon: Icons.phone_rounded,
+      label: 'Telefon-Recherche',
+      sub: 'Land, Provider, Nummerntyp',
+      color: const Color(0xFF66BB6A),
+      url: '',
+      description:
+          'Telefonnummer eingeben -> Land, Netzbetreiber, Nummerntyp (Mobil/'
+          'Festnetz) und Validierung. Reine Metadaten, keine Personen-Suche.',
+      customScreenBuilder: () => const PhoneOsintTool(),
+    ),
+    _DbDef(
+      icon: Icons.image_search_rounded,
+      label: 'Bild-Analyse',
+      sub: 'URL -> KI-Bild-Analyse',
+      color: const Color(0xFFAB47BC),
+      url: '',
+      description:
+          'Bild-URL eingeben -> KI-basierte Analyse des Bildinhalts (Objekte, '
+          'Szenen, Text). Hilfreich bei unbekannten Bildern oder Kontext-Checks.',
+      customScreenBuilder: () => const ImageAnalysisTool(),
+    ),
+    _DbDef(
+      icon: Icons.smart_toy_rounded,
+      label: 'KI-Detektor',
+      sub: 'Text auf KI-Generierung pruefen',
+      color: const Color(0xFF7E57C2),
+      url: '',
+      description:
+          'Text einfuegen -> Wahrscheinlichkeit dass er von einer KI (GPT, Claude '
+          'etc.) generiert wurde. Nuetzlich bei Fake-Artikeln oder KI-Propaganda.',
+      customScreenBuilder: () => const AiDetectorTool(),
+    ),
+    _DbDef(
+      icon: Icons.location_on_rounded,
+      label: 'Geo-Analyse',
+      sub: 'Koordinaten, Karten, Geolocation',
+      color: const Color(0xFFFF7043),
+      url: '',
+      description:
+          'Koordinaten oder Adresse eingeben -> Karte, Hoehe und weitere '
+          'geografische Metadaten. Hilfreich fuer Bild-Geolocalisierung.',
+      customScreenBuilder: () => const GeoAnalysisTool(),
+    ),
+    _DbDef(
+      icon: Icons.warning_amber_rounded,
+      label: 'Datenleck-Check',
+      sub: 'E-Mail in Datenlecks suchen',
+      color: const Color(0xFFEF5350),
+      url: '',
+      description:
+          'E-Mail-Adresse gegen bekannte Datenlecks pruefen (alternative Quelle). '
+          'Zeigt betroffene Dienste und Lecks. Ergaenzt den E-Mail Leak-Check.',
+      customScreenBuilder: () => const DataLeakTool(),
+    ),
+    _DbDef(
+      icon: Icons.currency_bitcoin_rounded,
+      label: 'Krypto-Tracker',
+      sub: 'Blockchain-Adresse analysieren',
+      color: const Color(0xFFFFB300),
+      url: '',
+      description:
+          'Bitcoin-, Ethereum- oder andere Blockchain-Adresse eingeben -> '
+          'Transaktionshistorie, Guthaben und bekannte Labels (Boersen, Scams).',
+      customScreenBuilder: () => const CryptoTrackerTool(),
     ),
   ];
 

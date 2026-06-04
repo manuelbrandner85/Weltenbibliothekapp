@@ -14,6 +14,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../utils/kaninchenbau_markdown_export.dart'; // 📄 C1
+import '../tools/eu_parliament_tracker_screen.dart';
+import '../tools/osint_tools_hub.dart';
+import '../tools/power_network_explorer_screen.dart';
+import '../tools/propaganda_compare_screen.dart';
+import '../tools/study_analyst_screen.dart';
+import '../tools/version_watcher_screen.dart';
+import '../tools/world_event_radar_screen.dart';
 import 'cards/abgeordnete_card.dart';
 import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
@@ -87,6 +94,15 @@ class _DossierItem {
   final int count;
   final IconData icon;
   const _DossierItem(this.label, this.count, this.icon);
+}
+
+/// One tile in the bottom tools quick-access section.
+class _BottomTool {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final Widget Function()? screenBuilder;
+  const _BottomTool(this.icon, this.title, this.color, this.screenBuilder);
 }
 
 class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
@@ -1290,12 +1306,146 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                         loading: s.relatedLoading,
                         onTap: _openThread,
                       )),
+                  const SizedBox(height: 24),
+                  _buildBottomToolsSection(),
                 ],
               ),
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildBottomToolsSection() {
+    // Quick-access tools shown at the bottom of every research thread so the
+    // user can immediately pivot to a manual tool without scrolling back up.
+    final tools = <_BottomTool>[
+      _BottomTool(Icons.hub_rounded, 'Power-Network', const Color(0xFFE53935),
+          () => const PowerNetworkExplorerScreen()),
+      _BottomTool(Icons.biotech_rounded, 'Studien-Analyst',
+          const Color(0xFF26C6DA), () => const StudyAnalystScreen()),
+      _BottomTool(Icons.history_rounded, 'Versions-Waechter',
+          const Color(0xFFFF7043), () => const VersionWatcherScreen()),
+      _BottomTool(Icons.how_to_vote_rounded, 'EU-Parlament',
+          const Color(0xFF2196F3), () => const EuParliamentTrackerScreen()),
+      _BottomTool(Icons.compare_rounded, 'Propaganda-Vgl.',
+          const Color(0xFFFF7043), () => const PropagandaCompareScreen()),
+      _BottomTool(Icons.public_rounded, 'Welt-Radar', const Color(0xFFEF5350),
+          () => const WorldEventRadarScreen()),
+      _BottomTool(Icons.insights_rounded, 'Medien-Ton', const Color(0xFFFF8F00),
+          null),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0000),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.manage_search_rounded,
+                size: 14, color: KbDesign.neonRed),
+            const SizedBox(width: 6),
+            const Text(
+              'WEITERFORSCHEN — WERKZEUGE',
+              style: TextStyle(
+                color: KbDesign.neonRed,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 3.0,
+            children: tools.map((t) {
+              return GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  if (t.screenBuilder != null) {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => t.screenBuilder!()));
+                  } else {
+                    Navigator.push(context,
+                        MaterialPageRoute(
+                            builder: (_) => const OsintToolsHub()));
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: t.color.withValues(alpha: 0.06),
+                    border: Border.all(
+                        color: t.color.withValues(alpha: 0.25), width: 1),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 6),
+                  child: Row(children: [
+                    Icon(t.icon, color: t.color, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        t.title,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ]),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const OsintToolsHub()));
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color: KbDesign.neonRed.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.arrow_forward_rounded,
+                      size: 13,
+                      color: KbDesign.neonRed.withValues(alpha: 0.7)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Alle 29 Werkzeuge anzeigen',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
