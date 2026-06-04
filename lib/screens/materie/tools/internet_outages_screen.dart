@@ -44,8 +44,8 @@ class _InternetOutagesScreenState extends State<InternetOutagesScreen> {
       _keyMissing = false;
     });
     try {
-      final uri = Uri.parse(
-          '${ApiConfig.workerUrl}/api/intel/outages?limit=40');
+      final uri =
+          Uri.parse('${ApiConfig.workerUrl}/api/intel/outages?limit=40');
       final resp = await http.get(uri).timeout(const Duration(seconds: 20));
       if (resp.statusCode != 200) throw Exception('HTTP ${resp.statusCode}');
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -55,10 +55,14 @@ class _InternetOutagesScreenState extends State<InternetOutagesScreen> {
       }
       final list = (data['outages'] as List?) ?? const [];
       if (!mounted) return;
-      setState(() => _outages =
-          list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
+      setState(() => _outages = list
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList());
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -115,7 +119,8 @@ class _InternetOutagesScreenState extends State<InternetOutagesScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const OsintSourceBanner(
             source: 'Dokumentierte Internet-Ausfaelle und Traffic-Anomalien '
                 'nach Land, Region oder Netz-Provider. Indikator fuer staatliche '
@@ -126,7 +131,8 @@ class _InternetOutagesScreenState extends State<InternetOutagesScreen> {
             ],
           ),
           if (_keyMissing)
-            _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _card(
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Row(children: [
                 Icon(Icons.key_off_rounded, color: Color(0xFFFFB300), size: 18),
                 SizedBox(width: 8),
@@ -159,8 +165,7 @@ class _InternetOutagesScreenState extends State<InternetOutagesScreen> {
                       style: const TextStyle(color: _kAccent, fontSize: 13))),
             ]))
           else if (_outages.isEmpty)
-            _card(const Text(
-                'Keine aktuellen Ausfaelle gemeldet.',
+            _card(const Text('Keine aktuellen Ausfaelle gemeldet.',
                 style: TextStyle(color: _kMuted, fontSize: 13)))
           else
             ..._outages.map(_outageCard),
@@ -189,7 +194,8 @@ class _InternetOutagesScreenState extends State<InternetOutagesScreen> {
     final start = _fmtDate((o['startDate'] ?? '').toString());
     final end = _fmtDate((o['endDate'] ?? '').toString());
     final c = _scopeColor(scope);
-    return _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return _card(
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -198,7 +204,8 @@ class _InternetOutagesScreenState extends State<InternetOutagesScreen> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(_scopeLabel(scope),
-              style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: c, fontSize: 10, fontWeight: FontWeight.bold)),
         ),
         if (country.isNotEmpty) ...[
           const SizedBox(width: 8),
@@ -214,7 +221,9 @@ class _InternetOutagesScreenState extends State<InternetOutagesScreen> {
       ]),
       const SizedBox(height: 8),
       Text(
-        loc.isNotEmpty ? loc : (asnName.isNotEmpty ? asnName : 'Unbekannter Bereich'),
+        loc.isNotEmpty
+            ? loc
+            : (asnName.isNotEmpty ? asnName : 'Unbekannter Bereich'),
         style: const TextStyle(
             color: _kText, fontSize: 14, fontWeight: FontWeight.w600),
       ),

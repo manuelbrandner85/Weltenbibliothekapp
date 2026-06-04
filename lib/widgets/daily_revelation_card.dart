@@ -34,64 +34,55 @@ class DailyRevelationCard extends StatelessWidget {
   static const List<Principle> ursprungInsights = [
     Principle(
       title: 'Beobachtung formt Realitaet',
-      body:
-          'In der Quantenphysik kollabiert die Wellenfunktion erst durch '
-              'Messung. Deine Aufmerksamkeit ist kein passiver Akt -- sie '
-              'gestaltet mit.',
+      body: 'In der Quantenphysik kollabiert die Wellenfunktion erst durch '
+          'Messung. Deine Aufmerksamkeit ist kein passiver Akt -- sie '
+          'gestaltet mit.',
     ),
     Principle(
       title: 'Focus 10 -- Koerper schlaeft, Geist wach',
-      body:
-          'Der erste Gateway-Zustand: tiefe koerperliche Entspannung bei '
-              'voll wachem Bewusstsein. Das Tor zu allen weiteren Ebenen.',
+      body: 'Der erste Gateway-Zustand: tiefe koerperliche Entspannung bei '
+          'voll wachem Bewusstsein. Das Tor zu allen weiteren Ebenen.',
     ),
     Principle(
       title: 'Resonanz',
       body:
           'Gleiche Frequenzen verstaerken sich. Was du innerlich kultivierst, '
-              'zieht im Aussen Entsprechendes an -- Schwingung sucht Schwingung.',
+          'zieht im Aussen Entsprechendes an -- Schwingung sucht Schwingung.',
     ),
     Principle(
       title: 'Der Beobachter hinter dem Denken',
-      body:
-          'Du bist nicht deine Gedanken -- du bist das Gewahrsein, das sie '
-              'bemerkt. In diesem Raum liegt deine eigentliche Freiheit.',
+      body: 'Du bist nicht deine Gedanken -- du bist das Gewahrsein, das sie '
+          'bemerkt. In diesem Raum liegt deine eigentliche Freiheit.',
     ),
     Principle(
       title: 'Nichtlokalitaet',
-      body:
-          'Verschraenkte Teilchen reagieren ueber jede Distanz hinweg '
-              'augenblicklich. Bewusstsein kennt moeglicherweise keinen Raum.',
+      body: 'Verschraenkte Teilchen reagieren ueber jede Distanz hinweg '
+          'augenblicklich. Bewusstsein kennt moeglicherweise keinen Raum.',
     ),
     Principle(
       title: 'Kohaerenz von Herz und Hirn',
-      body:
-          'Ein ruhiger, gleichmaessiger Herzrhythmus synchronisiert die '
-              'Gehirnwellen. Kohaerenz ist messbar -- und trainierbar.',
+      body: 'Ein ruhiger, gleichmaessiger Herzrhythmus synchronisiert die '
+          'Gehirnwellen. Kohaerenz ist messbar -- und trainierbar.',
     ),
     Principle(
       title: 'Die Schwelle der Stille',
-      body:
-          'Zwischen zwei Gedanken liegt eine Luecke. Wer sie weitet, betritt '
-              'den Ursprungsraum, aus dem alle Form entsteht.',
+      body: 'Zwischen zwei Gedanken liegt eine Luecke. Wer sie weitet, betritt '
+          'den Ursprungsraum, aus dem alle Form entsteht.',
     ),
     Principle(
       title: 'Intention als Saat',
-      body:
-          'Klar formulierte Absicht wirkt wie ein Same im Feld der '
-              'Moeglichkeiten. Patterning macht aus Wunsch gerichtete Energie.',
+      body: 'Klar formulierte Absicht wirkt wie ein Same im Feld der '
+          'Moeglichkeiten. Patterning macht aus Wunsch gerichtete Energie.',
     ),
     Principle(
       title: 'Theta -- das Tor zum Unbewussten',
-      body:
-          '4-7 Hz: die Frequenz tiefer Meditation und Heilung. Hier '
-              'reorganisiert sich, was im Wachzustand verschlossen bleibt.',
+      body: '4-7 Hz: die Frequenz tiefer Meditation und Heilung. Hier '
+          'reorganisiert sich, was im Wachzustand verschlossen bleibt.',
     ),
     Principle(
       title: 'Du bist mehr als dein Koerper',
-      body:
-          'Das Gateway-Experiment postuliert: Bewusstsein nutzt das Gehirn, '
-              'ist aber nicht darauf beschraenkt. Erfahre es selbst.',
+      body: 'Das Gateway-Experiment postuliert: Bewusstsein nutzt das Gehirn, '
+          'ist aber nicht darauf beschraenkt. Erfahre es selbst.',
     ),
   ];
 
@@ -102,85 +93,74 @@ class DailyRevelationCard extends StatelessWidget {
       title: 'Verberge deine Absichten',
       body:
           'Halte Menschen im Unklaren, und sie koennen sich nicht verteidigen. '
-              'Was sie nicht kommen sehen, koennen sie nicht abwehren.',
+          'Was sie nicht kommen sehen, koennen sie nicht abwehren.',
     ),
     Principle(
       title: 'Rede nie mehr als noetig',
       body:
           'Wer viel sagt, sagt Banales -- und gibt Angriffsflaeche. Schweigen '
-              'wirkt machtvoller und laesst andere sich offenbaren.',
+          'wirkt machtvoller und laesst andere sich offenbaren.',
     ),
     Principle(
       title: 'Reziprozitaet',
-      body:
-          'Ein kleiner Gefallen erzeugt das Beduerfnis, ihn zu erwidern. Wer '
-              'zuerst gibt, kontrolliert oft den naechsten Zug.',
+      body: 'Ein kleiner Gefallen erzeugt das Beduerfnis, ihn zu erwidern. Wer '
+          'zuerst gibt, kontrolliert oft den naechsten Zug.',
     ),
     Principle(
       title: 'Sozialer Beweis',
-      body:
-          'Menschen orientieren sich am Verhalten anderer. Zeige, dass viele '
-              'etwas tun -- und der Einzelne folgt fast automatisch.',
+      body: 'Menschen orientieren sich am Verhalten anderer. Zeige, dass viele '
+          'etwas tun -- und der Einzelne folgt fast automatisch.',
     ),
     Principle(
       title: 'Knappheit',
-      body:
-          'Was selten ist, wirkt wertvoller. Verfuegbarkeit zu begrenzen '
-              'steigert Begehrlichkeit staerker als jedes Argument.',
+      body: 'Was selten ist, wirkt wertvoller. Verfuegbarkeit zu begrenzen '
+          'steigert Begehrlichkeit staerker als jedes Argument.',
     ),
     Principle(
       title: 'Framing',
-      body:
-          'Nicht die Fakten entscheiden, sondern ihr Rahmen. Wer den Kontext '
-              'setzt, bestimmt, wie die gleiche Information gedeutet wird.',
+      body: 'Nicht die Fakten entscheiden, sondern ihr Rahmen. Wer den Kontext '
+          'setzt, bestimmt, wie die gleiche Information gedeutet wird.',
     ),
     Principle(
       title: 'Ankereffekt',
-      body:
-          'Die erste Zahl im Raum praegt alle folgenden Urteile. Wer zuerst '
-              'ankert, verschiebt die gesamte Verhandlung.',
+      body: 'Die erste Zahl im Raum praegt alle folgenden Urteile. Wer zuerst '
+          'ankert, verschiebt die gesamte Verhandlung.',
     ),
     Principle(
       title: 'Spiegle, um zu binden',
-      body:
-          'Subtiles Angleichen von Sprache und Koerperhaltung erzeugt '
-              'unbewusstes Vertrauen. Aehnlichkeit schafft Naehe.',
+      body: 'Subtiles Angleichen von Sprache und Koerperhaltung erzeugt '
+          'unbewusstes Vertrauen. Aehnlichkeit schafft Naehe.',
     ),
     Principle(
       title: 'Lass andere die Arbeit tun',
-      body:
-          'Nutze fremde Kompetenz und Energie fuer deine Ziele -- aber sorge '
-              'dafuer, dass der Verdienst dir zugeschrieben wird.',
+      body: 'Nutze fremde Kompetenz und Energie fuer deine Ziele -- aber sorge '
+          'dafuer, dass der Verdienst dir zugeschrieben wird.',
     ),
     Principle(
       title: 'Kenne das Spielfeld',
-      body:
-          'Sun Tzu: Wer sich selbst und den Gegner kennt, muss hundert '
-              'Schlachten nicht fuerchten. Aufklaerung schlaegt Staerke.',
+      body: 'Sun Tzu: Wer sich selbst und den Gegner kennt, muss hundert '
+          'Schlachten nicht fuerchten. Aufklaerung schlaegt Staerke.',
     ),
     Principle(
       title: 'Kontrolliere die Optionen',
-      body:
-          'Lass andere waehlen -- aber zwischen Alternativen, die DU gesetzt '
-              'hast. Die Illusion der Wahl ist machtvoller als Zwang.',
+      body: 'Lass andere waehlen -- aber zwischen Alternativen, die DU gesetzt '
+          'hast. Die Illusion der Wahl ist machtvoller als Zwang.',
     ),
     Principle(
       title: 'Geduld als Waffe',
-      body:
-          'Wer warten kann, diktiert das Tempo. Ungeduld ist eine Schwaeche, '
-              'die der Geduldige gegen den Hastigen ausspielt.',
+      body: 'Wer warten kann, diktiert das Tempo. Ungeduld ist eine Schwaeche, '
+          'die der Geduldige gegen den Hastigen ausspielt.',
     ),
     Principle(
       title: 'Erzeuge Abhaengigkeit',
-      body:
-          'Mache dich unverzichtbar. Solange andere dich brauchen, bist du '
-              'sicher -- Loyalitaet folgt dem Eigeninteresse.',
+      body: 'Mache dich unverzichtbar. Solange andere dich brauchen, bist du '
+          'sicher -- Loyalitaet folgt dem Eigeninteresse.',
     ),
     Principle(
       title: 'Das Gesetz der Verknappung von Lob',
       body:
           'Selten verteiltes Lob wiegt schwerer. Wer staendig lobt, entwertet '
-              'die eigene Anerkennung.',
+          'die eigene Anerkennung.',
     ),
   ];
 
@@ -231,7 +211,8 @@ class DailyRevelationCard extends StatelessWidget {
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(
-                      text: '$emoji ${p.title}\n\n${p.body}\n\n— Weltenbibliothek'));
+                      text:
+                          '$emoji ${p.title}\n\n${p.body}\n\n— Weltenbibliothek'));
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text('In Zwischenablage kopiert'),
                     duration: Duration(seconds: 2),

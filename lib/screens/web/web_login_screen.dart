@@ -226,7 +226,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
       } else if (status == 'pending') {
         setState(() {
           _errorMessage =
-              'Dein Zugang ist noch nicht freigeschaltet.\nEin Administrator prüft deinen Antrag.';
+              'Dein Antrag wird noch geprueft.\nBitte versuche es in einigen Stunden erneut.';
           _loading = false;
         });
       } else {
@@ -308,10 +308,14 @@ class _WebLoginScreenState extends State<WebLoginScreen>
 
       if (!mounted) return;
 
+      final now = DateTime.now();
+      final timeLabel =
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       setState(() {
         _loading = false;
-        _successMessage =
-            'Antrag für "$name" wurde eingereicht!\nEin Administrator schaltet dich frei.';
+        _successMessage = 'Antrag fuer "$name" eingereicht um $timeLabel.\n'
+            'Ein Administrator prueft deinen Antrag (meist innerhalb von 24h).\n'
+            'Klicke dann auf "Eintreten" um zu pruefen ob du freigeschaltet wurdest.';
         _errorMessage = null;
       });
     } catch (e) {

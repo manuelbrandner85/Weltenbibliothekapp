@@ -58,11 +58,16 @@ class _WildfireScreenState extends State<WildfireScreen> {
       final list = (data['fires'] as List?) ?? const [];
       if (!mounted) return;
       setState(() {
-        _fires = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _fires = list
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
         _totalRows = data['totalRows'] as int? ?? _fires.length;
       });
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -98,7 +103,8 @@ class _WildfireScreenState extends State<WildfireScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Row(children: [
             const Text('Zeitraum:',
                 style: TextStyle(color: _kMuted, fontSize: 12)),
@@ -112,17 +118,28 @@ class _WildfireScreenState extends State<WildfireScreen> {
                     _load();
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
-                      color: _days == d ? _kAccent.withValues(alpha: 0.2) : const Color(0xFF0D0000),
+                      color: _days == d
+                          ? _kAccent.withValues(alpha: 0.2)
+                          : const Color(0xFF0D0000),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _days == d ? _kAccent : _kBorder),
+                      border:
+                          Border.all(color: _days == d ? _kAccent : _kBorder),
                     ),
-                    child: Text(d == 1 ? '24h' : d == 2 ? '48h' : '7 Tage',
+                    child: Text(
+                        d == 1
+                            ? '24h'
+                            : d == 2
+                                ? '48h'
+                                : '7 Tage',
                         style: TextStyle(
                             color: _days == d ? _kText : _kMuted,
                             fontSize: 12,
-                            fontWeight: _days == d ? FontWeight.bold : FontWeight.normal)),
+                            fontWeight: _days == d
+                                ? FontWeight.bold
+                                : FontWeight.normal)),
                   ),
                 ),
               ),
@@ -138,7 +155,8 @@ class _WildfireScreenState extends State<WildfireScreen> {
             ],
           ),
           if (_keyMissing)
-            _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _card(
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Row(children: [
                 Icon(Icons.key_off_rounded, color: Color(0xFFFFB300), size: 18),
                 SizedBox(width: 8),
@@ -220,22 +238,29 @@ class _WildfireScreenState extends State<WildfireScreen> {
             Icon(Icons.local_fire_department_rounded, color: c, size: 20),
             if (frpRaw != null)
               Text('${frpRaw.round()} MW',
-                  style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: c, fontSize: 10, fontWeight: FontWeight.bold)),
           ]),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
-              lat.isNotEmpty && lon.isNotEmpty ? '$lat, $lon' : 'Koordinaten unbekannt',
+              lat.isNotEmpty && lon.isNotEmpty
+                  ? '$lat, $lon'
+                  : 'Koordinaten unbekannt',
               style: const TextStyle(
                   color: _kText, fontSize: 13, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 2),
             Text(
-              [country, if (date.isNotEmpty) '$date ${time.padLeft(4, '0').substring(0, 2)}:${time.padLeft(4, '0').substring(2)}', if (conf.isNotEmpty) 'Konfidenz: $conf%']
-                  .where((e) => e.isNotEmpty)
-                  .join('  -  '),
+              [
+                country,
+                if (date.isNotEmpty)
+                  '$date ${time.padLeft(4, '0').substring(0, 2)}:${time.padLeft(4, '0').substring(2)}',
+                if (conf.isNotEmpty) 'Konfidenz: $conf%'
+              ].where((e) => e.isNotEmpty).join('  -  '),
               style: const TextStyle(color: _kMuted, fontSize: 11),
             ),
           ]),

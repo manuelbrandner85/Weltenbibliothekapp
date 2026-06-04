@@ -48,8 +48,7 @@ class _IntroImageScreenState extends State<IntroImageScreen>
   /// ✅ PRELOAD IMAGE - startet Animation nur wenn Bild geladen
   Future<void> _preloadImage() async {
     try {
-      const image =
-          AssetImage('assets/images/intro_weltenbibliothek.webp');
+      const image = AssetImage('assets/images/intro_weltenbibliothek.webp');
       await precacheImage(image, context);
 
       if (mounted) {

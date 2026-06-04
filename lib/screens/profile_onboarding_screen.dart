@@ -296,7 +296,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           icon: Icons.person,
           onChanged: (_) {
             _usernameManuallyEdited = true;
-            if (_autoFilledUsername) setState(() => _autoFilledUsername = false);
+            if (_autoFilledUsername)
+              setState(() => _autoFilledUsername = false);
           },
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -629,16 +630,11 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         birthPlace: _birthPlaceController.text.trim().isEmpty
             ? null
             : _birthPlaceController.text.trim(),
-        birthDate: _selectedBirthDate
-            ?.toIso8601String()
-            .split('T')
-            .first,
+        birthDate: _selectedBirthDate?.toIso8601String().split('T').first,
       );
       final matched = res['matched_username'] as String?;
       if (!mounted) return;
-      if (matched != null &&
-          matched.isNotEmpty &&
-          !_usernameManuallyEdited) {
+      if (matched != null && matched.isNotEmpty && !_usernameManuallyEdited) {
         setState(() {
           _energieUsernameController.text = matched;
           _autoFilledUsername = true;
@@ -671,8 +667,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF12101C),
-        title: const Text('Konto gesperrt',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Konto gesperrt', style: TextStyle(color: Colors.white)),
         content: Text(
           alreadyRequested
               ? 'Dieses Konto wurde geloescht. Dein Reaktivierungs-Antrag '
@@ -777,8 +773,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       final blocked = await _checkBlacklistAndOfferReactivation(
         username: username,
         fullName: fullName,
-        birthDate:
-            _selectedBirthDate?.toIso8601String().split('T').first,
+        birthDate: _selectedBirthDate?.toIso8601String().split('T').first,
         birthPlace: _birthPlaceController.text.trim().isEmpty
             ? null
             : _birthPlaceController.text.trim(),

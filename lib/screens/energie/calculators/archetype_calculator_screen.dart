@@ -669,20 +669,12 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen>
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildDetailedInfoRow(
-                          '🎯 Was dich antreibt',
-                          '${strengthText.substring(
-                                  0, math.min(160, strengthText.length))}…'),
+                      _buildDetailedInfoRow('🎯 Was dich antreibt',
+                          '${strengthText.substring(0, math.min(160, strengthText.length))}…'),
                       _buildDetailedInfoRow('😨 Was du fürchtest',
                           _getPersonalizedFear(archetypeName)),
-                      _buildDetailedInfoRow(
-                          '💪 Deine Superkraft',
-                          '${_getPersonalizedStrength(archetypeName).substring(
-                                  0,
-                                  math.min(
-                                      140,
-                                      _getPersonalizedStrength(archetypeName)
-                                          .length))}…'),
+                      _buildDetailedInfoRow('💪 Deine Superkraft',
+                          '${_getPersonalizedStrength(archetypeName).substring(0, math.min(140, _getPersonalizedStrength(archetypeName).length))}…'),
                       _buildDetailedInfoRow('⚠️ Deine Falle',
                           _getPersonalizedWeakness(archetypeName)),
                       _buildDetailedInfoRow(

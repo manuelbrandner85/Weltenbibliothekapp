@@ -136,114 +136,78 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   ];
 
   static final _questions = [
-    _Question(
-      q: 'Sonntagabend mit unverplanter Zeit — was tust du?',
-      a: [
-        _Answer('Spazierengehen, einfach sein', 0),
-        _Answer('Mit Freunden treffen', 1),
-        _Answer('Sport oder Wettkampf', 2),
-        _Answer('Für jemanden kochen', 3),
-      ]
-    ),
-    _Question(
-      q: 'Im Job suchst du vor allem...',
-      a: [
-        _Answer('Sicherheit und Routine', 0),
-        _Answer('Sinn und Wirkung', 9),
-        _Answer('Aufstieg und Anerkennung', 8),
-        _Answer('Kreative Freiheit', 7),
-      ]
-    ),
-    _Question(
-      q: 'In Konflikten...',
-      a: [
-        _Answer('Suche ich Harmonie', 0),
-        _Answer('Setze ich klare Grenzen', 2),
-        _Answer('Versuche zu vermitteln', 3),
-        _Answer('Sage ich was Sache ist, koste es was es wolle', 6),
-      ]
-    ),
-    _Question(
-      q: 'Mein Lieblings-Genre in Büchern/Filmen?',
-      a: [
-        _Answer('Romance, Drama', 5),
-        _Answer('Action, Abenteuer', 4),
-        _Answer('Mystery, Sci-Fi', 9),
-        _Answer('Sachbücher, Philosophie', 10),
-      ]
-    ),
-    _Question(
-      q: 'Was ist dir wichtiger?',
-      a: [
-        _Answer('Aufrichtigkeit', 0),
-        _Answer('Erfolg', 2),
-        _Answer('Tiefe Verbindungen', 5),
-        _Answer('Freiheit', 4),
-      ]
-    ),
-    _Question(
-      q: 'Wenn du eine Schwäche zugeben müsstest...',
-      a: [
-        _Answer('Zu vertrauensselig', 0),
-        _Answer('Zu kritisch mit mir', 7),
-        _Answer('Zu viel zugleich wollen', 9),
-        _Answer('Zu wenig auf mich achten', 3),
-      ]
-    ),
-    _Question(
-      q: 'In sozialer Runde bist du eher...',
-      a: [
-        _Answer('Der Comedian', 11),
-        _Answer('Der Tiefgründige', 10),
-        _Answer('Der Organisator', 8),
-        _Answer('Der Außenseiter', 6),
-      ]
-    ),
-    _Question(
-      q: 'Welcher Satz beschreibt dich?',
-      a: [
-        _Answer('Ich liebe Menschen.', 3),
-        _Answer('Ich liebe Schönheit.', 5),
-        _Answer('Ich liebe Wahrheit.', 10),
-        _Answer('Ich liebe das Spiel.', 11),
-      ]
-    ),
-    _Question(
-      q: 'Bei einer Reise willst du am liebsten...',
-      a: [
-        _Answer('Etwas Authentisches erleben', 4),
-        _Answer('Tief in eine Kultur eintauchen', 10),
-        _Answer('Adrenalin und Abenteuer', 2),
-        _Answer('Etwas Lokales mit Insidern entdecken', 11),
-      ]
-    ),
-    _Question(
-      q: 'Was treibt dich an, morgens aufzustehen?',
-      a: [
-        _Answer('Verantwortung für andere', 3),
-        _Answer('Mein nächstes Werk', 7),
-        _Answer('Veränderung in der Welt', 6),
-        _Answer('Pure Lebensfreude', 11),
-      ]
-    ),
-    _Question(
-      q: 'Welche Krise wäre für dich am schlimmsten?',
-      a: [
-        _Answer('Verlust der Liebe', 5),
-        _Answer('Verlust der Macht', 8),
-        _Answer('Verlust der Freiheit', 4),
-        _Answer('Verlust der Bedeutung', 10),
-      ]
-    ),
-    _Question(
-      q: 'Wie willst du in Erinnerung bleiben?',
-      a: [
-        _Answer('Als jemand, der Großes vollbracht hat', 2),
-        _Answer('Als jemand, der die Welt verändert hat', 9),
-        _Answer('Als jemand, der wahrhaftig gelebt hat', 4),
-        _Answer('Als jemand, der die Welt schöner gemacht hat', 7),
-      ]
-    ),
+    _Question(q: 'Sonntagabend mit unverplanter Zeit — was tust du?', a: [
+      _Answer('Spazierengehen, einfach sein', 0),
+      _Answer('Mit Freunden treffen', 1),
+      _Answer('Sport oder Wettkampf', 2),
+      _Answer('Für jemanden kochen', 3),
+    ]),
+    _Question(q: 'Im Job suchst du vor allem...', a: [
+      _Answer('Sicherheit und Routine', 0),
+      _Answer('Sinn und Wirkung', 9),
+      _Answer('Aufstieg und Anerkennung', 8),
+      _Answer('Kreative Freiheit', 7),
+    ]),
+    _Question(q: 'In Konflikten...', a: [
+      _Answer('Suche ich Harmonie', 0),
+      _Answer('Setze ich klare Grenzen', 2),
+      _Answer('Versuche zu vermitteln', 3),
+      _Answer('Sage ich was Sache ist, koste es was es wolle', 6),
+    ]),
+    _Question(q: 'Mein Lieblings-Genre in Büchern/Filmen?', a: [
+      _Answer('Romance, Drama', 5),
+      _Answer('Action, Abenteuer', 4),
+      _Answer('Mystery, Sci-Fi', 9),
+      _Answer('Sachbücher, Philosophie', 10),
+    ]),
+    _Question(q: 'Was ist dir wichtiger?', a: [
+      _Answer('Aufrichtigkeit', 0),
+      _Answer('Erfolg', 2),
+      _Answer('Tiefe Verbindungen', 5),
+      _Answer('Freiheit', 4),
+    ]),
+    _Question(q: 'Wenn du eine Schwäche zugeben müsstest...', a: [
+      _Answer('Zu vertrauensselig', 0),
+      _Answer('Zu kritisch mit mir', 7),
+      _Answer('Zu viel zugleich wollen', 9),
+      _Answer('Zu wenig auf mich achten', 3),
+    ]),
+    _Question(q: 'In sozialer Runde bist du eher...', a: [
+      _Answer('Der Comedian', 11),
+      _Answer('Der Tiefgründige', 10),
+      _Answer('Der Organisator', 8),
+      _Answer('Der Außenseiter', 6),
+    ]),
+    _Question(q: 'Welcher Satz beschreibt dich?', a: [
+      _Answer('Ich liebe Menschen.', 3),
+      _Answer('Ich liebe Schönheit.', 5),
+      _Answer('Ich liebe Wahrheit.', 10),
+      _Answer('Ich liebe das Spiel.', 11),
+    ]),
+    _Question(q: 'Bei einer Reise willst du am liebsten...', a: [
+      _Answer('Etwas Authentisches erleben', 4),
+      _Answer('Tief in eine Kultur eintauchen', 10),
+      _Answer('Adrenalin und Abenteuer', 2),
+      _Answer('Etwas Lokales mit Insidern entdecken', 11),
+    ]),
+    _Question(q: 'Was treibt dich an, morgens aufzustehen?', a: [
+      _Answer('Verantwortung für andere', 3),
+      _Answer('Mein nächstes Werk', 7),
+      _Answer('Veränderung in der Welt', 6),
+      _Answer('Pure Lebensfreude', 11),
+    ]),
+    _Question(q: 'Welche Krise wäre für dich am schlimmsten?', a: [
+      _Answer('Verlust der Liebe', 5),
+      _Answer('Verlust der Macht', 8),
+      _Answer('Verlust der Freiheit', 4),
+      _Answer('Verlust der Bedeutung', 10),
+    ]),
+    _Question(q: 'Wie willst du in Erinnerung bleiben?', a: [
+      _Answer('Als jemand, der Großes vollbracht hat', 2),
+      _Answer('Als jemand, der die Welt verändert hat', 9),
+      _Answer('Als jemand, der wahrhaftig gelebt hat', 4),
+      _Answer('Als jemand, der die Welt schöner gemacht hat', 7),
+    ]),
   ];
 
   final Map<int, int> _answers = {};

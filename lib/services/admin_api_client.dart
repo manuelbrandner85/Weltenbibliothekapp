@@ -364,8 +364,7 @@ class AdminApiClient {
         hmacHeadersSent: hmacSent,
       ));
       if (kDebugMode && res.statusCode >= 400) {
-        debugPrint(
-            '[AdminApiClient] $method $path -> ${res.statusCode}: '
+        debugPrint('[AdminApiClient] $method $path -> ${res.statusCode}: '
             '${_snippet(res.body)}');
       }
       return res;

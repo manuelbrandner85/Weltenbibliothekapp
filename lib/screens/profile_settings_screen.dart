@@ -491,9 +491,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(sent
-          ? 'Loeschungs-Antrag gesendet.'
-          : 'Senden fehlgeschlagen.'),
+      content:
+          Text(sent ? 'Loeschungs-Antrag gesendet.' : 'Senden fehlgeschlagen.'),
     ));
   }
 

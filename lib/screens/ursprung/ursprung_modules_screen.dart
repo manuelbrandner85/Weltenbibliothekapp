@@ -380,13 +380,12 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
           onChanged: (v) => setState(() => _searchQuery = v),
           decoration: InputDecoration(
             hintText: 'Modul suchen (Code oder Stichwort)',
-            hintStyle:
-                TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
             prefixIcon: Icon(Icons.search, color: _gold.withValues(alpha: 0.7)),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: Icon(Icons.close,
-                        color: _gold.withValues(alpha: 0.7)),
+                    icon:
+                        Icon(Icons.close, color: _gold.withValues(alpha: 0.7)),
                     onPressed: () {
                       _searchCtrl.clear();
                       setState(() => _searchQuery = '');
@@ -418,8 +417,7 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
               child: Center(
                 child: Text(
                   'Kein Modul gefunden für "$_searchQuery"',
-                  style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5)),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                 ),
               ),
             )

@@ -25,6 +25,7 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
   bool _loadingMsgs = false;
   bool _loadingRooms = true;
   bool _autoRefresh = true;
+  bool _usingFallback = false;
   final _api = CloudflareApiService();
   Timer? _pollTimer;
 
@@ -93,6 +94,7 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
             _rooms = names;
             _selectedRoom = names.first;
             _loadingRooms = false;
+            _usingFallback = false;
           });
           _loadMessages();
           return;
@@ -105,6 +107,7 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
         _rooms = _fallbackRooms;
         _selectedRoom = _fallbackRooms.first;
         _loadingRooms = false;
+        _usingFallback = true;
       });
       _loadMessages();
     }
@@ -354,6 +357,25 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
           ),
         ]),
       ),
+
+      // ── Offline-Cache Banner ─────────────────────────────────────
+      if (_usingFallback)
+        Container(
+          padding: const EdgeInsets.all(10),
+          color: Colors.orange.withValues(alpha: 0.15),
+          child: const Row(
+            children: [
+              Icon(Icons.wifi_off, color: Colors.orange, size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Offline-Cache: Raumliste aus der Fallback-Liste.',
+                  style: TextStyle(color: Colors.orange, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
 
       // ── Raum-Auswahl ─────────────────────────────────────────────
       Container(

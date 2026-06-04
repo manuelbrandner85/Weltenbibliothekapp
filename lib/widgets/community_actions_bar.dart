@@ -168,10 +168,11 @@ class _CommentSheetState extends State<_CommentSheet> {
   Future<void> _load() async {
     try {
       final c = await _service.getComments(widget.post.id);
-      if (mounted) setState(() {
-        _comments = c;
-        _loading = false;
-      });
+      if (mounted)
+        setState(() {
+          _comments = c;
+          _loading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }

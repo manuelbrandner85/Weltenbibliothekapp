@@ -260,7 +260,8 @@ class _CountryCompareToolState extends State<CountryCompareTool> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Zwei Laender vergleichen',
                 style: TextStyle(color: _kMuted, fontSize: 12)),
@@ -269,8 +270,8 @@ class _CountryCompareToolState extends State<CountryCompareTool> {
               Expanded(child: _input(_aCtrl, 'Germany')),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text('vs',
-                    style: TextStyle(color: _kMuted, fontSize: 12)),
+                child:
+                    Text('vs', style: TextStyle(color: _kMuted, fontSize: 12)),
               ),
               Expanded(child: _input(_bCtrl, 'France')),
             ]),
@@ -301,7 +302,9 @@ class _CountryCompareToolState extends State<CountryCompareTool> {
             source: 'Faktendaten (Bevoelkerung, Flaeche, Gini-Index, Sprachen, '
                 'Waehrung) ueber restcountries.com.',
             accent: _kAccent,
-            sources: [OsintSource('restcountries.com', 'https://restcountries.com')],
+            sources: [
+              OsintSource('restcountries.com', 'https://restcountries.com')
+            ],
           ),
           if (_error != null)
             _card(Row(children: [
@@ -312,7 +315,8 @@ class _CountryCompareToolState extends State<CountryCompareTool> {
                       style: const TextStyle(color: _kAccent, fontSize: 13))),
             ])),
           if (ready)
-            _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _card(
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(
                   child: Row(children: [
@@ -328,26 +332,23 @@ class _CountryCompareToolState extends State<CountryCompareTool> {
                   ]),
                 ),
                 Expanded(
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(_commonName(_b),
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                  color: _kText,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(_flagEmoji(_b),
-                            style: const TextStyle(fontSize: 22)),
-                      ]),
+                  child:
+                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                    Expanded(
+                      child: Text(_commonName(_b),
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                              color: _kText,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(_flagEmoji(_b), style: const TextStyle(fontSize: 22)),
+                  ]),
                 ),
               ]),
               const SizedBox(height: 12),
-              _compareRow(
-                  'Bevoelkerung', _population(_a), _population(_b)),
+              _compareRow('Bevoelkerung', _population(_a), _population(_b)),
               _compareRow('Flaeche', _area(_a), _area(_b)),
               _compareRow('Dichte', _density(_a), _density(_b)),
               _compareRow('Hauptstadt', _capital(_a), _capital(_b)),

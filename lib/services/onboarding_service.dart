@@ -47,14 +47,14 @@ class OnboardingService extends ChangeNotifier {
       id: 'welcome',
       title: 'Willkommen zur Weltenbibliothek!',
       description:
-          'Entdecke Wissen aus zwei Welten: Materie (Fakten, Geschichte, Politik) und Energie (Spiritualität, Bewusstsein, Meditation).',
+          'Entdecke Wissen aus vier Welten: Materie, Energie, Vorhang und Ursprung.',
       iconData: '🌟',
     ),
     OnboardingStep(
       id: 'two_worlds',
-      title: 'Zwei Welten erkunden',
+      title: 'Vier Welten erkunden',
       description:
-          'Wähle zwischen Materie-Welt (🔵 Blau) für wissenschaftliches Wissen oder Energie-Welt (🟣 Lila) für spirituelle Inhalte.',
+          'Materie (🔵), Energie (🟣), Vorhang (🟡) und Ursprung (🟢) - jede Welt ein eigener Kosmos aus Wissen und Erkenntnissen.',
       iconData: '🌍',
       targetWidget: 'world_buttons',
     ),

@@ -94,7 +94,9 @@ class _PredictionMarketsScreenState extends State<PredictionMarketsScreen> {
       if (!mounted) return;
       setState(() => _markets = out);
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -149,7 +151,8 @@ class _PredictionMarketsScreenState extends State<PredictionMarketsScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const OsintSourceBanner(
             source: 'Aktive Wett-Maerkte nach Handelsvolumen sortiert. Die '
                 'Wahrscheinlichkeit ergibt sich aus dem Marktpreis - sie ist '

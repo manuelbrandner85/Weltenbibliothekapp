@@ -106,11 +106,11 @@ class _UsersTabState extends State<_UsersTab> {
                 .reversed
                 .firstOrNull;
             if (lastCall != null && lastCall.statusCode >= 400) {
-              _errorMessage = 'Worker-Fehler: HTTP ${lastCall.statusCode}\n'
-                  '${lastCall.message}\n\n'
+              _errorMessage =
+                  '${_httpLabel(lastCall.statusCode)}\n\n'
                   'Tipp: Tap auf "Diagnose" in der Uebersicht fuer Details.';
             } else if (lastCall != null && lastCall.statusCode == 0) {
-              _errorMessage = 'Netzwerk-Fehler: ${lastCall.message}\n\n'
+              _errorMessage = 'Verbindungsfehler - kein Netzwerk.\n\n'
                   'Tipp: Internet pruefen + Diagnose-Button in der Uebersicht.';
             } else {
               _errorMessage = 'Keine Nutzer gefunden.\n\n'
@@ -187,6 +187,24 @@ class _UsersTabState extends State<_UsersTab> {
     if (diff.inMinutes < 60) return 'vor ${diff.inMinutes} min';
     if (diff.inHours < 24) return 'vor ${diff.inHours} h';
     return 'vor ${diff.inDays} Tagen';
+  }
+
+  static String _httpLabel(int code) {
+    switch (code) {
+      case 400: return 'Fehlerhafte Anfrage (400) - Daten pruefen.';
+      case 401: return 'Nicht authentifiziert (401) - Erneut einloggen.';
+      case 403: return 'Keine Berechtigung (403) - Admin-Rechte pruefen.';
+      case 404: return 'Endpunkt nicht gefunden (404) - Worker-Version pruefen.';
+      case 409: return 'Konflikt (409) - Aktion wurde moeglicherweise schon ausgefuehrt.';
+      case 429: return 'Zu viele Anfragen (429) - Bitte kurz warten.';
+      case 500: return 'Server-Fehler (500) - Worker-Logs pruefen.';
+      case 502: return 'Worker nicht erreichbar (502) - Deployment pruefen.';
+      case 503: return 'Dienst nicht verfuegbar (503) - Wartungsarbeiten?';
+      default:
+        if (code >= 500) return 'Server-Fehler ($code).';
+        if (code >= 400) return 'Client-Fehler ($code).';
+        return 'Fehler ($code).';
+    }
   }
 
   void _snack(String msg, {Color? color}) {
@@ -766,7 +784,10 @@ class _UsersTabState extends State<_UsersTab> {
     final reasonCtrl = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) {
+        bool _acknowledged = false;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
         backgroundColor: const Color(0xFF12121E),
         title: const Row(children: [
           Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
@@ -827,6 +848,19 @@ class _UsersTabState extends State<_UsersTab> {
                   ),
                 ),
               ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                title: const Text(
+                  'Ich verstehe, dies ist unwiderruflich',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                value: _acknowledged,
+                activeColor: Colors.redAccent,
+                onChanged: (v) =>
+                    setDialogState(() => _acknowledged = v ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                dense: true,
+              ),
             ],
           ),
         ),
@@ -841,25 +875,24 @@ class _UsersTabState extends State<_UsersTab> {
                 foregroundColor: Colors.white),
             icon: const Icon(Icons.delete_forever_rounded, size: 16),
             label: const Text('Endgueltig loeschen'),
-            onPressed: () {
-              if (reasonCtrl.text.trim().length < 3) {
-                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                  content: Text('Grund (min. 3 Zeichen) ist Pflicht.'),
-                ));
-                return;
-              }
-              if (confirmCtrl.text.trim() == u.username) {
-                Navigator.pop(ctx, true);
-              } else {
-                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                  content: Text(
-                      'Username stimmt nicht ueberein -- Bestaetigung abgebrochen.'),
-                ));
-              }
-            },
+            onPressed: _acknowledged &&
+                    confirmCtrl.text.trim() == u.username
+                ? () {
+                    if (reasonCtrl.text.trim().length < 3) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                        content:
+                            Text('Grund (min. 3 Zeichen) ist Pflicht.'),
+                      ));
+                      return;
+                    }
+                    Navigator.pop(ctx, true);
+                  }
+                : null,
           ),
         ],
       ),
+        );
+      },
     );
     if (ok != true) return;
 

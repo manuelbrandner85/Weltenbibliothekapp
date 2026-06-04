@@ -117,8 +117,7 @@ class _FlightTrackerScreenState extends State<FlightTrackerScreen> {
   }
 
   String _alt(double? m) => m == null ? '-' : '${(m).round()} m';
-  String _spd(double? ms) =>
-      ms == null ? '-' : '${(ms * 3.6).round()} km/h';
+  String _spd(double? ms) => ms == null ? '-' : '${(ms * 3.6).round()} km/h';
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +141,8 @@ class _FlightTrackerScreenState extends State<FlightTrackerScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Region',
                 style: TextStyle(color: _kMuted, fontSize: 12)),
@@ -239,7 +239,8 @@ class _FlightTrackerScreenState extends State<FlightTrackerScreen> {
               color: f.onGround ? _kMuted : _kAccent, size: 18),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(f.callsign,
                   style: const TextStyle(
                       color: _kText,

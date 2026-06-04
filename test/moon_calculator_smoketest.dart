@@ -15,7 +15,8 @@ void testPhase(String label, DateTime utc, String expectedPhase,
       '(${s.moonSignDegree.toStringAsFixed(2)}°)  element=${s.moonElement}');
   if (expectSignIdx != null) {
     final sigOk = s.moonSignIndex == expectSignIdx;
-    print('   ${sigOk ? "✓" : "✗"} sign idx=${s.moonSignIndex} expected=$expectSignIdx (${zodiacNames[expectSignIdx]})');
+    print(
+        '   ${sigOk ? "✓" : "✗"} sign idx=${s.moonSignIndex} expected=$expectSignIdx (${zodiacNames[expectSignIdx]})');
   }
   if (expectIllum != null) {
     final err = (s.illumination - expectIllum).abs();
@@ -24,7 +25,8 @@ void testPhase(String label, DateTime utc, String expectedPhase,
   print('');
 }
 
-void testPhaseTiming(String label, DateTime from, double phase, DateTime expected) {
+void testPhaseTiming(
+    String label, DateTime from, double phase, DateTime expected) {
   final got = nextMoonPhase(from, phase);
   final diffMin = (got.difference(expected).inSeconds / 60.0).abs();
   final ok = diffMin < 5;
@@ -47,51 +49,50 @@ void main() {
   //  2024-04-23 23:49  Vollmond
 
   testPhase('2024-01-11 12:00 UTC sollte Neumond sein',
-      DateTime.utc(2024, 1, 11, 12, 0), 'new_moon', expectIllum: 0);
+      DateTime.utc(2024, 1, 11, 12, 0), 'new_moon',
+      expectIllum: 0);
   testPhase('2024-01-25 18:00 UTC sollte Vollmond sein',
-      DateTime.utc(2024, 1, 25, 18, 0), 'full_moon', expectIllum: 1);
+      DateTime.utc(2024, 1, 25, 18, 0), 'full_moon',
+      expectIllum: 1);
   testPhase('2024-03-10 09:00 UTC sollte Neumond sein',
-      DateTime.utc(2024, 3, 10, 9, 0), 'new_moon', expectIllum: 0);
+      DateTime.utc(2024, 3, 10, 9, 0), 'new_moon',
+      expectIllum: 0);
   testPhase('2024-04-08 18:21 UTC sollte Neumond sein (totale SoFi)',
-      DateTime.utc(2024, 4, 8, 18, 21), 'new_moon', expectIllum: 0);
+      DateTime.utc(2024, 4, 8, 18, 21), 'new_moon',
+      expectIllum: 0);
 
   // Heute (2026-04-18): laut in-the-sky ist der Mond ca. 01:00 UTC im Stier
   // (Datum aus dem Environment-Kontext der Session)
-  testPhase('Heute 2026-04-18 12:00 UTC (Referenz: Mond im Stier laut in-the-sky.org)',
-      DateTime.utc(2026, 4, 18, 12, 0), '',
+  testPhase(
+      'Heute 2026-04-18 12:00 UTC (Referenz: Mond im Stier laut in-the-sky.org)',
+      DateTime.utc(2026, 4, 18, 12, 0),
+      '',
       expectSignIdx: null);
 
   print('=== Phasen-Timing-Tests ===\n');
 
-  testPhaseTiming(
-      'Nächster Neumond ab 2024-01-01 → 2024-01-11 11:57',
-      DateTime.utc(2024, 1, 1),
-      0,
-      DateTime.utc(2024, 1, 11, 11, 57));
-  testPhaseTiming(
-      'Nächster Vollmond ab 2024-01-15 → 2024-01-25 17:54',
-      DateTime.utc(2024, 1, 15),
-      180,
-      DateTime.utc(2024, 1, 25, 17, 54));
-  testPhaseTiming(
-      'Nächster Neumond ab 2024-04-01 → 2024-04-08 18:21',
-      DateTime.utc(2024, 4, 1),
-      0,
-      DateTime.utc(2024, 4, 8, 18, 21));
-  testPhaseTiming(
-      'Nächstes Erstes Viertel ab 2024-01-12 → 2024-01-18 03:52',
-      DateTime.utc(2024, 1, 12),
-      90,
-      DateTime.utc(2024, 1, 18, 3, 52));
+  testPhaseTiming('Nächster Neumond ab 2024-01-01 → 2024-01-11 11:57',
+      DateTime.utc(2024, 1, 1), 0, DateTime.utc(2024, 1, 11, 11, 57));
+  testPhaseTiming('Nächster Vollmond ab 2024-01-15 → 2024-01-25 17:54',
+      DateTime.utc(2024, 1, 15), 180, DateTime.utc(2024, 1, 25, 17, 54));
+  testPhaseTiming('Nächster Neumond ab 2024-04-01 → 2024-04-08 18:21',
+      DateTime.utc(2024, 4, 1), 0, DateTime.utc(2024, 4, 8, 18, 21));
+  testPhaseTiming('Nächstes Erstes Viertel ab 2024-01-12 → 2024-01-18 03:52',
+      DateTime.utc(2024, 1, 12), 90, DateTime.utc(2024, 1, 18, 3, 52));
 
   print('=== Zeichenwechsel-Test ===\n');
 
   final change = nextMoonSignChange(DateTime.utc(2026, 4, 18, 12, 0));
   print('Nächster Zeichenwechsel ab 2026-04-18 12:00 UTC: $change');
-  final beforeSign = calculateMoonSnapshot(change.subtract(const Duration(minutes: 1)));
-  final afterSign = calculateMoonSnapshot(change.add(const Duration(minutes: 1)));
-  print('  1 min davor: ${beforeSign.moonSignName} (long=${beforeSign.moonLongitude.toStringAsFixed(3)}°)');
-  print('  1 min danach: ${afterSign.moonSignName} (long=${afterSign.moonLongitude.toStringAsFixed(3)}°)');
+  final beforeSign =
+      calculateMoonSnapshot(change.subtract(const Duration(minutes: 1)));
+  final afterSign =
+      calculateMoonSnapshot(change.add(const Duration(minutes: 1)));
+  print(
+      '  1 min davor: ${beforeSign.moonSignName} (long=${beforeSign.moonLongitude.toStringAsFixed(3)}°)');
+  print(
+      '  1 min danach: ${afterSign.moonSignName} (long=${afterSign.moonLongitude.toStringAsFixed(3)}°)');
   final transitionClean = beforeSign.moonSignIndex != afterSign.moonSignIndex;
-  print('  ${transitionClean ? "✓" : "✗"} Zeichen wechselt tatsächlich am Übergang');
+  print(
+      '  ${transitionClean ? "✓" : "✗"} Zeichen wechselt tatsächlich am Übergang');
 }

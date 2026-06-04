@@ -267,8 +267,7 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
       sub: 'Kritische Internet-Infrastruktur',
       color: const Color(0xFF26C6DA),
       url: 'https://www.submarinecablemap.com',
-      description:
-          'Das globale Unterseekabel-Netz, ueber das fast der gesamte '
+      description: 'Das globale Unterseekabel-Netz, ueber das fast der gesamte '
           'internationale Internet-Verkehr laeuft. Interaktive Karte von '
           'TeleGeography.',
     ),

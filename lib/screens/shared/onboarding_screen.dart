@@ -30,7 +30,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingPage(
       title: 'Willkommen in der\nWeltenbibliothek',
       description:
-          'Entdecke verborgenes Wissen aus zwei Welten:\nMaterie & Energie',
+          'Entdecke verborgenes Wissen aus vier Welten:\nMaterie, Energie, Vorhang & Ursprung',
       icon: Icons.auto_stories,
       gradient: const [Color(0xFF050310), Color(0xFF0D0A1A)],
       world: WBWorld.neutral,

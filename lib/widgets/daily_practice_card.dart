@@ -42,8 +42,7 @@ class _DailyPracticeCardState extends State<DailyPracticeCard> {
   String get _todaysPractice {
     if (widget.practices.isEmpty) return '';
     final now = DateTime.now();
-    final dayOfYear =
-        now.difference(DateTime(now.year, 1, 1)).inDays;
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
     return widget.practices[dayOfYear % widget.practices.length];
   }
 

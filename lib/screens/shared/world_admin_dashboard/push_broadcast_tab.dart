@@ -194,11 +194,22 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
               .ignore();
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                '✅ $enq Empfänger in Queue · Cron sendet via FCM (max 5min)'),
-            backgroundColor: widget.accent,
-          ));
+          if (enq == 0) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                '⚠️ 0 Empfaenger eingereiht - keine aktiven Push-Subscriptions '
+                'oder falscher Zielbereich gewahlt.',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 5),
+            ));
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(
+                  '✅ $enq Empfaenger in Queue - Cron sendet via FCM (max 5min)'),
+              backgroundColor: widget.accent,
+            ));
+          }
           _title.clear();
           _body.clear();
           _deeplink.clear();

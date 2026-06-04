@@ -700,9 +700,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                               ? 'Ort aus Favoriten entfernen'
                               : 'Ort speichern',
                           icon: Icon(
-                            isSaved
-                                ? Icons.bookmark
-                                : Icons.bookmark_border,
+                            isSaved ? Icons.bookmark : Icons.bookmark_border,
                             color: _getCategoryColor(location.category),
                           ),
                           onPressed: () async {

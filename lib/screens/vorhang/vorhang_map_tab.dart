@@ -229,7 +229,8 @@ class _VorhangMapTabState extends State<VorhangMapTab>
                 );
               }).toList(),
               clusterColor: _gold.withValues(alpha: 0.85),
-              maxClusterRadius: MapClusteringHelper.calculateOptimalClusterRadius(
+              maxClusterRadius:
+                  MapClusteringHelper.calculateOptimalClusterRadius(
                 _visibleCenters.length,
               ),
             ),
@@ -306,9 +307,7 @@ class _VorhangMapTabState extends State<VorhangMapTab>
                             : _gold.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: active
-                              ? _gold
-                              : _gold.withValues(alpha: 0.3),
+                          color: active ? _gold : _gold.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -320,12 +319,10 @@ class _VorhangMapTabState extends State<VorhangMapTab>
                           Text(
                             e.value.label,
                             style: TextStyle(
-                              color:
-                                  active ? Colors.black : Colors.white70,
+                              color: active ? Colors.black : Colors.white70,
                               fontSize: 12,
-                              fontWeight: active
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                              fontWeight:
+                                  active ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
                         ],
@@ -403,11 +400,9 @@ class _VorhangMapTabState extends State<VorhangMapTab>
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(12),
-                      border:
-                          Border.all(color: accent.withValues(alpha: 0.5)),
+                      border: Border.all(color: accent.withValues(alpha: 0.5)),
                     ),
-                    child:
-                        Icon(_iconFor(c.category), color: accent, size: 22),
+                    child: Icon(_iconFor(c.category), color: accent, size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -435,13 +430,10 @@ class _VorhangMapTabState extends State<VorhangMapTab>
                     final favId = 'map_vorhang_${c.name}';
                     final isSaved = FavoritesService.isFavorite(favId);
                     return IconButton(
-                      tooltip: isSaved
-                          ? 'Aus Favoriten entfernen'
-                          : 'Ort speichern',
+                      tooltip:
+                          isSaved ? 'Aus Favoriten entfernen' : 'Ort speichern',
                       icon: Icon(
-                        isSaved
-                            ? Icons.bookmark
-                            : Icons.bookmark_border,
+                        isSaved ? Icons.bookmark : Icons.bookmark_border,
                         color: accent,
                       ),
                       onPressed: () async {
@@ -475,8 +467,7 @@ class _VorhangMapTabState extends State<VorhangMapTab>
                     );
                   }),
                   IconButton(
-                    icon:
-                        const Icon(Icons.close, color: Colors.white54),
+                    icon: const Icon(Icons.close, color: Colors.white54),
                     onPressed: _deselect,
                   ),
                 ],
@@ -485,8 +476,7 @@ class _VorhangMapTabState extends State<VorhangMapTab>
             const SizedBox(height: 4),
             // Tab chips
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Row(
                 children: [
                   _tabChip('Überblick', 0, accent),
@@ -500,8 +490,7 @@ class _VorhangMapTabState extends State<VorhangMapTab>
             // Scrollable content
             Expanded(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 4, 16, 32),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                 child: _detailTabIndex == 0
                     ? _buildOverviewTab(c, accent)
                     : _detailTabIndex == 1
@@ -520,23 +509,18 @@ class _VorhangMapTabState extends State<VorhangMapTab>
     return GestureDetector(
       onTap: () => setState(() => _detailTabIndex = index),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: active
-              ? accent.withValues(alpha: 0.22)
-              : Colors.transparent,
+          color: active ? accent.withValues(alpha: 0.22) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: active ? accent : Colors.white24),
+          border: Border.all(color: active ? accent : Colors.white24),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: active ? accent : Colors.white54,
             fontSize: 12,
-            fontWeight:
-                active ? FontWeight.w600 : FontWeight.normal,
+            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
       ),
@@ -558,8 +542,8 @@ class _VorhangMapTabState extends State<VorhangMapTab>
               height: 160,
               color: Colors.white.withValues(alpha: 0.04),
               alignment: Alignment.center,
-              child: Icon(c.icon,
-                  color: accent.withValues(alpha: 0.5), size: 40),
+              child:
+                  Icon(c.icon, color: accent.withValues(alpha: 0.5), size: 40),
             ),
           ),
           const SizedBox(height: 12),
@@ -567,13 +551,11 @@ class _VorhangMapTabState extends State<VorhangMapTab>
         Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: accent.withValues(alpha: 0.5)),
+                border: Border.all(color: accent.withValues(alpha: 0.5)),
               ),
               child: Text(c.badge,
                   style: TextStyle(
@@ -604,9 +586,7 @@ class _VorhangMapTabState extends State<VorhangMapTab>
           const SizedBox(height: 16),
           Text('Bekannte Mitglieder',
               style: TextStyle(
-                  color: accent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600)),
+                  color: accent, fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           ...c.members.map((m) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -626,9 +606,7 @@ class _VorhangMapTabState extends State<VorhangMapTab>
           const SizedBox(height: 16),
           Text('Verbindungen',
               style: TextStyle(
-                  color: accent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600)),
+                  color: accent, fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
@@ -640,12 +618,11 @@ class _VorhangMapTabState extends State<VorhangMapTab>
                       decoration: BoxDecoration(
                         color: accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: accent.withValues(alpha: 0.35)),
+                        border:
+                            Border.all(color: accent.withValues(alpha: 0.35)),
                       ),
                       child: Text(x,
-                          style:
-                              TextStyle(color: accent, fontSize: 12)),
+                          style: TextStyle(color: accent, fontSize: 12)),
                     ))
                 .toList(),
           ),
@@ -668,8 +645,7 @@ class _VorhangMapTabState extends State<VorhangMapTab>
         padding: const EdgeInsets.all(32),
         child: Center(
           child: Text('Keine Bilder gefunden',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4))),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.4))),
         ),
       );
     }
@@ -705,8 +681,7 @@ class _VorhangMapTabState extends State<VorhangMapTab>
         padding: const EdgeInsets.all(32),
         child: Center(
           child: Text('Keine Videos gefunden',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4))),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.4))),
         ),
       );
     }
@@ -726,12 +701,10 @@ class _VorhangMapTabState extends State<VorhangMapTab>
                       width: 80, height: 54, fit: BoxFit.cover),
                 ),
                 title: Text(v.title,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 13),
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis),
-                trailing:
-                    Icon(Icons.play_circle_outline, color: accent),
+                trailing: Icon(Icons.play_circle_outline, color: accent),
                 onTap: () => setState(() => _ytPlaying = v),
               );
       }).toList(),

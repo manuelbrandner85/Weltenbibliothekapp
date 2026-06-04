@@ -54,7 +54,9 @@ class _CyberThreatFeedScreenState extends State<CyberThreatFeedScreen> {
         _c2 = results[1];
       });
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -125,7 +127,8 @@ class _CyberThreatFeedScreenState extends State<CyberThreatFeedScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const OsintSourceBanner(
             source: 'Aktuelle Ransomware-Opfer (von den Erpresser-Leak-Seiten '
                 'gesammelt) und aktive Command-and-Control-Server bekannter '
@@ -171,7 +174,10 @@ class _CyberThreatFeedScreenState extends State<CyberThreatFeedScreen> {
   }
 
   Widget _tabs() {
-    final labels = ['Ransomware-Opfer (${_victims.length})', 'C2-Server (${_c2.length})'];
+    final labels = [
+      'Ransomware-Opfer (${_victims.length})',
+      'C2-Server (${_c2.length})'
+    ];
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++)
@@ -183,7 +189,9 @@ class _CyberThreatFeedScreenState extends State<CyberThreatFeedScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: _tab == i ? _kAccent.withValues(alpha: 0.18) : _kSurface,
+                    color: _tab == i
+                        ? _kAccent.withValues(alpha: 0.18)
+                        : _kSurface,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: _tab == i ? _kAccent : _kBorder),
                   ),
@@ -193,7 +201,8 @@ class _CyberThreatFeedScreenState extends State<CyberThreatFeedScreen> {
                     style: TextStyle(
                       color: _tab == i ? _kText : _kMuted,
                       fontSize: 11,
-                      fontWeight: _tab == i ? FontWeight.bold : FontWeight.normal,
+                      fontWeight:
+                          _tab == i ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -221,7 +230,8 @@ class _CyberThreatFeedScreenState extends State<CyberThreatFeedScreen> {
     final country = _str(v, ['country']);
     final date = _str(v, ['attackdate', 'discovered', 'published']);
     final activity = _str(v, ['activity', 'sector']);
-    return _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return _card(
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Expanded(
           child: Text(victim.isEmpty ? '(unbenannt)' : victim,
@@ -237,14 +247,14 @@ class _CyberThreatFeedScreenState extends State<CyberThreatFeedScreen> {
             ),
             child: Text(group,
                 style: const TextStyle(
-                    color: _kAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                    color: _kAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
           ),
       ]),
       const SizedBox(height: 6),
       Text(
-        [activity, country, date]
-            .where((e) => e.isNotEmpty)
-            .join('  -  '),
+        [activity, country, date].where((e) => e.isNotEmpty).join('  -  '),
         style: const TextStyle(color: _kMuted, fontSize: 11),
       ),
     ]));
@@ -256,7 +266,8 @@ class _CyberThreatFeedScreenState extends State<CyberThreatFeedScreen> {
     final country = _str(c, ['country']);
     final asName = _str(c, ['as_name']);
     final port = _str(c, ['port']);
-    return _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return _card(
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         const Icon(Icons.dns_rounded, color: _kAccent, size: 16),
         const SizedBox(width: 8),

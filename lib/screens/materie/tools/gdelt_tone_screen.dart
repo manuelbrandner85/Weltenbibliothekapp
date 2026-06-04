@@ -95,7 +95,9 @@ class _GdeltToneScreenState extends State<GdeltToneScreen> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abfrage fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abfrage fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -173,7 +175,8 @@ class _GdeltToneScreenState extends State<GdeltToneScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Thema / Stichwort',
                 style: TextStyle(color: _kMuted, fontSize: 12)),
@@ -228,7 +231,9 @@ class _GdeltToneScreenState extends State<GdeltToneScreen> {
                 'Datenbank (ueberwacht Medien in 100+ Sprachen in Echtzeit). '
                 'Tonalitaet von negativ bis positiv gemittelt.',
             accent: _kAccent,
-            sources: [OsintSource('GDELT Project', 'https://www.gdeltproject.org')],
+            sources: [
+              OsintSource('GDELT Project', 'https://www.gdeltproject.org')
+            ],
           ),
           if (_error != null)
             _card(Row(children: [
@@ -239,7 +244,8 @@ class _GdeltToneScreenState extends State<GdeltToneScreen> {
                       style: const TextStyle(color: _kAccent, fontSize: 13))),
             ])),
           if (_avgTone != null)
-            _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _card(
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('DURCHSCHNITTS-TONALITAET',
                   style: TextStyle(
                       color: _kMuted,
@@ -302,7 +308,11 @@ class _GdeltToneScreenState extends State<GdeltToneScreen> {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  [a['domain'], a['sourcecountry'], _fmtDate(a['seendate']?.toString())]
+                  [
+                    a['domain'],
+                    a['sourcecountry'],
+                    _fmtDate(a['seendate']?.toString())
+                  ]
                       .where((e) => e != null && e.toString().isNotEmpty)
                       .join('  -  '),
                   style: const TextStyle(color: _kMuted, fontSize: 11),

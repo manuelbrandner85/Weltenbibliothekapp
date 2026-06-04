@@ -84,14 +84,16 @@ class AdminActionService {
       roomId: roomId,
     );
     // v103 (4.4): Push an den gemuteten User.
-    PushNotificationHelper.instance.fireAndForget(PushNotificationHelper.instance.sendToUser(
-      targetUserId: targetUserId,
-      type: 'admin_mute',
-      title: '🔇 Stummgeschaltet',
-      body:
-          'Du wurdest stummgeschaltet.${reason != null ? " Grund: $reason" : ""}',
-      data: {'action': 'mute', 'reason': reason},
-    ), context: 'admin-action');
+    PushNotificationHelper.instance.fireAndForget(
+        PushNotificationHelper.instance.sendToUser(
+          targetUserId: targetUserId,
+          type: 'admin_mute',
+          title: '🔇 Stummgeschaltet',
+          body:
+              'Du wurdest stummgeschaltet.${reason != null ? " Grund: $reason" : ""}',
+          data: {'action': 'mute', 'reason': reason},
+        ),
+        context: 'admin-action');
     return ok;
   }
 
@@ -177,19 +179,21 @@ class AdminActionService {
       _bannedUsersController.add(Map.unmodifiable(_bansCache));
 
       // v103 (4.1): Push an den gebannten User. Fire-and-forget.
-      PushNotificationHelper.instance.fireAndForget(PushNotificationHelper.instance.sendToUser(
-        targetUserId: targetUserId,
-        type: 'admin_ban',
-        title: '🚫 Account gesperrt',
-        body: isPermanent
-            ? 'Dein Account wurde dauerhaft gesperrt.${reason != null ? " Grund: $reason" : ""}'
-            : 'Dein Account wurde vorübergehend gesperrt.${reason != null ? " Grund: $reason" : ""}',
-        data: {
-          'action': 'ban',
-          'reason': reason,
-          'is_permanent': isPermanent,
-        },
-      ), context: 'admin-action');
+      PushNotificationHelper.instance.fireAndForget(
+          PushNotificationHelper.instance.sendToUser(
+            targetUserId: targetUserId,
+            type: 'admin_ban',
+            title: '🚫 Account gesperrt',
+            body: isPermanent
+                ? 'Dein Account wurde dauerhaft gesperrt.${reason != null ? " Grund: $reason" : ""}'
+                : 'Dein Account wurde vorübergehend gesperrt.${reason != null ? " Grund: $reason" : ""}',
+            data: {
+              'action': 'ban',
+              'reason': reason,
+              'is_permanent': isPermanent,
+            },
+          ),
+          context: 'admin-action');
 
       return ok;
     } catch (e) {
@@ -217,13 +221,15 @@ class AdminActionService {
         type: AdminActionType.unban,
       );
       // v103 (4.2): Push an den entbannten User.
-      PushNotificationHelper.instance.fireAndForget(PushNotificationHelper.instance.sendToUser(
-        targetUserId: targetUserId,
-        type: 'admin_unban',
-        title: '✅ Sperre aufgehoben',
-        body: 'Deine Account-Sperre wurde aufgehoben. Willkommen zurück!',
-        data: {'action': 'unban'},
-      ), context: 'admin-action');
+      PushNotificationHelper.instance.fireAndForget(
+          PushNotificationHelper.instance.sendToUser(
+            targetUserId: targetUserId,
+            type: 'admin_unban',
+            title: '✅ Sperre aufgehoben',
+            body: 'Deine Account-Sperre wurde aufgehoben. Willkommen zurück!',
+            data: {'action': 'unban'},
+          ),
+          context: 'admin-action');
       return ok;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ AdminAction.unbanUser: $e');
@@ -261,13 +267,15 @@ class AdminActionService {
 
       // v103 (4.3): Push an den verwarnten User. Vor dem 3-Strike-Check
       // damit auch die Warnung selbst eine Notification ausloest.
-      PushNotificationHelper.instance.fireAndForget(PushNotificationHelper.instance.sendToUser(
-        targetUserId: targetUserId,
-        type: 'admin_warning',
-        title: '⚠️ Verwarnung erhalten',
-        body: 'Du hast eine Verwarnung erhalten. Grund: $reason',
-        data: {'action': 'warning', 'reason': reason},
-      ), context: 'admin-action');
+      PushNotificationHelper.instance.fireAndForget(
+          PushNotificationHelper.instance.sendToUser(
+            targetUserId: targetUserId,
+            type: 'admin_warning',
+            title: '⚠️ Verwarnung erhalten',
+            body: 'Du hast eine Verwarnung erhalten. Grund: $reason',
+            data: {'action': 'warning', 'reason': reason},
+          ),
+          context: 'admin-action');
 
       // 3-Strike-Rule
       final count = await getWarningCount(targetUserId);

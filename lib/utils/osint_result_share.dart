@@ -104,8 +104,8 @@ class OsintResultShare {
     required Map<String, dynamic> result,
   }) async {
     final doc = pw.Document();
-    final lines =
-        toMarkdown(toolName: toolName, query: query, result: result).split('\n');
+    final lines = toMarkdown(toolName: toolName, query: query, result: result)
+        .split('\n');
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -148,8 +148,7 @@ class OsintResultShare {
     final bytes =
         await _pdfBytes(toolName: toolName, query: query, result: result);
     final base = query.isEmpty ? toolName : '${toolName}_$query';
-    final name =
-        '${base.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.pdf';
+    final name = '${base.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}.pdf';
     if (!context.mounted) return;
     final box = context.findRenderObject() as RenderBox?;
     await Share.shareXFiles(
@@ -176,8 +175,7 @@ class OsintResultShare {
       onSelected: (value) {
         switch (value) {
           case 'share':
-            share(context,
-                toolName: toolName, query: query, result: result);
+            share(context, toolName: toolName, query: query, result: result);
             break;
           case 'copy':
             copy(context, toolName: toolName, query: query, result: result);

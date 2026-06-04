@@ -66,7 +66,8 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
   static const List<_GuidePrompt> _guidePrompts = [
     _GuidePrompt(0, 'Schliesse die Augen. Atme ruhig und tief.'),
     _GuidePrompt(20, 'Spüre, wie dein Körper schwer und entspannt wird.'),
-    _GuidePrompt(50, 'Lass jeden Gedanken vorbeiziehen, ohne ihn festzuhalten.'),
+    _GuidePrompt(
+        50, 'Lass jeden Gedanken vorbeiziehen, ohne ihn festzuhalten.'),
     _GuidePrompt(90, 'Richte deine Aufmerksamkeit auf die Frequenz.'),
     _GuidePrompt(140, 'Dein Geist ist wach, dein Körper ruht vollkommen.'),
     _GuidePrompt(200, 'Öffne dich für die erweiterte Wahrnehmung.'),
@@ -657,8 +658,8 @@ class _GatewayHistoryScreenState extends State<_GatewayHistoryScreen> {
                     child: Text(
                       'Verlauf konnte nicht geladen werden.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6)),
+                      style:
+                          TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                     ),
                   ),
                 )
@@ -717,8 +718,7 @@ class _GatewayHistoryScreenState extends State<_GatewayHistoryScreen> {
                               const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       level,

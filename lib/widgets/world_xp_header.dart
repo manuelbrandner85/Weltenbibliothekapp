@@ -60,141 +60,141 @@ class _WorldXpHeaderState extends State<WorldXpHeader> {
       // Tap auf den Header oeffnet das welten-uebergreifende Dashboard (P5).
       onTap: () => Navigator.of(context).pushNamed('/global_profile'),
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            widget.accent.withValues(alpha: 0.16),
-            widget.accent.withValues(alpha: 0.04),
-          ],
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              widget.accent.withValues(alpha: 0.16),
+              widget.accent.withValues(alpha: 0.04),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: widget.accent.withValues(alpha: 0.3)),
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: widget.accent.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Level-Badge
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      widget.accent,
-                      widget.accent.withValues(alpha: 0.6),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // Level-Badge
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        widget.accent,
+                        widget.accent.withValues(alpha: 0.6),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.accent.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                      ),
                     ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.accent.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    '${p.level}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Level ${p.level}',
-                      style: TextStyle(
-                        color: widget.accent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      '${p.totalXp} XP gesamt',
+                  child: Center(
+                    child: Text(
+                      '${p.level}',
                       style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 11,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              // Streak-Flamme
-              if (p.streakDays > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: Colors.orange.withValues(alpha: 0.4)),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('🔥', style: TextStyle(fontSize: 14)),
-                      const SizedBox(width: 4),
                       Text(
-                        '${p.streakDays}',
-                        style: const TextStyle(
-                          color: Colors.orangeAccent,
+                        'Level ${p.level}',
+                        style: TextStyle(
+                          color: widget.accent,
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        '${p.totalXp} XP gesamt',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
                         ),
                       ),
                     ],
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Progress-Bar zum naechsten Level
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Stack(
-              children: [
-                Container(
-                  height: 8,
-                  color: Colors.white.withValues(alpha: 0.08),
-                ),
-                FractionallySizedBox(
-                  widthFactor: pct,
-                  child: Container(
-                    height: 8,
+                // Streak-Flamme
+                if (p.streakDays > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          widget.accent,
-                          widget.accent.withValues(alpha: 0.7),
-                        ],
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: Colors.orange.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🔥', style: TextStyle(fontSize: 14)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${p.streakDays}',
+                          style: const TextStyle(
+                            color: Colors.orangeAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Progress-Bar zum naechsten Level
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Stack(
+                children: [
+                  Container(
+                    height: 8,
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: pct,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            widget.accent,
+                            widget.accent.withValues(alpha: 0.7),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              'Noch ${(xpNeeded - xpInLevel).clamp(0, xpNeeded)} XP bis Level ${p.level + 1}',
-              style: const TextStyle(color: Colors.white38, fontSize: 10),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'Noch ${(xpNeeded - xpInLevel).clamp(0, xpNeeded)} XP bis Level ${p.level + 1}',
+                style: const TextStyle(color: Colors.white38, fontSize: 10),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
