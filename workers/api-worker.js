@@ -131,37 +131,101 @@ function _b64urlToBytes(s) {
   return bytes;
 }
 
+// base64url segment -> parsed JSON (JWT header/payload). Wirft nie.
+function _b64urlToJson(seg) {
+  try {
+    return JSON.parse(new TextDecoder().decode(_b64urlToBytes(seg)));
+  } catch (_) {
+    return null;
+  }
+}
+
+// In-memory JWKS cache (per Worker-Isolate). Supabase rotiert die ECC-Signier-
+// schluessel selten; 1h TTL haelt Netzwerk-Calls minimal ohne Stale-Risiko.
+let _jwksCache = { keys: null, exp: 0 };
+
+/**
+ * Laedt die oeffentlichen JWT-Signier-Schluessel (JWKS) des Supabase-Projekts.
+ * Diese sind oeffentlich -- es ist KEIN Secret noetig. Ergebnis wird gecacht.
+ * @returns {Promise<Array|null>} Array von JWKs oder null bei Fehler.
+ */
+async function _getSupabaseJwks() {
+  const now = Date.now();
+  if (_jwksCache.keys && now < _jwksCache.exp) return _jwksCache.keys;
+  try {
+    const resp = await fetch(
+      `${SUPABASE_URL}/auth/v1/.well-known/jwks.json`,
+      { cf: { cacheTtl: 3600, cacheEverything: true } }
+    );
+    if (!resp.ok) return _jwksCache.keys; // alten Cache behalten falls vorhanden
+    const data = await resp.json();
+    const keys = Array.isArray(data && data.keys) ? data.keys : [];
+    if (keys.length) {
+      _jwksCache = { keys, exp: now + 3600 * 1000 };
+    }
+    return keys.length ? keys : _jwksCache.keys;
+  } catch (_) {
+    return _jwksCache.keys;
+  }
+}
+
 /**
  * AUTH-REFACTOR Phase 2 (additiv, NICHT erzwingend):
- * Verifiziert ein Supabase Anon-JWT (HS256) LOKAL gegen SUPABASE_JWT_SECRET
- * und liefert den dekodierten Payload ({ sub, role, exp, ... }). sub ist die
- * kanonische auth.uid(). Kein Netzwerk-Call.
+ * Verifiziert ein Supabase Anon-JWT LOKAL und liefert den dekodierten Payload
+ * ({ sub, role, exp, ... }). sub ist die kanonische auth.uid().
  *
- * Gibt null zurueck wenn: kein X-Supabase-Token Header, kein
- * SUPABASE_JWT_SECRET gesetzt, falsches Format, ungueltige Signatur oder
- * abgelaufen. In Phase 2 (Vorbereitung) wird das Ergebnis nur geloggt --
- * spaeter gated es user-scoped Endpoints gegen Impersonation.
+ * Unterstuetzt beide Signatur-Verfahren:
+ *  - ES256 (ECC P-256): aktueller Supabase-Signier-Schluessel. Verifikation
+ *    via oeffentlichem JWKS -- KEIN Secret noetig.
+ *  - HS256: alter Legacy-Schluessel (nur fuer noch gueltige Alt-Tokens).
+ *    Fallback gegen SUPABASE_JWT_SECRET, nur falls gesetzt.
+ *
+ * Gibt null zurueck wenn: kein X-Supabase-Token Header, falsches Format,
+ * unbekannter Algorithmus, ungueltige Signatur oder abgelaufen. In Phase 2
+ * (Vorbereitung) wird das Ergebnis nur geloggt -- spaeter gated es
+ * user-scoped Endpoints gegen Impersonation.
  */
 async function verifyAnonJwt(request, env) {
   const token = (request.headers.get('X-Supabase-Token') || '').trim();
   if (!token) return null;
-  const secret = env.SUPABASE_JWT_SECRET || '';
-  if (!secret) return null; // Secret noch nicht gesetzt -> still aus.
   const parts = token.split('.');
   if (parts.length !== 3) return null;
+  const header = _b64urlToJson(parts[0]);
+  if (!header) return null;
+  const signingInput = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+  const sig = _b64urlToBytes(parts[2]);
   try {
-    const enc = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      'raw', enc.encode(secret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false, ['verify']
-    );
-    const ok = await crypto.subtle.verify(
-      'HMAC', key, _b64urlToBytes(parts[2]),
-      enc.encode(`${parts[0]}.${parts[1]}`)
-    );
+    let ok = false;
+    if (header.alg === 'ES256') {
+      // Asymmetrisch: oeffentlichen Schluessel per kid aus JWKS waehlen.
+      const keys = await _getSupabaseJwks();
+      if (!keys || !keys.length) return null;
+      const jwk = keys.find(k => k.kid === header.kid) || keys[0];
+      if (!jwk) return null;
+      const key = await crypto.subtle.importKey(
+        'jwk', jwk,
+        { name: 'ECDSA', namedCurve: 'P-256' },
+        false, ['verify']
+      );
+      ok = await crypto.subtle.verify(
+        { name: 'ECDSA', hash: 'SHA-256' }, key, sig, signingInput
+      );
+    } else if (header.alg === 'HS256') {
+      // Legacy symmetrisch: nur moeglich wenn Secret gesetzt ist.
+      const secret = env.SUPABASE_JWT_SECRET || '';
+      if (!secret) return null;
+      const key = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false, ['verify']
+      );
+      ok = await crypto.subtle.verify('HMAC', key, sig, signingInput);
+    } else {
+      return null; // unbekannter Algorithmus
+    }
     if (!ok) return null;
-    const payload = JSON.parse(new TextDecoder().decode(_b64urlToBytes(parts[1])));
+    const payload = _b64urlToJson(parts[1]);
+    if (!payload) return null;
     if (payload.exp && Date.now() / 1000 > payload.exp) return null;
     return payload;
   } catch (_) {
@@ -1331,8 +1395,8 @@ export default {
     }
 
     // AUTH-REFACTOR Phase 2 (additiv): nicht-blockierende Identity-Telemetrie.
-    // Misst Impersonation-Versuche via verifiziertem Anon-JWT, ohne irgendetwas
-    // zu erzwingen. No-op solange SUPABASE_JWT_SECRET nicht gesetzt ist.
+    // Misst Impersonation-Versuche via verifiziertem Anon-JWT (ES256 gegen das
+    // oeffentliche JWKS -- kein Secret noetig), ohne irgendetwas zu erzwingen.
     try { ctx.waitUntil(logIdentityTelemetry(request, env)); } catch (_) { /* best-effort */ }
 
     // ── Error Report (Client-Side) ────────────────────────────
