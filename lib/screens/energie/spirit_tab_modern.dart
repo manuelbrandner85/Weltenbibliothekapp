@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../widgets/restriction_gate.dart';
+import 'tools/cosmic_energy_tools.dart';
 import '../../services/storage_service.dart';
 import '../../services/favorites_service.dart';
 import '../../services/recent_tools_service.dart';
@@ -146,6 +147,43 @@ class _SpiritTabModernState extends State<SpiritTabModern>
 
   void _initializeTools() {
     _allTools = [
+      // === KOSMISCHE ENERGIE-WERKZEUGE (key-frei, Live-Daten) ===
+      {
+        'icon': Icons.nightlight_round,
+        'iconEmoji': '🌙',
+        'title': 'Mondphasen',
+        'subtitle': 'Mondenergie & 7-Tage-Vorschau',
+        'color': const Color(0xFF7C4DFF),
+        'category': 'astro',
+        'screen': const MoonPhaseScreen(),
+      },
+      {
+        'icon': Icons.graphic_eq_rounded,
+        'iconEmoji': '〰️',
+        'title': 'Erd-Resonanz',
+        'subtitle': 'Geomagnetik & Schumann (NOAA)',
+        'color': const Color(0xFFB388FF),
+        'category': 'energie',
+        'screen': const SchumannResonanceScreen(),
+      },
+      {
+        'icon': Icons.self_improvement_rounded,
+        'iconEmoji': '🧘',
+        'title': 'Tages-Mantra',
+        'subtitle': 'Taeglicher Weisheits-Impuls',
+        'color': const Color(0xFF9575CD),
+        'category': 'meditation',
+        'screen': const DailyMantraScreen(),
+      },
+      {
+        'icon': Icons.favorite_rounded,
+        'iconEmoji': '💗',
+        'title': 'Bio-Rhythmus',
+        'subtitle': 'Koerper, Seele & Geist-Zyklen',
+        'color': const Color(0xFFE91E63),
+        'category': 'wissen',
+        'screen': const BiorhythmScreen(),
+      },
       // === KERN-TOOLS (6 Original-Calculators) ===
       {
         'icon': Icons.calculate,

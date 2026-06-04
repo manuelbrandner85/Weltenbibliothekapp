@@ -19,6 +19,7 @@ import 'tools/breathmaster_screen.dart';
 import 'tools/breath_hold_timer_screen.dart';
 import 'tools/reality_architect_screen.dart';
 import 'tools/rv_trainer_screen.dart';
+import 'tools/origin_tools.dart';
 
 /// 🌀 URSPRUNG Home Tab — CIA Quanten-Code (25 Module, 5 Tools)
 ///
@@ -202,6 +203,41 @@ class UrsprungHomeTab extends StatelessWidget {
               title: 'RV Trainer',
               subtitle: '50 Targets · CRV 3-Stage · Ingo Swann',
               builder: (_) => const RvTrainerScreen(),
+            ),
+
+            const SizedBox(height: 22),
+            _sectionLabel('LEBENDIGER PLANET'),
+            const SizedBox(height: 12),
+            _buildToolCard(
+              context: context,
+              emoji: '🐾',
+              title: 'Artenvielfalt',
+              subtitle: 'Biodiversität weltweit · GBIF Live-Daten',
+              builder: (_) => const BiodiversityScreen(),
+            ),
+            const SizedBox(height: 10),
+            _buildToolCard(
+              context: context,
+              emoji: '✨',
+              title: 'Sternenhimmel heute',
+              subtitle: 'Sichtbare Planeten · Himmelskalender',
+              builder: (_) => const NightSkyScreen(),
+            ),
+            const SizedBox(height: 10),
+            _buildToolCard(
+              context: context,
+              emoji: '🌍',
+              title: 'Naturphänomene',
+              subtitle: 'Stürme, Eis, Dürre weltweit · NASA EONET',
+              builder: (_) => const NaturePhenomenaScreen(),
+            ),
+            const SizedBox(height: 10),
+            _buildToolCard(
+              context: context,
+              emoji: '🗣️',
+              title: 'Indigene Sprachen',
+              subtitle: 'Naturvölker & ihr Wissen · Datenbank',
+              builder: (_) => const IndigenousLanguagesScreen(),
             ),
 
             const SizedBox(height: 32),

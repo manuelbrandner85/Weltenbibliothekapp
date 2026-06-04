@@ -17,6 +17,7 @@ import '../../widgets/daily_practice_card.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_modules_screen.dart';
 import 'vorhang_symbol_decoder_screen.dart';
+import 'tools/power_tools.dart';
 
 /// 🎭 VORHANG Home Tab — Dunkle Psychologie & Elite-Strategien
 ///
@@ -200,6 +201,42 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
               _sectionLabel('KERN-TOOL'),
               const SizedBox(height: 12),
               _buildSymbolDecoderCard(context),
+              const SizedBox(height: 28),
+
+              // ── INTERAKTIVE WERKZEUGE (key-frei) ──
+              _sectionLabel('WERKZEUGE'),
+              const SizedBox(height: 12),
+              _buildToolTile(
+                context,
+                emoji: '🏛️',
+                title: 'Lobby-Radar',
+                subtitle: 'Konzern-Einfluss auf Politik - Live-Medien.',
+                builder: (_) => const LobbyRadarScreen(),
+              ),
+              const SizedBox(height: 10),
+              _buildToolTile(
+                context,
+                emoji: '🔓',
+                title: 'Leaks-Suche',
+                subtitle: 'Enthuellungen & Whistleblower weltweit.',
+                builder: (_) => const LeaksSearchScreen(),
+              ),
+              const SizedBox(height: 10),
+              _buildToolTile(
+                context,
+                emoji: '🕸️',
+                title: 'Macht-Netzwerke',
+                subtitle: 'Einflussreiche Netzwerke - Wissens-Datenbank.',
+                builder: (_) => const PowerNetworksScreen(),
+              ),
+              const SizedBox(height: 10),
+              _buildToolTile(
+                context,
+                emoji: '🔺',
+                title: 'Symbol-Datenbank',
+                subtitle: 'Historische Symbole & ihre Bedeutung.',
+                builder: (_) => const SymbolDatabaseScreen(),
+              ),
               const SizedBox(height: 28),
 
               // ── Ambient Tagespfad ──
@@ -453,6 +490,68 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
   // ── KERN-TOOL: Symbol- & Logo-Decoder ──
   /// Vorhang-exclusive entry point: decode symbols/logos into possible
   /// meanings, origin and cross-world references.
+  /// Kompakte Tool-Kachel fuer die WERKZEUGE-Sektion.
+  Widget _buildToolTile(
+    BuildContext context, {
+    required String emoji,
+    required String title,
+    required String subtitle,
+    required WidgetBuilder builder,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () =>
+            Navigator.push(context, MaterialPageRoute(builder: builder)),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: _surface,
+            border: Border.all(color: _gold.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: _gold.withValues(alpha: 0.12),
+                  border: Border.all(color: _gold.withValues(alpha: 0.4)),
+                ),
+                child: Text(emoji, style: const TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 3),
+                    Text(subtitle,
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.55),
+                            fontSize: 12,
+                            height: 1.3)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  color: _gold.withValues(alpha: 0.7), size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSymbolDecoderCard(BuildContext context) {
     return Material(
       color: Colors.transparent,
