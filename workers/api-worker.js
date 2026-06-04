@@ -11237,135 +11237,282 @@ Wichtig:
 
     }
 
-    // ── R-X10: Konflikt-Datenbank (ACLED) ────────────────────────────────────
+    // ── R-X10: Konflikt-Datenbank (ACLED bevorzugt, GDELT als freier Fallback) ─
     // GET /api/intel/conflict?country=Ukraine&limit=50
     if (path === '/api/intel/conflict' && method === 'GET') {
-      if (!env.ACLED_ACCESS_TOKEN || !env.ACLED_EMAIL) {
-        return jsonResponse({ key_missing: true, events: [] });
-      }
       const country = url.searchParams.get('country') || '';
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
+
+      // Premium path: ACLED (wenn Secrets gesetzt)
+      if (env.ACLED_ACCESS_TOKEN && env.ACLED_EMAIL) {
+        try {
+          const params = new URLSearchParams({
+            key: env.ACLED_ACCESS_TOKEN,
+            email: env.ACLED_EMAIL,
+            limit: String(limit),
+            fields: 'event_date|event_type|sub_event_type|country|location|latitude|longitude|fatalities|notes',
+            'order': 'event_date:desc',
+          });
+          if (country) params.set('country', country);
+          const r = await fetch(`https://api.acleddata.com/acled/read?${params}`, {
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!r.ok) return jsonResponse({ error: `ACLED HTTP ${r.status}`, events: [] });
+          const data = await r.json();
+          return jsonResponse({ events: data.data || [], count: data.count || 0 });
+        } catch (e) {
+          return errorResponse(`ACLED-Abfrage fehlgeschlagen: ${e.message}`, 502);
+        }
+      }
+
+      // Free fallback: GDELT DOC API (kein API-Key noetig)
       try {
-        const params = new URLSearchParams({
-          key: env.ACLED_ACCESS_TOKEN,
-          email: env.ACLED_EMAIL,
-          limit: String(limit),
-          fields: 'event_date|event_type|sub_event_type|country|location|latitude|longitude|fatalities|notes',
-          'order': 'event_date:desc',
-        });
-        if (country) params.set('country', country);
-        const r = await fetch(`https://api.acleddata.com/acled/read?${params}`, {
-          signal: AbortSignal.timeout(10000),
-        });
-        if (!r.ok) return jsonResponse({ error: `ACLED HTTP ${r.status}`, events: [] });
+        const q = country
+          ? `${country} conflict violence protest riot attack`
+          : 'conflict violence war protest';
+        const r = await fetch(
+          `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(q)}&mode=artlist&maxrecords=${limit}&format=json`,
+          { signal: AbortSignal.timeout(12000) }
+        );
+        if (!r.ok) return jsonResponse({ events: [], count: 0 });
         const data = await r.json();
-        return jsonResponse({ events: data.data || [], count: data.count || 0 });
+        const articles = Array.isArray(data.articles) ? data.articles : [];
+        const events = articles.map(a => {
+          const raw = a.seendate || '';
+          const event_date = raw.length >= 8
+            ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
+            : new Date().toISOString().slice(0, 10);
+          const t = (a.title || '').toLowerCase();
+          let event_type = 'Meldung';
+          if (/\b(battle|gefecht|kampf|krieg|war)\b/.test(t)) event_type = 'Battle';
+          else if (/\b(explos|bomben|rakete|missile|airstrike)\b/.test(t)) event_type = 'Explosion/Remote violence';
+          else if (/\b(protest|demonst|march)\b/.test(t)) event_type = 'Protests';
+          else if (/\b(riot|unruhen|aufstand)\b/.test(t)) event_type = 'Riots';
+          else if (/\b(attack|angriff|gewalt|violence|shooting|schusswaf)\b/.test(t)) event_type = 'Violence against civilians';
+          return {
+            event_type,
+            sub_event_type: a.domain || '',
+            location: country || a.sourcecountry || '',
+            event_date,
+            fatalities: 0,
+            notes: a.title || '',
+          };
+        });
+        return jsonResponse({ events, count: events.length, source: 'GDELT' });
       } catch (e) {
-        return errorResponse(`ACLED-Abfrage fehlgeschlagen: ${e.message}`, 502);
+        return jsonResponse({ events: [], count: 0, error: `GDELT: ${e.message}` });
       }
     }
 
-    // ── R-X11: Waldbrand-Satelliten (NASA FIRMS) ─────────────────────────────
+    // ── R-X11: Waldbrand-Satelliten (NASA FIRMS bevorzugt, EONET als freier Fallback)
     // GET /api/intel/wildfires?days=1&region=world
     if (path === '/api/intel/wildfires' && method === 'GET') {
-      if (!env.NASA_FIRMS_API_KEY) {
-        return jsonResponse({ key_missing: true, fires: [] });
-      }
       const days = Math.min(parseInt(url.searchParams.get('days') || '1'), 7);
-      const region = url.searchParams.get('region') || 'world';
-      try {
-        const csvUrl = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${env.NASA_FIRMS_API_KEY}/VIIRS_SNPP_NRT/${region}/${days}`;
-        const r = await fetch(csvUrl, { signal: AbortSignal.timeout(12000) });
-        if (!r.ok) return jsonResponse({ error: `FIRMS HTTP ${r.status}`, fires: [] });
-        const text = await r.text();
-        const lines = text.trim().split('\n');
-        if (lines.length < 2) return jsonResponse({ fires: [], count: 0 });
-        const headers = lines[0].split(',').map(h => h.trim());
-        const fires = [];
-        for (let i = 1; i < Math.min(lines.length, 301); i++) {
-          const cols = lines[i].split(',');
-          if (cols.length < headers.length) continue;
-          const entry = {};
-          headers.forEach((h, idx) => { entry[h] = cols[idx]?.trim() || ''; });
-          fires.push(entry);
+
+      // Premium path: NASA FIRMS (wenn API-Key gesetzt)
+      if (env.NASA_FIRMS_API_KEY) {
+        const region = url.searchParams.get('region') || 'world';
+        try {
+          const csvUrl = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${env.NASA_FIRMS_API_KEY}/VIIRS_SNPP_NRT/${region}/${days}`;
+          const r = await fetch(csvUrl, { signal: AbortSignal.timeout(12000) });
+          if (!r.ok) return jsonResponse({ error: `FIRMS HTTP ${r.status}`, fires: [] });
+          const text = await r.text();
+          const lines = text.trim().split('\n');
+          if (lines.length < 2) return jsonResponse({ fires: [], count: 0 });
+          const headers = lines[0].split(',').map(h => h.trim());
+          const fires = [];
+          for (let i = 1; i < Math.min(lines.length, 301); i++) {
+            const cols = lines[i].split(',');
+            if (cols.length < headers.length) continue;
+            const entry = {};
+            headers.forEach((h, idx) => { entry[h] = cols[idx]?.trim() || ''; });
+            fires.push(entry);
+          }
+          return jsonResponse({ fires, count: fires.length, totalRows: lines.length - 1 });
+        } catch (e) {
+          return errorResponse(`FIRMS-Abfrage fehlgeschlagen: ${e.message}`, 502);
         }
-        return jsonResponse({ fires, count: fires.length, totalRows: lines.length - 1 });
+      }
+
+      // Free fallback: NASA EONET (kein API-Key noetig, offizielle NASA-Events)
+      try {
+        const eonetDays = Math.max(days * 30, 30); // EONET nutzt Tage seit Beginn
+        const r = await fetch(
+          `https://eonet.gsfc.nasa.gov/api/v3/events?category=wildfires&status=open&limit=200&days=${eonetDays}`,
+          { signal: AbortSignal.timeout(12000) }
+        );
+        if (!r.ok) return jsonResponse({ fires: [], count: 0 });
+        const data = await r.json();
+        const fires = (data.events || []).flatMap(ev => {
+          // EONET events can have multiple geometry points (track); use the latest
+          const geoms = ev.geometry || [];
+          const geom = geoms[geoms.length - 1] || {};
+          const coords = geom.coordinates || [0, 0];
+          return [{
+            latitude: String(coords[1] || 0),
+            longitude: String(coords[0] || 0),
+            frp: '120',  // EONET hat kein FRP; Median-Wert als Platzhalter
+            acq_date: (geom.date || new Date().toISOString()).slice(0, 10),
+            acq_time: '0000',
+            country_id: '',
+            confidence: 'n',
+            title: ev.title || '',
+          }];
+        });
+        return jsonResponse({ fires, count: fires.length, totalRows: fires.length, source: 'NASA EONET' });
       } catch (e) {
-        return errorResponse(`FIRMS-Abfrage fehlgeschlagen: ${e.message}`, 502);
+        return jsonResponse({ fires: [], count: 0, error: `EONET: ${e.message}` });
       }
     }
 
-    // ── R-X12: Luftqualitaet (OpenAQ) ────────────────────────────────────────
+    // ── R-X12: Luftqualitaet (OpenAQ v3 bevorzugt, v2 als freier Fallback) ────
     // GET /api/intel/airquality?city=Berlin&limit=20
     if (path === '/api/intel/airquality' && method === 'GET') {
-      if (!env.OPENAQ_API_KEY) {
-        return jsonResponse({ key_missing: true, results: [] });
-      }
       const city = url.searchParams.get('city') || '';
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+
+      // Premium path: OpenAQ v3 (wenn API-Key gesetzt)
+      if (env.OPENAQ_API_KEY) {
+        try {
+          const params = new URLSearchParams({ limit: String(limit), order_by: 'lastUpdated', sort_order: 'desc' });
+          if (city) params.set('city', city);
+          const r = await fetch(`https://api.openaq.org/v3/locations?${params}`, {
+            headers: { 'X-API-Key': env.OPENAQ_API_KEY },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!r.ok) return jsonResponse({ error: `OpenAQ HTTP ${r.status}`, results: [] });
+          const data = await r.json();
+          const results = (data.results || []).map(loc => ({
+            id: loc.id,
+            name: loc.name,
+            city: loc.locality || loc.city || '',
+            country: loc.country?.code || '',
+            lat: loc.coordinates?.latitude,
+            lon: loc.coordinates?.longitude,
+            lastUpdated: loc.datetimeLast?.local || loc.lastUpdated || '',
+            sensors: (loc.sensors || []).map(s => ({
+              name: s.name,
+              parameter: s.parameter?.name || '',
+              unit: s.parameter?.units || '',
+            })),
+          }));
+          return jsonResponse({ results, count: results.length });
+        } catch (e) {
+          return errorResponse(`OpenAQ-Abfrage fehlgeschlagen: ${e.message}`, 502);
+        }
+      }
+
+      // Free fallback: OpenAQ v2 (kein API-Key noetig)
       try {
-        const params = new URLSearchParams({ limit: String(limit), order_by: 'lastUpdated', sort_order: 'desc' });
+        const params = new URLSearchParams({
+          limit: String(limit),
+          order_by: 'lastUpdated',
+          sort: 'desc',
+        });
         if (city) params.set('city', city);
-        const r = await fetch(`https://api.openaq.org/v3/locations?${params}`, {
-          headers: { 'X-API-Key': env.OPENAQ_API_KEY },
+        const r = await fetch(`https://api.openaq.org/v2/latest?${params}`, {
+          headers: { 'Accept': 'application/json' },
           signal: AbortSignal.timeout(10000),
         });
-        if (!r.ok) return jsonResponse({ error: `OpenAQ HTTP ${r.status}`, results: [] });
+        if (!r.ok) return jsonResponse({ results: [], error: `OpenAQ v2 HTTP ${r.status}` });
         const data = await r.json();
-        // Normalize: keep name, city, country, coordinates, lastUpdated, sensors
         const results = (data.results || []).map(loc => ({
-          id: loc.id,
-          name: loc.name,
-          city: loc.locality || loc.city || '',
-          country: loc.country?.code || '',
+          id: loc.id || 0,
+          name: loc.location || loc.name || '',
+          city: loc.city || '',
+          country: loc.country || '',
           lat: loc.coordinates?.latitude,
           lon: loc.coordinates?.longitude,
-          lastUpdated: loc.datetimeLast?.local || loc.lastUpdated || '',
-          sensors: (loc.sensors || []).map(s => ({
-            name: s.name,
-            parameter: s.parameter?.name || '',
-            unit: s.parameter?.units || '',
+          lastUpdated: loc.lastUpdated || '',
+          sensors: (loc.parameters || []).map(p => ({
+            name: p.parameter || '',
+            parameter: p.parameter || '',
+            unit: p.unit || '',
           })),
         }));
-        return jsonResponse({ results, count: results.length });
+        return jsonResponse({ results, count: results.length, source: 'OpenAQ v2' });
       } catch (e) {
-        return errorResponse(`OpenAQ-Abfrage fehlgeschlagen: ${e.message}`, 502);
+        return jsonResponse({ results: [], error: `OpenAQ v2: ${e.message}` });
       }
     }
 
-    // ── R-X13: Internet-Ausfaelle (Cloudflare Radar) ─────────────────────────
+    // ── R-X13: Internet-Ausfaelle (CF Radar bevorzugt, IODA als freier Fallback)
     // GET /api/intel/outages?limit=20
     if (path === '/api/intel/outages' && method === 'GET') {
-      if (!env.CLOUDFLARE_RADAR_API_TOKEN) {
-        return jsonResponse({ key_missing: true, outages: [] });
-      }
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '20'), 100);
+
+      // Premium path: Cloudflare Radar (wenn Token gesetzt)
+      if (env.CLOUDFLARE_RADAR_API_TOKEN) {
+        try {
+          const params = new URLSearchParams({ limit: String(limit), format: 'json' });
+          const r = await fetch(`https://api.cloudflare.com/client/v4/radar/annotations/outages?${params}`, {
+            headers: {
+              'Authorization': `Bearer ${env.CLOUDFLARE_RADAR_API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!r.ok) return jsonResponse({ error: `CF Radar HTTP ${r.status}`, outages: [] });
+          const data = await r.json();
+          const outages = (data.result?.annotations || []).map(a => ({
+            id: a.id,
+            asn: a.asn,
+            asnName: a.asnName || '',
+            location: a.locationName || '',
+            country: a.countryCode || '',
+            startDate: a.startDate || '',
+            endDate: a.endDate || '',
+            description: a.description || '',
+            scope: a.scope || '',
+            eventType: a.eventType || '',
+          }));
+          return jsonResponse({ outages, count: outages.length });
+        } catch (e) {
+          return errorResponse(`CF-Radar-Abfrage fehlgeschlagen: ${e.message}`, 502);
+        }
+      }
+
+      // Free fallback: IODA API (Internet Outage Detection and Analysis, CAIDA/Georgia Tech)
+      // Kein API-Key noetig. Erkennt BGP-Routing-Anomalien als Proxy fuer Ausfaelle.
       try {
-        const params = new URLSearchParams({ limit: String(limit), format: 'json' });
-        const r = await fetch(`https://api.cloudflare.com/client/v4/radar/annotations/outages?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${env.CLOUDFLARE_RADAR_API_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          signal: AbortSignal.timeout(10000),
+        const now = Math.floor(Date.now() / 1000);
+        const from = now - 7 * 24 * 3600; // letzte 7 Tage
+        const r = await fetch(
+          `https://api.ioda.caida.org/v2/outages/alerts?from=${from}&until=${now}&limit=${limit}`,
+          {
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(10000),
+          }
+        );
+        if (!r.ok) return jsonResponse({ outages: [], count: 0 });
+        const body = await r.json();
+        // IODA gibt entweder ein Array oder { data: [...] } zurueck
+        const alerts = Array.isArray(body) ? body
+          : Array.isArray(body.data) ? body.data
+          : Array.isArray(body.alerts) ? body.alerts
+          : [];
+        const outages = alerts.map(a => {
+          const entity = a.entity || {};
+          const type = entity.type || a.type || 'country';
+          const name = entity.name || a.name || entity.code || '';
+          const fromTs = a.from || a.time || now;
+          const untilTs = a.until || (fromTs + 3600);
+          return {
+            id: `${type}-${entity.code || name}-${fromTs}`,
+            asn: 0,
+            asnName: type === 'asn' ? name : '',
+            location: name,
+            country: type === 'country' ? name : (entity.code || ''),
+            startDate: new Date(fromTs * 1000).toISOString().slice(0, 10),
+            endDate: new Date(untilTs * 1000).toISOString().slice(0, 10),
+            description: `${a.datasource || 'bgp'}: Score ${(+(a.value || 0)).toFixed(1)}`,
+            scope: type,
+            eventType: a.condition || 'outage',
+          };
         });
-        if (!r.ok) return jsonResponse({ error: `CF Radar HTTP ${r.status}`, outages: [] });
-        const data = await r.json();
-        const outages = (data.result?.annotations || []).map(a => ({
-          id: a.id,
-          asn: a.asn,
-          asnName: a.asnName || '',
-          location: a.locationName || '',
-          country: a.countryCode || '',
-          startDate: a.startDate || '',
-          endDate: a.endDate || '',
-          description: a.description || '',
-          scope: a.scope || '',
-          eventType: a.eventType || '',
-        }));
-        return jsonResponse({ outages, count: outages.length });
+        return jsonResponse({ outages, count: outages.length, source: 'IODA/CAIDA' });
       } catch (e) {
-        return errorResponse(`CF-Radar-Abfrage fehlgeschlagen: ${e.message}`, 502);
+        return jsonResponse({ outages: [], count: 0, error: `IODA: ${e.message}` });
       }
     }
 
