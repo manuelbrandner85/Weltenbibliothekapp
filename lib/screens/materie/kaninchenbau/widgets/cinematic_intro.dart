@@ -15,10 +15,17 @@ library;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../tools/country_compare_tool.dart';
 import '../../tools/eu_parliament_tracker_screen.dart';
+import '../../tools/gdelt_tone_screen.dart';
+import '../../tools/ip_osint_tool.dart';
+import '../../tools/osint_tools_hub.dart';
+import '../../tools/person_osint_tool.dart';
 import '../../tools/power_network_explorer_screen.dart';
+import '../../tools/propaganda_compare_screen.dart';
 import '../../tools/study_analyst_screen.dart';
 import '../../tools/version_watcher_screen.dart';
+import '../../tools/world_event_radar_screen.dart';
 import '../screens/my_investigations_screen.dart';
 import '../services/kb_history_service.dart';
 import 'kb_design.dart';
@@ -236,13 +243,14 @@ class _CinematicIntroState extends State<CinematicIntro>
                             TextButton.icon(
                               onPressed: () {
                                 HapticFeedback.lightImpact();
-                                Navigator.of(context)
-                                    .pushNamed('/research-hub');
+                                Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) => const OsintToolsHub(),
+                                ));
                               },
-                              icon: Icon(Icons.science_outlined,
+                              icon: Icon(Icons.manage_search_rounded,
                                   size: 16, color: KbDesign.goldAccent),
                               label: Text(
-                                'Tools',
+                                'Werkzeuge',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.85),
                                   fontSize: 12,
@@ -579,27 +587,26 @@ class _CinematicIntroState extends State<CinematicIntro>
     );
   }
 
-  // Die 4 konsolidierten OSINT-Tools mit eigenen Cinematic-Screens
-  // (statt 7 WebView-Wrapper). Tap navigiert direkt in den jeweiligen
-  // Screen. screenBuilder = Widget-Factory, sonst Suchen-Dialog fallback.
+  // Alle verfuegbaren OSINT-Schnellzugriff-Tools.
+  // Tap navigiert direkt in den jeweiligen Screen.
   static final _osintTools = [
     _OsintToolDef(
       icon: Icons.hub,
       title: 'Power-Network',
-      subtitle: 'OpenSanctions + 6 Leaks parallel',
+      subtitle: 'OpenSanctions + 6 Leaks',
       color: const Color(0xFFE53935),
       screenBuilder: () => const PowerNetworkExplorerScreen(),
     ),
     _OsintToolDef(
       icon: Icons.biotech,
       title: 'Studien-Analyst',
-      subtitle: 'PubMed + Semantic + AI-TLDR',
+      subtitle: 'PubMed + Semantic + AI',
       color: const Color(0xFF26C6DA),
       screenBuilder: () => const StudyAnalystScreen(),
     ),
     _OsintToolDef(
       icon: Icons.history,
-      title: 'Versions-Wachter',
+      title: 'Versions-Waechter',
       subtitle: 'Wayback-Diff + Watchlist',
       color: const Color(0xFFFF7043),
       screenBuilder: () => const VersionWatcherScreen(),
@@ -607,9 +614,51 @@ class _CinematicIntroState extends State<CinematicIntro>
     _OsintToolDef(
       icon: Icons.how_to_vote,
       title: 'EU-Parlament',
-      subtitle: 'Live-Votes + Werte-Match',
+      subtitle: 'Live-Votes + MEP-Browser',
       color: const Color(0xFF2196F3),
       screenBuilder: () => const EuParliamentTrackerScreen(),
+    ),
+    _OsintToolDef(
+      icon: Icons.travel_explore_rounded,
+      title: 'IP / ASN-Lookup',
+      subtitle: 'Geolocation, ISP, ASN',
+      color: const Color(0xFFE53935),
+      screenBuilder: () => const IpOsintTool(),
+    ),
+    _OsintToolDef(
+      icon: Icons.person_search_rounded,
+      title: 'Personen-Recherche',
+      subtitle: 'Wikipedia / oeffentlich',
+      color: const Color(0xFFAB47BC),
+      screenBuilder: () => const PersonOsintTool(),
+    ),
+    _OsintToolDef(
+      icon: Icons.compare_rounded,
+      title: 'Propaganda-Vergleich',
+      subtitle: 'Zwei Quellen gegenueber',
+      color: const Color(0xFFFF7043),
+      screenBuilder: () => const PropagandaCompareScreen(),
+    ),
+    _OsintToolDef(
+      icon: Icons.public_rounded,
+      title: 'Welt-Radar',
+      subtitle: 'Erdbeben, Katastrophen live',
+      color: const Color(0xFFEF5350),
+      screenBuilder: () => const WorldEventRadarScreen(),
+    ),
+    _OsintToolDef(
+      icon: Icons.insights_rounded,
+      title: 'Medien-Tonalitaet',
+      subtitle: 'GDELT: Weltpresse-Stimmung',
+      color: const Color(0xFFFF8F00),
+      screenBuilder: () => const GdeltToneScreen(),
+    ),
+    _OsintToolDef(
+      icon: Icons.public_rounded,
+      title: 'Laender-Vergleich',
+      subtitle: 'Bevoelkerung, Gini, Sprachen',
+      color: const Color(0xFF26C6DA),
+      screenBuilder: () => const CountryCompareTool(),
     ),
   ];
 
@@ -626,7 +675,7 @@ class _CinematicIntroState extends State<CinematicIntro>
                   size: 14, color: KbDesign.neonRedSoft.withValues(alpha: 0.8)),
               const SizedBox(width: 6),
               Text(
-                'RECHERCHE-TOOLS',
+                'RECHERCHE-WERKZEUGE',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 10,
@@ -657,6 +706,42 @@ class _CinematicIntroState extends State<CinematicIntro>
                     },
                   ))
               .toList(),
+        ),
+        const SizedBox(height: 12),
+        // "Alle Werkzeuge" Link
+        GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const OsintToolsHub()));
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: KbDesign.neonRedSoft.withValues(alpha: 0.35)),
+              color: KbDesign.neonRed.withValues(alpha: 0.06),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: KbDesign.neonRedSoft.withValues(alpha: 0.8)),
+                const SizedBox(width: 6),
+                Text(
+                  'Alle Werkzeuge anzeigen (29 gesamt)',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
