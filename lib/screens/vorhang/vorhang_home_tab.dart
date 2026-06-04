@@ -16,6 +16,7 @@ import '../../widgets/daily_revelation_card.dart';
 import '../../widgets/daily_practice_card.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_modules_screen.dart';
+import 'vorhang_symbol_decoder_screen.dart';
 
 /// 🎭 VORHANG Home Tab — Dunkle Psychologie & Elite-Strategien
 ///
@@ -195,6 +196,12 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
               _buildMentorButton(context),
               const SizedBox(height: 28),
 
+              // ── KERN-TOOL: Symbol- & Logo-Decoder (Vorhang-exklusiv) ──
+              _sectionLabel('KERN-TOOL'),
+              const SizedBox(height: 12),
+              _buildSymbolDecoderCard(context),
+              const SizedBox(height: 28),
+
               // ── Ambient Tagespfad ──
               const DailyPathWidget(),
               const SizedBox(height: 28),
@@ -337,83 +344,84 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                  color: _gold.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _gold.withValues(alpha: 0.4)),
-                ),
-                child: const Text(
-                  'WELT VI',
-                  style: TextStyle(
-                    fontSize: 9,
-                    letterSpacing: 3.0,
-                    color: _gold,
-                    fontWeight: FontWeight.w700,
+                          color: _gold.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                              Border.all(color: _gold.withValues(alpha: 0.4)),
+                        ),
+                        child: const Text(
+                          'WELT VI',
+                          style: TextStyle(
+                            fontSize: 9,
+                            letterSpacing: 3.0,
+                            color: _gold,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      if (!_loading)
+                        Text(
+                          '$_completedCount / $_totalCount',
+                          style: const TextStyle(
+                            color: _gold,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-              ),
-              const Spacer(),
-              if (!_loading)
-                Text(
-                  '$_completedCount / $_totalCount',
-                  style: const TextStyle(
-                    color: _gold,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: 16),
+                  Text(
+                    'VORHANG',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w200,
+                      fontSize: 32,
+                      letterSpacing: 8.0,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'VORHANG',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w200,
-              fontSize: 32,
-              letterSpacing: 8.0,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Dunkle Psychologie & Elite-Strategien',
-            style: TextStyle(
-              fontSize: 14,
-              color: _gold.withValues(alpha: 0.7),
-              fontWeight: FontWeight.w300,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Hinter dem Vorhang verbirgt sich das Wissen über Macht, '
-            'Manipulation und die psychologischen Werkzeuge der Eliten. '
-            'Lerne sie zu erkennen — und dich zu schützen.',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.55),
-              height: 1.6,
-            ),
-          ),
-          if (!_loading && _totalCount > 0) ...[
-            const SizedBox(height: 18),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: percent,
-                minHeight: 6,
-                backgroundColor: _gold.withValues(alpha: 0.1),
-                valueColor: const AlwaysStoppedAnimation(_gold),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${(percent * 100).round()}% des Vorhangs gelüftet',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 11,
-              ),
-            ),
-          ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Dunkle Psychologie & Elite-Strategien',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _gold.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w300,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Hinter dem Vorhang verbirgt sich das Wissen über Macht, '
+                    'Manipulation und die psychologischen Werkzeuge der Eliten. '
+                    'Lerne sie zu erkennen — und dich zu schützen.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.55),
+                      height: 1.6,
+                    ),
+                  ),
+                  if (!_loading && _totalCount > 0) ...[
+                    const SizedBox(height: 18),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: percent,
+                        minHeight: 6,
+                        backgroundColor: _gold.withValues(alpha: 0.1),
+                        valueColor: const AlwaysStoppedAnimation(_gold),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${(percent * 100).round()}% des Vorhangs gelüftet',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -436,6 +444,91 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
           builder: (_) => const MentorChatScreen(
             personality: MentorPersonality.stratege,
             world: 'vorhang',
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── KERN-TOOL: Symbol- & Logo-Decoder ──
+  /// Vorhang-exclusive entry point: decode symbols/logos into possible
+  /// meanings, origin and cross-world references.
+  Widget _buildSymbolDecoderCard(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const VorhangSymbolDecoderScreen(),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                _gold.withValues(alpha: 0.18),
+                _gold.withValues(alpha: 0.05),
+                _surface,
+              ],
+            ),
+            border:
+                Border.all(color: _gold.withValues(alpha: 0.45), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: _gold.withValues(alpha: 0.15),
+                blurRadius: 26,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _gold.withValues(alpha: 0.15),
+                  border: Border.all(color: _gold.withValues(alpha: 0.5)),
+                ),
+                child: const Text('👁️', style: TextStyle(fontSize: 26)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Symbol- & Logo-Decoder',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Symbole entschluesseln: Bedeutung, Herkunft & '
+                      'Querverweise in die anderen Welten.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  color: _gold.withValues(alpha: 0.7), size: 22),
+            ],
           ),
         ),
       ),
