@@ -8,6 +8,7 @@ import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import 'ai_detector_tool.dart';
 import 'air_quality_screen.dart';
 import 'conflict_database_screen.dart';
+import 'cosmos_tools.dart';
 import 'country_compare_tool.dart';
 import 'crypto_tracker_tool.dart';
 import 'cyber_threat_feed_screen.dart';
@@ -404,6 +405,51 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
           'Bitcoin-, Ethereum- oder andere Blockchain-Adresse eingeben -> '
           'Transaktionshistorie, Guthaben und bekannte Labels (Boersen, Scams).',
       customScreenBuilder: () => const CryptoTrackerTool(),
+    ),
+    _DbDef(
+      icon: Icons.vibration_rounded,
+      label: 'Erdbeben-Radar',
+      sub: 'Live-Beben weltweit (USGS)',
+      color: const Color(0xFFD32F2F),
+      url: '',
+      description:
+          'Alle Erdbeben ab Magnitude 2.5 der letzten 24h weltweit aus der '
+          'US-Geological-Survey-Seismik. Mit Tiefe, Ort und Tsunami-Warnung.',
+      customScreenBuilder: () => const EarthquakeRadarScreen(),
+    ),
+    _DbDef(
+      icon: Icons.blur_circular_rounded,
+      label: 'Asteroiden-Anflug',
+      sub: 'Erdnahe Objekte (NASA/JPL)',
+      color: const Color(0xFFFF6F00),
+      url: '',
+      description:
+          'Asteroiden, die in den naechsten 60 Tagen nahe an der Erde '
+          'vorbeiziehen - aus der NASA/JPL Close-Approach-Datenbank. '
+          'Mit Distanz in Mond-Distanzen und Geschwindigkeit.',
+      customScreenBuilder: () => const AsteroidApproachScreen(),
+    ),
+    _DbDef(
+      icon: Icons.volcano_rounded,
+      label: 'Vulkan-Aktivitaet',
+      sub: 'Aktive Vulkane (NASA EONET)',
+      color: const Color(0xFFFF7043),
+      url: '',
+      description:
+          'Laufende Vulkan-Eruptionen und -Aktivitaeten weltweit aus dem '
+          'NASA Earth Observatory. Mit Standort und Quelle.',
+      customScreenBuilder: () => const VolcanoActivityScreen(),
+    ),
+    _DbDef(
+      icon: Icons.flare_rounded,
+      label: 'Weltraumwetter',
+      sub: 'Sonnenstuerme & Polarlicht (NOAA)',
+      color: const Color(0xFFFFC107),
+      url: '',
+      description:
+          'Geomagnetischer Kp-Index der NOAA. Ab Kp 5 Sturm mit hoher '
+          'Polarlicht-Chance und moeglichen Funk-/GPS-/Stromnetz-Stoerungen.',
+      customScreenBuilder: () => const SpaceWeatherScreen(),
     ),
   ];
 

@@ -11516,6 +11516,311 @@ Wichtig:
       }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // R-WELT: Key-freie Welt-Werkzeuge (alle ohne API-Key, offene Datenquellen)
+    // Einheitliche Antwort: { items: [...], count, source }
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // ── MATERIE: Erdbeben-Radar (USGS, kein Key) ─────────────────────────────
+    // GET /api/intel/earthquakes?min=2.5
+    if (path === '/api/intel/earthquakes' && method === 'GET') {
+      const min = url.searchParams.get('min') || '2.5';
+      const feed = ['1.0', '2.5', '4.5', 'significant'].includes(min) ? min : '2.5';
+      try {
+        const r = await fetch(
+          `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/${feed}_day.geojson`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const items = (data.features || []).slice(0, 120).map(f => {
+          const p = f.properties || {};
+          const c = (f.geometry && f.geometry.coordinates) || [0, 0, 0];
+          return {
+            title: p.place || 'Unbekannter Ort',
+            mag: p.mag,
+            time: p.time ? new Date(p.time).toISOString() : '',
+            lat: c[1], lon: c[0], depth: c[2],
+            tsunami: p.tsunami === 1,
+            url: p.url || '',
+          };
+        });
+        return jsonResponse({ items, count: items.length, source: 'USGS' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `USGS: ${e.message}` });
+      }
+    }
+
+    // ── MATERIE: Asteroiden-Anflug (JPL SSD Close-Approach, kein Key) ─────────
+    // GET /api/intel/asteroids
+    if (path === '/api/intel/asteroids' && method === 'GET') {
+      try {
+        const r = await fetch(
+          'https://ssd-api.jpl.nasa.gov/cad.api?date-min=now&date-max=%2B60&dist-max=0.05&sort=date',
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const fields = data.fields || [];
+        const idx = (n) => fields.indexOf(n);
+        const iDes = idx('des'), iCd = idx('cd'), iDist = idx('dist'),
+          iV = idx('v_rel'), iH = idx('h');
+        const items = (data.data || []).slice(0, 80).map(row => {
+          const distAu = parseFloat(row[iDist] || '0');
+          return {
+            name: row[iDes] || '?',
+            date: row[iCd] || '',
+            distLd: +(distAu * 389.17).toFixed(2), // Mond-Distanzen
+            distKm: Math.round(distAu * 149597871),
+            vRel: +(parseFloat(row[iV] || '0')).toFixed(1),
+            h: parseFloat(row[iH] || '0'), // absolute Helligkeit ~ Groesse
+          };
+        });
+        return jsonResponse({ items, count: items.length, source: 'NASA/JPL SSD' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `JPL: ${e.message}` });
+      }
+    }
+
+    // ── MATERIE: Vulkan-Aktivitaet (NASA EONET, kein Key) ────────────────────
+    // GET /api/intel/volcanoes
+    if (path === '/api/intel/volcanoes' && method === 'GET') {
+      try {
+        const r = await fetch(
+          'https://eonet.gsfc.nasa.gov/api/v3/events?category=volcanoes&status=open&limit=100',
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const items = (data.events || []).map(ev => {
+          const g = (ev.geometry || [])[((ev.geometry || []).length - 1)] || {};
+          const c = g.coordinates || [0, 0];
+          return {
+            title: ev.title || 'Vulkan',
+            date: (g.date || '').slice(0, 10),
+            lat: c[1], lon: c[0],
+            link: (ev.sources && ev.sources[0] && ev.sources[0].url) || ev.link || '',
+          };
+        });
+        return jsonResponse({ items, count: items.length, source: 'NASA EONET' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `EONET: ${e.message}` });
+      }
+    }
+
+    // ── MATERIE+ENERGIE: Weltraumwetter / Geomagnetik (NOAA SWPC, kein Key) ───
+    // GET /api/intel/spaceweather
+    if (path === '/api/intel/spaceweather' && method === 'GET') {
+      try {
+        const r = await fetch(
+          'https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json',
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const rows = await r.json();
+        const body = Array.isArray(rows) ? rows.slice(1) : [];
+        const items = body.slice(-24).reverse().map(row => {
+          const kp = parseFloat(row[1] || '0');
+          let level = 'Ruhig';
+          if (kp >= 8) level = 'Schwerer Sturm (G4-G5)';
+          else if (kp >= 7) level = 'Starker Sturm (G3)';
+          else if (kp >= 6) level = 'Sturm (G2)';
+          else if (kp >= 5) level = 'Geomagn. Sturm (G1)';
+          else if (kp >= 4) level = 'Unruhig';
+          return { time: row[0] || '', kp, level };
+        });
+        return jsonResponse({ items, count: items.length, source: 'NOAA SWPC' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `SWPC: ${e.message}` });
+      }
+    }
+
+    // ── ENERGIE: Mondphasen (FarmSense, kein Key) ────────────────────────────
+    // GET /api/intel/moon
+    if (path === '/api/intel/moon' && method === 'GET') {
+      try {
+        const now = Math.floor(Date.now() / 1000);
+        const ds = [];
+        for (let i = 0; i < 8; i++) ds.push(`d=${now + i * 86400}`);
+        const r = await fetch(
+          `https://api.farmsense.net/v1/moonphases/?${ds.join('&')}`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const phaseDe = {
+          'New Moon': 'Neumond', 'Waxing Crescent': 'Zunehmende Sichel',
+          'First Quarter': 'Erstes Viertel', 'Waxing Gibbous': 'Zunehmender Mond',
+          'Full Moon': 'Vollmond', 'Waning Gibbous': 'Abnehmender Mond',
+          'Last Quarter': 'Letztes Viertel', 'Waning Crescent': 'Abnehmende Sichel',
+          '3rd Quarter': 'Letztes Viertel',
+        };
+        const items = (Array.isArray(data) ? data : []).map((m, i) => ({
+          date: new Date((now + i * 86400) * 1000).toISOString().slice(0, 10),
+          phase: phaseDe[m.Phase] || m.Phase || '',
+          illumination: Math.round((parseFloat(m.Illumination || '0')) * 100),
+          age: Math.round(parseFloat(m.Age || '0')),
+          name: (m.Moon && m.Moon[0]) || '',
+        }));
+        return jsonResponse({ items, count: items.length, source: 'FarmSense' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `Moon: ${e.message}` });
+      }
+    }
+
+    // ── ENERGIE: Tages-Mantra / Zitate (ZenQuotes, kein Key) ─────────────────
+    // GET /api/intel/mantra
+    if (path === '/api/intel/mantra' && method === 'GET') {
+      try {
+        const r = await fetch('https://zenquotes.io/api/quotes', {
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const items = (Array.isArray(data) ? data : []).slice(0, 20).map(q => ({
+          quote: q.q || '',
+          author: q.a || 'Unbekannt',
+        })).filter(x => x.quote);
+        return jsonResponse({ items, count: items.length, source: 'ZenQuotes' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `Mantra: ${e.message}` });
+      }
+    }
+
+    // ── VORHANG: Lobby-Radar (GDELT, kein Key) ───────────────────────────────
+    // GET /api/intel/lobby
+    // ── VORHANG: Leaks-Suche (GDELT, kein Key) ───────────────────────────────
+    // GET /api/intel/leaks
+    if ((path === '/api/intel/lobby' || path === '/api/intel/leaks') && method === 'GET') {
+      const isLobby = path.endsWith('lobby');
+      const q = isLobby
+        ? 'lobbying corporate influence government policy donation'
+        : 'leak whistleblower classified documents exposed revealed';
+      try {
+        const r = await fetch(
+          `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(q)}&mode=artlist&maxrecords=60&sort=datedesc&format=json`,
+          { signal: AbortSignal.timeout(12000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const items = (Array.isArray(data.articles) ? data.articles : []).map(a => {
+          const raw = a.seendate || '';
+          const date = raw.length >= 8
+            ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
+            : '';
+          return {
+            title: a.title || '',
+            domain: a.domain || '',
+            country: a.sourcecountry || '',
+            date,
+            url: a.url || '',
+          };
+        }).filter(x => x.title);
+        return jsonResponse({ items, count: items.length, source: 'GDELT' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `GDELT: ${e.message}` });
+      }
+    }
+
+    // ── URSPRUNG: Artenvielfalt (GBIF, kein Key) ─────────────────────────────
+    // GET /api/intel/species?q=
+    if (path === '/api/intel/species' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      try {
+        const params = new URLSearchParams({
+          limit: '50', mediaType: 'StillImage',
+        });
+        if (q) params.set('q', q);
+        const r = await fetch(`https://api.gbif.org/v1/occurrence/search?${params}`, {
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const seen = new Set();
+        const items = [];
+        for (const o of (data.results || [])) {
+          const name = o.species || o.scientificName || '';
+          if (!name || seen.has(name)) continue;
+          seen.add(name);
+          const media = (o.media || [])[0] || {};
+          items.push({
+            species: name,
+            sciName: o.scientificName || '',
+            kingdom: o.kingdom || '',
+            country: o.country || '',
+            date: (o.eventDate || '').slice(0, 10),
+            img: media.identifier || '',
+          });
+          if (items.length >= 40) break;
+        }
+        return jsonResponse({ items, count: items.length, source: 'GBIF' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `GBIF: ${e.message}` });
+      }
+    }
+
+    // ── URSPRUNG: Sternenhimmel heute (visibleplanets.dev, kein Key) ──────────
+    // GET /api/intel/starsky?lat=51&lon=10
+    if (path === '/api/intel/starsky' && method === 'GET') {
+      const lat = url.searchParams.get('lat') || '51.16';
+      const lon = url.searchParams.get('lon') || '10.45';
+      try {
+        const r = await fetch(
+          `https://api.visibleplanets.dev/v3?latitude=${lat}&longitude=${lon}`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const items = (data.data || []).map(p => ({
+          name: p.name || '',
+          constellation: p.constellation || '',
+          altitude: typeof p.altitude === 'number' ? +p.altitude.toFixed(1) : null,
+          azimuth: typeof p.azimuth === 'number' ? +p.azimuth.toFixed(0) : null,
+          magnitude: p.magnitude,
+          nakedEye: p.nakedEyeObject === true,
+        }));
+        return jsonResponse({ items, count: items.length, source: 'visibleplanets.dev' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `Sky: ${e.message}` });
+      }
+    }
+
+    // ── URSPRUNG: Naturphaenomene weltweit (NASA EONET, kein Key) ─────────────
+    // GET /api/intel/naturevents
+    if (path === '/api/intel/naturevents' && method === 'GET') {
+      try {
+        const r = await fetch(
+          'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=100',
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], count: 0 });
+        const data = await r.json();
+        const catDe = {
+          'Severe Storms': 'Schwerer Sturm', 'Sea and Lake Ice': 'Meer-/See-Eis',
+          'Drought': 'Duerre', 'Floods': 'Ueberschwemmung', 'Earthquakes': 'Erdbeben',
+          'Landslides': 'Erdrutsch', 'Snow': 'Schnee', 'Dust and Haze': 'Staub/Dunst',
+          'Water Color': 'Wasserfaerbung', 'Temperature Extremes': 'Temperatur-Extrem',
+          'Manmade': 'Menschgemacht', 'Wildfires': 'Waldbrand', 'Volcanoes': 'Vulkan',
+        };
+        const items = (data.events || [])
+          .filter(ev => !(ev.categories || []).some(c => c.title === 'Wildfires'))
+          .map(ev => {
+            const g = (ev.geometry || [])[((ev.geometry || []).length - 1)] || {};
+            const c = g.coordinates || [0, 0];
+            const cat = (ev.categories || [])[0] || {};
+            return {
+              title: ev.title || '',
+              category: catDe[cat.title] || cat.title || 'Ereignis',
+              date: (g.date || '').slice(0, 10),
+              lat: c[1], lon: c[0],
+            };
+          });
+        return jsonResponse({ items, count: items.length, source: 'NASA EONET' });
+      } catch (e) {
+        return jsonResponse({ items: [], count: 0, error: `EONET: ${e.message}` });
+      }
+    }
+
     // ── GET /api/admin/users/:userId/module-access ───────────────────────────
     // Liefert alle Admin-Overrides (grant/block) fuer einen User.
     // Response: { success, overrides: [{ module_code, module_type, is_granted, granted_by, reason, created_at }] }
