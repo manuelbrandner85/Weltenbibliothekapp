@@ -12,6 +12,7 @@ import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
 
 import 'ursprung_modules_screen.dart';
+import 'ursprung_timeline_screen.dart';
 import 'tools/gateway_room_screen.dart';
 import 'tools/frequency_generator_screen.dart';
 import 'tools/breathmaster_screen.dart';
@@ -60,6 +61,12 @@ class UrsprungHomeTab extends StatelessWidget {
 
             // ── Mentor: Der Alchemist ──
             _buildMentorButton(context),
+            const SizedBox(height: 28),
+
+            // ── KERN-TOOL: Zeitleiste der Menschheitsursprünge (Ursprung-exklusiv) ──
+            _sectionLabel('KERN-TOOL'),
+            const SizedBox(height: 12),
+            _buildTimelineCard(context),
             const SizedBox(height: 28),
 
             // ── Ambient Tagespfad ──
@@ -257,61 +264,62 @@ class UrsprungHomeTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _cyan.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _cyan.withValues(alpha: 0.5)),
-                ),
-                child: Text(
-                  'WELT IV · CIA QUANTEN-CODE',
-                  style: TextStyle(
-                    fontSize: 9,
-                    letterSpacing: 3.0,
-                    color: _cyan,
-                    fontWeight: FontWeight.w700,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _cyan.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                              Border.all(color: _cyan.withValues(alpha: 0.5)),
+                        ),
+                        child: Text(
+                          'WELT IV · CIA QUANTEN-CODE',
+                          style: TextStyle(
+                            fontSize: 9,
+                            letterSpacing: 3.0,
+                            color: _cyan,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.bolt, color: _cyanAccent, size: 18),
+                    ],
                   ),
-                ),
-              ),
-              const Spacer(),
-              Icon(Icons.bolt, color: _cyanAccent, size: 18),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'URSPRUNG',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w200,
-              fontSize: 36,
-              letterSpacing: 10.0,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Kehre zum Ursprung zurück',
-            style: TextStyle(
-              fontSize: 14,
-              color: _cyan,
-              fontWeight: FontWeight.w400,
-              letterSpacing: 2.0,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Bewusstsein ist der Ursprung der Realität. '
-            'Entdecke die deklassifizierten CIA-Programme — '
-            'Gateway Process, Project Stargate, Remote Viewing — '
-            'und werde Architekt deiner eigenen Wirklichkeit.',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.65),
-              height: 1.6,
-            ),
-          ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'URSPRUNG',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w200,
+                      fontSize: 36,
+                      letterSpacing: 10.0,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Kehre zum Ursprung zurück',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _cyan,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Bewusstsein ist der Ursprung der Realität. '
+                    'Entdecke die deklassifizierten CIA-Programme — '
+                    'Gateway Process, Project Stargate, Remote Viewing — '
+                    'und werde Architekt deiner eigenen Wirklichkeit.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.65),
+                      height: 1.6,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -333,6 +341,91 @@ class UrsprungHomeTab extends StatelessWidget {
           builder: (_) => const MentorChatScreen(
             personality: MentorPersonality.alchemist,
             world: 'ursprung',
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── KERN-TOOL: Zeitleiste der Menschheitsursprünge ──
+  /// Ursprung-exclusive entry point: interactive timeline of creation myths,
+  /// early cultures and open questions about human origins.
+  Widget _buildTimelineCard(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const UrsprungTimelineScreen(),
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                _cyan.withValues(alpha: 0.18),
+                _cyan.withValues(alpha: 0.05),
+                _surface,
+              ],
+            ),
+            border:
+                Border.all(color: _cyan.withValues(alpha: 0.45), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: _cyan.withValues(alpha: 0.15),
+                blurRadius: 26,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _cyan.withValues(alpha: 0.15),
+                  border: Border.all(color: _cyan.withValues(alpha: 0.5)),
+                ),
+                child: const Text('🕰️', style: TextStyle(fontSize: 26)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Zeitleiste der Menschheitsursprünge',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Schoepfungsmythen, Urkulturen & offene Fragen -- '
+                      'interaktiv von den Anfaengen bis heute.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  color: _cyan.withValues(alpha: 0.7), size: 22),
+            ],
           ),
         ),
       ),
