@@ -106,8 +106,7 @@ class _UsersTabState extends State<_UsersTab> {
                 .reversed
                 .firstOrNull;
             if (lastCall != null && lastCall.statusCode >= 400) {
-              _errorMessage =
-                  '${_httpLabel(lastCall.statusCode)}\n\n'
+              _errorMessage = '${_httpLabel(lastCall.statusCode)}\n\n'
                   'Tipp: Tap auf "Diagnose" in der Uebersicht fuer Details.';
             } else if (lastCall != null && lastCall.statusCode == 0) {
               _errorMessage = 'Verbindungsfehler - kein Netzwerk.\n\n'
@@ -191,15 +190,24 @@ class _UsersTabState extends State<_UsersTab> {
 
   static String _httpLabel(int code) {
     switch (code) {
-      case 400: return 'Fehlerhafte Anfrage (400) - Daten pruefen.';
-      case 401: return 'Nicht authentifiziert (401) - Erneut einloggen.';
-      case 403: return 'Keine Berechtigung (403) - Admin-Rechte pruefen.';
-      case 404: return 'Endpunkt nicht gefunden (404) - Worker-Version pruefen.';
-      case 409: return 'Konflikt (409) - Aktion wurde moeglicherweise schon ausgefuehrt.';
-      case 429: return 'Zu viele Anfragen (429) - Bitte kurz warten.';
-      case 500: return 'Server-Fehler (500) - Worker-Logs pruefen.';
-      case 502: return 'Worker nicht erreichbar (502) - Deployment pruefen.';
-      case 503: return 'Dienst nicht verfuegbar (503) - Wartungsarbeiten?';
+      case 400:
+        return 'Fehlerhafte Anfrage (400) - Daten pruefen.';
+      case 401:
+        return 'Nicht authentifiziert (401) - Erneut einloggen.';
+      case 403:
+        return 'Keine Berechtigung (403) - Admin-Rechte pruefen.';
+      case 404:
+        return 'Endpunkt nicht gefunden (404) - Worker-Version pruefen.';
+      case 409:
+        return 'Konflikt (409) - Aktion wurde moeglicherweise schon ausgefuehrt.';
+      case 429:
+        return 'Zu viele Anfragen (429) - Bitte kurz warten.';
+      case 500:
+        return 'Server-Fehler (500) - Worker-Logs pruefen.';
+      case 502:
+        return 'Worker nicht erreichbar (502) - Deployment pruefen.';
+      case 503:
+        return 'Dienst nicht verfuegbar (503) - Wartungsarbeiten?';
       default:
         if (code >= 500) return 'Server-Fehler ($code).';
         if (code >= 400) return 'Client-Fehler ($code).';
@@ -788,109 +796,109 @@ class _UsersTabState extends State<_UsersTab> {
         bool _acknowledged = false;
         return StatefulBuilder(
           builder: (ctx, setDialogState) => AlertDialog(
-        backgroundColor: const Color(0xFF12121E),
-        title: const Row(children: [
-          Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
-          SizedBox(width: 8),
-          Text('Hard-Delete', style: TextStyle(color: Colors.white)),
-        ]),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '@${u.username} wird unwiderruflich geloescht.\n\n'
-                'Profile-Zeile + auth.users (falls vorhanden) werden geloescht. '
-                'XP, Chat-Eintraege und alle abhaengigen Daten gehen verloren.',
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'Grund (Pflicht, fuer Audit-Trail):',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: reasonCtrl,
-                maxLength: 200,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'z.B. Account-Loeschung auf Wunsch',
-                  hintStyle: const TextStyle(color: Colors.white24),
-                  filled: true,
-                  fillColor: const Color(0xFF1A1A26),
-                  counterStyle: const TextStyle(color: Colors.white38),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.white24),
+            backgroundColor: const Color(0xFF12121E),
+            title: const Row(children: [
+              Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
+              SizedBox(width: 8),
+              Text('Hard-Delete', style: TextStyle(color: Colors.white)),
+            ]),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '@${u.username} wird unwiderruflich geloescht.\n\n'
+                    'Profile-Zeile + auth.users (falls vorhanden) werden geloescht. '
+                    'XP, Chat-Eintraege und alle abhaengigen Daten gehen verloren.',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Tippe "${u.username}" zur Bestaetigung:',
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: confirmCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: u.username,
-                  hintStyle: const TextStyle(color: Colors.white24),
-                  filled: true,
-                  fillColor: const Color(0xFF1A1A26),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                        color: Colors.redAccent.withValues(alpha: 0.4)),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Grund (Pflicht, fuer Audit-Trail):',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: reasonCtrl,
+                    maxLength: 200,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'z.B. Account-Loeschung auf Wunsch',
+                      hintStyle: const TextStyle(color: Colors.white24),
+                      filled: true,
+                      fillColor: const Color(0xFF1A1A26),
+                      counterStyle: const TextStyle(color: Colors.white38),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: const BorderSide(color: Colors.white24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Tippe "${u.username}" zur Bestaetigung:',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: confirmCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: u.username,
+                      hintStyle: const TextStyle(color: Colors.white24),
+                      filled: true,
+                      fillColor: const Color(0xFF1A1A26),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                            color: Colors.redAccent.withValues(alpha: 0.4)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  CheckboxListTile(
+                    title: const Text(
+                      'Ich verstehe, dies ist unwiderruflich',
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    value: _acknowledged,
+                    activeColor: Colors.redAccent,
+                    onChanged: (v) =>
+                        setDialogState(() => _acknowledged = v ?? false),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              CheckboxListTile(
-                title: const Text(
-                  'Ich verstehe, dies ist unwiderruflich',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                value: _acknowledged,
-                activeColor: Colors.redAccent,
-                onChanged: (v) =>
-                    setDialogState(() => _acknowledged = v ?? false),
-                controlAffinity: ListTileControlAffinity.leading,
-                dense: true,
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Abbrechen',
+                      style: TextStyle(color: Colors.white60))),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white),
+                icon: const Icon(Icons.delete_forever_rounded, size: 16),
+                label: const Text('Endgueltig loeschen'),
+                onPressed: _acknowledged &&
+                        confirmCtrl.text.trim() == u.username
+                    ? () {
+                        if (reasonCtrl.text.trim().length < 3) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                            content:
+                                Text('Grund (min. 3 Zeichen) ist Pflicht.'),
+                          ));
+                          return;
+                        }
+                        Navigator.pop(ctx, true);
+                      }
+                    : null,
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Abbrechen',
-                  style: TextStyle(color: Colors.white60))),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white),
-            icon: const Icon(Icons.delete_forever_rounded, size: 16),
-            label: const Text('Endgueltig loeschen'),
-            onPressed: _acknowledged &&
-                    confirmCtrl.text.trim() == u.username
-                ? () {
-                    if (reasonCtrl.text.trim().length < 3) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                        content:
-                            Text('Grund (min. 3 Zeichen) ist Pflicht.'),
-                      ));
-                      return;
-                    }
-                    Navigator.pop(ctx, true);
-                  }
-                : null,
-          ),
-        ],
-      ),
         );
       },
     );
