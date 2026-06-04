@@ -120,6 +120,77 @@ async function _hmacSha256Hex(secret, message) {
     .map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// base64url -> Uint8Array (JWT segments use URL-safe base64 without padding).
+function _b64urlToBytes(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = s.length % 4;
+  if (pad) s += '='.repeat(4 - pad);
+  const bin = atob(s);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+/**
+ * AUTH-REFACTOR Phase 2 (additiv, NICHT erzwingend):
+ * Verifiziert ein Supabase Anon-JWT (HS256) LOKAL gegen SUPABASE_JWT_SECRET
+ * und liefert den dekodierten Payload ({ sub, role, exp, ... }). sub ist die
+ * kanonische auth.uid(). Kein Netzwerk-Call.
+ *
+ * Gibt null zurueck wenn: kein X-Supabase-Token Header, kein
+ * SUPABASE_JWT_SECRET gesetzt, falsches Format, ungueltige Signatur oder
+ * abgelaufen. In Phase 2 (Vorbereitung) wird das Ergebnis nur geloggt --
+ * spaeter gated es user-scoped Endpoints gegen Impersonation.
+ */
+async function verifyAnonJwt(request, env) {
+  const token = (request.headers.get('X-Supabase-Token') || '').trim();
+  if (!token) return null;
+  const secret = env.SUPABASE_JWT_SECRET || '';
+  if (!secret) return null; // Secret noch nicht gesetzt -> still aus.
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw', enc.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false, ['verify']
+    );
+    const ok = await crypto.subtle.verify(
+      'HMAC', key, _b64urlToBytes(parts[2]),
+      enc.encode(`${parts[0]}.${parts[1]}`)
+    );
+    if (!ok) return null;
+    const payload = JSON.parse(new TextDecoder().decode(_b64urlToBytes(parts[1])));
+    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
+    return payload;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * AUTH-REFACTOR Phase 2 telemetry: vergleicht die client-behauptete Identitaet
+ * (X-User-ID) gegen den verifizierten JWT-sub und LOGGT einen Mismatch.
+ * Erzwingt nichts (kein 403) -- dient nur dazu, vor der Umstellung auf
+ * Enforcement zu messen wie oft echte vs. gefaelschte Identitaeten auftreten.
+ * Best-effort, niemals werfen.
+ */
+async function logIdentityTelemetry(request, env) {
+  try {
+    const payload = await verifyAnonJwt(request, env);
+    if (!payload) return; // kein/ungueltiges JWT -> Legacy-Pfad, nichts zu tun.
+    const sub = String(payload.sub || '');
+    const claimed = (request.headers.get('X-User-ID') || '').trim();
+    const looksUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(claimed);
+    // Nur loggen wenn claimed AUCH wie eine UUID aussieht und abweicht --
+    // legacy 'user_<ts>'-IDs weichen erwartungsgemaess ab und sind kein Angriff.
+    if (looksUuid && sub && claimed && claimed !== sub) {
+      console.warn(`[auth-phase2] identity mismatch: claimed=${claimed} jwt.sub=${sub} path=${new URL(request.url).pathname}`);
+    }
+  } catch (_) { /* best-effort */ }
+}
+
 /**
  * Validiert dass der Caller ein Admin ist und liefert seinen profiles-Eintrag.
  *
@@ -1258,6 +1329,11 @@ export default {
     if (method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
+
+    // AUTH-REFACTOR Phase 2 (additiv): nicht-blockierende Identity-Telemetrie.
+    // Misst Impersonation-Versuche via verifiziertem Anon-JWT, ohne irgendetwas
+    // zu erzwingen. No-op solange SUPABASE_JWT_SECRET nicht gesetzt ist.
+    try { ctx.waitUntil(logIdentityTelemetry(request, env)); } catch (_) { /* best-effort */ }
 
     // ── Error Report (Client-Side) ────────────────────────────
     // Akzeptiert FlutterErrorDetails-aehnliche Payloads vom Client

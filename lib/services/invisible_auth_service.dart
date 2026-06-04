@@ -215,14 +215,32 @@ class InvisibleAuthService {
   String? get deviceId => _deviceId;
   String? get authToken => _authToken;
 
-  Map<String, String> authHeaders({String? world, String? role}) => {
-        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-        // Kanonische Identitaet (Supabase-UUID falls vorhanden, sonst Legacy).
-        'X-User-ID': userId ?? '',
-        if (_deviceId != null) 'X-Device-ID': _deviceId!,
-        if (world != null) 'X-World': world,
-        if (role != null) 'X-Role': role,
-      };
+  /// Access-Token der aktiven anonymen Supabase-Session (echtes HS256-JWT).
+  /// Null wenn keine Session besteht. Best-effort -- crasht nie.
+  String? _supabaseAccessToken() {
+    try {
+      return supa.Supabase.instance.client.auth.currentSession?.accessToken;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Map<String, String> authHeaders({String? world, String? role}) {
+    final supaToken = _supabaseAccessToken();
+    return {
+      if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      // Kanonische Identitaet (Supabase-UUID falls vorhanden, sonst Legacy).
+      'X-User-ID': userId ?? '',
+      if (_deviceId != null) 'X-Device-ID': _deviceId!,
+      // AUTH-REFACTOR Phase 2 (additiv): echtes Supabase-Anon-JWT mitliefern,
+      // damit der Worker die Identitaet serverseitig verifizieren kann. Wird
+      // aktuell nur fuer Telemetrie genutzt (kein Enforcement).
+      if (supaToken != null && supaToken.isNotEmpty)
+        'X-Supabase-Token': supaToken,
+      if (world != null) 'X-World': world,
+      if (role != null) 'X-Role': role,
+    };
+  }
 
   Future<void> linkProfile({
     required String username,
