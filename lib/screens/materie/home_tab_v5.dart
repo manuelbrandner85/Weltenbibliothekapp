@@ -17,6 +17,7 @@ import 'materie_live_chat_screen.dart';
 import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import 'tools/osint_tools_hub.dart';
+import 'conspiracy_network_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
@@ -69,6 +70,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   bool _worldSubscribed = false;
   final _worldSubSvc = WorldSubscriptionService();
   final _scrollCtrl = ScrollController();
+  // Real search input -> opens Kaninchenbau with the typed topic.
+  final _searchCtrl = TextEditingController();
   double _scrollOffset = 0;
   Timer? _liveTimer;
   RealtimeChannel? _channel;
@@ -120,6 +123,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     _entryCtrl.dispose();
     _particleCtrl.dispose();
     _scrollCtrl.dispose();
+    _searchCtrl.dispose();
     _liveTimer?.cancel();
     _channel?.unsubscribe();
     _notifChannel?.unsubscribe();
@@ -716,41 +720,63 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     );
   }
 
+  /// Submits the typed topic into the Kaninchenbau research engine.
+  void _submitSearch() {
+    final q = _searchCtrl.text.trim();
+    if (q.isEmpty) {
+      _openRechercheTab();
+      return;
+    }
+    _openTopic(q);
+    _searchCtrl.clear();
+  }
+
   Widget _buildInlineSearch() {
-    return GestureDetector(
-      onTap: _openRechercheTab,
-      child: Container(
-        height: 46,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
-          boxShadow: [
-            BoxShadow(color: _blue.withValues(alpha: 0.12), blurRadius: 12),
-          ],
-        ),
-        child: Row(children: [
-          Icon(Icons.search_rounded,
-              color: _blueL.withValues(alpha: 0.9), size: 20),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text('Artikel, Themen, Fakten suchen…',
-                style: TextStyle(color: Colors.white54, fontSize: 14)),
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
+        boxShadow: [
+          BoxShadow(color: _blue.withValues(alpha: 0.12), blurRadius: 12),
+        ],
+      ),
+      child: Row(children: [
+        Icon(Icons.search_rounded,
+            color: _blueL.withValues(alpha: 0.9), size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: TextField(
+            controller: _searchCtrl,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) => _submitSearch(),
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            cursorColor: _blueL,
+            decoration: const InputDecoration(
+              isCollapsed: true,
+              border: InputBorder.none,
+              hintText: 'Thema eingeben - z.B. "WHO", "BlackRock"…',
+              hintStyle: TextStyle(color: Colors.white54, fontSize: 14),
+            ),
           ),
-          Container(
+        ),
+        GestureDetector(
+          onTap: _submitSearch,
+          child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: _blue.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: _blue.withValues(alpha: 0.35)),
             ),
-            child: const Text('KI-Suche',
+            child: const Text('Recherche',
                 style: TextStyle(
                     color: _blueL, fontSize: 10, fontWeight: FontWeight.w700)),
           ),
-        ]),
-      ),
+        ),
+      ]),
     );
   }
 
@@ -875,8 +901,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     final tiles = [
       _TileDef(
         icon: Icons.auto_stories_rounded,
-        label: 'Recherche',
-        sub: 'Artikel & Fakten',
+        label: 'Recherche starten',
+        sub: 'Thema -> automatisches Dossier',
         gradient: [
           const Color(0xFF0D47A1),
           const Color(0xFF1565C0),
@@ -898,20 +924,21 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         onTap: () => _go(const MaterieLiveChatScreen()),
       ),
       _TileDef(
-        icon: Icons.timeline_rounded,
-        label: 'Zeitlinie',
-        sub: 'Geschichte & Ereignisse',
+        icon: Icons.hub_rounded,
+        label: 'Verflechtungs-Netz',
+        sub: 'Wer haengt mit wem zusammen?',
         gradient: [
           const Color(0xFF1B5E20),
           const Color(0xFF2E7D32),
           const Color(0xFF43A047)
         ],
         badge: 0,
-        onTap: _openRechercheTab,
+        onTap: () =>
+            _go(const ConspiracyNetworkScreen(roomId: 'materie-recherche')),
       ),
       _TileDef(
         icon: Icons.collections_bookmark_rounded,
-        label: 'Gespeichert',
+        label: 'Lesezeichen',
         sub: 'Deine Sammlung',
         gradient: [
           const Color(0xFFE65100),
@@ -923,8 +950,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       ),
       _TileDef(
         icon: Icons.manage_search_rounded,
-        label: 'OSINT Tools',
-        sub: 'Bild · Leak · Krypto',
+        label: 'Recherche-Werkzeuge',
+        sub: 'Einzeln & manuell bedienen',
         gradient: [
           const Color(0xFF4A0000),
           const Color(0xFF7B0000),
@@ -935,8 +962,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       ),
       _TileDef(
         icon: Icons.folder_special_rounded,
-        label: 'Meine Recherchen',
-        sub: 'Gespeicherte Fälle',
+        label: 'Meine Fälle',
+        sub: 'Gespeicherte Recherchen',
         gradient: [
           const Color(0xFF311B92),
           const Color(0xFF512DA8),
@@ -1129,14 +1156,14 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   // ── RECENT ROOMS ───────────────────────────────────────────────────────
   // dart2js stolpert über const Map<String, Record> → final genutzt.
-  static final Map<String, (String, String)> _recentRoomMeta = {
-    'politik': ('🎭', 'Politik'),
-    'geschichte': ('🏛️', 'Geschichte'),
-    'ufo': ('🛸', 'UFOs'),
-    'verschwoerungen': ('👁️', 'Verschwörungen'),
-    'wissenschaft': ('🔬', 'Wissenschaft'),
-    'heilung': ('🌿', 'Heilung'),
-    'forschung': ('🧪', 'Forschung'),
+  static const Map<String, _RoomMeta> _recentRoomMeta = {
+    'politik': _RoomMeta('🎭', 'Politik'),
+    'geschichte': _RoomMeta('🏛️', 'Geschichte'),
+    'ufo': _RoomMeta('🛸', 'UFOs'),
+    'verschwoerungen': _RoomMeta('👁️', 'Verschwörungen'),
+    'wissenschaft': _RoomMeta('🔬', 'Wissenschaft'),
+    'heilung': _RoomMeta('🌿', 'Heilung'),
+    'forschung': _RoomMeta('🧪', 'Forschung'),
   };
 
   Widget _buildRecentRooms() {
@@ -1175,7 +1202,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
                     itemBuilder: (c, i) {
                       final id = rooms[i];
-                      final meta = _recentRoomMeta[id] ?? ('💬', id);
+                      final meta = _recentRoomMeta[id] ?? _RoomMeta('💬', id);
                       return InkWell(
                         borderRadius: BorderRadius.circular(18),
                         onTap: () => Navigator.push(
@@ -1199,11 +1226,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(meta.$1,
+                              Text(meta.emoji,
                                   style: const TextStyle(fontSize: 14)),
                               const SizedBox(width: 6),
                               Text(
-                                meta.$2,
+                                meta.label,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -1544,6 +1571,13 @@ class _StatDef {
       required this.label,
       required this.value,
       required this.color});
+}
+
+/// Emoji + display label for a recent chat room (replaces a Dart record type).
+class _RoomMeta {
+  final String emoji;
+  final String label;
+  const _RoomMeta(this.emoji, this.label);
 }
 
 class _TileDef {
