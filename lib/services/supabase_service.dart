@@ -35,26 +35,47 @@ Future<void> initSupabase() async {
     debugPrint('✅ [Supabase] Initialisiert: ${ApiConfig.supabaseUrl}');
   }
 
-  // Automatisch anonyme Auth-Session erstellen wenn kein User eingeloggt.
-  // Voraussetzung: Authentication → Providers → Anonymous Sign-ins im
-  // Supabase-Dashboard aktiviert. Bei Fehler: stiller Fallback (allowAnonymous=true).
+  // AUTH-REFACTOR Phase 1: die anonyme Session ist die kanonische Identitaet
+  // (auth.uid()). Sie muss moeglichst zuverlaessig stehen, weil jede spaetere
+  // Phase (Profil-Bindung, JWT-Verifikation, RLS-Haertung) darauf aufbaut.
+  // Best-effort mit Retry -- blockiert die App NICHT wenn offline.
+  await ensureAnonymousSession();
+}
+
+/// Stellt sicher, dass eine (anonyme oder echte) Supabase-Session existiert.
+/// Idempotent: kehrt sofort zurueck wenn bereits ein User eingeloggt ist.
+/// Kann nach Reconnect / Cold-Start erneut aufgerufen werden.
+///
+/// Voraussetzung: Authentication -> Providers -> Anonymous Sign-ins im
+/// Supabase-Dashboard aktiviert. Schlaegt das fehl, laeuft die App im
+/// Legacy-Fallback (InvisibleAuth `user_<ts>_<rand>`) weiter.
+Future<bool> ensureAnonymousSession({int maxAttempts = 3}) async {
   final client = Supabase.instance.client;
-  if (client.auth.currentUser == null) {
+  if (client.auth.currentUser != null) return true;
+
+  for (var attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      // Timeout verhindert ewiges Hängen auf Web wenn Dashboard-Setting fehlt.
+      // Timeout verhindert ewiges Haengen auf Web wenn Dashboard-Setting fehlt.
       await client.auth.signInAnonymously().timeout(const Duration(seconds: 8));
-      if (kDebugMode) {
-        debugPrint(
-            '✅ [Supabase] Anonyme Session erstellt: ${client.auth.currentUser?.id}');
+      if (client.auth.currentUser != null) {
+        if (kDebugMode) {
+          debugPrint('✅ [Supabase] Anonyme Session erstellt '
+              '(Versuch $attempt): ${client.auth.currentUser?.id}');
+        }
+        return true;
       }
     } catch (e) {
-      // Tritt auf wenn Anonymous Sign-ins nicht aktiviert oder Timeout.
-      // App funktioniert trotzdem via allowAnonymous=true in sendMessage.
       if (kDebugMode) {
-        debugPrint('⚠️ [Supabase] signInAnonymously fehlgeschlagen: $e');
+        debugPrint('⚠️ [Supabase] signInAnonymously Versuch $attempt/'
+            '$maxAttempts fehlgeschlagen: $e');
       }
     }
+    // Kurzer Backoff vor dem naechsten Versuch (nicht nach dem letzten).
+    if (attempt < maxAttempts) {
+      await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+    }
   }
+  return false;
 }
 
 /// Schnellzugriff auf den Supabase-Client.
