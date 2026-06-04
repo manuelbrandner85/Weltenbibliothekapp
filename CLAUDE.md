@@ -58,11 +58,16 @@ Detaillierte Instruktionen in `.claude/skills/` (142 installiert, via `npx skill
 - **Security:** code-maturity-assessor, differential-review, semgrep, codeql, insecure-defaults (+ ~50 weitere Audit/Fuzzing-Skills)
 - **Projekt:** shorebird-ota, weltenbibliothek-architektur, weltenbibliothek-gamification, weltenbibliothek-mentor, weltenbibliothek-update-system
 
-## ⚠️ Offene TODOs (Stand 2026-05-17)
+## ⚠️ Offene TODOs (Stand 2026-06-04)
+
+### ✅ Erledigt (Session 2026-06-04)
+- **Ein-Profil (TEIL 1A):** Doppeltes lokales Profil (`sp_materie_profile` + `sp_energie_profile`) auf einen Unified-Store reduziert. Mirror-Funktionen + Multi-Source-Rollen-Logik entfernt, Einmal-Migration beim Start.
+- **Dashboard-Split (TEIL 1B):** `world_admin_dashboard.dart` (11.8k Zeilen) via `part`/`part of` in per-Tab/per-Sheet-Dateien zerlegt (476 Zeilen Hauptdatei).
+- **Security-Fixes (TEIL 2/3):** Username-basierte Privilege-Escalation entfernt, `/api/admin/dashboard` HMAC-gated, Self-Protection in ban/warn, `?? false`-Fixes, CSV ohne user_id.
 
 ### 🔴 Kritisch
 1. **Auth-Refactor: InvisibleAuth → Supabase Anonymous Auth.** App nutzt aktuell client-generierte `user_<ts>_<rand>` IDs ohne echte Server-Validation. `/auth/*`-Worker-Endpoints existieren nicht (Code-Theater). Konsequenz: Username-basierte Impersonation möglich, RLS `auth.uid()=user_id` nicht anwendbar. Plan: `supabase.auth.signInAnonymously()`, JWT durchreichen, RLS härten.
-2. **RLS-Härtung:** 11 Tabellen ohne RLS, 28 mit `USING (true)`, `chat_messages` GRANT-ALL TO anon. Blockiert von #1.
+2. **RLS-Härtung:** Audit 2026-06-04: ALLE public-Tabellen haben jetzt RLS aktiviert (kein `rls_enabled=false` mehr). Rest-Risiko: viele `USING (true)`-Policies auf sensiblen per-User-Tabellen (`spirit_readings`, `biometric_data_cache`, `manifestation_goals`, `bookmark_collections`, `user_annotations`, `vorhang_lesson_notes`, `web_access_requests` u.a.). **Echt blockiert von #1:** Client (z.B. `spirit_reading_service`) liest diese direkt mit Anon-Key unter InvisibleAuth — `auth.uid()=user_id` würde die App für alle brechen. Erst nach Anon-Auth härtbar.
 
 ### 🟠 Wichtig
 1. **Worker-Quota:** Free-Plan 100k/Tag wurde erschöpft (Cron-Drossel auf `*/5` seit v644c80f). Mittelfristig Workers Paid ($5/Monat) oder Worker modularisieren.
@@ -74,8 +79,8 @@ Detaillierte Instruktionen in `.claude/skills/` (142 installiert, via `npx skill
 ### 🟡 Sollte
 1. info-level Analyzer-Issues: `use_build_context_synchronously`, `unused_field`, `deprecated_member_use`.
 2. 31 TODO/FIXME-Marker im Code.
-3. Worker-Datei 6560 Zeilen monolithisch → modularisieren.
-4. Admin-Endpoints `/admin/migrate-v*` nutzen hardcoded String-Tokens — auf JWT migrieren.
+3. Worker-Datei monolithisch → modularisieren.
+4. ~~Admin-Endpoints `/admin/migrate-v*` hardcoded String-Tokens~~ — Audit 2026-06-04: keine `migrate-v*`-Endpoints mehr im Worker vorhanden (erledigt/entfernt).
 
 ### 🟢 Nice-to-have
 1. **iOS-Build:** `ios/`-Verzeichnis fehlt. Setup auf Mac mit Xcode: `flutter create --platforms=ios .` im Projekt-Root. Danach in `ios/Runner/Info.plist`:
