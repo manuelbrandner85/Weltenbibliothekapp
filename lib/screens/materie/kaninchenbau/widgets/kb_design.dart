@@ -88,4 +88,38 @@ class KbDesign {
           ),
         ],
       );
+
+  /// Hinweis-Banner fuer Karten mit geschaetzten / illustrativen Daten.
+  /// WICHTIG: Macht transparent, dass Zahlen NICHT belegt sind (Glaubwuerdigkeit).
+  static Widget estimateBanner([String? note]) => Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(radiusSm),
+          color: const Color(0xFFFFB300).withValues(alpha: 0.10),
+          border: Border.all(
+            color: const Color(0xFFFFB300).withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline,
+                color: Color(0xFFFFB300), size: 15),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                note ??
+                    'Schaetzung / Illustration - keine belegten Zahlen. '
+                        'Dient nur zur Veranschaulichung moeglicher Zusammenhaenge.',
+                style: TextStyle(
+                  color: const Color(0xFFFFB300).withValues(alpha: 0.95),
+                  fontSize: 11,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }

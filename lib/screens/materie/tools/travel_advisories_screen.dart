@@ -85,7 +85,9 @@ class _TravelAdvisoriesScreenState extends State<TravelAdvisoriesScreen> {
       if (!mounted) return;
       setState(() => _all = out);
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -101,8 +103,10 @@ class _TravelAdvisoriesScreenState extends State<TravelAdvisoriesScreen> {
     return m != null ? int.tryParse(m.group(1) ?? '0') ?? 0 : 0;
   }
 
-  String _stripHtml(String s) =>
-      s.replaceAll(RegExp(r'<[^>]*>'), '').replaceAll(RegExp(r'\s+'), ' ').trim();
+  String _stripHtml(String s) => s
+      .replaceAll(RegExp(r'<[^>]*>'), '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
 
   Color _levelColor(int l) {
     switch (l) {
@@ -174,7 +178,8 @@ class _TravelAdvisoriesScreenState extends State<TravelAdvisoriesScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             TextField(
               controller: _filterCtrl,
@@ -272,7 +277,8 @@ class _TravelAdvisoriesScreenState extends State<TravelAdvisoriesScreen> {
     final c = _levelColor(a.level);
     return GestureDetector(
       onTap: () => _open(a.link),
-      child: _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child:
+          _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Container(
             width: 34,
@@ -289,7 +295,8 @@ class _TravelAdvisoriesScreenState extends State<TravelAdvisoriesScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(a.country,
                   style: const TextStyle(
                       color: _kText,

@@ -153,8 +153,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   /// Loescht eine Notification ueber den Worker (InvisibleAuth-tauglich).
   /// Gibt true zurueck wenn die Kachel weggewischt werden darf.
   Future<bool> _deleteNotification(String id) async {
-    final uid = _supabase.auth.currentUser?.id ??
-        UnifiedProfileService.instance.userId;
+    final uid =
+        _supabase.auth.currentUser?.id ?? UnifiedProfileService.instance.userId;
     if (uid == null) return false;
     final ok =
         await AccountService.instance.deleteNotification(id: id, userId: uid);
@@ -170,15 +170,15 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   /// Loescht ALLE Notifications des Users.
   Future<void> _deleteAll() async {
-    final uid = _supabase.auth.currentUser?.id ??
-        UnifiedProfileService.instance.userId;
+    final uid =
+        _supabase.auth.currentUser?.id ?? UnifiedProfileService.instance.userId;
     if (uid == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _card,
-        title: const Text('Alle loeschen?',
-            style: TextStyle(color: Colors.white)),
+        title:
+            const Text('Alle loeschen?', style: TextStyle(color: Colors.white)),
         content: const Text(
           'Alle Benachrichtigungen werden unwiderruflich entfernt.',
           style: TextStyle(color: Colors.white70),
@@ -190,14 +190,14 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Loeschen', style: TextStyle(color: Colors.red)),
+            child: const Text('Loeschen', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
     if (confirmed != true) return;
-    final ok = await AccountService.instance.deleteAllNotifications(userId: uid);
+    final ok =
+        await AccountService.instance.deleteAllNotifications(userId: uid);
     if (ok && mounted) {
       setState(() => _notifs = []);
     } else if (mounted) {

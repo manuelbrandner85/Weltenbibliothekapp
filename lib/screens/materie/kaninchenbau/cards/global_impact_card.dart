@@ -54,6 +54,12 @@ class GlobalImpactCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+          // Glaubwuerdigkeit: Sentiment ist eine Stichwort-Heuristik, kein NLP.
+          if (!loading && impacts.isNotEmpty)
+            KbDesign.estimateBanner(
+              'Sentiment wird per Stichwort-Heuristik geschaetzt - '
+              'nur grobe Tendenz, keine belegte Analyse.',
+            ),
           if (loading)
             _buildLoading()
           else if (impacts.isEmpty)

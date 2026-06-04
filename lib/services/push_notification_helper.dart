@@ -30,7 +30,8 @@ class PushNotificationHelper {
         debugPrint('⚠️ Push fire-and-forget failed: $context');
       }
     }).catchError((e) {
-      if (kDebugMode) debugPrint('⚠️ Push fire-and-forget error ($context): $e');
+      if (kDebugMode)
+        debugPrint('⚠️ Push fire-and-forget error ($context): $e');
     });
   }
 

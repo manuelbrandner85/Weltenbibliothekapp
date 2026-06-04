@@ -48,7 +48,7 @@ class _PropagandaCompareScreenState extends State<PropagandaCompareScreen> {
     if (a.length < 40 || b.length < 40) {
       setState(() => _error =
           'Bitte in beide Felder je einen laengeren Textausschnitt (min. '
-          '40 Zeichen) einfuegen.');
+              '40 Zeichen) einfuegen.');
       return;
     }
     setState(() {
@@ -67,7 +67,8 @@ class _PropagandaCompareScreenState extends State<PropagandaCompareScreen> {
         _b = results[1];
       });
     } catch (e) {
-      setState(() => _error = 'Analyse fehlgeschlagen. Bitte erneut versuchen.');
+      setState(
+          () => _error = 'Analyse fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       setState(() => _loading = false);
     }
@@ -233,7 +234,8 @@ class _PropagandaCompareScreenState extends State<PropagandaCompareScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(children: [
             _input(_aCtrl, 'Quelle A'),
             const SizedBox(height: 12),
@@ -250,7 +252,8 @@ class _PropagandaCompareScreenState extends State<PropagandaCompareScreen> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.compare_arrows_rounded, size: 18),
-                label: Text(_loading ? 'Analysiere ...' : 'Quellen vergleichen'),
+                label:
+                    Text(_loading ? 'Analysiere ...' : 'Quellen vergleichen'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _kAccent,
                   foregroundColor: Colors.white,

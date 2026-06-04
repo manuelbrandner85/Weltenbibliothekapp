@@ -60,8 +60,7 @@ class AdminAuthService {
 
       final token = _hmacHex(_secret, username.toLowerCase());
       if (kDebugMode) {
-        debugPrint(
-            '[AdminAuthService] sending X-Admin-Username="$username" '
+        debugPrint('[AdminAuthService] sending X-Admin-Username="$username" '
             '(role=$role) -- HMAC computed');
       }
       return {
@@ -160,8 +159,7 @@ class AdminAuthService {
         }
       } catch (_) {/* best-effort */}
 
-      final nonEmpty =
-          candidates.where((u) => u.trim().isNotEmpty).toList();
+      final nonEmpty = candidates.where((u) => u.trim().isNotEmpty).toList();
 
       // Prio 4: erster non-InvisibleAuth-Username
       for (final u in nonEmpty) {

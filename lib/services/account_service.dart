@@ -30,7 +30,8 @@ class AccountService {
       {required String id, required String userId}) async {
     try {
       final res = await http
-          .delete(_u('/api/notifications/$id?userId=${Uri.encodeQueryComponent(userId)}'))
+          .delete(_u(
+              '/api/notifications/$id?userId=${Uri.encodeQueryComponent(userId)}'))
           .timeout(_timeout);
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (e) {
@@ -43,7 +44,8 @@ class AccountService {
   Future<bool> deleteAllNotifications({required String userId}) async {
     try {
       final res = await http
-          .delete(_u('/api/notifications/all?userId=${Uri.encodeQueryComponent(userId)}'))
+          .delete(_u(
+              '/api/notifications/all?userId=${Uri.encodeQueryComponent(userId)}'))
           .timeout(_timeout);
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (e) {
@@ -70,12 +72,14 @@ class AccountService {
         'lastName': lastName,
       };
       if (username != null && username.isNotEmpty) qp['username'] = username;
-      if (birthDate != null && birthDate.isNotEmpty) qp['birthDate'] = birthDate;
+      if (birthDate != null && birthDate.isNotEmpty)
+        qp['birthDate'] = birthDate;
       if (birthPlace != null && birthPlace.isNotEmpty) {
         qp['birthPlace'] = birthPlace;
       }
       final res = await http
-          .get(_u('/api/account/identity-lookup?${Uri(queryParameters: qp).query}'))
+          .get(_u(
+              '/api/account/identity-lookup?${Uri(queryParameters: qp).query}'))
           .timeout(_timeout);
       if (res.statusCode == 200) {
         return jsonDecode(res.body) as Map<String, dynamic>;
@@ -99,7 +103,8 @@ class AccountService {
       if (username != null && username.isNotEmpty) qp['username'] = username;
       if (qp.isEmpty) return {'scopes': [], 'restrictions': []};
       final res = await http
-          .get(_u('/api/account/restrictions?${Uri(queryParameters: qp).query}'))
+          .get(
+              _u('/api/account/restrictions?${Uri(queryParameters: qp).query}'))
           .timeout(_timeout);
       if (res.statusCode == 200) {
         return jsonDecode(res.body) as Map<String, dynamic>;

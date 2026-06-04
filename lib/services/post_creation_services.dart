@@ -322,9 +322,8 @@ class LinkPreviewService {
       if (res.statusCode < 200 || res.statusCode >= 400) return null;
 
       // HTML auf ersten 256KB beschraenken -- og-Tags stehen im <head>
-      final html = res.body.length > 262144
-          ? res.body.substring(0, 262144)
-          : res.body;
+      final html =
+          res.body.length > 262144 ? res.body.substring(0, 262144) : res.body;
 
       String? meta(String property) {
         // og:* und twitter:* sowohl als property als auch name unterstuetzen
@@ -347,8 +346,9 @@ class LinkPreviewService {
       }
 
       final ogTitle = meta('og:title') ?? meta('twitter:title');
-      final ogDesc =
-          meta('og:description') ?? meta('twitter:description') ?? meta('description');
+      final ogDesc = meta('og:description') ??
+          meta('twitter:description') ??
+          meta('description');
       final ogImage = meta('og:image') ?? meta('twitter:image');
 
       // Fallback: <title>...</title>
@@ -466,8 +466,7 @@ class DraftService {
     final key = _draftKey(world);
     final list = await _read(key);
     final data = Map<String, dynamic>.from(draftData);
-    data['id'] = data['id'] ??
-        'draft_${DateTime.now().millisecondsSinceEpoch}';
+    data['id'] = data['id'] ?? 'draft_${DateTime.now().millisecondsSinceEpoch}';
     data['savedAt'] = DateTime.now().toIso8601String();
     // Existierenden Draft mit gleicher id ueberschreiben
     list.removeWhere((d) => d['id'] == data['id']);
@@ -497,8 +496,7 @@ class DraftService {
     final key = _schedKey(world);
     final list = await _read(key);
     final data = Map<String, dynamic>.from(postData);
-    data['id'] = data['id'] ??
-        'sched_${DateTime.now().millisecondsSinceEpoch}';
+    data['id'] = data['id'] ?? 'sched_${DateTime.now().millisecondsSinceEpoch}';
     data['scheduledFor'] = scheduledFor.toIso8601String();
     data['savedAt'] = DateTime.now().toIso8601String();
     list.removeWhere((d) => d['id'] == data['id']);

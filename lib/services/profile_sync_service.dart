@@ -153,8 +153,8 @@ class ProfileSyncService {
             userId: (profileData['id'] ?? profileData['user_id']) as String?,
             role: profileData['role'] as String?,
             // Spalte heisst display_name (frueher faelschlich 'name').
-            name: (profileData['display_name'] ?? profileData['name'])
-                as String?,
+            name:
+                (profileData['display_name'] ?? profileData['name']) as String?,
             avatarUrl: profileData['avatar_url'] as String?,
             avatarEmoji: profileData['avatar_emoji'] as String?,
             bio: profileData['bio'] as String?,

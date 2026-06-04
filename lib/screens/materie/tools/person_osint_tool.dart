@@ -68,7 +68,7 @@ class _PersonOsintToolState extends State<PersonOsintTool> {
       if (hits.isEmpty) {
         setState(() => _error =
             'Kein oeffentlicher Eintrag gefunden. Nur bekannte Personen, '
-            'Organisationen und Begriffe sind erfasst.');
+                'Organisationen und Begriffe sind erfasst.');
         return;
       }
 
@@ -87,7 +87,8 @@ class _PersonOsintToolState extends State<PersonOsintTool> {
         _otherHits = hits.skip(1).toList();
       });
     } catch (e) {
-      setState(() => _error = 'Abfrage fehlgeschlagen. Bitte erneut versuchen.');
+      setState(
+          () => _error = 'Abfrage fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       setState(() => _loading = false);
     }
@@ -150,7 +151,8 @@ class _PersonOsintToolState extends State<PersonOsintTool> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Name, Organisation oder Begriff',
                 style: TextStyle(color: _kMuted, fontSize: 12)),
@@ -216,7 +218,8 @@ class _PersonOsintToolState extends State<PersonOsintTool> {
                       style: const TextStyle(color: _kAccent, fontSize: 13))),
             ])),
           if (s != null) ...[
-            _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _card(
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 if (thumb != null)
                   ClipRRect(
@@ -252,8 +255,7 @@ class _PersonOsintToolState extends State<PersonOsintTool> {
                 const SizedBox(height: 10),
                 const Text(
                   'Mehrdeutiger Begriff - bitte praezisieren.',
-                  style: TextStyle(
-                      color: Color(0xFFFFB300), fontSize: 12),
+                  style: TextStyle(color: Color(0xFFFFB300), fontSize: 12),
                 ),
               ],
               if (s['extract'] != null) ...[

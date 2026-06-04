@@ -82,7 +82,8 @@ class _EmailOsintToolState extends State<EmailOsintTool> {
         };
       });
     } catch (e) {
-      setState(() => _error = 'Abfrage fehlgeschlagen. Bitte erneut versuchen.');
+      setState(
+          () => _error = 'Abfrage fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       setState(() => _loading = false);
     }
@@ -127,7 +128,8 @@ class _EmailOsintToolState extends State<EmailOsintTool> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('E-Mail-Adresse',
                 style: TextStyle(color: _kMuted, fontSize: 12)),
@@ -251,8 +253,8 @@ class _EmailOsintToolState extends State<EmailOsintTool> {
                                 color: _kAccent.withValues(alpha: 0.3)),
                           ),
                           child: Text(b,
-                              style: const TextStyle(
-                                  color: _kText, fontSize: 12)),
+                              style:
+                                  const TextStyle(color: _kText, fontSize: 12)),
                         ),
                     ],
                   ),

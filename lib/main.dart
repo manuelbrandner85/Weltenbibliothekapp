@@ -413,7 +413,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
     return provider.Consumer<ThemeService>(
       builder: (context, themeService, child) {
         return MaterialApp(
-          title: 'Dual Realms - Deep Research',
+          title: 'Weltenbibliothek',
           debugShowCheckedModeBanner: false,
           navigatorKey: appNavigatorKey,
 

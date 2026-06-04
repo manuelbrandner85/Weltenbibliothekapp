@@ -81,6 +81,14 @@ class KaninchenbauScreen extends StatefulWidget {
   State<KaninchenbauScreen> createState() => _KaninchenbauScreenState();
 }
 
+/// One counter chip in the dossier summary (replaces a Dart record type).
+class _DossierItem {
+  final String label;
+  final int count;
+  final IconData icon;
+  const _DossierItem(this.label, this.count, this.icon);
+}
+
 class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
   final _service = KaninchenbauService();
   final _osint = OsintApis.instance;
@@ -547,104 +555,9 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       });
     });
 
-    // Geldflüsse (warten bis Network-Daten da sind, dann mit Kontext)
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (!mounted || s.disposed) return;
-      _service
-          .fetchMoneyFlows(s.topic, networkContext: s.networkNodes)
-          .then((flows) {
-        if (!mounted || s.disposed) return;
-        setState(() {
-          s.moneyFlows = flows;
-          s.moneyLoading = false;
-        });
-      });
-    });
-
-    // Medien-Kompass
-    _service.fetchMediaCompass(s.topic).then((points) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.compassPoints = points;
-        s.compassLoading = false;
-      });
-    });
-
-    // Dokumente
-    _service.fetchLeakedDocuments(s.topic).then((docs) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.documents = docs;
-        s.documentsLoading = false;
-      });
-    });
-
-    // Globale Auswirkungen
-    _service.fetchGlobalImpact(s.topic).then((impacts) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.globalImpacts = impacts;
-        s.globalLoading = false;
-      });
-    });
-
-    // OSINT-Layer parallel
-    _osint.fetchOpenAlexPapers(s.topic).then((papers) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.academicPapers = papers;
-        s.academicLoading = false;
-      });
-    });
-
-    _osint.fetchSanctions(s.topic).then((sanctions) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.sanctions = sanctions;
-        s.sanctionsLoading = false;
-      });
-    });
-
-    _osint.fetchLittleSisRelations(s.topic).then((rels) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.powerRelations = rels;
-        s.powerRelationsLoading = false;
-      });
-    });
-
-    _osint.fetchWaybackSnapshots(s.topic).then((snaps) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.waybackSnapshots = snaps;
-        s.waybackLoading = false;
-      });
-    });
-
-    _osint.fetchCourtCases(s.topic).then((cases) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.courtCases = cases;
-        s.courtLoading = false;
-      });
-    });
-
-    _osint.fetchFactChecks(s.topic).then((fcs) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.factChecks = fcs;
-        s.factCheckLoading = false;
-      });
-    });
-
-    // RSS-Aggregator (Worker)
-    _service.fetchRssAggregate(s.topic).then((rss) {
-      if (!mounted || s.disposed) return;
-      setState(() {
-        s.rssItems = rss;
-        s.rssLoading = false;
-      });
-    });
+    // NOTE: Die Geldfluss-/Medien-/Dokument-/Impact- und OSINT-Layer-Fetches
+    // werden bereits im oberen Block (mit loadedApiCount-Tracking) angestossen.
+    // Der frueher hier duplizierte Block wurde entfernt (doppelte API-Calls).
 
     // AI Insight (etwas verzögert, damit Kontext vorhanden ist)
     Future.delayed(const Duration(seconds: 1), () {
@@ -910,41 +823,41 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
   }
 
   Widget _buildDossierCard(_ThreadState s) {
-    final items = <(String, int, IconData)>[
-      (
+    final items = <_DossierItem>[
+      _DossierItem(
         'Netzwerk',
         s.networkNodes.where((n) => n.id != 'center').length,
-        Icons.hub_rounded
+        Icons.hub_rounded,
       ),
-      ('Personen', s.keyPersons.length, Icons.people_rounded),
-      ('Nachrichten', s.rssItems.length, Icons.feed_rounded),
-      (
+      _DossierItem('Personen', s.keyPersons.length, Icons.people_rounded),
+      _DossierItem('Nachrichten', s.rssItems.length, Icons.feed_rounded),
+      _DossierItem(
         'Sanktionen',
         s.sanctions.length + s.openSanctions.length,
-        Icons.gavel_rounded
+        Icons.gavel_rounded,
       ),
-      (
+      _DossierItem(
         'Urteile',
         s.courtCases.length + s.courtListener.length,
-        Icons.account_balance_rounded
+        Icons.account_balance_rounded,
       ),
-      (
+      _DossierItem(
         'Dokumente',
         s.documents.length +
             s.documentCloud.length +
             s.wikiLeaks.length +
             s.ciaCrest.length,
-        Icons.description_rounded
+        Icons.description_rounded,
       ),
-      ('Lobbying', s.lobbyEntries.length, Icons.handshake_rounded),
-      (
+      _DossierItem('Lobbying', s.lobbyEntries.length, Icons.handshake_rounded),
+      _DossierItem(
         'Studien',
         s.academicPapers.length +
             s.pubmedPapers.length +
             s.semanticPapers.length,
-        Icons.biotech_rounded
+        Icons.biotech_rounded,
       ),
-    ].where((e) => e.$2 > 0).toList();
+    ].where((e) => e.count > 0).toList();
 
     if (items.isEmpty) return const SizedBox.shrink();
 
@@ -986,7 +899,9 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
             spacing: 8,
             runSpacing: 6,
             children: items.map((e) {
-              final (label, count, icon) = e;
+              final label = e.label;
+              final count = e.count;
+              final icon = e.icon;
               return Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -1124,6 +1039,9 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                       )),
 
                   // ── C: ABSCHNITT 3 — KRITIK & GEGENDARSTELLUNG ──────────
+                  // Echte Gegendarstellung: Faktenchecks, Medien-Einordnung und
+                  // Gegenquellen. Die Macht-/Sanktions-/Geldfluss-Karten stehen
+                  // bewusst NUR im Abschnitt "Netzwerk & Macht" (keine Dopplung).
                   const _SectionHeader(
                     label: 'KRITIK & GEGENDARSTELLUNG',
                     icon: Icons.balance,
@@ -1131,31 +1049,23 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
-                    delay: const Duration(milliseconds: 340),
-                    child: PowerRelationsCard(
-                      relations: s.powerRelations,
-                      loading: s.powerRelationsLoading,
+                    delay: const Duration(milliseconds: 360),
+                    child: FactCheckCard(
+                      checks: s.factChecks,
+                      loading: s.factCheckLoading,
                     ),
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
-                    delay: const Duration(milliseconds: 380),
-                    child: SanctionsCard(
-                      entries: s.sanctions,
-                      loading: s.sanctionsLoading,
+                    delay: const Duration(milliseconds: 400),
+                    child: MediaCompassCard(
+                      points: s.compassPoints,
+                      loading: s.compassLoading,
                     ),
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
-                    delay: const Duration(milliseconds: 420),
-                    child: MoneyFlowCard(
-                      flows: s.moneyFlows,
-                      loading: s.moneyLoading,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _StaggeredCard(
-                    delay: const Duration(milliseconds: 450),
+                    delay: const Duration(milliseconds: 440),
                     child: SourcesCard(
                       sources: s.sources,
                       loading: s.sourcesLoading,
@@ -1167,22 +1077,6 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     child: AcademicCard(
                       papers: s.academicPapers,
                       loading: s.academicLoading,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _StaggeredCard(
-                    delay: const Duration(milliseconds: 520),
-                    child: MediaCompassCard(
-                      points: s.compassPoints,
-                      loading: s.compassLoading,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _StaggeredCard(
-                    delay: const Duration(milliseconds: 560),
-                    child: FactCheckCard(
-                      checks: s.factChecks,
-                      loading: s.factCheckLoading,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1233,25 +1127,8 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                       loading: s.rssLoading,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _StaggeredCard(
-                    delay: const Duration(milliseconds: 790),
-                    child: AnnotationsCard(topic: s.topic),
-                  ),
-                  const SizedBox(height: 16),
-                  _StaggeredCard(
-                    delay: const Duration(milliseconds: 810),
-                    child: SherlockCard(topic: s.topic),
-                  ),
-                  const SizedBox(height: 16),
-                  _StaggeredCard(
-                    delay: const Duration(milliseconds: 830),
-                    child: RelatedPathsCard(
-                      topics: s.relatedTopics,
-                      loading: s.relatedLoading,
-                      onTap: _openThread,
-                    ),
-                  ),
+                  // NOTE: AnnotationsCard / SherlockCard / RelatedPathsCard
+                  // stehen gebuendelt am Ende des Threads (keine Dopplung hier).
                   _stag(
                       690,
                       PubMedCard(

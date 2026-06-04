@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/free_api_service.dart';
 import '../../services/group_tools_service.dart';
@@ -658,7 +659,11 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
               'Max. Energie'),
           const Spacer(),
           GestureDetector(
-            onTap: () {},
+            onTap: () async {
+              final uri = Uri.parse('https://ssd.jpl.nasa.gov/');
+              if (await canLaunchUrl(uri))
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(

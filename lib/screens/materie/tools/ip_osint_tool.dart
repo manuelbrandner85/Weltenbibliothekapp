@@ -116,7 +116,8 @@ class _IpOsintToolState extends State<IpOsintTool> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('IP-Adresse oder Domain',
                 style: TextStyle(color: _kMuted, fontSize: 12)),
@@ -182,7 +183,8 @@ class _IpOsintToolState extends State<IpOsintTool> {
                       style: const TextStyle(color: _kAccent, fontSize: 13))),
             ])),
           if (r != null) ...[
-            _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _card(
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 if (flag?['emoji'] != null)
                   Text(flag!['emoji'].toString(),
@@ -214,31 +216,35 @@ class _IpOsintToolState extends State<IpOsintTool> {
                       : null),
             ])),
             if (conn != null)
-              _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: const [
-                  Icon(Icons.dns_rounded, color: _kAccent, size: 16),
-                  SizedBox(width: 6),
-                  Text('Netzwerk / Provider',
-                      style: TextStyle(
-                          color: _kAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14)),
-                ]),
-                const SizedBox(height: 10),
-                _row('ASN',
-                    conn['asn'] != null ? 'AS${conn['asn']}' : null),
-                _row('Organisation', conn['org']?.toString()),
-                _row('ISP', conn['isp']?.toString()),
-                _row('Domain', conn['domain']?.toString()),
-              ])),
+              _card(Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: const [
+                      Icon(Icons.dns_rounded, color: _kAccent, size: 16),
+                      SizedBox(width: 6),
+                      Text('Netzwerk / Provider',
+                          style: TextStyle(
+                              color: _kAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14)),
+                    ]),
+                    const SizedBox(height: 10),
+                    _row(
+                        'ASN', conn['asn'] != null ? 'AS${conn['asn']}' : null),
+                    _row('Organisation', conn['org']?.toString()),
+                    _row('ISP', conn['isp']?.toString()),
+                    _row('Domain', conn['domain']?.toString()),
+                  ])),
             if (tz != null)
-              _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Zeitzone',
-                    style: TextStyle(color: _kMuted, fontSize: 12)),
-                const SizedBox(height: 8),
-                _row('Zone', tz['id']?.toString()),
-                _row('UTC-Offset', tz['utc']?.toString()),
-              ])),
+              _card(Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Zeitzone',
+                        style: TextStyle(color: _kMuted, fontSize: 12)),
+                    const SizedBox(height: 8),
+                    _row('Zone', tz['id']?.toString()),
+                    _row('UTC-Offset', tz['utc']?.toString()),
+                  ])),
           ],
         ]),
       ),

@@ -100,7 +100,9 @@ class _EconomicIndicatorsScreenState extends State<EconomicIndicatorsScreen> {
         setState(() => _error = 'Keine Daten fuer dieses Land verfuegbar.');
       }
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -177,10 +179,10 @@ class _EconomicIndicatorsScreenState extends State<EconomicIndicatorsScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Land',
-                style: TextStyle(color: _kMuted, fontSize: 12)),
+            const Text('Land', style: TextStyle(color: _kMuted, fontSize: 12)),
             const SizedBox(height: 8),
             DropdownButtonFormField<_Country>(
               value: _country,
@@ -254,16 +256,14 @@ class _EconomicIndicatorsScreenState extends State<EconomicIndicatorsScreen> {
     return _card(Row(children: [
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(ind.label,
-              style: const TextStyle(color: _kMuted, fontSize: 12)),
+          Text(ind.label, style: const TextStyle(color: _kMuted, fontSize: 12)),
           const SizedBox(height: 4),
           Text(v.$1,
               style: const TextStyle(
                   color: _kText, fontSize: 18, fontWeight: FontWeight.bold)),
         ]),
       ),
-      Text(v.$2,
-          style: const TextStyle(color: _kMuted, fontSize: 12)),
+      Text(v.$2, style: const TextStyle(color: _kMuted, fontSize: 12)),
     ]));
   }
 }

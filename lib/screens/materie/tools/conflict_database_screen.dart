@@ -20,10 +20,23 @@ const _kMuted = Color(0xFFB0A0A0);
 const _kBorder = Color(0x33E53935);
 
 const _kCountries = [
-  'Ukraine', 'Sudan', 'Syria', 'Yemen', 'Ethiopia', 'Myanmar',
-  'Israel', 'Palestine', 'Democratic Republic of Congo',
-  'Somalia', 'Afghanistan', 'Mali', 'Nigeria', 'Russia',
-  'Haiti', 'Libya', 'Venezuela',
+  'Ukraine',
+  'Sudan',
+  'Syria',
+  'Yemen',
+  'Ethiopia',
+  'Myanmar',
+  'Israel',
+  'Palestine',
+  'Democratic Republic of Congo',
+  'Somalia',
+  'Afghanistan',
+  'Mali',
+  'Nigeria',
+  'Russia',
+  'Haiti',
+  'Libya',
+  'Venezuela',
 ];
 
 class ConflictDatabaseScreen extends StatefulWidget {
@@ -66,11 +79,16 @@ class _ConflictDatabaseScreenState extends State<ConflictDatabaseScreen> {
       final list = (data['events'] as List?) ?? const [];
       if (!mounted) return;
       setState(() {
-        _events = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _events = list
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
         _total = data['count'] as int? ?? _events.length;
       });
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -79,7 +97,8 @@ class _ConflictDatabaseScreenState extends State<ConflictDatabaseScreen> {
   Color _typeColor(String type) {
     final t = type.toLowerCase();
     if (t.contains('battle') || t.contains('violence')) return _kAccent;
-    if (t.contains('explosion') || t.contains('remote')) return const Color(0xFFFF7043);
+    if (t.contains('explosion') || t.contains('remote'))
+      return const Color(0xFFFF7043);
     if (t.contains('protest')) return const Color(0xFFFFB300);
     if (t.contains('riot')) return const Color(0xFFFF9800);
     return const Color(0xFF4CAF50);
@@ -107,7 +126,8 @@ class _ConflictDatabaseScreenState extends State<ConflictDatabaseScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Land / Region',
                 style: TextStyle(color: _kMuted, fontSize: 12)),
@@ -148,7 +168,8 @@ class _ConflictDatabaseScreenState extends State<ConflictDatabaseScreen> {
             sources: [OsintSource('ACLED', 'https://acleddata.com')],
           ),
           if (_keyMissing)
-            _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _card(
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Row(children: [
                 Icon(Icons.key_off_rounded, color: Color(0xFFFFB300), size: 18),
                 SizedBox(width: 8),
@@ -215,7 +236,8 @@ class _ConflictDatabaseScreenState extends State<ConflictDatabaseScreen> {
     final fat = e['fatalities']?.toString() ?? '0';
     final notes = (e['notes'] ?? '').toString();
     final c = _typeColor(type);
-    return _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return _card(
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -224,11 +246,11 @@ class _ConflictDatabaseScreenState extends State<ConflictDatabaseScreen> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(type.isNotEmpty ? type : 'Unbekannt',
-              style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  color: c, fontSize: 10, fontWeight: FontWeight.bold)),
         ),
         const Spacer(),
-        Text(date,
-            style: const TextStyle(color: _kMuted, fontSize: 11)),
+        Text(date, style: const TextStyle(color: _kMuted, fontSize: 11)),
       ]),
       if (sub.isNotEmpty) ...[
         const SizedBox(height: 4),
@@ -240,12 +262,15 @@ class _ConflictDatabaseScreenState extends State<ConflictDatabaseScreen> {
         const SizedBox(width: 4),
         Expanded(
           child: Text(loc,
-              style: const TextStyle(color: _kText, fontSize: 13, fontWeight: FontWeight.w600)),
+              style: const TextStyle(
+                  color: _kText, fontSize: 13, fontWeight: FontWeight.w600)),
         ),
         if (fat != '0') ...[
-          const Icon(Icons.warning_amber_rounded, color: Color(0xFFFF7043), size: 13),
+          const Icon(Icons.warning_amber_rounded,
+              color: Color(0xFFFF7043), size: 13),
           const SizedBox(width: 3),
-          Text('$fat', style: const TextStyle(color: Color(0xFFFF7043), fontSize: 12)),
+          Text('$fat',
+              style: const TextStyle(color: Color(0xFFFF7043), fontSize: 12)),
         ],
       ]),
       if (notes.isNotEmpty) ...[

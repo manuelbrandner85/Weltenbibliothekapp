@@ -189,7 +189,8 @@ class SoundService {
   }
 
   /// Play custom sound from URL or asset path
-  static Future<void> playCustomSound(String soundUrl, {double volume = 0.5}) async {
+  static Future<void> playCustomSound(String soundUrl,
+      {double volume = 0.5}) async {
     try {
       final player = _instance._getAvailablePlayer();
       if (player == null) return;

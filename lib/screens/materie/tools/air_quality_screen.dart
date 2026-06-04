@@ -67,11 +67,15 @@ class _AirQualityScreenState extends State<AirQualityScreen> {
       if (list.isEmpty) {
         setState(() => _error = 'Keine Stationen fuer diese Stadt gefunden.');
       } else {
-        setState(() => _stations =
-            list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
+        setState(() => _stations = list
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList());
       }
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -81,15 +85,17 @@ class _AirQualityScreenState extends State<AirQualityScreen> {
     if (_stations.isEmpty) return null;
     return {
       'Stadt': _cityCtrl.text.trim(),
-      'Stationen': _stations.map((s) => {
-            'Name': s['name'],
-            'Land': s['country'],
-            'Letzte Messung': s['lastUpdated'],
-            'Sensoren': (s['sensors'] as List?)
-                    ?.map((x) => '${x['parameter']} (${x['unit']})')
-                    .join(', ') ??
-                '',
-          }).toList(),
+      'Stationen': _stations
+          .map((s) => {
+                'Name': s['name'],
+                'Land': s['country'],
+                'Letzte Messung': s['lastUpdated'],
+                'Sensoren': (s['sensors'] as List?)
+                        ?.map((x) => '${x['parameter']} (${x['unit']})')
+                        .join(', ') ??
+                    '',
+              })
+          .toList(),
     };
   }
 
@@ -117,10 +123,10 @@ class _AirQualityScreenState extends State<AirQualityScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Stadt',
-                style: TextStyle(color: _kMuted, fontSize: 12)),
+            const Text('Stadt', style: TextStyle(color: _kMuted, fontSize: 12)),
             const SizedBox(height: 8),
             TextField(
               controller: _cityCtrl,
@@ -183,7 +189,8 @@ class _AirQualityScreenState extends State<AirQualityScreen> {
             sources: [OsintSource('OpenAQ', 'https://openaq.org')],
           ),
           if (_keyMissing)
-            _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _card(
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Row(children: [
                 Icon(Icons.key_off_rounded, color: Color(0xFFFFB300), size: 18),
                 SizedBox(width: 8),
@@ -232,7 +239,8 @@ class _AirQualityScreenState extends State<AirQualityScreen> {
     final country = (s['country'] ?? '').toString();
     final updated = (s['lastUpdated'] ?? '').toString();
     final sensors = (s['sensors'] as List?) ?? const [];
-    return _card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return _card(
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         const Icon(Icons.sensors_rounded, color: _kAccent, size: 16),
         const SizedBox(width: 8),

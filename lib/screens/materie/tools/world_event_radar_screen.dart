@@ -76,7 +76,9 @@ class _WorldEventRadarScreenState extends State<WorldEventRadarScreen> {
         _natural = results[2];
       });
     } catch (_) {
-      if (mounted) setState(() => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
+      if (mounted)
+        setState(
+            () => _error = 'Abruf fehlgeschlagen. Bitte erneut versuchen.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -285,7 +287,8 @@ class _WorldEventRadarScreenState extends State<WorldEventRadarScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const OsintSourceBanner(
             source: 'Live-Ereignisse aus drei offiziellen Quellen. Erdbeben ab '
                 'Magnitude 4.5 (letzte 24h), UN-Katastrophen-Alerts und offene '
@@ -302,8 +305,7 @@ class _WorldEventRadarScreenState extends State<WorldEventRadarScreen> {
           if (_loading)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 48),
-              child: Center(
-                  child: CircularProgressIndicator(color: _kAccent)),
+              child: Center(child: CircularProgressIndicator(color: _kAccent)),
             )
           else if (_error != null)
             _card(Row(children: [
@@ -324,7 +326,11 @@ class _WorldEventRadarScreenState extends State<WorldEventRadarScreen> {
   }
 
   Widget _tabs() {
-    final labels = ['Erdbeben (${_quakes.length})', 'Katastrophen (${_disasters.length})', 'Natur (${_natural.length})'];
+    final labels = [
+      'Erdbeben (${_quakes.length})',
+      'Katastrophen (${_disasters.length})',
+      'Natur (${_natural.length})'
+    ];
     return Row(
       children: [
         for (var i = 0; i < labels.length; i++)
@@ -336,10 +342,11 @@ class _WorldEventRadarScreenState extends State<WorldEventRadarScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: _tab == i ? _kAccent.withValues(alpha: 0.18) : _kSurface,
+                    color: _tab == i
+                        ? _kAccent.withValues(alpha: 0.18)
+                        : _kSurface,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: _tab == i ? _kAccent : _kBorder),
+                    border: Border.all(color: _tab == i ? _kAccent : _kBorder),
                   ),
                   child: Text(
                     labels[i],
@@ -378,7 +385,8 @@ class _WorldEventRadarScreenState extends State<WorldEventRadarScreen> {
               decoration: BoxDecoration(
                 color: e.severityColor.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: e.severityColor.withValues(alpha: 0.5)),
+                border:
+                    Border.all(color: e.severityColor.withValues(alpha: 0.5)),
               ),
               child: Text(e.severity,
                   style: TextStyle(

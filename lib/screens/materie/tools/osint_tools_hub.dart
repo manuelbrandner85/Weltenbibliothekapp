@@ -45,16 +45,16 @@ class OsintToolsHub extends StatefulWidget {
 }
 
 class _OsintToolsHubState extends State<OsintToolsHub> {
-  List<(String, String, String)> _starred = []; // (tool, label, query)
+  List<_StarredSearch> _starred = [];
 
   static const _toolMeta = [
-    ('domain_osint', '🌐'),
-    ('phone_osint', '📞'),
-    ('crypto_tracker', '₿'),
-    ('image_analysis', '🖼️'),
-    ('ai_detector', '🤖'),
-    ('geo_analysis', '🗺️'),
-    ('data_leak', '⚠️'),
+    _ToolMeta('domain_osint', '🌐'),
+    _ToolMeta('phone_osint', '📞'),
+    _ToolMeta('crypto_tracker', '₿'),
+    _ToolMeta('image_analysis', '🖼️'),
+    _ToolMeta('ai_detector', '🤖'),
+    _ToolMeta('geo_analysis', '🗺️'),
+    _ToolMeta('data_leak', '⚠️'),
   ];
 
   @override
@@ -64,11 +64,11 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
   }
 
   Future<void> _loadStarred() async {
-    final result = <(String, String, String)>[];
-    for (final (toolId, emoji) in _toolMeta) {
-      final entries = await OsintHistoryService.instance.list(toolId);
+    final result = <_StarredSearch>[];
+    for (final meta in _toolMeta) {
+      final entries = await OsintHistoryService.instance.list(meta.id);
       for (final e in entries.where((e) => e.starred)) {
-        result.add((toolId, emoji, e.query));
+        result.add(_StarredSearch(meta.id, meta.emoji, e.query));
       }
     }
     if (mounted) setState(() => _starred = result);
@@ -267,8 +267,7 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
       sub: 'Kritische Internet-Infrastruktur',
       color: const Color(0xFF26C6DA),
       url: 'https://www.submarinecablemap.com',
-      description:
-          'Das globale Unterseekabel-Netz, ueber das fast der gesamte '
+      description: 'Das globale Unterseekabel-Netz, ueber das fast der gesamte '
           'internationale Internet-Verkehr laeuft. Interaktive Karte von '
           'TeleGeography.',
     ),
@@ -332,7 +331,7 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
         titleWidget: Row(children: [
           Icon(Icons.manage_search_rounded, color: _kAccent, size: 22),
           const SizedBox(width: 8),
-          const Text('OSINT Datenbanken',
+          const Text('Recherche-Werkzeuge',
               style: TextStyle(
                   color: _kText, fontWeight: FontWeight.bold, fontSize: 18)),
         ]),
@@ -355,8 +354,10 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
           child: Text(
-            '${_tools.length} Recherche-Tools · Power-Network kombiniert 8 Datenbanken in einer Suche.',
-            style: const TextStyle(color: _kMuted, fontSize: 13),
+            'Einzelne Werkzeuge zum manuellen Vertiefen. '
+            'Fuer ein automatisches Dossier zu einem Thema nutze stattdessen '
+            '"Recherche starten" (Kaninchenbau).',
+            style: const TextStyle(color: _kMuted, fontSize: 13, height: 1.35),
           ),
         ),
         if (_starred.isNotEmpty) _buildBookmarkStrip(context),
@@ -416,7 +417,8 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
             spacing: 6,
             runSpacing: 4,
             children: _starred.map((s) {
-              final (_, emoji, query) = s;
+              final emoji = s.emoji;
+              final query = s.query;
               return GestureDetector(
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: query));
@@ -619,6 +621,21 @@ class _DbDef {
   });
 }
 
+/// Tool id + emoji (replaces a Dart record type).
+class _ToolMeta {
+  final String id;
+  final String emoji;
+  const _ToolMeta(this.id, this.emoji);
+}
+
+/// A starred search entry: tool id + emoji + the saved query string.
+class _StarredSearch {
+  final String toolId;
+  final String emoji;
+  final String query;
+  const _StarredSearch(this.toolId, this.emoji, this.query);
+}
+
 // 🕰️ D1: OSINT-Such-Verlauf pro Tool
 class _OsintHistoryScreen extends StatefulWidget {
   const _OsintHistoryScreen();
@@ -627,14 +644,15 @@ class _OsintHistoryScreen extends StatefulWidget {
 }
 
 class _OsintHistoryScreenState extends State<_OsintHistoryScreen> {
+  // _ToolMeta(id, label) -- the 2nd field carries the chip label here.
   static const _tools = [
-    ('domain_osint', '🌐 Domain'),
-    ('phone_osint', '📞 Phone'),
-    ('crypto_tracker', '₿ Crypto'),
-    ('image_analysis', '🖼️ Image'),
-    ('ai_detector', '🤖 AI-Detector'),
-    ('geo_analysis', '🗺️ Geo'),
-    ('data_leak', '⚠️ Leaks'),
+    _ToolMeta('domain_osint', '🌐 Domain'),
+    _ToolMeta('phone_osint', '📞 Phone'),
+    _ToolMeta('crypto_tracker', '₿ Crypto'),
+    _ToolMeta('image_analysis', '🖼️ Image'),
+    _ToolMeta('ai_detector', '🤖 AI-Detector'),
+    _ToolMeta('geo_analysis', '🗺️ Geo'),
+    _ToolMeta('data_leak', '⚠️ Leaks'),
   ];
 
   String _selectedTool = 'domain_osint';
@@ -692,16 +710,15 @@ class _OsintHistoryScreenState extends State<_OsintHistoryScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                     child: ChoiceChip(
-                      label: Text(t.$2, style: const TextStyle(fontSize: 12)),
-                      selected: _selectedTool == t.$1,
+                      label: Text(t.emoji, style: const TextStyle(fontSize: 12)),
+                      selected: _selectedTool == t.id,
                       selectedColor: _kAccent.withValues(alpha: 0.25),
                       backgroundColor: Colors.white.withValues(alpha: 0.04),
                       labelStyle: TextStyle(
-                        color:
-                            _selectedTool == t.$1 ? _kAccent : Colors.white70,
+                        color: _selectedTool == t.id ? _kAccent : Colors.white70,
                       ),
                       onSelected: (_) {
-                        setState(() => _selectedTool = t.$1);
+                        setState(() => _selectedTool = t.id);
                         _load();
                       },
                     ),

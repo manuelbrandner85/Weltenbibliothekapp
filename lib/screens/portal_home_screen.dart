@@ -165,6 +165,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
       // Check if tutorial should be shown (v5.37 - Improvement 5.5)
       _checkTutorial();
 
+      // Re-enable gyroscope parallax (CINEMA-MODE v6).
+      _initGyroscope();
+
       // Portal ist bereit
       if (mounted) {
         setState(() {
@@ -184,18 +187,23 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
     }
   }
 
-  /// Original initState - nur für Rückwärtskompatibilität
-  //     // Start gyroscope listener (v5.37 - Improvement 5.4)
-  // _gyroscopeSubscription = gyroscopeEventStream().listen((GyroscopeEvent event) {
-  // if (mounted) {
-  // setState(() {
-  // Subtle tilt effect (limit range)
-  // _gyroX = (event.y * 10).clamp(-20.0, 20.0);
-  // _gyroY = (event.x * 10).clamp(-20.0, 20.0);
-  // });
-  // }
-  // });
-  // }
+  /// Gyroscope 3D parallax - CINEMA-MODE v6.
+  void _initGyroscope() {
+    try {
+      _gyroscopeSubscription =
+          gyroscopeEventStream(samplingPeriod: SensorInterval.gameInterval)
+              .listen((GyroscopeEvent event) {
+        if (mounted) {
+          setState(() {
+            _gyroX = (event.y * 8).clamp(-15.0, 15.0);
+            _gyroY = (event.x * 8).clamp(-15.0, 15.0);
+          });
+        }
+      });
+    } catch (_) {
+      // Gyroscope not available on this device/emulator - silent fail.
+    }
+  }
 
   Future<void> _checkTutorial() async {
     final show = await shouldShowTutorial();
@@ -374,7 +382,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
+            content: Text('$emoji ${name.split(" ")[0]}-Farbschema aktiviert'),
             backgroundColor: color1,
             duration: const Duration(seconds: 2),
           ),
@@ -470,9 +478,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               _buildStatItem('Touch-Position',
                   _touchPosition != null ? 'Getrackt' : 'Keine'),
               const Divider(color: Colors.white24),
-              _buildStatItem('Features', '9 Easter Egg Verbesserungen'),
-              _buildStatItem('Build-Zeit', '60.8s'),
-              _buildStatItem('Version', 'v5.41 UX FIXES'),
+              _buildStatItem('Features', '4 Welten'),
+              _buildStatItem('Version', 'Aktuell'),
             ],
           ),
         ),
@@ -544,12 +551,12 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               ),
               const SizedBox(height: 8),
               const Text(
-                'Dual Realms · Deep Research',
+                'Vier Welten · Deep Research',
                 style: TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 20),
               const Text(
-                'Das Portal verbindet zwei Welten:',
+                'Das Portal verbindet vier Welten:',
                 style:
                     TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
@@ -565,22 +572,17 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                 'Die spirituelle Dimension. Spirit, Bewusstsein, Archetypen und Symbolik.',
                 const Color(0xFF9C27B0),
               ),
-              const Divider(color: Colors.white24, height: 32),
-              const Text(
-                'Version: 5.37 FINAL',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+              const SizedBox(height: 12),
+              _buildWorldDescription(
+                '🎭 VORHANG',
+                'Die verborgene Dimension. Symbolik, Macht, Medienmanipulation und Psychologie.',
+                const Color(0xFFC9A84C),
               ),
-              const Text(
-                'Alle 9 Verbesserungen implementiert',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Made with 💙 by Claude Code Agent',
-                style: TextStyle(
-                    color: Colors.white38,
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic),
+              const SizedBox(height: 12),
+              _buildWorldDescription(
+                '🌌 URSPRUNG',
+                'Das grosse Geheimnis. Bewusstsein, CIA-Dokumente, Zeitleisten und Kosmologie.',
+                const Color(0xFF00D4AA),
               ),
             ],
           ),
@@ -1015,182 +1017,199 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                             SoundService.playUnlockSound();
                             _showEasterEgg();
                           },
-                          child: SizedBox(
-                            key: _portalKey,
-                            width: 260,
-                            height: 280,
-                            child: AnimatedBuilder(
-                              animation: Listenable.merge([
-                                _portalController,
-                                _nebulaController,
-                                _tapPulseController
-                              ]),
-                              builder: (context, child) {
-                                final tapScale =
-                                    1.0 + _tapPulseController.value * 0.14;
-                                final neo = _nebulaController.value;
-                                return Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    // Dual ambient atmosphere
-                                    Transform.scale(
-                                      scale: tapScale,
-                                      child: Container(
-                                        width: 260,
-                                        height: 260,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                                color: _portalColor1.withValues(
-                                                    alpha: 0.22 * neo),
-                                                blurRadius: 110,
-                                                spreadRadius: 55),
-                                            BoxShadow(
-                                                color: _portalColor2.withValues(
-                                                    alpha: 0.22 * (1 - neo)),
-                                                blurRadius: 110,
-                                                spreadRadius: 55),
-                                          ],
+                          child: Transform(
+                            transform: Matrix4.identity()
+                              ..setEntry(3, 2, 0.001)
+                              ..rotateX(_gyroY * 0.004)
+                              ..rotateY(_gyroX * 0.004),
+                            alignment: Alignment.center,
+                            child: SizedBox(
+                              key: _portalKey,
+                              width: 260,
+                              height: 280,
+                              child: AnimatedBuilder(
+                                animation: Listenable.merge([
+                                  _portalController,
+                                  _nebulaController,
+                                  _tapPulseController
+                                ]),
+                                builder: (context, child) {
+                                  final tapScale =
+                                      1.0 + _tapPulseController.value * 0.14;
+                                  final neo = _nebulaController.value;
+                                  return Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Dual ambient atmosphere
+                                      Transform.scale(
+                                        scale: tapScale,
+                                        child: Container(
+                                          width: 260,
+                                          height: 260,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                  color:
+                                                      _portalColor1.withValues(
+                                                          alpha: 0.22 * neo),
+                                                  blurRadius: 110,
+                                                  spreadRadius: 55),
+                                              BoxShadow(
+                                                  color:
+                                                      _portalColor2.withValues(
+                                                          alpha:
+                                                              0.22 * (1 - neo)),
+                                                  blurRadius: 110,
+                                                  spreadRadius: 55),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    // Cinematic dual-world vortex painter
-                                    CustomPaint(
-                                      size: const Size(240, 240),
-                                      painter: CinematicPortalPainter(
-                                        animation: _portalController.value,
-                                        pulse: neo,
-                                        materieColor: _portalColor1,
-                                        energieColor: _portalColor2,
-                                      ),
-                                    ),
-                                    // Central division crack (world boundary)
-                                    Container(
-                                      width: 2.5,
-                                      height: 112,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            Colors.transparent,
-                                            Colors.white
-                                                .withValues(alpha: 0.82),
-                                            Colors.white,
-                                            Colors.white,
-                                            Colors.white
-                                                .withValues(alpha: 0.82),
-                                            Colors.transparent,
-                                          ],
-                                          stops: const [
-                                            0.0,
-                                            0.15,
-                                            0.35,
-                                            0.65,
-                                            0.85,
-                                            1.0
-                                          ],
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.65),
-                                              blurRadius: 14),
-                                          BoxShadow(
-                                              color: _portalColor1.withValues(
-                                                  alpha: 0.45),
-                                              blurRadius: 26,
-                                              offset: const Offset(-10, 0)),
-                                          BoxShadow(
-                                              color: _portalColor2.withValues(
-                                                  alpha: 0.45),
-                                              blurRadius: 26,
-                                              offset: const Offset(10, 0)),
-                                        ],
-                                      ),
-                                    ),
-                                    // Nexus dot at the boundary
-                                    Opacity(
-                                      opacity:
-                                          (0.7 + 0.3 * neo).clamp(0.0, 1.0),
-                                      child: Container(
-                                        width: 12,
-                                        height: 12,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.white,
-                                          boxShadow: [
-                                            const BoxShadow(
-                                                color: Colors.white,
-                                                blurRadius: 30,
-                                                spreadRadius: 8),
-                                            BoxShadow(
-                                                color: _portalColor1.withValues(
-                                                    alpha: 0.55),
-                                                blurRadius: 60,
-                                                spreadRadius: 14,
-                                                offset: const Offset(-7, 0)),
-                                            BoxShadow(
-                                                color: _portalColor2.withValues(
-                                                    alpha: 0.55),
-                                                blurRadius: 60,
-                                                spreadRadius: 14,
-                                                offset: const Offset(7, 0)),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    // Tap progress ring
-                                    if (_portalTapCount > 0)
+                                      // Cinematic dual-world vortex painter
                                       CustomPaint(
-                                        size: const Size(256, 256),
-                                        painter: TapProgressRingPainter(
-                                          progress: _portalTapCount / 10.0,
-                                          tapCount: _portalTapCount,
-                                          color1: _portalColor1,
-                                          color2: _portalColor2,
+                                        size: const Size(240, 240),
+                                        painter: CinematicPortalPainter(
+                                          animation: _portalController.value,
+                                          pulse: neo,
+                                          materieColor: _portalColor1,
+                                          energieColor: _portalColor2,
                                         ),
                                       ),
-                                    // Tap dots
-                                    Positioned(
-                                      bottom: 0,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: List.generate(
-                                            10,
-                                            (i) => Container(
-                                                  width: 5,
-                                                  height: 5,
-                                                  margin: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 2.5),
-                                                  decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: i < _portalTapCount
-                                                        ? const Color(
-                                                            0xFFFFD479)
-                                                        : Colors.white
-                                                            .withValues(
-                                                                alpha: 0.15),
-                                                    boxShadow: i <
-                                                            _portalTapCount
-                                                        ? [
-                                                            const BoxShadow(
-                                                                color: Color(
-                                                                    0xFFFFD479),
-                                                                blurRadius: 8)
-                                                          ]
-                                                        : null,
-                                                  ),
-                                                )),
+                                      // Central division crack (world boundary)
+                                      Container(
+                                        width: 2.5,
+                                        height: 112,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.white
+                                                  .withValues(alpha: 0.82),
+                                              Colors.white,
+                                              Colors.white,
+                                              Colors.white
+                                                  .withValues(alpha: 0.82),
+                                              Colors.transparent,
+                                            ],
+                                            stops: const [
+                                              0.0,
+                                              0.15,
+                                              0.35,
+                                              0.65,
+                                              0.85,
+                                              1.0
+                                            ],
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.65),
+                                                blurRadius: 14),
+                                            BoxShadow(
+                                                color: _portalColor1.withValues(
+                                                    alpha: 0.45),
+                                                blurRadius: 26,
+                                                offset: const Offset(-10, 0)),
+                                            BoxShadow(
+                                                color: _portalColor2.withValues(
+                                                    alpha: 0.45),
+                                                blurRadius: 26,
+                                                offset: const Offset(10, 0)),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              },
+                                      // Nexus dot at the boundary
+                                      Opacity(
+                                        opacity:
+                                            (0.7 + 0.3 * neo).clamp(0.0, 1.0),
+                                        child: Container(
+                                          width: 12,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white,
+                                            boxShadow: [
+                                              const BoxShadow(
+                                                  color: Colors.white,
+                                                  blurRadius: 30,
+                                                  spreadRadius: 8),
+                                              BoxShadow(
+                                                  color: _portalColor1
+                                                      .withValues(alpha: 0.55),
+                                                  blurRadius: 60,
+                                                  spreadRadius: 14,
+                                                  offset: const Offset(-7, 0)),
+                                              BoxShadow(
+                                                  color: _portalColor2
+                                                      .withValues(alpha: 0.55),
+                                                  blurRadius: 60,
+                                                  spreadRadius: 14,
+                                                  offset: const Offset(7, 0)),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      // Tap progress ring - only visible after 3+ taps.
+                                      if (_portalTapCount >= 3)
+                                        CustomPaint(
+                                          size: const Size(256, 256),
+                                          painter: TapProgressRingPainter(
+                                            progress: _portalTapCount / 10.0,
+                                            tapCount: _portalTapCount,
+                                            color1: _portalColor1,
+                                            color2: _portalColor2,
+                                          ),
+                                        ),
+                                      // Tap dots - hidden until 3+ taps to avoid confusion.
+                                      Positioned(
+                                        bottom: 0,
+                                        child: Opacity(
+                                          opacity:
+                                              _portalTapCount >= 3 ? 1.0 : 0.0,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: List.generate(
+                                                10,
+                                                (i) => Container(
+                                                      width: 5,
+                                                      height: 5,
+                                                      margin: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 2.5),
+                                                      decoration: BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: i <
+                                                                _portalTapCount
+                                                            ? const Color(
+                                                                0xFFFFD479)
+                                                            : Colors.white
+                                                                .withValues(
+                                                                    alpha:
+                                                                        0.15),
+                                                        boxShadow:
+                                                            i < _portalTapCount
+                                                                ? [
+                                                                    const BoxShadow(
+                                                                        color: Color(
+                                                                            0xFFFFD479),
+                                                                        blurRadius:
+                                                                            8)
+                                                                  ]
+                                                                : null,
+                                                      ),
+                                                    )),
+                                          ), // Row close
+                                        ), // Opacity close
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
                             ),
-                          ),
+                          ), // Transform close
                         ),
 
                         const Spacer(),
@@ -1203,6 +1222,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         // ⚔️ K2: Tages-Challenges (versteckt sich wenn keine
                         // Challenges für heute angelegt).
                         const DailyChallengesBanner(),
+
+                        // CINEMA-MODE v6: Heute entdecken — daily feature card.
+                        _buildDailyFeatureCard(),
+                        const SizedBox(height: 12),
 
                         // ── World cards (2×2 Quad-Portal Grid) ──
                         // Auf PC: max 800px breit damit Kacheln nicht riesig werden.
@@ -1333,6 +1356,114 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
             child: WebLogoutButton(),
           ),
       ],
+    );
+  }
+
+  // ── CINEMA-MODE v6: Daily feature card ──
+
+  Widget _buildDailyFeatureCard() {
+    const featureTitles = [
+      'OSINT-Recherche',
+      'Chakra-Balance',
+      'Symbol-Decoder',
+      'Bewusstseins-Atlas',
+    ];
+    const featureSubtitles = [
+      'Quellen hinter den Nachrichten',
+      'Energiezentren erkennen und aktivieren',
+      'Geheime Bedeutungen entschluesseln',
+      'CIA-Dokumente und Quantenbewusstsein',
+    ];
+    const featureWorlds = ['MATERIE', 'ENERGIE', 'VORHANG', 'URSPRUNG'];
+    const featureEmojis = ['🔵', '🟣', '🟡', '🟢'];
+    const featureColors = [
+      Color(0xFF3B82F6),
+      Color(0xFFA855F7),
+      Color(0xFFC9A84C),
+      Color(0xFF00D4AA),
+    ];
+
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
+    final idx = dayOfYear % featureTitles.length;
+    final color = featureColors[idx];
+
+    final targets = [
+      const MaterieWorldWrapper(),
+      const EnergieWorldWrapper(),
+      const VorhangWorldWrapper(),
+      const UrsprungWorldWrapper(),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GestureDetector(
+        onTap: () {
+          HapticService.lightImpact();
+          _navigateWithCinematicTransition(targets[idx]);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                color.withValues(alpha: 0.08),
+                color.withValues(alpha: 0.02),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.15),
+                ),
+                child: Center(
+                  child: Text(featureEmojis[idx],
+                      style: const TextStyle(fontSize: 20)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'HEUTE IN ${featureWorlds[idx]}',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 10,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      featureTitles[idx],
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      featureSubtitles[idx],
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios,
+                  color: color.withValues(alpha: 0.7), size: 14),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -123,7 +123,8 @@ class _PendulumOracleScreenState extends State<PendulumOracleScreen>
               const Text(
                 'Formuliere eine Ja/Nein-Frage, atme ruhig und lass das '
                 'Pendel antworten.',
-                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                style:
+                    TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
               ),
               const SizedBox(height: 18),
               TextField(
@@ -133,16 +134,19 @@ class _PendulumOracleScreenState extends State<PendulumOracleScreen>
                 maxLines: 2,
                 decoration: InputDecoration(
                   hintText: 'Deine Frage ...',
-                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                  hintStyle:
+                      TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                   filled: true,
                   fillColor: _surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: _purple.withValues(alpha: 0.4)),
+                    borderSide:
+                        BorderSide(color: _purple.withValues(alpha: 0.4)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: _purple.withValues(alpha: 0.4)),
+                    borderSide:
+                        BorderSide(color: _purple.withValues(alpha: 0.4)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -205,7 +209,8 @@ class _PendulumOracleScreenState extends State<PendulumOracleScreen>
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.touch_app_rounded, size: 18),
-                  label: Text(_running ? 'Pendel schwingt ...' : 'Pendel befragen'),
+                  label: Text(
+                      _running ? 'Pendel schwingt ...' : 'Pendel befragen'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _gold,
                     foregroundColor: Colors.black,

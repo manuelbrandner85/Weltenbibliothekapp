@@ -46,8 +46,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
         });
         HapticService.lightImpact();
         // Tab-Index persistieren.
-        SharedPreferences.getInstance().then(
-            (p) => p.setInt(_kLastTabKey, _tabController.index));
+        SharedPreferences.getInstance()
+            .then((p) => p.setInt(_kLastTabKey, _tabController.index));
       }
     });
   }

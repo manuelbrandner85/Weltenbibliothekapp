@@ -285,7 +285,10 @@ class _NetworkCardState extends State<NetworkCard>
                 label: center.label,
                 type: center.type,
                 isCenter: true,
-                onTap: () {},
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  widget.onTapNode(center.label);
+                },
               ),
             ),
             // Outer nodes

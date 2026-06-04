@@ -219,8 +219,8 @@ class AnalyseService {
     void register(String name, AkteurTyp typ, String? quelle) {
       final key = name.trim().toLowerCase();
       if (key.isEmpty || key.length < 2) return;
-      final accu =
-          mentions.putIfAbsent(key, () => _AkteurAccu(name.trim(), typ, quelle));
+      final accu = mentions.putIfAbsent(
+          key, () => _AkteurAccu(name.trim(), typ, quelle));
       accu.count++;
     }
 
@@ -231,7 +231,8 @@ class AnalyseService {
       for (final m in orgRegex.allMatches(text)) {
         final base = m.group(1)!;
         final suffix = m.group(2)!;
-        final typ = (suffix == 'Konzern') ? AkteurTyp.konzern : AkteurTyp.konzern;
+        final typ =
+            (suffix == 'Konzern') ? AkteurTyp.konzern : AkteurTyp.konzern;
         register('$base $suffix', typ, q.url);
       }
       for (final m in govRegex.allMatches(text)) {

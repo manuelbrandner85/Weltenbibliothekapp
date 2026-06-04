@@ -71,7 +71,8 @@ class _BreathHoldTimerScreenState extends State<BreathHoldTimerScreen> {
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     final data = _records
-        .map((r) => {'sec': r.seconds, 'ts': r.timestamp.millisecondsSinceEpoch})
+        .map(
+            (r) => {'sec': r.seconds, 'ts': r.timestamp.millisecondsSinceEpoch})
         .toList();
     await prefs.setString(_prefsKey, jsonEncode(data));
   }
@@ -87,7 +88,8 @@ class _BreathHoldTimerScreenState extends State<BreathHoldTimerScreen> {
   void _start() {
     _watch = Stopwatch()..start();
     _ticker = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      if (mounted) setState(() => _elapsedMs = _watch?.elapsedMilliseconds ?? 0);
+      if (mounted)
+        setState(() => _elapsedMs = _watch?.elapsedMilliseconds ?? 0);
     });
     setState(() {
       _running = true;
@@ -130,12 +132,14 @@ class _BreathHoldTimerScreenState extends State<BreathHoldTimerScreen> {
     await prefs.remove(_prefsKey);
   }
 
-  int get _bestSeconds =>
-      _records.isEmpty ? 0 : _records.map((r) => r.seconds).reduce((a, b) => a > b ? a : b);
+  int get _bestSeconds => _records.isEmpty
+      ? 0
+      : _records.map((r) => r.seconds).reduce((a, b) => a > b ? a : b);
 
   int get _avgSeconds => _records.isEmpty
       ? 0
-      : (_records.map((r) => r.seconds).reduce((a, b) => a + b) / _records.length)
+      : (_records.map((r) => r.seconds).reduce((a, b) => a + b) /
+              _records.length)
           .round();
 
   String _fmt(int totalSeconds) {
@@ -179,7 +183,8 @@ class _BreathHoldTimerScreenState extends State<BreathHoldTimerScreen> {
               const Text(
                 'Tief einatmen, dann tippen zum Starten. Erneut tippen, '
                 'sobald du Luft holen musst.',
-                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                style:
+                    TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
               ),
               const SizedBox(height: 24),
               GestureDetector(
@@ -215,7 +220,9 @@ class _BreathHoldTimerScreenState extends State<BreathHoldTimerScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          _running ? 'TIPPEN ZUM STOPPEN' : 'TIPPEN ZUM STARTEN',
+                          _running
+                              ? 'TIPPEN ZUM STOPPEN'
+                              : 'TIPPEN ZUM STARTEN',
                           style: TextStyle(
                             color: _cyan.withValues(alpha: 0.9),
                             fontSize: 11,
@@ -268,8 +275,8 @@ class _BreathHoldTimerScreenState extends State<BreathHoldTimerScreen> {
                 for (final r in _records.take(20))
                   Container(
                     margin: const EdgeInsets.only(bottom: 6),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: _surface,
                       borderRadius: BorderRadius.circular(10),

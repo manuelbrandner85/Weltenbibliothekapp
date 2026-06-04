@@ -151,14 +151,15 @@ class _BirthstoneMatcherScreenState extends State<BirthstoneMatcherScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/profile_settings'),
+              onPressed: () =>
+                  Navigator.pushNamed(context, '/profile_settings'),
               icon: const Icon(Icons.edit, size: 18),
               label: const Text('Profil bearbeiten'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFC9A84C),
                 foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             ),
           ],

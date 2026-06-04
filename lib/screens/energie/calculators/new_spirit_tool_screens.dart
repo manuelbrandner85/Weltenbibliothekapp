@@ -4344,8 +4344,7 @@ class _TransformationTrackerScreenState
                     DropdownMenuItem(value: 'Energie', child: Text('Energie')),
                     DropdownMenuItem(
                         value: 'Bewusstsein', child: Text('Bewusstsein')),
-                    DropdownMenuItem(
-                        value: 'Heilung', child: Text('Heilung')),
+                    DropdownMenuItem(value: 'Heilung', child: Text('Heilung')),
                     DropdownMenuItem(
                         value: 'Spirituell', child: Text('Spirituell')),
                   ],
