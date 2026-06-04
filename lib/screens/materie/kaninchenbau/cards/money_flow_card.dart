@@ -47,6 +47,12 @@ class MoneyFlowCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
+          // Glaubwuerdigkeit: Betraege sind heuristisch/illustrativ, nicht belegt.
+          if (!loading && flows.isNotEmpty)
+            KbDesign.estimateBanner(
+              'Betraege sind heuristische Schaetzungen aus Mustern & Netzwerk - '
+              'keine belegten Transaktionsdaten.',
+            ),
           if (loading)
             _buildLoading()
           else if (flows.isEmpty)

@@ -51,6 +51,12 @@ class MediaCompassCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+          // Glaubwuerdigkeit: Bias-Positionen sind feste Richtwerte, kein Live-Score.
+          if (!loading)
+            KbDesign.estimateBanner(
+              'Positionen sind feste Richtwerte (angelehnt an AdFontes/Allsides) - '
+              'keine themenspezifische Live-Analyse.',
+            ),
           if (loading)
             _buildLoading()
           else
