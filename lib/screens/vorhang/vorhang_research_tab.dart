@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../widgets/restriction_gate.dart';
+import '../shared/research_module.dart';
 
+/// Vorhang research tab -- now a thin config over the shared [ResearchModule]
+/// (Erweiterung 4). The static psychology compendium data stays here; the
+/// header/card/detail scaffolding is provided by the shared module.
 class VorhangResearchTab extends StatelessWidget {
   const VorhangResearchTab({super.key});
 
@@ -300,51 +303,37 @@ class VorhangResearchTab extends StatelessWidget {
     ),
   ];
 
-  @override
-  Widget build(BuildContext context) {
-    // v119: Recherche-Tools koennen vom Admin komplett gesperrt werden.
-    return RestrictionGate(
-      scope: 'research_tools',
-      toolLabel: 'Recherche-Tools',
-      child: Container(
-        color: _bg,
-        child: ListView.builder(
-          padding: const EdgeInsets.only(top: 8, bottom: 80),
-          itemCount: _categories.length + 1,
-          itemBuilder: (context, i) {
-            if (i == 0) return _buildHeader();
-            return _CategoryCard(category: _categories[i - 1]);
-          },
-        ),
-      ),
-    );
+  /// Flattens the static categories into shared [ResearchItem]s. The category
+  /// title becomes the world-specific source filter.
+  Future<ResearchLoadResult> _load() async {
+    final items = <ResearchItem>[];
+    for (final cat in _categories) {
+      for (final c in cat.concepts) {
+        items.add(ResearchItem(
+          id: '${cat.title}-${c.name}',
+          title: c.name,
+          summary: c.summary,
+          detail: c.detail,
+          category: cat.title,
+          icon: cat.icon,
+        ));
+      }
+    }
+    return ResearchLoadResult(items);
   }
 
-  Widget _buildHeader() {
-    return Container(
-      color: _surface,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'PSYCHOLOGIE-KOMPENDIUM',
-            style: TextStyle(
-              color: _gold,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '6 Kategorien · ${_categories.fold(0, (s, c) => s + c.concepts.length)} Konzepte',
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
-          ),
-        ],
-      ),
+  @override
+  Widget build(BuildContext context) {
+    return ResearchModule(
+      world: 'vorhang',
+      accent: _gold,
+      background: _bg,
+      surface: _surface,
+      title: 'PSYCHOLOGIE-KOMPENDIUM',
+      loader: _load,
+      enableSearch: true,
+      enableCategoryFilter: true,
+      searchHint: 'Konzepte durchsuchen ...',
     );
   }
 }
@@ -361,198 +350,4 @@ class _Concept {
   final String name, summary, detail;
   const _Concept(
       {required this.name, required this.summary, required this.detail});
-}
-
-class _CategoryCard extends StatefulWidget {
-  final _Category category;
-  const _CategoryCard({required this.category});
-
-  @override
-  State<_CategoryCard> createState() => _CategoryCardState();
-}
-
-class _CategoryCardState extends State<_CategoryCard> {
-  static const _gold = Color(0xFFC9A84C);
-  static const _surface = Color(0xFF0D0B00);
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(12),
-        border: const Border(left: BorderSide(color: _gold, width: 3)),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(widget.category.icon, color: _gold, size: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.category.title,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${widget.category.concepts.length} Konzepte',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.4),
-                              fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  AnimatedRotation(
-                    turns: _expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(Icons.keyboard_arrow_down,
-                        color: _gold.withValues(alpha: 0.7)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 200),
-            crossFadeState: _expanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Column(
-              children: [
-                Divider(color: _gold.withValues(alpha: 0.15), height: 1),
-                ...widget.category.concepts
-                    .map((c) => _ConceptTile(concept: c)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ConceptTile extends StatelessWidget {
-  final _Concept concept;
-  const _ConceptTile({required this.concept});
-
-  static const _gold = Color(0xFFC9A84C);
-  static const _surface = Color(0xFF0D0B00);
-
-  void _showDetail(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: _surface,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.55,
-        maxChildSize: 0.9,
-        builder: (_, sc) => SingleChildScrollView(
-          controller: sc,
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: _gold.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Text(
-                concept.name,
-                style: const TextStyle(
-                    color: _gold, fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                concept.summary,
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic),
-              ),
-              const SizedBox(height: 16),
-              Divider(color: _gold.withValues(alpha: 0.2)),
-              const SizedBox(height: 12),
-              Text(
-                concept.detail,
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 14, height: 1.65),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => _showDetail(context),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration:
-                  const BoxDecoration(color: _gold, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    concept.name,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    concept.summary,
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
-                        fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right,
-                color: _gold.withValues(alpha: 0.5), size: 18),
-          ],
-        ),
-      ),
-    );
-  }
 }
