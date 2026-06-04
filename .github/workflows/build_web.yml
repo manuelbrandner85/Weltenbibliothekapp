@@ -130,12 +130,19 @@ jobs:
           fi
 
       - name: 🚀 Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ env.CF_DEPLOY_TOKEN }}
+        # Direkt via npx statt wrangler-action@v3: die Action laeuft "npm i
+        # wrangler" im Repo-Root und reconciled dabei die package-lock.json des
+        # Next.js-Frontends -- die einen toten pkg.pr.new-Preview-Pin von
+        # @opennextjs/aws enthaelt (404) und den Deploy bricht. npx -y
+        # wrangler@3 installiert isoliert (kein Lock-Reconcile) -- gleiche
+        # robuste Methode wie deploy_worker.yml.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.CF_DEPLOY_TOKEN }}
           # Account-ID ist öffentlich (aus CLAUDE.md / wrangler.toml)
-          accountId: 3472f5994537c3a30c5caeaff4de21fb
-          command: pages deploy build/web --project-name=weltenbibliothek-web --branch=main
+          CLOUDFLARE_ACCOUNT_ID: 3472f5994537c3a30c5caeaff4de21fb
+        run: |
+          npx -y wrangler@3 pages deploy build/web \
+            --project-name=weltenbibliothek-web --branch=main
 
       - name: 📦 Upload build artifact
         uses: actions/upload-artifact@v4
