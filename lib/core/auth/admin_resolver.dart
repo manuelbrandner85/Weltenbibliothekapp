@@ -81,10 +81,10 @@ class AdminResolver {
 
     // 2. Mobile-App via InvisibleAuth → Username/Cache-Rolle aus lokalem Profil
     try {
+      // TEIL 1A: single unified profile -- one source, no Materie/Energie split.
       final storage = StorageService();
-      final mProfile = storage.getMaterieProfile();
-      final eProfile = storage.getEnergieProfile();
-      final localUsername = mProfile?.username ?? eProfile?.username;
+      final profile = storage.getProfile();
+      final localUsername = profile?.username;
       if (localUsername != null && localUsername.isNotEmpty) {
         if (AppRoles.isRootAdminByUsername(localUsername)) {
           if (kDebugMode) {
@@ -106,18 +106,16 @@ class AdminResolver {
       // AUTH-REFACTOR-FIX: Lokal gecachte Admin-Rolle ehren. Nach dem Refactor
       // laeuft das Geraet auf einer anonymen Supabase-Session (role='user'),
       // waehrend die zuvor aufgeloeste Admin-Rolle des Owners lokal im Profil
-      // gecacht ist (gleiche Quelle die das Dashboard via _resolveLocalFallback
-      // und AdminState Schritt 2 nutzen). Ohne dies wuerde die anon-Session den
-      // Owner auf 'user' downgraden und Admin-Worker-Calls mit 403 brechen.
-      for (final cachedRole in [mProfile?.role, eProfile?.role]) {
-        if (cachedRole != null &&
-            cachedRole.isNotEmpty &&
-            AppRoles.isAdmin(cachedRole)) {
-          if (kDebugMode) {
-            debugPrint('🔐 [AdminResolver] Lokale Cache-Rolle: $cachedRole');
-          }
-          return cachedRole;
+      // gecacht ist. Ohne dies wuerde die anon-Session den Owner auf 'user'
+      // downgraden und Admin-Worker-Calls mit 403 brechen.
+      final cachedRole = profile?.role;
+      if (cachedRole != null &&
+          cachedRole.isNotEmpty &&
+          AppRoles.isAdmin(cachedRole)) {
+        if (kDebugMode) {
+          debugPrint('🔐 [AdminResolver] Lokale Cache-Rolle: $cachedRole');
         }
+        return cachedRole;
       }
 
       // v104: Auch fuer Nicht-Admin-User den Username persistieren damit
@@ -168,8 +166,7 @@ class AdminResolver {
   /// naechsten Aufruf sofort trifft. Wird nach jedem erfolgreichen
   /// Username-basierten Resolve aufgerufen. Beide Welten persistieren
   /// dieselbe Identity (single profile per user).
-  static Future<void> _persistUnifiedRole(
-      String username, String role) async {
+  static Future<void> _persistUnifiedRole(String username, String role) async {
     try {
       final unified = UnifiedStorageService();
       await unified.saveProfile('materie', {
@@ -180,6 +177,6 @@ class AdminResolver {
         'username': username,
         'role': role,
       });
-    } catch (_) { /* best-effort, NICHT crashen */ }
+    } catch (_) {/* best-effort, NICHT crashen */}
   }
 }

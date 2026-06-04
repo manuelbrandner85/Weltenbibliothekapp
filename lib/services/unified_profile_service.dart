@@ -14,7 +14,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/energie_profile.dart';
-import '../models/materie_profile.dart';
 import 'storage_service.dart';
 
 class UnifiedProfileService {
@@ -41,31 +40,10 @@ class UnifiedProfileService {
   }
 
   /// Neulesen aus dem Storage und Stream benachrichtigen.
+  /// TEIL 1A: single unified store -- no more Materie/Energie reconciliation.
   Future<EnergieProfile?> reload() async {
     final storage = StorageService();
-    EnergieProfile? energie = await storage.loadEnergieProfile();
-
-    // Fallback: wenn EnergieProfile fehlt aber MaterieProfile existiert,
-    // bauen wir ein minimales EnergieProfile aus den Materie-Daten.
-    if (energie == null || !energie.isValid) {
-      final mat = await storage.loadMaterieProfile();
-      if (mat != null && mat.username.isNotEmpty) {
-        energie = EnergieProfile(
-          username: mat.username,
-          firstName: mat.name?.split(' ').first ?? '',
-          lastName: mat.name != null && (mat.name?.split(' ').length ?? 0) > 1
-              ? (mat.name?.split(' ').sublist(1).join(' ') ?? '')
-              : '',
-          birthDate: DateTime(1990, 1, 1),
-          birthPlace: '',
-          avatarUrl: mat.avatarUrl,
-          avatarEmoji: mat.avatarEmoji,
-          bio: mat.bio,
-          userId: mat.userId,
-          role: mat.role,
-        );
-      }
-    }
+    final EnergieProfile? energie = await storage.loadProfile();
 
     _cached = energie;
     if (kDebugMode) {
@@ -78,28 +56,10 @@ class UnifiedProfileService {
     return _cached;
   }
 
-  /// Speichert das Profil ueberall:
-  /// - EnergieProfile (Master) in den Energie-Bucket
-  /// - MaterieProfile (derived) in den Materie-Bucket
-  /// - Vorhang/Ursprung lesen direkt aus EnergieProfile -- keine eigenen
-  ///   Buckets noetig.
+  /// Speichert das Profil in den einzigen Unified-Store. Alle Welten lesen
+  /// daraus -- kein separater Materie-Bucket mehr (TEIL 1A).
   Future<void> save(EnergieProfile profile) async {
-    final storage = StorageService();
-    await storage.saveEnergieProfile(profile);
-
-    // Derivat fuer Materie-Welt -- gleiche soziale Felder, kein
-    // Geburtsdatum/Spirit-Kram.
-    final mat = MaterieProfile(
-      username: profile.username,
-      name: profile.fullName.trim().isEmpty ? null : profile.fullName,
-      avatarUrl: profile.avatarUrl,
-      avatarEmoji: profile.avatarEmoji,
-      bio: profile.bio,
-      userId: profile.userId,
-      role: profile.role,
-    );
-    await storage.saveMaterieProfile(mat);
-
+    await StorageService().saveEnergieProfile(profile);
     _cached = profile;
     _controller.add(_cached);
   }

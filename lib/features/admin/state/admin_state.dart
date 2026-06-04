@@ -230,11 +230,11 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
     // AdminState -- und Schritt 2.5 + die Admin-Resolution greifen nie.
     if (username == null || username.isEmpty) {
       try {
+        // TEIL 1A: single unified profile -- one source.
         final storage = StorageService();
-        final mProfile = storage.getMaterieProfile();
-        final eProfile = storage.getEnergieProfile();
-        username = mProfile?.username ?? eProfile?.username;
-        role = mProfile?.role ?? eProfile?.role;
+        final profile = storage.getProfile();
+        username = profile?.username;
+        role = profile?.role;
         if (username != null && username.isNotEmpty) {
           // Persistiere ins UnifiedStorage damit zukuenftige Aufrufe
           // sofort treffen (kein erneuter SharedPreferences-Lookup).
@@ -350,8 +350,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
             .from('profiles')
             .update({'role': correctRole}).eq('id', supabaseUserId);
         if (kDebugMode) {
-          debugPrint(
-              '✅ AdminState: Supabase role korrigiert → $correctRole');
+          debugPrint('✅ AdminState: Supabase role korrigiert → $correctRole');
         }
       } catch (e) {
         if (kDebugMode) {

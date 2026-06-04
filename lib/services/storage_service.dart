@@ -60,6 +60,8 @@ class StorageService {
   static const String _kMaterieProfile = 'sp_materie_profile';
   static const String _kEnergieProfile = 'sp_energie_profile';
   static const String _kSpiritProfile = 'sp_spirit_profile';
+  // TEIL 1A: one-time merge of the old double profile into the single store.
+  static const String _kUnifiedMigrated = 'sp_unified_profile_migrated_v1';
 
   // Singleton Pattern
   static final StorageService _instance = StorageService._internal();
@@ -77,10 +79,97 @@ class StorageService {
   Future<void> init() async {
     if (kDebugMode) debugPrint('📦 Storage: Initialisierung starten...');
     _prefs = await SharedPreferences.getInstance();
+    // TEIL 1A: collapse the old double profile into the single store before
+    // any reader runs. Idempotent (guarded by _kUnifiedMigrated flag).
+    await _migrateToUnifiedProfile(_prefs!);
     if (kDebugMode) {
       debugPrint(
           '✅ Storage: Bereit (Profile via SharedPreferences, Daten via SQLite)');
     }
+  }
+
+  /// TEIL 1A: one-time merge of the legacy `sp_materie_profile` +
+  /// `sp_energie_profile` pair into the single unified store
+  /// (`sp_energie_profile`). Critically preserves Materie-only users whose
+  /// data lived solely in the materie key. Removes the legacy materie key
+  /// afterwards. Safe to call on every start -- the flag prevents re-runs.
+  Future<void> _migrateToUnifiedProfile(SharedPreferences prefs) async {
+    if (prefs.getBool(_kUnifiedMigrated) == true) return;
+    try {
+      final eRaw = prefs.getString(_kEnergieProfile);
+      final mRaw = prefs.getString(_kMaterieProfile);
+      EnergieProfile? energie;
+      MaterieProfile? materie;
+      if (eRaw != null) {
+        try {
+          energie =
+              EnergieProfile.fromJson(jsonDecode(eRaw) as Map<String, dynamic>);
+        } catch (_) {/* corrupt -- treat as absent */}
+      }
+      if (mRaw != null) {
+        try {
+          materie =
+              MaterieProfile.fromJson(jsonDecode(mRaw) as Map<String, dynamic>);
+        } catch (_) {/* corrupt -- treat as absent */}
+      }
+
+      if (energie == null && materie != null) {
+        // Materie-only user: build a master profile from the identity subset.
+        final parts = (materie.name ?? '').trim().split(RegExp(r'\s+'));
+        energie = EnergieProfile(
+          username: materie.username,
+          firstName: parts.isNotEmpty ? parts.first : '',
+          lastName: parts.length > 1 ? parts.sublist(1).join(' ') : '',
+          birthDate: DateTime(1990, 1, 1),
+          birthPlace: '',
+          avatarUrl: materie.avatarUrl,
+          avatarEmoji: materie.avatarEmoji,
+          bio: materie.bio,
+          userId: materie.userId,
+          role: materie.role,
+        );
+      } else if (energie != null && materie != null) {
+        // Both exist: fill identity gaps on the master from materie and keep
+        // the higher of the two cached roles (one-time reconciliation).
+        energie = energie.copyWith(
+          username:
+              energie.username.isNotEmpty ? energie.username : materie.username,
+          avatarUrl: energie.avatarUrl ?? materie.avatarUrl,
+          avatarEmoji: energie.avatarEmoji ?? materie.avatarEmoji,
+          bio: energie.bio ?? materie.bio,
+          userId: energie.userId ?? materie.userId,
+          role: _higherRole(energie.role, materie.role),
+        );
+      }
+
+      if (energie != null) {
+        await prefs.setString(_kEnergieProfile, jsonEncode(energie.toJson()));
+      }
+      await prefs.remove(_kMaterieProfile);
+      await prefs.setBool(_kUnifiedMigrated, true);
+      if (kDebugMode) {
+        debugPrint('✅ Storage: Unified-Profile-Migration abgeschlossen '
+            '(materie=${materie != null}, energie=${eRaw != null})');
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ unified-profile migration: $e');
+    }
+  }
+
+  /// One-time merge helper: returns the more privileged of two cached roles.
+  /// Only used during migration -- runtime resolution uses the single store.
+  String? _higherRole(String? a, String? b) {
+    const rank = {
+      'root_admin': 5,
+      'root-admin': 5,
+      'admin': 4,
+      'content_editor': 3,
+      'moderator': 2,
+      'user': 1,
+    };
+    final ra = rank[a] ?? 0;
+    final rb = rank[b] ?? 0;
+    return rb > ra ? b : a;
   }
 
   /// Hive-kompatibler Box-Shim (Hive→sqflite Migration).
@@ -113,125 +202,17 @@ class StorageService {
   }
 
   // ============================================
-  // MATERIE PROFILE — SharedPreferences
+  // UNIFIED PROFILE — single SharedPreferences store
   // ============================================
+  //
+  // TEIL 1A: ONE physical profile per user (key: _kEnergieProfile).
+  // EnergieProfile is the master type (superset incl. spirit data);
+  // MaterieProfile is a projection over the identity subset. No mirror
+  // functions, no multi-source role reconciliation -- a single store
+  // cannot drift.
 
-  Future<void> saveMaterieProfile(MaterieProfile profile) async {
-    final prefs = await _ensurePrefs();
-    await prefs.setString(_kMaterieProfile, jsonEncode(profile.toJson()));
-    // v99: nach lokalem Speichern Profil sofort nach Supabase pushen,
-    // damit es im Admin-Dashboard mit Echtdaten erscheint.
-    // Best-effort -- bei Netzfehler bleibt es trotzdem lokal gespeichert.
-    unawaited(SupabaseProfileSync.instance.syncMaterieProfile(profile));
-    // v101: Unified identity. Spiegelt Username/Avatar/Bio ins Energie-
-    // Profil damit alle Welten denselben User-Avatar/Display-Name sehen.
-    await _mirrorIdentityToEnergie(profile);
-  }
-
-  /// v101: Synchronisiert die geteilten Identity-Felder ins Energie-Profil
-  /// nach jedem Materie-Save. Spirit-spezifische Felder (Geburtsdatum,
-  /// Birth-Chart usw.) bleiben unberuehrt.
-  Future<void> _mirrorIdentityToEnergie(MaterieProfile m) async {
-    try {
-      final existing = getEnergieProfile();
-      final updated = (existing ?? EnergieProfile.empty()).copyWith(
-        username: m.username,
-        avatarUrl: m.avatarUrl,
-        avatarEmoji: m.avatarEmoji,
-        bio: m.bio,
-        userId: m.userId,
-        role: m.role,
-      );
-      final prefs = await _ensurePrefs();
-      await prefs.setString(_kEnergieProfile, jsonEncode(updated.toJson()));
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ mirror identity to energie: $e');
-    }
-  }
-
-  MaterieProfile? getMaterieProfile() {
-    final raw = _prefs?.getString(_kMaterieProfile);
-    if (raw == null) return null;
-    try {
-      return MaterieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<MaterieProfile?> loadMaterieProfile() async {
-    final prefs = await _ensurePrefs();
-    final raw = prefs.getString(_kMaterieProfile);
-    if (raw == null) return null;
-    try {
-      return MaterieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> deleteMaterieProfile() async {
-    final prefs = await _ensurePrefs();
-    await prefs.remove(_kMaterieProfile);
-  }
-
-  // ============================================
-  // ENERGIE PROFILE — SharedPreferences
-  // ============================================
-
-  Future<void> saveEnergieProfile(EnergieProfile profile) async {
-    final prefs = await _ensurePrefs();
-    await prefs.setString(_kEnergieProfile, jsonEncode(profile.toJson()));
-    unawaited(SupabaseProfileSync.instance.syncEnergieProfile(profile));
-    // v101: Unified identity -- spiegelt Username/Avatar ins Materie-Profil.
-    await _mirrorIdentityToMaterie(profile);
-  }
-
-  /// v101: Synchronisiert die geteilten Identity-Felder ins Materie-Profil
-  /// nach jedem Energie-Save.
-  Future<void> _mirrorIdentityToMaterie(EnergieProfile e) async {
-    try {
-      final existing = getMaterieProfile();
-      // Falls noch kein Materie-Profil existiert: ein minimales anlegen.
-      final updated = MaterieProfile(
-        username: e.username,
-        name: existing?.name ?? e.fullName,
-        avatarUrl: e.avatarUrl ?? existing?.avatarUrl,
-        bio: e.bio ?? existing?.bio,
-        avatarEmoji: e.avatarEmoji ?? existing?.avatarEmoji,
-        userId: e.userId ?? existing?.userId,
-        role: e.role ?? existing?.role,
-      );
-      final prefs = await _ensurePrefs();
-      await prefs.setString(_kMaterieProfile, jsonEncode(updated.toJson()));
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ mirror identity to materie: $e');
-    }
-  }
-
-  /// v101: Unified-Identity-Lookup. Liefert die geteilten Felder unabhaengig
-  /// von der Welt -- bevorzugt Materie, faellt auf Energie zurueck, dann
-  /// Default. UI-Code, der nur Username/Avatar/Display-Name braucht, sollte
-  /// diese Methode statt getMaterieProfile/getEnergieProfile nutzen.
-  UserProfile? getUnifiedProfile() {
-    final m = getMaterieProfile();
-    final e = getEnergieProfile();
-    if (m == null && e == null) return null;
-    return UserProfile(
-      username:
-          m?.username.isNotEmpty == true ? m!.username : (e?.username ?? ''),
-      displayName: m?.name?.isNotEmpty == true
-          ? m!.name
-          : (e?.fullName.isNotEmpty == true ? e!.fullName : null),
-      avatarUrl: m?.avatarUrl ?? e?.avatarUrl,
-      avatarEmoji: m?.avatarEmoji ?? e?.avatarEmoji,
-      bio: m?.bio ?? e?.bio,
-      userId: m?.userId ?? e?.userId,
-      role: m?.role ?? e?.role,
-    );
-  }
-
-  EnergieProfile? getEnergieProfile() {
+  /// Canonical unified profile accessor (sync, cached prefs).
+  EnergieProfile? getProfile() {
     final raw = _prefs?.getString(_kEnergieProfile);
     if (raw == null) return null;
     try {
@@ -241,20 +222,105 @@ class StorageService {
     }
   }
 
-  Future<EnergieProfile?> loadEnergieProfile() async {
+  /// Canonical unified profile accessor (async, ensures prefs loaded).
+  Future<EnergieProfile?> loadProfile() async {
+    await _ensurePrefs();
+    return getProfile();
+  }
+
+  /// Projects the unified profile down to the Materie identity subset.
+  MaterieProfile? _projectMaterie(EnergieProfile? e) {
+    if (e == null) return null;
+    final full = e.fullName.trim();
+    return MaterieProfile(
+      username: e.username,
+      name: full.isEmpty ? null : full,
+      avatarUrl: e.avatarUrl,
+      bio: e.bio,
+      avatarEmoji: e.avatarEmoji,
+      userId: e.userId,
+      role: e.role,
+    );
+  }
+
+  Future<void> saveMaterieProfile(MaterieProfile profile) async {
+    // Merge the identity fields into the single unified store. Spirit data
+    // (birthDate, chart, ...) on the existing master stays untouched.
+    final existing = getProfile() ?? EnergieProfile.empty();
+    final hasName = profile.name != null && profile.name!.trim().isNotEmpty;
+    final parts = (profile.name ?? '').trim().split(RegExp(r'\s+'));
+    final first = parts.isNotEmpty ? parts.first : existing.firstName;
+    final last = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    final merged = existing.copyWith(
+      username: profile.username,
+      firstName: hasName ? first : null,
+      lastName: hasName ? last : null,
+      avatarUrl: profile.avatarUrl,
+      avatarEmoji: profile.avatarEmoji,
+      bio: profile.bio,
+      userId: profile.userId,
+      role: profile.role,
+    );
     final prefs = await _ensurePrefs();
-    final raw = prefs.getString(_kEnergieProfile);
-    if (raw == null) return null;
-    try {
-      return EnergieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
+    await prefs.setString(_kEnergieProfile, jsonEncode(merged.toJson()));
+    // v99: push to Supabase so the admin dashboard shows real data.
+    // Best-effort -- stays locally stored even on network error.
+    unawaited(SupabaseProfileSync.instance.syncMaterieProfile(profile));
+  }
+
+  MaterieProfile? getMaterieProfile() => _projectMaterie(getProfile());
+
+  Future<MaterieProfile?> loadMaterieProfile() async {
+    await _ensurePrefs();
+    return _projectMaterie(getProfile());
+  }
+
+  Future<void> deleteMaterieProfile() async {
+    // Single store: deleting clears the unified identity.
+    final prefs = await _ensurePrefs();
+    await prefs.remove(_kEnergieProfile);
+    await prefs.remove(_kMaterieProfile); // clear legacy key too
+  }
+
+  // ============================================
+  // ENERGIE PROFILE (= unified master store)
+  // ============================================
+
+  Future<void> saveEnergieProfile(EnergieProfile profile) async {
+    final prefs = await _ensurePrefs();
+    await prefs.setString(_kEnergieProfile, jsonEncode(profile.toJson()));
+    unawaited(SupabaseProfileSync.instance.syncEnergieProfile(profile));
+  }
+
+  /// Unified identity as a lightweight cross-world view. Single source --
+  /// no reconciliation needed. UI-Code, der nur Username/Avatar/Display-Name
+  /// braucht, sollte diese Methode (oder [getProfile]) nutzen.
+  UserProfile? getUnifiedProfile() {
+    final e = getProfile();
+    if (e == null) return null;
+    final full = e.fullName.trim();
+    return UserProfile(
+      username: e.username,
+      displayName: full.isEmpty ? null : full,
+      avatarUrl: e.avatarUrl,
+      avatarEmoji: e.avatarEmoji,
+      bio: e.bio,
+      userId: e.userId,
+      role: e.role,
+    );
+  }
+
+  EnergieProfile? getEnergieProfile() => getProfile();
+
+  Future<EnergieProfile?> loadEnergieProfile() async {
+    await _ensurePrefs();
+    return getProfile();
   }
 
   Future<void> deleteEnergieProfile() async {
     final prefs = await _ensurePrefs();
     await prefs.remove(_kEnergieProfile);
+    await prefs.remove(_kMaterieProfile); // clear legacy key too
   }
 
   // ============================================
@@ -1065,48 +1131,21 @@ class StorageService {
   // ADMIN-SYSTEM ROLLEN-VERWALTUNG
   // ═══════════════════════════════════════════════════════════
 
-  Future<String?> getUsername(String world) async {
-    if (world == 'materie') return getMaterieProfile()?.username;
-    if (world == 'energie') return getEnergieProfile()?.username;
-    // vorhang / ursprung: unified profile (energie primary, materie fallback)
-    return getEnergieProfile()?.username ?? getMaterieProfile()?.username;
-  }
+  // TEIL 1A: single source -- the `world` parameter is kept for API
+  // compatibility but no longer changes the lookup (one profile per user).
+  Future<String?> getUsername(String world) async => getProfile()?.username;
 
-  Future<String?> getUserId(String world) async {
-    if (world == 'materie') return getMaterieProfile()?.userId;
-    if (world == 'energie') return getEnergieProfile()?.userId;
-    return getEnergieProfile()?.userId ?? getMaterieProfile()?.userId;
-  }
+  Future<String?> getUserId(String world) async => getProfile()?.userId;
 
-  Future<String?> getRole(String world) async {
-    if (world == 'materie') return getMaterieProfile()?.role;
-    if (world == 'energie') return getEnergieProfile()?.role;
-    return getEnergieProfile()?.role ?? getMaterieProfile()?.role;
-  }
+  Future<String?> getRole(String world) async => getProfile()?.role;
 
-  Future<bool> isAdmin(String world) async {
-    if (world == 'materie') return getMaterieProfile()?.isAdmin() ?? false;
-    if (world == 'energie') return getEnergieProfile()?.isAdmin() ?? false;
-    return getEnergieProfile()?.isAdmin() ??
-        getMaterieProfile()?.isAdmin() ??
-        false;
-  }
+  Future<bool> isAdmin(String world) async => getProfile()?.isAdmin() ?? false;
 
-  Future<bool> isRootAdmin(String world) async {
-    if (world == 'materie') return getMaterieProfile()?.isRootAdmin() ?? false;
-    if (world == 'energie') return getEnergieProfile()?.isRootAdmin() ?? false;
-    return getEnergieProfile()?.isRootAdmin() ??
-        getMaterieProfile()?.isRootAdmin() ??
-        false;
-  }
+  Future<bool> isRootAdmin(String world) async =>
+      getProfile()?.isRootAdmin() ?? false;
 
-  Future<String> getEffectiveRole(String world) async {
-    if (world == 'materie') return getMaterieProfile()?.effectiveRole ?? 'user';
-    if (world == 'energie') return getEnergieProfile()?.effectiveRole ?? 'user';
-    return getEnergieProfile()?.effectiveRole ??
-        getMaterieProfile()?.effectiveRole ??
-        'user';
-  }
+  Future<String> getEffectiveRole(String world) async =>
+      getProfile()?.effectiveRole ?? 'user';
 
   // ═══════════════════════════════════════════════════════════
   // GENERIC KEY-VALUE (DynamicContentService)

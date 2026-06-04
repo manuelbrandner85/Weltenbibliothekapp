@@ -109,14 +109,13 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   /// time it reaches here.
   AdminState _resolveLocalFallback(AdminState provider) {
     try {
+      // TEIL 1A: single unified profile -- one local source.
       final storage = StorageService();
-      final m = storage.getMaterieProfile();
-      final e = storage.getEnergieProfile();
+      final profile = storage.getProfile();
 
       final allUsernames = <String>[
         provider.username ?? '',
-        m?.username ?? '',
-        e?.username ?? '',
+        profile?.username ?? '',
       ].where((u) => u.isNotEmpty).toList();
 
       if (allUsernames.isEmpty) return provider;
@@ -126,8 +125,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       // Pick highest role from backend state + local cache (role-based only).
       final candidates = <String?>[
         provider.role,
-        m?.role,
-        e?.role,
+        profile?.role,
       ].where((r) => r != null && r.isNotEmpty).cast<String>().toList();
 
       final effectiveRole = _highestRole(candidates) ?? provider.role;
