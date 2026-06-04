@@ -101,22 +101,18 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     _tabsLen = length;
   }
 
-  /// v103: Robuster Fallback. NICHT mehr nur wenn Provider leer ist,
-  /// sondern IMMER -- waehle die HOECHSTE Berechtigung aus mehreren
-  /// Quellen (Provider-Backend, lokales Profil-Role, Username-Match,
-  /// Web-Pref). Vermeidet "Kein Zugriff"-Screen wenn der Provider mit
-  /// einer alten role='user' aus dem Cache geladen wurde, obwohl
-  /// lokal/per Username klar Root-Admin angemeldet ist.
+  /// Fallback: pick highest role from backend state + local profile cache.
+  /// Role-based only -- no username override (that would allow privilege
+  /// escalation by setting a local username to a known admin name).
+  /// AdminStateNotifier already handles the username->role mapping via
+  /// isRootAdminByUsername in step 2.5, so the role is correct by the
+  /// time it reaches here.
   AdminState _resolveLocalFallback(AdminState provider) {
     try {
       final storage = StorageService();
       final m = storage.getMaterieProfile();
       final e = storage.getEnergieProfile();
 
-      // v105: ALLE Username-Quellen sammeln statt nur den ersten zu nehmen.
-      // Vorher fiel der Username-Override durch wenn provider.username
-      // einen Email-String enthielt (z.B. supabase auth.email) -- der
-      // lokale 'Weltenbibliothek' wurde nicht mehr beruecksichtigt.
       final allUsernames = <String>[
         provider.username ?? '',
         m?.username ?? '',
@@ -126,43 +122,24 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       if (allUsernames.isEmpty) return provider;
 
       final localUser = allUsernames.first;
-      final matchesRoot = allUsernames.any(AppRoles.isRootAdminByUsername);
-      final matchesContentEditor =
-          allUsernames.any(AppRoles.isContentEditorByUsername);
 
-      // Sammle Rollen-Kandidaten und nimm die hoechste.
+      // Pick highest role from backend state + local cache (role-based only).
       final candidates = <String?>[
         provider.role,
         m?.role,
         e?.role,
-        if (matchesRoot) AppRoles.rootAdmin,
-        if (matchesContentEditor) AppRoles.contentEditor,
-      ].where((r) => r != null && r.isNotEmpty).toList();
+      ].where((r) => r != null && r.isNotEmpty).cast<String>().toList();
 
-      final highest = _highestRole(candidates.cast<String>());
-      final effectiveRole = highest ?? provider.role;
-
-      // v103 FIX 3: Hard Username-Override. Wenn alle anderen Quellen
-      // 'user' liefern oder leer sind, aber IRGENDEINE Username-Quelle
-      // einem Admin-Account entspricht -> Rolle hart setzen.
-      final finalRole = (effectiveRole == null ||
-              effectiveRole.isEmpty ||
-              effectiveRole == AppRoles.user)
-          ? (matchesRoot
-              ? AppRoles.rootAdmin
-              : matchesContentEditor
-                  ? AppRoles.contentEditor
-                  : effectiveRole)
-          : effectiveRole;
+      final effectiveRole = _highestRole(candidates) ?? provider.role;
 
       return AdminState(
-        isAdmin: AppRoles.canAccessAdminDashboard(finalRole),
-        isRootAdmin: AppRoles.isRootAdmin(finalRole),
-        isModerator: AppRoles.isModerator(finalRole),
+        isAdmin: AppRoles.canAccessAdminDashboard(effectiveRole),
+        isRootAdmin: AppRoles.isRootAdmin(effectiveRole),
+        isModerator: AppRoles.isModerator(effectiveRole),
         world: provider.world,
         backendVerified: provider.backendVerified,
         username: localUser,
-        role: finalRole,
+        role: effectiveRole,
       );
     } catch (_) {
       return provider;
@@ -225,28 +202,12 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     if (admin.username == null || admin.username!.isEmpty) {
       return _loadingScaffold();
     }
-    // v103 FIX 4 + v105: Zugriffsschutz mit Multi-Source-Username-Check.
-    // hasAccess akzeptiert JEDE der folgenden Quellen:
-    //   - admin.isAdmin / isRootAdmin / isModerator (Provider-Flags)
-    //   - canAccessAdminDashboard(role) (Rolle-Whitelist)
-    //   - isRootAdminByUsername / isContentEditorByUsername fuer:
-    //       admin.username (vom Resolver), MaterieProfile, EnergieProfile
-    //   role='user' UND alle Username-Quellen unbekannt -> blockt.
-    final storage = StorageService();
-    final altUsernames = <String?>[
-      admin.username,
-      storage.getMaterieProfile()?.username,
-      storage.getEnergieProfile()?.username,
-    ];
-    final usernameMatchesAdmin = altUsernames.any((u) =>
-        u != null &&
-        (AppRoles.isRootAdminByUsername(u) ||
-            AppRoles.isContentEditorByUsername(u)));
+    // Access gate: role-based only. Username-based bypasses removed to
+    // prevent privilege escalation via locally-manipulated profile data.
     final hasAccess = admin.isAdmin ||
         admin.isRootAdmin ||
         admin.isModerator ||
-        AppRoles.canAccessAdminDashboard(admin.role ?? '') ||
-        usernameMatchesAdmin;
+        AppRoles.canAccessAdminDashboard(admin.role ?? '');
     if (!hasAccess) return _accessDeniedScaffold();
 
     // v103: Tabs dynamisch -- Rollen-Permission steuert Sichtbarkeit.
@@ -1439,6 +1400,11 @@ class _UsersTabState extends State<_UsersTab> {
   }
 
   Future<void> _ban(WorldUser u) async {
+    if (u.username.trim().toLowerCase() ==
+        (widget.admin.username ?? '').trim().toLowerCase()) {
+      _snack('Du kannst dich nicht selbst sperren.', color: Colors.orange);
+      return;
+    }
     final result = await _showBanDialog(u.username);
     if (result == null) return;
 
@@ -1682,102 +1648,88 @@ class _UsersTabState extends State<_UsersTab> {
     }
   }
 
-  Future<void> _promote(WorldUser u) async {
-    // Always target 'admin'; root_admin can only be set via manual DB/dedicated action.
-    const targetRole = 'admin';
-    final confirmed = await _confirm(
-      'Zum Admin befoerdern',
-      'Soll @${u.username} wirklich befördert werden?\n\nNeue Rolle: ${_prettyRole(targetRole)}',
-      confirmColor: Colors.green,
-    );
-    if (!confirmed) return;
-
-    setState(() => _processing = true);
-    final ok = await WorldAdminServiceV162.changeUserRole(
-      userId: u.userId,
-      newRole: targetRole,
-      adminUsername: widget.admin.username,
-    );
-    if (!mounted) return;
-    setState(() => _processing = false);
-    if (ok) {
-      _snack('⬆️ @${u.username} ist jetzt ${_prettyRole(targetRole)}',
-          color: Colors.green);
-      _load();
-    } else {
-      final errMsg = AdminApiClient.instance.diagLog.isNotEmpty
-          ? AdminApiClient.instance.diagLog.last.message
-          : 'Unbekannter Fehler';
-      _snack('❌ Befoerdern fehlgeschlagen: $errMsg', color: Colors.orange);
-    }
-  }
-
   // v115 (Feature B): Verwarnung aussprechen. Dialog mit Grund-Feld.
   // Bei der 3. Verwarnung bannt der Worker automatisch fuer 7 Tage.
   Future<void> _warn(WorldUser u) async {
+    if (u.username.trim().toLowerCase() ==
+        (widget.admin.username ?? '').trim().toLowerCase()) {
+      _snack('Du kannst dich nicht selbst verwarnen.', color: Colors.orange);
+      return;
+    }
     final reasonCtrl = TextEditingController();
     final confirmed = await showDialog<bool>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFF12121E),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(children: [
-              const Icon(Icons.warning_amber_rounded,
-                  color: Colors.orangeAccent, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('Verwarnen (${u.warningCount}/3)',
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-            ]),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '@${u.username} verwarnen. Ab der 3. Verwarnung wird der '
-                  'Nutzer automatisch fuer 7 Tage gesperrt.',
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: reasonCtrl,
-                  autofocus: true,
-                  maxLength: 200,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Grund (Pflicht, min. 3 Zeichen)',
-                    labelStyle: TextStyle(color: Colors.white54),
-                    counterStyle: TextStyle(color: Colors.white38),
+          builder: (ctx) {
+            String? errorText;
+            return StatefulBuilder(
+              builder: (ctx2, setDs) => AlertDialog(
+                backgroundColor: const Color(0xFF12121E),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                title: Row(children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      color: Colors.orangeAccent, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Verwarnen (${u.warningCount}/3)',
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
+                ]),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '@${u.username} verwarnen. Ab der 3. Verwarnung wird der '
+                      'Nutzer automatisch fuer 7 Tage gesperrt.',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: reasonCtrl,
+                      autofocus: true,
+                      maxLength: 200,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Grund (Pflicht, min. 3 Zeichen)',
+                        labelStyle: const TextStyle(color: Colors.white54),
+                        errorText: errorText,
+                        counterStyle: const TextStyle(color: Colors.white38),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Abbrechen',
-                    style: TextStyle(color: Colors.white54)),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx2, false),
+                    child: const Text('Abbrechen',
+                        style: TextStyle(color: Colors.white54)),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      if (reasonCtrl.text.trim().length < 3) {
+                        setDs(() =>
+                            errorText = 'Mindestens 3 Zeichen erforderlich');
+                        return;
+                      }
+                      Navigator.pop(ctx2, true);
+                    },
+                    icon: const Icon(Icons.warning_amber_rounded,
+                        color: Colors.white, size: 16),
+                    label: const Text('Verwarnen',
+                        style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade800,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
               ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  if (reasonCtrl.text.trim().length < 3) return;
-                  Navigator.pop(ctx, true);
-                },
-                icon: const Icon(Icons.warning_amber_rounded,
-                    color: Colors.white, size: 16),
-                label: const Text('Verwarnen',
-                    style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade800,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ) ??
         false;
     if (!confirmed) return;
@@ -1823,7 +1775,7 @@ class _UsersTabState extends State<_UsersTab> {
 
     final buf = StringBuffer();
     buf.writeln(
-        'username,display_name,role,banned,warnings,source,created_at,last_seen,user_id');
+        'username,display_name,role,banned,warnings,source,created_at,last_seen');
     for (final u in rows) {
       buf.writeln([
         esc(u.username),
@@ -1834,7 +1786,6 @@ class _UsersTabState extends State<_UsersTab> {
         esc(u.source),
         esc(u.createdAt),
         esc(u.lastSeenAt ?? ''),
-        esc(u.userId),
       ].join(','));
     }
     await Clipboard.setData(ClipboardData(text: buf.toString()));
@@ -2715,7 +2666,7 @@ class _UsersTabState extends State<_UsersTab> {
                                     accentBright: widget.accentBright,
                                     onBan: () => _ban(u),
                                     onUnban: () => _unban(u),
-                                    onPromote: () => _promote(u),
+                                    onPromote: () => _changeRole(u, 'admin'),
                                     onDemote: () => _demote(u),
                                     onGrantXp:
                                         AppRoles.canGrantXp(widget.admin.role)

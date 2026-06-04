@@ -841,7 +841,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
         },
       );
       AdminApiClient.instance.invalidateCache('/api/admin/users');
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode) debugPrint('❌ banUser: ${e.statusCode} ${e.bodySnippet}');
       return false;
@@ -858,7 +858,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
         '/api/admin/users/$userId/unban',
       );
       AdminApiClient.instance.invalidateCache('/api/admin/users');
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ unbanUser: ${e.statusCode} ${e.bodySnippet}');
@@ -903,7 +903,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
           },
         ).ignore();
       }
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ changeUserRole: ${e.statusCode} ${e.bodySnippet}');
@@ -969,7 +969,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final data = await AdminApiClient.instance.deleteJson(
         '/api/admin/users/$userId$qp',
       );
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ deleteUser: ${e.statusCode} ${e.bodySnippet}');
@@ -1097,7 +1097,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
-      return {'error': 'Failed'};
+      if (response.statusCode == 403) {
+        return {
+          'error': 'Zugriff verweigert (403) -- ADMIN_AUTH_SECRET pruefen'
+        };
+      }
+      return {'error': 'HTTP ${response.statusCode}'};
     } catch (e) {
       return {'error': e.toString()};
     }
@@ -1693,7 +1698,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
         '/api/admin/app-config',
         body: {'platform': platform, ...updates},
       );
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ updateAppConfig: ${e.statusCode} ${e.bodySnippet}');
@@ -1741,7 +1746,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
           'type': type,
         },
       );
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ sendDirectPush: ${e.statusCode} ${e.bodySnippet}');
@@ -1789,7 +1794,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
         '/api/admin/articles/$articleId',
         body: fields,
       );
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ updateArticle: ${e.statusCode} ${e.bodySnippet}');
@@ -1853,7 +1858,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
         },
       );
       AdminApiClient.instance.invalidateCache('/api/admin/users');
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ restrictUser: ${e.statusCode} ${e.bodySnippet}');
@@ -1875,7 +1880,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
         body: {'scopes': scopes},
       );
       AdminApiClient.instance.invalidateCache('/api/admin/users');
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ unrestrictUser: ${e.statusCode} ${e.bodySnippet}');
@@ -1916,7 +1921,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
         '/api/admin/account-requests/$requestId/resolve',
         body: {'action': approve ? 'approve' : 'reject'},
       );
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('❌ resolveAccountRequest: ${e.statusCode} ${e.bodySnippet}');
@@ -1946,7 +1951,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
     try {
       final data = await AdminApiClient.instance
           .deleteJson('/api/admin/deleted-identities/$id');
-      return data['success'] as bool? ?? true;
+      return data['success'] as bool? ?? false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ removeDeletedIdentity: $e');
       return false;

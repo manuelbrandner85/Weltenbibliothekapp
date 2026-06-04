@@ -3512,6 +3512,8 @@ export default {
 
     // ── Admin Dashboard ───────────────────────────────────────
     if (path === '/api/admin/dashboard') {
+      const caller = await verifyAdminCaller(request, env);
+      if (!caller) return errorResponse('Nicht autorisiert', 403);
       try {
         const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
         // Fetch stats in parallel
