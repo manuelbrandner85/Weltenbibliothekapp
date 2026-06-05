@@ -473,6 +473,8 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
         children: [
           Text(
             room['name'] as String,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: _kAccent,
               fontSize: 13,
@@ -481,6 +483,8 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
           ),
           Text(
             room['description'] as String,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.45),
               fontSize: 11,
@@ -683,12 +687,16 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
                     style: const TextStyle(fontSize: 14)),
                 const SizedBox(width: 6),
               ],
-              Text(
-                msgUsername.isNotEmpty ? msgUsername : 'Unbekannt',
-                style: const TextStyle(
-                  color: _kAccent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  msgUsername.isNotEmpty ? msgUsername : 'Unbekannt',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _kAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               if (timeLabel != null) ...[
