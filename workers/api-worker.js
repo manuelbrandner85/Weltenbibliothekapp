@@ -4091,6 +4091,276 @@ export default {
         ]);
       };
 
+      // ── VIDEO-ARCHIV (Mediathek) ──────────────────────────────────────
+      // Admin pflegt YouTube-Videos in archive_videos ein. Es wird NIE ein
+      // Video heruntergeladen/re-gehostet -- nur die YouTube-Video-ID +
+      // Metadaten gespeichert, der Client bettet via youtube_player_flutter
+      // ein. Nur status='confirmed' ist fuer Nutzer sichtbar (RLS).
+      const VIDEO_WORLDS = new Set(['materie', 'energie', 'vorhang', 'ursprung']);
+      const VIDEO_STATUSES = new Set(['pending', 'confirmed', 'rejected']);
+
+      // Extract the 11-char YouTube video id from a URL or raw id.
+      const extractYoutubeId = (input) => {
+        const s = String(input || '').trim();
+        if (!s) return null;
+        // Raw 11-char id (allowed chars: A-Za-z0-9_-)
+        if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+        // Try common URL shapes
+        const patterns = [
+          /[?&]v=([A-Za-z0-9_-]{11})/, // watch?v=ID
+          /youtu\.be\/([A-Za-z0-9_-]{11})/, // youtu.be/ID
+          /\/embed\/([A-Za-z0-9_-]{11})/, // /embed/ID
+          /\/shorts\/([A-Za-z0-9_-]{11})/, // /shorts/ID
+          /\/live\/([A-Za-z0-9_-]{11})/, // /live/ID
+        ];
+        for (const re of patterns) {
+          const m = s.match(re);
+          if (m) return m[1];
+        }
+        return null;
+      };
+
+      // Best-effort: fetch title + thumbnail from YouTube oEmbed (no API key).
+      const fetchYoutubeOembed = async (videoId) => {
+        try {
+          const r = await fetch(
+            `https://www.youtube.com/oembed?url=${encodeURIComponent(
+              'https://www.youtube.com/watch?v=' + videoId
+            )}&format=json`
+          );
+          if (!r.ok) return null;
+          const j = await r.json().catch(() => null);
+          if (!j) return null;
+          return {
+            title: j.title || null,
+            thumbnail_url:
+              j.thumbnail_url ||
+              `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+          };
+        } catch (_) {
+          return null;
+        }
+      };
+
+      // ── GET /api/admin/videos  (Liste fuer Admin-Review, alle Status) ──
+      // ?world=... &status=pending|confirmed|rejected|all &limit=200
+      if (method === 'GET' && path === '/api/admin/videos') {
+        try {
+          const world = url.searchParams.get('world');
+          const status = url.searchParams.get('status') || 'all';
+          const limit = Math.min(
+            500,
+            parseInt(url.searchParams.get('limit') || '200')
+          );
+          let filter = '';
+          if (world && VIDEO_WORLDS.has(world)) {
+            filter += `&worlds=cs.{${world}}`;
+          }
+          if (status !== 'all' && VIDEO_STATUSES.has(status)) {
+            filter += `&status=eq.${status}`;
+          }
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/archive_videos?select=*${filter}&order=created_at.desc&limit=${limit}`,
+            { headers: svcHeaders }
+          );
+          if (!res.ok) return errorResponse(`Supabase ${res.status}`, res.status);
+          const rows = await res.json().catch(() => []);
+          return jsonResponse({
+            success: true,
+            videos: Array.isArray(rows) ? rows : [],
+          });
+        } catch (e) {
+          return errorResponse(`Video-Liste-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/videos  (Video einpflegen) ────────────────────
+      // Body: { youtube_url|youtube_video_id, raw_title?, youtube_title?,
+      //         thumbnail_url?, category?, worlds:[...], status? }
+      // Fehlende Titel/Thumbnail werden best-effort via oEmbed gefuellt.
+      if (method === 'POST' && path === '/api/admin/videos') {
+        try {
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+
+          const videoId = extractYoutubeId(
+            body.youtube_video_id || body.youtube_url
+          );
+          if (!videoId) {
+            return errorResponse(
+              'Ungueltige YouTube-URL oder Video-ID',
+              400,
+              'invalid_youtube_id'
+            );
+          }
+
+          // Worlds validieren -- mindestens eine gueltige Welt.
+          const worlds = Array.isArray(body.worlds)
+            ? body.worlds.filter((w) => VIDEO_WORLDS.has(String(w)))
+            : [];
+          if (worlds.length === 0) {
+            return errorResponse(
+              'Mindestens eine gueltige Welt erforderlich (materie/energie/vorhang/ursprung)',
+              400,
+              'invalid_worlds'
+            );
+          }
+
+          // Status: content_editor darf nur 'pending'/'confirmed' setzen.
+          let status = VIDEO_STATUSES.has(body.status) ? body.status : 'pending';
+          if (status === 'rejected') status = 'pending';
+
+          // Titel/Thumbnail best-effort aus oEmbed nachladen wenn nicht gesetzt.
+          let youtubeTitle = body.youtube_title || null;
+          let thumbnailUrl = body.thumbnail_url || null;
+          if (!youtubeTitle || !thumbnailUrl) {
+            const meta = await fetchYoutubeOembed(videoId);
+            if (meta) {
+              youtubeTitle = youtubeTitle || meta.title;
+              thumbnailUrl = thumbnailUrl || meta.thumbnail_url;
+            }
+          }
+          thumbnailUrl =
+            thumbnailUrl ||
+            `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+
+          const row = {
+            youtube_video_id: videoId,
+            raw_title:
+              body.raw_title != null
+                ? String(body.raw_title).slice(0, 500)
+                : youtubeTitle,
+            youtube_title: youtubeTitle
+              ? String(youtubeTitle).slice(0, 500)
+              : null,
+            thumbnail_url: thumbnailUrl,
+            category: body.category
+              ? String(body.category).slice(0, 80)
+              : null,
+            worlds,
+            status,
+            created_at: new Date().toISOString(),
+          };
+
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_videos`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify(row),
+          });
+          if (!res.ok) {
+            const t = await res.text().catch(() => '');
+            return errorResponse(`Insert-Fehler: ${res.status} ${t.slice(0, 200)}`);
+          }
+          const inserted = await res.json().catch(() => []);
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'video_create',
+            target_id: Array.isArray(inserted) ? inserted[0]?.id : null,
+            details: { youtube_video_id: videoId, worlds, status },
+          });
+          return jsonResponse({
+            success: true,
+            video: Array.isArray(inserted) ? inserted[0] : null,
+          });
+        } catch (e) {
+          return errorResponse(`Video-Insert-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/videos/:id/confirm  (sichtbar schalten) ───────
+      if (
+        method === 'POST' &&
+        path.startsWith('/api/admin/videos/') &&
+        path.endsWith('/confirm')
+      ) {
+        try {
+          const id = path.split('/')[4];
+          if (!id) return errorResponse('Video-ID fehlt', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/archive_videos?id=eq.${encodeURIComponent(id)}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify({ status: 'confirmed' }),
+            }
+          );
+          if (!res.ok) return errorResponse(`Confirm-Fehler: ${res.status}`);
+          const rows = await res.json().catch(() => []);
+          if (!Array.isArray(rows) || rows.length === 0) {
+            return errorResponse('Video nicht gefunden', 404);
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'video_confirm',
+            target_id: id,
+          });
+          return jsonResponse({ success: true, video: rows[0] });
+        } catch (e) {
+          return errorResponse(`Confirm-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/videos/:id/reject  (ausblenden, nicht loeschen) ─
+      if (
+        method === 'POST' &&
+        path.startsWith('/api/admin/videos/') &&
+        path.endsWith('/reject')
+      ) {
+        try {
+          const id = path.split('/')[4];
+          if (!id) return errorResponse('Video-ID fehlt', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/archive_videos?id=eq.${encodeURIComponent(id)}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify({ status: 'rejected' }),
+            }
+          );
+          if (!res.ok) return errorResponse(`Reject-Fehler: ${res.status}`);
+          const rows = await res.json().catch(() => []);
+          if (!Array.isArray(rows) || rows.length === 0) {
+            return errorResponse('Video nicht gefunden', 404);
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'video_reject',
+            target_id: id,
+          });
+          return jsonResponse({ success: true, video: rows[0] });
+        } catch (e) {
+          return errorResponse(`Reject-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── DELETE /api/admin/videos/:id  (endgueltig entfernen) ──────────
+      if (
+        method === 'DELETE' &&
+        path.startsWith('/api/admin/videos/') &&
+        path.split('/').length === 5
+      ) {
+        try {
+          const id = path.split('/')[4];
+          if (!id) return errorResponse('Video-ID fehlt', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/archive_videos?id=eq.${encodeURIComponent(id)}`,
+            {
+              method: 'DELETE',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            }
+          );
+          if (!res.ok) return errorResponse(`Delete-Fehler: ${res.status}`);
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'video_delete',
+            target_id: id,
+          });
+          return jsonResponse({ success: true, deleted: id });
+        } catch (e) {
+          return errorResponse(`Delete-Fehler: ${e.message}`);
+        }
+      }
+
       // ── GET /api/admin/articles  (globale Artikel-Liste fuer Admin) ──
       // ?world=materie|energie|vorhang|ursprung  optional Filter
       // ?status=published|unpublished|all  (default: all)
