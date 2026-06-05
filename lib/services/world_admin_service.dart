@@ -816,6 +816,32 @@ class AuditLogEntry {
 ///   return;
 /// }
 /// ```
+/// YouTube-Suchergebnis fuer das Admin-Einpflege-Dialog.
+class YoutubeSearchResult {
+  final String videoId;
+  final String title;
+  final String thumbnailUrl;
+  final String? channelTitle;
+  const YoutubeSearchResult({
+    required this.videoId,
+    required this.title,
+    required this.thumbnailUrl,
+    this.channelTitle,
+  });
+  factory YoutubeSearchResult.fromJson(Map<String, dynamic> j) {
+    final id = j['video_id'] as String? ?? '';
+    return YoutubeSearchResult(
+      videoId: id,
+      title: j['title'] as String? ?? '',
+      thumbnailUrl: j['thumbnail_url'] as String? ??
+          (id.isNotEmpty
+              ? 'https://img.youtube.com/vi/$id/mqdefault.jpg'
+              : ''),
+      channelTitle: j['channel_title'] as String?,
+    );
+  }
+}
+
 extension WorldAdminServiceV162 on WorldAdminService {
   // AUDIT-FIX A1: HMAC-Header fuer Worker verifyAdminCaller.
   static Future<Map<String, String>> get _h async =>
@@ -1866,6 +1892,33 @@ extension WorldAdminServiceV162 on WorldAdminService {
     } catch (e) {
       if (kDebugMode) debugPrint('❌ createArchiveVideo: $e');
       return null;
+    }
+  }
+
+  /// YouTube-Videosuche fuer den Admin-Einpflege-Dialog.
+  /// Gibt leere Liste zurueck wenn YOUTUBE_API_KEY im Worker fehlt oder
+  /// die Suche keine Treffer liefert.
+  static Future<List<YoutubeSearchResult>> searchYoutubeVideos(
+    String query,
+  ) async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+        '/api/admin/videos/search'
+        '?q=${Uri.encodeQueryComponent(query)}&max_results=8',
+      );
+      final items = data['videos'] as List?;
+      if (items == null) return const [];
+      return items
+          .map((e) => YoutubeSearchResult.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ searchYoutubeVideos: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ searchYoutubeVideos: $e');
+      return const [];
     }
   }
 

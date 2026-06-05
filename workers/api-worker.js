@@ -4325,6 +4325,54 @@ export default {
         }
       }
 
+      // ── GET /api/admin/videos/search  (YouTube-Suche fuer Admin) ──────
+      // ?q=Suchbegriff &max_results=8
+      // Benoetigt env.YOUTUBE_API_KEY (Wrangler-Secret).
+      if (method === 'GET' && path === '/api/admin/videos/search') {
+        try {
+          const q = (url.searchParams.get('q') || '').trim();
+          const maxResults = Math.min(
+            10,
+            parseInt(url.searchParams.get('max_results') || '8')
+          );
+          if (!q) {
+            return errorResponse('Suchbegriff erforderlich', 400, 'missing_query');
+          }
+          if (!env.YOUTUBE_API_KEY) {
+            return errorResponse(
+              'YOUTUBE_API_KEY nicht konfiguriert',
+              503,
+              'no_api_key'
+            );
+          }
+          const apiRes = await fetch(
+            'https://www.googleapis.com/youtube/v3/search' +
+            `?part=snippet&type=video&q=${encodeURIComponent(q)}` +
+            `&maxResults=${maxResults}&key=${env.YOUTUBE_API_KEY}`
+          );
+          if (!apiRes.ok) {
+            return errorResponse(
+              `YouTube API: HTTP ${apiRes.status}`,
+              502,
+              'youtube_api_error'
+            );
+          }
+          const apiData = await apiRes.json();
+          const videos = (apiData.items || []).map(item => ({
+            video_id: item.id.videoId,
+            title: item.snippet.title,
+            thumbnail_url:
+              item.snippet.thumbnails?.medium?.url ||
+              item.snippet.thumbnails?.default?.url ||
+              null,
+            channel_title: item.snippet.channelTitle || null,
+          }));
+          return jsonResponse({ success: true, videos, query: q });
+        } catch (e) {
+          return errorResponse(`Suche fehlgeschlagen: ${e.message}`);
+        }
+      }
+
       // ── GET /api/admin/videos  (Liste fuer Admin-Review, alle Status) ──
       // ?world=... &status=pending|confirmed|rejected|all &limit=200
       if (method === 'GET' && path === '/api/admin/videos') {
