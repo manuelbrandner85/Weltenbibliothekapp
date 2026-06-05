@@ -24,7 +24,7 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
   @override
   void initState() {
     super.initState();
-    _ctrl = TabController(length: 4, vsync: this);
+    _ctrl = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -53,6 +53,9 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
             Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Editor'),
             Tab(icon: Icon(Icons.report_rounded, size: 16), text: 'Meldungen'),
             Tab(icon: Icon(Icons.article_rounded, size: 16), text: 'Artikel'),
+            Tab(
+                icon: Icon(Icons.play_circle_outline_rounded, size: 16),
+                text: 'Videos'),
           ],
         ),
       ),
@@ -67,6 +70,8 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
             _PostReportsTab(
                 accent: widget.accent, accentBright: widget.accentBright),
             _ArticleManagerTab(
+                accent: widget.accent, accentBright: widget.accentBright),
+            _VideoManagerTab(
                 accent: widget.accent, accentBright: widget.accentBright),
           ],
         ),
@@ -991,6 +996,518 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                     );
                   },
                 ),
+        ),
+      ),
+    ]);
+  }
+}
+
+// =============================================================================
+// SUB-TAB - VIDEO-MANAGER (Mediathek einpflegen + bestaetigen)
+// =============================================================================
+class _VideoManagerTab extends StatefulWidget {
+  final Color accent, accentBright;
+  const _VideoManagerTab({required this.accent, required this.accentBright});
+  @override
+  State<_VideoManagerTab> createState() => _VideoManagerTabState();
+}
+
+class _VideoManagerTabState extends State<_VideoManagerTab> {
+  List<Map<String, dynamic>>? _videos;
+  bool _loading = true;
+  String _worldFilter = 'all';
+  String _statusFilter = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+    final rows = await WorldAdminServiceV162.getArchiveVideos(
+      world: _worldFilter == 'all' ? null : _worldFilter,
+      status: _statusFilter,
+      limit: 200,
+    );
+    if (mounted) {
+      setState(() {
+        _videos = rows;
+        _loading = false;
+      });
+    }
+  }
+
+  void _snack(String msg, {Color? color}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: color ?? const Color(0xFF1A1A2E),
+    ));
+  }
+
+  String _fmtDate(dynamic v) {
+    if (v == null) return '-';
+    try {
+      final dt = DateTime.parse(v.toString()).toLocal();
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
+    } catch (_) {
+      return '-';
+    }
+  }
+
+  Future<void> _confirm(Map<String, dynamic> v) async {
+    final id = v['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    final ok = await WorldAdminServiceV162.confirmArchiveVideo(id);
+    _snack(ok ? 'Video bestaetigt (sichtbar)' : 'Fehler beim Bestaetigen',
+        color: ok ? Colors.green : Colors.orange);
+    if (ok) _load();
+  }
+
+  Future<void> _reject(Map<String, dynamic> v) async {
+    final id = v['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    final ok = await WorldAdminServiceV162.rejectArchiveVideo(id);
+    _snack(ok ? 'Video ausgeblendet' : 'Fehler beim Ausblenden',
+        color: ok ? Colors.teal : Colors.orange);
+    if (ok) _load();
+  }
+
+  Future<void> _delete(Map<String, dynamic> v) async {
+    final id = v['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        title: const Text('Video loeschen?',
+            style: TextStyle(color: Colors.white, fontSize: 15)),
+        content: const Text('Das Video wird endgueltig entfernt.',
+            style: TextStyle(color: Colors.white70, fontSize: 13)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child:
+                  const Text('Loeschen', style: TextStyle(color: Colors.white))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ok = await WorldAdminServiceV162.deleteArchiveVideo(id);
+    _snack(ok ? 'Video geloescht' : 'Fehler beim Loeschen',
+        color: ok ? Colors.green : Colors.orange);
+    if (ok) _load();
+  }
+
+  Future<void> _addVideo() async {
+    final urlCtrl = TextEditingController();
+    final categoryCtrl = TextEditingController();
+    // worlds selection state (at least one required)
+    final selectedWorlds = <String>{};
+    bool saving = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          backgroundColor: const Color(0xFF12121E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(children: [
+            Icon(Icons.add_circle_outline_rounded,
+                color: widget.accent, size: 18),
+            const SizedBox(width: 8),
+            const Expanded(
+                child: Text('Video einpflegen',
+                    style: TextStyle(color: Colors.white, fontSize: 15))),
+          ]),
+          content: SizedBox(
+            width: 500,
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextField(
+                  controller: urlCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'YouTube-URL oder Video-ID',
+                    hintText: 'https://youtu.be/...',
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    hintStyle: const TextStyle(color: Colors.white24),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.white12)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: categoryCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Kategorie (optional)',
+                    hintText: 'z.B. Doku, Vortrag, Interview',
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    hintStyle: const TextStyle(color: Colors.white24),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.white12)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Welten (mind. eine):',
+                      style: TextStyle(color: Colors.white54, fontSize: 12)),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: ['materie', 'energie', 'vorhang', 'ursprung']
+                      .map((w) {
+                    final sel = selectedWorlds.contains(w);
+                    return FilterChip(
+                      label: Text(w[0].toUpperCase() + w.substring(1)),
+                      selected: sel,
+                      onSelected: (s) => setLocal(() {
+                        if (s) {
+                          selectedWorlds.add(w);
+                        } else {
+                          selectedWorlds.remove(w);
+                        }
+                      }),
+                      backgroundColor: const Color(0xFF1A1A2E),
+                      selectedColor: widget.accent.withValues(alpha: 0.3),
+                      labelStyle: TextStyle(
+                        color: sel ? widget.accentBright : Colors.white54,
+                        fontSize: 12,
+                      ),
+                      checkmarkColor: widget.accentBright,
+                    );
+                  }).toList(),
+                ),
+              ]),
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed:
+                    saving ? null : () => Navigator.pop(ctx),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white54))),
+            ElevatedButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      final url = urlCtrl.text.trim();
+                      if (url.isEmpty) {
+                        _snack('Bitte YouTube-URL eingeben',
+                            color: Colors.orange);
+                        return;
+                      }
+                      if (selectedWorlds.isEmpty) {
+                        _snack('Bitte mindestens eine Welt waehlen',
+                            color: Colors.orange);
+                        return;
+                      }
+                      setLocal(() => saving = true);
+                      final video =
+                          await WorldAdminServiceV162.createArchiveVideo(
+                        youtubeUrl: url,
+                        worlds: selectedWorlds.toList(),
+                        category: categoryCtrl.text.trim(),
+                        status: 'confirmed',
+                      );
+                      if (!ctx.mounted) return;
+                      if (video != null) {
+                        Navigator.pop(ctx);
+                        _snack('Video eingepflegt + sichtbar',
+                            color: Colors.green);
+                        _load();
+                      } else {
+                        setLocal(() => saving = false);
+                        _snack('Einpflegen fehlgeschlagen (URL pruefen)',
+                            color: Colors.orange);
+                      }
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+              child: saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Text('Einpflegen',
+                      style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final videos = _videos ?? [];
+    return Column(children: [
+      // Filter-Leiste
+      Container(
+        color: const Color(0xFF0D0D1A),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(children: [
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _worldFilter,
+              dropdownColor: const Color(0xFF1A1A2E),
+              iconEnabledColor: Colors.white54,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+              isDense: true,
+              items: const [
+                DropdownMenuItem(value: 'all', child: Text('Alle Welten')),
+                DropdownMenuItem(value: 'materie', child: Text('Materie')),
+                DropdownMenuItem(value: 'energie', child: Text('Energie')),
+                DropdownMenuItem(value: 'vorhang', child: Text('Vorhang')),
+                DropdownMenuItem(value: 'ursprung', child: Text('Ursprung')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _worldFilter = v);
+                _load();
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _statusFilter,
+              dropdownColor: const Color(0xFF1A1A2E),
+              iconEnabledColor: Colors.white54,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+              isDense: true,
+              items: const [
+                DropdownMenuItem(value: 'all', child: Text('Alle')),
+                DropdownMenuItem(value: 'confirmed', child: Text('Sichtbar')),
+                DropdownMenuItem(value: 'pending', child: Text('Wartend')),
+                DropdownMenuItem(value: 'rejected', child: Text('Versteckt')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _statusFilter = v);
+                _load();
+              },
+            ),
+          ),
+          const Spacer(),
+          Text('${videos.length}',
+              style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: Icon(Icons.refresh_rounded, color: widget.accent, size: 18),
+            onPressed: _load,
+            tooltip: 'Aktualisieren',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ]),
+      ),
+      // Liste
+      Expanded(
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: widget.accent))
+            : _videos == null
+                ? const _EmptyHint(
+                    'Laden fehlgeschlagen. Ziehe zum Aktualisieren.')
+                : videos.isEmpty
+                    ? const _EmptyHint('Keine Videos. Tippe + zum Einpflegen.')
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        color: widget.accent,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: videos.length,
+                          itemBuilder: (ctx, i) {
+                            final v = videos[i];
+                            final title = (v['youtube_title'] ??
+                                    v['raw_title'] ??
+                                    '-')
+                                .toString();
+                            final status =
+                                v['status'] as String? ?? 'pending';
+                            final category = v['category'] as String?;
+                            final rawWorlds = v['worlds'];
+                            final worlds = rawWorlds is List
+                                ? rawWorlds.map((e) => e.toString()).toList()
+                                : <String>[];
+                            final thumb =
+                                v['thumbnail_url'] as String? ?? '';
+                            final statusColor = status == 'confirmed'
+                                ? Colors.green
+                                : status == 'rejected'
+                                    ? Colors.white24
+                                    : Colors.amber;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF12121E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.06)),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Row(children: [
+                                  // Thumbnail
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: thumb.isNotEmpty
+                                        ? Image.network(
+                                            thumb,
+                                            width: 72,
+                                            height: 48,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
+                                              width: 72,
+                                              height: 48,
+                                              color: const Color(0xFF1A1A2E),
+                                              child: const Icon(
+                                                  Icons.broken_image_rounded,
+                                                  color: Colors.white24,
+                                                  size: 18),
+                                            ),
+                                          )
+                                        : Container(
+                                            width: 72,
+                                            height: 48,
+                                            color: const Color(0xFF1A1A2E),
+                                            child: const Icon(
+                                                Icons
+                                                    .play_circle_outline_rounded,
+                                                color: Colors.white24,
+                                                size: 18),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  // Info
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(title,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis),
+                                        const SizedBox(height: 4),
+                                        Wrap(
+                                          spacing: 4,
+                                          runSpacing: 4,
+                                          crossAxisAlignment:
+                                              WrapCrossAlignment.center,
+                                          children: [
+                                            _MiniPill(
+                                                label: status,
+                                                color: statusColor),
+                                            for (final w in worlds)
+                                              _MiniPill(
+                                                  label: w,
+                                                  color: widget.accent
+                                                      .withValues(alpha: 0.7)),
+                                            if (category != null)
+                                              Text(category,
+                                                  style: const TextStyle(
+                                                      color: Colors.white38,
+                                                      fontSize: 10)),
+                                            Text('· ${_fmtDate(v['created_at'])}',
+                                                style: const TextStyle(
+                                                    color: Colors.white24,
+                                                    fontSize: 10)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Actions
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (status != 'confirmed')
+                                            IconButton(
+                                              icon: const Icon(
+                                                  Icons.check_circle_rounded,
+                                                  color: Colors.green,
+                                                  size: 18),
+                                              tooltip: 'Bestaetigen',
+                                              onPressed: () => _confirm(v),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(
+                                                  minWidth: 30, minHeight: 30),
+                                            ),
+                                          if (status == 'confirmed')
+                                            IconButton(
+                                              icon: const Icon(
+                                                  Icons
+                                                      .visibility_off_rounded,
+                                                  color: Colors.white38,
+                                                  size: 18),
+                                              tooltip: 'Ausblenden',
+                                              onPressed: () => _reject(v),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(
+                                                  minWidth: 30, minHeight: 30),
+                                            ),
+                                          IconButton(
+                                            icon: const Icon(
+                                                Icons.delete_outline_rounded,
+                                                color: Colors.red,
+                                                size: 16),
+                                            tooltip: 'Loeschen',
+                                            onPressed: () => _delete(v),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(
+                                                minWidth: 30, minHeight: 30),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ]),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+      ),
+      // Add-Button
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _addVideo,
+            icon: const Icon(Icons.add_rounded, color: Colors.white),
+            label: const Text('Video einpflegen',
+                style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.accent,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
         ),
       ),
     ]);

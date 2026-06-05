@@ -1805,6 +1805,106 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  // ── VIDEO-ARCHIV (Mediathek) ──────────────────────────────────────────────
+
+  /// Laedt Videos fuer das Admin-Review (alle Status oder gefiltert).
+  /// [status] in 'all'|'pending'|'confirmed'|'rejected'.
+  static Future<List<Map<String, dynamic>>?> getArchiveVideos({
+    String? world,
+    String status = 'all',
+    int limit = 200,
+  }) async {
+    try {
+      final qp = <String, String>{'status': status, 'limit': '$limit'};
+      if (world != null) qp['world'] = world;
+      final data = await AdminApiClient.instance.getJson(
+        '/api/admin/videos?${Uri(queryParameters: qp).query}',
+      );
+      final videos = data['videos'];
+      if (videos is List) return videos.cast<Map<String, dynamic>>();
+      return [];
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ getArchiveVideos: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getArchiveVideos: $e');
+      return null;
+    }
+  }
+
+  /// Pflegt ein YouTube-Video ein. [youtubeUrl] darf URL oder reine ID sein.
+  /// Titel/Thumbnail werden serverseitig best-effort via oEmbed gefuellt.
+  static Future<Map<String, dynamic>?> createArchiveVideo({
+    required String youtubeUrl,
+    required List<String> worlds,
+    String? category,
+    String? rawTitle,
+    String status = 'confirmed',
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/videos',
+        body: {
+          'youtube_url': youtubeUrl,
+          'worlds': worlds,
+          if (category != null && category.isNotEmpty) 'category': category,
+          if (rawTitle != null && rawTitle.isNotEmpty) 'raw_title': rawTitle,
+          'status': status,
+        },
+      );
+      if (data['success'] == true) {
+        return (data['video'] as Map?)?.cast<String, dynamic>();
+      }
+      return null;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ createArchiveVideo: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ createArchiveVideo: $e');
+      return null;
+    }
+  }
+
+  /// Setzt status='confirmed' (sichtbar) fuer ein Video.
+  static Future<bool> confirmArchiveVideo(String videoId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/videos/$videoId/confirm');
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ confirmArchiveVideo: $e');
+      return false;
+    }
+  }
+
+  /// Setzt status='rejected' (ausgeblendet, nicht geloescht).
+  static Future<bool> rejectArchiveVideo(String videoId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/videos/$videoId/reject');
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ rejectArchiveVideo: $e');
+      return false;
+    }
+  }
+
+  /// Entfernt ein Video endgueltig.
+  static Future<bool> deleteArchiveVideo(String videoId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .deleteJson('/api/admin/videos/$videoId');
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ deleteArchiveVideo: $e');
+      return false;
+    }
+  }
+
   /// Laedt Zustellstatistiken der notification_queue (letzte 7 Tage).
   static Future<Map<String, dynamic>?> getPushStats() async {
     try {
