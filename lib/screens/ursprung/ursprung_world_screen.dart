@@ -22,6 +22,7 @@ import '../../widgets/global_search_sheet.dart';
 import '../../widgets/notification_center_button.dart';
 import '../../widgets/onboarding/world_coachmarks.dart';
 import '../../config/wb_design.dart'; // 🎨 Welt-Theme (Feature B)
+import '../../config/day_phase.dart';
 
 /// 🌀 URSPRUNG-WELT DASHBOARD — Cinematic Chrome
 ///
@@ -136,6 +137,13 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
             // Vignette als oberster atmosphärischer Layer
             const Positioned.fill(
               child: IgnorePointer(child: WBVignette()),
+            ),
+
+            // Day-phase atmospheric scrim
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: TimeOfDayOverlay(world: 'ursprung'),
+              ),
             ),
 
             // Floating Bottom-Nav

@@ -22,6 +22,7 @@ import '../../widgets/global_search_sheet.dart';
 import '../../widgets/notification_center_button.dart';
 import '../../widgets/onboarding/world_coachmarks.dart';
 import '../../config/wb_design.dart'; // 🎨 Welt-Theme (Feature B)
+import '../../config/day_phase.dart';
 
 /// 🎭 VORHANG-WELT DASHBOARD — Cinematic Chrome
 ///
@@ -135,6 +136,13 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
             // Vignette als oberster atmosphärischer Layer
             const Positioned.fill(
               child: IgnorePointer(child: WBVignette()),
+            ),
+
+            // Day-phase atmospheric scrim
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: TimeOfDayOverlay(world: 'vorhang'),
+              ),
             ),
 
             // Floating Bottom-Nav
