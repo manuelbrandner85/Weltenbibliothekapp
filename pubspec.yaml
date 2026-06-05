@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 5.56.1+20260701
+version: 5.57.0+20260702
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -50,6 +50,7 @@ dependencies:
   sqflite: ^2.3.3+1      # SQLite for all local storage (Hive replacement)
   path: ^1.9.0            # Path joins for sqflite DB path
   share_plus: ^7.2.1  # 🆕 Sharing functionality
+  app_links: ^6.3.2  # 🔗 Native Deep-Links (weltenbibliothek://live?room=...)
   qr_flutter: ^4.1.0  # QR Code generation
   pdf: ^3.11.1  # PDF generation for export
   

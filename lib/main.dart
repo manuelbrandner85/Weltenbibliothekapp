@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 // ✅ FÜR kDebugMode
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:app_links/app_links.dart'; // 🔗 Native Deep-Links
 import 'package:provider/provider.dart' as provider; // ✅ Provider aliased
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD für Admin-System
 import 'services/sqlite_storage_service.dart'; // 🗄️ SQLITE LOCAL STORAGE (Mobile)
@@ -196,6 +197,24 @@ void main() async {
     ));
   }
 
+  // 🔗 NATIVE DEEP-LINKS: weltenbibliothek://live?room=...&world=... → Live-Call
+  if (!kIsWeb) {
+    try {
+      _appLinks = AppLinks();
+      // Cold start
+      unawaited(_appLinks!.getInitialLink().then((uri) {
+        if (uri != null) _handleIncomingUri(uri);
+      }));
+      // Warm / running
+      _linkSub = _appLinks!.uriLinkStream.listen(
+        (uri) => _handleIncomingUri(uri),
+        onError: (_) {},
+      );
+    } catch (_) {
+      // app_links not available -> ignore
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════
   // MOBILE SYSTEM UI OPTIMIERUNGEN (SYNC - SCHNELL) — nur auf Mobile
   // ═══════════════════════════════════════════════════════════
@@ -312,6 +331,30 @@ class _WebScrollBehavior extends MaterialScrollBehavior {
 }
 
 /// Joins a LiveKit live-call room from a push-notification deep link.
+/// Top-level references keep the AppLinks instance and its stream subscription
+/// alive for the whole app lifetime (prevents GC of the deep-link listener).
+AppLinks? _appLinks;
+StreamSubscription<Uri>? _linkSub;
+
+/// Parses an incoming weltenbibliothek:// deep link and joins a live room.
+void _handleIncomingUri(Uri uri) {
+  if (uri.scheme != 'weltenbibliothek' || uri.host != 'live') return;
+  final room = uri.queryParameters['room'] ?? '';
+  final world = uri.queryParameters['world'] ?? 'materie';
+  if (room.isEmpty) return;
+  void go() {
+    final nav = appNavigatorKey.currentState;
+    if (nav == null) {
+      // Navigator not ready yet (cold start) -> retry next frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) => go());
+      return;
+    }
+    _joinLiveFromDeepLink(nav, room, world);
+  }
+
+  go();
+}
+
 /// Pulls the local display name + avatar from the stored profile so the
 /// invited user appears with their identity.
 void _joinLiveFromDeepLink(

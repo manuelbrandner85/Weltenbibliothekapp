@@ -20,6 +20,7 @@ import '../../widgets/cinematic/wb_ambient_particles.dart';
 import '../profile_settings_screen.dart';
 import '../../widgets/global_search_sheet.dart';
 import '../../widgets/notification_center_button.dart';
+import '../../widgets/onboarding/world_coachmarks.dart';
 
 /// 🌀 URSPRUNG-WELT DASHBOARD — Cinematic Chrome
 ///
@@ -48,6 +49,12 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
         if (kDebugMode) {
           debugPrint('✅ Ursprung Screen: Admin-State geladen');
         }
+        // First-run coachmarks (one-time, guarded by SharedPreferences).
+        WorldCoachmarks.maybeShow(
+          context,
+          world: 'ursprung',
+          accent: const Color(0xFF00D4AA),
+        );
       }
     });
 
@@ -159,43 +166,12 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
         onPressed: () => GlobalSearchSheet.open(context),
       ),
       const NotificationCenterButton(accent: Color(0xFF00D4AA)),
-      // Vier-Welten-Karte (Erweiterung 3): gemeinsame Layer-Karte
+      // Overflow menu (declutter): holds Map / Stats / Portal-Switch.
       IconButton(
-        tooltip: 'Vier-Welten-Karte',
-        icon: const Icon(Icons.layers_outlined, color: Color(0xFF00D4AA)),
+        tooltip: 'Mehr',
+        icon: const Icon(Icons.more_vert, color: Color(0xFF00D4AA)),
         iconSize: 22,
-        onPressed: () {
-          HapticService.selectionClick();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const UnifiedWorldMapScreen(world: 'ursprung'),
-            ),
-          );
-        },
-      ),
-      // Portal-Wechsel
-      IconButton(
-        icon: const Icon(Icons.swap_horiz, color: Color(0xFF00D4AA)),
-        iconSize: 22,
-        onPressed: () => Navigator.pop(context),
-        tooltip: 'Zur Portal-Auswahl',
-      ),
-      // Stats
-      IconButton(
-        icon: const Icon(Icons.analytics_outlined, color: Color(0xFF00D4AA)),
-        iconSize: 22,
-        onPressed: () {
-          HapticService.selectionClick();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  const StatsDashboardScreen(world: 'ursprung'),
-            ),
-          );
-        },
-        tooltip: 'Statistiken',
+        onPressed: () => _showMoreMenu(context, adminState),
       ),
       // Debug-Indikator (nur Debug-Build)
       if (kDebugMode) _DebugAdminBadge(adminState: adminState),
@@ -219,6 +195,78 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
         tooltip: 'Profil-Einstellungen',
       ),
     ];
+  }
+
+  /// Overflow bottom sheet with the less-frequent navigation actions.
+  void _showMoreMenu(BuildContext context, AdminState adminState) {
+    const accent = Color(0xFF00D4AA);
+    HapticService.selectionClick();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF0C0C14),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.layers_outlined, color: accent),
+                title: const Text('Vier-Welten-Karte',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const UnifiedWorldMapScreen(world: 'ursprung'),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.analytics_outlined, color: accent),
+                title: const Text('Statistik',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const StatsDashboardScreen(world: 'ursprung'),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.swap_horiz, color: accent),
+                title: const Text('Welt wechseln',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

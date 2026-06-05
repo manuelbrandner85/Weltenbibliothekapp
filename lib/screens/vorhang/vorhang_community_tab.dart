@@ -6,12 +6,33 @@ import '../../models/community_post.dart';
 import '../../services/community_service.dart';
 import '../../widgets/community_actions_bar.dart';
 import '../../widgets/wb_skeleton.dart';
+import 'vorhang_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 
+/// Community-Tab der VORHANG-Welt.
+///
+/// [postsOnly] steuert den Anzeigemodus:
+/// - `false` (Default, Community-Tab-Slot): zeigt NUR den Live-Chat.
+/// - `true` (via [VorhangPostsScreen] vom Home-Screen): zeigt den
+///   Beiträge-Feed inkl. "Beitrag erstellen"-FAB.
 class VorhangCommunityTab extends StatefulWidget {
-  const VorhangCommunityTab({super.key});
+  final bool postsOnly;
+
+  const VorhangCommunityTab({super.key, this.postsOnly = false});
 
   @override
   State<VorhangCommunityTab> createState() => _VorhangCommunityTabState();
+}
+
+/// Eigenständiger Beiträge-Feed-Screen für die VORHANG-Welt.
+///
+/// Dünner Wrapper, der den Community-Tab im Posts-Modus öffnet. Wird vom
+/// Home-Screen über einen "Beiträge"-Eintrag aufgerufen.
+class VorhangPostsScreen extends StatelessWidget {
+  const VorhangPostsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      const VorhangCommunityTab(postsOnly: true);
 }
 
 class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
@@ -176,8 +197,22 @@ class _VorhangCommunityTabState extends State<VorhangCommunityTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Community-Tab-Slot: nur Live-Chat. Beiträge-Feed läuft über
+    // [VorhangPostsScreen] (postsOnly=true) vom Home-Screen.
+    if (!widget.postsOnly) {
+      return const VorhangLiveChatScreen();
+    }
+
+    // postsOnly: eigenständiger Beiträge-Feed mit zurück-navigierbarer AppBar.
     return Scaffold(
       backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _surface,
+        elevation: 0,
+        title: const Text('Beiträge',
+            style: TextStyle(color: _gold, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: _gold),
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: _gold,
         foregroundColor: Colors.black,

@@ -14,6 +14,7 @@ import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
 import '../../widgets/daily_practice_card.dart';
+import 'vorhang_community_tab.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_live_chat_screen.dart';
 import 'vorhang_modules_screen.dart';
@@ -196,6 +197,18 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
               ),
               const SizedBox(height: 12),
               _buildMentorButton(context),
+              const SizedBox(height: 28),
+
+              // ── COMMUNITY: Beiträge-Feed (vom Community-Tab ausgelagert) ──
+              _sectionLabel('COMMUNITY'),
+              const SizedBox(height: 12),
+              _buildToolTile(
+                context,
+                emoji: '📝',
+                title: 'Beiträge',
+                subtitle: 'Community-Feed - Erkenntnisse teilen & lesen.',
+                builder: (_) => const VorhangPostsScreen(),
+              ),
               const SizedBox(height: 28),
 
               // ── KERN-TOOL: Symbol- & Logo-Decoder (Vorhang-exklusiv) ──

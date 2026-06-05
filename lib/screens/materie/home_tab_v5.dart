@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 import 'kaninchenbau/screens/my_investigations_screen.dart';
 import 'materie_live_chat_screen.dart';
+import 'community_tab_modern.dart';
 // HistoryTimelineScreen ersetzt durch Kaninchenbau (Zeitlinie ist jetzt eine Card im Kaninchenbau)
 import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
@@ -972,6 +973,19 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         badge: 0,
         onTap: () => _go(const MyInvestigationsScreen()),
       ),
+      // Community-Feed (vom Community-Tab ausgelagert).
+      _TileDef(
+        icon: Icons.dynamic_feed_rounded,
+        label: 'Beiträge',
+        sub: 'Community-Feed lesen & teilen',
+        gradient: [
+          const Color(0xFF01579B),
+          const Color(0xFF0277BD),
+          const Color(0xFF29B6F6)
+        ],
+        badge: 0,
+        onTap: () => _go(const MateriePostsScreen()),
+      ),
     ];
 
     return SliverToBoxAdapter(
@@ -999,6 +1013,12 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                 _buildActionTile(tiles[4]),
                 const SizedBox(width: 10),
                 _buildActionTile(tiles[5]),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                _buildActionTile(tiles[6]),
+                const SizedBox(width: 10),
+                const Expanded(child: SizedBox()),
               ]),
             ]),
           ),

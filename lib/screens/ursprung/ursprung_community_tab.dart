@@ -3,12 +3,33 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/community_post.dart';
 import '../../widgets/community_actions_bar.dart';
+import 'ursprung_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 
+/// Community-Tab der URSPRUNG-Welt.
+///
+/// [postsOnly] steuert den Anzeigemodus:
+/// - `false` (Default, Community-Tab-Slot): zeigt NUR den Live-Chat.
+/// - `true` (via [UrsprungPostsScreen] vom Home-Screen): zeigt den
+///   Beiträge-Feed inkl. "Beitrag erstellen"-FAB.
 class UrsprungCommunityTab extends StatefulWidget {
-  const UrsprungCommunityTab({super.key});
+  final bool postsOnly;
+
+  const UrsprungCommunityTab({super.key, this.postsOnly = false});
 
   @override
   State<UrsprungCommunityTab> createState() => _UrsprungCommunityTabState();
+}
+
+/// Eigenständiger Beiträge-Feed-Screen für die URSPRUNG-Welt.
+///
+/// Dünner Wrapper, der den Community-Tab im Posts-Modus öffnet. Wird vom
+/// Home-Screen über einen "Beiträge"-Eintrag aufgerufen.
+class UrsprungPostsScreen extends StatelessWidget {
+  const UrsprungPostsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      const UrsprungCommunityTab(postsOnly: true);
 }
 
 class _UrsprungCommunityTabState extends State<UrsprungCommunityTab> {
@@ -172,8 +193,22 @@ class _UrsprungCommunityTabState extends State<UrsprungCommunityTab> {
 
   @override
   Widget build(BuildContext context) {
+    // Community-Tab-Slot: nur Live-Chat. Beiträge-Feed läuft über
+    // [UrsprungPostsScreen] (postsOnly=true) vom Home-Screen.
+    if (!widget.postsOnly) {
+      return const UrsprungLiveChatScreen();
+    }
+
+    // postsOnly: eigenständiger Beiträge-Feed mit zurück-navigierbarer AppBar.
     return Scaffold(
       backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _surface,
+        elevation: 0,
+        title: const Text('Beiträge',
+            style: TextStyle(color: _cyan, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: _cyan),
+      ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: _cyan,
         foregroundColor: Colors.black,
