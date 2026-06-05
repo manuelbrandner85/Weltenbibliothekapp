@@ -15,6 +15,7 @@ import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
 import '../../widgets/daily_practice_card.dart';
 import 'vorhang_lesson_screen.dart';
+import 'vorhang_live_chat_screen.dart';
 import 'vorhang_modules_screen.dart';
 import 'vorhang_symbol_decoder_screen.dart';
 import 'tools/power_tools.dart';
@@ -206,6 +207,14 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
               // ── INTERAKTIVE WERKZEUGE (key-frei) ──
               _sectionLabel('WERKZEUGE'),
               const SizedBox(height: 12),
+              _buildToolTile(
+                context,
+                emoji: '🎙️',
+                title: 'Livestream',
+                subtitle: 'Live-Chat & Sprachraeume',
+                builder: (_) => const VorhangLiveChatScreen(),
+              ),
+              const SizedBox(height: 10),
               _buildToolTile(
                 context,
                 emoji: '🏛️',

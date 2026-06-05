@@ -642,9 +642,15 @@ class _AnimatedBackground extends StatelessWidget {
       case RoomTheme.kristall:
         painter = _KristallPainter(t, accent);
       case RoomTheme.standard:
-        painter = world == 'materie'
-            ? _MateriePainter(t, accent)
-            : _EnergiePainter(t, accent);
+        if (world == 'materie') {
+          painter = _MateriePainter(t, accent);
+        } else if (world == 'vorhang') {
+          painter = _VorhangPainter(t, accent);
+        } else if (world == 'ursprung') {
+          painter = _UrsprungPainter(t, accent);
+        } else {
+          painter = _EnergiePainter(t, accent);
+        }
     }
 
     return CustomPaint(painter: painter);
@@ -1074,6 +1080,184 @@ class _KristallPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _KristallPainter old) => old.t != t;
+}
+
+/// Vorhang -- gold constellation map with mystic glyph traces.
+/// Symbolises the hidden knowledge behind the veil.
+class _VorhangPainter extends CustomPainter {
+  final double t;
+  final Color accent;
+  _VorhangPainter(this.t, this.accent);
+
+  static final List<Offset> _stars = [
+    const Offset(0.08, 0.12), const Offset(0.22, 0.05), const Offset(0.40, 0.18),
+    const Offset(0.60, 0.08), const Offset(0.78, 0.15), const Offset(0.92, 0.22),
+    const Offset(0.15, 0.35), const Offset(0.35, 0.42), const Offset(0.55, 0.30),
+    const Offset(0.75, 0.40), const Offset(0.88, 0.55), const Offset(0.05, 0.60),
+    const Offset(0.25, 0.65), const Offset(0.48, 0.58), const Offset(0.68, 0.72),
+    const Offset(0.85, 0.68), const Offset(0.12, 0.80), const Offset(0.35, 0.85),
+    const Offset(0.58, 0.88), const Offset(0.80, 0.82),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    // Constellation lines between nearby stars
+    for (int i = 0; i < _stars.length; i++) {
+      for (int j = i + 1; j < _stars.length; j++) {
+        final a = Offset(_stars[i].dx * size.width, _stars[i].dy * size.height);
+        final b = Offset(_stars[j].dx * size.width, _stars[j].dy * size.height);
+        final dist = (a - b).distance;
+        if (dist < size.width * 0.28) {
+          final fade = 1.0 - dist / (size.width * 0.28);
+          linePaint.color = accent.withValues(alpha: 0.06 * fade);
+          canvas.drawLine(a, b, linePaint);
+        }
+      }
+    }
+
+    // Twinkling star points
+    final starPaint = Paint()..style = PaintingStyle.fill;
+    for (int i = 0; i < _stars.length; i++) {
+      final phase = (t + i * 0.05) % 1.0;
+      final twinkle = 0.3 + 0.5 * math.sin(phase * math.pi * 2);
+      final sx = _stars[i].dx * size.width;
+      final sy = _stars[i].dy * size.height;
+      final r = 1.2 + (i % 3) * 0.6;
+
+      // Glow
+      starPaint.shader = RadialGradient(colors: [
+        accent.withValues(alpha: twinkle * 0.6),
+        accent.withValues(alpha: 0),
+      ]).createShader(Rect.fromCircle(center: Offset(sx, sy), radius: r * 4));
+      canvas.drawCircle(Offset(sx, sy), r * 4, starPaint);
+      // Core
+      starPaint.shader = null;
+      starPaint.color = accent.withValues(alpha: twinkle * 0.85);
+      canvas.drawCircle(Offset(sx, sy), r, starPaint);
+    }
+
+    // Drifting golden mote particles
+    final motePaint = Paint()..style = PaintingStyle.fill;
+    for (int i = 0; i < 12; i++) {
+      final seed = i * 0.137;
+      final angle = (seed + t * 0.12) * math.pi * 2;
+      final rx = 0.30 + ((i * 11) % 40) / 100;
+      final ry = 0.25 + ((i * 7) % 40) / 100;
+      final x = size.width * 0.5 + math.cos(angle) * size.width * rx;
+      final y = size.height * 0.45 + math.sin(angle * 1.4) * size.height * ry;
+      final alpha = 0.20 + 0.25 * math.sin(t * math.pi * 2 + i);
+      motePaint.color = accent.withValues(alpha: alpha);
+      canvas.drawCircle(Offset(x, y), 1.2, motePaint);
+    }
+
+    // Central mystic glow
+    final corePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = RadialGradient(colors: [
+        accent.withValues(alpha: 0.08 + 0.04 * math.sin(t * math.pi * 2)),
+        accent.withValues(alpha: 0),
+      ]).createShader(Rect.fromCircle(
+          center: Offset(size.width * 0.5, size.height * 0.45),
+          radius: size.width * 0.40));
+    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.45),
+        size.width * 0.40, corePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _VorhangPainter old) => old.t != t;
+}
+
+/// Ursprung -- bioluminescent forest/cosmos with cyan organic waves.
+/// Symbolises the primal living planet and cosmic origins.
+class _UrsprungPainter extends CustomPainter {
+  final double t;
+  final Color accent;
+  _UrsprungPainter(this.t, this.accent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Starfield background
+    final starPaint = Paint()..style = PaintingStyle.fill;
+    for (int i = 0; i < 60; i++) {
+      final seed = i * 0.137;
+      final x = ((seed * 113.7 + 0.5) % 1.0) * size.width;
+      final y = ((seed * 97.3 + 0.3) % 1.0) * size.height;
+      final twinkle = 0.15 + 0.20 * math.sin(t * math.pi * 2 + i * 0.7);
+      starPaint.color = Colors.white.withValues(alpha: twinkle);
+      canvas.drawCircle(Offset(x, y), 0.7 + (i % 2) * 0.5, starPaint);
+    }
+
+    // Organic bioluminescent waves from bottom
+    for (int wave = 0; wave < 3; wave++) {
+      final path = Path();
+      final baseY = size.height * (0.65 + wave * 0.12);
+      final amplitude = 20.0 + wave * 10.0;
+      final freq = 0.006 + wave * 0.002;
+      final phase = t * math.pi * 2 + wave * math.pi / 2;
+
+      path.moveTo(0, baseY);
+      for (double x = 0; x <= size.width; x += 4) {
+        final y = baseY + math.sin(x * freq + phase) * amplitude;
+        path.lineTo(x, y);
+      }
+
+      final wavePaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 60.0 + wave * 20.0
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30)
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            accent.withValues(alpha: 0.05 + wave * 0.015),
+            accent.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromLTWH(0, baseY - 50, size.width, 100));
+      canvas.drawPath(path, wavePaint);
+    }
+
+    // Floating bioluminescent orbs
+    final orbPaint = Paint()..style = PaintingStyle.fill;
+    for (int i = 0; i < 8; i++) {
+      final seed = i * 0.137;
+      final angle = (seed * 2.5 + t * 0.15) * math.pi;
+      final rx = 0.20 + ((i * 9) % 50) / 100;
+      final ry = 0.15 + ((i * 7) % 40) / 100;
+      final x = size.width * 0.5 + math.cos(angle) * size.width * rx;
+      final y = size.height * 0.6 + math.sin(angle * 0.8) * size.height * ry;
+      final orbR = 30.0 + (i % 3) * 12.0;
+      final alpha = 0.06 + 0.04 * math.sin(t * math.pi * 2 + i);
+      orbPaint.shader = RadialGradient(colors: [
+        accent.withValues(alpha: alpha),
+        accent.withValues(alpha: 0),
+      ]).createShader(Rect.fromCircle(center: Offset(x, y), radius: orbR));
+      canvas.drawCircle(Offset(x, y), orbR, orbPaint);
+    }
+
+    // Cosmic core glow (planet from space)
+    final corePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = RadialGradient(colors: [
+        accent.withValues(alpha: 0.10 + 0.05 * math.sin(t * math.pi * 2)),
+        accent.withValues(alpha: 0.03),
+        accent.withValues(alpha: 0),
+      ], stops: const [
+        0.0,
+        0.5,
+        1.0
+      ]).createShader(Rect.fromCircle(
+          center: Offset(size.width * 0.5, size.height * 0.38),
+          radius: size.width * 0.38));
+    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.38),
+        size.width * 0.38, corePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _UrsprungPainter old) => old.t != t;
 }
 
 /// Globaler ValueNotifier für Spatial-Audio-Toggle (UI-State, kein setState im Screen).
@@ -1878,9 +2062,12 @@ class _TopBar extends StatelessWidget {
                 ),
                 child: Center(
                   child: Icon(
-                    isMaterie
-                        ? Icons.hexagon_rounded
-                        : Icons.auto_awesome_rounded,
+                    switch (world) {
+                      'materie' => Icons.hexagon_rounded,
+                      'vorhang' => Icons.nights_stay_rounded,
+                      'ursprung' => Icons.eco_rounded,
+                      _ => Icons.auto_awesome_rounded,
+                    },
                     size: 20,
                     color: Colors.white,
                   ),
@@ -1920,9 +2107,12 @@ class _TopBar extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          isMaterie
-                              ? 'Weltenbibliothek · Materie'
-                              : 'Weltenbibliothek · Energie',
+                          switch (world) {
+                            'materie' => 'Weltenbibliothek · Materie',
+                            'vorhang' => 'Weltenbibliothek · Vorhang',
+                            'ursprung' => 'Weltenbibliothek · Ursprung',
+                            _ => 'Weltenbibliothek · Energie',
+                          },
                           style: TextStyle(
                             color: accent.withValues(alpha: 0.85),
                             fontSize: 10,
@@ -2505,19 +2695,19 @@ class _ParticipantTileState extends State<_ParticipantTile>
     // Das Tile selbst ist in RepaintBoundary isoliert.
     final isolatedTile = RepaintBoundary(child: tileWithQuality);
 
-    Widget result;
-    if (!widget.isActiveSpeaker) {
-      result = isolatedTile;
-    } else {
-      final c1 = isMaterie ? const Color(0xFFE53935) : const Color(0xFF7C4DFF);
-      final c2 = isMaterie ? const Color(0xFF2979FF) : const Color(0xFF00E5FF);
-      result = Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Aura-Layer (animiert, IgnorePointer, separater Repaint-Boundary)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: RepaintBoundary(
+    // Always same Stack tree -> VideoTrackRenderer stays mounted when
+    // isActiveSpeaker changes (prevents blank-frame flicker on speaking start).
+    final c1 = isMaterie ? const Color(0xFFE53935) : const Color(0xFF7C4DFF);
+    final c2 = isMaterie ? const Color(0xFF2979FF) : const Color(0xFF00E5FF);
+    final result = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: AnimatedOpacity(
+                opacity: widget.isActiveSpeaker ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
                 child: AnimatedBuilder(
                   animation: _pulseAnim,
                   builder: (_, __) {
@@ -2546,11 +2736,10 @@ class _ParticipantTileState extends State<_ParticipantTile>
               ),
             ),
           ),
-          // Tile-Layer (statisch, eigener Repaint-Boundary)
-          isolatedTile,
-        ],
-      );
-    }
+        ),
+        isolatedTile,
+      ],
+    );
 
     // 🔦 B11: Long-Press wrappen wenn Callback vorhanden
     if (widget.onLongPress != null) {
@@ -2800,71 +2989,149 @@ class _ParticipantTileState extends State<_ParticipantTile>
     );
   }
 
-  /// Video-View Layout — Vollformat-Video mit Name + Mic-Status overlay.
+  /// Video-View Layout -- cinema-style with vignette, accent ring, DU badge.
   Widget _buildVideoView() {
+    final nameLabel = () {
+      final n = widget.name.trim();
+      if (widget.isLocal) return n.isEmpty ? 'Du' : '$n (Du)';
+      return n.isEmpty ? 'Mitglied' : n;
+    }();
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(WbDesign.radiusCard),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // RepaintBoundary verhindert dass Pulse/Aura-Animationen den
-          // Video-Frame neu rendern lassen (= Flackern beim Sprechen).
+          // Video track isolated from surrounding repaints.
           RepaintBoundary(
             child: lk.VideoTrackRenderer(
               widget.videoTrack!,
               fit: lk.VideoViewFit.cover,
-              // livekit_client 2.5.4: mirroring via mirrorMode (VideoViewMirrorMode),
-              // not a bool `mirror`. Local camera tracks are mirrored like a selfie.
               mirrorMode: widget.isLocal
                   ? lk.VideoViewMirrorMode.mirror
                   : lk.VideoViewMirrorMode.off,
             ),
           ),
-          // Bottom overlay: Name + Mic-Status
+          // Cinematic vignette (dark corners, film-like depth).
+          IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.0,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.22),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Speaking: animated accent border ring.
+          if (widget.isActiveSpeaker)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: RepaintBoundary(
+                  child: AnimatedBuilder(
+                    animation: _pulseAnim,
+                    builder: (_, __) => DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius:
+                            BorderRadius.circular(WbDesign.radiusCard),
+                        border: Border.all(
+                          color: widget.accent.withValues(
+                            alpha: 0.55 + (_pulseAnim.value - 0.95) * 4,
+                          ),
+                          width: 2.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Top-left: LOCAL badge when camera is own stream.
+          if (widget.isLocal)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'DU',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          // Bottom gradient + name + mic badge.
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.fromLTRB(10, 20, 10, 8),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.7),
+                    Colors.black.withValues(alpha: 0.80),
                   ],
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    widget.micEnabled
-                        ? Icons.mic_rounded
-                        : Icons.mic_off_rounded,
-                    size: 14,
-                    color: widget.micEnabled ? widget.accent : Colors.white60,
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: widget.micEnabled
+                          ? widget.accent.withValues(alpha: 0.25)
+                          : Colors.white.withValues(alpha: 0.10),
+                    ),
+                    child: Icon(
+                      widget.micEnabled
+                          ? Icons.mic_rounded
+                          : Icons.mic_off_rounded,
+                      size: 12,
+                      color: widget.micEnabled
+                          ? widget.accent
+                          : Colors.white54,
+                    ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 5),
                   Expanded(
                     child: Text(
-                      () {
-                        final n = widget.name.trim();
-                        if (widget.isLocal) {
-                          return n.isEmpty ? 'Du' : '$n (Du)';
-                        }
-                        return n.isEmpty ? 'Mitglied' : n;
-                      }(),
+                      nameLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        shadows: [
+                          Shadow(color: Colors.black54, blurRadius: 4),
+                        ],
                       ),
                     ),
                   ),
+                  if (widget.handRaised)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: Text('✋', style: TextStyle(fontSize: 12)),
+                    ),
                 ],
               ),
             ),
