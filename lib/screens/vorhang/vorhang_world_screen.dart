@@ -21,6 +21,7 @@ import '../shared/unified_world_map_screen.dart';
 import '../../widgets/global_search_sheet.dart';
 import '../../widgets/notification_center_button.dart';
 import '../../widgets/onboarding/world_coachmarks.dart';
+import '../../config/wb_design.dart'; // 🎨 Welt-Theme (Feature B)
 
 /// 🎭 VORHANG-WELT DASHBOARD — Cinematic Chrome
 ///
@@ -90,66 +91,70 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
       const UnifiedKnowledgeTab(world: 'vorhang'),
     ];
 
-    return Scaffold(
-      extendBody: true,
-      backgroundColor: const Color(0xFF000000),
-      appBar: WBGlassAppBar(
-        world: WBWorld.vorhang,
-        showWorldSwitcher: true,
-        titleWidget: Text(
-          'VORHANG',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w300,
-            fontSize: 18,
-            letterSpacing: 4.0,
-            color: Colors.white,
+    return Theme(
+      data: WbDesign.themeFor(context, 'vorhang'),
+      child: Scaffold(
+        extendBody: true,
+        backgroundColor: const Color(0xFF000000),
+        appBar: WBGlassAppBar(
+          world: WBWorld.vorhang,
+          showWorldSwitcher: true,
+          titleWidget: Text(
+            'VORHANG',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w300,
+              fontSize: 18,
+              letterSpacing: 4.0,
+              color: Colors.white,
+            ),
           ),
+          actions: _buildAppBarActions(context, adminState),
         ),
-        actions: _buildAppBarActions(context, adminState),
-      ),
-      body: Stack(
-        children: [
-          // Cosmic-Hintergrund + Welt-Ambient
-          const Positioned.fill(child: _CosmicBackground()),
+        body: Stack(
+          children: [
+            // Cosmic-Hintergrund + Welt-Ambient
+            const Positioned.fill(child: _CosmicBackground()),
 
-          // Ambient particles
-          const Positioned.fill(
-            child: WBAmbientParticles(world: WBWorld.vorhang, count: 35),
-          ),
-
-          // Tab-Content + Admin-Button (über Tabs, nur wenn isAdmin)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 80),
-            child: Column(
-              children: [
-                AdminDashboardButton(adminState: adminState, world: 'vorhang'),
-                Expanded(child: tabs[_currentIndex]),
-              ],
+            // Ambient particles
+            const Positioned.fill(
+              child: WBAmbientParticles(world: WBWorld.vorhang, count: 35),
             ),
-          ),
 
-          // Vignette als oberster atmosphärischer Layer
-          const Positioned.fill(
-            child: IgnorePointer(child: WBVignette()),
-          ),
-
-          // Floating Bottom-Nav
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: WBFloatingNav(
-              world: WBWorld.vorhang,
-              activeIndex: _currentIndex,
-              items: const [
-                WBFloatingNavItem(icon: Icons.home, label: 'Home'),
-                WBFloatingNavItem(icon: Icons.search, label: 'Recherche'),
-                WBFloatingNavItem(icon: Icons.people, label: 'Community'),
-                WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
-                WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
-              ],
-              onChanged: (i) => setState(() => _currentIndex = i),
+            // Tab-Content + Admin-Button (über Tabs, nur wenn isAdmin)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 80),
+              child: Column(
+                children: [
+                  AdminDashboardButton(
+                      adminState: adminState, world: 'vorhang'),
+                  Expanded(child: tabs[_currentIndex]),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // Vignette als oberster atmosphärischer Layer
+            const Positioned.fill(
+              child: IgnorePointer(child: WBVignette()),
+            ),
+
+            // Floating Bottom-Nav
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: WBFloatingNav(
+                world: WBWorld.vorhang,
+                activeIndex: _currentIndex,
+                items: const [
+                  WBFloatingNavItem(icon: Icons.home, label: 'Home'),
+                  WBFloatingNavItem(icon: Icons.search, label: 'Recherche'),
+                  WBFloatingNavItem(icon: Icons.people, label: 'Community'),
+                  WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
+                  WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
+                ],
+                onChanged: (i) => setState(() => _currentIndex = i),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
