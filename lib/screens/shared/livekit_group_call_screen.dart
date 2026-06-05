@@ -103,6 +103,9 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
   // 📺 B10.4: Co-Watch
   bool _coWatchVisible = false;
   String? _coWatchVideoId;
+  // True wenn DIESER Client das Co-Watch gestartet hat (steuert Play/Pause/Seek
+  // für alle). Remote-Teilnehmer folgen nur — sonst entstünde eine Sync-Schleife.
+  bool _coWatchIsHost = false;
   StreamSubscription<CoWatchEvent>? _coWatchSub;
   // 💬 In-Call-Chat
   bool _chatVisible = false;
@@ -157,9 +160,15 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
     _coWatchSub = CoWatchService.instance.eventStream.listen((event) {
       if (!mounted) return;
       if (event.action == CoWatchAction.load && event.videoId != null) {
+        // Host = der Client, dessen Identity das Load-Event ausgelöst hat.
+        // Bei lokalem Start ist fromIdentity == localIdentity (oder 'local').
+        final local = CoWatchService.instance.localIdentity;
+        final isHost = event.fromIdentity == 'local' ||
+            (local != null && event.fromIdentity == local);
         setState(() {
           _coWatchVideoId = event.videoId;
           _coWatchVisible = true;
+          _coWatchIsHost = isHost;
         });
       } else if (event.action == CoWatchAction.close) {
         setState(() {
@@ -361,7 +370,7 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
                     child: CoWatchPanel(
                       videoId: _coWatchVideoId!,
                       world: widget.world,
-                      isHost: true,
+                      isHost: _coWatchIsHost,
                       service: CoWatchService.instance,
                       onClose: () => setState(() {
                         _coWatchVisible = false;
@@ -431,11 +440,23 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
                           await showCoWatchInputDialog(context, widget.world);
                       if (url == null || !mounted) return;
                       await CoWatchService.instance.loadVideo(url);
+                      final vid = CoWatchService.instance.currentVideoId;
+                      if (vid == null) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Video konnte nicht erkannt werden. Bitte gültigen YouTube-Link verwenden.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                        return;
+                      }
                       setState(() {
-                        _coWatchVideoId =
-                            CoWatchService.instance.currentVideoId;
-                        _coWatchVisible =
-                            CoWatchService.instance.currentVideoId != null;
+                        _coWatchVideoId = vid;
+                        _coWatchVisible = true;
+                        _coWatchIsHost = true;
                       });
                     },
                   ),
@@ -449,11 +470,23 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
                           await showCoWatchInputDialog(context, widget.world);
                       if (url == null || !mounted) return;
                       await CoWatchService.instance.loadVideo(url);
+                      final vid = CoWatchService.instance.currentVideoId;
+                      if (vid == null) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Video konnte nicht erkannt werden. Bitte gültigen YouTube-Link verwenden.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                        return;
+                      }
                       setState(() {
-                        _coWatchVideoId =
-                            CoWatchService.instance.currentVideoId;
-                        _coWatchVisible =
-                            CoWatchService.instance.currentVideoId != null;
+                        _coWatchVideoId = vid;
+                        _coWatchVisible = true;
+                        _coWatchIsHost = true;
                       });
                     },
                     onToggleChat: () {
@@ -1470,6 +1503,8 @@ class _TopBar extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // ── Teilen ────────────────────────────────────────
+                        const _MoreSectionHeader('Teilen'),
                         // Einladen (Live-Call-Invite: Push + Link)
                         _MoreOptionTile(
                           icon: Icons.person_add_alt_1_rounded,
@@ -1500,23 +1535,8 @@ class _TopBar extends StatelessWidget {
                             _showReactionsPicker(context, world, service);
                           },
                         ),
-                        // Hand heben
-                        _MoreOptionTile(
-                          icon: service.handRaised
-                              ? Icons.front_hand_rounded
-                              : Icons.front_hand_outlined,
-                          title:
-                              service.handRaised ? 'Hand senken' : 'Hand heben',
-                          subtitle: service.handRaised
-                              ? 'Meldung zurückziehen'
-                              : 'Allen zeigen dass du etwas sagen möchtest',
-                          active: service.handRaised,
-                          accent: const Color(0xFFFFB300),
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            service.toggleHandRaised();
-                          },
-                        ),
+                        // Hand heben entfernt — jetzt eigener Direkt-Button in
+                        // der Control-Bar (kein Duplikat im Sheet).
                         // Bildschirm teilen
                         _MoreOptionTile(
                           icon: service.screenShareEnabled
@@ -1535,20 +1555,8 @@ class _TopBar extends StatelessWidget {
                             service.toggleScreenShare();
                           },
                         ),
-                        // Kamera drehen (nur wenn Kamera an)
-                        if (service.cameraEnabled)
-                          _MoreOptionTile(
-                            icon: Icons.cameraswitch_rounded,
-                            title: 'Kamera drehen',
-                            subtitle:
-                                'Zwischen Vorder- und Rückkamera wechseln',
-                            active: false,
-                            accent: accent,
-                            onTap: () {
-                              Navigator.pop(ctx);
-                              service.switchCamera();
-                            },
-                          ),
+                        // Kamera drehen entfernt — jetzt per Long-Press auf
+                        // dem Kamera-Button in der Control-Bar (kein Duplikat).
                         // Co-Watch
                         _MoreOptionTile(
                           icon: Icons.tv_rounded,
@@ -1599,7 +1607,8 @@ class _TopBar extends StatelessWidget {
                             );
                           },
                         ),
-                        // ── Anzeige & Audio ────────────────────────────────────────────
+                        // ── Anzeige ───────────────────────────────────────
+                        const _MoreSectionHeader('Anzeige'),
                         // Ansicht wechseln (Gallery ↔ Speaker)
                         _MoreOptionTile(
                           icon: viewMode == LiveKitViewMode.speaker
@@ -1634,6 +1643,24 @@ class _TopBar extends StatelessWidget {
                             onToggleCaptions();
                           },
                         ),
+                        // Audio-Only-Modus (Kamera aus → Anzeige-Aspekt)
+                        _MoreOptionTile(
+                          icon: audioOnly
+                              ? Icons.headset_rounded
+                              : Icons.headset_outlined,
+                          title: 'Nur Audio',
+                          subtitle: audioOnly
+                              ? 'Kamera deaktiviert — spart Akku und Daten'
+                              : 'Kamera ausschalten für mehr Akku-Laufzeit',
+                          active: audioOnly,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            onToggleAudioOnly();
+                          },
+                        ),
+                        // ── Audio ─────────────────────────────────────────
+                        const _MoreSectionHeader('Audio'),
                         // Atmosphäre (Hintergrund-Sound)
                         _MoreOptionTile(
                           icon: soundscapeEnabled
@@ -1667,22 +1694,6 @@ class _TopBar extends StatelessWidget {
                               _showHeilfrequenzPicker(context);
                             },
                           ),
-                        // Audio-Only-Modus
-                        _MoreOptionTile(
-                          icon: audioOnly
-                              ? Icons.headset_rounded
-                              : Icons.headset_outlined,
-                          title: 'Nur Audio',
-                          subtitle: audioOnly
-                              ? 'Kamera deaktiviert — spart Akku und Daten'
-                              : 'Kamera ausschalten für mehr Akku-Laufzeit',
-                          active: audioOnly,
-                          accent: accent,
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            onToggleAudioOnly();
-                          },
-                        ),
                         // 🎨 B10.6: Raumstimmung
                         Builder(builder: (ctx2) {
                           final theme =
@@ -2383,6 +2394,33 @@ class _MoreOptionTile extends StatelessWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Kleiner Abschnitts-Header im "Weitere Optionen"-Sheet, um die vielen
+/// Aktionen in kurze Gruppen (Teilen / Anzeige / Audio) zu bündeln und so die
+/// kognitive Last zu senken.
+class _MoreSectionHeader extends StatelessWidget {
+  final String label;
+  const _MoreSectionHeader(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            color: WbDesign.textTertiary,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
         ),
       ),
     );
@@ -3322,20 +3360,8 @@ class _ControlBar extends StatelessWidget {
                         service.toggleScreenShare();
                       },
                     ),
-                    // Kamera drehen (nur wenn Kamera an)
-                    if (service.cameraEnabled)
-                      _MoreActionTile(
-                        icon: Icons.cameraswitch_rounded,
-                        title: 'Kamera drehen',
-                        subtitle: 'Zwischen Vorder- und Rückkamera wechseln',
-                        active: false,
-                        accent: accent,
-                        enabled: isConnected,
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          service.switchCamera();
-                        },
-                      ),
+                    // Kamera drehen entfernt — jetzt per Long-Press auf dem
+                    // Kamera-Button in der Control-Bar (kein Duplikat).
                     // Co-Watch
                     _MoreActionTile(
                       icon: Icons.tv_rounded,
@@ -3491,16 +3517,44 @@ class _ControlBar extends StatelessWidget {
                     onLongPressStart: () => service.pttPress(),
                     onLongPressEnd: () => service.pttRelease(),
                   ),
-                  // ── Kamera ──
+                  // ── Kamera (Tap = an/aus, Lang druecken = drehen) ──
                   _CtrlBtn(
                     icon: service.cameraEnabled
                         ? Icons.videocam_rounded
                         : Icons.videocam_off_rounded,
                     label: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
+                    semanticHint: 'Lang druecken: drehen',
                     active: service.cameraEnabled,
                     activeColor: accent,
                     enabled: isConnected,
                     onTap: () => service.toggleCamera(),
+                    // Long-press: rotate camera when on; otherwise toggle it on.
+                    onLongPress: () async {
+                      if (!service.cameraEnabled) {
+                        await service.toggleCamera();
+                        return;
+                      }
+                      await service.switchCamera();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Kamera gedreht'),
+                          duration: Duration(seconds: 1),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                  ),
+                  // ── Hand heben (Tap = melden/zurueckziehen) ──
+                  _CtrlBtn(
+                    icon: service.handRaised
+                        ? Icons.front_hand_rounded
+                        : Icons.front_hand_outlined,
+                    label: service.handRaised ? 'Hand unten' : 'Hand heben',
+                    active: service.handRaised,
+                    activeColor: const Color(0xFFFFB300),
+                    enabled: isConnected,
+                    onTap: () => service.toggleHandRaised(),
                   ),
                   // ── Auflegen (immer sichtbar, prominent) ──
                   _CtrlBtn(
@@ -3783,6 +3837,12 @@ class _CtrlBtn extends StatelessWidget {
   // 🎙️ B12: Push-to-Talk Long-Press
   final VoidCallback? onLongPressStart;
   final VoidCallback? onLongPressEnd;
+  // 📷 Simple long-press (e.g. camera rotate). Distinct from PTT start/end so
+  // both behaviours can coexist without interfering.
+  final VoidCallback? onLongPress;
+  // Optional accessibility/long-press hint surfaced via Semantics (e.g.
+  // "Lang druecken: drehen") without cluttering the tiny visible label.
+  final String? semanticHint;
 
   const _CtrlBtn({
     required this.icon,
@@ -3795,6 +3855,8 @@ class _CtrlBtn extends StatelessWidget {
     this.onTap,
     this.onLongPressStart,
     this.onLongPressEnd,
+    this.onLongPress,
+    this.semanticHint,
   });
 
   @override
@@ -3819,10 +3881,13 @@ class _CtrlBtn extends StatelessWidget {
             : WbDesign.textTertiary);
 
     return Semantics(
-      label: label,
+      label: semanticHint != null ? '$label. $semanticHint' : label,
       button: true,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
+        onLongPress: (enabled && onLongPress != null)
+            ? () => onLongPress!()
+            : null,
         onLongPressStart: (enabled && onLongPressStart != null)
             ? (_) => onLongPressStart!()
             : null,

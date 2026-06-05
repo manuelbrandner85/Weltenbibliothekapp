@@ -42,7 +42,11 @@ class UrsprungHomeTab extends StatelessWidget {
     return Container(
       color: _bgDeep,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        // Bottom-Inset (Gesten-Leiste) zur Floating-Nav-Hoehe addieren,
+        // damit der CIA-Footer auf Geraeten mit hoher Navigationsleiste
+        // nicht hinter der Nav verschwindet.
+        padding: EdgeInsets.fromLTRB(
+            16, 16, 16, 100 + MediaQuery.paddingOf(context).bottom),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

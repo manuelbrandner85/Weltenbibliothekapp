@@ -13,6 +13,7 @@ import 'services/sqlite_storage_service.dart'; // 🗄️ SQLITE LOCAL STORAGE (
 // Firebase DEAKTIVIERT - Jetzt Cloudflare
 // import 'package:firebase_core/firebase_core.dart';
 // import 'firebase_options.dart';
+import 'core/responsive.dart'; // 📐 Global text-scale clamp
 import 'screens/intro_image_screen.dart';
 import 'screens/cinematic_splash_screen.dart'; // 🎬 Cinematic Splash (Mobile only)
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
@@ -538,19 +539,23 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
             final hosted = RealtimeNotificationHost(
               child: child ?? const SizedBox.shrink(),
             );
-            if (kIsWeb) return hosted;
-            return Stack(
-              children: [
-                hosted,
-                // Schwebender, frei verschiebbarer Live-Call-Button. Liegt
-                // ueber jedem Screen und ist die primaere Rueckkehr in einen
-                // minimierten Call (loest die alte, leicht uebersehene
-                // Bottom-Mini-Bar ab). Positioniert sich selbst intern.
-                const Positioned.fill(
-                  child: LiveKitFloatingButton(),
-                ),
-              ],
-            );
+            final content = kIsWeb
+                ? hosted
+                : Stack(
+                    children: [
+                      hosted,
+                      // Schwebender, frei verschiebbarer Live-Call-Button. Liegt
+                      // ueber jedem Screen und ist die primaere Rueckkehr in einen
+                      // minimierten Call (loest die alte, leicht uebersehene
+                      // Bottom-Mini-Bar ab). Positioniert sich selbst intern.
+                      const Positioned.fill(
+                        child: LiveKitFloatingButton(),
+                      ),
+                    ],
+                  );
+            // Clamp oversized OS font settings app-wide so huge accessibility
+            // text sizes can't break layouts.
+            return clampTextScale(context, content);
           },
           // Web: Login-Gate vor dem Portal
           // Mobile: direkt zum Portal + UpdateGate für OTA-Patch-Dialog

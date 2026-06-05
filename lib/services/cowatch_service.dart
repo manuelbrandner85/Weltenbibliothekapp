@@ -50,6 +50,10 @@ class CoWatchService {
   lk.Room? _room;
   String? _localIdentity;
 
+  /// Lokale LiveKit-Identity (zum Erkennen, ob ein Event vom eigenen Client
+  /// stammt → dieser Client ist dann der Co-Watch-Host).
+  String? get localIdentity => _localIdentity;
+
   void attachRoom(lk.Room room, String identity) {
     _room = room;
     _localIdentity = identity;

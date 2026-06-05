@@ -10,6 +10,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+// Platform-spezifischer Controller für Android-only Media-Autoplay-Setting.
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../config/wb_design.dart';
 import '../services/cowatch_service.dart';
@@ -36,9 +38,10 @@ class CoWatchPanel extends StatefulWidget {
 }
 
 class _CoWatchPanelState extends State<CoWatchPanel> {
-  late final WebViewController _controller;
+  late WebViewController _controller;
   StreamSubscription<CoWatchEvent>? _sub;
   bool _webViewReady = false;
+  bool _loadError = false;
 
   @override
   void initState() {
@@ -48,6 +51,8 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
   }
 
   void _initWebView() {
+    _loadError = false;
+    _webViewReady = false;
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
@@ -57,15 +62,41 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
       )
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) {
-          if (mounted) setState(() => _webViewReady = true);
+          if (mounted) {
+            setState(() {
+              _webViewReady = true;
+              _loadError = false;
+            });
+          }
+        },
+        onWebResourceError: (error) {
+          // Nur den Haupt-Frame als echten Fehler behandeln — YouTube lädt
+          // viele Sub-Ressourcen, von denen einzelne fehlschlagen dürfen.
+          if (error.isForMainFrame ?? false) {
+            if (mounted) setState(() => _loadError = true);
+          }
         },
       ))
       ..loadHtmlString(_buildHtml(widget.videoId));
+
+    // Autoplay ohne User-Geste erlauben — sonst startet das Video bei den
+    // Teilnehmern nie automatisch (Android blockt sonst Media-Playback).
+    // Nur auf Android verfügbar; iOS/andere ignorieren das stillschweigend.
+    final platform = _controller.platform;
+    if (platform is AndroidWebViewController) {
+      platform.setMediaPlaybackRequiresUserGesture(false);
+    }
+  }
+
+  /// Player neu laden (Retry nach Fehler).
+  void _retry() {
+    if (!mounted) return;
+    setState(_initWebView);
   }
 
   void _onJsMessage(JavaScriptMessage msg) {
     if (!widget.isHost) return;
-    // Host broadcastet Zustandsänderungen an alle
+    // Host broadcastet Zustandsänderungen an alle Teilnehmer.
     try {
       final parts = msg.message.split(':');
       if (parts.length < 2) return;
@@ -78,8 +109,17 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
   }
 
   void _onEvent(CoWatchEvent event) {
+    // 'close' immer behandeln (auch wenn WebView noch nicht bereit ist) —
+    // sonst bleibt das Panel bei manchen Teilnehmern offen.
+    if (event.action == CoWatchAction.close) {
+      widget.onClose();
+      return;
+    }
     if (!_webViewReady) return;
-    if (event.fromIdentity == widget.service.currentVideoId) return;
+    // Der Host steuert selbst — eingehende Sync-Events (vom eigenen Broadcast
+    // zurückgespiegelt) NICHT erneut auf den eigenen Player anwenden, sonst
+    // entsteht eine Play/Pause-Schleife. Nur Nicht-Hosts folgen.
+    if (widget.isHost) return;
     switch (event.action) {
       case CoWatchAction.play:
         _js('seekAndPlay(${event.position ?? 0});');
@@ -87,15 +127,13 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
         _js('seekAndPause(${event.position ?? 0});');
       case CoWatchAction.seek:
         _js('seekTo(${event.position ?? 0});');
-      case CoWatchAction.close:
-        widget.onClose();
       default:
         break;
     }
   }
 
   void _js(String script) {
-    _controller.runJavaScript(script);
+    _controller.runJavaScript(script).catchError((_) {});
   }
 
   @override
@@ -179,9 +217,56 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
                 child: Stack(
                   children: [
                     WebViewWidget(controller: _controller),
-                    if (!_webViewReady)
+                    if (!_webViewReady && !_loadError)
                       const Center(
                         child: CircularProgressIndicator(color: Colors.white54),
+                      ),
+                    // Freundliche Fehlermeldung + Retry statt roher Exception.
+                    if (_loadError)
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.85),
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.wifi_off_rounded,
+                                    color: Colors.white54, size: 40),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Video konnte nicht geladen werden.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Prüfe deine Internetverbindung und versuche es erneut.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                FilledButton.icon(
+                                  onPressed: _retry,
+                                  icon: const Icon(Icons.refresh_rounded,
+                                      size: 18),
+                                  label: const Text('Erneut versuchen'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: accent,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     if (!widget.isHost)
                       // Overlay-Hinweis für Nicht-Host
@@ -225,7 +310,7 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #000; width: 100vw; height: 100vh; overflow: hidden; }
-    #player { width: 100%; height: 100%; }
+    #player, #fallback { width: 100%; height: 100%; border: 0; }
   </style>
 </head>
 <body>
@@ -239,11 +324,29 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
     var isReady = false;
     var pendingSeek = null;
 
+    // Fallback: wenn die iframe-API nicht innerhalb von 6s lädt (z.B. Skript
+    // geblockt), direkt ein Embed-iframe mit Autoplay einsetzen. So sehen alle
+    // wenigstens das Video, auch wenn die JS-Steuerung nicht verfügbar ist.
+    var apiTimeout = setTimeout(function () {
+      if (!isReady) { loadFallback(); }
+    }, 6000);
+
+    function loadFallback() {
+      var f = document.createElement('iframe');
+      f.id = 'fallback';
+      f.src = 'https://www.youtube.com/embed/$videoId?autoplay=1&playsinline=1&rel=0&modestbranding=1';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture';
+      f.setAttribute('allowfullscreen', 'true');
+      var p = document.getElementById('player');
+      if (p) { p.parentNode.replaceChild(f, p); }
+    }
+
     function onYouTubeIframeAPIReady() {
+      clearTimeout(apiTimeout);
       player = new YT.Player('player', {
         videoId: '$videoId',
         playerVars: {
-          'autoplay': 0,
+          'autoplay': 1,
           'controls': 1,
           'rel': 0,
           'modestbranding': 1,
@@ -252,9 +355,16 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
         events: {
           'onReady': function(e) {
             isReady = true;
+            try { e.target.playVideo(); } catch (err) {}
             if (pendingSeek !== null) { seekTo(pendingSeek); pendingSeek = null; }
           },
+          'onError': function(e) {
+            // Bei Player-Fehler (z.B. Einbettung verboten) auf das simple
+            // Embed-iframe zurückfallen.
+            loadFallback();
+          },
           'onStateChange': function(e) {
+            if (!player || !player.getCurrentTime) return;
             var t = player.getCurrentTime();
             if (e.data === YT.PlayerState.PLAYING) {
               CoWatchBridge.postMessage('play:' + t);
@@ -267,17 +377,17 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
     }
 
     function seekAndPlay(secs) {
-      if (!isReady) { pendingSeek = secs; return; }
+      if (!isReady || !player) { pendingSeek = secs; return; }
       player.seekTo(secs, true);
       player.playVideo();
     }
     function seekAndPause(secs) {
-      if (!isReady) return;
+      if (!isReady || !player) return;
       player.seekTo(secs, true);
       player.pauseVideo();
     }
     function seekTo(secs) {
-      if (!isReady) { pendingSeek = secs; return; }
+      if (!isReady || !player) { pendingSeek = secs; return; }
       player.seekTo(secs, true);
     }
   </script>

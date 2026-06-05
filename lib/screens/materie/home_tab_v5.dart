@@ -28,6 +28,7 @@ import '../shared/mentor_chat_screen.dart';
 import '../../widgets/mentor_hero_card.dart';
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/trending_rooms_section.dart';
+import '../../core/responsive.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MATERIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -1032,7 +1033,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       child: GestureDetector(
         onTap: t.onTap,
         child: Container(
-          height: 108,
+          // Responsive Hoehe: kleine Phones / grosse System-Fonts brauchen
+          // mehr Platz fuer Label + Sub, damit nichts abgeschnitten wird.
+          height: context.isSmallPhone ? 116 : context.rw(108),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -1092,12 +1095,16 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                       ),
                       const Spacer(),
                       Text(t.label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 1),
                       Text(t.sub,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 10)),

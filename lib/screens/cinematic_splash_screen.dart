@@ -16,6 +16,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/splash_audio_service.dart';
+
 /// 4 Welt-Akzentfarben fuer die Konvergenz.
 const _materieColor = Color(0xFFE53935); // Rot
 const _energieColor = Color(0xFF7C4DFF); // Lila
@@ -47,6 +49,10 @@ class _CinematicSplashScreenState extends State<CinematicSplashScreen>
   @override
   void initState() {
     super.initState();
+    // Fire-and-forget intro audio. The service is a singleton independent of
+    // this widget, so the sound plays to its natural end even after the splash
+    // is disposed / skipped. We intentionally do NOT stop it on dispose/skip.
+    SplashAudioService.instance.playOnce();
     _master = AnimationController(vsync: this, duration: widget.totalDuration)
       ..forward();
     _ambient = AnimationController(
