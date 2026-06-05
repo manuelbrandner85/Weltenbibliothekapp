@@ -3567,6 +3567,93 @@ export default {
       }
     }
 
+    // ── Presence: online users (for livestream invite picker) ──
+    // GET /api/presence/online?exclude=<user_id>
+    // Returns app users with last_seen_at within the last 15 minutes.
+    if (path === '/api/presence/online' && method === 'GET') {
+      try {
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const excludeId = url.searchParams.get('exclude') || '';
+        const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?select=id,username,avatar_url,last_seen_at` +
+            `&last_seen_at=gte.${encodeURIComponent(cutoff)}` +
+            `&username=not.is.null` +
+            `&order=last_seen_at.desc&limit=50`,
+          { headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` } }
+        );
+        const rows = await res.json().catch(() => []);
+        const safe = Array.isArray(rows) ? rows : [];
+        const users = safe
+          .filter((p) => String(p.id) !== excludeId)
+          .map((p) => ({
+            user_id: p.id,
+            username: p.username,
+            avatar_url: p.avatar_url || null,
+            last_seen: p.last_seen_at || null,
+          }));
+        return jsonResponse({ users, count: users.length });
+      } catch (e) {
+        return jsonResponse({ users: [], count: 0 });
+      }
+    }
+
+    // ── LiveKit invite: push notification to selected users ────
+    // POST /api/livekit/invite
+    // Body: { from_name, room_name, world, target_user_ids: [...] }
+    if (path === '/api/livekit/invite' && method === 'POST') {
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const pushAuth = serviceKey
+        ? { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+        : { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` };
+      if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+      try {
+        const body = await request.json().catch(() => ({}));
+        const fromName = (body?.from_name || '').toString();
+        const roomName = (body?.room_name || '').toString().trim();
+        const world = (body?.world || '').toString();
+        const targetIds = Array.isArray(body?.target_user_ids)
+          ? body.target_user_ids
+          : [];
+        if (!roomName || targetIds.length === 0) {
+          return errorResponse('room_name and target_user_ids required', 400);
+        }
+        // Build one notification_queue row per target. Mirror send-to-user:
+        // legacy 'user_' ids use legacy_user_id, UUIDs use user_id.
+        const rows = targetIds.map((id) => {
+          const base = {
+            title: '🎙️ Live-Einladung',
+            body: `${fromName || 'Jemand'} lädt dich in einen Live-Call ein`,
+            data: { type: 'livekit_invite', room_name: roomName, world, from_name: fromName },
+            status: 'pending',
+          };
+          return String(id).startsWith('user_')
+            ? { legacy_user_id: id, ...base }
+            : { user_id: id, ...base };
+        });
+        const ins = await fetch(
+          `${SUPABASE_URL}/rest/v1/notification_queue`,
+          {
+            method: 'POST',
+            headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify(rows),
+          }
+        );
+        if (!ins.ok) {
+          const txt = await ins.text().catch(() => '');
+          return errorResponse(`Enqueue ${ins.status}: ${txt.slice(0, 200)}`);
+        }
+        // Immediate dispatch.
+        try {
+          await dispatchPushQueue(env, pushAuth);
+        } catch (_) {}
+        return jsonResponse({ success: true, invited: targetIds.length });
+      } catch (e) {
+        return errorResponse(`livekit invite failed: ${e.message}`);
+      }
+    }
+
     // ── Statistiken ───────────────────────────────────────────
     if (path === '/api/statistics' || path.startsWith('/api/statistics')) {
       try {

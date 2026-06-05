@@ -35,6 +35,7 @@ import '../../services/storage_service.dart';
 import '../../widgets/cowatch_panel.dart';
 import '../../widgets/incall_chat_panel.dart';
 import '../../widgets/live_caption_overlay.dart';
+import '../../widgets/livekit_invite_sheet.dart';
 import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
 import '../../widgets/pip_overlay.dart';
@@ -1469,6 +1470,24 @@ class _TopBar extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Einladen (Live-Call-Invite: Push + Link)
+                        _MoreOptionTile(
+                          icon: Icons.person_add_alt_1_rounded,
+                          title: 'Einladen',
+                          subtitle: 'Andere in diesen Live-Call holen',
+                          active: false,
+                          accent: accent,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            showLivekitInviteSheet(
+                              context,
+                              roomName: roomName,
+                              world: world,
+                              fromName: service.localDisplayName ?? 'Jemand',
+                              accent: accent,
+                            );
+                          },
+                        ),
                         // Reaktion senden
                         _MoreOptionTile(
                           icon: Icons.emoji_emotions_outlined,
