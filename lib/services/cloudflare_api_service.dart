@@ -1462,7 +1462,8 @@ class CloudflareApiService {
     try {
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('$reactionsApiUrl/media/upload'), // Updated endpoint
+        Uri.parse(
+            '$mediaApiUrl/api/media/upload'), // FIX: /api/ prefix (war 404)
       );
 
       request.files.add(http.MultipartFile.fromBytes(
@@ -1523,7 +1524,8 @@ class CloudflareApiService {
       // Create multipart request
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('$mediaApiUrl/upload'),
+        Uri.parse(
+            '$mediaApiUrl/api/chat/voice-upload'), // FIX: war /upload (404)
       );
 
       // Add file
