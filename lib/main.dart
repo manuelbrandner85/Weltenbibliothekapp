@@ -17,7 +17,9 @@ import 'screens/cinematic_splash_screen.dart'; // 🎬 Cinematic Splash (Mobile 
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
 import 'screens/web/web_auth_gate.dart'; // 🌐 Web Auth Gate
 import 'screens/web/web_admin_panel.dart'; // 👑 Web Admin Panel
-import 'widgets/livekit_mini_bar.dart'; // 📞 Mini-Bar für aktiven LiveKit-Call
+import 'widgets/livekit_floating_button.dart'; // 🎈 Schwebender Zurück-zum-Call-Button
+import 'screens/shared/livekit_group_call_screen.dart'; // 🎥 Live-Call-Screen (Deep-Link)
+import 'services/storage_service.dart'; // 👤 Profil für Deep-Link-Join
 import 'screens/energie_world_screen.dart'; // ✅ FIXED: Correct path
 import 'screens/energie/achievements_screen.dart';
 import 'screens/daily_challenges_screen.dart'; // 🎯 Daily Challenges
@@ -157,6 +159,16 @@ void main() async {
         }
 
         switch (type) {
+          case 'livekit_invite':
+            // Live-Call-Einladung: direkt in den Raum springen.
+            final inviteRoom = data['room_name']?.toString() ??
+                data['roomName']?.toString() ??
+                '';
+            final inviteWorld = data['world']?.toString() ?? 'materie';
+            if (inviteRoom.isNotEmpty) {
+              _joinLiveFromDeepLink(nav, inviteRoom, inviteWorld);
+            }
+            break;
           case 'chat_message':
           case 'mention':
           case 'reply':
@@ -297,6 +309,43 @@ class _WebScrollBehavior extends MaterialScrollBehavior {
         PointerDeviceKind.trackpad,
         PointerDeviceKind.stylus,
       };
+}
+
+/// Joins a LiveKit live-call room from a push-notification deep link.
+/// Pulls the local display name + avatar from the stored profile so the
+/// invited user appears with their identity.
+void _joinLiveFromDeepLink(
+  NavigatorState nav,
+  String roomName,
+  String world,
+) {
+  String displayName = 'Mitglied';
+  String? avatarUrl;
+  try {
+    final storage = StorageService();
+    final m = storage.getMaterieProfile();
+    final e = storage.getEnergieProfile();
+    if (m != null && m.username.isNotEmpty) {
+      displayName = m.username;
+      avatarUrl = m.avatarUrl;
+    } else if (e != null && e.username.isNotEmpty) {
+      displayName = e.username;
+      avatarUrl = e.avatarUrl;
+    }
+  } catch (_) {
+    // Profile not loadable -> join as anonymous member.
+  }
+  nav.push(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => LiveKitGroupCallScreen(
+        roomName: roomName,
+        world: world,
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+      ),
+    ),
+  );
 }
 
 class WeltenbibliothekApp extends StatefulWidget {
@@ -453,15 +502,12 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
             return Stack(
               children: [
                 hosted,
-                // Mini-Bar am UNTEREN Rand statt oben -- die top-Leiste
-                // der Welten (Admin-Dashboard-Link / Benachrichtigungen
-                // etc.) wuerde sonst verdeckt. Bottom-Offset ~88px = nav
-                // height (~56) + safe area (~24) + spacing.
-                const Positioned(
-                  bottom: 88,
-                  left: 0,
-                  right: 0,
-                  child: LiveKitMiniBar(),
+                // Schwebender, frei verschiebbarer Live-Call-Button. Liegt
+                // ueber jedem Screen und ist die primaere Rueckkehr in einen
+                // minimierten Call (loest die alte, leicht uebersehene
+                // Bottom-Mini-Bar ab). Positioniert sich selbst intern.
+                const Positioned.fill(
+                  child: LiveKitFloatingButton(),
                 ),
               ],
             );
