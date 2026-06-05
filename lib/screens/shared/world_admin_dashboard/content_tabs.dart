@@ -1331,7 +1331,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                       style: TextStyle(color: Colors.white)),
             ),
           ],
-        ),
+          );
+        },
       ),
     );
   }
