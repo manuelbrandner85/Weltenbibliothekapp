@@ -578,17 +578,46 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
       case LiveKitConnectionState.connected:
         // 🌌 Bundle 3: ValueListenableBuilder auf speakersNotifier.
         // 🔁 Bundle 6: viewMode entscheidet ob Gallery oder Speaker-View.
-        return ValueListenableBuilder<Set<String>>(
-          valueListenable: svc.speakersNotifier,
-          builder: (_, speakers, __) {
-            if (svc.viewMode == LiveKitViewMode.speaker) {
-              return _SpeakerView(
+        // 💖 Doppel-Tipp auf die Teilnehmer-Flaeche -> Herz-Reaktion (wie
+        // Instagram/TikTok Live). Einzel-Taps gehen weiterhin an die Tiles.
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onDoubleTap: () => svc.sendReaction('❤️'),
+          child: ValueListenableBuilder<Set<String>>(
+            valueListenable: svc.speakersNotifier,
+            builder: (_, speakers, __) {
+              if (svc.viewMode == LiveKitViewMode.speaker) {
+                return _SpeakerView(
+                  world: widget.world,
+                  localName: widget.displayName,
+                  localAvatarUrl: widget.avatarUrl,
+                  localIdentity: svc.room?.localParticipant?.identity,
+                  remoteNames: svc.remoteParticipantNames,
+                  micEnabled: svc.micEnabled,
+                  accent: accent,
+                  localVideoTrack: svc.localVideoTrack,
+                  remoteVideoTracks: svc.remoteVideoTracks,
+                  remoteMicActive: svc.isRemoteMicActive,
+                  localHandRaised: svc.handRaised,
+                  remoteHandRaised: svc.isRemoteHandRaised,
+                  remoteAvatarUrl: svc.remoteAvatarUrl,
+                  activeSpeakers: speakers,
+                  qualityFor: svc.connectionQualityFor,
+                  pinnedIdentity: svc.pinnedIdentity,
+                  onSpotlight: (id) => svc.sendSpotlight(id),
+                  roomName: widget.roomName,
+                  isModerator: _isModerator,
+                  moderatorUsername: _moderatorUsername,
+                );
+              }
+              return _ParticipantGrid(
                 world: widget.world,
                 localName: widget.displayName,
                 localAvatarUrl: widget.avatarUrl,
                 localIdentity: svc.room?.localParticipant?.identity,
                 remoteNames: svc.remoteParticipantNames,
                 micEnabled: svc.micEnabled,
+                cameraEnabled: svc.cameraEnabled,
                 accent: accent,
                 localVideoTrack: svc.localVideoTrack,
                 remoteVideoTracks: svc.remoteVideoTracks,
@@ -598,37 +627,14 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
                 remoteAvatarUrl: svc.remoteAvatarUrl,
                 activeSpeakers: speakers,
                 qualityFor: svc.connectionQualityFor,
-                pinnedIdentity: svc.pinnedIdentity,
                 onSpotlight: (id) => svc.sendSpotlight(id),
                 roomName: widget.roomName,
                 isModerator: _isModerator,
                 moderatorUsername: _moderatorUsername,
+                cameraInFlight: svc.cameraToggleInFlight,
               );
-            }
-            return _ParticipantGrid(
-              world: widget.world,
-              localName: widget.displayName,
-              localAvatarUrl: widget.avatarUrl,
-              localIdentity: svc.room?.localParticipant?.identity,
-              remoteNames: svc.remoteParticipantNames,
-              micEnabled: svc.micEnabled,
-              cameraEnabled: svc.cameraEnabled,
-              accent: accent,
-              localVideoTrack: svc.localVideoTrack,
-              remoteVideoTracks: svc.remoteVideoTracks,
-              remoteMicActive: svc.isRemoteMicActive,
-              localHandRaised: svc.handRaised,
-              remoteHandRaised: svc.isRemoteHandRaised,
-              remoteAvatarUrl: svc.remoteAvatarUrl,
-              activeSpeakers: speakers,
-              qualityFor: svc.connectionQualityFor,
-              onSpotlight: (id) => svc.sendSpotlight(id),
-              roomName: widget.roomName,
-              isModerator: _isModerator,
-              moderatorUsername: _moderatorUsername,
-              cameraInFlight: svc.cameraToggleInFlight,
-            );
-          },
+            },
+          ),
         );
     }
   }
@@ -1125,13 +1131,26 @@ class _VorhangPainter extends CustomPainter {
   _VorhangPainter(this.t, this.accent);
 
   static final List<Offset> _stars = [
-    const Offset(0.08, 0.12), const Offset(0.22, 0.05), const Offset(0.40, 0.18),
-    const Offset(0.60, 0.08), const Offset(0.78, 0.15), const Offset(0.92, 0.22),
-    const Offset(0.15, 0.35), const Offset(0.35, 0.42), const Offset(0.55, 0.30),
-    const Offset(0.75, 0.40), const Offset(0.88, 0.55), const Offset(0.05, 0.60),
-    const Offset(0.25, 0.65), const Offset(0.48, 0.58), const Offset(0.68, 0.72),
-    const Offset(0.85, 0.68), const Offset(0.12, 0.80), const Offset(0.35, 0.85),
-    const Offset(0.58, 0.88), const Offset(0.80, 0.82),
+    const Offset(0.08, 0.12),
+    const Offset(0.22, 0.05),
+    const Offset(0.40, 0.18),
+    const Offset(0.60, 0.08),
+    const Offset(0.78, 0.15),
+    const Offset(0.92, 0.22),
+    const Offset(0.15, 0.35),
+    const Offset(0.35, 0.42),
+    const Offset(0.55, 0.30),
+    const Offset(0.75, 0.40),
+    const Offset(0.88, 0.55),
+    const Offset(0.05, 0.60),
+    const Offset(0.25, 0.65),
+    const Offset(0.48, 0.58),
+    const Offset(0.68, 0.72),
+    const Offset(0.85, 0.68),
+    const Offset(0.12, 0.80),
+    const Offset(0.35, 0.85),
+    const Offset(0.58, 0.88),
+    const Offset(0.80, 0.82),
   ];
 
   @override
@@ -2558,9 +2577,8 @@ class _ParticipantGrid extends StatelessWidget {
     // childAspectRatio: schmalere Bildschirme bekommen hoehere Kacheln
     // (kleinerer Ratio = mehr vertikaler Platz) damit Avatar, Name und
     // Mic-Badge nicht ueberlaufen. Tablets duerfen quadratischer sein.
-    final double tileAspect = context.isSmallPhone
-        ? 0.74
-        : (context.isTablet ? 0.92 : 0.85);
+    final double tileAspect =
+        context.isSmallPhone ? 0.74 : (context.isTablet ? 0.92 : 0.85);
     // Identity-Lookup für Quality + Active-Speaker-Check
     final identitiesSorted = remoteVideoTracks.keys.toList();
     final tiles = List.generate(count, (i) {
@@ -3135,8 +3153,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
               top: 8,
               left: 8,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.55),
                   borderRadius: BorderRadius.circular(6),
@@ -3185,9 +3202,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
                           ? Icons.mic_rounded
                           : Icons.mic_off_rounded,
                       size: 12,
-                      color: widget.micEnabled
-                          ? widget.accent
-                          : Colors.white54,
+                      color: widget.micEnabled ? widget.accent : Colors.white54,
                     ),
                   ),
                   const SizedBox(width: 5),
@@ -3484,108 +3499,111 @@ class _ControlBar extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // ── Chat (mit Unread-Badge) ──
-                  ValueListenableBuilder<int>(
-                    valueListenable: InCallChatService.instance.unreadNotifier,
-                    builder: (_, unread, __) => Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        _CtrlBtn(
-                          icon: chatVisible
-                              ? Icons.chat_bubble_rounded
-                              : Icons.chat_bubble_outline_rounded,
-                          label: 'Chat',
-                          active: chatVisible,
-                          activeColor: accent,
-                          enabled: isConnected,
-                          onTap: onToggleChat,
-                        ),
-                        if (!chatVisible && unread > 0)
-                          Positioned(
-                            top: -2,
-                            right: -2,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              constraints: const BoxConstraints(
-                                  minWidth: 18, minHeight: 18),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF1744),
-                                borderRadius: BorderRadius.circular(9),
-                                border: Border.all(
-                                    color: WbDesign.surfaceAlt(world),
-                                    width: 1.5),
-                              ),
-                              child: Text(
-                                unread > 99 ? '99+' : '$unread',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                      ValueListenableBuilder<int>(
+                        valueListenable:
+                            InCallChatService.instance.unreadNotifier,
+                        builder: (_, unread, __) => Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            _CtrlBtn(
+                              icon: chatVisible
+                                  ? Icons.chat_bubble_rounded
+                                  : Icons.chat_bubble_outline_rounded,
+                              label: 'Chat',
+                              active: chatVisible,
+                              activeColor: accent,
+                              enabled: isConnected,
+                              onTap: onToggleChat,
                             ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // ── Mikrofon (Tap = Toggle, Long-Press = PTT) ──
-                  _CtrlBtn(
-                    icon: service.micEnabled
-                        ? Icons.mic_rounded
-                        : Icons.mic_off_rounded,
-                    label: service.pttActive
-                        ? 'Sprechtaste'
-                        : (service.micEnabled
-                            ? 'Mikrofon an'
-                            : 'Stummschalten'),
-                    active: service.micEnabled || service.pttActive,
-                    activeColor:
-                        service.pttActive ? const Color(0xFF00E676) : accent,
-                    enabled: isConnected,
-                    onTap: () => service.toggleMicrophone(),
-                    onLongPressStart: () => service.pttPress(),
-                    onLongPressEnd: () => service.pttRelease(),
-                  ),
-                  // ── Kamera (Tap = an/aus, Lang druecken = drehen) ──
-                  _CtrlBtn(
-                    icon: service.cameraEnabled
-                        ? Icons.videocam_rounded
-                        : Icons.videocam_off_rounded,
-                    label: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
-                    semanticHint: 'Lang druecken: drehen',
-                    active: service.cameraEnabled,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: () => service.toggleCamera(),
-                    // Long-press: rotate camera when on; otherwise toggle it on.
-                    onLongPress: () async {
-                      if (!service.cameraEnabled) {
-                        await service.toggleCamera();
-                        return;
-                      }
-                      await service.switchCamera();
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Kamera gedreht'),
-                          duration: Duration(seconds: 1),
-                          behavior: SnackBarBehavior.floating,
+                            if (!chatVisible && unread > 0)
+                              Positioned(
+                                top: -2,
+                                right: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  constraints: const BoxConstraints(
+                                      minWidth: 18, minHeight: 18),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF1744),
+                                    borderRadius: BorderRadius.circular(9),
+                                    border: Border.all(
+                                        color: WbDesign.surfaceAlt(world),
+                                        width: 1.5),
+                                  ),
+                                  child: Text(
+                                    unread > 99 ? '99+' : '$unread',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
-                  // ── Hand heben (Tap = melden/zurueckziehen) ──
-                  _CtrlBtn(
-                    icon: service.handRaised
-                        ? Icons.front_hand_rounded
-                        : Icons.front_hand_outlined,
-                    label: service.handRaised ? 'Hand unten' : 'Hand heben',
-                    active: service.handRaised,
-                    activeColor: const Color(0xFFFFB300),
-                    enabled: isConnected,
-                    onTap: () => service.toggleHandRaised(),
-                  ),
+                      ),
+                      // ── Mikrofon (Tap = Toggle, Long-Press = PTT) ──
+                      _CtrlBtn(
+                        icon: service.micEnabled
+                            ? Icons.mic_rounded
+                            : Icons.mic_off_rounded,
+                        label: service.pttActive
+                            ? 'Sprechtaste'
+                            : (service.micEnabled
+                                ? 'Mikrofon an'
+                                : 'Stummschalten'),
+                        active: service.micEnabled || service.pttActive,
+                        activeColor: service.pttActive
+                            ? const Color(0xFF00E676)
+                            : accent,
+                        enabled: isConnected,
+                        onTap: () => service.toggleMicrophone(),
+                        onLongPressStart: () => service.pttPress(),
+                        onLongPressEnd: () => service.pttRelease(),
+                      ),
+                      // ── Kamera (Tap = an/aus, Lang druecken = drehen) ──
+                      _CtrlBtn(
+                        icon: service.cameraEnabled
+                            ? Icons.videocam_rounded
+                            : Icons.videocam_off_rounded,
+                        label:
+                            service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
+                        semanticHint: 'Lang druecken: drehen',
+                        active: service.cameraEnabled,
+                        activeColor: accent,
+                        enabled: isConnected,
+                        onTap: () => service.toggleCamera(),
+                        // Long-press: rotate camera when on; otherwise toggle it on.
+                        onLongPress: () async {
+                          if (!service.cameraEnabled) {
+                            await service.toggleCamera();
+                            return;
+                          }
+                          await service.switchCamera();
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Kamera gedreht'),
+                              duration: Duration(seconds: 1),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+                      // ── Hand heben (Tap = melden/zurueckziehen) ──
+                      _CtrlBtn(
+                        icon: service.handRaised
+                            ? Icons.front_hand_rounded
+                            : Icons.front_hand_outlined,
+                        label: service.handRaised ? 'Hand unten' : 'Hand heben',
+                        active: service.handRaised,
+                        activeColor: const Color(0xFFFFB300),
+                        enabled: isConnected,
+                        onTap: () => service.toggleHandRaised(),
+                      ),
                       // ── Auflegen (immer sichtbar, prominent) ──
                       _CtrlBtn(
                         icon: Icons.call_end_rounded,
@@ -3937,9 +3955,8 @@ class _CtrlBtn extends StatelessWidget {
       button: true,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
-        onLongPress: (enabled && onLongPress != null)
-            ? () => onLongPress!()
-            : null,
+        onLongPress:
+            (enabled && onLongPress != null) ? () => onLongPress!() : null,
         onLongPressStart: (enabled && onLongPressStart != null)
             ? (_) => onLongPressStart!()
             : null,
