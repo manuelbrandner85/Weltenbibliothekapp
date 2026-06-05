@@ -13,6 +13,7 @@ import '../../services/achievement_service.dart';
 import '../../services/gamification_service.dart';
 import '../../services/unified_knowledge_service.dart';
 import '../../services/user_service.dart';
+import '../../widgets/xp_avatar_ring.dart';
 
 // dart2js-Bug-Workaround: Named Records kompilieren nicht zuverlaessig.
 class _WorldMeta {
@@ -86,6 +87,14 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
       if (s > bestStreak) bestStreak = s;
     }
 
+    // Globaler XP-Fortschritt zum naechsten globalen Level (gleiche Formel:
+    // level = sqrt(totalXp / 100)).
+    final xpForLevel = globalLevel * globalLevel * 100;
+    final xpForNext = (globalLevel + 1) * (globalLevel + 1) * 100;
+    final globalProgress = (xpForNext - xpForLevel) <= 0
+        ? 1.0
+        : ((totalXp - xpForLevel) / (xpForNext - xpForLevel)).clamp(0.0, 1.0);
+
     return Scaffold(
       backgroundColor: const Color(0xFF06060C),
       appBar: AppBar(
@@ -108,27 +117,33 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7C4DFF), Color(0xFF448AFF)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF7C4DFF).withValues(alpha: 0.5),
-                        blurRadius: 16,
+                XpAvatarRing(
+                  progress: globalProgress,
+                  level: null, // Level wird im Kreis selbst angezeigt.
+                  accent: const Color(0xFF7C4DFF),
+                  size: 76,
+                  strokeWidth: 4,
+                  showBadge: false,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF7C4DFF), Color(0xFF448AFF)],
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text('$globalLevel',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF7C4DFF).withValues(alpha: 0.5),
+                          blurRadius: 16,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text('$globalLevel',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold)),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
