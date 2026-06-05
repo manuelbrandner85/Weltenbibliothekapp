@@ -4133,6 +4133,7 @@ export default {
           if (!j) return null;
           return {
             title: j.title || null,
+            author_name: j.author_name || null,
             thumbnail_url:
               j.thumbnail_url ||
               `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
@@ -4141,6 +4142,188 @@ export default {
           return null;
         }
       };
+
+      // Keyword-Heuristik als letzter Fallback (ohne KI). Liefert worlds[] +
+      // Kategorie aus dem Titel/Kanalnamen. Bewusst grob -- nur Notnagel.
+      const heuristicClassify = (text) => {
+        const t = String(text || '').toLowerCase();
+        const has = (words) => words.some((w) => t.includes(w));
+        const worlds = [];
+        if (
+          has([
+            'ufo', 'ufologie', 'uap', 'beweis', 'doku', 'recherche',
+            'geheim', 'akte', 'whistleblow', 'geopolit', 'geschichte',
+            'wissenschaft', 'physik', 'experiment', 'studie',
+          ])
+        ) {
+          worlds.push('materie');
+        }
+        if (
+          has([
+            'meditation', 'chakra', 'frequenz', 'heilung', 'energie',
+            'astral', 'manifest', 'bewusstsein', 'achtsamkeit', 'spirit',
+            'aura', 'reiki', 'solfeggio', 'atem',
+          ])
+        ) {
+          worlds.push('energie');
+        }
+        if (
+          has([
+            'propaganda', 'manipulation', 'macht', 'elite', 'kontrolle',
+            'medien', 'narrativ', 'psychologie', 'strategie', 'agenda',
+            'lobby', 'zensur',
+          ])
+        ) {
+          worlds.push('vorhang');
+        }
+        if (
+          has([
+            'ursprung', 'remote viewing', 'gateway', 'hermet', 'mystik',
+            'holograf', 'hologramm', 'schöpfung', 'schoepfung', 'seele',
+            'matrix', 'simulation', 'quelle',
+          ])
+        ) {
+          worlds.push('ursprung');
+        }
+        if (worlds.length === 0) worlds.push('materie');
+
+        let category = 'Video';
+        if (has(['doku', 'dokumentation'])) category = 'Doku';
+        else if (has(['interview', 'gespräch', 'gespraech'])) {
+          category = 'Interview';
+        } else if (has(['vortrag', 'talk', 'lecture'])) category = 'Vortrag';
+        else if (has(['meditation', 'geführt', 'gefuehrt'])) {
+          category = 'Meditation';
+        } else if (has(['wissenschaft', 'physik', 'studie'])) {
+          category = 'Wissenschaft';
+        }
+        return { worlds, category };
+      };
+
+      // KI-gestuetzte Klassifikation: Titel + Kanal -> worlds[] + Kategorie.
+      // GROQ-first (Llama 3.3 70B), Workers-AI-Fallback (Llama 3.1 8B),
+      // Keyword-Heuristik als letzter Notnagel. Gibt immer ein valides
+      // Ergebnis zurueck (nie null).
+      const classifyVideo = async (title, author) => {
+        const text = `${title || ''} ${author ? '(Kanal: ' + author + ')' : ''}`.trim();
+        const systemPrompt =
+          'Du bist ein Klassifikator fuer eine spirituell-investigative Wissensplattform mit vier Welten. ' +
+          'Ordne ein YouTube-Video anhand von Titel und Kanal einer oder mehreren Welten zu und schlage eine kurze deutsche Kategorie vor.\n\n' +
+          'Welten:\n' +
+          '- materie: harte Recherche, Wissenschaft, Fakten, Geopolitik, Geschichte, UFOs/UAP, investigative Dokus.\n' +
+          '- energie: Spiritualitaet, Meditation, Chakren, Frequenzen, Heilung, Astralreisen, Manifestation, Bewusstsein.\n' +
+          '- vorhang: verdeckte Machtstrukturen, Propaganda, Medien-Manipulation, Psychologie der Macht, Strategie.\n' +
+          '- ursprung: Ursprung von Bewusstsein/Mensch, Remote Viewing, Hermetik, Mystik, holografisches Universum, Simulation.\n\n' +
+          'Antworte AUSSCHLIESSLICH mit kompaktem JSON ohne Markdown:\n' +
+          '{"worlds":["..."],"category":"..."}\n' +
+          'Maximal 2 Welten, nur die Slugs materie/energie/vorhang/ursprung. Kategorie max. 2 Woerter.';
+
+        const parseAi = (raw) => {
+          if (!raw) return null;
+          try {
+            const m = String(raw).match(/\{[\s\S]*\}/);
+            if (!m) return null;
+            const obj = JSON.parse(m[0]);
+            const worlds = Array.isArray(obj.worlds)
+              ? obj.worlds
+                  .map((w) => String(w).toLowerCase().trim())
+                  .filter((w) => VIDEO_WORLDS.has(w))
+              : [];
+            if (worlds.length === 0) return null;
+            const category =
+              obj.category && String(obj.category).trim()
+                ? String(obj.category).trim().slice(0, 40)
+                : null;
+            return { worlds: worlds.slice(0, 2), category };
+          } catch (_) {
+            return null;
+          }
+        };
+
+        // 1) GROQ
+        if (env.GROQ_API_KEY) {
+          try {
+            const r = await fetch(
+              'https://api.groq.com/openai/v1/chat/completions',
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${env.GROQ_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'llama-3.3-70b-versatile',
+                  messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: `Video: "${text}"` },
+                  ],
+                  max_tokens: 120,
+                  temperature: 0.2,
+                }),
+              }
+            );
+            if (r.ok) {
+              const d = await r.json().catch(() => null);
+              const parsed = parseAi(d?.choices?.[0]?.message?.content);
+              if (parsed) return { ...parsed, source: 'groq' };
+            }
+          } catch (_) {}
+        }
+
+        // 2) Workers AI
+        if (env.AI) {
+          try {
+            const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Video: "${text}"` },
+              ],
+              max_tokens: 120,
+            });
+            const parsed = parseAi(res?.response);
+            if (parsed) return { ...parsed, source: 'workers-ai' };
+          } catch (_) {}
+        }
+
+        // 3) Heuristik
+        return { ...heuristicClassify(text), source: 'heuristic' };
+      };
+
+      // ── POST /api/admin/videos/suggest  (KI-Vorschlag Welt + Kategorie) ─
+      // Body: { youtube_url | youtube_video_id }
+      // Liefert Titel/Thumbnail (oEmbed) + vorgeschlagene worlds[] + Kategorie.
+      if (method === 'POST' && path === '/api/admin/videos/suggest') {
+        try {
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const videoId = extractYoutubeId(
+            body.youtube_video_id || body.youtube_url
+          );
+          if (!videoId) {
+            return errorResponse(
+              'Ungueltige YouTube-URL oder Video-ID',
+              400,
+              'invalid_youtube_id'
+            );
+          }
+          const meta = await fetchYoutubeOembed(videoId);
+          const title = meta?.title || '';
+          const suggestion = await classifyVideo(title, meta?.author_name);
+          return jsonResponse({
+            success: true,
+            video_id: videoId,
+            title: title || null,
+            thumbnail_url:
+              meta?.thumbnail_url ||
+              `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+            worlds: suggestion.worlds,
+            category: suggestion.category,
+            source: suggestion.source,
+          });
+        } catch (e) {
+          return errorResponse(`Vorschlag-Fehler: ${e.message}`);
+        }
+      }
 
       // ── GET /api/admin/videos  (Liste fuer Admin-Review, alle Status) ──
       // ?world=... &status=pending|confirmed|rejected|all &limit=200
