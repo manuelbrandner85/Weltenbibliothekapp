@@ -44,6 +44,7 @@ part 'world_admin_dashboard/requests_tabs.dart';
 part 'world_admin_dashboard/user_detail_sheet.dart';
 part 'world_admin_dashboard/restriction_sheet.dart';
 part 'world_admin_dashboard/account_requests_sheet.dart';
+part 'world_admin_dashboard/admin_hub.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -63,6 +64,18 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   TabController? _tabController;
   int _tabsLen = 0;
 
+  // HUB navigation: null = hub landing, otherwise a section key
+  // (matches _sectionBody). The hub is the default entry surface.
+  String? _activeSection;
+
+  // Pre-filled search query when the hub global search opens the Users section.
+  String _pendingUserSearch = '';
+
+  // Best-effort "Zu erledigen" badge counts (default 0, never block/crash).
+  int _badgeOpenReports = 0;
+  int _badgePendingUsernameRequests = 0;
+  int _badgeFailedPushes = 0;
+
   // v103: Dashboard ist ein globales Tool fuer ALLE Welten gleichzeitig.
   // Kein Welt-Filter, kein Welt-Switcher, keine welt-spezifischen Farben.
   // widget.world bleibt nur als Cache-Key fuer adminStateProvider erhalten
@@ -77,7 +90,49 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _waitForState();
+      if (mounted) _loadHubBadges();
     });
+  }
+
+  /// Best-effort hub badge fetch. Reuses the SAME endpoints the existing tabs
+  /// use (overview_tab.dart:236 / audit_tabs.dart:47/65, push_broadcast_tab
+  /// .dart:43). Each count is wrapped in try/catch and defaults to 0 -- never
+  /// blocks the UI or crashes. No heavy/new backend calls are introduced.
+  Future<void> _loadHubBadges() async {
+    // Open reports (moderation queue) -> /api/admin/reports?status=open.
+    try {
+      final reportsData =
+          await WorldAdminServiceV162.getReports(status: 'open', limit: 1);
+      final open = reportsData == null
+          ? 0
+          : ((reportsData['counts'] as Map?)?['open'] as num?)?.toInt() ?? 0;
+      if (mounted) setState(() => _badgeOpenReports = open);
+    } catch (_) {/* degrade gracefully */}
+
+    // Pending username-change requests -> /api/admin/username-change-requests.
+    try {
+      final headers = await AdminAuthService.instance.headers();
+      final res = await http
+          .get(
+              Uri.parse(
+                  '${ApiConfig.workerUrl}/api/admin/username-change-requests'),
+              headers: headers)
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final total = (data['total'] as int?) ??
+            (data['requests'] as List?)?.length ??
+            0;
+        if (mounted) setState(() => _badgePendingUsernameRequests = total);
+      }
+    } catch (_) {/* degrade gracefully */}
+
+    // Failed pushes -> /api/admin/push/stats -> total_failed.
+    try {
+      final stats = await WorldAdminServiceV162.getPushStats();
+      final failed = (stats?['total_failed'] as num?)?.toInt() ?? 0;
+      if (mounted) setState(() => _badgeFailedPushes = failed);
+    } catch (_) {/* degrade gracefully */}
   }
 
   /// v103: Ermittelt erlaubte Tabs anhand der Rolle.
@@ -226,10 +281,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         AppRoles.canAccessAdminDashboard(admin.role ?? '');
     if (!hasAccess) return _accessDeniedScaffold();
 
-    // v103: Tabs dynamisch -- Rollen-Permission steuert Sichtbarkeit.
-    final tabDefs = _availableTabs(admin.role);
-    _ensureTabController(tabDefs.length);
-
+    // HUB-first entry: the default surface is the _AdminHub landing (see body
+    // below). The legacy TabBar/TabController wiring is intentionally no longer
+    // built here; _availableTabs/_ensureTabController/_buildTabBody remain in
+    // the file (unused by build) to avoid touching unrelated references.
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: WBGlassAppBar(
@@ -320,6 +375,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             tooltip: 'Alles neu laden',
             onPressed: () {
               ref.read(adminStateProvider(widget.world).notifier).refresh();
+              _loadHubBadges();
               setState(() {});
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -331,34 +387,80 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             },
           ),
         ],
+        // Back button: from a section -> return to hub; from hub -> leave.
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded,
               color: Colors.white70, size: 20),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Zurück',
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: _accent,
-          indicatorWeight: 3,
-          indicatorSize: TabBarIndicatorSize.tab,
-          labelColor: _accentBright,
-          unselectedLabelColor: Colors.white38,
-          labelStyle:
-              const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-          unselectedLabelStyle:
-              const TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
-          tabs: tabDefs
-              .map((t) => Tab(icon: Icon(t.icon, size: 18), text: t.label))
-              .toList(),
+          onPressed: () {
+            if (_activeSection != null) {
+              setState(() => _activeSection = null);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          tooltip: _activeSection != null ? 'Zur Übersicht' : 'Zurück',
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: tabDefs.map((t) => _buildTabBody(t.kind, admin)).toList(),
-      ),
+      // null -> hub landing, otherwise the selected section widget.
+      body: _activeSection == null
+          ? _AdminHub(
+              role: admin.role,
+              accent: _accent,
+              accentBright: _accentBright,
+              openReports: _badgeOpenReports,
+              pendingUsernameRequests: _badgePendingUsernameRequests,
+              failedPushes: _badgeFailedPushes,
+              onOpen: (section) =>
+                  setState(() => _activeSection = section),
+              onSearch: (query) => setState(() {
+                _pendingUserSearch = query;
+                _activeSection = 'users';
+              }),
+            )
+          : _sectionBody(_activeSection!, admin),
     );
+  }
+
+  /// Maps a hub section key to the existing (unchanged) section widget.
+  /// Reuses exactly the same constructors as [_buildTabBody]; 'moderation'
+  /// uses the [_ModerationHub] wrapper (Chat + Meldungen sub-tabs).
+  Widget _sectionBody(String section, AdminState admin) {
+    switch (section) {
+      case 'overview':
+        return _OverviewTab(
+            world: 'all',
+            admin: admin,
+            accent: _accent,
+            accentBright: _accentBright);
+      case 'users':
+        return _UsersTab(
+            world: 'all',
+            admin: admin,
+            accent: _accent,
+            accentBright: _accentBright);
+      case 'moderation':
+        return _ModerationHub(
+            world: 'all',
+            admin: admin,
+            accent: _accent,
+            accentBright: _accentBright);
+      case 'content':
+        return _ContentInsightsTab(
+            accent: _accent, accentBright: _accentBright);
+      case 'push':
+        return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
+      case 'audit':
+        return _AuditReportsWrapper(
+            world: 'all',
+            accent: _accent,
+            accentBright: _accentBright,
+            isRootAdmin: admin.isRootAdmin);
+      case 'system':
+        return _SystemTab(
+            accent: _accent, accentBright: _accentBright, admin: admin);
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildTabBody(String kind, AdminState admin) {
