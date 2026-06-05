@@ -168,6 +168,43 @@ class _GlobalProfileDashboardState extends State<GlobalProfileDashboard> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+
+          // ── Meine Bibliothek (welten-uebergreifende Lesezeichen) ──
+          InkWell(
+            onTap: () => Navigator.of(context).pushNamed('/global_bookmarks'),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14122A),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.bookmarks_rounded,
+                      color: Color(0xFF7C4DFF), size: 22),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Meine Bibliothek',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const Text('Gespeichert & Verlauf',
+                      style: TextStyle(color: Colors.white38, fontSize: 12)),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: Colors.white24),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
 
           // ── Stat-Kacheln: Streak + Achievements + gelesene Inhalte ──

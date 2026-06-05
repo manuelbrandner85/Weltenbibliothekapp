@@ -29,6 +29,7 @@ import 'screens/daily_challenges_screen.dart'; // 🎯 Daily Challenges
 import 'screens/leaderboard_screen.dart'; // 🏆 Leaderboard
 import 'screens/enhanced_profile_screen.dart'; // 👤 Enhanced Profile
 import 'screens/shared/global_profile_dashboard.dart'; // 🏅 P5
+import 'screens/shared/global_bookmarks_screen.dart'; // 📚 Welten-Lesezeichen
 import 'screens/cloudflare_notification_settings_screen.dart'; // CLOUDFLARE PUSH
 import 'screens/materie/search_history_screen.dart';
 import 'screens/shared/update_history_screen.dart';
@@ -572,6 +573,9 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
                 const EnhancedProfileScreen(), // 👤 Enhanced Profile
             '/global_profile': (context) =>
                 const GlobalProfileDashboard(), // 🏅 P5: Welten-Fortschritt
+            '/global_bookmarks': (context) =>
+                const GlobalBookmarksScreen(), // 📚 Welten-Lesezeichen
+
             '/notifications': (context) =>
                 const CloudflareNotificationSettingsScreen(), // CLOUDFLARE
             '/search_history': (context) =>
