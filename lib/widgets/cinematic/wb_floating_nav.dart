@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/wb_cinematic_tokens.dart';
+import '../../core/responsive.dart';
 
 @immutable
 class WBFloatingNavItem {
@@ -49,7 +50,9 @@ class WBFloatingNav extends StatelessWidget {
             filter:
                 ImageFilter.blur(sigmaX: wb.blurMedium, sigmaY: wb.blurMedium),
             child: Container(
-              height: 68,
+              // Responsive Hoehe: kleine Phones / grosse System-Fonts wuerden
+              // Icon + Label sonst clippen. Clamp haelt es kompakt.
+              height: context.isSmallPhone ? 64 : context.rw(68),
               decoration: BoxDecoration(
                 color: wb.glassElevated,
                 borderRadius: BorderRadius.circular(WBRadius.xl),
@@ -151,17 +154,24 @@ class _NavTab extends StatelessWidget {
               child: active
                   ? Padding(
                       padding: const EdgeInsets.only(top: 3),
-                      child: Text(
-                        item.label,
-                        style: GoogleFonts.inter(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                          color: palette.label,
-                          height: 1.0,
+                      // FittedBox + scaleDown: das Label (z.B. "Community")
+                      // passt so auch auf schmale Phones in die schmale Tab-
+                      // Spalte, ohne abzuschneiden. ellipsis bleibt als
+                      // Notfall-Fallback fuer extrem lange Labels.
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          item.label,
+                          style: GoogleFonts.inter(
+                            fontSize: context.rf(9),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: palette.label,
+                            height: 1.0,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     )
                   : const SizedBox.shrink(),

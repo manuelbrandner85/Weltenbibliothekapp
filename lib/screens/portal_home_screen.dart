@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'dart:async';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/responsive.dart';
 import 'materie_world_wrapper.dart';
 import 'energie_world_wrapper.dart';
 import 'vorhang/vorhang_world_wrapper.dart';
@@ -899,9 +900,24 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   ),
 
                   // MAIN CONTENT — Cinematic Portal Design
+                  // Scroll-safe: auf kleinen Geräten würde die Column mit den
+                  // Spacern + Portal (280px) + Bannern + 2x2-Welt-Grid sonst
+                  // vertikal überlaufen ("abgeschnitten"). LayoutBuilder +
+                  // ConstrainedBox(minHeight) + IntrinsicHeight behält das
+                  // luftige Layout auf hohen Screens und scrollt sonst.
                   SafeArea(
-                    child: Column(
-                      children: [
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(
+                              parent: AlwaysScrollableScrollPhysics()),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: IntrinsicHeight(
+                              child: Column(
+                                children: [
                         // ── Top bar ──
                         Padding(
                           padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
@@ -1316,7 +1332,12 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         ), // Center close
 
                         const SizedBox(height: 36),
-                      ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                      },
                     ),
                   ),
                 ],
@@ -1508,9 +1529,14 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
       {required bool isGradient}) {
     final letters = text.split('');
     final total = letters.length;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(total, (i) {
+    // FittedBox: das Wordmark (fontSize 38 + letterSpacing 10) ist auf schmalen
+    // Phones breiter als der Screen und würde sonst horizontal abgeschnitten.
+    // scaleDown verkleinert nur wenn nötig, lässt es auf breiten Screens gleich.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(total, (i) {
         final start = delayFrac + i * (0.55 / total);
         final end = (start + 0.18).clamp(0.0, 1.0);
         final t = ((anim - start) / (end - start)).clamp(0.0, 1.0);
@@ -1555,7 +1581,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
           ),
         );
         return child;
-      }),
+        }),
+      ),
     );
   }
 
@@ -1796,7 +1823,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
             child: Container(
-              height: 150,
+              // Responsive Höhe: kleine Phones bekommen etwas mehr Höhe damit
+              // Chip + Titel + Subtitle + Badge-Row nicht clippen; Tablets dürfen
+              // moderat wachsen. Clamp hält es kompakt.
+              height: context.isSmallPhone ? 158 : context.rw(150),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
                 gradient: LinearGradient(
@@ -1900,6 +1930,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         // Subtitle
                         Text(
                           subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 10,
                             color: Colors.white.withValues(alpha: 0.48),

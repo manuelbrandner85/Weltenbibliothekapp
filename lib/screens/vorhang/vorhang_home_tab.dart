@@ -162,7 +162,11 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
         onRefresh: _fetch,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+          // Bottom-Inset (Gesten-Leiste) zur Floating-Nav-Hoehe addieren,
+          // damit der "ALLE 30 MODULE"-Button auf Geraeten mit hoher
+          // Navigationsleiste nicht hinter der Nav verschwindet.
+          padding: EdgeInsets.fromLTRB(
+              16, 16, 16, 100 + MediaQuery.paddingOf(context).bottom),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

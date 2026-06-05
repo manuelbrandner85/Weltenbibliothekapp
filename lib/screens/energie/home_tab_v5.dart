@@ -30,6 +30,7 @@ import '../../widgets/daily_mantra_banner.dart'; // 🌙 F1 Tages-Mantra
 import '../../widgets/daily_path_widget.dart';
 import '../../services/spirit_reading_service.dart';
 import '../../core/storage/unified_storage_service.dart';
+import '../../core/responsive.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ENERGIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -1986,7 +1987,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       child: GestureDetector(
         onTap: t.onTap,
         child: Container(
-          height: 108,
+          // Responsive Hoehe: kleine Phones / grosse System-Fonts brauchen
+          // mehr Platz fuer Label + Sub, damit nichts abgeschnitten wird.
+          height: context.isSmallPhone ? 116 : context.rw(108),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -2034,12 +2037,16 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                       ),
                       const Spacer(),
                       Text(t.label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 1),
                       Text(t.sub,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 10)),
