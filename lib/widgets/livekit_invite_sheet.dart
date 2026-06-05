@@ -60,15 +60,42 @@ class _InviteSheet extends StatefulWidget {
 }
 
 class _InviteSheetState extends State<_InviteSheet> {
-  late final Future<List<InviteUser>> _usersFuture;
+  late Future<List<InviteUser>> _usersFuture;
   final Set<String> _selected = <String>{};
+  final TextEditingController _searchCtrl = TextEditingController();
   bool _sending = false;
+  bool _searching = false;
 
   @override
   void initState() {
     super.initState();
     _usersFuture = LivestreamInviteService.instance
         .getOnlineUsers(excludeUserId: widget.excludeUserId);
+    _searchCtrl.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.removeListener(_onSearchChanged);
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final q = _searchCtrl.text.trim();
+    if (q.isEmpty) {
+      setState(() {
+        _searching = false;
+        _usersFuture = LivestreamInviteService.instance
+            .getOnlineUsers(excludeUserId: widget.excludeUserId);
+      });
+    } else {
+      setState(() {
+        _searching = true;
+        _usersFuture = LivestreamInviteService.instance
+            .searchUsers(q, excludeUserId: widget.excludeUserId);
+      });
+    }
   }
 
   Future<void> _shareLink() async {
@@ -181,25 +208,58 @@ class _InviteSheetState extends State<_InviteSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                // ── Search field ───────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    cursorColor: accent,
+                    decoration: InputDecoration(
+                      hintText: 'Mitglied suchen...',
+                      hintStyle:
+                          const TextStyle(color: Colors.white38, fontSize: 14),
+                      prefixIcon:
+                          Icon(Icons.search_rounded, color: accent, size: 20),
+                      suffixIcon: _searchCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded,
+                                  color: Colors.white38, size: 18),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.07),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 // ── Section label ──────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      const Text(
-                        'Online-Nutzer einladen',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _searching ? 'Suchergebnisse' : 'Online-Mitglieder',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                // ── Online users list ──────────────────────────────────
+                // ── Users list ─────────────────────────────────────────
                 Flexible(
                   child: FutureBuilder<List<InviteUser>>(
                     future: _usersFuture,
@@ -215,12 +275,14 @@ class _InviteSheetState extends State<_InviteSheet> {
                       }
                       final users = snapshot.data ?? const <InviteUser>[];
                       if (users.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 32),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 32),
                           child: Center(
                             child: Text(
-                              'Gerade ist niemand online',
-                              style: TextStyle(
+                              _searching
+                                  ? 'Kein Ergebnis für "${_searchCtrl.text}"'
+                                  : 'Gerade ist niemand online',
+                              style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 14,
                               ),
@@ -251,13 +313,31 @@ class _InviteSheetState extends State<_InviteSheet> {
                             controlAffinity:
                                 ListTileControlAffinity.trailing,
                             secondary: _Avatar(user: u, accent: accent),
-                            title: Text(
-                              u.username,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    u.username,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (u.isOnline)
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 6),
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF4CAF50),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                              ],
                             ),
                           );
                         },
