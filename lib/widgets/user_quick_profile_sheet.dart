@@ -1,14 +1,23 @@
 // Quick-Profile-Bottom-Sheet — kurze Vorschau eines Users.
 //
-// Wird vom Avatar-Tap in Chat-Bubbles ausgelöst. Zeigt Username,
-// Avatar, Rolle und ggf. eine "Erwähnen"-Action. Lädt das Profil
-// lazy aus profiles über Supabase (anon-Read).
+// Wird vom Avatar-/Namens-Tap in Chat-Bubbles ausgelöst. Zeigt Username,
+// Avatar mit XP-Ring, Level, Welt + Rolle, Online-Status, Bio und Actions
+// (Erwähnen + In aktiven Live-Call einladen). Lädt das Profil lazy aus
+// `profiles` über Supabase (anon-Read).
 //
-// Keine DM-Funktion — die App hat noch keinen 1:1-Chat. Wenn das
-// kommt, fügen wir hier eine "DM senden"-Action ein.
+// Konsolidiert die frühere separate UserProfileSheet — es gibt jetzt nur
+// noch dieses eine Sheet für alle Chat-Profil-Previews.
+
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../providers/livekit_call_provider.dart';
+import '../services/livestream_invite_service.dart';
+import '../services/user_service.dart';
+import 'xp_avatar_ring.dart';
 
 class UserQuickProfileSheet {
   static Future<void> show(
@@ -56,10 +65,14 @@ class _QuickProfileContent extends StatefulWidget {
 }
 
 class _QuickProfileContentState extends State<_QuickProfileContent> {
+  String? _userId;
   String? _avatarUrl;
   String? _displayName;
   String? _role;
   String? _bio;
+  String? _world;
+  int _xp = 0;
+  bool _isOnline = false;
   bool _loading = true;
 
   @override
@@ -74,18 +87,31 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
     try {
       final res = await Supabase.instance.client
           .from('profiles')
-          .select('avatar_url,display_name,role,bio')
+          .select('id,avatar_url,display_name,role,bio,xp,world,last_seen_at')
           .ilike('username', widget.username)
           .limit(1)
           .maybeSingle()
           .timeout(const Duration(seconds: 4));
       if (!mounted) return;
       if (res != null) {
+        final lastSeen = res['last_seen_at'] as String?;
+        bool online = false;
+        if (lastSeen != null) {
+          final dt = DateTime.tryParse(lastSeen);
+          if (dt != null) {
+            online =
+                DateTime.now().toUtc().difference(dt.toUtc()).inMinutes < 15;
+          }
+        }
         setState(() {
+          _userId = res['id']?.toString();
           _avatarUrl = (res['avatar_url'] as String?) ?? _avatarUrl;
           _displayName = (res['display_name'] as String?) ?? _displayName;
           _role = res['role'] as String?;
           _bio = res['bio'] as String?;
+          _world = (res['world'] as String?);
+          _xp = (res['xp'] as num?)?.toInt() ?? 0;
+          _isOnline = online;
           _loading = false;
         });
       } else {
@@ -96,7 +122,17 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
     }
   }
 
-  String _badge(String? role) {
+  // Level via the same formula as PlayerProgress: level = sqrt(xp/100).
+  int get _level => math.max(1, math.sqrt(_xp / 100).floor());
+  double get _progress {
+    final forLevel = _level * _level * 100;
+    final forNext = (_level + 1) * (_level + 1) * 100;
+    final range = forNext - forLevel;
+    if (range <= 0) return 1.0;
+    return ((_xp - forLevel) / range).clamp(0.0, 1.0);
+  }
+
+  String _roleBadge(String? role) {
     switch (role?.toLowerCase().replaceAll('-', '_')) {
       case 'root_admin':
         return '👑 Root-Admin';
@@ -111,11 +147,77 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
     }
   }
 
+  String _worldLabel(String world) {
+    switch (world) {
+      case 'materie':
+        return 'Materie';
+      case 'energie':
+        return 'Energie';
+      case 'vorhang':
+        return 'Vorhang';
+      case 'ursprung':
+        return 'Ursprung';
+      default:
+        return world;
+    }
+  }
+
+  Future<void> _inviteToCall({
+    required String roomName,
+    required String world,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final uid = _userId;
+    if (uid == null || uid.isEmpty) return;
+    final fromName = UserService.getCurrentUsername();
+    final ok = await LivestreamInviteService.instance.invite(
+      roomName: roomName,
+      world: world,
+      fromName: fromName.isNotEmpty ? fromName : 'Jemand',
+      userIds: [uid],
+    );
+    if (!mounted) return;
+    navigator.pop();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(ok
+            ? '${widget.username} wurde eingeladen'
+            : 'Einladung fehlgeschlagen'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final name =
         (_displayName?.isNotEmpty ?? false) ? _displayName! : widget.username;
-    final badge = _badge(_role);
+    final badge = _roleBadge(_role);
+
+    // Active LiveKit call (if any) -> enables "invite to call".
+    final call = ProviderScope.containerOf(context, listen: false)
+        .read(livekitCallServiceProvider);
+    final hasActiveCall = call.isConnected &&
+        call.roomName != null &&
+        call.roomName!.isNotEmpty &&
+        (_userId?.isNotEmpty ?? false);
+
+    final avatarChild = (_avatarUrl?.isNotEmpty ?? false)
+        ? Image.network(_avatarUrl!, fit: BoxFit.cover)
+        : Container(
+            color: widget.accent.withValues(alpha: 0.2),
+            alignment: Alignment.center,
+            child: Text(
+              name.isNotEmpty ? name[0].toUpperCase() : '?',
+              style: TextStyle(
+                color: widget.accent,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
       child: Column(
@@ -130,31 +232,48 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
             ),
           ),
           const SizedBox(height: 18),
-          CircleAvatar(
-            radius: 38,
-            backgroundColor: widget.accent.withValues(alpha: 0.2),
-            backgroundImage: (_avatarUrl?.isNotEmpty ?? false)
-                ? NetworkImage(_avatarUrl!)
-                : null,
-            child: (_avatarUrl?.isEmpty ?? true)
-                ? Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      color: widget.accent,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+          // Avatar with XP ring (only when xp is known).
+          if (_xp > 0)
+            XpAvatarRing(
+              progress: _progress,
+              level: _level,
+              accent: widget.accent,
+              size: 88,
+              strokeWidth: 4,
+              child: avatarChild,
+            )
+          else
+            ClipOval(
+              child: SizedBox(width: 76, height: 76, child: avatarChild),
             ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (_isOnline) ...[
+                const SizedBox(width: 8),
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF4CAF50),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
           ),
           if (widget.username != name)
             Padding(
@@ -164,29 +283,19 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
                 style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
             ),
-          if (badge.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: widget.accent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: widget.accent.withValues(alpha: 0.45),
-                  ),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(
-                    color: widget.accent,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
+          const SizedBox(height: 10),
+          // Badges: level, world, role.
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              if (_xp > 0) _chip('Level $_level', widget.accent),
+              if (_world != null && _world!.isNotEmpty)
+                _chip(_worldLabel(_world!), widget.accent),
+              if (badge.isNotEmpty) _chip(badge, widget.accent),
+            ],
+          ),
           if (_loading)
             const Padding(
               padding: EdgeInsets.only(top: 14),
@@ -211,20 +320,43 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
                 ),
               ),
             ),
-          if (widget.onMention != null) ...[
+          // ── Actions ──────────────────────────────────────────
+          if (hasActiveCall) ...[
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: FilledButton.icon(
+                onPressed: () => _inviteToCall(
+                  roomName: call.roomName!,
+                  world: call.world ?? 'materie',
+                ),
+                icon: const Icon(Icons.video_call_rounded, size: 20),
+                label: const Text('In meinen Live-Call einladen'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: widget.accent,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (widget.onMention != null) ...[
+            SizedBox(height: hasActiveCall ? 10 : 18),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
                   widget.onMention!(widget.username);
                 },
                 icon: const Icon(Icons.alternate_email_rounded, size: 18),
                 label: const Text('Erwähnen'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: widget.accent,
-                  foregroundColor: Colors.white,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: widget.accent,
+                  side: BorderSide(color: widget.accent.withValues(alpha: 0.5)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -234,6 +366,25 @@ class _QuickProfileContentState extends State<_QuickProfileContent> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _chip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

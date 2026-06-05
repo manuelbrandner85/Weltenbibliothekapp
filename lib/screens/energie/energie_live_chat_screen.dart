@@ -2523,6 +2523,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
       onDelete: () {
         _deleteMessage(msg);
       },
+      onMention: (u) {
+        final cur = _messageController.text;
+        final sep = cur.isEmpty || cur.endsWith(' ') ? '' : ' ';
+        _messageController.text = '$cur$sep@$u ';
+        _messageController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _messageController.text.length),
+        );
+      },
     );
   }
 

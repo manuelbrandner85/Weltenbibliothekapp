@@ -12,7 +12,7 @@ import 'voice_message_player.dart' show ChatVoicePlayer; // 🎵 CHAT VOICE PLAY
 // 🎤 TELEGRAM VOICE PLAYER (Backup)
 import 'read_receipts_indicator.dart'; // 📖 READ RECEIPTS
 import 'chat/chat_markdown_text.dart'; // ✨ Markdown-Light
-import 'user_profile_sheet.dart'; // 👤 Tap-Username -> Profil-Karte
+import 'user_quick_profile_sheet.dart'; // 👤 Tap-Username -> Profil-Karte
 
 /// 💬 ENHANCED MESSAGE BUBBLE
 /// Mit Reactions, Reply, Media, Read Receipts
@@ -24,6 +24,7 @@ class EnhancedMessageBubble extends StatefulWidget {
   final VoidCallback? onReply;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final void Function(String username)? onMention;
   final Color worldColor; // ENERGIE: purple, MATERIE: red
 
   const EnhancedMessageBubble({
@@ -35,6 +36,7 @@ class EnhancedMessageBubble extends StatefulWidget {
     this.onReply,
     this.onEdit,
     this.onDelete,
+    this.onMention,
     this.worldColor = Colors.purple,
   });
 
@@ -293,12 +295,16 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                                     final name =
                                         (message['username'] ?? '').toString();
                                     if (name.isEmpty) return;
-                                    showUserProfileSheet(
+                                    UserQuickProfileSheet.show(
                                       context,
                                       username: name,
                                       accent: widget.worldColor,
                                       avatarUrl:
                                           message['avatar_url']?.toString(),
+                                      displayName: message['display_name']
+                                              ?.toString() ??
+                                          message['displayName']?.toString(),
+                                      onMention: widget.onMention,
                                     );
                                   },
                             child: Row(
