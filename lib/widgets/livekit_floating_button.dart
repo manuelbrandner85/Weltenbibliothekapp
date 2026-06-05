@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/wb_design.dart';
+import '../core/app_navigator_key.dart';
 import '../providers/livekit_call_provider.dart';
 import '../screens/shared/livekit_group_call_screen.dart';
 import '../services/livekit_call_service.dart';
@@ -50,6 +51,13 @@ class _LiveKitFloatingButtonState extends ConsumerState<LiveKitFloatingButton>
   /// a stray pan emitted on tap, and to disable the snap-animation mid-drag.
   bool _dragging = false;
 
+  /// Accumulated finger travel during the current pan. If it stays below
+  /// [_tapSlop] the gesture is treated as a tap (return to call) rather than a
+  /// drag — the pan recognizer can win the arena over the tap recognizer on
+  /// the slightest movement, so a pan that barely moves must still act as a tap.
+  double _panTravel = 0;
+  static const double _tapSlop = 12;
+
   late final AnimationController _pulse;
 
   @override
@@ -74,13 +82,21 @@ class _LiveKitFloatingButtonState extends ConsumerState<LiveKitFloatingButton>
     return '$m:$sec';
   }
 
-  /// Reopen the full call screen using the rootNavigator push pattern.
+  /// Reopen the full call screen.
+  ///
+  /// IMPORTANT: this FAB is mounted via `MaterialApp.builder` as a SIBLING of
+  /// the app Navigator (Stack: [Navigator, FAB]). The Navigator is therefore a
+  /// descendant — NOT an ancestor — of this widget's context, so
+  /// `Navigator.of(context)` cannot find it and the push silently fails. We
+  /// push through the global [appNavigatorKey] instead.
   void _expandToFull(LiveKitCallService svc) {
     if (LiveKitScreenVisibility.instance.visible) return;
     final world = svc.world ?? 'materie';
     final roomName = svc.roomName ?? '';
     if (roomName.isEmpty) return;
-    Navigator.of(context, rootNavigator: true).push(
+    final nav = appNavigatorKey.currentState;
+    if (nav == null) return;
+    nav.push(
       MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => LiveKitGroupCallScreen(
@@ -94,10 +110,14 @@ class _LiveKitFloatingButtonState extends ConsumerState<LiveKitFloatingButton>
   }
 
   /// Long-press action sheet: toggle mic + hang up. German labels.
+  /// Uses the global navigator context (see [_expandToFull] for why the local
+  /// context has no Navigator/Overlay ancestor).
   void _showActions(LiveKitCallService svc) {
     final world = svc.world ?? 'materie';
+    final sheetRootContext = appNavigatorKey.currentContext;
+    if (sheetRootContext == null) return;
     showModalBottomSheet<void>(
-      context: context,
+      context: sheetRootContext,
       backgroundColor: WbDesign.surface(world),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -217,9 +237,11 @@ class _LiveKitFloatingButtonState extends ConsumerState<LiveKitFloatingButton>
                     onTap: () => _expandToFull(svc),
                     onLongPress: () => _showActions(svc),
                     onPanStart: (_) {
+                      _panTravel = 0;
                       setState(() => _dragging = true);
                     },
                     onPanUpdate: (details) {
+                      _panTravel += details.delta.distance;
                       setState(() {
                         _pos = Offset(
                           (_pos ?? pos).dx + details.delta.dx,
@@ -228,7 +250,13 @@ class _LiveKitFloatingButtonState extends ConsumerState<LiveKitFloatingButton>
                       });
                     },
                     onPanEnd: (_) {
-                      // Snap horizontally to the nearest edge.
+                      // A pan that barely moved is really a tap → reopen call.
+                      if (_panTravel < _tapSlop) {
+                        setState(() => _dragging = false);
+                        _expandToFull(svc);
+                        return;
+                      }
+                      // Otherwise snap horizontally to the nearest edge.
                       final current = _pos ?? pos;
                       final centerX = current.dx + _size / 2;
                       final snapLeft = centerX < constraints.maxWidth / 2;
