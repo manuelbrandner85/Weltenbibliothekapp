@@ -1394,6 +1394,49 @@ export default {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
+    // ── Invite-Deep-Link: GET /join?room=...&world=... ────────
+    // Serves an HTML page that immediately redirects to the custom-scheme
+    // deep link. Because HTTPS URLs are clickable in WhatsApp/SMS while
+    // "weltenbibliothek://" scheme links are not.
+    if (path === '/join' && method === 'GET') {
+      const room = (url.searchParams.get('room') || '').trim();
+      const world = (url.searchParams.get('world') || 'materie').trim();
+      const worldLabel = { materie: 'Materie', energie: 'Energie', vorhang: 'Vorhang', ursprung: 'Ursprung' }[world] || 'Weltenbibliothek';
+      if (!room) {
+        return new Response('Fehlender Parameter: room', { status: 400 });
+      }
+      const deepLink = `weltenbibliothek://live?room=${encodeURIComponent(room)}&world=${encodeURIComponent(world)}`;
+      const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Weltenbibliothek - Live-Call</title>
+  <style>
+    body{margin:0;background:#0a0a14;color:#eee;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}
+    h1{color:#c084fc;font-size:1.5rem;margin-bottom:.5rem}
+    p{color:#aaa;margin:.5rem 0}
+    a.btn{display:inline-block;margin-top:1.5rem;padding:14px 32px;border-radius:14px;background:#7c3aed;color:#fff;font-size:1rem;font-weight:600;text-decoration:none}
+    .room{color:#e2e8f0;font-weight:600}
+  </style>
+  <script>
+    setTimeout(function(){window.location.href="${deepLink}";},400);
+  </script>
+</head>
+<body>
+  <h1>Weltenbibliothek</h1>
+  <p>Du wurdest in einen Live-Call eingeladen!</p>
+  <p>Welt: <span class="room">${worldLabel}</span></p>
+  <p>Raum: <span class="room">${room}</span></p>
+  <a class="btn" href="${deepLink}">App oeffnen &amp; beitreten</a>
+  <p style="margin-top:2rem;font-size:.8rem;color:#666">Noch keine App? Bitte nach dem Download-Link fragen.</p>
+</body>
+</html>`;
+      return new Response(html, {
+        headers: { 'Content-Type': 'text/html;charset=utf-8', 'Cache-Control': 'no-store' },
+      });
+    }
+
     // AUTH-REFACTOR Phase 2 (additiv): nicht-blockierende Identity-Telemetrie.
     // Misst Impersonation-Versuche via verifiziertem Anon-JWT (ES256 gegen das
     // oeffentliche JWKS -- kein Secret noetig), ohne irgendetwas zu erzwingen.
@@ -2442,16 +2485,21 @@ export default {
         }
       }
 
-      // GET /api/push/pending?user_id=UUID → returns pending + marks them 'sent'
-      // Used by the mobile client while the app is open to drain queued notifications.
+      // GET /api/push/pending?user_id=UUID_or_legacy_id
+      // Supports both UUID users and InvisibleAuth legacy_user_id ("user_<ts>_<rand>").
       if (method === 'GET' && path.includes('/pending')) {
         const userId = url.searchParams.get('user_id') || path.split('/').pop();
         if (!userId || userId === 'pending') {
           return jsonResponse({ notifications: [], count: 0 });
         }
         try {
+          // Legacy IDs start with "user_" and go in the legacy_user_id column.
+          const isLegacy = String(userId).startsWith('user_');
+          const filter = isLegacy
+            ? `legacy_user_id=eq.${encodeURIComponent(userId)}`
+            : `user_id=eq.${encodeURIComponent(userId)}`;
           const fetchRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/notification_queue?user_id=eq.${encodeURIComponent(userId)}&status=eq.pending&select=*&order=created_at.asc&limit=50`,
+            `${SUPABASE_URL}/rest/v1/notification_queue?${filter}&status=eq.pending&select=*&order=created_at.asc&limit=50`,
             { headers: pushAuth }
           );
           const rows = await fetchRes.json().catch(() => []);
@@ -3651,6 +3699,38 @@ export default {
         return jsonResponse({ success: true, invited: targetIds.length });
       } catch (e) {
         return errorResponse(`livekit invite failed: ${e.message}`);
+      }
+    }
+
+    // ── Nutzer-Suche fuer Einladungssheet ─────────────────────
+    // GET /api/users/search?q=<query>&limit=20
+    // Gibt Nutzerliste zurueck (gefiltert nach Username-Prefix, case-insensitive).
+    if (path === '/api/users/search' && method === 'GET') {
+      try {
+        const q = (url.searchParams.get('q') || '').trim();
+        const lim = Math.min(parseInt(url.searchParams.get('limit') || '20', 10), 50);
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const filter = q.length >= 1
+          ? `&username=ilike.${encodeURIComponent(q + '*')}`
+          : '';
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?select=id,username,avatar_url,last_seen_at&username=not.is.null${filter}&order=username.asc&limit=${lim}`,
+          { headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` } }
+        );
+        const rows = await res.json().catch(() => []);
+        const safe = Array.isArray(rows) ? rows : [];
+        const now = Date.now();
+        const users = safe.map(p => ({
+          user_id: p.id,
+          username: p.username,
+          avatar_url: p.avatar_url || null,
+          is_online: p.last_seen_at
+            ? (now - new Date(p.last_seen_at).getTime()) < 15 * 60 * 1000
+            : false,
+        }));
+        return jsonResponse({ users, count: users.length });
+      } catch (e) {
+        return jsonResponse({ users: [], count: 0 });
       }
     }
 

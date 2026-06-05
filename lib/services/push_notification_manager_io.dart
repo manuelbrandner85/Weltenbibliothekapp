@@ -23,6 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
 import 'push_preferences_service.dart';
+import 'storage_service.dart';
 
 typedef DeepLinkHandler = void Function(Map<String, dynamic> data);
 
@@ -259,6 +260,8 @@ class PushNotificationManager with WidgetsBindingObserver {
   bool _subscribed = false;
   String? _fcmToken;
   DeepLinkHandler? _deepLinkHandler;
+  // Legacy (InvisibleAuth) user ID for in-app polling fallback.
+  String? _legacyUserId;
 
   /// Dedup-Set für Notification-IDs. Begrenzt auf [_seenIdsMax] damit es
   /// in Long-Running-Sessions nicht unbegrenzt wächst (Bundle 4.2).
@@ -309,10 +312,22 @@ class PushNotificationManager with WidgetsBindingObserver {
     if (client.auth.currentUser != null) {
       unawaited(_registerSubscription(client.auth.currentUser!.id));
       _startPolling();
+    } else {
+      // InvisibleAuth fallback: use legacy user ID for in-app notification polling.
+      // This ensures push invite notifications queued with legacy_user_id are received.
+      final storage = StorageService();
+      final m = storage.getMaterieProfile();
+      final e = storage.getEnergieProfile();
+      final legacyId = (m?.userId ?? e?.userId ?? '').trim();
+      if (legacyId.isNotEmpty) {
+        _legacyUserId = legacyId;
+        _startPolling();
+      }
     }
     _authSub = client.auth.onAuthStateChange.listen((state) {
       final user = state.session?.user;
       if (user != null) {
+        _legacyUserId = null;
         unawaited(_registerSubscription(user.id));
         _startPolling();
       } else {
@@ -445,6 +460,7 @@ class PushNotificationManager with WidgetsBindingObserver {
   /// Falls nicht → erneute Registrierung. Schützt vor "Push silent broken"-
   /// Fällen (z.B. wenn Subscribe beim ersten App-Start gefailt ist).
   Future<void> _verifyAndHealSubscription() async {
+    // Only verify FCM subscriptions for real auth users; legacy users use polling only.
     final uid = Supabase.instance.client.auth.currentUser?.id;
     if (uid == null) return;
     try {
@@ -470,7 +486,8 @@ class PushNotificationManager with WidgetsBindingObserver {
   }
 
   Future<void> _pollOnce() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final userId =
+        Supabase.instance.client.auth.currentUser?.id ?? _legacyUserId;
     if (userId == null) return;
     try {
       final res = await http
