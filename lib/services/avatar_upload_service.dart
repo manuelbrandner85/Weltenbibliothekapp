@@ -9,13 +9,17 @@
 /// - Avatar management
 library;
 
+import 'dart:convert';
 import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../config/api_config.dart';
 
 /// Exception mit nutzerlesbarer deutscher Fehlermeldung. Wird von
 /// [AvatarUploadService.uploadAvatarOrThrow] geworfen — Caller kann den Text
@@ -107,9 +111,12 @@ class AvatarUploadService {
     try {
       final client = Supabase.instance.client;
 
+      // InvisibleAuth-Fallback: ohne echte Supabase-Session kann der Client
+      // nicht direkt in Storage schreiben (RLS). Dann laeuft der Upload ueber
+      // den Worker (/api/avatar/upload, service-role) der auch InvisibleAuth-
+      // IDs (legacy_user_id) korrekt in profiles.avatar_url patcht.
       if (client.auth.currentUser == null) {
-        throw AvatarUploadException(
-            'Nicht eingeloggt — bitte erneut anmelden.');
+        return await _uploadViaWorker(imageFile, userId);
       }
 
       final bytes = await imageFile.readAsBytes();
@@ -150,6 +157,49 @@ class AvatarUploadService {
       throw AvatarUploadException('Upload fehlgeschlagen: ${e.message}');
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error uploading avatar: $e');
+      throw AvatarUploadException(
+        'Verbindung fehlgeschlagen. Bitte erneut versuchen.',
+      );
+    }
+  }
+
+  /// Worker-Upload-Pfad fuer InvisibleAuth-User (keine Supabase-Session).
+  /// Postet das Bild an /api/avatar/upload (service-role serverseitig).
+  Future<String> _uploadViaWorker(File imageFile, String userId) async {
+    try {
+      final bytes = await imageFile.readAsBytes();
+      final ext = imageFile.path.split('.').last.toLowerCase();
+      final safeExt =
+          ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+      final uri = Uri.parse('${ApiConfig.workerUrl}/api/avatar/upload');
+      final request = http.MultipartRequest('POST', uri);
+      request.fields['userId'] = userId;
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: 'avatar.$safeExt',
+      ));
+      final streamed =
+          await request.send().timeout(const Duration(seconds: 30));
+      final res = await http.Response.fromStream(streamed);
+      if (res.statusCode != 200) {
+        throw AvatarUploadException(
+            'Upload fehlgeschlagen (${res.statusCode}).');
+      }
+      final data = json.decode(res.body) as Map<String, dynamic>;
+      final url =
+          (data['avatar_url'] ?? data['media_url'] ?? data['url'])?.toString();
+      if (url == null || url.isEmpty) {
+        throw AvatarUploadException('Server lieferte keine Bild-URL.');
+      }
+      final avatarUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
+      await saveAvatarUrl(userId, avatarUrl);
+      if (kDebugMode) debugPrint('✅ Avatar via Worker uploaded: $avatarUrl');
+      return avatarUrl;
+    } on AvatarUploadException {
+      rethrow;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Worker avatar upload error: $e');
       throw AvatarUploadException(
         'Verbindung fehlgeschlagen. Bitte erneut versuchen.',
       );
