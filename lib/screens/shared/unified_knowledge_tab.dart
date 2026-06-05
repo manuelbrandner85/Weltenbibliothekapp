@@ -6,7 +6,9 @@ import 'package:share_plus/share_plus.dart';
 import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
 import '../../services/cross_world_topics_service.dart';
+import '../../services/archive_video_service.dart';
 import 'vier_linsen_screen.dart';
+import 'mediathek_screen.dart';
 import 'knowledge_reader_mode.dart';
 import '../wissen/cinematic_book_reader_screen.dart'; // v5.44.6 Buecher
 import '../../widgets/wissen/bookshelf_3d_view.dart'; // v5.44.7 Bookshelf
@@ -34,6 +36,7 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
   List<KnowledgeEntry> _filtered = [];
   // Erweiterung 2 "Vier Linsen": cross-world topics (world-agnostic).
   List<CrossWorldTopic> _crossTopics = [];
+  List<ArchiveVideo> _latestVideos = [];
   Map<String, int> _stats = {};
   bool _isLoading = true;
   String _cat = 'all';
@@ -116,11 +119,14 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
       final entries = await _svc.getAllEntries(world: widget.world);
       final stats = await _svc.getStatistics(widget.world);
       final crossTopics = await CrossWorldTopicsService.instance.fetch();
+      final videos = await ArchiveVideoService.instance
+          .fetchLatest(world: widget.world, limit: 8);
       if (mounted) {
         setState(() {
           _all = entries;
           _filtered = entries;
           _crossTopics = crossTopics;
+          _latestVideos = videos;
           _stats = stats;
           _isLoading = false;
         });
@@ -541,6 +547,14 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
                 child: _sectionHeader('VIER LINSEN', Icons.lens_blur)),
             SliverToBoxAdapter(child: _buildVierLinsenRow()),
           ],
+          // Video-Archiv row (between Vier-Linsen and Empfohlen)
+          if (_latestVideos.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: _sectionHeader(
+                  'VIDEO-ARCHIV', Icons.play_circle_outline_rounded),
+            ),
+            SliverToBoxAdapter(child: _buildMediathekRow()),
+          ],
           // Featured horizontal row
           if (featured.isNotEmpty) ...[
             SliverToBoxAdapter(
@@ -696,6 +710,178 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
             ),
           );
         },
+      ),
+    );
+  }
+
+  // Horizontal video preview row — same card style as _buildVierLinsenRow.
+  Widget _buildMediathekRow() {
+    return SizedBox(
+      height: 148,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        // +1 for the "Alle ansehen" end card
+        itemCount: _latestVideos.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) {
+          if (i == _latestVideos.length) return _buildMediathekAllCard();
+          final v = _latestVideos[i];
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      MediathekScreen(world: widget.world),
+                ),
+              );
+            },
+            child: Container(
+              width: 168,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFF0B0D1A),
+                border: Border.all(color: _primary.withValues(alpha: 0.3)),
+                boxShadow: [
+                  BoxShadow(
+                      color: _primary.withValues(alpha: 0.12),
+                      blurRadius: 16),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Thumbnail
+                    Expanded(
+                      flex: 5,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.network(
+                            v.effectiveThumbnail,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: const Color(0xFF111827),
+                              child: Icon(
+                                Icons.play_circle_outline_rounded,
+                                size: 34,
+                                color:
+                                    Colors.white.withValues(alpha: 0.3),
+                              ),
+                            ),
+                          ),
+                          Center(
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.black
+                                    .withValues(alpha: 0.55),
+                                border: Border.all(
+                                    color: Colors.white
+                                        .withValues(alpha: 0.6)),
+                              ),
+                              child: const Icon(
+                                  Icons.play_arrow_rounded,
+                                  color: Colors.white,
+                                  size: 18),
+                            ),
+                          ),
+                          if (v.category != null)
+                            Positioned(
+                              bottom: 5,
+                              left: 6,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black
+                                      .withValues(alpha: 0.65),
+                                  borderRadius:
+                                      BorderRadius.circular(5),
+                                ),
+                                child: Text(
+                                  v.category!,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Title
+                    Expanded(
+                      flex: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+                        child: Text(
+                          v.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // "Alle ansehen" end card at the right of the mediathek row.
+  Widget _buildMediathekAllCard() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MediathekScreen(world: widget.world),
+          ),
+        );
+      },
+      child: Container(
+        width: 100,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFF0B0D1A),
+          border: Border.all(color: _primary.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.arrow_forward_ios_rounded,
+                color: _primary, size: 20),
+            const SizedBox(height: 8),
+            Text(
+              'Alle\nansehen',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: _primarySoft,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
