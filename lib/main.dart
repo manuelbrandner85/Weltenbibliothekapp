@@ -19,6 +19,7 @@ import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
 import 'screens/web/web_auth_gate.dart'; // 🌐 Web Auth Gate
 import 'screens/web/web_admin_panel.dart'; // 👑 Web Admin Panel
 import 'widgets/livekit_floating_button.dart'; // 🎈 Schwebender Zurück-zum-Call-Button
+import 'core/app_navigator_key.dart'; // 🔑 Globaler Navigator-Key (geteilt)
 import 'screens/shared/livekit_group_call_screen.dart'; // 🎥 Live-Call-Screen (Deep-Link)
 import 'services/storage_service.dart'; // 👤 Profil für Deep-Link-Join
 import 'screens/energie_world_screen.dart'; // ✅ FIXED: Correct path
@@ -75,10 +76,6 @@ import 'widgets/realtime_notification_host.dart'; // 🔔 v95 In-App Activity Ba
 // 🔔 v95
 import 'services/pip_service.dart'; // 📺 B10.3 PiP
 import 'services/feature_flags.dart'; // 🚩 v5.44.2 Phase-2-Toggle-System
-
-/// Global navigator key — needed by PushNotificationManager to deep-link into
-/// routes from outside the widget tree (notification tap).
-final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
