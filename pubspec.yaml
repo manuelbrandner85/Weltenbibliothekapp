@@ -69,6 +69,7 @@ dependencies:
   
   # Video Player (für Intro-Video)
   video_player: ^2.8.2  # Web-kompatibel
+  youtube_player_flutter: ^9.1.1  # Inline YouTube player (no download/rehosting)
   
   # Internationalization – version managed by flutter_localizations SDK (do not pin manually)
   intl: any
