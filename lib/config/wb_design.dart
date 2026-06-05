@@ -481,6 +481,59 @@ class WbDesign {
       );
 
   // ═══════════════════════════════════════════════════════════════════════
+  // WORLD THEME (Feature B) — per-world Material ThemeData
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /// Returns a [ThemeData] tinted with the world accent, inheriting from the
+  /// ambient theme so typography/fonts stay intact. Wrap a world's subtree in
+  /// `Theme(data: WbDesign.themeFor(context, world), child: ...)` so that
+  /// standard Material widgets (FAB, switches, sliders, progress indicators,
+  /// text selection, default buttons, tab indicators) automatically adopt
+  /// the world color — the visible "theme changes per world" effect.
+  static ThemeData themeFor(BuildContext context, String world) {
+    final acc = accent(world);
+    final base = Theme.of(context);
+    return base.copyWith(
+      colorScheme: base.colorScheme.copyWith(
+        primary: acc,
+        secondary: acc,
+        surface: surface(world),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: acc),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: acc,
+        foregroundColor: Colors.black,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? acc : Colors.white70,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? acc.withValues(alpha: 0.4)
+              : Colors.white24,
+        ),
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: acc,
+        thumbColor: acc,
+        overlayColor: acc.withValues(alpha: 0.2),
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: acc,
+        indicatorColor: acc,
+        unselectedLabelColor: Colors.white54,
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: acc,
+        selectionColor: acc.withValues(alpha: 0.3),
+        selectionHandleColor: acc,
+      ),
+      iconTheme: base.iconTheme.copyWith(color: Colors.white),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   // ACCESSIBILITY
   // ═══════════════════════════════════════════════════════════════════════
 
@@ -492,14 +545,14 @@ class WbDesign {
 extension WbDesignContext on BuildContext {
   /// Liefert WbDesign-Tokens für eine bestimmte Welt.
   /// Verwendung: `context.wbWorld('energie').card(...)`
-  _WbDesignWorld wbWorld(String world) => _WbDesignWorld(world);
+  WbDesignWorld wbWorld(String world) => WbDesignWorld(world);
 }
 
 /// Welt-bound Wrapper über WbDesign — vermeidet ständiges Übergeben des
 /// `world`-Strings.
-class _WbDesignWorld {
+class WbDesignWorld {
   final String world;
-  const _WbDesignWorld(this.world);
+  const WbDesignWorld(this.world);
 
   Color get background => WbDesign.background(world);
   Color get surface => WbDesign.surface(world);
