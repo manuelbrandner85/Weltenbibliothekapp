@@ -12,16 +12,35 @@ import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
 import '../../widgets/article_like_button.dart'; // 👍 NEW: Like Button
 import '../../widgets/article_comments_widget.dart'; // 💬 NEW: Comments Widget
 import 'materie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
-import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
 import 'package:share_plus/share_plus.dart';
 
 /// Modernes Community-Tab für MATERIE-Welt - Social-Media-Style
+///
+/// [postsOnly] steuert den Anzeigemodus:
+/// - `false` (Default, Community-Tab-Slot): zeigt NUR den Live-Chat.
+/// - `true` (via [MateriePostsScreen] vom Home-Screen): zeigt den
+///   Beiträge-Feed inkl. "Beitrag erstellen"-FAB, eingebettet in ein
+///   eigenes Scaffold mit zurück-navigierbarer AppBar.
 class MaterieCommunityTabModern extends StatefulWidget {
-  const MaterieCommunityTabModern({super.key});
+  final bool postsOnly;
+
+  const MaterieCommunityTabModern({super.key, this.postsOnly = false});
 
   @override
   State<MaterieCommunityTabModern> createState() =>
       _MaterieCommunityTabModernState();
+}
+
+/// Eigenständiger Beiträge-Feed-Screen für die MATERIE-Welt.
+///
+/// Dünner Wrapper, der den Community-Tab im Posts-Modus öffnet. Wird vom
+/// Home-Screen über einen "Beiträge"-Eintrag aufgerufen.
+class MateriePostsScreen extends StatelessWidget {
+  const MateriePostsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      const MaterieCommunityTabModern(postsOnly: true);
 }
 
 // ── Design palette (mirrors Materie Home Dashboard V7) ────────────────────
@@ -45,10 +64,6 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern>
   // Feature 2 — Reactions
   final Map<String, Map<String, int>> _reactions = {};
 
-  // 💬 TAB CONTROLLER für Posts vs Chat
-  late TabController _tabController;
-  final ChatNotificationService _notificationService =
-      ChatNotificationService();
   final CommunityService _communityService = CommunityService();
 
   // ── Hero-header animations (mirror home dashboard) ────────────────────
@@ -65,8 +80,6 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() => setState(() {}));
     _auraCtrl =
         AnimationController(vsync: this, duration: const Duration(seconds: 3))
           ..repeat(reverse: true);
@@ -198,7 +211,6 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _auraCtrl.dispose();
     _entryCtrl.dispose();
     _orbitCtrl.dispose();
@@ -256,207 +268,56 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern>
     if (result == true) _loadData();
   }
 
-  Widget _buildPillSwitcher() {
-    final isChat = _tabController.index == 1;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      child: Container(
-        height: 48,
+  @override
+  Widget build(BuildContext context) {
+    // Community-Tab-Slot: nur Live-Chat. Beiträge-Feed läuft über
+    // [MateriePostsScreen] (postsOnly=true) vom Home-Screen.
+    if (!widget.postsOnly) {
+      return const MaterieLiveChatScreen();
+    }
+
+    // postsOnly: eigenständiger Beiträge-Feed mit zurück-navigierbarer AppBar.
+    return Scaffold(
+      backgroundColor: _mBg,
+      appBar: AppBar(
+        backgroundColor: _mBg,
+        elevation: 0,
+        title: const Text('Beiträge',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: _buildPostsView(),
+      floatingActionButton: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Stack(
-          children: [
-            // Sliding pill
-            AnimatedAlign(
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutCubic,
-              alignment: isChat ? Alignment.centerRight : Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: 0.5,
-                child: Container(
-                  margin: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: _mBlue.withValues(alpha: 0.20),
-                    borderRadius: BorderRadius.circular(9),
-                    border: Border.all(color: _mBlue.withValues(alpha: 0.55)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _mBlue.withValues(alpha: 0.18),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _tabController.animateTo(0);
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.article_rounded,
-                            size: 15,
-                            color: !isChat ? Colors.white : Colors.white38),
-                        const SizedBox(width: 6),
-                        Text('Beiträge',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight:
-                                  !isChat ? FontWeight.w700 : FontWeight.w400,
-                              color: !isChat ? Colors.white : Colors.white38,
-                              letterSpacing: 0.2,
-                            )),
-                      ],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _tabController.animateTo(1);
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.chat_bubble_rounded,
-                            size: 15,
-                            color: isChat ? Colors.white : Colors.white38),
-                        const SizedBox(width: 6),
-                        Text('Live-Chat',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight:
-                                  isChat ? FontWeight.w700 : FontWeight.w400,
-                              color: isChat ? Colors.white : Colors.white38,
-                              letterSpacing: 0.2,
-                            )),
-                        ListenableBuilder(
-                          listenable: _notificationService,
-                          builder: (context, _) {
-                            final count =
-                                _notificationService.getTotalUnreadCount();
-                            if (count == 0) return const SizedBox.shrink();
-                            return Container(
-                              margin: const EdgeInsets.only(left: 5),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(6),
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: Colors.red.withValues(alpha: 0.5),
-                                      blurRadius: 4)
-                                ],
-                              ),
-                              child: Text(count > 9 ? '9+' : '$count',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold)),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1565C0), Color(0xFF2979FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2979FF).withValues(alpha: 0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildContextSubtitle() {
-    final isChat = _tabController.index == 1;
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
-      child: Padding(
-        key: ValueKey(isChat),
-        padding: const EdgeInsets.only(left: 20, top: 6, bottom: 4),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            isChat
-                ? 'Echtzeit-Gespräche · Raum wählen'
-                : '${_posts.length} Beiträge in der Community',
-            style: const TextStyle(
-                fontSize: 11, color: Colors.white38, letterSpacing: 0.1),
+        child: FloatingActionButton.extended(
+          onPressed: _showCreatePostDialogV2,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          icon: const Icon(Icons.edit, color: Colors.white, size: 24),
+          label: const Text(
+            'Beitrag erstellen',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _mBg,
-      body: Column(
-        children: [
-          _buildPillSwitcher(),
-          _buildContextSubtitle(),
-          // TAB VIEW: Posts oder Chat
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildPostsView(),
-                const MaterieLiveChatScreen(),
-              ],
-            ),
-          ),
-        ],
-      ),
-      // ✅ Post-Button NUR im Posts-Tab anzeigen (nicht im Chat)
-      floatingActionButton: _tabController.index == 0
-          ? Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1565C0), Color(0xFF2979FF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0xFF2979FF).withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton.extended(
-                onPressed: _showCreatePostDialogV2,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                icon: const Icon(Icons.edit, color: Colors.white, size: 24),
-                label: const Text(
-                  'Beitrag erstellen',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            )
-          : null, // Kein Button im Chat-Tab
     );
   }
 

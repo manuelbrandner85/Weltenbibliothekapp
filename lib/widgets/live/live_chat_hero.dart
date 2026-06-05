@@ -391,7 +391,10 @@ class _LiveChatHeroState extends State<LiveChatHero>
         Row(
           children: [
             _PrimaryButton(
-              label: 'BEITRETEN',
+              // Active call -> clear "join" action with live participant count.
+              label: call.participantCount > 0
+                  ? 'BEITRETEN (${call.participantCount})'
+                  : 'BEITRETEN',
               color: palette.primary,
               onTap: _handleJoin,
             ),

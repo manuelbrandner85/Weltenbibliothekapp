@@ -12,6 +12,7 @@ import '../../models/energie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../materie/kaninchenbau/kaninchenbau_screen.dart';
 import 'energie_live_chat_screen.dart';
+import 'energie_community_tab_modern.dart';
 import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
@@ -1932,6 +1933,19 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         badge: _bookmarks > 0 ? _bookmarks : 0,
         onTap: () => _go(const BookmarksScreen()),
       ),
+      // Community-Feed (vom Community-Tab ausgelagert).
+      _TileDef(
+        icon: Icons.dynamic_feed_rounded,
+        label: 'Beiträge',
+        sub: 'Community-Feed lesen & teilen',
+        gradient: [
+          const Color(0xFF4A148C),
+          const Color(0xFF7B1FA2),
+          const Color(0xFFAB47BC)
+        ],
+        badge: 0,
+        onTap: () => _go(const EnergiePostsScreen()),
+      ),
     ];
 
     return SliverToBoxAdapter(
@@ -1953,6 +1967,12 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 _buildActionTile(tiles[2]),
                 const SizedBox(width: 10),
                 _buildActionTile(tiles[3]),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                _buildActionTile(tiles[4]),
+                const SizedBox(width: 10),
+                const Expanded(child: SizedBox()),
               ]),
             ]),
           ),

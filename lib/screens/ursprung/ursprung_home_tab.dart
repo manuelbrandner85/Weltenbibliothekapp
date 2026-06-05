@@ -11,6 +11,7 @@ import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
 
+import 'ursprung_community_tab.dart';
 import 'ursprung_live_chat_screen.dart';
 import 'ursprung_modules_screen.dart';
 import 'ursprung_timeline_screen.dart';
@@ -63,6 +64,18 @@ class UrsprungHomeTab extends StatelessWidget {
 
             // ── Mentor: Der Alchemist ──
             _buildMentorButton(context),
+            const SizedBox(height: 28),
+
+            // ── COMMUNITY: Beiträge-Feed (vom Community-Tab ausgelagert) ──
+            _sectionLabel('COMMUNITY'),
+            const SizedBox(height: 12),
+            _buildToolCard(
+              context: context,
+              emoji: '📝',
+              title: 'Beiträge',
+              subtitle: 'Community-Feed - Erfahrungen teilen & lesen.',
+              builder: (_) => const UrsprungPostsScreen(),
+            ),
             const SizedBox(height: 28),
 
             // ── KERN-TOOL: Zeitleiste der Menschheitsursprünge (Ursprung-exklusiv) ──

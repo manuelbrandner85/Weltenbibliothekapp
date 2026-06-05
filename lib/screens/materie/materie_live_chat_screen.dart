@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
-import '../../config/api_config.dart';
 import '../shared/livekit_group_call_screen.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
@@ -1717,29 +1716,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
           ),
         ),
         actions: [
-          // 🎥 LIVEKIT VIDEO/VOICE GROUPCALL
-          // FIX (#4): Button nur zeigen wenn LiveKit konfiguriert ist.
-          if (ApiConfig.isLivekitEnabled)
-            IconButton(
-              icon: const Icon(Icons.video_call, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LiveKitGroupCallScreen(
-                      roomName: 'wb-materie-$_selectedRoom',
-                      world: 'materie',
-                      displayName:
-                          _username.isNotEmpty ? _username : 'Mitglied',
-                      avatarUrl: _avatarUrl,
-                      audioOnly: false,
-                      initialMicEnabled: true,
-                    ),
-                  ),
-                );
-              },
-              tooltip: 'Sprach- & Video-Chat',
-            ),
+          // 🎥 Live-Einstieg: nur noch ueber den "Live starten"-Button im
+          // LiveChatHero (single entry point). Doppelter AppBar-Kamera-Button
+          // entfernt, um den Live-Einstieg eindeutig zu machen.
           if (_username.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.alternate_email, color: Colors.white),
@@ -1841,7 +1820,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
                                       ? _username
                                       : 'Mitglied',
                                   avatarUrl: _avatarUrl,
-                                  audioOnly: true,
+                                  // Single entry point: video available,
+                                  // toggle inside the call. Mic on by default.
+                                  audioOnly: false,
                                   initialMicEnabled: true,
                                 ),
                               ),

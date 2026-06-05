@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import 'dart:io'
     if (dart.library.html) '../../stubs/dart_io_stub.dart'; // File for uploads
-import '../../config/api_config.dart';
 import '../shared/livekit_group_call_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase client für Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
@@ -1763,31 +1762,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
           ),
         ),
         actions: [
-          // 🎥 LIVEKIT VIDEO/VOICE GROUPCALL
-          // FIX (#4): Button nur zeigen wenn LiveKit konfiguriert ist,
-          // statt einen sichtbaren Button mit Error-SnackBar (verwirrte
-          // User die wiederholt klickten).
-          if (ApiConfig.isLivekitEnabled)
-            IconButton(
-              icon: const Icon(Icons.video_call, color: Colors.white),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LiveKitGroupCallScreen(
-                      roomName: 'wb-energie-$_selectedRoom',
-                      world: 'energie',
-                      displayName:
-                          _username.isNotEmpty ? _username : 'Mitglied',
-                      avatarUrl: _avatarUrl,
-                      audioOnly: false,
-                      initialMicEnabled: true,
-                    ),
-                  ),
-                );
-              },
-              tooltip: 'Sprach- & Video-Chat',
-            ),
+          // 🎥 Live-Einstieg: nur noch ueber den "Live starten"-Button im
+          // LiveChatHero (single entry point). Doppelter AppBar-Kamera-Button
+          // entfernt, um den Live-Einstieg eindeutig zu machen.
           if (_username.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.alternate_email, color: Colors.white),
@@ -1889,7 +1866,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                                       ? _username
                                       : 'Mitglied',
                                   avatarUrl: _avatarUrl,
-                                  audioOnly: true,
+                                  // Single entry point: video available,
+                                  // toggle inside the call. Mic on by default.
+                                  audioOnly: false,
                                   initialMicEnabled: true,
                                 ),
                               ),

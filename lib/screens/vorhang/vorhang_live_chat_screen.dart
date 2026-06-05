@@ -43,6 +43,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
   final CloudflareApiService _api = CloudflareApiService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _inputFocusNode = FocusNode();
 
   late String _selectedRoom;
 
@@ -119,6 +120,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _inputFocusNode.dispose();
     _realtimeChannel?.unsubscribe();
     _realtimeChannel = null;
     _realtimeRetryTimer?.cancel();
@@ -346,6 +348,9 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
           world: 'vorhang',
           displayName: _username,
           avatarUrl: _avatarUrl,
+          // Single entry point: video available, toggle inside the call.
+          audioOnly: false,
+          initialMicEnabled: true,
         ),
       ),
     );
@@ -363,9 +368,10 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
         title: 'Vorhang Live-Chat',
         world: WBWorld.vorhang,
         actions: [
+          // Single, clear live entry point for this world.
           IconButton(
-            icon: const Icon(Icons.mic_rounded, color: _kAccent),
-            tooltip: 'Sprachraum beitreten',
+            icon: const Icon(Icons.podcasts_rounded, color: _kAccent),
+            tooltip: 'Live beitreten',
             onPressed: _joinVoiceRoom,
           ),
         ],
@@ -385,6 +391,8 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
                     world: 'vorhang',
                     displayName: _username,
                     avatarUrl: _avatarUrl,
+                    audioOnly: false,
+                    initialMicEnabled: true,
                   ),
                 ),
               );
@@ -516,28 +524,52 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
 
     if (_messages.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '🔮',
-              style: const TextStyle(fontSize: 48),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Noch keine Nachrichten',
-              style: TextStyle(color: Colors.white54, fontSize: 15),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Sei die erste mystische Stimme in diesem Raum.',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.3),
-                fontSize: 12,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '🔮',
+                style: TextStyle(fontSize: 48),
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const SizedBox(height: 16),
+              const Text(
+                'Hier ist es noch still',
+                style: TextStyle(color: Colors.white54, fontSize: 15),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sei die erste mystische Stimme - schreibe etwas oder '
+                'starte einen Live-Talk.',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildEmptyAction(
+                    icon: Icons.edit_rounded,
+                    label: 'Erste Nachricht senden',
+                    filled: true,
+                    onTap: () => _inputFocusNode.requestFocus(),
+                  ),
+                  _buildEmptyAction(
+                    icon: Icons.podcasts_rounded,
+                    label: 'Live starten',
+                    filled: false,
+                    onTap: _joinVoiceRoom,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -554,6 +586,51 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
         itemBuilder: (context, index) {
           return _buildMessageBubble(_messages[index]);
         },
+      ),
+    );
+  }
+
+  // Small pill action used in the empty state (filled = primary CTA).
+  Widget _buildEmptyAction({
+    required IconData icon,
+    required String label,
+    required bool filled,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: filled
+              ? _kAccent.withValues(alpha: 0.85)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: filled
+                ? _kAccent
+                : _kAccent.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: filled ? Colors.black : _kAccent,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: filled ? Colors.black : _kAccent,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -665,6 +742,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
               ),
               child: TextField(
                 controller: _messageController,
+                focusNode: _inputFocusNode,
                 style: const TextStyle(color: Colors.white, fontSize: 14),
                 maxLines: 4,
                 minLines: 1,
