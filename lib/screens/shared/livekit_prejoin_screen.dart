@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../config/wb_design.dart';
+import '../../core/responsive.dart';
 import 'livekit_group_call_screen.dart';
 
 class LiveKitPreJoinScreen extends StatefulWidget {
@@ -121,6 +122,10 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
     final bg = WbDesign.background(widget.world);
     final isMaterie = widget.world == 'materie';
 
+    // Avatar skaliert mit der Bildschirmbreite, bleibt aber auf kleinen
+    // Telefonen kompakt genug damit darunter Name + Cards + Button passen.
+    final double avatarSize = context.isSmallPhone ? 104 : context.rw(140);
+
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
@@ -136,15 +141,19 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Sprach-Anruf vorbereiten',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.95),
-                              fontSize: 18,
+                              fontSize: context.rf(18),
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.2,
                             )),
                         const SizedBox(height: 2),
                         Text(
                           'Raum: ${_roomDisplayName(widget.roomName)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: accent.withValues(alpha: 0.85),
                             fontSize: 12,
@@ -162,122 +171,146 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 24),
 
-            // Avatar-Preview mit Pulse
+            // Scroll-sicherer Inhalt: auf kleinen Telefonen wuerde der fixe
+            // Block (Avatar + Name + Cards) sonst vertikal ueberlaufen. Der
+            // Beitreten-Button bleibt fix unten ausserhalb des Scrollbereichs.
             Expanded(
-              child: Center(
-                child: AnimatedBuilder(
-                  animation: _avatarPulse,
-                  builder: (_, __) {
-                    final t = _avatarPulse.value;
-                    return Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withValues(alpha: 0.25 + t * 0.20),
-                            blurRadius: 30 + t * 20,
-                            spreadRadius: 4 + t * 4,
-                          ),
-                        ],
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 24),
+
+                    // Avatar-Preview mit Pulse
+                    Center(
+                      child: AnimatedBuilder(
+                        animation: _avatarPulse,
+                        builder: (_, __) {
+                          final t = _avatarPulse.value;
+                          return Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      accent.withValues(alpha: 0.25 + t * 0.20),
+                                  blurRadius: 30 + t * 20,
+                                  spreadRadius: 4 + t * 4,
+                                ),
+                              ],
+                            ),
+                            child: Container(
+                              width: avatarSize,
+                              height: avatarSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: WbDesign.hero(widget.world),
+                                border: Border.all(
+                                  color: accent.withValues(alpha: 0.6),
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: (widget.avatarUrl != null &&
+                                        widget.avatarUrl!.isNotEmpty)
+                                    ? Image.network(
+                                        widget.avatarUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            _initialsFallback(),
+                                      )
+                                    : _initialsFallback(),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                      child: Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: WbDesign.hero(widget.world),
-                          border: Border.all(
-                            color: accent.withValues(alpha: 0.6),
-                            width: 2,
-                          ),
-                        ),
-                        child: ClipOval(
-                          child: (widget.avatarUrl != null &&
-                                  widget.avatarUrl!.isNotEmpty)
-                              ? Image.network(
-                                  widget.avatarUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      _initialsFallback(),
-                                )
-                              : _initialsFallback(),
+                    ),
+
+                    SizedBox(height: context.isSmallPhone ? 16 : 24),
+
+                    // Name + Welt
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        widget.displayName,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: context.rf(22),
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isMaterie
+                          ? 'Weltenbibliothek · Materie'
+                          : 'Weltenbibliothek · Energie',
+                      style: TextStyle(
+                        color: accent.withValues(alpha: 0.8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    SizedBox(height: context.isSmallPhone ? 18 : 26),
+
+                    // Permission + Modus-Cards
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _checkingPerms
+                          ? const SizedBox(
+                              height: 70,
+                              child: Center(
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2)),
+                            )
+                          : Column(
+                              children: [
+                                _PermissionCard(
+                                  icon: _micGranted
+                                      ? Icons.mic_rounded
+                                      : Icons.mic_off_rounded,
+                                  label: 'Mikrofon',
+                                  status: _micGranted
+                                      ? 'Bereit'
+                                      : 'Tippen zum Erlauben',
+                                  ok: _micGranted,
+                                  accent: accent,
+                                  onTap: _micGranted ? null : _requestMic,
+                                ),
+                                if (_micGranted) ...[
+                                  const SizedBox(height: 10),
+                                  _MicToggleCard(
+                                    value: _micEnabled,
+                                    onChanged: (v) =>
+                                        setState(() => _micEnabled = v),
+                                    accent: accent,
+                                  ),
+                                ],
+                                const SizedBox(height: 10),
+                                _AudioOnlyToggleCard(
+                                  value: _audioOnly,
+                                  onChanged: (v) =>
+                                      setState(() => _audioOnly = v),
+                                  accent: accent,
+                                ),
+                              ],
+                            ),
+                    ),
+
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
             ),
 
-            // Name + Welt
-            Text(
-              widget.displayName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              isMaterie
-                  ? 'Weltenbibliothek · Materie'
-                  : 'Weltenbibliothek · Energie',
-              style: TextStyle(
-                color: accent.withValues(alpha: 0.8),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.4,
-              ),
-            ),
-            const SizedBox(height: 26),
-
-            // Permission + Modus-Cards
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _checkingPerms
-                  ? const SizedBox(
-                      height: 70,
-                      child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2)),
-                    )
-                  : Column(
-                      children: [
-                        _PermissionCard(
-                          icon: _micGranted
-                              ? Icons.mic_rounded
-                              : Icons.mic_off_rounded,
-                          label: 'Mikrofon',
-                          status:
-                              _micGranted ? 'Bereit' : 'Tippen zum Erlauben',
-                          ok: _micGranted,
-                          accent: accent,
-                          onTap: _micGranted ? null : _requestMic,
-                        ),
-                        if (_micGranted) ...[
-                          const SizedBox(height: 10),
-                          _MicToggleCard(
-                            value: _micEnabled,
-                            onChanged: (v) => setState(() => _micEnabled = v),
-                            accent: accent,
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        _AudioOnlyToggleCard(
-                          value: _audioOnly,
-                          onChanged: (v) => setState(() => _audioOnly = v),
-                          accent: accent,
-                        ),
-                      ],
-                    ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Beitreten-Button
+            // Beitreten-Button (fix unten, scrollt nicht weg)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: SizedBox(
@@ -291,16 +324,20 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
                         : Icons.mic_off_rounded,
                     size: 22,
                   ),
-                  label: Text(
-                    !_micGranted
-                        ? 'Mikrofon-Berechtigung erlauben'
-                        : (_micEnabled
-                            ? 'Mit Mikrofon beitreten'
-                            : 'Als Zuhörer beitreten'),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
+                  label: Flexible(
+                    child: Text(
+                      !_micGranted
+                          ? 'Mikrofon-Berechtigung erlauben'
+                          : (_micEnabled
+                              ? 'Mit Mikrofon beitreten'
+                              : 'Als Zuhörer beitreten'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
                     ),
                   ),
                   style: ElevatedButton.styleFrom(

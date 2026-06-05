@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
 
 import '../../config/wb_design.dart';
+import '../../core/responsive.dart';
 import '../../providers/livekit_call_provider.dart';
 import '../../services/audio_feedback_service.dart';
 import '../../services/cowatch_service.dart';
@@ -2112,16 +2113,18 @@ class _TopBar extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          _roomDisplayName(roomName),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.2,
+                        Flexible(
+                          child: Text(
+                            _roomDisplayName(roomName),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(width: 6),
                         // Status-Dot direkt am Raumnamen
@@ -2136,18 +2139,22 @@ class _TopBar extends StatelessWidget {
                     // Welt-Branding-Zeile
                     Row(
                       children: [
-                        Text(
-                          switch (world) {
-                            'materie' => 'Weltenbibliothek · Materie',
-                            'vorhang' => 'Weltenbibliothek · Vorhang',
-                            'ursprung' => 'Weltenbibliothek · Ursprung',
-                            _ => 'Weltenbibliothek · Energie',
-                          },
-                          style: TextStyle(
-                            color: accent.withValues(alpha: 0.85),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.3,
+                        Flexible(
+                          child: Text(
+                            switch (world) {
+                              'materie' => 'Weltenbibliothek · Materie',
+                              'vorhang' => 'Weltenbibliothek · Vorhang',
+                              'ursprung' => 'Weltenbibliothek · Ursprung',
+                              _ => 'Weltenbibliothek · Energie',
+                            },
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: accent.withValues(alpha: 0.85),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -2367,6 +2374,8 @@ class _MoreOptionTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: active ? accent : Colors.white,
                       fontSize: 14,
@@ -2376,6 +2385,8 @@ class _MoreOptionTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: WbDesign.textSecondary,
                       fontSize: 12,
@@ -2538,7 +2549,18 @@ class _ParticipantGrid extends StatelessWidget {
       );
     }
 
-    final crossCount = count <= 2 ? 2 : (count <= 4 ? 2 : 3);
+    // Responsive Spalten: Tablets duerfen mehr Kacheln pro Reihe zeigen,
+    // Telefone bleiben bei max. 2-3 Spalten damit die Kacheln gross genug
+    // bleiben (sonst clippen Name + Mic-Badge).
+    final int crossCount = context.isTablet
+        ? (count <= 2 ? 2 : (count <= 6 ? 3 : 4))
+        : (count <= 2 ? 2 : (count <= 4 ? 2 : 3));
+    // childAspectRatio: schmalere Bildschirme bekommen hoehere Kacheln
+    // (kleinerer Ratio = mehr vertikaler Platz) damit Avatar, Name und
+    // Mic-Badge nicht ueberlaufen. Tablets duerfen quadratischer sein.
+    final double tileAspect = context.isSmallPhone
+        ? 0.74
+        : (context.isTablet ? 0.92 : 0.85);
     // Identity-Lookup für Quality + Active-Speaker-Check
     final identitiesSorted = remoteVideoTracks.keys.toList();
     final tiles = List.generate(count, (i) {
@@ -2603,7 +2625,7 @@ class _ParticipantGrid extends StatelessWidget {
         crossAxisCount: crossCount,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        childAspectRatio: 0.85, // ~140px hoch bei ~165px Breite
+        childAspectRatio: tileAspect, // responsiv (siehe oben)
         physics: const ClampingScrollPhysics(),
         shrinkWrap: true,
         children: tiles,
@@ -3446,14 +3468,22 @@ class _ControlBar extends StatelessWidget {
           child: SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
+              padding: EdgeInsets.symmetric(
+                horizontal: context.rw(20),
                 vertical: 14,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // ── Chat (mit Unread-Badge) ──
+              // Auf schmalen Telefonen passt die Button-Reihe sonst nicht in
+              // die Breite (Overflow). LayoutBuilder + horizontales Scrollen
+              // garantieren: passt sie rein -> bleibt sie spaceEvenly verteilt,
+              // passt sie nicht -> wird scrollbar statt zu clippen. Kein Button
+              // wird entfernt, das prominente "Auflegen" bleibt erhalten.
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final row = Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // ── Chat (mit Unread-Badge) ──
                   ValueListenableBuilder<int>(
                     valueListenable: InCallChatService.instance.unreadNotifier,
                     builder: (_, unread, __) => Stack(
@@ -3556,17 +3586,31 @@ class _ControlBar extends StatelessWidget {
                     enabled: isConnected,
                     onTap: () => service.toggleHandRaised(),
                   ),
-                  // ── Auflegen (immer sichtbar, prominent) ──
-                  _CtrlBtn(
-                    icon: Icons.call_end_rounded,
-                    label: 'Auflegen',
-                    active: false,
-                    enabled: true,
-                    isDanger: true,
-                    isLarge: true,
-                    onTap: onLeave,
-                  ),
-                ],
+                      // ── Auflegen (immer sichtbar, prominent) ──
+                      _CtrlBtn(
+                        icon: Icons.call_end_rounded,
+                        label: 'Auflegen',
+                        active: false,
+                        enabled: true,
+                        isDanger: true,
+                        isLarge: true,
+                        onTap: onLeave,
+                      ),
+                    ],
+                  );
+                  // Passt die Reihe in die verfuegbare Breite -> volle Breite
+                  // mit spaceEvenly. Andernfalls horizontal scrollbar machen,
+                  // damit nichts abgeschnitten wird.
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const ClampingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minWidth: constraints.maxWidth),
+                      child: row,
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -3671,6 +3715,8 @@ class _MoreActionTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: !enabled
                           ? WbDesign.textDisabled
@@ -3682,6 +3728,8 @@ class _MoreActionTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: !enabled
                           ? WbDesign.textDisabled
@@ -3861,8 +3909,12 @@ class _CtrlBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double btnSize = isLarge ? 64 : 54;
-    final double iconSize = isLarge ? 26 : 22;
+    // Auf kleinen Telefonen Buttons/Icons/Labels verkleinern, damit die
+    // gesamte Control-Bar-Reihe in die Breite passt (kein Overflow). Tablets
+    // skalieren leicht hoch. rw/rf sind geclamped -> nie zu klein/gross.
+    final double btnSize = context.rw(isLarge ? 64 : 54);
+    final double iconSize = context.rw(isLarge ? 26 : 22);
+    final double labelSize = context.rf(9.5);
 
     final Color bg = isDanger
         ? const Color(0xFFFF1744)
@@ -3938,12 +3990,13 @@ class _CtrlBtn extends StatelessWidget {
               label,
               style: TextStyle(
                 color: isDanger ? const Color(0xFFFF6B6B) : labelColor,
-                fontSize: 9.5,
+                fontSize: labelSize,
                 fontWeight:
                     (active || isDanger) ? FontWeight.w700 : FontWeight.w400,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
