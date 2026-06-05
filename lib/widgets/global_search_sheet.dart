@@ -15,6 +15,12 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/knowledge_extended_models.dart';
+import '../services/unified_knowledge_service.dart';
+import '../screens/shared/knowledge_reader_mode.dart';
+import '../screens/wissen/cinematic_book_reader_screen.dart';
+import 'user_quick_profile_sheet.dart';
+
 class GlobalSearchSheet {
   static Future<void> open(BuildContext context) {
     return showGeneralDialog(
@@ -55,6 +61,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
   List<_Hit> _profiles = const [];
   List<_Hit> _messages = const [];
   List<_Hit> _modules = const [];
+  List<_Hit> _knowledge = const [];
 
   @override
   void initState() {
@@ -82,6 +89,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
         _profiles = const [];
         _messages = const [];
         _modules = const [];
+        _knowledge = const [];
         _loading = false;
       });
       return;
@@ -142,14 +150,30 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
             .toList())
         .onError((_, __) => <_Hit>[]);
 
+    // Local knowledge library (bundled, all 4 worlds). No network needed.
+    final Future<List<_Hit>> knowledgeFut = UnifiedKnowledgeService()
+        .search(query)
+        .then((entries) => entries
+            .take(10)
+            .map((e) => _Hit(
+                  title: e.title,
+                  subtitle: '${_worldLabel(e.world)} · ${e.description}',
+                  category: _HitCategory.knowledge,
+                  data: {'entry': e},
+                ))
+            .toList())
+        .onError((_, __) => <_Hit>[]);
+
     try {
-      final results = await Future.wait([profilesFut, messagesFut, modulesFut])
+      final results = await Future.wait(
+              [profilesFut, messagesFut, modulesFut, knowledgeFut])
           .timeout(const Duration(seconds: 6));
       if (!mounted) return;
       setState(() {
         _profiles = results[0];
         _messages = results[1];
         _modules = results[2];
+        _knowledge = results[3];
         _loading = false;
       });
     } catch (e) {
@@ -158,8 +182,26 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
     }
   }
 
+  static String _worldLabel(String world) {
+    switch (world) {
+      case 'materie':
+        return 'Materie';
+      case 'energie':
+        return 'Energie';
+      case 'vorhang':
+        return 'Vorhang';
+      case 'ursprung':
+        return 'Ursprung';
+      default:
+        return world;
+    }
+  }
+
   bool get _hasResults =>
-      _profiles.isNotEmpty || _messages.isNotEmpty || _modules.isNotEmpty;
+      _profiles.isNotEmpty ||
+      _messages.isNotEmpty ||
+      _modules.isNotEmpty ||
+      _knowledge.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +262,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
               autocorrect: false,
               onChanged: _onChange,
               decoration: const InputDecoration(
-                hintText: 'Suche User, Nachrichten, Module …',
+                hintText: 'Suche User, Wissen, Nachrichten …',
                 hintStyle: TextStyle(color: Colors.white38, fontSize: 14),
                 border: InputBorder.none,
                 isCollapsed: true,
@@ -271,6 +313,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       children: [
         if (_profiles.isNotEmpty) ..._buildSection('Profile', _profiles),
+        if (_knowledge.isNotEmpty) ..._buildSection('Wissen', _knowledge),
         if (_messages.isNotEmpty) ..._buildSection('Nachrichten', _messages),
         if (_modules.isNotEmpty) ..._buildSection('Vorhang-Module', _modules),
       ],
@@ -296,7 +339,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
   }
 }
 
-enum _HitCategory { profile, message, module }
+enum _HitCategory { profile, message, module, knowledge }
 
 class _Hit {
   final String title;
@@ -323,6 +366,8 @@ class _HitTile extends StatelessWidget {
         return Icons.chat_bubble_rounded;
       case _HitCategory.module:
         return Icons.school_rounded;
+      case _HitCategory.knowledge:
+        return Icons.menu_book_rounded;
     }
   }
 
@@ -334,6 +379,8 @@ class _HitTile extends StatelessWidget {
         return const Color(0xFFA855F7);
       case _HitCategory.module:
         return const Color(0xFFC9A84C);
+      case _HitCategory.knowledge:
+        return const Color(0xFF00D4AA);
     }
   }
 
@@ -359,11 +406,44 @@ class _HitTile extends StatelessWidget {
           fontSize: 11,
         ),
       ),
-      onTap: () {
-        // MVP: schließen und User selber navigieren lassen.
-        // Spätere Iteration: per Category in Chat/Module deep-linken.
-        Navigator.of(context).pop();
-      },
+      onTap: () => _handleTap(context),
     );
+  }
+
+  void _handleTap(BuildContext context) {
+    final nav = Navigator.of(context);
+    switch (hit.category) {
+      case _HitCategory.knowledge:
+        final entry = hit.data['entry'];
+        if (entry is KnowledgeEntry) {
+          nav.pop();
+          nav.push(MaterialPageRoute(
+            builder: (_) => entry.type == 'book'
+                ? CinematicBookReaderScreen(book: entry)
+                : KnowledgeReaderMode(entry: entry, world: entry.world),
+          ));
+        } else {
+          nav.pop();
+        }
+        break;
+      case _HitCategory.profile:
+        final username = (hit.data['username'] as String?) ?? '';
+        nav.pop();
+        if (username.isNotEmpty) {
+          UserQuickProfileSheet.show(
+            context,
+            username: username,
+            avatarUrl: hit.data['avatar_url'] as String?,
+            displayName: hit.data['display_name'] as String?,
+            accent: const Color(0xFF3B82F6),
+          );
+        }
+        break;
+      case _HitCategory.message:
+      case _HitCategory.module:
+        // No deep-link target yet — just close.
+        nav.pop();
+        break;
+    }
   }
 }
