@@ -12,6 +12,7 @@ import 'voice_message_player.dart' show ChatVoicePlayer; // 🎵 CHAT VOICE PLAY
 // 🎤 TELEGRAM VOICE PLAYER (Backup)
 import 'read_receipts_indicator.dart'; // 📖 READ RECEIPTS
 import 'chat/chat_markdown_text.dart'; // ✨ Markdown-Light
+import 'user_profile_sheet.dart'; // 👤 Tap-Username -> Profil-Karte
 
 /// 💬 ENHANCED MESSAGE BUBBLE
 /// Mit Reactions, Reply, Media, Read Receipts
@@ -282,64 +283,84 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // User info
-                          Row(
-                            children: [
-                              // Avatar
-                              if (message['avatar_url'] != null &&
-                                  (message['avatar_url'] as String)
-                                      .startsWith('http'))
-                                ClipOval(
-                                  child: CachedNetworkImage(
-                                    imageUrl: message['avatar_url'],
-                                    width: 24,
-                                    height: 24,
-                                    fit: BoxFit.cover,
-                                    errorWidget: (context, url, error) => Text(
-                                      message['avatar'] ?? '👤',
-                                      style: const TextStyle(fontSize: 20),
+                          // User info (tap avatar/name -> profile card,
+                          // except for own messages).
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: widget.isMyMessage
+                                ? null
+                                : () {
+                                    final name =
+                                        (message['username'] ?? '').toString();
+                                    if (name.isEmpty) return;
+                                    showUserProfileSheet(
+                                      context,
+                                      username: name,
+                                      accent: widget.worldColor,
+                                      avatarUrl:
+                                          message['avatar_url']?.toString(),
+                                    );
+                                  },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Avatar
+                                if (message['avatar_url'] != null &&
+                                    (message['avatar_url'] as String)
+                                        .startsWith('http'))
+                                  ClipOval(
+                                    child: CachedNetworkImage(
+                                      imageUrl: message['avatar_url'],
+                                      width: 24,
+                                      height: 24,
+                                      fit: BoxFit.cover,
+                                      errorWidget: (context, url, error) =>
+                                          Text(
+                                        message['avatar'] ?? '👤',
+                                        style: const TextStyle(fontSize: 20),
+                                      ),
+                                    ),
+                                  )
+                                else if (message['avatar'] != null)
+                                  Text(
+                                    message['avatar'],
+                                    style: const TextStyle(fontSize: 20),
+                                  )
+                                else if (!widget.isMyMessage)
+                                  const Text('👤',
+                                      style: TextStyle(fontSize: 20)),
+
+                                const SizedBox(width: 8),
+
+                                // Username
+                                Text(
+                                  message['username'] ?? 'Unknown',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: widget.isMyMessage
+                                        ? Colors.white70
+                                        : widget.worldColor,
+                                  ),
+                                ),
+
+                                // Edited indicator
+                                if (message['edited'] == 1 ||
+                                    message['edited'] == true) ...[
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '(bearbeitet)',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontStyle: FontStyle.italic,
+                                      color: widget.isMyMessage
+                                          ? Colors.white60
+                                          : Colors.grey[500],
                                     ),
                                   ),
-                                )
-                              else if (message['avatar'] != null)
-                                Text(
-                                  message['avatar'],
-                                  style: const TextStyle(fontSize: 20),
-                                )
-                              else if (!widget.isMyMessage)
-                                const Text('👤',
-                                    style: TextStyle(fontSize: 20)),
-
-                              const SizedBox(width: 8),
-
-                              // Username
-                              Text(
-                                message['username'] ?? 'Unknown',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  color: widget.isMyMessage
-                                      ? Colors.white70
-                                      : widget.worldColor,
-                                ),
-                              ),
-
-                              // Edited indicator
-                              if (message['edited'] == 1 ||
-                                  message['edited'] == true) ...[
-                                const SizedBox(width: 4),
-                                Text(
-                                  '(bearbeitet)',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontStyle: FontStyle.italic,
-                                    color: widget.isMyMessage
-                                        ? Colors.white60
-                                        : Colors.grey[500],
-                                  ),
-                                ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
 
                           const SizedBox(height: 4),
