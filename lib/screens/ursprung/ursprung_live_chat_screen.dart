@@ -1,7 +1,7 @@
-/// Vorhang-Welt Live-Chat Screen
+/// Ursprung-Welt Live-Chat Screen
 ///
-/// Mystischer Gold-Design-Chat mit 5 Raeumen, Realtime-Subscription
-/// und LiveKit-Sprachraeumen.
+/// Cyan-Design-Chat fuer die Ursprung-Welt mit 5 Raeumen:
+/// Natur, Kosmos, Urvolk, Heilpflanzen, Tiergeister.
 library;
 
 import 'dart:async';
@@ -22,24 +22,25 @@ import '../shared/livekit_group_call_screen.dart';
 // Constants
 // ---------------------------------------------------------------------------
 
-const _kAccent = Color(0xFFD4AF37);
-const _kBg = Color(0xFF060408);
-const _kSurface = Color(0xFF0D0A14);
+const _kAccent = Color(0xFF00D4AA);
+const _kBg = Color(0xFF050510);
+const _kSurface = Color(0xFF080818);
 
 // ---------------------------------------------------------------------------
 // Widget
 // ---------------------------------------------------------------------------
 
-class VorhangLiveChatScreen extends StatefulWidget {
+class UrsprungLiveChatScreen extends StatefulWidget {
   final String? initialRoom;
 
-  const VorhangLiveChatScreen({super.key, this.initialRoom});
+  const UrsprungLiveChatScreen({super.key, this.initialRoom});
 
   @override
-  State<VorhangLiveChatScreen> createState() => _VorhangLiveChatScreenState();
+  State<UrsprungLiveChatScreen> createState() =>
+      _UrsprungLiveChatScreenState();
 }
 
-class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
+class _UrsprungLiveChatScreenState extends State<UrsprungLiveChatScreen> {
   final CloudflareApiService _api = CloudflareApiService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -47,50 +48,53 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
   late String _selectedRoom;
 
   static const Map<String, String> _roomIdMap = {
-    'orakel': 'vorhang-orakel',
-    'rituale': 'vorhang-rituale',
-    'symbole': 'vorhang-symbole',
-    'prophezeiungen': 'vorhang-prophezeiungen',
-    'spiegel': 'vorhang-spiegel',
+    'natur': 'ursprung-natur',
+    'kosmos': 'ursprung-kosmos',
+    'urvolk': 'ursprung-urvolk',
+    'heilpflanzen': 'ursprung-heilpflanzen',
+    'tiergeister': 'ursprung-tiergeister',
   };
 
   final Map<String, Map<String, dynamic>> _rooms = {
-    'orakel': {
-      'name': '🔮 Orakel & Prophetie',
+    'natur': {
+      'name': '🌿 Natur & Naturgeister',
       'description':
-          'Seherische Traeume, Orakel-Praktiken und prophetische Visionen',
-      'icon': '🔮',
+          'Naturkraefte, Geister der Natur und Leben auf der Erde',
+      'icon': '🌿',
     },
-    'rituale': {
-      'name': '🕯️ Rituale & Magie',
-      'description': 'Magische Praktiken, Rituale und okkultes Wissen',
-      'icon': '🕯️',
-    },
-    'symbole': {
-      'name': '👁️ Symbole & Geheimcodes',
-      'description': 'Versteckte Symbole, Geheimzeichen und kosmische Codes',
-      'icon': '👁️',
-    },
-    'prophezeiungen': {
-      'name': '📜 Prophezeiungen & Träume',
-      'description': 'Alte Prophezeiungen, Traumdeutung und Visionaeres',
-      'icon': '📜',
-    },
-    'spiegel': {
-      'name': '🌀 Der Innere Spiegel',
+    'kosmos': {
+      'name': '🌌 Kosmos & Sternenhimmel',
       'description':
-          'Bewusstseinserweiterung, innere Reisen und Schattenselbst',
-      'icon': '🌀',
+          'Kosmische Verbindungen, Sterne und universelle Wahrheiten',
+      'icon': '🌌',
+    },
+    'urvolk': {
+      'name': '🏛️ Ur-Kulturen & Ahnen',
+      'description':
+          'Uraltes Wissen der Naturvoelker, Ahnenverbindung und Traditionen',
+      'icon': '🏛️',
+    },
+    'heilpflanzen': {
+      'name': '🌱 Heilpflanzen & Natur-Medizin',
+      'description':
+          'Pflanzenwissen, Kraeuterheilkunde und natuerliche Heilmethoden',
+      'icon': '🌱',
+    },
+    'tiergeister': {
+      'name': '🦅 Tiergeister & Animismus',
+      'description':
+          'Tier-Totem, animistische Weltsicht und Naturverbindung',
+      'icon': '🦅',
     },
   };
 
   String get _fullRoomId =>
-      _roomIdMap[_selectedRoom] ?? 'vorhang-$_selectedRoom';
+      _roomIdMap[_selectedRoom] ?? 'ursprung-$_selectedRoom';
 
   // Profile
   String _username = '';
   String _userId = '';
-  String _avatarEmoji = '🔮';
+  String _avatarEmoji = '🌿';
   String? _avatarUrl;
 
   // State
@@ -106,7 +110,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedRoom = widget.initialRoom ?? 'orakel';
+    _selectedRoom = widget.initialRoom ?? 'natur';
     _userId = supabase.auth.currentUser?.id ?? UserService.getCurrentUserId();
     _loadProfile();
     _subscribeToRoom(_fullRoomId);
@@ -138,9 +142,10 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
     if (profile != null) {
       setState(() {
         _username = ep?.username ?? mp?.username ?? '';
-        _avatarEmoji = ep?.avatarEmoji ?? mp?.avatarEmoji ?? '🔮';
+        _avatarEmoji = ep?.avatarEmoji ?? mp?.avatarEmoji ?? '🌿';
         _avatarUrl = ep?.avatarUrl ?? mp?.avatarUrl;
-        _userId = supabase.auth.currentUser?.id ?? UserService.getCurrentUserId();
+        _userId =
+            supabase.auth.currentUser?.id ?? UserService.getCurrentUserId();
       });
     } else {
       _userId = UserService.getCurrentUserId();
@@ -221,7 +226,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
     }
     try {
       final messages = await _api
-          .getChatMessages(_fullRoomId, realm: 'vorhang', limit: 50)
+          .getChatMessages(_fullRoomId, realm: 'ursprung', limit: 50)
           .timeout(const Duration(seconds: 15));
       if (mounted) {
         setState(() {
@@ -266,7 +271,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
     try {
       final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId,
-        realm: 'vorhang',
+        realm: 'ursprung',
         userId: _userId,
         username: _username,
         message: text,
@@ -276,8 +281,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
       _messageController.clear();
       if (mounted) {
         setState(() {
-          final exists =
-              _messages.any((m) => m['id'] == serverMsg['id']);
+          final exists = _messages.any((m) => m['id'] == serverMsg['id']);
           if (!exists) _messages.add(serverMsg);
         });
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
@@ -285,7 +289,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Senden fehlgeschlagen. Bitte erneut versuchen.'),
             backgroundColor: Colors.red,
           ),
@@ -343,7 +347,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
       MaterialPageRoute(
         builder: (_) => LiveKitGroupCallScreen(
           roomName: _fullRoomId,
-          world: 'vorhang',
+          world: 'ursprung',
           displayName: _username,
           avatarUrl: _avatarUrl,
         ),
@@ -360,8 +364,8 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
     return Scaffold(
       backgroundColor: _kBg,
       appBar: WBGlassAppBar(
-        title: 'Vorhang Live-Chat',
-        world: WBWorld.vorhang,
+        title: 'Ursprung Live-Chat',
+        world: WBWorld.ursprung,
         actions: [
           IconButton(
             icon: const Icon(Icons.mic_rounded, color: _kAccent),
@@ -374,7 +378,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
         children: [
           // Live-Banner
           LiveRoomBanner(
-            world: 'vorhang',
+            world: 'ursprung',
             currentRoomName: _fullRoomId,
             onJoin: (roomName) {
               Navigator.push(
@@ -382,7 +386,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
                 MaterialPageRoute(
                   builder: (_) => LiveKitGroupCallScreen(
                     roomName: roomName,
-                    world: 'vorhang',
+                    world: 'ursprung',
                     displayName: _username,
                     avatarUrl: _avatarUrl,
                   ),
@@ -497,9 +501,9 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
           children: [
             const Icon(Icons.error_outline, color: Colors.orange, size: 40),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Fehler beim Laden',
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -519,9 +523,9 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '🔮',
-              style: const TextStyle(fontSize: 48),
+            const Text(
+              '🌿',
+              style: TextStyle(fontSize: 48),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -530,7 +534,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Sei die erste mystische Stimme in diesem Raum.',
+              'Verbinde dich mit der Natur und beginne das Gespraech.',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.3),
                 fontSize: 12,
@@ -561,8 +565,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
   Widget _buildMessageBubble(Map<String, dynamic> msg) {
     final msgUsername = msg['username']?.toString() ?? '';
     final isOwn = msgUsername.isNotEmpty && msgUsername == _username;
-    final content =
-        (msg['message'] ?? msg['content'] ?? '').toString();
+    final content = (msg['message'] ?? msg['content'] ?? '').toString();
     final createdAt = msg['created_at']?.toString() ?? '';
 
     String? timeLabel;
@@ -576,7 +579,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
     }
 
     final emojiRaw = msg['avatar_emoji']?.toString() ?? '';
-    final avatarEmoji = emojiRaw.isNotEmpty ? emojiRaw : '🔮';
+    final avatarEmoji = emojiRaw.isNotEmpty ? emojiRaw : '🌿';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -584,7 +587,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
       decoration: BoxDecoration(
         color: isOwn
             ? _kAccent.withValues(alpha: 0.15)
-            : const Color(0xFF120D1A),
+            : const Color(0xFF0A0F1E),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isOwn
@@ -597,9 +600,8 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
             isOwn ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: isOwn
-                ? MainAxisAlignment.end
-                : MainAxisAlignment.start,
+            mainAxisAlignment:
+                isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
               if (!isOwn) ...[
                 Text(avatarEmoji,
@@ -670,7 +672,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
                 minLines: 1,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
-                  hintText: 'Deine mystische Botschaft...',
+                  hintText: 'Deine Botschaft an die Natur...',
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.3),
                     fontSize: 14,

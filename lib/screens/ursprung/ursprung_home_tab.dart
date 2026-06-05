@@ -11,6 +11,7 @@ import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
 
+import 'ursprung_live_chat_screen.dart';
 import 'ursprung_modules_screen.dart';
 import 'ursprung_timeline_screen.dart';
 import 'tools/gateway_room_screen.dart';
@@ -208,6 +209,14 @@ class UrsprungHomeTab extends StatelessWidget {
             const SizedBox(height: 22),
             _sectionLabel('LEBENDIGER PLANET'),
             const SizedBox(height: 12),
+            _buildToolCard(
+              context: context,
+              emoji: '🎙️',
+              title: 'Livestream',
+              subtitle: 'Live-Chat & Sprachraeume',
+              builder: (_) => const UrsprungLiveChatScreen(),
+            ),
+            const SizedBox(height: 10),
             _buildToolCard(
               context: context,
               emoji: '🐾',
