@@ -1113,92 +1113,172 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
     // worlds selection state (at least one required)
     final selectedWorlds = <String>{};
     bool saving = false;
+    bool suggesting = false;
+    String? detectedTitle;
+    String? suggestSource;
 
     await showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          backgroundColor: const Color(0xFF12121E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(children: [
-            Icon(Icons.add_circle_outline_rounded,
-                color: widget.accent, size: 18),
-            const SizedBox(width: 8),
-            const Expanded(
-                child: Text('Video einpflegen',
-                    style: TextStyle(color: Colors.white, fontSize: 15))),
-          ]),
-          content: SizedBox(
-            width: 500,
-            child: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TextField(
-                  controller: urlCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'YouTube-URL oder Video-ID',
-                    hintText: 'https://youtu.be/...',
-                    labelStyle: const TextStyle(color: Colors.white54),
-                    hintStyle: const TextStyle(color: Colors.white24),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.white12)),
+        builder: (ctx, setLocal) {
+          // KI-Vorschlag: Welt(en) + Kategorie aus dem Video ableiten.
+          Future<void> runSuggest() async {
+            final url = urlCtrl.text.trim();
+            if (url.isEmpty) {
+              _snack('Bitte zuerst YouTube-URL eingeben', color: Colors.orange);
+              return;
+            }
+            setLocal(() => suggesting = true);
+            final res =
+                await WorldAdminServiceV162.suggestVideoClassification(url);
+            if (!ctx.mounted) return;
+            if (res == null) {
+              setLocal(() => suggesting = false);
+              _snack('Vorschlag fehlgeschlagen', color: Colors.orange);
+              return;
+            }
+            final worlds = (res['worlds'] as List?)
+                    ?.map((e) => e.toString())
+                    .where((w) =>
+                        ['materie', 'energie', 'vorhang', 'ursprung']
+                            .contains(w))
+                    .toList() ??
+                [];
+            setLocal(() {
+              suggesting = false;
+              detectedTitle = res['title'] as String?;
+              suggestSource = res['source'] as String?;
+              if (worlds.isNotEmpty) {
+                selectedWorlds
+                  ..clear()
+                  ..addAll(worlds);
+              }
+              final cat = res['category'] as String?;
+              if (cat != null && cat.isNotEmpty && categoryCtrl.text.isEmpty) {
+                categoryCtrl.text = cat;
+              }
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: const Color(0xFF12121E),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(children: [
+              Icon(Icons.add_circle_outline_rounded,
+                  color: widget.accent, size: 18),
+              const SizedBox(width: 8),
+              const Expanded(
+                  child: Text('Video einpflegen',
+                      style: TextStyle(color: Colors.white, fontSize: 15))),
+            ]),
+            content: SizedBox(
+              width: 500,
+              child: SingleChildScrollView(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextField(
+                    controller: urlCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    onSubmitted: (_) => runSuggest(),
+                    decoration: InputDecoration(
+                      labelText: 'YouTube-URL oder Video-ID',
+                      hintText: 'https://youtu.be/...',
+                      labelStyle: const TextStyle(color: Colors.white54),
+                      hintStyle: const TextStyle(color: Colors.white24),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.05),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.white12)),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: categoryCtrl,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Kategorie (optional)',
-                    hintText: 'z.B. Doku, Vortrag, Interview',
-                    labelStyle: const TextStyle(color: Colors.white54),
-                    hintStyle: const TextStyle(color: Colors.white24),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.white12)),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Welten (mind. eine):',
-                      style: TextStyle(color: Colors.white54, fontSize: 12)),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: ['materie', 'energie', 'vorhang', 'ursprung']
-                      .map((w) {
-                    final sel = selectedWorlds.contains(w);
-                    return FilterChip(
-                      label: Text(w[0].toUpperCase() + w.substring(1)),
-                      selected: sel,
-                      onSelected: (s) => setLocal(() {
-                        if (s) {
-                          selectedWorlds.add(w);
-                        } else {
-                          selectedWorlds.remove(w);
-                        }
-                      }),
-                      backgroundColor: const Color(0xFF1A1A2E),
-                      selectedColor: widget.accent.withValues(alpha: 0.3),
-                      labelStyle: TextStyle(
-                        color: sel ? widget.accentBright : Colors.white54,
-                        fontSize: 12,
+                  const SizedBox(height: 8),
+                  // KI-Vorschlag-Button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: suggesting ? null : runSuggest,
+                      icon: suggesting
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2))
+                          : Icon(Icons.auto_awesome_rounded,
+                              size: 16, color: widget.accentBright),
+                      label: Text(
+                        suggesting
+                            ? 'Analysiere ...'
+                            : 'Welt + Kategorie vorschlagen',
+                        style: TextStyle(
+                            color: widget.accentBright, fontSize: 12),
                       ),
-                      checkmarkColor: widget.accentBright,
-                    );
-                  }).toList(),
-                ),
-              ]),
+                    ),
+                  ),
+                  if (detectedTitle != null && detectedTitle!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Erkannt: $detectedTitle'
+                          '${suggestSource != null ? '  (${suggestSource == 'heuristic' ? 'Keywords' : 'KI'})' : ''}',
+                          style: const TextStyle(
+                              color: Colors.white38, fontSize: 11),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: categoryCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Kategorie (optional)',
+                      hintText: 'z.B. Doku, Vortrag, Interview',
+                      labelStyle: const TextStyle(color: Colors.white54),
+                      hintStyle: const TextStyle(color: Colors.white24),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.05),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.white12)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Welten (mind. eine):',
+                        style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: ['materie', 'energie', 'vorhang', 'ursprung']
+                        .map((w) {
+                      final sel = selectedWorlds.contains(w);
+                      return FilterChip(
+                        label: Text(w[0].toUpperCase() + w.substring(1)),
+                        selected: sel,
+                        onSelected: (s) => setLocal(() {
+                          if (s) {
+                            selectedWorlds.add(w);
+                          } else {
+                            selectedWorlds.remove(w);
+                          }
+                        }),
+                        backgroundColor: const Color(0xFF1A1A2E),
+                        selectedColor: widget.accent.withValues(alpha: 0.3),
+                        labelStyle: TextStyle(
+                          color: sel ? widget.accentBright : Colors.white54,
+                          fontSize: 12,
+                        ),
+                        checkmarkColor: widget.accentBright,
+                      );
+                    }).toList(),
+                  ),
+                ]),
+              ),
             ),
-          ),
           actions: [
             TextButton(
                 onPressed:

@@ -1869,6 +1869,30 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// KI-Vorschlag: aus YouTube-URL/ID Welt(en) + Kategorie ableiten.
+  /// Liefert {worlds:[...], category, title, thumbnail_url, source} oder null.
+  static Future<Map<String, dynamic>?> suggestVideoClassification(
+    String youtubeUrl,
+  ) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/videos/suggest',
+        body: {'youtube_url': youtubeUrl},
+        timeout: const Duration(seconds: 20),
+      );
+      if (data['success'] == true) return data;
+      return null;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ suggestVideoClassification: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ suggestVideoClassification: $e');
+      return null;
+    }
+  }
+
   /// Setzt status='confirmed' (sichtbar) fuer ein Video.
   static Future<bool> confirmArchiveVideo(String videoId) async {
     try {
