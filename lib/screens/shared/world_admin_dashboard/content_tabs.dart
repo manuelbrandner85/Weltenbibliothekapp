@@ -1108,235 +1108,19 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
   }
 
   Future<void> _addVideo() async {
-    final urlCtrl = TextEditingController();
-    final categoryCtrl = TextEditingController();
-    // worlds selection state (at least one required)
-    final selectedWorlds = <String>{};
-    bool saving = false;
-    bool suggesting = false;
-    String? detectedTitle;
-    String? suggestSource;
-
-    await showDialog<void>(
+    final saved = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) {
-          // KI-Vorschlag: Welt(en) + Kategorie aus dem Video ableiten.
-          Future<void> runSuggest() async {
-            final url = urlCtrl.text.trim();
-            if (url.isEmpty) {
-              _snack('Bitte zuerst YouTube-URL eingeben', color: Colors.orange);
-              return;
-            }
-            setLocal(() => suggesting = true);
-            final res =
-                await WorldAdminServiceV162.suggestVideoClassification(url);
-            if (!ctx.mounted) return;
-            if (res == null) {
-              setLocal(() => suggesting = false);
-              _snack('Vorschlag fehlgeschlagen', color: Colors.orange);
-              return;
-            }
-            final worlds = (res['worlds'] as List?)
-                    ?.map((e) => e.toString())
-                    .where((w) =>
-                        ['materie', 'energie', 'vorhang', 'ursprung']
-                            .contains(w))
-                    .toList() ??
-                [];
-            setLocal(() {
-              suggesting = false;
-              detectedTitle = res['title'] as String?;
-              suggestSource = res['source'] as String?;
-              if (worlds.isNotEmpty) {
-                selectedWorlds
-                  ..clear()
-                  ..addAll(worlds);
-              }
-              final cat = res['category'] as String?;
-              if (cat != null && cat.isNotEmpty && categoryCtrl.text.isEmpty) {
-                categoryCtrl.text = cat;
-              }
-            });
-          }
-
-          return AlertDialog(
-            backgroundColor: const Color(0xFF12121E),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Row(children: [
-              Icon(Icons.add_circle_outline_rounded,
-                  color: widget.accent, size: 18),
-              const SizedBox(width: 8),
-              const Expanded(
-                  child: Text('Video einpflegen',
-                      style: TextStyle(color: Colors.white, fontSize: 15))),
-            ]),
-            content: SizedBox(
-              width: 500,
-              child: SingleChildScrollView(
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  TextField(
-                    controller: urlCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    onSubmitted: (_) => runSuggest(),
-                    decoration: InputDecoration(
-                      labelText: 'YouTube-URL oder Video-ID',
-                      hintText: 'https://youtu.be/...',
-                      labelStyle: const TextStyle(color: Colors.white54),
-                      hintStyle: const TextStyle(color: Colors.white24),
-                      filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.05),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.white12)),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // KI-Vorschlag-Button
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: suggesting ? null : runSuggest,
-                      icon: suggesting
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : Icon(Icons.auto_awesome_rounded,
-                              size: 16, color: widget.accentBright),
-                      label: Text(
-                        suggesting
-                            ? 'Analysiere ...'
-                            : 'Welt + Kategorie vorschlagen',
-                        style: TextStyle(
-                            color: widget.accentBright, fontSize: 12),
-                      ),
-                    ),
-                  ),
-                  if (detectedTitle != null && detectedTitle!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Erkannt: $detectedTitle'
-                          '${suggestSource != null ? '  (${suggestSource == 'heuristic' ? 'Keywords' : 'KI'})' : ''}',
-                          style: const TextStyle(
-                              color: Colors.white38, fontSize: 11),
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: categoryCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Kategorie (optional)',
-                      hintText: 'z.B. Doku, Vortrag, Interview',
-                      labelStyle: const TextStyle(color: Colors.white54),
-                      hintStyle: const TextStyle(color: Colors.white24),
-                      filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.05),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.white12)),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Welten (mind. eine):',
-                        style: TextStyle(color: Colors.white54, fontSize: 12)),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: ['materie', 'energie', 'vorhang', 'ursprung']
-                        .map((w) {
-                      final sel = selectedWorlds.contains(w);
-                      return FilterChip(
-                        label: Text(w[0].toUpperCase() + w.substring(1)),
-                        selected: sel,
-                        onSelected: (s) => setLocal(() {
-                          if (s) {
-                            selectedWorlds.add(w);
-                          } else {
-                            selectedWorlds.remove(w);
-                          }
-                        }),
-                        backgroundColor: const Color(0xFF1A1A2E),
-                        selectedColor: widget.accent.withValues(alpha: 0.3),
-                        labelStyle: TextStyle(
-                          color: sel ? widget.accentBright : Colors.white54,
-                          fontSize: 12,
-                        ),
-                        checkmarkColor: widget.accentBright,
-                      );
-                    }).toList(),
-                  ),
-                ]),
-              ),
-            ),
-          actions: [
-            TextButton(
-                onPressed:
-                    saving ? null : () => Navigator.pop(ctx),
-                child: const Text('Abbrechen',
-                    style: TextStyle(color: Colors.white54))),
-            ElevatedButton(
-              onPressed: saving
-                  ? null
-                  : () async {
-                      final url = urlCtrl.text.trim();
-                      if (url.isEmpty) {
-                        _snack('Bitte YouTube-URL eingeben',
-                            color: Colors.orange);
-                        return;
-                      }
-                      if (selectedWorlds.isEmpty) {
-                        _snack('Bitte mindestens eine Welt waehlen',
-                            color: Colors.orange);
-                        return;
-                      }
-                      setLocal(() => saving = true);
-                      final video =
-                          await WorldAdminServiceV162.createArchiveVideo(
-                        youtubeUrl: url,
-                        worlds: selectedWorlds.toList(),
-                        category: categoryCtrl.text.trim(),
-                        status: 'confirmed',
-                      );
-                      if (!ctx.mounted) return;
-                      if (video != null) {
-                        Navigator.pop(ctx);
-                        _snack('Video eingepflegt + sichtbar',
-                            color: Colors.green);
-                        _load();
-                      } else {
-                        setLocal(() => saving = false);
-                        _snack('Einpflegen fehlgeschlagen (URL pruefen)',
-                            color: Colors.orange);
-                      }
-                    },
-              style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
-              child: saving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : const Text('Einpflegen',
-                      style: TextStyle(color: Colors.white)),
-            ),
-          ],
-          );
-        },
+      barrierDismissible: false,
+      builder: (_) => _AddVideoDialog(
+        accent: widget.accent,
+        accentBright: widget.accentBright,
       ),
     );
+    if (saved == true) {
+      _snack('Video eingepflegt + sichtbar', color: Colors.green);
+      _load();
+    }
   }
-
   @override
   Widget build(BuildContext context) {
     final videos = _videos ?? [];
@@ -1592,5 +1376,655 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
         ),
       ),
     ]);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADD VIDEO DIALOG (Schritt-basiert: Suche → Ergebnis → Konfiguration)
+// ═══════════════════════════════════════════════════════════════════════════
+
+enum _VStep { input, loading, results, configuring }
+
+class _AddVideoDialog extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  const _AddVideoDialog({required this.accent, required this.accentBright});
+
+  @override
+  State<_AddVideoDialog> createState() => _AddVideoDialogState();
+}
+
+class _AddVideoDialogState extends State<_AddVideoDialog> {
+  final _queryCtrl = TextEditingController();
+  final _categoryCtrl = TextEditingController();
+
+  _VStep _step = _VStep.input;
+  List<YoutubeSearchResult> _results = [];
+  YoutubeSearchResult? _selected;
+  final Set<String> _selectedWorlds = {};
+  String? _detectedTitle;
+  String? _suggestSource;
+  bool _suggesting = false;
+  bool _saving = false;
+  String? _errorMsg;
+  String? _saveError;
+
+  @override
+  void dispose() {
+    _queryCtrl.dispose();
+    _categoryCtrl.dispose();
+    super.dispose();
+  }
+
+  bool _isYoutubeUrl(String s) {
+    final t = s.trim();
+    return t.contains('youtube.com') ||
+        t.contains('youtu.be') ||
+        RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(t);
+  }
+
+  String? _extractId(String input) {
+    final t = input.trim();
+    final patterns = [
+      RegExp(r'[?&]v=([a-zA-Z0-9_-]{11})'),
+      RegExp(r'youtu\.be/([a-zA-Z0-9_-]{11})'),
+      RegExp(r'/embed/([a-zA-Z0-9_-]{11})'),
+      RegExp(r'/shorts/([a-zA-Z0-9_-]{11})'),
+      RegExp(r'/live/([a-zA-Z0-9_-]{11})'),
+    ];
+    for (final p in patterns) {
+      final m = p.firstMatch(t);
+      if (m != null) return m.group(1);
+    }
+    if (RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(t)) return t;
+    return null;
+  }
+
+  Future<void> _onSearch() async {
+    final q = _queryCtrl.text.trim();
+    if (q.isEmpty) return;
+    setState(() {
+      _step = _VStep.loading;
+      _errorMsg = null;
+    });
+    if (_isYoutubeUrl(q)) {
+      final videoId = _extractId(q) ?? q;
+      setState(() {
+        _selected = YoutubeSearchResult(
+          videoId: videoId,
+          title: '',
+          thumbnailUrl: '',
+        );
+        _step = _VStep.configuring;
+      });
+      _runSuggest(q);
+    } else {
+      final results = await WorldAdminServiceV162.searchYoutubeVideos(q);
+      if (!mounted) return;
+      if (results.isEmpty) {
+        setState(() {
+          _step = _VStep.input;
+          _errorMsg = 'Keine Videos gefunden -- anderen Suchbegriff versuchen.';
+        });
+      } else {
+        setState(() {
+          _results = results;
+          _step = _VStep.results;
+        });
+      }
+    }
+  }
+
+  void _selectVideo(YoutubeSearchResult video) {
+    setState(() {
+      _selected = video;
+      _step = _VStep.configuring;
+      _selectedWorlds.clear();
+      _categoryCtrl.clear();
+      _detectedTitle = null;
+      _suggestSource = null;
+      _saveError = null;
+    });
+    _runSuggest(video.videoId);
+  }
+
+  Future<void> _runSuggest(String urlOrId) async {
+    setState(() => _suggesting = true);
+    final res = await WorldAdminServiceV162.suggestVideoClassification(urlOrId);
+    if (!mounted) return;
+    setState(() {
+      _suggesting = false;
+      if (res == null) return;
+      _detectedTitle = res['title'] as String?;
+      _suggestSource = res['source'] as String?;
+      final worlds = (res['worlds'] as List?)
+              ?.map((e) => e.toString())
+              .where((w) =>
+                  ['materie', 'energie', 'vorhang', 'ursprung'].contains(w))
+              .toList() ??
+          const [];
+      if (worlds.isNotEmpty) {
+        _selectedWorlds
+          ..clear()
+          ..addAll(worlds);
+      }
+      final cat = res['category'] as String?;
+      if (cat != null && cat.isNotEmpty) _categoryCtrl.text = cat;
+      final sel = _selected;
+      if (sel != null &&
+          sel.title.isEmpty &&
+          _detectedTitle?.isNotEmpty == true) {
+        _selected = YoutubeSearchResult(
+          videoId: sel.videoId,
+          title: _detectedTitle!,
+          thumbnailUrl: sel.thumbnailUrl,
+          channelTitle: sel.channelTitle,
+        );
+      }
+    });
+  }
+
+  Future<void> _save() async {
+    final sel = _selected;
+    if (sel == null || _selectedWorlds.isEmpty) return;
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    final video = await WorldAdminServiceV162.createArchiveVideo(
+      youtubeUrl: sel.videoId,
+      worlds: _selectedWorlds.toList(),
+      category: _categoryCtrl.text.trim(),
+      status: 'confirmed',
+    );
+    if (!mounted) return;
+    if (video != null) {
+      Navigator.pop(context, true);
+    } else {
+      setState(() {
+        _saving = false;
+        _saveError = 'Einpflegen fehlgeschlagen -- URL oder ID pruefen.';
+      });
+    }
+  }
+
+  void _goBack() {
+    setState(() {
+      _step = _VStep.input;
+      _results.clear();
+      _selected = null;
+      _selectedWorlds.clear();
+      _detectedTitle = null;
+      _suggestSource = null;
+      _saveError = null;
+    });
+  }
+
+  Future<void> _showPreview(String videoId, String title) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _VideoPreviewDialog(
+        videoId: videoId,
+        title: title,
+        accent: widget.accent,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF12121E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(children: [
+        Icon(Icons.add_circle_outline_rounded, color: widget.accent, size: 18),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text('Video einpflegen',
+              style: TextStyle(color: Colors.white, fontSize: 15)),
+        ),
+        if (_step != _VStep.input && _step != _VStep.loading)
+          IconButton(
+            icon: const Icon(Icons.arrow_back_rounded,
+                color: Colors.white54, size: 18),
+            onPressed: _goBack,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: 'Zurueck zur Suche',
+          ),
+      ]),
+      content: SizedBox(width: 500, child: _buildContent()),
+      actions: _buildActions(),
+    );
+  }
+
+  Widget _buildContent() {
+    switch (_step) {
+      case _VStep.input:
+        return _buildInputStep();
+      case _VStep.loading:
+        return const SizedBox(
+          height: 120,
+          child: Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 12),
+              Text('Suche laeuft...',
+                  style: TextStyle(color: Colors.white54, fontSize: 13)),
+            ]),
+          ),
+        );
+      case _VStep.results:
+        return _buildResultsStep();
+      case _VStep.configuring:
+        return _buildConfiguringStep();
+    }
+  }
+
+  Widget _buildInputStep() {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      TextField(
+        controller: _queryCtrl,
+        style: const TextStyle(color: Colors.white),
+        onSubmitted: (_) => _onSearch(),
+        autofocus: true,
+        decoration: InputDecoration(
+          labelText: 'YouTube-URL oder Suchbegriff',
+          hintText: 'z.B. "Quantenbewusstsein" oder https://youtu.be/...',
+          labelStyle: const TextStyle(color: Colors.white54),
+          hintStyle:
+              const TextStyle(color: Colors.white24, fontSize: 12),
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.05),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.white12),
+          ),
+          suffixIcon: Icon(Icons.search_rounded,
+              color: widget.accentBright, size: 20),
+        ),
+      ),
+      if (_errorMsg != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(_errorMsg!,
+              style:
+                  const TextStyle(color: Colors.orange, fontSize: 12)),
+        ),
+      const SizedBox(height: 8),
+      const Text(
+        'Tipp: Themennamen eingeben zum Suchen,\noder YouTube-URL direkt einfuegen.',
+        style: TextStyle(color: Colors.white38, fontSize: 11),
+      ),
+    ]);
+  }
+
+  Widget _buildResultsStep() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 380),
+      child: ListView.separated(
+        shrinkWrap: true,
+        itemCount: _results.length,
+        separatorBuilder: (_, __) =>
+            const Divider(color: Colors.white12, height: 1),
+        itemBuilder: (_, i) => _YoutubeResultCard(
+          result: _results[i],
+          accent: widget.accent,
+          accentBright: widget.accentBright,
+          onPreview: () =>
+              _showPreview(_results[i].videoId, _results[i].title),
+          onSelect: () => _selectVideo(_results[i]),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfiguringStep() {
+    final sel = _selected;
+    if (sel == null) return const SizedBox.shrink();
+    final thumb = sel.thumbnailUrl.isNotEmpty
+        ? sel.thumbnailUrl
+        : 'https://img.youtube.com/vi/${sel.videoId}/mqdefault.jpg';
+    final displayTitle = _detectedTitle?.isNotEmpty == true
+        ? _detectedTitle!
+        : sel.title.isNotEmpty
+            ? sel.title
+            : sel.videoId;
+
+    return SingleChildScrollView(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        // Selected video preview header
+        Row(children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              thumb,
+              width: 100,
+              height: 56,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 100,
+                height: 56,
+                color: Colors.white12,
+                child: const Icon(Icons.videocam_rounded,
+                    color: Colors.white38),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(displayTitle,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                  if (sel.channelTitle?.isNotEmpty == true)
+                    Text(sel.channelTitle!,
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 11)),
+                  GestureDetector(
+                    onTap: () => _showPreview(sel.videoId, displayTitle),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.play_circle_outline_rounded,
+                          color: widget.accentBright, size: 14),
+                      const SizedBox(width: 4),
+                      Text('Vorschau',
+                          style: TextStyle(
+                              color: widget.accentBright, fontSize: 11)),
+                    ]),
+                  ),
+                ]),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        // KI-Status
+        if (_suggesting)
+          const Row(children: [
+            SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 2)),
+            SizedBox(width: 8),
+            Text('KI analysiert Video...',
+                style: TextStyle(color: Colors.white38, fontSize: 11)),
+          ])
+        else if (_suggestSource != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Vorschlag via '
+              '${_suggestSource == 'heuristic' ? 'Keywords' : 'KI'}'
+              ' -- bitte pruefen',
+              style:
+                  TextStyle(color: widget.accentBright, fontSize: 11),
+            ),
+          ),
+        const SizedBox(height: 10),
+        // Welt-Chips
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text('Welten (mind. eine):',
+              style:
+                  TextStyle(color: Colors.white54, fontSize: 12)),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children:
+              ['materie', 'energie', 'vorhang', 'ursprung'].map((w) {
+            final isSelected = _selectedWorlds.contains(w);
+            return FilterChip(
+              label: Text(w[0].toUpperCase() + w.substring(1)),
+              selected: isSelected,
+              onSelected: (s) => setState(() {
+                if (s) {
+                  _selectedWorlds.add(w);
+                } else {
+                  _selectedWorlds.remove(w);
+                }
+              }),
+              backgroundColor: const Color(0xFF1A1A2E),
+              selectedColor: widget.accent.withValues(alpha: 0.3),
+              labelStyle: TextStyle(
+                color: isSelected
+                    ? widget.accentBright
+                    : Colors.white54,
+                fontSize: 12,
+              ),
+              checkmarkColor: widget.accentBright,
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 10),
+        // Kategorie
+        TextField(
+          controller: _categoryCtrl,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'Kategorie (optional)',
+            hintText: 'z.B. Doku, Vortrag, Interview',
+            labelStyle: const TextStyle(color: Colors.white54),
+            hintStyle: const TextStyle(color: Colors.white24),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.05),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.white12),
+            ),
+          ),
+        ),
+        if (_saveError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(_saveError!,
+                style: const TextStyle(
+                    color: Colors.orange, fontSize: 12)),
+          ),
+      ]),
+    );
+  }
+
+  List<Widget> _buildActions() {
+    final cancelBtn = TextButton(
+      onPressed: (_saving || _suggesting) ? null : () => Navigator.pop(context),
+      child:
+          const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+    );
+    if (_step == _VStep.input) {
+      return [
+        cancelBtn,
+        ElevatedButton(
+          onPressed: _onSearch,
+          style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+          child: const Text('Suchen / Laden',
+              style: TextStyle(color: Colors.white)),
+        ),
+      ];
+    }
+    if (_step == _VStep.configuring) {
+      return [
+        cancelBtn,
+        ElevatedButton(
+          onPressed: (_saving || _suggesting || _selectedWorlds.isEmpty)
+              ? null
+              : _save,
+          style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+          child: _saving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
+              : const Text('Einpflegen',
+                  style: TextStyle(color: Colors.white)),
+        ),
+      ];
+    }
+    return [cancelBtn];
+  }
+}
+
+// ── Einzelne Suchergebnis-Karte ──────────────────────────────────────────────
+
+class _YoutubeResultCard extends StatelessWidget {
+  final YoutubeSearchResult result;
+  final Color accent;
+  final Color accentBright;
+  final VoidCallback onPreview;
+  final VoidCallback onSelect;
+
+  const _YoutubeResultCard({
+    required this.result,
+    required this.accent,
+    required this.accentBright,
+    required this.onPreview,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final thumb = result.thumbnailUrl.isNotEmpty
+        ? result.thumbnailUrl
+        : 'https://img.youtube.com/vi/${result.videoId}/mqdefault.jpg';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+      child: Row(children: [
+        GestureDetector(
+          onTap: onPreview,
+          child: Stack(alignment: Alignment.center, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.network(
+                thumb,
+                width: 88,
+                height: 50,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 88,
+                  height: 50,
+                  color: Colors.white12,
+                  child: const Icon(Icons.videocam_rounded,
+                      color: Colors.white38, size: 20),
+                ),
+              ),
+            ),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.play_arrow_rounded,
+                  color: Colors.white, size: 18),
+            ),
+          ]),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(result.title,
+                    style:
+                        const TextStyle(color: Colors.white, fontSize: 12),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+                if (result.channelTitle?.isNotEmpty == true)
+                  Text(result.channelTitle!,
+                      style: const TextStyle(
+                          color: Colors.white38, fontSize: 10)),
+              ]),
+        ),
+        const SizedBox(width: 6),
+        ElevatedButton(
+          onPressed: onSelect,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: accent,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('Auswaehlen',
+              style: TextStyle(color: Colors.white, fontSize: 11)),
+        ),
+      ]),
+    );
+  }
+}
+
+// ── Video-Vorschau-Dialog (inline YoutubePlayer) ─────────────────────────────
+
+class _VideoPreviewDialog extends StatefulWidget {
+  final String videoId;
+  final String title;
+  final Color accent;
+  const _VideoPreviewDialog(
+      {required this.videoId, required this.title, required this.accent});
+
+  @override
+  State<_VideoPreviewDialog> createState() => _VideoPreviewDialogState();
+}
+
+class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
+  late YoutubePlayerController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = YoutubePlayerController(
+      initialVideoId: widget.videoId,
+      flags: const YoutubePlayerFlags(autoPlay: true, mute: false),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return YoutubePlayerBuilder(
+      player: YoutubePlayer(
+        controller: _ctrl,
+        showVideoProgressIndicator: true,
+        progressIndicatorColor: widget.accent,
+      ),
+      builder: (ctx, player) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 40),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          player,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 4, 4),
+            child: Row(children: [
+              Expanded(
+                child: Text(
+                  widget.title,
+                  style:
+                      const TextStyle(color: Colors.white70, fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Schliessen',
+                    style:
+                        TextStyle(color: Colors.white54, fontSize: 12)),
+              ),
+            ]),
+          ),
+        ]),
+      ),
+    );
   }
 }

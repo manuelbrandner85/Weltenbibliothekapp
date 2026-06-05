@@ -9,6 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart'
     show RealtimeChannel, PostgresChangeEvent, Supabase;
+import 'package:youtube_player_flutter/youtube_player_flutter.dart'
+    show YoutubePlayerController, YoutubePlayerFlags, YoutubePlayer,
+         YoutubePlayerBuilder;
 
 import '../../config/api_config.dart';
 import '../../core/constants/roles.dart';
