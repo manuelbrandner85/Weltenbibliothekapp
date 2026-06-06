@@ -756,6 +756,98 @@ class _UsersTabState extends State<_UsersTab> {
         _ => r,
       };
 
+  // "Befoerdern"-Button: oeffnet einen Rollen-Picker statt einer harten
+  // Promotion zu 'admin'. Picker zeigt nur Rollen ueber der aktuellen,
+  // die der eingeloggte Admin laut canPromoteToRole tatsaechlich vergeben
+  // darf.
+  Future<void> _promote(WorldUser u) async {
+    const order = [
+      AppRoles.user,
+      AppRoles.moderator,
+      AppRoles.contentEditor,
+      AppRoles.admin,
+      AppRoles.rootAdmin,
+    ];
+    final currentIdx = order.indexOf(u.role);
+    final targets = order
+        .where((r) =>
+            r != u.role &&
+            (currentIdx < 0 || order.indexOf(r) > currentIdx) &&
+            AppRoles.canPromoteToRole(widget.admin.role, r))
+        .toList();
+    if (targets.isEmpty) {
+      _snack(
+        'Keine hoehere Rolle verfuegbar, die du vergeben darfst.',
+        color: Colors.orange,
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(children: [
+                const Icon(Icons.arrow_upward_rounded,
+                    color: Colors.green, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '@${u.username} befoerdern',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15),
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Aktuell: ${_prettyRole(u.role)}',
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 20),
+            for (final r in targets)
+              ListTile(
+                leading: const Icon(Icons.arrow_circle_up_rounded,
+                    color: Colors.greenAccent, size: 20),
+                title: Text(_prettyRole(r),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14)),
+                onTap: () => Navigator.pop(ctx, r),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked == null) return;
+    await _changeRole(u, picked);
+  }
+
   Future<void> _demote(WorldUser u) async {
     final confirmed = await _confirm(
       'Degradieren',
@@ -1159,6 +1251,8 @@ class _UsersTabState extends State<_UsersTab> {
             : '⚠️ $amount XP für @${u.username} (neu: $newXp)',
         color: amount > 0 ? Colors.green.shade700 : Colors.orange,
       );
+      // Reload so the new XP value is visible in the user list immediately.
+      _load();
     } else {
       _snack('❌ XP-Vergabe fehlgeschlagen', color: Colors.red);
     }
@@ -1549,7 +1643,7 @@ class _UsersTabState extends State<_UsersTab> {
                                     accentBright: widget.accentBright,
                                     onBan: () => _ban(u),
                                     onUnban: () => _unban(u),
-                                    onPromote: () => _changeRole(u, 'admin'),
+                                    onPromote: () => _promote(u),
                                     onDemote: () => _demote(u),
                                     onGrantXp:
                                         AppRoles.canGrantXp(widget.admin.role)
