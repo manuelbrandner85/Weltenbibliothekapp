@@ -11,7 +11,15 @@ part of '../world_admin_dashboard.dart';
 class _ContentInsightsTab extends StatefulWidget {
   final Color accent;
   final Color accentBright;
-  const _ContentInsightsTab({required this.accent, required this.accentBright});
+  // videosOnly=true: Rolle hat keine vollen Content-Rechte (z.B. Moderator/
+  // Admin) -> es wird NUR der Video-Manager gezeigt, ohne die anderen
+  // Content-Sub-Tabs (Fortschritt/Editor/Meldungen/Artikel).
+  final bool videosOnly;
+  const _ContentInsightsTab({
+    required this.accent,
+    required this.accentBright,
+    this.videosOnly = false,
+  });
 
   @override
   State<_ContentInsightsTab> createState() => _ContentInsightsTabState();
@@ -19,22 +27,31 @@ class _ContentInsightsTab extends StatefulWidget {
 
 class _ContentInsightsTabState extends State<_ContentInsightsTab>
     with SingleTickerProviderStateMixin {
-  late TabController _ctrl;
+  TabController? _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = TabController(length: 5, vsync: this);
+    // Nur ein TabController wenn die vollen Content-Tabs gezeigt werden.
+    if (!widget.videosOnly) {
+      _ctrl = TabController(length: 5, vsync: this);
+    }
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _ctrl?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Eingeschraenkte Ansicht: nur Video-Manager (Moderator/Admin ohne
+    // Content-Edit-Recht).
+    if (widget.videosOnly) {
+      return _VideoManagerTab(
+          accent: widget.accent, accentBright: widget.accentBright);
+    }
     return Column(children: [
       Container(
         color: const Color(0xFF0D0D1A),
