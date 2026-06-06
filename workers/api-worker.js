@@ -4855,7 +4855,10 @@ export default {
           if (!res.ok && res.status !== 204) {
             return errorResponse(`Loeschen fehlgeschlagen: ${res.status}`);
           }
-          await logAudit(env, caller.username, 'push_history_clear', null, '', null, {});
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'push_history_clear',
+          });
           return jsonResponse({ success: true });
         } catch (e) { return errorResponse(`History-Delete-Fehler: ${e.message}`); }
       }
@@ -12535,8 +12538,11 @@ Wichtig:
             `${SUPABASE_URL}/rest/v1/admin_module_access?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}`,
             { method: 'DELETE', headers: svcHeaders },
           );
-          await logAudit(env, caller.username, 'module_access_remove', userId, '', null, {
-            module_code: moduleCode,
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'module_access_remove',
+            target_id: userId,
+            details: { module_code: moduleCode },
           });
           return jsonResponse({ success: true, action: 'removed', module_code: moduleCode });
         }
@@ -12574,8 +12580,12 @@ Wichtig:
           return errorResponse(`module-access UPSERT Fehler: ${upsertRes.status} ${t.slice(0, 200)}`);
         }
 
-        await logAudit(env, caller.username, isGranted ? 'module_access_grant' : 'module_access_block',
-          userId, '', null, { module_code: moduleCode, module_type: moduleType, reason });
+        logAudit(svcHeaders, {
+          admin_username: caller.username,
+          action: isGranted ? 'module_access_grant' : 'module_access_block',
+          target_id: userId,
+          details: { module_code: moduleCode, module_type: moduleType, reason },
+        });
 
         return jsonResponse({
           success: true,
