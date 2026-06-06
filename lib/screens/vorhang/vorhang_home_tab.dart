@@ -8,6 +8,7 @@ import '../../widgets/cinematic/wb_stagger_reveal.dart';
 
 import '../../services/mentor_service.dart';
 import '../../widgets/mentor_hero_card.dart';
+import '../../services/unified_profile_service.dart';
 import '../../services/vorhang_service.dart';
 import '../shared/mentor_chat_screen.dart';
 import '../../widgets/daily_path_widget.dart';
@@ -80,10 +81,14 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
       _error = null;
     });
     try {
+      // Fall back to UnifiedProfileService.userId when no Supabase Auth
+      // session exists (InvisibleAuth users) -- otherwise admin module
+      // overrides never load for app-only profiles.
       final user = Supabase.instance.client.auth.currentUser;
+      final userId = user?.id ?? UnifiedProfileService.instance.userId;
       // Direct-Supabase Pfad (Worker-Bypass) — funktioniert auch bei
       // Cloudflare-Worker-Quota-Outage.
-      final data = await VorhangService.fetchModules(userId: user?.id);
+      final data = await VorhangService.fetchModules(userId: userId);
       final rawBranches = (data['branches'] as Map?) ?? {};
       final mapped = <String, List<Map<String, dynamic>>>{};
       for (final b in _branchOrder) {

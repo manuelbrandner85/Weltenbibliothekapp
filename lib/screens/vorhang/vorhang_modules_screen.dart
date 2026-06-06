@@ -5,6 +5,7 @@ import '../../services/branch_boss_test_service.dart'; // 👑 I3 Boss-Test
 import '../../services/gamification_service.dart';
 import '../../services/new_unlock_tracker.dart';
 import '../../services/storage_service.dart';
+import '../../services/unified_profile_service.dart';
 import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -116,10 +117,14 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
       _error = null;
     });
     try {
+      // Fall back to UnifiedProfileService.userId when no Supabase Auth
+      // session exists (InvisibleAuth users) -- otherwise admin module
+      // overrides never load for app-only profiles.
       final user = Supabase.instance.client.auth.currentUser;
+      final userId = user?.id ?? UnifiedProfileService.instance.userId;
       // Direct-Supabase Pfad (Worker-Bypass) — funktioniert auch bei
       // Cloudflare-Worker-Quota-Outage.
-      final data = await VorhangService.fetchModules(userId: user?.id);
+      final data = await VorhangService.fetchModules(userId: userId);
       final rawBranches = (data['branches'] as Map?) ?? {};
       final mapped = <String, List<Map<String, dynamic>>>{};
       for (final b in _branchOrder) {
