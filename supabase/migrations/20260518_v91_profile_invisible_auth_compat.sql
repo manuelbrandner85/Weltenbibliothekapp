@@ -83,6 +83,17 @@ CREATE POLICY user_devices_read_own ON public.user_devices
 -- ── 5. admin_audit_log: Trigger fuer profile.role Aenderungen ──────────────
 -- Bestehende admin_audit_log Tabelle (v87 cluster_m_admin) wird genutzt.
 -- Jede Aenderung von profiles.role wird automatisch geloggt.
+--
+-- ROOT-CAUSE-FIX (2026-06-06): Diese Migration laeuft bei JEDEM Push auf
+-- main (apply_migrations.yml hat keinen paths-Filter). Die urspruengliche
+-- Variante schrieb in admin_audit_log(actor_id, target_type, target_id,
+-- payload) -- Spalten, die im aktuellen Schema NICHT existieren. Dadurch
+-- wurde die Funktion bei jedem Deploy wieder auf die kaputte Form
+-- zurueckgesetzt und JEDER Rollenwechsel schlug mit 42703 fehl, obwohl
+-- v118/v123/v124 sie zwischenzeitlich gefixt hatten (diese laufen nicht
+-- im Workflow). Deshalb hier an der Quelle auf das echte Schema
+-- (admin_username, action, target_identity, target_username, details)
+-- korrigiert.
 DO $$
 BEGIN
   IF EXISTS (
@@ -90,16 +101,17 @@ BEGIN
     WHERE table_schema = 'public' AND table_name = 'admin_audit_log'
   ) THEN
     CREATE OR REPLACE FUNCTION public.log_profile_role_change()
-    RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $func$
+    RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path = public AS $func$
     BEGIN
       IF OLD.role IS DISTINCT FROM NEW.role THEN
         INSERT INTO public.admin_audit_log (
-          actor_id, action, target_type, target_id, payload, created_at
+          admin_username, action, target_identity, target_username, details, created_at
         ) VALUES (
-          COALESCE(auth.uid(), '00000000-0000-0000-0000-000000000000'::uuid),
+          'system (trigger)',
           'role_change',
-          'profile',
           NEW.id::text,
+          NEW.username,
           jsonb_build_object(
             'old_role', OLD.role,
             'new_role', NEW.role,
