@@ -103,6 +103,54 @@ class AdminResolver {
         }
       }
 
+      // ROLLEN-ZUWEISUNGS-FIX (2026-06-06): Zugewiesene Rollen
+      // (moderator / admin / content_editor) frisch aus profiles laden.
+      // Ein Root-Admin kann einem InvisibleAuth-User per Dashboard eine
+      // Rolle zuweisen -- das schreibt profiles.role in der DB. Ohne echte
+      // Supabase-Session wuerde dieser Client die neue Rolle aber NIE sehen
+      // (nur hardcoded Username-Match + lokaler Cache). Daher hier ein
+      // direkter profiles-Lookup per userId (profiles.id) bzw. Username.
+      // ADDITIV: Nur Admin-Rollen werden geehrt -- kann Zugang GEBEN, nie
+      // wegnehmen (DB sagt 'user' -> wir fahren mit Cache-Fallback fort,
+      // kein Downgrade des Owners durch eine anon-Session).
+      final localUserId = profile?.userId;
+      try {
+        final sb = Supabase.instance.client;
+        Map<String, dynamic>? row;
+        if (localUserId != null && localUserId.isNotEmpty) {
+          row = await sb
+              .from('profiles')
+              .select('role')
+              .eq('id', localUserId)
+              .maybeSingle()
+              .timeout(const Duration(seconds: 6));
+        }
+        if (row == null && localUsername != null && localUsername.isNotEmpty) {
+          final list = await sb
+              .from('profiles')
+              .select('role')
+              .eq('username', localUsername)
+              .limit(1)
+              .timeout(const Duration(seconds: 6));
+          if (list is List && list.isNotEmpty) {
+            row = Map<String, dynamic>.from(list.first as Map);
+          }
+        }
+        final dbRole = row?['role'] as String?;
+        if (dbRole != null && dbRole.isNotEmpty && AppRoles.isAdmin(dbRole)) {
+          if (kDebugMode) {
+            debugPrint(
+                '🔐 [AdminResolver] Zugewiesene DB-Rolle (InvisibleAuth): $dbRole');
+          }
+          await _persistUnifiedRole(localUsername ?? '(admin)', dbRole);
+          return dbRole;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ [AdminResolver] DB-Rollen-Lookup-Fehler: $e');
+        }
+      }
+
       // AUTH-REFACTOR-FIX: Lokal gecachte Admin-Rolle ehren. Nach dem Refactor
       // laeuft das Geraet auf einer anonymen Supabase-Session (role='user'),
       // waehrend die zuvor aufgeloeste Admin-Rolle des Owners lokal im Profil
