@@ -21,7 +21,11 @@ class _CategoryChip {
 
 class MediathekScreen extends StatefulWidget {
   final String world;
-  const MediathekScreen({super.key, required this.world});
+  // embedded=true: als Tab in der Welt-Navigationsleiste -> keine eigene
+  // AppBar mit Back-Button + transparenter Hintergrund (Welt-Background
+  // scheint durch). embedded=false (Default): Vollbild-Screen mit AppBar.
+  final bool embedded;
+  const MediathekScreen({super.key, required this.world, this.embedded = false});
 
   @override
   State<MediathekScreen> createState() => _MediathekScreenState();
@@ -134,6 +138,18 @@ class _MediathekScreenState extends State<MediathekScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Embedded-Variante (Welt-Tab): kein Scaffold/AppBar/Back-Button,
+    // transparenter Hintergrund + schlanker Titel-Header.
+    if (widget.embedded) {
+      return Column(
+        children: [
+          _buildEmbeddedHeader(),
+          _buildSearchBar(),
+          if (_chips.isNotEmpty) _buildCategoryChips(),
+          Expanded(child: _isLoading ? _buildSpinner() : _buildGrid()),
+        ],
+      );
+    }
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
@@ -161,6 +177,42 @@ class _MediathekScreenState extends State<MediathekScreen> {
           _buildSearchBar(),
           if (_chips.isNotEmpty) _buildCategoryChips(),
           Expanded(child: _isLoading ? _buildSpinner() : _buildGrid()),
+        ],
+      ),
+    );
+  }
+
+  // Schlanker Header fuer den eingebetteten Welt-Tab (statt AppBar).
+  Widget _buildEmbeddedHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 18,
+            decoration: BoxDecoration(
+              color: _primary,
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: [BoxShadow(color: _primary, blurRadius: 8)],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Videos',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w300,
+              fontSize: 26,
+              letterSpacing: 2,
+              shadows: [
+                Shadow(color: _primary.withValues(alpha: 0.4), blurRadius: 20),
+              ],
+            ),
+          ),
+          const Spacer(),
+          Icon(Icons.play_circle_outline_rounded,
+              color: _primary.withValues(alpha: 0.6), size: 22),
         ],
       ),
     );
