@@ -100,15 +100,47 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
   // (Constructor + onAuthStateChange) sich gegenseitig ueberschreiben.
   bool _isLoading = false;
 
+  // ANTI-FLACKER: hoechste in dieser Session aufgeloeste Admin-Rolle.
+  // Ein spaeterer load() (z.B. tokenRefreshed) bei dem der async DB-Lookup
+  // langsam ist / timeout hat, wuerde sonst kurzzeitig 'user' liefern -> der
+  // Content/Videos-Tab + Dashboard-Button flackern weg und wieder rein.
+  // Sicher: Der Worker prueft die Rolle bei JEDER Aktion live (verifyAdminCaller
+  // liest profiles.role), eine veraltete Admin-Rolle im Client kann also keine
+  // unautorisierte Aktion ausloesen. Wird bei signedOut zurueckgesetzt.
+  String? _stickyAdminRole;
+
   AdminStateNotifier(this.ref, this.world) : super(AdminState.empty(world)) {
     load();
     supabase.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedOut) {
+        _stickyAdminRole = null; // echte Abmeldung -> Admin-Status verfaellt
+      }
       if (data.event == AuthChangeEvent.signedIn ||
           data.event == AuthChangeEvent.signedOut ||
           data.event == AuthChangeEvent.tokenRefreshed) {
         load();
       }
     });
+  }
+
+  /// Setzt den State mit Anti-Flacker-Schutz: einmal aufgeloeste Admin-Rolle
+  /// wird innerhalb der Session nicht auf 'user' herabgestuft.
+  void _commit(AdminState s) {
+    if (AppRoles.isAdmin(s.role)) {
+      _stickyAdminRole = s.role;
+      state = s;
+      return;
+    }
+    if (_stickyAdminRole != null) {
+      if (kDebugMode) {
+        debugPrint(
+            '🔐 AdminState: Anti-Flacker -> behalte $_stickyAdminRole statt ${s.role}');
+      }
+      state = AdminState.fromCache(
+          world, s.username ?? state.username, _stickyAdminRole);
+      return;
+    }
+    state = s;
   }
 
   Future<void> load() async {
@@ -182,7 +214,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
           // InvisibleAuth-Moderator/Admin seine Rolle nie (die haengt an
           // seiner eigenen profiles-Zeile, nicht an der anon-Session).
           if (AppRoles.isAdmin(role)) {
-            state = AdminState(
+            _commit(AdminState(
               isAdmin: true,
               isRootAdmin: AppRoles.isRootAdmin(role),
               isModerator: AppRoles.isModerator(role),
@@ -190,7 +222,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
               backendVerified: true,
               username: username,
               role: role,
-            );
+            ));
             if (kDebugMode) {
               debugPrint('✅ AdminState: Supabase verifiziert – $state');
             }
@@ -299,8 +331,8 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       final resolverRole = await AdminResolver.resolveCurrentRole();
       if (AppRoles.isAdmin(resolverRole)) {
         // Username: behalte was wir aus Hive/SQLite haben — sonst leer.
-        state =
-            AdminState.fromCache(world, username ?? '(admin)', resolverRole);
+        _commit(
+            AdminState.fromCache(world, username ?? '(admin)', resolverRole));
         if (kDebugMode) {
           debugPrint(
               '🛡️ AdminState: AdminResolver-Pfad – role=$resolverRole, $state');
@@ -315,7 +347,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       if (kDebugMode) {
         debugPrint('⚠️ AdminState: Kein Profil gefunden ($world)');
       }
-      state = AdminState.empty(world);
+      _commit(AdminState.empty(world));
       return;
     }
 
@@ -340,7 +372,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       }
     }
 
-    state = AdminState.fromCache(world, username, role);
+    _commit(AdminState.fromCache(world, username, role));
     if (kDebugMode) debugPrint('📦 AdminState: Offline-Cache geladen – $state');
   }
 
