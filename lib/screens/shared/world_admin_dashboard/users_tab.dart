@@ -787,6 +787,11 @@ class _UsersTabState extends State<_UsersTab> {
   // exakten Usernames zur Bestaetigung (Fat-Finger-Schutz).
   Future<void> _deleteUser(WorldUser u) async {
     if (!widget.admin.isRootAdmin) return;
+    if (u.username.trim().toLowerCase() ==
+        (widget.admin.username ?? '').trim().toLowerCase()) {
+      _snack('Du kannst dich nicht selbst loeschen.', color: Colors.orange);
+      return;
+    }
     final confirmCtrl = TextEditingController();
     // AUDIT-FIX B13: Reason-Feld bei Hard-Delete fuer Audit-Trail.
     final reasonCtrl = TextEditingController();
