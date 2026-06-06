@@ -4330,7 +4330,11 @@ export default {
 
       // ── GET /api/admin/videos/search  (YouTube-Suche fuer Admin) ──────
       // ?q=Suchbegriff &max_results=8
-      // Benoetigt env.YOUTUBE_API_KEY (Wrangler-Secret).
+      // Robust: Piped API zuerst (kostenlos, kein Key, keine Quota), dann
+      // YouTube Data API v3 als Fallback (falls YOUTUBE_API_KEY gesetzt).
+      // Grund: Die YouTube Data API hat nur 10k Units/Tag -- eine Suche
+      // kostet 100 Units -> nach ~100 Suchen liefert sie 403/quotaExceeded
+      // und der Admin saehe "keine Videos". Piped umgeht das komplett.
       if (method === 'GET' && path === '/api/admin/videos/search') {
         try {
           const q = (url.searchParams.get('q') || '').trim();
@@ -4341,35 +4345,70 @@ export default {
           if (!q) {
             return errorResponse('Suchbegriff erforderlich', 400, 'missing_query');
           }
-          if (!env.YOUTUBE_API_KEY) {
-            return errorResponse(
-              'YOUTUBE_API_KEY nicht konfiguriert',
-              503,
-              'no_api_key'
-            );
+
+          let videos = [];
+
+          // 1) Piped API (kostenlos, kein API-Key). Mehrere Spiegel, da
+          //    einzelne Instanzen zeitweise down/rate-limited sein koennen.
+          const pipedHosts = [
+            'https://pipedapi.kavin.rocks',
+            'https://pipedapi.adminforge.de',
+            'https://api-piped.mha.fi',
+          ];
+          for (const host of pipedHosts) {
+            try {
+              const pr = await fetch(
+                `${host}/search?q=${encodeURIComponent(q)}&filter=videos`,
+                {
+                  headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' },
+                  signal: AbortSignal.timeout(7000),
+                }
+              );
+              if (!pr.ok) continue;
+              const pd = await pr.json();
+              videos = (pd.items || [])
+                .filter((i) => i.url && i.url.startsWith('/watch?v='))
+                .slice(0, maxResults)
+                .map((i) => {
+                  const vid = i.url.replace('/watch?v=', '').split('&')[0];
+                  return {
+                    video_id: vid,
+                    title: i.title || '',
+                    thumbnail_url:
+                      i.thumbnail ||
+                      `https://img.youtube.com/vi/${vid}/mqdefault.jpg`,
+                    channel_title: i.uploaderName || null,
+                  };
+                })
+                .filter((v) => v.video_id.length > 0);
+              if (videos.length > 0) break;
+            } catch (_) { /* naechster Spiegel */ }
           }
-          const apiRes = await fetch(
-            'https://www.googleapis.com/youtube/v3/search' +
-            `?part=snippet&type=video&q=${encodeURIComponent(q)}` +
-            `&maxResults=${maxResults}&key=${env.YOUTUBE_API_KEY}`
-          );
-          if (!apiRes.ok) {
-            return errorResponse(
-              `YouTube API: HTTP ${apiRes.status}`,
-              502,
-              'youtube_api_error'
-            );
+
+          // 2) Fallback: YouTube Data API v3 (falls Key gesetzt + Piped leer).
+          if (videos.length === 0 && env.YOUTUBE_API_KEY) {
+            try {
+              const apiRes = await fetch(
+                'https://www.googleapis.com/youtube/v3/search' +
+                `?part=snippet&type=video&q=${encodeURIComponent(q)}` +
+                `&maxResults=${maxResults}&key=${env.YOUTUBE_API_KEY}`,
+                { signal: AbortSignal.timeout(8000) }
+              );
+              if (apiRes.ok) {
+                const apiData = await apiRes.json();
+                videos = (apiData.items || []).map((item) => ({
+                  video_id: item.id.videoId,
+                  title: item.snippet.title,
+                  thumbnail_url:
+                    item.snippet.thumbnails?.medium?.url ||
+                    item.snippet.thumbnails?.default?.url ||
+                    null,
+                  channel_title: item.snippet.channelTitle || null,
+                }));
+              }
+            } catch (_) { /* Piped war schon leer -> unten leere Liste */ }
           }
-          const apiData = await apiRes.json();
-          const videos = (apiData.items || []).map(item => ({
-            video_id: item.id.videoId,
-            title: item.snippet.title,
-            thumbnail_url:
-              item.snippet.thumbnails?.medium?.url ||
-              item.snippet.thumbnails?.default?.url ||
-              null,
-            channel_title: item.snippet.channelTitle || null,
-          }));
+
           return jsonResponse({ success: true, videos, query: q });
         } catch (e) {
           return errorResponse(`Suche fehlgeschlagen: ${e.message}`);
