@@ -1138,6 +1138,143 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
       _load();
     }
   }
+
+  // Nachtraegliche Bearbeitung von Kategorie + Welten eines Videos.
+  Future<void> _editVideo(Map<String, dynamic> v) async {
+    final id = v['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    const allWorlds = ['materie', 'energie', 'vorhang', 'ursprung'];
+    final categoryCtrl = TextEditingController(
+        text: (v['category'] as String?) ?? '');
+    final rawWorlds = v['worlds'];
+    final selectedWorlds = <String>{
+      ...(rawWorlds is List ? rawWorlds.map((e) => e.toString()) : <String>[]),
+    };
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          backgroundColor: const Color(0xFF12121E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Text('Video bearbeiten',
+              style: TextStyle(color: Colors.white, fontSize: 16)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  (v['youtube_title'] ?? v['raw_title'] ?? '-').toString(),
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 14),
+                const Text('Welten',
+                    style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
+                        letterSpacing: 1.2)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: allWorlds.map((w) {
+                    final sel = selectedWorlds.contains(w);
+                    return GestureDetector(
+                      onTap: () => setLocal(() {
+                        if (sel) {
+                          selectedWorlds.remove(w);
+                        } else {
+                          selectedWorlds.add(w);
+                        }
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? widget.accent.withValues(alpha: 0.25)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: sel
+                                  ? widget.accent
+                                  : Colors.white24),
+                        ),
+                        child: Text(w,
+                            style: TextStyle(
+                                color: sel
+                                    ? widget.accentBright
+                                    : Colors.white70,
+                                fontSize: 12,
+                                fontWeight:
+                                    sel ? FontWeight.w700 : FontWeight.normal)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: categoryCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    labelText: 'Kategorie',
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.white12)),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.white12)),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: widget.accent)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedWorlds.isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                    content: Text('Mindestens eine Welt waehlen'),
+                    backgroundColor: Colors.orange,
+                  ));
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+              child:
+                  const Text('Speichern', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true) return;
+    final ok = await WorldAdminServiceV162.updateArchiveVideo(
+      videoId: id,
+      category: categoryCtrl.text.trim().isEmpty
+          ? null
+          : categoryCtrl.text.trim(),
+      worlds: selectedWorlds.toList(),
+    );
+    _snack(ok ? 'Video aktualisiert' : 'Fehler beim Aktualisieren',
+        color: ok ? Colors.green : Colors.orange);
+    if (ok) _load();
+  }
   @override
   Widget build(BuildContext context) {
     final videos = _videos ?? [];
@@ -1353,6 +1490,15 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                                               constraints: const BoxConstraints(
                                                   minWidth: 30, minHeight: 30),
                                             ),
+                                          IconButton(
+                                            icon: Icon(Icons.edit_rounded,
+                                                color: widget.accent, size: 16),
+                                            tooltip: 'Kategorie/Welten bearbeiten',
+                                            onPressed: () => _editVideo(v),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(
+                                                minWidth: 30, minHeight: 30),
+                                          ),
                                           IconButton(
                                             icon: const Icon(
                                                 Icons.delete_outline_rounded,

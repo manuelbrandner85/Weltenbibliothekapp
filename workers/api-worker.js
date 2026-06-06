@@ -4102,6 +4102,30 @@ export default {
       const VIDEO_WORLDS = new Set(['materie', 'energie', 'vorhang', 'ursprung']);
       const VIDEO_STATUSES = new Set(['pending', 'confirmed', 'rejected']);
 
+      // Serien-Erkennung: entfernt Teil/Part/Folge/Episode/Kapitel-Marker +
+      // "#N" / "(1/5)" am Titel-Ende, damit "Die Macht Teil 2" auf den
+      // Basis-Titel "Die Macht" reduziert wird (= gleicher Stamm wie Teil 1).
+      // Gibt den getrimmten Basis-Titel zurueck, oder '' wenn kein Marker da war.
+      const stripSeriesMarker = (rawTitle) => {
+        const t = String(rawTitle || '').trim();
+        if (!t) return '';
+        let base = t
+          .replace(
+            /[\s\-–—|:,.]*\b(teil|part|pt|folge|episode|ep|kapitel|chapter|vol|volume)\.?\s*\d+\b.*$/i,
+            ''
+          )
+          .replace(/[\s\-–—|:,.]*[#(]\s*\d+\s*(\/\s*\d+)?\s*\)?\s*$/i, '')
+          .trim();
+        // Trailing-Trennzeichen abschneiden.
+        base = base.replace(/[\s\-–—|:,.]+$/, '').trim();
+        // Nur als Serie werten, wenn ein Marker tatsaechlich entfernt wurde
+        // und der Basis-Titel noch sinnvoll lang ist.
+        if (base.length >= 4 && base.toLowerCase() !== t.toLowerCase()) {
+          return base;
+        }
+        return '';
+      };
+
       // Extract the 11-char YouTube video id from a URL or raw id.
       const extractYoutubeId = (input) => {
         const s = String(input || '').trim();
@@ -4311,7 +4335,36 @@ export default {
           }
           const meta = await fetchYoutubeOembed(videoId);
           const title = meta?.title || '';
-          const suggestion = await classifyVideo(title, meta?.author_name);
+          let suggestion = await classifyVideo(title, meta?.author_name);
+
+          // Serien-Erkennung: wenn der Titel ein "Teil 2"/"Part 3"/... ist,
+          // nach einem bereits eingepflegten Geschwister-Video mit gleichem
+          // Basis-Titel suchen und dessen Kategorie + Welten uebernehmen.
+          // So landet "Teil 2" automatisch in derselben Kategorie wie "Teil 1".
+          const base = stripSeriesMarker(title);
+          if (base) {
+            try {
+              const sibRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/archive_videos` +
+                  `?youtube_title=ilike.${encodeURIComponent(base + '*')}` +
+                  `&select=category,worlds,youtube_title&order=created_at.desc&limit=1`,
+                { headers: svcHeaders }
+              );
+              if (sibRes.ok) {
+                const sibs = await sibRes.json().catch(() => []);
+                if (Array.isArray(sibs) && sibs.length > 0) {
+                  const sib = sibs[0];
+                  const sibWorlds = Array.isArray(sib.worlds) ? sib.worlds : [];
+                  suggestion = {
+                    worlds: sibWorlds.length ? sibWorlds : suggestion.worlds,
+                    category: sib.category || suggestion.category,
+                    source: 'series_sibling',
+                  };
+                }
+              }
+            } catch (_) { /* Serie best-effort -- Heuristik bleibt Fallback */ }
+          }
+
           return jsonResponse({
             success: true,
             video_id: videoId,
@@ -4322,6 +4375,7 @@ export default {
             worlds: suggestion.worlds,
             category: suggestion.category,
             source: suggestion.source,
+            series_base: base || null,
           });
         } catch (e) {
           return errorResponse(`Vorschlag-Fehler: ${e.message}`);
@@ -4569,6 +4623,68 @@ export default {
           return jsonResponse({ success: true, video: rows[0] });
         } catch (e) {
           return errorResponse(`Confirm-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── PATCH /api/admin/videos/:id  (Kategorie + Welten nachbearbeiten) ─
+      // Body: { category?, worlds?: [...] }. Root-Admin/Content-Editor/Admin
+      // koennen ein bereits eingepflegtes Video umkategorisieren oder die
+      // Welten-Zuordnung aendern.
+      if (
+        method === 'PATCH' &&
+        path.startsWith('/api/admin/videos/') &&
+        path.split('/').length === 5
+      ) {
+        try {
+          const id = path.split('/')[4];
+          if (!id) return errorResponse('Video-ID fehlt', 400);
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const patch = {};
+          if (body.category !== undefined) {
+            patch.category = body.category
+              ? String(body.category).slice(0, 80)
+              : null;
+          }
+          if (Array.isArray(body.worlds)) {
+            const worlds = body.worlds.filter((w) => VIDEO_WORLDS.has(String(w)));
+            if (worlds.length === 0) {
+              return errorResponse(
+                'Mindestens eine gueltige Welt erforderlich',
+                400,
+                'invalid_worlds'
+              );
+            }
+            patch.worlds = worlds;
+          }
+          if (Object.keys(patch).length === 0) {
+            return errorResponse('Nichts zu aendern (category/worlds)', 400);
+          }
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/archive_videos?id=eq.${encodeURIComponent(id)}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify(patch),
+            }
+          );
+          if (!res.ok) {
+            const t = await res.text().catch(() => '');
+            return errorResponse(`Update-Fehler: ${res.status} ${t.slice(0, 200)}`);
+          }
+          const rows = await res.json().catch(() => []);
+          if (!Array.isArray(rows) || rows.length === 0) {
+            return errorResponse('Video nicht gefunden', 404);
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'video_update',
+            target_id: id,
+            details: patch,
+          });
+          return jsonResponse({ success: true, video: rows[0] });
+        } catch (e) {
+          return errorResponse(`Update-Fehler: ${e.message}`);
         }
       }
 
