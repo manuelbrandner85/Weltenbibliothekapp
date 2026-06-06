@@ -2100,6 +2100,9 @@ export default {
               lastName: 'birth_last_name', avatarUrl: 'avatar_url',
               avatarEmoji: 'avatar_emoji', birthDate: 'birth_date',
               birthPlace: 'birth_place', birthTime: 'birth_time',
+              // world_preference existiert NICHT als Spalte -- auf 'world'
+              // mappen, sonst lehnt PostgREST den INSERT/PATCH mit 42703 ab.
+              world_preference: 'world',
             };
             for (const [from, to] of Object.entries(ALIAS)) {
               if (body[from] !== undefined) {
@@ -2109,7 +2112,7 @@ export default {
             }
             const PROFILE_COLS = new Set([
               'username', 'display_name', 'avatar_url', 'avatar_emoji', 'bio',
-              'world', 'world_preference', 'role', 'full_name', 'birth_date',
+              'world', 'role', 'full_name', 'birth_date',
               'birth_time', 'birth_place', 'birth_latitude', 'birth_longitude',
               'timezone_offset_hours', 'birth_time_unknown', 'gender',
               'birth_first_name', 'birth_middle_names', 'birth_last_name',
@@ -4779,12 +4782,12 @@ export default {
           const deeplink = (body.deeplink || '').toString();
           if (!title || !msgBody) return errorResponse('title und body sind pflicht', 400);
 
-          // Empfänger-Liste aus profiles holen
-          // world_preference-Spalte ggf. entfernt — fallback ohne wenn 42703.
+          // Empfänger-Liste aus profiles holen.
+          // world_preference-Spalte existiert nicht -> nur world filtern.
           // v103 Phase 4e: 'admins' und 'active' als neue Targets.
           let filter = '';
           if (target === 'materie' || target === 'energie' || target === 'vorhang' || target === 'ursprung') {
-            filter = `&or=(world.eq.${target},world_preference.eq.${target})`;
+            filter = `&world=eq.${target}`;
           } else if (target === 'user' && body.userId) {
             filter = `&id=eq.${body.userId}`;
           } else if (target === 'admins') {
@@ -4795,21 +4798,11 @@ export default {
             const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
             filter = `&last_seen_at=gte.${sevenDaysAgo}`;
           }
-          let recRes = await fetch(
+          const recRes = await fetch(
             `${SUPABASE_URL}/rest/v1/profiles?select=id${filter}&limit=2000`,
             { headers: svcH }
           );
-          if (!recRes.ok) {
-            const txt = await recRes.text().catch(() => '');
-            if ((txt.includes('42703') || txt.includes('world_preference')) && filter.includes('world_preference')) {
-              const fallbackFilter = filter.replace(/&or=\(world\.eq\.[^,]+,world_preference\.eq\.[^)]+\)/, `&world=eq.${target}`);
-              recRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/profiles?select=id${fallbackFilter}&limit=2000`,
-                { headers: svcH }
-              );
-            }
-            if (!recRes.ok) return errorResponse(`Empfänger-Fetch ${recRes.status}`);
-          }
+          if (!recRes.ok) return errorResponse(`Empfänger-Fetch ${recRes.status}`);
           const recipients = await recRes.json().catch(() => []);
           const userIds = (Array.isArray(recipients) ? recipients : [])
             .map(r => r.id).filter(id => id && !id.startsWith('00000000-'));
@@ -4916,7 +4909,10 @@ export default {
           // v5.44.7: legacy_user_id (v91) + xp dazu, damit InvisibleAuth-User
           // korrekt erscheinen + Admin XP-Statistik sieht.
           const baseCols = ['id','username','display_name','role','is_banned','avatar_url','avatar_emoji','created_at'];
-          const optionalCols = ['world','world_preference','last_seen_at','legacy_user_id','xp','full_name'];
+          // world_preference existiert nicht (entfernt) -> nicht mehr anfragen.
+          // xp existiert ab v128. Restliche optionalCols bleiben fuer den
+          // 42703-Fallback-Loop defensiv erhalten.
+          const optionalCols = ['world','last_seen_at','legacy_user_id','xp','full_name'];
           // Versuche zuerst mit allen Spalten, droppe optional bei 42703.
           let cols = [...baseCols, ...optionalCols];
           let res;
@@ -4988,7 +4984,7 @@ export default {
               avatar_url: u.avatar_url,
               avatar_emoji: u.avatar_emoji || null,
               created_at: u.created_at || '',
-              world: u.world || u.world_preference || null,
+              world: u.world || null,
               last_seen_at: u.last_seen_at || null,
               xp: u.xp || 0,
               full_name: u.full_name || null,
@@ -5063,20 +5059,16 @@ export default {
           const world = path.split('/')[4];
           const anonKey = env.SUPABASE_ANON_KEY || '';
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
-          // Always use both world and world_preference to catch all profiles
-          // Use OR filter: world=materie OR world_preference=materie
+          // world_preference-Spalte existiert nicht -> nur nach world filtern.
+          // (Frueher zweiter Request gegen world_preference schlug bei jedem
+          //  Dashboard-Load mit 42703 fehl und kostete einen Worker-Subrequest.)
           const res1 = await fetch(
             `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,full_name,role,is_banned,avatar_url,avatar_emoji,created_at,legacy_user_id,last_seen_at&world=eq.${world}&order=created_at.desc&limit=5000`,  // avatar_emoji now exists after migration v14
             { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
           );
-          const res2 = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,full_name,role,is_banned,avatar_url,avatar_emoji,created_at,legacy_user_id,last_seen_at&world_preference=eq.${world}&order=created_at.desc&limit=5000`,  // avatar_emoji now exists after migration v14
-            { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
-          );
           const data1 = await res1.json().catch(() => []);
-          const data2 = await res2.json().catch(() => []);
-          // Merge and deduplicate by id
-          const allProfiles = [...(Array.isArray(data1) ? data1 : []), ...(Array.isArray(data2) ? data2 : [])];
+          // Deduplicate by id
+          const allProfiles = [...(Array.isArray(data1) ? data1 : [])];
           const seen = new Set();
           const unique = allProfiles.filter(u => { if (seen.has(u.id)) return false; seen.add(u.id); return true; });
           const users = unique.map(u => ({
@@ -5659,7 +5651,7 @@ export default {
               { headers: svcHeaders }),
             fetch(`${SUPABASE_URL}/rest/v1/admin_warnings?user_id=eq.${encodeURIComponent(userId)}&select=id,reason,created_at,admin_username&order=created_at.desc&limit=10`,
               { headers: svcHeaders }),
-            fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log?target_id=eq.${encodeURIComponent(userId)}&select=action,details,created_at,admin_username&order=created_at.desc&limit=10`,
+            fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log?target_identity=eq.${encodeURIComponent(userId)}&select=action,details,created_at,admin_username&order=created_at.desc&limit=10`,
               { headers: svcHeaders }),
           ]);
 

@@ -433,6 +433,19 @@ jobs:
           run_sql "v93 Profile spirit extra fields (lat/lng/tz/time_unknown)" \
             supabase/migrations/20260518_v93_profile_spirit_extra_fields.sql
 
+          # ── Schema-Defenses fuer Admin-Dashboard (2026-06-06) ────────────────
+          # Diese laufen NACH v91 (das die role-audit Trigger-Funktion definiert)
+          # und sind additiv + idempotent. v126 gibt admin_audit_log die alten
+          # Spalten zurueck (falls je wieder eine Legacy-Trigger-Variante schreibt),
+          # v128 ergaenzt profiles.xp (Server-XP-Zaehler fuer add_user_xp + Admin-
+          # XP-Endpoint). OHNE diese schlaegt XP-Vergabe + (frueher) Rollenwechsel
+          # nach jedem Deploy wieder fehl.
+          run_sql "v126 admin_audit_log Legacy-Spalten (Schema-Defense)" \
+            supabase/migrations/20260606_v126_admin_audit_log_legacy_columns.sql
+
+          run_sql "v128 profiles.xp Spalte (Server-XP fuer Admin-Vergabe)" \
+            supabase/migrations/20260606_v128_add_profiles_xp_column.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
