@@ -4372,7 +4372,6 @@ export default {
           return errorResponse(`Suche fehlgeschlagen: ${e.message}`);
         }
       }
-
       // ── GET /api/admin/videos  (Liste fuer Admin-Review, alle Status) ──
       // ?world=... &status=pending|confirmed|rejected|all &limit=200
       if (method === 'GET' && path === '/api/admin/videos') {
@@ -5865,6 +5864,10 @@ export default {
           if (!rawUserId) return errorResponse('userId fehlt', 400);
           // Resolve legacy 'user_*' IDs to the real profiles.id UUID.
           const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
+          // Self-delete guard: Root-Admins duerfen sich nicht selbst loeschen.
+          if (String(userId) === String(caller.userId)) {
+            return errorResponse('Selbst-Loeschung ist nicht erlaubt', 403, 'self_delete_forbidden');
+          }
           const delReason = url.searchParams.get('reason') || null;
 
           // v117: Vor dem Loeschen Identitaet auf die Blacklist (deleted_identities)
