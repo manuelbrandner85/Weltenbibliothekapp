@@ -152,8 +152,17 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     tabs.add(const _AdminTabDef(
         icon: Icons.chat_bubble_rounded, label: 'Chat', kind: 'chat'));
     if (AppRoles.canEditContent(role)) {
+      // Volle Content-Rechte (Root-Admin + Content-Editor): kompletter
+      // Content-Tab inkl. Module/Editor/Meldungen/Artikel/Videos.
       tabs.add(const _AdminTabDef(
           icon: Icons.analytics_rounded, label: 'Content', kind: 'content'));
+    } else if (AppRoles.canAccessAdminDashboard(role)) {
+      // Alle anderen Admin-Rollen (Moderator/Admin): nur Video-Verwaltung
+      // unter "Inhalte" -- keine sonstigen Content-Funktionen.
+      tabs.add(const _AdminTabDef(
+          icon: Icons.play_circle_outline_rounded,
+          label: 'Videos',
+          kind: 'videos'));
     }
     if (AppRoles.canCreateAnnouncements(role)) {
       tabs.add(const _AdminTabDef(
@@ -450,6 +459,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       case 'content':
         return _ContentInsightsTab(
             accent: _accent, accentBright: _accentBright);
+      case 'videos':
+        return _ContentInsightsTab(
+            accent: _accent, accentBright: _accentBright, videosOnly: true);
       case 'push':
         return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
       case 'audit':
@@ -489,6 +501,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       case 'content':
         return _ContentInsightsTab(
             accent: _accent, accentBright: _accentBright);
+      case 'videos':
+        return _ContentInsightsTab(
+            accent: _accent, accentBright: _accentBright, videosOnly: true);
       case 'push':
         return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
       case 'audit':
