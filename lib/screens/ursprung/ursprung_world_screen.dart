@@ -7,6 +7,7 @@ import 'ursprung_research_tab.dart';
 import 'ursprung_community_tab.dart';
 import 'ursprung_map_tab.dart';
 import '../shared/unified_knowledge_tab.dart';
+import '../shared/mediathek_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../shared/unified_world_map_screen.dart';
 import '../../widgets/admin_dashboard_button.dart';
@@ -91,6 +92,7 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
       const UrsprungCommunityTab(),
       const UrsprungMapTab(),
       const UnifiedKnowledgeTab(world: 'ursprung'),
+      const MediathekScreen(world: 'ursprung', embedded: true),
     ];
 
     return Theme(
@@ -159,6 +161,8 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
                   WBFloatingNavItem(icon: Icons.people, label: 'Community'),
                   WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
                   WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
+                  WBFloatingNavItem(
+                      icon: Icons.play_circle_outline, label: 'Videos'),
                 ],
                 onChanged: (i) => setState(() => _currentIndex = i),
               ),

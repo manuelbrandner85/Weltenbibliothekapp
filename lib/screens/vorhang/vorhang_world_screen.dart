@@ -7,6 +7,7 @@ import 'vorhang_research_tab.dart';
 import 'vorhang_community_tab.dart';
 import 'vorhang_map_tab.dart';
 import '../shared/unified_knowledge_tab.dart';
+import '../shared/mediathek_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../../widgets/admin_dashboard_button.dart';
 import '../../services/haptic_service.dart';
@@ -90,6 +91,7 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
       const VorhangCommunityTab(),
       const VorhangMapTab(),
       const UnifiedKnowledgeTab(world: 'vorhang'),
+      const MediathekScreen(world: 'vorhang', embedded: true),
     ];
 
     return Theme(
@@ -157,6 +159,8 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
                   WBFloatingNavItem(icon: Icons.people, label: 'Community'),
                   WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
                   WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
+                  WBFloatingNavItem(
+                      icon: Icons.play_circle_outline, label: 'Videos'),
                 ],
                 onChanged: (i) => setState(() => _currentIndex = i),
               ),

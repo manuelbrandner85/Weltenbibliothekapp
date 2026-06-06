@@ -7,6 +7,7 @@ import 'energie/spirit_tab_modern.dart';
 import 'energie/energie_community_tab_modern.dart';
 import 'energie/energie_karte_tab_pro.dart';
 import 'shared/unified_knowledge_tab.dart';
+import 'shared/mediathek_screen.dart';
 import 'shared/stats_dashboard_screen.dart';
 import 'shared/unified_world_map_screen.dart';
 import '../widgets/admin_dashboard_button.dart';
@@ -90,6 +91,7 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
       const EnergieCommunityTabModern(),
       const EnergieKarteTabPro(),
       const UnifiedKnowledgeTab(world: 'energie'),
+      const MediathekScreen(world: 'energie', embedded: true),
     ];
 
     return Theme(
@@ -159,6 +161,8 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
                   WBFloatingNavItem(icon: Icons.people, label: 'Community'),
                   WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
                   WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
+                  WBFloatingNavItem(
+                      icon: Icons.play_circle_outline, label: 'Videos'),
                 ],
                 onChanged: (i) => setState(() => _currentIndex = i),
               ),
