@@ -1970,6 +1970,33 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// Aendert Kategorie und/oder Welten eines bereits eingepflegten Videos.
+  /// [worlds] null laesst die Welten unveraendert; sonst muss mind. eine
+  /// gueltige Welt enthalten sein.
+  static Future<bool> updateArchiveVideo({
+    required String videoId,
+    String? category,
+    List<String>? worlds,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (category != null) body['category'] = category;
+      if (worlds != null) body['worlds'] = worlds;
+      if (body.isEmpty) return false;
+      final data = await AdminApiClient.instance
+          .patchJson('/api/admin/videos/$videoId', body: body);
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ updateArchiveVideo: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ updateArchiveVideo: $e');
+      return false;
+    }
+  }
+
   /// Entfernt ein Video endgueltig.
   static Future<bool> deleteArchiveVideo(String videoId) async {
     try {
