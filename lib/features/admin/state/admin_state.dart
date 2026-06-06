@@ -175,20 +175,31 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
             'display_name': profile['display_name'],
           });
 
-          state = AdminState(
-            isAdmin: AppRoles.isAdmin(role),
-            isRootAdmin: AppRoles.isRootAdmin(role),
-            isModerator: AppRoles.isModerator(role),
-            world: world,
-            backendVerified: true,
-            username: username,
-            role: role,
-          );
-
-          if (kDebugMode) {
-            debugPrint('✅ AdminState: Supabase verifiziert – $state');
+          // Nur eine ECHTE Admin-Rolle aus der Supabase-Session beendet die
+          // Aufloesung. Eine anonyme Geraete-Session (signInAnonymously ->
+          // role='user') darf den AdminResolver-Pfad (Schritt 3) NICHT
+          // ueberspringen -- sonst sieht ein per Dashboard zugewiesener
+          // InvisibleAuth-Moderator/Admin seine Rolle nie (die haengt an
+          // seiner eigenen profiles-Zeile, nicht an der anon-Session).
+          if (AppRoles.isAdmin(role)) {
+            state = AdminState(
+              isAdmin: true,
+              isRootAdmin: AppRoles.isRootAdmin(role),
+              isModerator: AppRoles.isModerator(role),
+              world: world,
+              backendVerified: true,
+              username: username,
+              role: role,
+            );
+            if (kDebugMode) {
+              debugPrint('✅ AdminState: Supabase verifiziert – $state');
+            }
+            return;
           }
-          return;
+          if (kDebugMode) {
+            debugPrint(
+                '🔐 AdminState: Supabase-Session role=user -> weiter zu AdminResolver');
+          }
         }
       }
     } catch (e) {
