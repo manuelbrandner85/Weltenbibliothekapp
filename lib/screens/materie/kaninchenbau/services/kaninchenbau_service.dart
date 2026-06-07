@@ -595,7 +595,9 @@ LIMIT 60
           result.add(word);
         }
       }
-    } catch (e) { if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e');
+    }
 
     if (result.length < 6) {
       try {
@@ -607,7 +609,9 @@ LIMIT 60
           }
           if (result.length >= 6) break;
         }
-      } catch (e) { if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e'); }
+      } catch (e) {
+        if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e');
+      }
     }
 
     return result.take(6).toList();
@@ -1652,8 +1656,8 @@ LIMIT 60
     final threads =
         await SavedThreadsService.instance.findThreadsByTopic(topic);
     if (threads.isEmpty) return const NetworkGraph(nodes: [], edges: []);
-    final center = NetworkNode(
-        id: 'center', label: topic, type: 'concept', weight: 1.0);
+    final center =
+        NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0);
     final nodes = <NetworkNode>[center];
     final edges = <NetworkEdge>[];
     for (var i = 0; i < threads.length && i < 16; i++) {

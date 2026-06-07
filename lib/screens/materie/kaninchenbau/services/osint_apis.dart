@@ -51,7 +51,9 @@ class OsintApis {
           );
         }).toList();
       }
-    } catch (e) { if (kDebugMode) debugPrint('osint_apis: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('osint_apis: silent catch -> $e');
+    }
 
     // Direkter Fallback wenn Worker nicht erreichbar
     try {
@@ -175,7 +177,7 @@ class OsintApis {
       {int limit = 5}) async {
     try {
       final url = Uri.parse(
-          'https://api.opencorporates.com/v0.4/companies/search?q=${Uri.encodeComponent(topic)}&per_page=$limit');
+          'https://api.opencorporates.com/v0.4.5/companies/search?q=${Uri.encodeComponent(topic)}&per_page=$limit&format=json');
       final resp = await http.get(url).timeout(const Duration(seconds: 12));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -312,8 +314,9 @@ class OsintApis {
   // ═══════════════════════════════════════════════════════════════
   Future<List<CourtCase>> fetchCourtCases(String topic, {int limit = 6}) async {
     try {
+      // 2026-06-07: REST v3 ist EOL, v4 ist aktuelle stabile Version.
       final url = Uri.parse(
-          'https://www.courtlistener.com/api/rest/v3/search/?q=${Uri.encodeComponent(topic)}&type=o&order_by=score+desc');
+          'https://www.courtlistener.com/api/rest/v4/search/?q=${Uri.encodeComponent(topic)}&type=o&order_by=score+desc&format=json');
       final resp = await http.get(url).timeout(const Duration(seconds: 12));
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;

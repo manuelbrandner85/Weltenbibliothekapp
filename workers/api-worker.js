@@ -638,27 +638,76 @@ async function requireAdmin(request, env, { needHighPrivilege = false, needRootA
 
 const DE_WORDS = /\b(und|der|die|das|ist|von|auf|zu|für|nicht|mit|einen|einem|eine|des|den|wird|wurde|sind|hat|haben|kann|dass|als|aber|auch|nach|bei|über|durch|im|am|es|er|sie|wir|ihr|was|wie|wenn|dann|noch|nur|alle|sehr|mehr|so|da|hier|jetzt|schon|ihm|ihn|dem|diesem|seiner|ihrer|eines|welche|andere|andere)\b/i;
 
-async function translateToDe(text) {
+// Bisheriger Google-Translate-Hack (translate.googleapis.com/translate_a/single)
+// wurde von Google massiv rate-limited und scheiterte 90% der Zeit leise.
+// Neuer Pfad: Workers-AI m2m100 (kostenlos, zuverlaessig).
+// Fallback: Original-Text zurueckgeben (besser als Crash).
+async function translateToDe(text, env) {
   if (!text || text.trim().length < 5) return text || '';
   if (DE_WORDS.test(text)) return text; // bereits Deutsch
+  if (!env?.AI) return text; // ohne Workers-AI: Original zurueck
   try {
-    const r = await fetch(
-      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=de&dt=t&q=${encodeURIComponent(text.slice(0, 500))}`,
-      { signal: AbortSignal.timeout(5000), headers: { 'User-Agent': 'Mozilla/5.0' } }
-    );
-    if (!r.ok) return text;
-    const data = await r.json();
-    return data?.[0]?.map(s => s?.[0] || '').filter(Boolean).join('') || text;
-  } catch (_) { return text; }
+    const trimmed = text.slice(0, 1500);
+    const aiRes = await env.AI.run('@cf/meta/m2m100-1.2b', {
+      text: trimmed,
+      source_lang: 'en',
+      target_lang: 'de',
+    });
+    const translated = aiRes?.translated_text;
+    return (translated && translated.trim()) ? translated : text;
+  } catch (_) {
+    return text;
+  }
 }
 
-async function translateItems(items, fields) {
-  return Promise.all(items.map(async item => {
-    const vals = await Promise.all(fields.map(f => translateToDe(item[f] || '')));
-    const out = { ...item };
-    fields.forEach((f, i) => { out[f] = vals[i]; });
+async function translateItems(items, fields, env) {
+  if (!items || items.length === 0) return items || [];
+  // Batch via Worker-AI llama (1 Call) ist wesentlich schneller als
+  // pro-Item-m2m100 wenn viele Items zu uebersetzen sind.
+  // Fuer kleine Mengen (<= 3) oder ohne AI: pro-Item m2m100.
+  const total = items.length * fields.length;
+  if (total <= 3 || !env?.AI) {
+    return Promise.all(items.map(async item => {
+      const vals = await Promise.all(
+        fields.map(f => translateToDe(item[f] || '', env))
+      );
+      const out = { ...item };
+      fields.forEach((f, i) => { out[f] = vals[i]; });
+      return out;
+    }));
+  }
+  // Batch: alle Strings sammeln, 1 Llama-Call, zurueck mappen.
+  const strings = [];
+  const refs = []; // {itemIdx, field}
+  items.forEach((item, idx) => {
+    fields.forEach(f => {
+      const v = (item[f] || '').toString();
+      if (v.trim().length >= 5 && !DE_WORDS.test(v)) {
+        strings.push(v.slice(0, 300).replace(/\n/g, ' '));
+        refs.push({ itemIdx: idx, field: f });
+      }
+    });
+  });
+  if (strings.length === 0) return items;
+  try {
+    const numbered = strings.map((s, i) => `${i + 1}. ${s}`).join('\n');
+    const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+      messages: [
+        { role: 'system', content: 'Du übersetzt nummerierte englische Texte ins Deutsche. Gib NUR die Übersetzungen in der gleichen Nummerierung zurück, ohne Kommentare. Behalte Eigennamen und Firmennamen unverändert.' },
+        { role: 'user', content: numbered },
+      ],
+      max_tokens: 1500,
+    });
+    const text = aiRes?.response || '';
+    const out = items.map(it => ({ ...it }));
+    refs.forEach((ref, i) => {
+      const match = text.match(new RegExp(`(?:^|\\n)\\s*${i + 1}\\.\\s*(.+?)(?=(?:\\n\\s*\\d+\\.)|$)`, 's'));
+      if (match) out[ref.itemIdx][ref.field] = match[1].trim();
+    });
     return out;
-  }));
+  } catch (_) {
+    return items;
+  }
 }
 
 // Supabase-Proxy mit optionalem Auth-Token
@@ -8877,7 +8926,7 @@ export default {
         const link = (block.match(/<id>([\s\S]*?)<\/id>/) || [])[1]?.trim();
         return { title, summary, url: link };
       }).filter(p => p.title) : [];
-      const arxivPapers = await translateItems(arxivRaw, ['title', 'summary']);
+      const arxivPapers = await translateItems(arxivRaw, ['title', 'summary'], env);
 
       const europeanaRaw = europeana?.items?.slice(0, 5).map(it => ({
         title: it.title?.[0] || '',
@@ -8885,7 +8934,7 @@ export default {
         year: it.year?.[0] || '',
         url: it.guid,
       })) || [];
-      const europeanaTranslated = await translateItems(europeanaRaw, ['title']);
+      const europeanaTranslated = await translateItems(europeanaRaw, ['title'], env);
 
       const gdeltRaw = gdelt?.articles?.slice(0, 10).map(a => ({
         title: a.title || '',
@@ -8893,7 +8942,7 @@ export default {
         domain: a.domain,
         date: a.seendate,
       })) || [];
-      const gdeltTranslated = await translateItems(gdeltRaw, ['title']);
+      const gdeltTranslated = await translateItems(gdeltRaw, ['title'], env);
 
       return jsonResponse({
         topic,
@@ -9115,7 +9164,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           date: a.seendate,
           tone: a.tone || 0,
         }));
-        const items = await translateItems(itemsRaw, ['title']);
+        const items = await translateItems(itemsRaw, ['title'], env);
         return jsonResponse({ topic, items, count: items.length });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -9233,7 +9282,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           score: e.score || 0,
           url: `https://www.opensanctions.org/entities/${e.id}`,
         }));
-        const results = await translateItems(sanctionsRaw, ['notes']);
+        const results = await translateItems(sanctionsRaw, ['notes'], env);
         return jsonResponse({ topic, results, total: data?.total?.value || results.length });
       } catch (e) {
         return jsonResponse({ results: [], error: e.message });
@@ -9263,7 +9312,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           summary: e.properties?.summary?.[0] || e.properties?.description?.[0] || '',
           url: e.links?.ui || `https://aleph.occrp.org/entities/${e.id}`,
         }));
-        const results = await translateItems(alephRaw, ['name', 'summary']);
+        const results = await translateItems(alephRaw, ['name', 'summary'], env);
         return jsonResponse({ topic, results, total: data?.total?.value || results.length });
       } catch (e) {
         return jsonResponse({ results: [], error: e.message });
@@ -9305,7 +9354,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
             url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
           };
         }).filter(Boolean);
-        const papers = await translateItems(papersRaw, ['title']);
+        const papers = await translateItems(papersRaw, ['title'], env);
         return jsonResponse({ topic, papers });
       } catch (e) {
         return jsonResponse({ papers: [], error: e.message });
@@ -9339,7 +9388,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           abstract: (p.abstract || '').slice(0, 250),
           url: `https://www.semanticscholar.org/paper/${p.paperId}`,
         }));
-        const papers = await translateItems(papersRaw, ['title', 'abstract']);
+        const papers = await translateItems(papersRaw, ['title', 'abstract'], env);
         return jsonResponse({ topic, papers });
       } catch (e) {
         return jsonResponse({ papers: [], error: e.message });
@@ -9367,7 +9416,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           description: (Array.isArray(d.description) ? d.description[0] : d.description || '').slice(0, 200),
           url: `https://archive.org/details/${d.identifier}`,
         }));
-        const docs = await translateItems(docsRaw, ['title', 'description']);
+        const docs = await translateItems(docsRaw, ['title', 'description'], env);
         return jsonResponse({ topic, docs });
       } catch (e) {
         return jsonResponse({ docs: [], error: e.message });
@@ -9395,7 +9444,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           abstainCount: v.stats?.abstained || 0,
           url: `https://howtheyvote.eu/votes/${v.id}`,
         }));
-        const votes = await translateItems(votesRaw, ['title']);
+        const votes = await translateItems(votesRaw, ['title'], env);
         return jsonResponse({ topic, votes });
       } catch (e) {
         return jsonResponse({ votes: [], error: e.message });
@@ -9554,7 +9603,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
             access: d?.item?.accessRestriction || 'Unrestricted',
           };
         }).filter(i => i.title);
-        const translated = await translateItems(items, ['title', 'description']);
+        const translated = await translateItems(items, ['title', 'description'], env);
         return jsonResponse({ topic: q, items: translated });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -9622,7 +9671,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           date: p.approvaldate || '',
           url: p.url || `https://projects.worldbank.org/en/projects-operations/project-detail/${p.id}`,
         })).filter(p => p.name);
-        const translated = await translateItems(items, ['name', 'description']);
+        const translated = await translateItems(items, ['name', 'description'], env);
         return jsonResponse({ topic: q, items: translated });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -9651,7 +9700,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           url: c.absolute_url ? `https://www.courtlistener.com${c.absolute_url}` : '',
           citations: c.citeCount || 0,
         })).filter(c => c.caseName);
-        const translated = await translateItems(items, ['caseName', 'snippet']);
+        const translated = await translateItems(items, ['caseName', 'snippet'], env);
         return jsonResponse({ topic: q, items: translated });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -9679,7 +9728,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           description: (f.public_notes || f.description || '').slice(0, 150),
           url: f.absolute_url ? `https://www.muckrock.com${f.absolute_url}` : '',
         })).filter(f => f.title);
-        const translated = await translateItems(items, ['title', 'description']);
+        const translated = await translateItems(items, ['title', 'description'], env);
         return jsonResponse({ topic: q, items: translated });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -9739,7 +9788,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           url: d.canonical_url || `https://www.documentcloud.org/documents/${d.id}`,
           thumbnail: d.image_url ? d.image_url.replace('{page}', '1').replace('{size}', 'thumbnail') : null,
         })).filter(d => d.title);
-        const translated = await translateItems(items, ['title', 'description']);
+        const translated = await translateItems(items, ['title', 'description'], env);
         return jsonResponse({ topic: q, items: translated });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -9780,7 +9829,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           { title: `MFF: ${q}`, url: `https://www.maryferrell.org/search.html#q=${encodeURIComponent(q)}`, source: 'Mary Ferrell Foundation', description: 'JFK/CIA/FBI Aktendatenbank' },
         ];
 
-        const translated = await translateItems([...archiveDocs, ...links.filter(l => !archiveDocs.length)], ['title', 'description']);
+        const translated = await translateItems([...archiveDocs, ...links.filter(l => !archiveDocs.length)], ['title', 'description'], env);
         return jsonResponse({ topic: q, items: translated.length ? translated : links });
       } catch (e) {
         return jsonResponse({ items: [
@@ -9814,7 +9863,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           { title: `DDoSecrets: ${topic}`, url: `https://ddosecrets.com/search?q=${encodeURIComponent(topic)}`, source: 'DDoSecrets', description: 'BlueLeaks, Hacker-Dumps, Geheimdienstakten' },
           { title: `Snowden NSA Docs (Intercept)`, url: `https://theintercept.com/snowden-sidtoday/`, source: 'The Intercept', description: 'NSA-Interna aus den Snowden-Dokumenten' },
         ];
-        const translated = await translateItems(items, ['title', 'description']);
+        const translated = await translateItems(items, ['title', 'description'], env);
         return jsonResponse({ topic: q, items: [...translated, ...staticLinks] });
       } catch (e) {
         return jsonResponse({ items: [
@@ -9903,7 +9952,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
             url: `https://hudoc.echr.coe.int/eng#{%22itemid%22:[%22${cols?.itemid}%22]}`,
           };
         }).filter(c => c.title);
-        const translated = await translateItems(items, ['title', 'conclusion']);
+        const translated = await translateItems(items, ['title', 'conclusion'], env);
         return jsonResponse({ topic: q, items: translated });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -9939,7 +9988,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
             { id: 'eurlex-1', title: `EUR-Lex: ${topic}`, date: '', type: 'Suche', source: 'EUR-Lex', url: `https://eur-lex.europa.eu/search.html?text=${encodeURIComponent(topic)}&lang=de` },
           ];
         }
-        const translated = await translateItems(items, ['title']);
+        const translated = await translateItems(items, ['title'], env);
         return jsonResponse({ topic, items: translated });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -10118,7 +10167,7 @@ LIMIT 15`;
           { id: 'wl-1', title: `WikiLeaks-Suche: ${q}`, date: '', collection: 'WikiLeaks', snippet: 'Diplomatische Depeschen, Geheimdienstberichte, interne Firmen-E-Mails', url: `https://search.wikileaks.org/?q=${encodeURIComponent(q)}` },
           { id: 'wl-2', title: `WikiLeaks GI-Files: ${q}`, date: '', collection: 'WikiLeaks / Stratfor', snippet: 'Stratfor Global Intelligence E-Mails', url: `https://search.wikileaks.org/gifiles/?query=${encodeURIComponent(q)}` },
         ];
-        const translated = await translateItems(archiveItems, ['title', 'snippet']);
+        const translated = await translateItems(archiveItems, ['title', 'snippet'], env);
         return jsonResponse({ topic: q, items: [...translated, ...staticItems] });
       } catch (e) {
         return jsonResponse({ items: [
@@ -10279,7 +10328,7 @@ Falls keine konkreten Behauptungen bekannt sind, gib 1 allgemeinen Eintrag zum T
           url: m.doi || m.id || '',
           source: 'OpenAlex',
         }));
-        const translated = await translateItems(raw, ['title']);
+        const translated = await translateItems(raw, ['title'], env);
         return jsonResponse({ topic, results: translated });
       } catch (e) {
         return jsonResponse({ results: [], error: e.message });
