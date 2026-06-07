@@ -46,6 +46,10 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   bool _autoScanEnabled = true;
   bool _autoScanLoading = false;
 
+  // W3/W5: Cover-Generierung + Undo laufend?
+  bool _coverBusy = false;
+  bool _undoBusy = false;
+
   @override
   void initState() {
     super.initState();
@@ -297,6 +301,96 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
     _snack(translated != null
         ? 'Uebersetzt - als neues Modul speicherbar'
         : 'Uebersetzung fehlgeschlagen');
+  }
+
+  // W3: Cover-Bereich (Bild + "per KI generieren").
+  Widget _buildCoverSection(Map<String, dynamic> m) {
+    final url = m['cover_image_url']?.toString() ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (url.isNotEmpty)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.white10,
+                  child: const Center(
+                    child: Icon(Icons.broken_image,
+                        color: Colors.white24, size: 32),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 6),
+        OutlinedButton.icon(
+          onPressed: _coverBusy ? null : () => _generateCover(m),
+          icon: _coverBusy
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.image_outlined, size: 16),
+          label: Text(url.isEmpty ? 'Cover per KI generieren' : 'Neues Cover'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: widget.accentBright,
+            side: BorderSide(color: widget.accent),
+            minimumSize: const Size.fromHeight(40),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _generateCover(Map<String, dynamic> m) async {
+    final title = m['title']?.toString() ?? '';
+    if (title.trim().isEmpty) {
+      _snack('Bitte zuerst einen Titel');
+      return;
+    }
+    setState(() => _coverBusy = true);
+    final url = await WorldAdminServiceV162.generateModuleCover(
+      world: _world,
+      title: title,
+      hint: m['subtitle']?.toString(),
+    );
+    if (!mounted) return;
+    setState(() {
+      _coverBusy = false;
+      if (url != null) m['cover_image_url'] = url;
+    });
+    _snack(url != null
+        ? 'Cover generiert (wird beim Speichern uebernommen)'
+        : 'Cover-Generierung fehlgeschlagen');
+  }
+
+  // W5: Letzte Aenderung des aktuell editierten Moduls rueckgaengig machen.
+  Future<void> _undoModule() async {
+    final code = _activeEditCode;
+    if (code == null) return;
+    setState(() => _undoBusy = true);
+    final ok = await WorldAdminServiceV162.undoModule(
+      world: _world,
+      moduleCode: code,
+    );
+    if (!mounted) return;
+    setState(() => _undoBusy = false);
+    if (ok) {
+      _snack('Letzte Version wiederhergestellt');
+      setState(() {
+        _draftModule = null;
+        _activeEditCode = null;
+      });
+      await _loadExisting();
+      _tabs.animateTo(1);
+    } else {
+      _snack('Keine fruehere Version vorhanden');
+    }
   }
 
   // W6: Echte Vorschau im Reader-Layout (Markdown gerendert).
@@ -567,6 +661,8 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildCoverSection(m), // W3
+          const SizedBox(height: 10),
           _previewField('Titel', m['title']?.toString() ?? '',
               onChanged: (v) => setState(() => m['title'] = v)),
           _previewField('Untertitel', m['subtitle']?.toString() ?? '',
@@ -646,6 +742,24 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
               ),
             ),
           ]),
+          // W5: Undo nur beim Editieren eines bestehenden Moduls.
+          if (_activeEditCode != null) ...[
+            const SizedBox(height: 6),
+            OutlinedButton.icon(
+              onPressed: _undoBusy ? null : _undoModule,
+              icon: _undoBusy
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.undo, size: 16),
+              label: const Text('Letzte Aenderung rueckgaengig'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.orangeAccent,
+                side: BorderSide(color: Colors.orangeAccent.withValues(alpha: 0.5)),
+              ),
+            ),
+          ],
           const SizedBox(height: 6),
           TextButton.icon(
             onPressed: () => setState(() {
