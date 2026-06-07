@@ -41,6 +41,7 @@ import 'screens/ursprung/ursprung_world_wrapper.dart'; // 🌀 URSPRUNG WORLD
 // KI-ANALYSE-TOOLS (für Recherche-Tab)
 import 'screens/materie/propaganda_detector_screen.dart';
 import 'screens/materie/image_forensics_screen.dart';
+import 'screens/materie/tools/manipulation_analysis_screen.dart';
 import 'screens/materie/power_network_mapper_screen.dart';
 import 'screens/materie/event_predictor_screen.dart';
 import 'screens/research/research_hub_screen.dart';
@@ -612,6 +613,8 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
             '/propaganda-detector': (context) =>
                 const PropagandaDetectorScreen(),
             '/image-forensics': (context) => const ImageForensicsScreen(),
+            '/manipulation-analysis': (context) =>
+                const ManipulationAnalysisScreen(),
             '/power-network-mapper': (context) =>
                 const PowerNetworkMapperScreen(),
             '/event-predictor': (context) => const EventPredictorScreen(),

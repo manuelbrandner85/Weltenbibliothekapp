@@ -22,6 +22,7 @@ import 'gdelt_tone_screen.dart';
 import 'geo_analysis_tool.dart';
 import 'image_analysis_tool.dart';
 import 'internet_outages_screen.dart';
+import 'manipulation_analysis_screen.dart';
 import 'ip_osint_tool.dart';
 import 'person_osint_tool.dart';
 import 'phone_osint_tool.dart';
@@ -383,6 +384,18 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
           'Koordinaten oder Adresse eingeben -> Karte, Hoehe und weitere '
           'geografische Metadaten. Hilfreich fuer Bild-Geolocalisierung.',
       customScreenBuilder: () => const GeoAnalysisTool(),
+    ),
+    _DbDef(
+      icon: Icons.manage_search_rounded,
+      label: 'Manipulationsanalyse',
+      sub: 'Bildbearbeitung & Faelschungen',
+      color: const Color(0xFFE91E63),
+      url: '',
+      description:
+          'Bild hochladen -> forensische Analyse auf Photoshop-Spuren, '
+          'EXIF-Anomalien, Kompressionsartefakte, Filter und eingebettete '
+          'Daten. Lokal + optionale Hugging Face KI.',
+      customScreenBuilder: () => const ManipulationAnalysisScreen(),
     ),
     _DbDef(
       icon: Icons.warning_amber_rounded,
