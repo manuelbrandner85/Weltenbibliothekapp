@@ -255,6 +255,58 @@ class _UserDetailSheetState extends State<_UserDetailSheet> {
             );
           }),
         ],
+
+        // v124: Sensitive actions -- root_admin only.
+        if (widget.isRootAdmin) ...[
+          const SizedBox(height: 18),
+          _SectionLabel('Sensitive Aktionen (Root-Admin)',
+              Icons.security_rounded, Colors.redAccent),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.redAccent),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                icon: const Icon(Icons.visibility_rounded,
+                    color: Colors.redAccent, size: 16),
+                label: const Text('Als Nutzer ansehen',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 12)),
+                onPressed: () => showImpersonationSheet(
+                  context,
+                  user: widget.user,
+                  accent: widget.accent,
+                  accentBright: widget.accentBright,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.amber),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                icon: const Icon(Icons.devices_rounded,
+                    color: Colors.amber, size: 16),
+                label: const Text('Verknuepfte Konten',
+                    style: TextStyle(color: Colors.amber, fontSize: 12)),
+                onPressed: () => showLinkedAccountsSheet(
+                  context,
+                  user: widget.user,
+                  accent: widget.accent,
+                  accentBright: widget.accentBright,
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          const Text(
+            'Jeder Klick wird im Audit-Log erfasst. Snapshot ist schreibgeschuetzt.',
+            style: TextStyle(color: Colors.white38, fontSize: 10),
+          ),
+        ],
       ],
     );
   }

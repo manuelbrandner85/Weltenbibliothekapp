@@ -51,6 +51,7 @@ part 'world_admin_dashboard/admin_hub.dart';
 part 'world_admin_dashboard/insights_tab.dart';
 part 'world_admin_dashboard/control_tab.dart';
 part 'world_admin_dashboard/search_sheet.dart';
+part 'world_admin_dashboard/sensitive_sheets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
