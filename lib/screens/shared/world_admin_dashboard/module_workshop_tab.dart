@@ -656,7 +656,15 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
           ),
         ],
         const SizedBox(height: 20),
-        _sectionHeader('2. Thema / Bereich'),
+        _sectionHeader('2. Bereich (Modul-Gruppe)'),
+        const SizedBox(height: 4),
+        Text(
+          _newTheme
+              ? 'Es wird ein komplett neuer Bereich angelegt.'
+              : 'Das Thema wird automatisch in den passenden bestehenden Bereich '
+                  'einsortiert (z.B. Machtpsychologie). Passt es zu keinem, entsteht ein neuer.',
+          style: const TextStyle(color: Colors.white38, fontSize: 11, height: 1.3),
+        ),
         const SizedBox(height: 6),
         Row(children: [
           Switch(
@@ -668,7 +676,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
             activeColor: widget.accentBright,
           ),
           const Expanded(
-            child: Text('Komplett neues Thema erstellen',
+            child: Text('Als komplett neuen Bereich anlegen',
                 style: TextStyle(color: Colors.white70, fontSize: 12)),
           ),
         ]),
@@ -676,8 +684,8 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
           controller: _themeCtrl,
           style: const TextStyle(color: Colors.white),
           decoration: _inputDeco(_newTheme
-              ? 'Name des neuen Themas (leer = KI schlaegt vor)'
-              : 'Bestehendes Thema waehlen oder leer = KI waehlt'),
+              ? 'Name des neuen Bereichs (leer = KI waehlt)'
+              : 'Bereich waehlen — leer = automatisch passend einsortieren'),
         ),
         if (!_newTheme && _existingBranches.isNotEmpty) ...[
           const SizedBox(height: 6),

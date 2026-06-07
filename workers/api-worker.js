@@ -1511,6 +1511,43 @@ function normSources(raw) {
   })).filter((s) => s.title);
 }
 
+// Liefert die in der Welt tatsaechlich vorhandenen Bereiche (Branches).
+async function fetchExistingBranches(tbl, svcHeaders) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}?select=branch`, { headers: svcHeaders });
+    if (!r.ok) return [];
+    const rows = await r.json().catch(() => []);
+    return [...new Set((Array.isArray(rows) ? rows : []).map((x) => String(x.branch || '').trim()).filter(Boolean))];
+  } catch (_) { return []; }
+}
+
+// Intelligente Bereich-Zuordnung: matched den KI-Branch case-insensitiv auf einen
+// bestehenden Bereich (damit Themen die zu Machtpsychologie passen DORT landen,
+// statt einen fast gleichen neuen Bereich anzulegen).
+function matchExistingBranch(branch, existing) {
+  const b = String(branch || '').trim().toLowerCase();
+  if (!b) return null;
+  for (const e of existing) {
+    if (String(e).trim().toLowerCase() === b) return e; // exakter Treffer (Case)
+  }
+  return null;
+}
+
+// Stellt sicher, dass ein Modul Quiz-Fragen hat (Pflicht fuer Vorhang/Ursprung).
+// Generiert sie bei Bedarf in einem fokussierten Zweitschritt aus der Theorie.
+async function ensureTestQuestions(env, existing, ctx) {
+  const cur = normTestQuestions(existing);
+  if (cur.length >= 3) return cur;
+  try {
+    const sys = 'Erstelle 4 Multiple-Choice-Quiz-Fragen zum Lern-Modul. ' +
+      'Antworte AUSSCHLIESSLICH als JSON-Array, je { "question", "options": [4 Antworten], "answer_index": 0-3 }. Deutsch.';
+    const user = `Titel: ${ctx.title || ''}\n\nTheorie:\n${(ctx.theory_content || '').slice(0, 3000)}`;
+    const arr = await aiJson(env, sys, user, 1200);
+    const q = normTestQuestions(Array.isArray(arr) ? arr : (arr.test_questions || arr.questions));
+    return q.length >= 3 ? q : cur;
+  } catch (_) { return cur; }
+}
+
 // W5: Snapshot des aktuellen Modulstands in module_versions sichern (vor Edit).
 // Best-effort -- ein Fehler hier darf das Speichern nicht blockieren.
 async function snapshotModule(world, tbl, code, svcHeaders, username) {
@@ -8538,21 +8575,28 @@ export default {
           const topic = String(body?.topic || '').trim();
           if (topic.length < 3) return errorResponse('topic fehlt', 400);
           const world = normWorld(body?.world);
-          const branches = WORKSHOP_BRANCHES[world];
+          const tbl = tableForWorld(world);
           // Branch-Hinweis darf bestehend ODER ein komplett neues Thema sein.
           const branchHint = body?.branch ? String(body.branch).trim() : null;
           // Wenn der Admin explizit ein neues Thema will:
           const wantNewTheme = body?.new_theme === true;
 
+          // Bestehende Bereiche der Welt laden (echte + Standard) fuer die
+          // intelligente Zuordnung.
+          const dbBranches = await fetchExistingBranches(tbl, svcHeaders);
+          const allBranches = [...new Set([...dbBranches, ...WORKSHOP_BRANCHES[world]])];
+          const branchList = allBranches.join(' | ');
+
           const system = [
-            'Du bist Lehrredaktion fuer die Weltenbibliothek-App. Erstellst ein neues Lern-Modul.',
+            'Du bist Lehrredaktion fuer die Weltenbibliothek-App. Erstellst ein neues Lern-Modul (eine Lerneinheit).',
+            'Ein "branch" ist der uebergeordnete Bereich/das Modul-Thema, dem die Lerneinheit zugeordnet wird.',
             'Schreibst praezise, sachlich, lebensnah. Kein Marketing-Sprech, keine Floskeln.',
             'Antworte AUSSCHLIESSLICH als JSON-Objekt mit den Feldern:',
             '  title (max 60 Zeichen),',
             '  subtitle (max 120 Zeichen),',
             wantNewTheme
-              ? '  branch (Name eines NEUEN, treffenden Themas/Bereichs, 2-4 Worte),'
-              : `  branch (passendes Thema -- bevorzugt eines aus: ${branches.join(' | ')}; ein neues Thema ist erlaubt wenn es besser passt),`,
+              ? `  branch (Name eines KOMPLETT NEUEN Bereichs, 2-4 Worte; darf NICHT einer von diesen sein: ${branchList}),`
+              : `  branch -- WICHTIG: Wenn der Inhalt thematisch zu einem dieser BESTEHENDEN Bereiche passt, nutze EXAKT diesen Namen: ${branchList}. NUR wenn er zu KEINEM passt, erfinde einen neuen, treffenden Bereich-Namen.`,
             '  theory_content (300-700 Worte, Markdown erlaubt: ## Ueberschriften, **fett**, Listen),',
             '  case_study (eine konkrete Fallgeschichte, 150-350 Worte),',
             '  exercise_description (1-3 praktische Uebungen, 100-300 Worte),',
@@ -8562,18 +8606,32 @@ export default {
             'Inhalte auf Deutsch.',
           ].join('\n');
           const user = branchHint
-            ? `Thema-Inhalt: ${topic}\nGewuenschtes Thema/Bereich (branch): ${branchHint}\nErstelle das vollstaendige Modul.`
+            ? `Thema-Inhalt: ${topic}\nGewuenschter Bereich (branch): ${branchHint}\nErstelle die vollstaendige Lerneinheit.`
             : (wantNewTheme
-              ? `Thema-Inhalt: ${topic}\nErfinde dafuer ein passendes NEUES Thema/Bereich (branch) und erstelle das vollstaendige Modul.`
-              : `Thema-Inhalt: ${topic}\nWaehle das passende Thema (branch) selbst und erstelle das vollstaendige Modul.`);
-          // 4096 statt 2200: Theorie+Fallstudie+Uebung+Quiz+Quellen sprengen sonst
-          // das Token-Budget -> abgeschnittenes JSON -> "Generierung fehlgeschlagen".
+              ? `Thema-Inhalt: ${topic}\nLege dafuer einen KOMPLETT NEUEN Bereich (branch) an und erstelle die vollstaendige Lerneinheit.`
+              : `Thema-Inhalt: ${topic}\nOrdne es dem passenden BESTEHENDEN Bereich zu (oder neu, wenn nichts passt), und erstelle die vollstaendige Lerneinheit.`);
           const moduleData = await workshopAiJson(system, user, 4096);
-          // branch: KI-Vorschlag (auch neues Thema) > Hint > erster bestehender.
-          const branch = (String(moduleData.branch || '').trim())
-            || branchHint || branches[0];
+
+          // ── Intelligente Bereich-Zuordnung ──
+          let branch = String(moduleData.branch || '').trim() || branchHint || allBranches[0];
+          if (!wantNewTheme) {
+            // Auf bestehenden Bereich normalisieren (Case/Tippfehler-tolerant).
+            const matched = matchExistingBranch(branch, allBranches);
+            if (matched) branch = matched;
+          }
+
           const xpRaw = Number(moduleData.xp_reward) || 100;
           const xp = Math.max(50, Math.min(200, Math.round(xpRaw)));
+
+          // Tests fuer Vorhang/Ursprung garantieren (Pflicht laut Anforderung).
+          let testQuestions = normTestQuestions(moduleData.test_questions);
+          if ((world === 'vorhang' || world === 'ursprung') && testQuestions.length < 3) {
+            testQuestions = await ensureTestQuestions(env, testQuestions, {
+              title: moduleData.title || topic,
+              theory_content: moduleData.theory_content || '',
+            });
+          }
+
           return jsonResponse({
             success: true,
             module: {
@@ -8584,7 +8642,7 @@ export default {
               case_study: String(moduleData.case_study || ''),
               exercise_description: String(moduleData.exercise_description || ''),
               xp_reward: xp,
-              test_questions: normTestQuestions(moduleData.test_questions),
+              test_questions: testQuestions,
               sources: normSources(moduleData.sources),
             },
           });
@@ -9016,6 +9074,14 @@ export default {
             await snapshotModule(world, tbl, moduleCode, svcHeaders, caller.username);
           }
 
+          // Tests fuer Vorhang/Ursprung garantieren (Pflicht).
+          let saveTests = normTestQuestions(mod.test_questions);
+          if ((world === 'vorhang' || world === 'ursprung') && saveTests.length < 3) {
+            saveTests = await ensureTestQuestions(env, saveTests, {
+              title: mod.title, theory_content: mod.theory_content,
+            });
+          }
+
           // ── Schreiben (UPSERT bei edit, INSERT bei new) ───────────
           const row = {
             module_code: moduleCode,
@@ -9030,7 +9096,7 @@ export default {
             case_study: String(mod.case_study),
             exercise_description: String(mod.exercise_description),
             // test_questions ist NOT NULL -> immer ein Array mitschicken.
-            test_questions: normTestQuestions(mod.test_questions),
+            test_questions: saveTests,
             sources: normSources(mod.sources),
             // W3: Cover-Bild (optional).
             cover_image_url: mod.cover_image_url ? String(mod.cover_image_url).slice(0, 500) : null,
@@ -9327,6 +9393,13 @@ export default {
               .map(e => Number(e.branch_order)).filter(n => Number.isFinite(n));
             accBranchOrder = inBranch.length > 0 ? Math.max(...inBranch) + 1 : 1;
           }
+          // Tests fuer Vorhang/Ursprung garantieren (Pflicht).
+          let accTests = normTestQuestions(sug.test_questions);
+          if ((world === 'vorhang' || world === 'ursprung') && sug.kind !== 'quality' && accTests.length < 3) {
+            accTests = await ensureTestQuestions(env, accTests, {
+              title: sug.title || moduleCode, theory_content: sug.theory_content || '',
+            });
+          }
           const row = {
             module_code: moduleCode,
             branch: accBranch,
@@ -9340,7 +9413,7 @@ export default {
             case_study: sug.case_study || '',
             exercise_description: sug.exercise_description || '',
             // test_questions ist NOT NULL -> immer ein Array mitschicken.
-            test_questions: normTestQuestions(sug.test_questions),
+            test_questions: accTests,
             sources: normSources(sug.sources),
           };
           // W5: Bei 'improve' (Ueberschreiben) vorher Snapshot sichern.
