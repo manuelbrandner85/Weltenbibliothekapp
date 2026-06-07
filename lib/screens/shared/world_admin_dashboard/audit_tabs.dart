@@ -6,7 +6,10 @@ part of '../world_admin_dashboard.dart';
 // 📜 AUDIT-LOG TAB
 // ═══════════════════════════════════════════════════════════
 // ═════════════════════════════════════════════════════════════════════════════
-// TAB – AUDIT + REPORTS WRAPPER (zwei Sub-Tabs)
+// TAB – PROTOKOLL WRAPPER (Audit-Log + Username-Antraege)
+// 2026-06-07: Reports lebten frueher als 3. Sub-Tab hier mit; sind jetzt
+// EINMALIG unter Moderation -> Protokoll hat nur noch Audit + Usernamen.
+// Klassenname bleibt _AuditReportsWrapper aus Patch-Kompatibilitaet.
 // ═════════════════════════════════════════════════════════════════════════════
 class _AuditReportsWrapper extends StatefulWidget {
   final String world;
@@ -27,33 +30,13 @@ class _AuditReportsWrapper extends StatefulWidget {
 class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
     with SingleTickerProviderStateMixin {
   late TabController _ctrl;
-  int _openReports = 0;
   int _openUsernameRequests = 0;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = TabController(length: 3, vsync: this);
-    _loadReportsCount();
+    _ctrl = TabController(length: 2, vsync: this);
     _loadUsernameRequestsCount();
-  }
-
-  Future<void> _loadReportsCount() async {
-    try {
-      final headers = await AdminAuthService.instance.headers();
-      final res = await http
-          .get(
-              Uri.parse(
-                  '${ApiConfig.workerUrl}/api/admin/reports?status=open&limit=1'),
-              headers: headers)
-          .timeout(const Duration(seconds: 8));
-      if (res.statusCode == 200 && mounted) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final counts =
-            (data['counts'] as Map?)?.cast<String, dynamic>() ?? const {};
-        setState(() => _openReports = (counts['open'] as int?) ?? 0);
-      }
-    } catch (_) {}
   }
 
   Future<void> _loadUsernameRequestsCount() async {
@@ -97,30 +80,6 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
                 icon: Icon(Icons.history_rounded, size: 16), text: 'Audit-Log'),
             Tab(
               icon: Stack(clipBehavior: Clip.none, children: [
-                const Icon(Icons.flag_rounded, size: 16),
-                if (_openReports > 0)
-                  Positioned(
-                    right: -8,
-                    top: -4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text('$_openReports',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-              ]),
-              text: 'Reports',
-            ),
-            Tab(
-              icon: Stack(clipBehavior: Clip.none, children: [
                 const Icon(Icons.edit_note_rounded, size: 16),
                 if (_openUsernameRequests > 0)
                   Positioned(
@@ -155,12 +114,6 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
                 accent: widget.accent,
                 accentBright: widget.accentBright,
                 isRootAdmin: widget.isRootAdmin),
-            _ReportsInboxTab(
-              accent: widget.accent,
-              accentBright: widget.accentBright,
-              isRootAdmin: widget.isRootAdmin,
-              onChanged: _loadReportsCount,
-            ),
             _UsernameRequestsTab(
               world: widget.world,
               accent: widget.accent,

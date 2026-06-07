@@ -13,7 +13,7 @@ class _ContentInsightsTab extends StatefulWidget {
   final Color accentBright;
   // videosOnly=true: Rolle hat keine vollen Content-Rechte (z.B. Moderator/
   // Admin) -> es wird NUR der Video-Manager gezeigt, ohne die anderen
-  // Content-Sub-Tabs (Fortschritt/Editor/Meldungen/Artikel).
+  // Content-Sub-Tabs (Fortschritt/Editor/Artikel).
   final bool videosOnly;
   const _ContentInsightsTab({
     required this.accent,
@@ -33,8 +33,10 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
   void initState() {
     super.initState();
     // Nur ein TabController wenn die vollen Content-Tabs gezeigt werden.
+    // Reports/Meldungen leben jetzt einmal unter Moderation -- daher hier
+    // KEIN "Meldungen"-Sub-Tab mehr (Konsolidierung 2026-06-07).
     if (!widget.videosOnly) {
-      _ctrl = TabController(length: 5, vsync: this);
+      _ctrl = TabController(length: 4, vsync: this);
     }
   }
 
@@ -68,7 +70,6 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
                 icon: Icon(Icons.school_rounded, size: 16),
                 text: 'Fortschritt'),
             Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Editor'),
-            Tab(icon: Icon(Icons.report_rounded, size: 16), text: 'Meldungen'),
             Tab(icon: Icon(Icons.article_rounded, size: 16), text: 'Artikel'),
             Tab(
                 icon: Icon(Icons.play_circle_outline_rounded, size: 16),
@@ -83,8 +84,6 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
             _ModuleProgressTab(
                 accent: widget.accent, accentBright: widget.accentBright),
             _ModuleEditorTab(
-                accent: widget.accent, accentBright: widget.accentBright),
-            _PostReportsTab(
                 accent: widget.accent, accentBright: widget.accentBright),
             _ArticleManagerTab(
                 accent: widget.accent, accentBright: widget.accentBright),
