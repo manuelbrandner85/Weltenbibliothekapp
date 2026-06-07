@@ -310,7 +310,9 @@ class PushNotificationManager with WidgetsBindingObserver {
 
     final client = Supabase.instance.client;
     if (client.auth.currentUser != null) {
-      unawaited(_registerSubscription(client.auth.currentUser!.id));
+      final uid = client.auth.currentUser!.id;
+      unawaited(_registerSubscription(uid));
+      unawaited(_registerDevice(profileId: uid));
       _startPolling();
     } else {
       // InvisibleAuth fallback: use legacy user ID for in-app notification polling.
@@ -321,6 +323,10 @@ class PushNotificationManager with WidgetsBindingObserver {
       final legacyId = (m?.userId ?? e?.userId ?? '').trim();
       if (legacyId.isNotEmpty) {
         _legacyUserId = legacyId;
+        // AUDIT-FIX 2026-06-07: InvisibleAuth-User registrierten ihr FCM-Token
+        // FRUEHER NIE -> sie konnten gar keine Push-Notifications empfangen.
+        // Jetzt: Geraet unter legacy_user_id in user_devices registrieren.
+        unawaited(_registerDevice(legacyUserId: legacyId));
         _startPolling();
       }
     }
@@ -329,6 +335,7 @@ class PushNotificationManager with WidgetsBindingObserver {
       if (user != null) {
         _legacyUserId = null;
         unawaited(_registerSubscription(user.id));
+        unawaited(_registerDevice(profileId: user.id));
         _startPolling();
       } else {
         _stopPolling();
@@ -356,7 +363,13 @@ class PushNotificationManager with WidgetsBindingObserver {
       _fcmTokenSub = fcm.onTokenRefresh.listen((token) {
         _fcmToken = token;
         final uid = Supabase.instance.client.auth.currentUser?.id;
-        if (uid != null) unawaited(_registerSubscription(uid));
+        if (uid != null) {
+          unawaited(_registerSubscription(uid));
+          unawaited(_registerDevice(profileId: uid));
+        } else if (_legacyUserId != null && _legacyUserId!.isNotEmpty) {
+          // InvisibleAuth-User: Token-Refresh ebenfalls nach user_devices.
+          unawaited(_registerDevice(legacyUserId: _legacyUserId));
+        }
       });
       _fcmToken = await fcm.getToken();
       _firebaseReady = _fcmToken != null;
@@ -374,7 +387,10 @@ class PushNotificationManager with WidgetsBindingObserver {
     try {
       final msg = await FirebaseMessaging.instance.getInitialMessage();
       if (msg != null) _onFcmOpenedApp(msg);
-    } catch (e) { if (kDebugMode) debugPrint('push_notification_manager_io: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode)
+        debugPrint('push_notification_manager_io: silent catch -> $e');
+    }
   }
 
   @override
@@ -430,6 +446,42 @@ class PushNotificationManager with WidgetsBindingObserver {
         await Future.delayed(delay);
         return _registerSubscription(userId, retry: retry + 1);
       }
+    }
+  }
+
+  /// Registriert das FCM-Token in der user_devices-Tabelle -- die Tabelle,
+  /// die der Cron-Dispatcher tatsaechlich liest. Funktioniert fuer BEIDE
+  /// Auth-Arten: echte Supabase-UUID -> profile_id, InvisibleAuth ->
+  /// legacy_user_id. Ohne FCM-Token (z.B. Permission denied) ist nichts zu
+  /// tun -- dann greift das In-App-Polling.
+  Future<void> _registerDevice(
+      {String? profileId, String? legacyUserId}) async {
+    final token = _fcmToken;
+    if (token == null || token.isEmpty) return;
+    final hasProfile = profileId != null && profileId.isNotEmpty;
+    final hasLegacy = legacyUserId != null && legacyUserId.isNotEmpty;
+    if (!hasProfile && !hasLegacy) return;
+    try {
+      final res = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/devices/register'),
+            headers: const {'Content-Type': 'application/json'},
+            body: json.encode({
+              'fcm_token': token,
+              'platform': defaultTargetPlatform == TargetPlatform.iOS
+                  ? 'ios'
+                  : 'android',
+              if (hasProfile) 'profile_id': profileId,
+              if (hasLegacy) 'legacy_user_id': legacyUserId,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (kDebugMode) {
+        debugPrint('🔔 device register → ${res.statusCode} '
+            '(${hasProfile ? "uuid" : "legacy"})');
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ device register failed: $e');
     }
   }
 

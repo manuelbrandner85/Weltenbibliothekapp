@@ -16,6 +16,8 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'sqlite_storage_service.dart';
 import 'push_notification_manager.dart';
+import 'unified_profile_service.dart';
+import 'account_service.dart';
 import '../config/api_config.dart';
 
 // ──────────────────────────────────────────────────────────────
@@ -1059,16 +1061,37 @@ class SupabaseNotificationService {
       _instance ??= SupabaseNotificationService._();
   SupabaseNotificationService._();
 
+  /// Loest die wirksame Identitaet auf -- Supabase-UUID ODER InvisibleAuth
+  /// legacy_user_id. Returnt (spalte, wert) oder null.
+  (String, String)? _identity() {
+    final authUid = supabase.auth.currentUser?.id;
+    if (authUid != null && authUid.isNotEmpty) return ('user_id', authUid);
+    final unified = UnifiedProfileService.instance.userId;
+    if (unified == null || unified.isEmpty) return null;
+    if (unified.startsWith('user_')) return ('legacy_user_id', unified);
+    return ('user_id', unified);
+  }
+
   Future<List<Map<String, dynamic>>> getNotifications({
     bool unreadOnly = false,
     int limit = 30,
   }) async {
-    final userId = supabase.auth.currentUser?.id;
-    if (userId == null) return [];
+    final id = _identity();
+    if (id == null) return [];
 
-    var query = supabase.from('notifications').select().eq('user_id', userId);
+    // InvisibleAuth: RLS blockiert Direktzugriff -> ueber Worker.
+    if (id.$1 == 'legacy_user_id') {
+      return AccountService.instance.getNotifications(
+        userId: id.$2,
+        unreadOnly: unreadOnly,
+        limit: limit,
+      );
+    }
 
-    if (unreadOnly) query = query.eq('is_read', false);
+    var query = supabase.from('notifications').select().eq(id.$1, id.$2);
+
+    // Ungelesen = weder is_read noch read_at gesetzt. PostgREST-OR-Filter.
+    if (unreadOnly) query = query.or('is_read.is.false,is_read.is.null');
 
     final response =
         await query.order('created_at', ascending: false).limit(limit);
@@ -1076,19 +1099,24 @@ class SupabaseNotificationService {
   }
 
   Future<void> markAsRead(String notificationId) async {
-    await supabase
-        .from('notifications')
-        .update({'is_read': true}).eq('id', notificationId);
+    // Beide Gelesen-Spalten setzen (Konsistenz zwischen Screen + Badge).
+    await supabase.from('notifications').update({
+      'is_read': true,
+      'read_at': DateTime.now().toIso8601String(),
+    }).eq('id', notificationId);
   }
 
   Future<void> markAllAsRead() async {
-    final userId = supabase.auth.currentUser?.id;
-    if (userId == null) return;
+    final id = _identity();
+    if (id == null) return;
 
     await supabase
         .from('notifications')
-        .update({'is_read': true})
-        .eq('user_id', userId)
+        .update({
+          'is_read': true,
+          'read_at': DateTime.now().toIso8601String(),
+        })
+        .eq(id.$1, id.$2)
         .eq('is_read', false);
   }
 
@@ -1096,19 +1124,19 @@ class SupabaseNotificationService {
   RealtimeChannel subscribeToNotifications({
     required void Function(Map<String, dynamic>) onNotification,
   }) {
-    final userId = supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('Nicht eingeloggt');
+    final id = _identity();
+    if (id == null) throw Exception('Keine Identitaet (nicht eingeloggt)');
 
     return supabase
-        .channel('notifications_$userId')
+        .channel('notifications_${id.$2}')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'notifications',
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
-            column: 'user_id',
-            value: userId,
+            column: id.$1,
+            value: id.$2,
           ),
           callback: (payload) =>
               onNotification(Map<String, dynamic>.from(payload.newRecord)),

@@ -54,6 +54,53 @@ class AccountService {
     }
   }
 
+  /// Liest die In-App-Notifications via Worker (service_role, umgeht RLS).
+  /// KRITISCH fuer InvisibleAuth-User: die koennen die notifications-Tabelle
+  /// nicht direkt via Supabase lesen (RLS auth.uid()=user_id schlaegt fehl).
+  Future<List<Map<String, dynamic>>> getNotifications({
+    required String userId,
+    bool unreadOnly = false,
+    int limit = 100,
+  }) async {
+    try {
+      final res = await http
+          .get(
+              _u('/api/notifications?userId=${Uri.encodeQueryComponent(userId)}'
+                  '&unreadOnly=$unreadOnly&limit=$limit'))
+          .timeout(_timeout);
+      if (res.statusCode < 200 || res.statusCode >= 300) return const [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final list = (data['notifications'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getNotifications: $e');
+      return const [];
+    }
+  }
+
+  /// Markiert eine (id gesetzt) ODER alle Notifications des Users als gelesen.
+  Future<bool> markNotificationsRead({
+    required String userId,
+    String? id,
+  }) async {
+    try {
+      final res = await http
+          .post(
+            _u('/api/notifications/mark-read'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'userId': userId,
+              if (id != null) 'id': id,
+            }),
+          )
+          .timeout(_timeout);
+      return res.statusCode >= 200 && res.statusCode < 300;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ markNotificationsRead: $e');
+      return false;
+    }
+  }
+
   // ── Identitaets-Lookup (Auto-Fill Username + Blacklist-Vorabpruefung) ───
 
   /// Findet zu Vor+Nachname den hinterlegten Username und prueft die
