@@ -1487,6 +1487,7 @@ const WORKSHOP_BRANCHES = {
   ursprung: ['gateway_foundation', 'focus_levels', 'energy_tools', 'patterning_manifestation', 'remote_viewing'],
 };
 const WORKSHOP_WORLDS = ['materie', 'energie', 'vorhang', 'ursprung'];
+const WORLD_CODE_PREFIX = { materie: 'M-', energie: 'E-', vorhang: 'V-', ursprung: 'U-' };
 function normWorld(w) { return WORKSHOP_WORLDS.includes(w) ? w : 'vorhang'; }
 function tableForWorld(w) { return `${normWorld(w)}_modules`; }
 
@@ -8619,8 +8620,8 @@ export default {
           let moduleCode = editCode;
           if (!moduleCode) {
             // Naechste freie Nummer im Branch finden.
-            // V-1..V-99 fuer vorhang, U-1..U-99 fuer ursprung.
-            const prefix = world === 'ursprung' ? 'U-' : 'V-';
+            // V-/U-/M-/E- je nach Welt.
+            const prefix = WORLD_CODE_PREFIX[world] || 'V-';
             const r = await fetch(
               `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code&module_code=like.${prefix}*`,
               { headers: svcHeaders },
@@ -8646,6 +8647,8 @@ export default {
             theory_content: String(mod.theory_content),
             case_study: String(mod.case_study),
             exercise_description: String(mod.exercise_description),
+            // test_questions ist NOT NULL -> immer ein Array mitschicken.
+            test_questions: Array.isArray(mod.test_questions) ? mod.test_questions : [],
           };
 
           const saveRes = await fetch(
@@ -8911,7 +8914,7 @@ export default {
           // new/improve: in die Modul-Tabelle schreiben.
           let moduleCode = sug.target_module_code;
           if (!moduleCode) {
-            const prefix = world === 'ursprung' ? 'U-' : 'V-';
+            const prefix = WORLD_CODE_PREFIX[world] || 'V-';
             const exR = await fetch(
               `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code&module_code=like.${prefix}*`,
               { headers: svcHeaders },
@@ -8921,11 +8924,12 @@ export default {
             moduleCode = `${prefix}${nums.length > 0 ? Math.max(...nums) + 1 : 1}`;
           }
           const branches = WORKSHOP_BRANCHES[world];
+          const accBranch = branches.includes(sug.branch) ? sug.branch : branches[0];
           const row = {
             module_code: moduleCode,
-            branch: branches.includes(sug.branch) ? sug.branch : branches[0],
-            branch_order: branches.indexOf(sug.branch) + 1,
-            title: sug.title,
+            branch: accBranch,
+            branch_order: branches.indexOf(accBranch) + 1,
+            title: sug.title || moduleCode,
             subtitle: sug.subtitle || '',
             is_boss_module: false,
             xp_reward: sug.xp_reward || 100,
@@ -8933,6 +8937,8 @@ export default {
             theory_content: sug.theory_content || '',
             case_study: sug.case_study || '',
             exercise_description: sug.exercise_description || '',
+            // test_questions ist NOT NULL -> immer ein Array mitschicken.
+            test_questions: Array.isArray(sug.test_questions) ? sug.test_questions : [],
           };
           const saveR = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}?on_conflict=module_code`, {
             method: 'POST',
