@@ -731,11 +731,13 @@ class WorldUser {
       warningCount: (json['warning_count'] as num?)?.toInt() ?? 0,
       sourceFromServer: json['source'] as String?,
       isWebOnly: json['is_web_only'] as bool? ?? false,
-      isShadowBanned:
-          json['shadow_banned'] as bool? ?? json['isShadowBanned'] as bool? ?? false,
+      isShadowBanned: json['shadow_banned'] as bool? ??
+          json['isShadowBanned'] as bool? ??
+          false,
       mutedUntil: mutedStr != null ? DateTime.tryParse(mutedStr) : null,
-      isBotSuspect:
-          json['is_bot_suspect'] as bool? ?? json['isBotSuspect'] as bool? ?? false,
+      isBotSuspect: json['is_bot_suspect'] as bool? ??
+          json['isBotSuspect'] as bool? ??
+          false,
       postCount: (json['post_count'] as num?)?.toInt() ?? 0,
     );
   }
@@ -856,9 +858,7 @@ class YoutubeSearchResult {
       videoId: id,
       title: j['title'] as String? ?? '',
       thumbnailUrl: j['thumbnail_url'] as String? ??
-          (id.isNotEmpty
-              ? 'https://img.youtube.com/vi/$id/mqdefault.jpg'
-              : ''),
+          (id.isNotEmpty ? 'https://img.youtube.com/vi/$id/mqdefault.jpg' : ''),
       channelTitle: j['channel_title'] as String?,
     );
   }
@@ -1587,6 +1587,150 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }
 
   // ════════════════════════════════════════════════════════════
+  // v128 (Task 3): MODUL-WERKSTATT (KI-gestuetzte Modul-Erstellung)
+  // ════════════════════════════════════════════════════════════
+
+  /// Liefert 3-5 KI-Themenvorschlaege fuer ein Welt-Modul.
+  /// [hint] kann leer sein -> KI schlaegt frei vor.
+  static Future<List<String>> getModuleTopicSuggestions({
+    required String world,
+    String hint = '',
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/topics',
+        body: {'world': world, 'hint': hint},
+      );
+      final list = (data['suggestions'] as List?) ?? const [];
+      return list.map((e) => e.toString()).toList();
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            'getModuleTopicSuggestions: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('getModuleTopicSuggestions: $e');
+      return const [];
+    }
+  }
+
+  /// Generiert ein vollstaendiges Modul (title/subtitle/branch/theory/case/exercise/xp).
+  /// Returns Map oder null bei Fehler.
+  static Future<Map<String, dynamic>?> generateModule({
+    required String world,
+    required String topic,
+    String? branch,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/generate',
+        body: {
+          'world': world,
+          'topic': topic,
+          if (branch != null && branch.isNotEmpty) 'branch': branch,
+        },
+      );
+      return (data['module'] as Map?)?.cast<String, dynamic>();
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('generateModule: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('generateModule: $e');
+      return null;
+    }
+  }
+
+  /// Erweitert/verbessert ein bestehendes Modul via KI.
+  static Future<Map<String, dynamic>?> expandModule({
+    required String world,
+    required Map<String, dynamic> current,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/expand',
+        body: {'world': world, 'current': current},
+      );
+      return (data['module'] as Map?)?.cast<String, dynamic>();
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('expandModule: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('expandModule: $e');
+      return null;
+    }
+  }
+
+  /// Speichert ein neues oder bestehendes Modul.
+  /// [editCode] = vorhandener module_code zum Editieren, sonst null = neu.
+  /// Returns Map mit { success, module_code, action, errors? }.
+  static Future<Map<String, dynamic>> saveModule({
+    required String world,
+    required Map<String, dynamic> module,
+    String? editCode,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/save',
+        body: {
+          'world': world,
+          'module': module,
+          if (editCode != null && editCode.isNotEmpty) 'edit_code': editCode,
+        },
+      );
+      return Map<String, dynamic>.from(data);
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('saveModule: ${e.statusCode} ${e.bodySnippet}');
+      }
+      // Body kann JSON mit errors-Liste enthalten (Inhalts-Check 400).
+      try {
+        final body = e.bodySnippet;
+        if (body.contains('errors')) {
+          return {
+            'success': false,
+            'errors': [body]
+          };
+        }
+      } catch (_) {}
+      return {
+        'success': false,
+        'errors': ['HTTP ${e.statusCode}']
+      };
+    } catch (e) {
+      if (kDebugMode) debugPrint('saveModule: $e');
+      return {
+        'success': false,
+        'errors': [e.toString()]
+      };
+    }
+  }
+
+  /// Liefert alle Module einer Welt fuer die Edit-Ansicht (inkl. theory_content).
+  static Future<List<Map<String, dynamic>>> listWorkshopModules({
+    required String world,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/module-workshop/list?world=$world');
+      final list = (data['modules'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('listWorkshopModules: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('listWorkshopModules: $e');
+      return const [];
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
   // v115 Feature E: Moderations-Queue (User-Reports)
   // ════════════════════════════════════════════════════════════
 
@@ -1959,7 +2103,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return null;
     } on AdminApiException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ suggestVideoClassification: ${e.statusCode} ${e.bodySnippet}');
+        debugPrint(
+            '❌ suggestVideoClassification: ${e.statusCode} ${e.bodySnippet}');
       }
       return null;
     } catch (e) {
@@ -2198,7 +2343,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       );
       return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('❌ shadowBanUser: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('❌ shadowBanUser: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ shadowBanUser: $e');
@@ -2224,7 +2370,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       );
       return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('❌ tempMuteUser: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('❌ tempMuteUser: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ tempMuteUser: $e');
@@ -2236,7 +2383,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
 
   static Future<List<Map<String, dynamic>>> getFeatureFlags() async {
     try {
-      final data = await AdminApiClient.instance.getJson('/api/admin/feature-flags');
+      final data =
+          await AdminApiClient.instance.getJson('/api/admin/feature-flags');
       final list = data['flags'] as List? ?? [];
       return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
@@ -2263,7 +2411,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       );
       return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('❌ setFeatureFlag: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('❌ setFeatureFlag: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ setFeatureFlag: $e');
@@ -2275,7 +2424,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
 
   static Future<List<Map<String, dynamic>>> getAnnouncements() async {
     try {
-      final data = await AdminApiClient.instance.getJson('/api/admin/announcements');
+      final data =
+          await AdminApiClient.instance.getJson('/api/admin/announcements');
       final list = data['announcements'] as List? ?? [];
       return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
@@ -2305,7 +2455,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       );
       return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('❌ createAnnouncement: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('❌ createAnnouncement: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ createAnnouncement: $e');
@@ -2342,8 +2493,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
 
   static Future<Map<String, dynamic>> getInsights() async {
     try {
-      final data = await AdminApiClient.instance
-          .getJson('/api/admin/insights');
+      final data = await AdminApiClient.instance.getJson('/api/admin/insights');
       return data;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ getInsights: $e');
@@ -2355,8 +2505,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
 
   static Future<Map<String, dynamic>> getHealthStatus() async {
     try {
-      final data = await AdminApiClient.instance
-          .getJson('/api/admin/health');
+      final data = await AdminApiClient.instance.getJson('/api/admin/health');
       return data;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ getHealthStatus: $e');
@@ -2381,9 +2530,11 @@ extension WorldAdminServiceV162 on WorldAdminService {
         if (from != null) 'from': from.toUtc().toIso8601String(),
         if (to != null) 'to': to.toUtc().toIso8601String(),
       };
-      final qs = params.entries.map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}').join('&');
-      final data = await AdminApiClient.instance
-          .getJson('/api/admin/audit-log?$qs');
+      final qs = params.entries
+          .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+          .join('&');
+      final data =
+          await AdminApiClient.instance.getJson('/api/admin/audit-log?$qs');
       final list = data['entries'] as List? ?? data['log'] as List? ?? [];
       return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } catch (e) {
@@ -2400,7 +2551,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
           .postJson('/api/admin/audit-log/$entryId/undo', body: {});
       return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('❌ undoAuditEntry: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('❌ undoAuditEntry: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ undoAuditEntry: $e');
@@ -2422,7 +2574,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       );
       return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('❌ bulkWarnUsers: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('❌ bulkWarnUsers: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ bulkWarnUsers: $e');
@@ -2442,7 +2595,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       );
       return data['success'] as bool? ?? false;
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('❌ bulkChangeRole: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('❌ bulkChangeRole: ${e.statusCode} ${e.bodySnippet}');
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ bulkChangeRole: $e');
@@ -2485,8 +2639,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<Map<String, dynamic>?> getImpersonationSnapshot(
       String userId) async {
     try {
-      final data = await AdminApiClient.instance.getJson(
-          '/api/admin/users/$userId/impersonation-snapshot');
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/users/$userId/impersonation-snapshot');
       return data;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ getImpersonationSnapshot: $e');

@@ -7332,18 +7332,47 @@ export default {
       }
 
       // ── GET /api/admin/users/:userId/module-access ───────────────────────────
-      // Liefert alle Admin-Overrides (grant/block) fuer einen User.
-      // Response: { success, overrides: [{ module_code, module_type, is_granted, granted_by, reason, created_at }] }
+      // Liefert ALLE Admin-Overrides fuer einen User -- inkl. evtl. Altlasten
+      // unter Legacy-IDs ('user_*'). Sucht parallel unter beiden IDs (UUID +
+      // legacy) damit der Admin im UI sieht, wenn ein Eintrag unter einer
+      // veralteten ID liegt (Task 2: Status-Anzeige im Dashboard).
+      // user_id wird im Response explizit zurueckgegeben damit die UI die
+      // Heuristik (UUID vs Legacy) anwenden kann.
       if (method === 'GET' && path.includes('/users/') && path.endsWith('/module-access')) {
         try {
           const userId = path.split('/')[4];
           if (!userId) return errorResponse('userId fehlt', 400);
+          // Beide IDs ermitteln: was als Eingabe kam + die jeweils andere.
+          const candidates = new Set([userId]);
+          const uuid = await resolveProfileUuid(userId, svcHeaders);
+          if (uuid) candidates.add(uuid);
+          // Wenn Eingabe UUID war: zugehoerige legacy_user_id mitsuchen.
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+            try {
+              const lr = await fetch(
+                `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=legacy_user_id&limit=1`,
+                { headers: svcHeaders },
+              );
+              if (lr.ok) {
+                const arr = await lr.json().catch(() => []);
+                const legacy = Array.isArray(arr) && arr[0]?.legacy_user_id;
+                if (legacy) candidates.add(legacy);
+              }
+            } catch (_) {}
+          }
+          const idList = [...candidates].map(encodeURIComponent).join(',');
           const r = await fetch(
-            `${SUPABASE_URL}/rest/v1/admin_module_access?user_id=eq.${encodeURIComponent(userId)}&select=module_code,module_type,is_granted,granted_by,reason,created_at&order=created_at.desc`,
+            `${SUPABASE_URL}/rest/v1/admin_module_access?user_id=in.(${idList})&select=user_id,module_code,module_type,is_granted,granted_by,reason,created_at&order=created_at.desc`,
             { headers: svcHeaders },
           );
           const rows = r.ok ? await r.json().catch(() => []) : [];
-          return jsonResponse({ success: true, overrides: Array.isArray(rows) ? rows : [] });
+          return jsonResponse({
+            success: true,
+            overrides: Array.isArray(rows) ? rows : [],
+            // UI-Hinweise: kanonische UUID + alle abgefragten IDs.
+            canonical_uuid: uuid,
+            queried_ids: [...candidates],
+          });
         } catch (e) { return errorResponse(`module-access GET Fehler: ${e.message}`); }
       }
 
@@ -7353,10 +7382,17 @@ export default {
       //   is_granted=true  → Force-Unlock (Prerequisites ignorieren)
       //   is_granted=false → Force-Block  (auch wenn Prerequisites erfuellt)
       // Body fuer entfernen: { module_code, action: 'remove' }
+      //
+      // Task 1 (2026-06-07): KANONISCHE UUID. Der Schreibpfad loest die
+      // Eingabe-ID immer auf profiles.id (UUID) auf. Dadurch landet die
+      // user_id-Spalte konsistent bei der UUID und der Lesepfad in
+      // vorhang_service.dart (sucht via .inFilter ueber UUID + legacy)
+      // matched IMMER. Verhindert das frueher beobachtete "Override
+      // gespeichert aber User sieht nichts"-Problem.
       if (method === 'POST' && path.includes('/users/') && path.endsWith('/module-access')) {
         try {
-          const userId = path.split('/')[4];
-          if (!userId) return errorResponse('userId fehlt', 400);
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
 
           // Nur Admin+ darf Modul-Overrides setzen (Moderatoren nicht).
           if (!['admin', 'root_admin'].includes(caller.role)) {
@@ -7368,17 +7404,50 @@ export default {
           const moduleCode = String(body?.module_code || '').trim().toUpperCase();
           if (!moduleCode) return errorResponse('module_code fehlt', 400);
 
-          // Remove-Aktion: Override loeschen, User faellt zurueck auf Prerequisite-Logik.
+          // ─── KANONISCHE UUID aufloesen ──────────────────────────────
+          // Eingabe kann UUID ODER Legacy-ID ('user_*') sein -- die admin
+          // user-list im Worker liefert beides je nach Datenstand. Wir
+          // brauchen IMMER die profiles.id (UUID) damit der Lesepfad
+          // konsistent matched.
+          const canonicalUuid = await resolveProfileUuid(rawUserId, svcHeaders);
+          // Wenn kein Profil-Match: Eingabe-ID als Fallback verwenden +
+          // Warnung loggen (der User existiert evtl. nur in der alten
+          // InvisibleAuth-Welt und wurde noch nie zu profiles syncronisiert).
+          const writeUserId = canonicalUuid || rawUserId;
+          if (!canonicalUuid) {
+            console.warn(`[module-access] WARN: keine UUID fuer rawUserId='${rawUserId}' -- schreibe mit Fallback. User-Sync evtl. noetig.`);
+          }
+
+          // Remove-Aktion: ALLE Override-Zeilen fuer diesen User+Modul
+          // loeschen -- auch evtl. Altlasten unter Legacy-ID, damit der
+          // User wirklich auf die Prerequisite-Logik zurueckfaellt.
           if (body?.action === 'remove') {
+            const removalIds = new Set([rawUserId]);
+            if (canonicalUuid) removalIds.add(canonicalUuid);
+            // Zusaetzlich legacy_user_id ermitteln wenn nur UUID bekannt war.
+            if (canonicalUuid === rawUserId) {
+              try {
+                const lr = await fetch(
+                  `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(canonicalUuid)}&select=legacy_user_id&limit=1`,
+                  { headers: svcHeaders },
+                );
+                if (lr.ok) {
+                  const arr = await lr.json().catch(() => []);
+                  const legacy = Array.isArray(arr) && arr[0]?.legacy_user_id;
+                  if (legacy) removalIds.add(legacy);
+                }
+              } catch (_) {}
+            }
+            const idList = [...removalIds].map(encodeURIComponent).join(',');
             await fetch(
-              `${SUPABASE_URL}/rest/v1/admin_module_access?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}`,
+              `${SUPABASE_URL}/rest/v1/admin_module_access?user_id=in.(${idList})&module_code=eq.${encodeURIComponent(moduleCode)}`,
               { method: 'DELETE', headers: svcHeaders },
             );
             logAudit(svcHeaders, {
               admin_username: caller.username,
               action: 'module_access_remove',
-              target_id: userId,
-              details: { module_code: moduleCode },
+              target_id: writeUserId,
+              details: { module_code: moduleCode, queried_ids: [...removalIds] },
             });
             return jsonResponse({ success: true, action: 'removed', module_code: moduleCode });
           }
@@ -7394,14 +7463,23 @@ export default {
           const isGranted = body.is_granted;
           const reason = String(body?.reason || '').trim().slice(0, 300) || null;
 
-          // UPSERT: vorhandenen Override aktualisieren oder neu anlegen.
+          // Falls eine alte Zeile unter Legacy-ID existiert: erst loeschen,
+          // damit nicht zwei widerspruechliche Zeilen entstehen.
+          if (canonicalUuid && rawUserId !== canonicalUuid) {
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/admin_module_access?user_id=eq.${encodeURIComponent(rawUserId)}&module_code=eq.${encodeURIComponent(moduleCode)}`,
+              { method: 'DELETE', headers: svcHeaders },
+            ).catch(() => {});
+          }
+
+          // UPSERT mit kanonischer UUID.
           const upsertRes = await fetch(
             `${SUPABASE_URL}/rest/v1/admin_module_access?on_conflict=user_id,module_code`,
             {
               method: 'POST',
               headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
               body: JSON.stringify({
-                user_id: userId,
+                user_id: writeUserId,
                 module_code: moduleCode,
                 module_type: moduleType,
                 is_granted: isGranted,
@@ -7419,8 +7497,14 @@ export default {
           logAudit(svcHeaders, {
             admin_username: caller.username,
             action: isGranted ? 'module_access_grant' : 'module_access_block',
-            target_id: userId,
-            details: { module_code: moduleCode, module_type: moduleType, reason },
+            target_id: writeUserId,
+            details: {
+              module_code: moduleCode,
+              module_type: moduleType,
+              reason,
+              uuid_resolved: !!canonicalUuid,
+              raw_input_id: rawUserId,
+            },
           });
 
           return jsonResponse({
@@ -7428,8 +7512,323 @@ export default {
             action: isGranted ? 'granted' : 'blocked',
             module_code: moduleCode,
             module_type: moduleType,
+            stored_user_id: writeUserId,
+            uuid_resolved: !!canonicalUuid,
           });
         } catch (e) { return errorResponse(`module-access POST Fehler: ${e.message}`); }
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // v128 (2026-06-07): MODUL-WERKSTATT (Task 3)
+      // KI-gestuetzte Modul-Erstellung & -Editierung im Admin-Dashboard.
+      // ════════════════════════════════════════════════════════════════
+      // Endpunkte:
+      //   POST /api/admin/module-workshop/topics    -> KI-Themen-Vorschlaege
+      //   POST /api/admin/module-workshop/generate  -> Vollst. Modul erstellen
+      //   POST /api/admin/module-workshop/expand    -> Inhalte erweitern
+      //   POST /api/admin/module-workshop/save      -> Persistieren in Tabelle
+      //   GET  /api/admin/module-workshop/list      -> Vollst. Liste fuer Edit
+      // Welt-Param: 'vorhang' oder 'ursprung' -> bestimmt die Tabelle.
+
+      // Hilfs-Schema: bekannte Branches pro Welt (Auto-Wahl + Validierung).
+      const WORKSHOP_BRANCHES = {
+        vorhang: [
+          'Machtpsychologie',
+          'Manipulationserkennung',
+          'Verhandlung & Überzeugung',
+          'Körpersprache & Nonverbales',
+          'Strategisches Denken',
+          'Schattenarbeit',
+        ],
+        ursprung: [
+          'gateway_foundation',
+          'focus_levels',
+          'energy_tools',
+          'patterning_manifestation',
+          'remote_viewing',
+        ],
+      };
+      const tableForWorld = (w) => w === 'ursprung' ? 'ursprung_modules' : 'vorhang_modules';
+
+      // Hilfs-Funktion: KI-Call mit JSON-Output-Parsing (faengt Markdown-Codeblocks ab).
+      async function workshopAiJson(systemMsg, userMsg, maxTokens = 1200) {
+        if (!env.AI) throw new Error('Workers-AI nicht verfuegbar');
+        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [
+            { role: 'system', content: systemMsg },
+            { role: 'user', content: userMsg },
+          ],
+          max_tokens: maxTokens,
+        });
+        let text = (res?.response || '').trim();
+        // Strip ```json ... ``` falls vorhanden
+        const codeFence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (codeFence) text = codeFence[1].trim();
+        // Erstes valides JSON-Objekt extrahieren
+        const jsonStart = text.search(/[\{\[]/);
+        if (jsonStart >= 0) text = text.slice(jsonStart);
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          throw new Error(`KI-Antwort nicht parsebar: ${text.slice(0, 200)}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/topics ─────────────────────
+      // Body: { hint: 'Freitext (kurz)', world: 'vorhang'|'ursprung' }
+      // Returns: { suggestions: ['Thema 1', 'Thema 2', ...] }
+      if (method === 'POST' && path === '/api/admin/module-workshop/topics') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const hint = String(body?.hint || '').trim().slice(0, 200);
+          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const worldContext = world === 'vorhang'
+            ? 'die "Vorhang"-Welt der Weltenbibliothek-App: Themen zu Machtpsychologie, Manipulationserkennung, Verhandlung, Koerpersprache, strategischem Denken und Schattenarbeit.'
+            : 'die "Ursprung"-Welt: Themen zu Bewusstsein, Gateway-Erfahrungen, Focus-Levels, Energie-Tools, Manifestation und Remote Viewing.';
+          const system = `Du hilfst beim Erstellen von Lern-Modulen fuer ${worldContext} Antworte AUSSCHLIESSLICH als JSON-Array von 5 Strings, je 3-8 Worte, auf Deutsch.`;
+          const user = hint
+            ? `Schlage 5 konkrete Modul-Themen vor, die zu folgendem Ausgangspunkt passen: "${hint}"`
+            : `Schlage 5 spannende, noch nicht offensichtliche Modul-Themen vor.`;
+          const arr = await workshopAiJson(system, user, 400);
+          const suggestions = (Array.isArray(arr) ? arr : []).map(String).slice(0, 5);
+          return jsonResponse({ success: true, suggestions });
+        } catch (e) {
+          return errorResponse(`Themen-Vorschlaege fehlgeschlagen: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/generate ───────────────────
+      // Body: { topic: 'Lehrthema', world: 'vorhang'|'ursprung', branch?: '...' }
+      // Returns: { module: { title, subtitle, branch, theory_content, case_study, exercise_description, xp_reward } }
+      if (method === 'POST' && path === '/api/admin/module-workshop/generate') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const topic = String(body?.topic || '').trim();
+          if (topic.length < 3) return errorResponse('topic fehlt', 400);
+          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const branches = WORKSHOP_BRANCHES[world];
+          const branchHint = body?.branch && branches.includes(body.branch)
+            ? body.branch
+            : null;
+
+          const system = [
+            'Du bist Lehrredaktion fuer die Weltenbibliothek-App. Erstellst ein neues Lern-Modul.',
+            'Schreibst praezise, sachlich, lebensnah. Kein Marketing-Sprech, keine Floskeln.',
+            'Antworte AUSSCHLIESSLICH als JSON-Objekt mit den Feldern:',
+            '  title (max 60 Zeichen),',
+            '  subtitle (max 120 Zeichen),',
+            `  branch (einer aus: ${branches.join(' | ')}),`,
+            '  theory_content (300-700 Worte, Markdown erlaubt: ## Ueberschriften, **fett**, Listen),',
+            '  case_study (eine konkrete Fallgeschichte, 150-350 Worte),',
+            '  exercise_description (1-3 praktische Uebungen, 100-300 Worte),',
+            '  xp_reward (Integer zwischen 50 und 200, je nach Schwierigkeit).',
+            'Inhalte auf Deutsch.',
+          ].join('\n');
+          const user = branchHint
+            ? `Thema: ${topic}\nGewuenschter Branch: ${branchHint}\nErstelle das vollstaendige Modul.`
+            : `Thema: ${topic}\nWaehle den passenden Branch selbst und erstelle das vollstaendige Modul.`;
+          const moduleData = await workshopAiJson(system, user, 1800);
+          // Sanity-Check + Defaults
+          const branch = branches.includes(moduleData.branch) ? moduleData.branch : (branchHint || branches[0]);
+          const xpRaw = Number(moduleData.xp_reward) || 100;
+          const xp = Math.max(50, Math.min(200, Math.round(xpRaw)));
+          return jsonResponse({
+            success: true,
+            module: {
+              title: String(moduleData.title || topic).slice(0, 120),
+              subtitle: String(moduleData.subtitle || '').slice(0, 240),
+              branch,
+              theory_content: String(moduleData.theory_content || ''),
+              case_study: String(moduleData.case_study || ''),
+              exercise_description: String(moduleData.exercise_description || ''),
+              xp_reward: xp,
+            },
+          });
+        } catch (e) {
+          return errorResponse(`Modul-Generierung fehlgeschlagen: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/expand ─────────────────────
+      // Body: { world, current: { title, theory_content, case_study, exercise_description } }
+      // Returns: { module: { title, subtitle, branch, theory_content, case_study, exercise_description, xp_reward } }
+      if (method === 'POST' && path === '/api/admin/module-workshop/expand') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const branches = WORKSHOP_BRANCHES[world];
+          const current = body?.current || {};
+          if (!current.title || !current.theory_content) {
+            return errorResponse('current.title + current.theory_content noetig', 400);
+          }
+          const system = [
+            'Du verbesserst ein bestehendes Lern-Modul der Weltenbibliothek.',
+            'Behalte den Charakter und Schwerpunkt bei, fuege aber substantielle Tiefe hinzu:',
+            '  - Theory: ergaenze Mechanismen, Beispiele, Gegenargumente',
+            '  - Case Study: konkrete Geschichte mit Personen, Daten, Wendung',
+            '  - Uebungen: praxisnah, ohne Plattitueden',
+            'Schreibst Deutsch, sachlich, ohne Marketing-Sprech.',
+            'Antworte AUSSCHLIESSLICH als JSON-Objekt mit denselben Feldern wie Generate.',
+            `Branches: ${branches.join(' | ')}`,
+          ].join('\n');
+          const user = `Bestehender Inhalt:\n\nTitel: ${current.title}\nSubtitle: ${current.subtitle || ''}\nBranch: ${current.branch || ''}\n\nTheorie:\n${current.theory_content}\n\nFallstudie:\n${current.case_study || ''}\n\nUebung:\n${current.exercise_description || ''}\n\nBitte ausbauen.`;
+          const moduleData = await workshopAiJson(system, user, 2000);
+          const branch = branches.includes(moduleData.branch)
+            ? moduleData.branch
+            : (current.branch && branches.includes(current.branch) ? current.branch : branches[0]);
+          const xpRaw = Number(moduleData.xp_reward) || Number(current.xp_reward) || 100;
+          const xp = Math.max(50, Math.min(200, Math.round(xpRaw)));
+          return jsonResponse({
+            success: true,
+            module: {
+              title: String(moduleData.title || current.title).slice(0, 120),
+              subtitle: String(moduleData.subtitle || current.subtitle || '').slice(0, 240),
+              branch,
+              theory_content: String(moduleData.theory_content || current.theory_content),
+              case_study: String(moduleData.case_study || current.case_study || ''),
+              exercise_description: String(moduleData.exercise_description || current.exercise_description || ''),
+              xp_reward: xp,
+            },
+          });
+        } catch (e) {
+          return errorResponse(`Modul-Ausarbeitung fehlgeschlagen: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/admin/module-workshop/list?world=vorhang ──────────
+      // Vollstaendige Liste inkl. theory_content fuer Edit-Ansicht.
+      if (method === 'GET' && path === '/api/admin/module-workshop/list') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const world = url.searchParams.get('world') === 'ursprung' ? 'ursprung' : 'vorhang';
+          const tbl = tableForWorld(world);
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,branch_order,title,subtitle,is_boss_module,xp_reward,prerequisites,theory_content,case_study,exercise_description&order=branch_order.asc,module_code.asc`,
+            { headers: svcHeaders },
+          );
+          if (!r.ok) {
+            const t = await r.text().catch(() => '');
+            return errorResponse(`module-workshop list: ${r.status} ${t.slice(0, 200)}`);
+          }
+          const rows = await r.json().catch(() => []);
+          return jsonResponse({ success: true, modules: Array.isArray(rows) ? rows : [] });
+        } catch (e) {
+          return errorResponse(`module-workshop list Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/save ───────────────────────
+      // Body: { world, module: {...}, edit_code?: 'V-31' }
+      // Bei edit_code: UPDATE; sonst INSERT mit auto-generiertem module_code.
+      // Inhalts-Check: Mindestlaengen + Pflichtfelder + KI-Platzhalter-Warnung.
+      if (method === 'POST' && path === '/api/admin/module-workshop/save') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const tbl = tableForWorld(world);
+          const mod = body?.module || {};
+          const editCode = body?.edit_code ? String(body.edit_code).trim().toUpperCase() : null;
+
+          // ── Inhalts-Check ─────────────────────────────────────────
+          const errors = [];
+          if (!mod.title || String(mod.title).trim().length < 3) errors.push('title fehlt oder zu kurz');
+          if (!mod.branch || !WORKSHOP_BRANCHES[world].includes(mod.branch)) errors.push('branch ungueltig');
+          if (!mod.theory_content || String(mod.theory_content).trim().length < 200) {
+            errors.push('theory_content zu kurz (min 200 Zeichen)');
+          }
+          if (!mod.case_study || String(mod.case_study).trim().length < 80) {
+            errors.push('case_study zu kurz (min 80 Zeichen)');
+          }
+          if (!mod.exercise_description || String(mod.exercise_description).trim().length < 50) {
+            errors.push('exercise_description zu kurz (min 50 Zeichen)');
+          }
+          // KI-Platzhalter erkennen
+          const placeholderRe = /(\[einfuegen\]|\[bitte ergaenzen\]|\.\.\.tbd|TODO|XXX|Lorem ipsum)/i;
+          for (const f of ['title', 'subtitle', 'theory_content', 'case_study', 'exercise_description']) {
+            if (mod[f] && placeholderRe.test(String(mod[f]))) {
+              errors.push(`${f} enthaelt Platzhalter`);
+            }
+          }
+          if (errors.length > 0) {
+            return jsonResponse({ success: false, errors }, 400);
+          }
+
+          // ── module_code bestimmen ─────────────────────────────────
+          let moduleCode = editCode;
+          if (!moduleCode) {
+            // Naechste freie Nummer im Branch finden.
+            // V-1..V-99 fuer vorhang, U-1..U-99 fuer ursprung.
+            const prefix = world === 'ursprung' ? 'U-' : 'V-';
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code&module_code=like.${prefix}*`,
+              { headers: svcHeaders },
+            );
+            const existing = r.ok ? await r.json().catch(() => []) : [];
+            const nums = (existing || [])
+              .map(e => parseInt(String(e.module_code || '').replace(prefix, ''), 10))
+              .filter(n => !isNaN(n));
+            const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+            moduleCode = `${prefix}${nextNum}`;
+          }
+
+          // ── Schreiben (UPSERT bei edit, INSERT bei new) ───────────
+          const row = {
+            module_code: moduleCode,
+            branch: mod.branch,
+            branch_order: Number(mod.branch_order) || (WORKSHOP_BRANCHES[world].indexOf(mod.branch) + 1),
+            title: String(mod.title).trim(),
+            subtitle: String(mod.subtitle || '').trim(),
+            is_boss_module: !!mod.is_boss_module,
+            xp_reward: Math.max(50, Math.min(200, Math.round(Number(mod.xp_reward) || 100))),
+            prerequisites: Array.isArray(mod.prerequisites) ? mod.prerequisites : [],
+            theory_content: String(mod.theory_content),
+            case_study: String(mod.case_study),
+            exercise_description: String(mod.exercise_description),
+          };
+
+          const saveRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tbl}?on_conflict=module_code`,
+            {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+              body: JSON.stringify(row),
+            },
+          );
+          if (!saveRes.ok) {
+            const t = await saveRes.text().catch(() => '');
+            return errorResponse(`module-workshop save: ${saveRes.status} ${t.slice(0, 300)}`);
+          }
+
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: editCode ? 'module_workshop_edit' : 'module_workshop_create',
+            target_id: moduleCode,
+            details: { world, branch: row.branch, title: row.title },
+          });
+
+          return jsonResponse({
+            success: true,
+            module_code: moduleCode,
+            action: editCode ? 'updated' : 'created',
+            world,
+          });
+        } catch (e) {
+          return errorResponse(`module-workshop save Fehler: ${e.message}`);
+        }
       }
 
       // ════════════════════════════════════════════════════════════════
