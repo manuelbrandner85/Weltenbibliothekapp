@@ -452,8 +452,28 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
 
   // ── Build ────────────────────────────────────────────────────────────
 
+  /// Materie + Energie haben KEINE Lern-Module/Quiz, sondern interaktive
+  /// Funktionen/Tools -> dort die Funktions-Werkstatt statt Quiz-Editor.
+  bool get _isToolWorld => _world == 'materie' || _world == 'energie';
+
   @override
   Widget build(BuildContext context) {
+    if (_isToolWorld) {
+      return Column(
+        children: [
+          _buildWorldSwitcher(),
+          const SizedBox(height: 4),
+          Expanded(
+            child: _FunctionWorkshop(
+              key: ValueKey('fnws_$_world'),
+              world: _world,
+              accent: widget.accent,
+              accentBright: widget.accentBright,
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       children: [
         _buildWorldSwitcher(),
@@ -1881,4 +1901,467 @@ class _ModulePreviewSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FUNKTIONS-WERKSTATT (Materie/Energie) — Funktion bauen lassen + Inhalte
+// ═══════════════════════════════════════════════════════════════════════════
+class _FunctionWorkshop extends StatefulWidget {
+  final String world;
+  final Color accent;
+  final Color accentBright;
+  const _FunctionWorkshop({
+    super.key,
+    required this.world,
+    required this.accent,
+    required this.accentBright,
+  });
+
+  @override
+  State<_FunctionWorkshop> createState() => _FunctionWorkshopState();
+}
+
+class _FunctionWorkshopState extends State<_FunctionWorkshop>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs;
+
+  // Funktion-Tab
+  bool _extend = false;
+  final _fnTitle = TextEditingController();
+  final _fnTarget = TextEditingController();
+  final _fnDesc = TextEditingController();
+  bool _requesting = false;
+  String? _resultMsg;
+  String? _resultUrl;
+
+  // Inhalte-Tab
+  List<Map<String, dynamic>> _contentTables = const [];
+  String? _activeTable;
+  List<Map<String, dynamic>> _rows = const [];
+  List<String> _columns = const [];
+  bool _contentLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 2, vsync: this);
+    _loadContentTables();
+  }
+
+  @override
+  void dispose() {
+    _fnTitle.dispose();
+    _fnTarget.dispose();
+    _fnDesc.dispose();
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  void _snack(String m, {Color? c}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A30)));
+  }
+
+  Future<void> _requestFunction() async {
+    final title = _fnTitle.text.trim();
+    final desc = _fnDesc.text.trim();
+    if (title.length < 3 || desc.length < 10) {
+      _snack('Titel (min. 3) und Beschreibung (min. 10 Zeichen) noetig');
+      return;
+    }
+    setState(() {
+      _requesting = true;
+      _resultMsg = null;
+      _resultUrl = null;
+    });
+    final res = await WorldAdminServiceV162.requestTool(
+      title: title,
+      description: desc,
+      world: widget.world,
+      mode: _extend ? 'extend' : 'new',
+      target: _extend ? _fnTarget.text.trim() : null,
+    );
+    if (!mounted) return;
+    setState(() => _requesting = false);
+    if (res['success'] == true) {
+      setState(() {
+        _resultUrl = (res['issue_url'] ?? res['prefill_url'])?.toString();
+        _resultMsg = res['auto_created'] == true
+            ? 'Anfrage erstellt — Claude Code baut die Funktion und oeffnet einen PR.'
+            : 'Anfrage vorbereitet — oeffne den Link und klicke "Submit".';
+      });
+      _fnTitle.clear();
+      _fnDesc.clear();
+      _fnTarget.clear();
+    } else {
+      _snack('Anfrage fehlgeschlagen: ${res['error'] ?? ''}', c: Colors.redAccent);
+    }
+  }
+
+  Future<void> _loadContentTables() async {
+    final t = await WorldAdminServiceV162.getContentTables(widget.world);
+    if (!mounted) return;
+    setState(() => _contentTables = t);
+  }
+
+  Future<void> _loadRows(String table) async {
+    setState(() {
+      _activeTable = table;
+      _contentLoading = true;
+    });
+    final data = await WorldAdminServiceV162.getContentRows(
+        world: widget.world, table: table);
+    if (!mounted) return;
+    setState(() {
+      _rows = (data['rows'] as List).cast<Map<String, dynamic>>();
+      _columns = (data['columns'] as List).cast<String>();
+      _contentLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabs,
+          indicatorColor: widget.accentBright,
+          labelColor: widget.accentBright,
+          unselectedLabelColor: Colors.white38,
+          tabs: const [
+            Tab(icon: Icon(Icons.build_circle_outlined, size: 16), text: 'Funktion (KI baut)'),
+            Tab(icon: Icon(Icons.dataset_outlined, size: 16), text: 'Inhalte'),
+          ],
+        ),
+        const Divider(color: Colors.white10, height: 1),
+        Expanded(
+          child: TabBarView(
+            controller: _tabs,
+            children: [_buildFunctionTab(), _buildContentTab()],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Tab 1: Funktion anfragen (Claude baut) ──
+  Widget _buildFunctionTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.amber.withValues(alpha: 0.25)),
+          ),
+          child: Text(
+            '${widget.world == 'energie' ? 'Energie' : 'Materie'} hat interaktive Funktionen/Tools (kein Quiz). '
+            'Beschreibe eine neue Funktion oder eine Erweiterung — die KI verfasst eine Spezifikation, '
+            'erstellt ein GitHub-Issue und Claude Code baut sie und oeffnet einen PR (du mergest, dann neues APK).',
+            style: const TextStyle(color: Colors.amber, fontSize: 11, height: 1.4),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Row(children: [
+          ChoiceChip(
+            label: const Text('Neue Funktion'),
+            selected: !_extend,
+            onSelected: (_) => setState(() => _extend = false),
+            selectedColor: widget.accent,
+          ),
+          const SizedBox(width: 8),
+          ChoiceChip(
+            label: const Text('Bestehende erweitern'),
+            selected: _extend,
+            onSelected: (_) => setState(() => _extend = true),
+            selectedColor: widget.accent,
+          ),
+        ]),
+        const SizedBox(height: 12),
+        if (_extend) ...[
+          TextField(
+            controller: _fnTarget,
+            style: const TextStyle(color: Colors.white),
+            decoration: _deco(widget.world == 'energie'
+                ? 'Welches Tool? (z.B. Numerologie, Tarot, Chakren)'
+                : 'Welches Tool? (z.B. Kaninchenbau, Krypto-Tracker)'),
+          ),
+          const SizedBox(height: 10),
+        ],
+        TextField(
+          controller: _fnTitle,
+          style: const TextStyle(color: Colors.white),
+          decoration: _deco('Kurzer Titel der Funktion'),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _fnDesc,
+          style: const TextStyle(color: Colors.white),
+          maxLines: 6,
+          decoration: _deco('Was soll die Funktion koennen? Eingaben, Ausgaben, Ablauf …'),
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: _requesting ? null : _requestFunction,
+          icon: _requesting
+              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.auto_awesome),
+          label: Text(_requesting ? 'KI erstellt Spezifikation …' : 'Anfragen & bauen lassen'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.accentBright.withValues(alpha: 0.85),
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(46),
+          ),
+        ),
+        if (_resultMsg != null) ...[
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_resultMsg!, style: const TextStyle(color: Colors.white, fontSize: 12)),
+              if (_resultUrl != null) ...[
+                const SizedBox(height: 6),
+                SelectableText(_resultUrl!,
+                    style: TextStyle(color: widget.accentBright, fontSize: 11)),
+              ],
+            ]),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Tab 2: Inhalte verwalten ──
+  Widget _buildContentTab() {
+    if (_contentTables.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Fuer diese Welt gibt es aktuell keine direkt editierbaren Inhalte.\n'
+            'Nutze die Funktions-Werkstatt, um neue Tools/Inhalte bauen zu lassen.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38),
+          ),
+        ),
+      );
+    }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(children: [
+            const Text('Inhaltstyp:', style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _activeTable,
+                  isExpanded: true,
+                  dropdownColor: const Color(0xFF1A1A2E),
+                  hint: const Text('Auswaehlen …', style: TextStyle(color: Colors.white38)),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  items: [
+                    for (final t in _contentTables)
+                      DropdownMenuItem(
+                        value: t['table'] as String,
+                        child: Text(t['label'] as String? ?? t['table'] as String),
+                      ),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) _loadRows(v);
+                  },
+                ),
+              ),
+            ),
+            if (_activeTable != null)
+              IconButton(
+                icon: Icon(Icons.add_circle, color: widget.accentBright),
+                tooltip: 'Neuer Eintrag',
+                onPressed: () => _editRow(null),
+              ),
+          ]),
+        ),
+        const Divider(color: Colors.white10, height: 1),
+        Expanded(
+          child: _activeTable == null
+              ? const Center(child: Text('Inhaltstyp waehlen', style: TextStyle(color: Colors.white38)))
+              : _contentLoading
+                  ? Center(child: CircularProgressIndicator(color: widget.accentBright))
+                  : _rows.isEmpty
+                      ? const Center(child: Text('Keine Eintraege', style: TextStyle(color: Colors.white38)))
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: _rows.length,
+                          itemBuilder: (_, i) => _buildRowTile(_rows[i]),
+                        ),
+        ),
+      ],
+    );
+  }
+
+  String _rowTitle(Map<String, dynamic> r) {
+    for (final k in ['name', 'title', 'label', 'symbol', 'keyword', 'animal', 'number']) {
+      final v = r[k];
+      if (v != null && v.toString().trim().isNotEmpty) return v.toString();
+    }
+    return r['id']?.toString() ?? '(ohne Titel)';
+  }
+
+  Widget _buildRowTile(Map<String, dynamic> r) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        dense: true,
+        title: Text(_rowTitle(r),
+            style: const TextStyle(color: Colors.white, fontSize: 13)),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          IconButton(
+            icon: const Icon(Icons.edit, size: 16, color: Colors.white54),
+            onPressed: () => _editRow(r),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+            onPressed: () => _deleteRow(r),
+          ),
+        ]),
+        onTap: () => _editRow(r),
+      ),
+    );
+  }
+
+  Future<void> _deleteRow(Map<String, dynamic> r) async {
+    final id = r['id'];
+    if (id == null) {
+      _snack('Eintrag ohne id kann nicht geloescht werden');
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A30),
+        title: const Text('Eintrag loeschen?', style: TextStyle(color: Colors.white)),
+        content: Text(_rowTitle(r), style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Loeschen', style: TextStyle(color: Colors.redAccent))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final done = await WorldAdminServiceV162.deleteContentRow(
+        world: widget.world, table: _activeTable!, id: id);
+    _snack(done ? 'Geloescht' : 'Loeschen fehlgeschlagen');
+    if (done) _loadRows(_activeTable!);
+  }
+
+  Future<void> _editRow(Map<String, dynamic>? existing) async {
+    final cols = _columns.isNotEmpty
+        ? _columns
+        : (existing?.keys.toList() ?? const <String>[]);
+    final ctrls = <String, TextEditingController>{};
+    for (final c in cols) {
+      if (c == 'id' || c == 'created_at' || c == 'updated_at') continue;
+      final v = existing?[c];
+      ctrls[c] = TextEditingController(
+          text: v == null ? '' : (v is String ? v : jsonEncode(v)));
+    }
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.85,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          builder: (_, scroll) => ListView(
+            controller: scroll,
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text(existing == null ? 'Neuer Eintrag' : 'Eintrag bearbeiten',
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              for (final e in ctrls.entries) ...[
+                Text(e.key, style: TextStyle(color: widget.accentBright, fontSize: 11, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: e.value,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  maxLines: null,
+                  minLines: 1,
+                  decoration: _deco(null),
+                ),
+                const SizedBox(height: 10),
+              ],
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.save, size: 16),
+                label: const Text('Speichern'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(46),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (saved != true) return;
+    final row = <String, dynamic>{};
+    for (final e in ctrls.entries) {
+      final raw = e.value.text;
+      // Versuche JSON zu parsen (fuer jsonb-Spalten), sonst String.
+      dynamic val = raw;
+      final trimmed = raw.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          val = jsonDecode(trimmed);
+        } catch (_) {/* bleibt String */}
+      }
+      row[e.key] = val;
+    }
+    final ok = await WorldAdminServiceV162.saveContentRow(
+      world: widget.world,
+      table: _activeTable!,
+      row: row,
+      id: existing?['id'],
+    );
+    _snack(ok ? 'Gespeichert' : 'Speichern fehlgeschlagen',
+        c: ok ? Colors.green : Colors.redAccent);
+    if (ok) _loadRows(_activeTable!);
+  }
+
+  InputDecoration _deco(String? hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      );
 }

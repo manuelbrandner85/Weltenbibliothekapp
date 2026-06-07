@@ -1982,6 +1982,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
     required String title,
     required String description,
     String? world,
+    String mode = 'new', // 'new' | 'extend'
+    String? target, // bei extend: Name des bestehenden Tools
   }) async {
     try {
       final data = await AdminApiClient.instance.postJson(
@@ -1990,6 +1992,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
           'title': title,
           'description': description,
           if (world != null) 'world': world,
+          'mode': mode,
+          if (target != null && target.isNotEmpty) 'target': target,
         },
       );
       return Map<String, dynamic>.from(data);
@@ -2001,6 +2005,77 @@ extension WorldAdminServiceV162 on WorldAdminService {
     } catch (e) {
       if (kDebugMode) debugPrint('requestTool: $e');
       return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  // ── Inhalte-Verwaltung (Materie/Energie Tool-Inhalte) ─────────────────
+  static Future<List<Map<String, dynamic>>> getContentTables(String world) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/content/tables?world=$world');
+      final list = (data['tables'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('getContentTables: $e');
+      return const [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> getContentRows({
+    required String world,
+    required String table,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+          '/api/admin/content/rows?world=$world&table=$table');
+      return {
+        'rows': ((data['rows'] as List?) ?? const [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList(),
+        'columns':
+            ((data['columns'] as List?) ?? const []).map((e) => e.toString()).toList(),
+      };
+    } catch (e) {
+      if (kDebugMode) debugPrint('getContentRows: $e');
+      return {'rows': <Map<String, dynamic>>[], 'columns': <String>[]};
+    }
+  }
+
+  static Future<bool> saveContentRow({
+    required String world,
+    required String table,
+    required Map<String, dynamic> row,
+    dynamic id,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/content/row',
+        body: {
+          'world': world,
+          'table': table,
+          'row': row,
+          if (id != null) 'id': id,
+        },
+      );
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('saveContentRow: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> deleteContentRow({
+    required String world,
+    required String table,
+    required dynamic id,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.deleteJson(
+          '/api/admin/content/row?world=$world&table=$table&id=${Uri.encodeQueryComponent('$id')}');
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('deleteContentRow: $e');
+      return false;
     }
   }
 

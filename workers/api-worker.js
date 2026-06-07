@@ -9406,26 +9406,57 @@ export default {
           const title = String(body?.title || '').trim().slice(0, 120);
           const description = String(body?.description || '').trim().slice(0, 2000);
           const world = body?.world || null;
+          const mode = body?.mode === 'extend' ? 'extend' : 'new';
+          const target = String(body?.target || '').trim().slice(0, 120);
+          const refine = body?.refine !== false; // default: KI-Spezifikation erzeugen
           if (title.length < 3 || description.length < 10) {
             return errorResponse('Titel (min 3) und Beschreibung (min 10) noetig', 400);
           }
+
+          // KI-Spezifikation erzeugen, damit das Issue fuer Claude Code direkt
+          // umsetzbar ist (Zweck, Eingaben, Ausgaben, Daten, UI, Akzeptanz).
+          let refinedSpec = '';
+          if (refine) {
+            try {
+              const sys = [
+                'Du bist Tech-Lead und schreibst eine praezise Umsetzungs-Spezifikation',
+                'fuer ein interaktives Flutter-Tool/Feature der Weltenbibliothek-App.',
+                mode === 'extend'
+                  ? `Es geht um die ERWEITERUNG eines bestehenden Tools: "${target}".`
+                  : 'Es geht um ein NEUES Tool/Feature.',
+                'Schreibe auf Deutsch, strukturiert in Markdown mit Abschnitten:',
+                '## Zweck, ## Nutzer-Interaktion, ## Eingaben, ## Ausgaben/Berechnung,',
+                '## Datenquellen/Tabellen (falls noetig), ## UI-Skizze, ## Akzeptanzkriterien.',
+                'Konkret, knapp, umsetzbar. Keine Floskeln.',
+              ].join('\n');
+              refinedSpec = await aiText(env,
+                sys,
+                `Welt: ${world || 'unbestimmt'}\nTitel: ${title}\nWunsch: ${description}`,
+                1400);
+            } catch (_) { refinedSpec = ''; }
+          }
+
           const repo = 'manuelbrandner85/Weltenbibliothekapp';
-          const issueTitle = `[Tool-Anfrage] ${title}`;
+          const issueTitle = `[${mode === 'extend' ? 'Tool-Erweiterung' : 'Tool-Anfrage'}] ${title}`;
           const issueBody = [
-            '## Neues interaktives Tool (LOGIK-Modul) angefragt',
+            `## ${mode === 'extend' ? 'Erweiterung eines Tools' : 'Neues interaktives Tool/Feature'}`,
             '',
             `**Welt:** ${world || 'unbestimmt'}`,
+            mode === 'extend' && target ? `**Bestehendes Tool:** ${target}` : '',
             `**Angefragt von:** @${caller.username}`,
             '',
-            '### Beschreibung',
+            '### Wunsch (Original)',
             description,
             '',
-            '---',
-            '_Diese Anfrage wurde aus der Modul-Werkstatt im Admin-Dashboard erstellt.',
-            'Ein LOGIK-Modul braucht echten Code + App-Build durch Claude Code._',
+            refinedSpec ? '### KI-Spezifikation' : '',
+            refinedSpec,
             '',
-            '<!-- claude-code: bitte dieses Tool implementieren und einen PR oeffnen -->',
-          ].join('\n');
+            '---',
+            '_Erstellt aus der Funktions-Werkstatt im Admin-Dashboard.',
+            'Braucht echten Code + App-Build durch Claude Code._',
+            '',
+            '<!-- claude-code: bitte dieses Tool/Feature implementieren und einen PR oeffnen -->',
+          ].filter((l) => l !== '').join('\n');
 
           let issueUrl = null;
           let autoCreated = false;
@@ -9483,12 +9514,121 @@ export default {
             success: true,
             auto_created: autoCreated,
             issue_url: issueUrl,
+            refined_spec: refinedSpec || null,
             // Wenn nicht auto-erstellt: Admin oeffnet diese URL und klickt "Submit".
             prefill_url: autoCreated ? null : prefillUrl,
           });
         } catch (e) {
           return errorResponse(`tool-request Fehler: ${e.message}`);
         }
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // INHALTE-VERWALTUNG (Materie/Energie Tool-Inhalte direkt editieren)
+      // Generischer, whitelisted CRUD ueber Inhalts-/Referenz-Tabellen.
+      // ════════════════════════════════════════════════════════════════
+      // Whitelist je Welt: nur diese Tabellen sind editierbar.
+      const CONTENT_TABLES = {
+        energie: [
+          { table: 'dream_symbols', label: 'Traumsymbole' },
+          { table: 'astrology_meanings', label: 'Astrologie-Bedeutungen' },
+          { table: 'soul_number_meanings', label: 'Numerologie-Bedeutungen' },
+          { table: 'hd_meanings', label: 'Human-Design-Lexikon' },
+          { table: 'shamanic_power_animals', label: 'Krafttiere' },
+          { table: 'shamanic_journey_guides', label: 'Schamanen-Reisen' },
+          { table: 'moon_rituals', label: 'Mond-Rituale' },
+          { table: 'ancestral_rituals', label: 'Ahnen-Rituale' },
+          { table: 'chakra_symptoms', label: 'Chakra-Symptome' },
+        ],
+        materie: [],
+      };
+      const isContentTableAllowed = (world, tbl) =>
+        (CONTENT_TABLES[world] || []).some((t) => t.table === tbl);
+
+      // GET /api/admin/content/tables?world=energie
+      if (method === 'GET' && path === '/api/admin/content/tables') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        const world = String(url.searchParams.get('world') || '').toLowerCase();
+        return jsonResponse({ success: true, tables: CONTENT_TABLES[world] || [] });
+      }
+
+      // GET /api/admin/content/rows?world=&table=&limit=
+      if (method === 'GET' && path === '/api/admin/content/rows') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        try {
+          const world = String(url.searchParams.get('world') || '').toLowerCase();
+          const tbl = String(url.searchParams.get('table') || '');
+          const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') || '200')));
+          if (!isContentTableAllowed(world, tbl)) return errorResponse('Tabelle nicht erlaubt', 403);
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tbl}?select=*&limit=${limit}&order=id.desc`,
+            { headers: svcHeaders });
+          if (!r.ok) {
+            // Fallback ohne order (manche Tabellen haben keine id-Spalte)
+            const r2 = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}?select=*&limit=${limit}`, { headers: svcHeaders });
+            const rows2 = r2.ok ? await r2.json().catch(() => []) : [];
+            const cols2 = rows2[0] ? Object.keys(rows2[0]) : [];
+            return jsonResponse({ success: true, rows: rows2, columns: cols2 });
+          }
+          const rows = await r.json().catch(() => []);
+          const columns = rows[0] ? Object.keys(rows[0]) : [];
+          return jsonResponse({ success: true, rows, columns });
+        } catch (e) { return errorResponse(`content rows Fehler: ${e.message}`); }
+      }
+
+      // POST /api/admin/content/row  { world, table, row, id? }  -> upsert
+      if (method === 'POST' && path === '/api/admin/content/row') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = String(body?.world || '').toLowerCase();
+          const tbl = String(body?.table || '');
+          const row = body?.row && typeof body.row === 'object' ? body.row : null;
+          const id = body?.id;
+          if (!isContentTableAllowed(world, tbl)) return errorResponse('Tabelle nicht erlaubt', 403);
+          if (!row) return errorResponse('row fehlt', 400);
+          // id niemals ueberschreiben beim Update
+          const payload = { ...row };
+          delete payload.created_at;
+          let res;
+          if (id !== undefined && id !== null && id !== '') {
+            delete payload.id;
+            res = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}?id=eq.${encodeURIComponent(id)}`,
+              { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify(payload) });
+          } else {
+            delete payload.id;
+            res = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}`,
+              { method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify(payload) });
+          }
+          if (!res.ok) { const t = await res.text().catch(() => ''); return errorResponse(`Speichern ${res.status}: ${t.slice(0, 200)}`, res.status); }
+          logAudit(svcHeaders, { admin_username: caller.username, action: id ? 'content_update' : 'content_create', target_id: tbl, details: { world } });
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`content row Fehler: ${e.message}`); }
+      }
+
+      // DELETE /api/admin/content/row?world=&table=&id=
+      if (method === 'DELETE' && path === '/api/admin/content/row') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const world = String(url.searchParams.get('world') || '').toLowerCase();
+          const tbl = String(url.searchParams.get('table') || '');
+          const id = url.searchParams.get('id');
+          if (!isContentTableAllowed(world, tbl)) return errorResponse('Tabelle nicht erlaubt', 403);
+          if (!id) return errorResponse('id fehlt', 400);
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}?id=eq.${encodeURIComponent(id)}`,
+            { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+          if (!res.ok && res.status !== 204) return errorResponse(`Loeschen ${res.status}`, res.status);
+          logAudit(svcHeaders, { admin_username: caller.username, action: 'content_delete', target_id: tbl, details: { world, id } });
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`content delete Fehler: ${e.message}`); }
       }
 
       // ════════════════════════════════════════════════════════════════
