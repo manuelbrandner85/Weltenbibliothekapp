@@ -1511,6 +1511,25 @@ function normSources(raw) {
   })).filter((s) => s.title);
 }
 
+// W5: Snapshot des aktuellen Modulstands in module_versions sichern (vor Edit).
+// Best-effort -- ein Fehler hier darf das Speichern nicht blockieren.
+async function snapshotModule(world, tbl, code, svcHeaders, username) {
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/${tbl}?module_code=eq.${encodeURIComponent(code)}&limit=1`,
+      { headers: svcHeaders });
+    if (!r.ok) return;
+    const arr = await r.json().catch(() => []);
+    const cur = Array.isArray(arr) && arr[0];
+    if (!cur) return; // existiert noch nicht -> nichts zu sichern
+    await fetch(`${SUPABASE_URL}/rest/v1/module_versions`, {
+      method: 'POST',
+      headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ world, module_code: code, snapshot: cur, created_by: username || null }),
+    });
+  } catch (_) { /* best-effort */ }
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // B1: KI-AUTO-SCAN (Cron, 2026-06-07)
 // Periodischer Hintergrund-Scan, der pro Tag EINE Welt prueft und Modul-
@@ -8691,7 +8710,7 @@ export default {
           const world = normWorld(url.searchParams.get('world'));
           const tbl = tableForWorld(world);
           const r = await fetch(
-            `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,branch_order,title,subtitle,is_boss_module,xp_reward,prerequisites,theory_content,case_study,exercise_description,test_questions,sources&order=branch_order.asc,module_code.asc`,
+            `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,branch_order,title,subtitle,is_boss_module,xp_reward,prerequisites,theory_content,case_study,exercise_description,test_questions,sources,cover_image_url&order=branch_order.asc,module_code.asc`,
             { headers: svcHeaders },
           );
           if (!r.ok) {
@@ -8775,6 +8794,114 @@ export default {
         }
       }
 
+      // ── POST /api/admin/module-workshop/cover (W3: Cover per KI) ────
+      // Body: { world, title, hint? } -> generiert ein Bild (Workers-AI),
+      // legt es in R2 ab und liefert die oeffentliche URL.
+      if (method === 'POST' && path === '/api/admin/module-workshop/cover') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          if (!env.AI) return errorResponse('Workers-AI nicht verfuegbar', 503);
+          if (!env.R2_BUCKET) return errorResponse('Kein R2-Bucket konfiguriert', 503);
+          const body = await request.clone().json().catch(() => ({}));
+          const world = normWorld(body?.world);
+          const title = String(body?.title || '').trim();
+          const hint = String(body?.hint || '').trim();
+          if (!title) return errorResponse('title fehlt', 400);
+          const styleMap = {
+            vorhang: 'dark cinematic, psychological, dramatic lighting, deep red accents',
+            ursprung: 'cosmic, ethereal, consciousness, soft glowing light, deep blue and violet',
+            materie: 'investigative, documentary, network of connections, muted earthy tones',
+            energie: 'spiritual, energy flow, aura, warm golden and turquoise light',
+          };
+          const prompt = `Cover artwork for a learning module titled "${title}". ${hint ? hint + '. ' : ''}` +
+            `Style: ${styleMap[world] || styleMap.vorhang}. Abstract, symbolic, no text, no letters, high detail, 16:9.`;
+          // flux-1-schnell liefert { image: base64 }.
+          const aiRes = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', {
+            prompt: prompt.slice(0, 2000),
+          });
+          const b64 = aiRes && aiRes.image;
+          if (!b64) return errorResponse('Bildgenerierung lieferte kein Bild', 502);
+          // base64 -> Bytes
+          const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+          const key = `module-covers/${world}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+          await env.R2_BUCKET.put(key, bin, { httpMetadata: { contentType: 'image/png' } });
+          const publicUrl = `https://pub-${env.CF_ACCOUNT_ID || 'unknown'}.r2.dev/${key}`;
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'module_cover_generate',
+            details: { world, title },
+          });
+          return jsonResponse({ success: true, cover_image_url: publicUrl });
+        } catch (e) {
+          return errorResponse(`Cover-Generierung fehlgeschlagen: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/admin/module-workshop/versions?world=&code= (W5) ──
+      if (method === 'GET' && path === '/api/admin/module-workshop/versions') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const world = normWorld(url.searchParams.get('world'));
+          const code = String(url.searchParams.get('code') || '').trim().toUpperCase();
+          if (!code) return errorResponse('code fehlt', 400);
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/module_versions?world=eq.${encodeURIComponent(world)}&module_code=eq.${encodeURIComponent(code)}&select=id,created_at,created_by&order=created_at.desc&limit=20`,
+            { headers: svcHeaders });
+          const rows = r.ok ? await r.json().catch(() => []) : [];
+          return jsonResponse({ success: true, versions: Array.isArray(rows) ? rows : [] });
+        } catch (e) {
+          return errorResponse(`versions Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/undo (W5) ──────────────────
+      // Body: { world, code }. Stellt den letzten Snapshot wieder her und
+      // entfernt ihn (mehrfaches Undo geht weiter zurueck).
+      if (method === 'POST' && path === '/api/admin/module-workshop/undo') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = normWorld(body?.world);
+          const code = String(body?.code || '').trim().toUpperCase();
+          if (!code) return errorResponse('code fehlt', 400);
+          const tbl = tableForWorld(world);
+          const vr = await fetch(
+            `${SUPABASE_URL}/rest/v1/module_versions?world=eq.${encodeURIComponent(world)}&module_code=eq.${encodeURIComponent(code)}&select=id,snapshot&order=created_at.desc&limit=1`,
+            { headers: svcHeaders });
+          const varr = vr.ok ? await vr.json().catch(() => []) : [];
+          const ver = Array.isArray(varr) && varr[0];
+          if (!ver) return errorResponse('Keine fruehere Version vorhanden', 404);
+          const snap = ver.snapshot || {};
+          // id/created_at aus dem Snapshot entfernen (PK/Timestamps nicht ueberschreiben).
+          const restore = { ...snap };
+          delete restore.id;
+          delete restore.created_at;
+          delete restore.updated_at;
+          const rr = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tbl}?module_code=eq.${encodeURIComponent(code)}`,
+            { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify(restore) });
+          if (!rr.ok) return errorResponse(`Wiederherstellen ${rr.status}`, rr.status);
+          // verbrauchten Snapshot loeschen
+          await fetch(`${SUPABASE_URL}/rest/v1/module_versions?id=eq.${encodeURIComponent(ver.id)}`,
+            { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'module_workshop_undo',
+            target_id: code,
+            details: { world },
+          });
+          return jsonResponse({ success: true, restored: code });
+        } catch (e) {
+          return errorResponse(`undo Fehler: ${e.message}`);
+        }
+      }
+
       // ── POST /api/admin/module-workshop/save ───────────────────────
       // Body: { world, module: {...}, edit_code?: 'V-31' }
       // Bei edit_code: UPDATE; sonst INSERT mit auto-generiertem module_code.
@@ -8832,6 +8959,11 @@ export default {
             moduleCode = `${prefix}${nextNum}`;
           }
 
+          // W5: Vor dem Ueberschreiben eines bestehenden Moduls Snapshot sichern.
+          if (editCode) {
+            await snapshotModule(world, tbl, moduleCode, svcHeaders, caller.username);
+          }
+
           // ── Schreiben (UPSERT bei edit, INSERT bei new) ───────────
           const row = {
             module_code: moduleCode,
@@ -8848,6 +8980,8 @@ export default {
             // test_questions ist NOT NULL -> immer ein Array mitschicken.
             test_questions: normTestQuestions(mod.test_questions),
             sources: normSources(mod.sources),
+            // W3: Cover-Bild (optional).
+            cover_image_url: mod.cover_image_url ? String(mod.cover_image_url).slice(0, 500) : null,
           };
 
           const saveRes = await fetch(
@@ -9140,6 +9274,10 @@ export default {
             test_questions: normTestQuestions(sug.test_questions),
             sources: normSources(sug.sources),
           };
+          // W5: Bei 'improve' (Ueberschreiben) vorher Snapshot sichern.
+          if (sug.target_module_code) {
+            await snapshotModule(world, tbl, moduleCode, svcHeaders, caller.username);
+          }
           const saveR = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}?on_conflict=module_code`, {
             method: 'POST',
             headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },

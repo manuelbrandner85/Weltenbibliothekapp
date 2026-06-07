@@ -1786,6 +1786,59 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// W3: Generiert ein Cover-Bild per KI. Returns cover_image_url.
+  static Future<String?> generateModuleCover({
+    required String world,
+    required String title,
+    String? hint,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/cover',
+        body: {'world': world, 'title': title, if (hint != null) 'hint': hint},
+      );
+      if (data['success'] == true) return data['cover_image_url'] as String?;
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('generateModuleCover: $e');
+      return null;
+    }
+  }
+
+  /// W5: Anzahl vorhandener Versions-Snapshots fuer ein Modul.
+  static Future<int> getModuleVersionCount({
+    required String world,
+    required String moduleCode,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+        '/api/admin/module-workshop/versions?world=$world&code=${Uri.encodeQueryComponent(moduleCode)}',
+      );
+      final list = (data['versions'] as List?) ?? const [];
+      return list.length;
+    } catch (e) {
+      if (kDebugMode) debugPrint('getModuleVersionCount: $e');
+      return 0;
+    }
+  }
+
+  /// W5: Stellt die letzte Version eines Moduls wieder her.
+  static Future<bool> undoModule({
+    required String world,
+    required String moduleCode,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/undo',
+        body: {'world': world, 'code': moduleCode},
+      );
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('undoModule: $e');
+      return false;
+    }
+  }
+
   /// W4: Uebersetzt ein Modul in eine Zielsprache. Returns uebersetztes Modul.
   static Future<Map<String, dynamic>?> translateModule({
     required Map<String, dynamic> module,
