@@ -569,11 +569,14 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
   Future<void> _voteForPrediction(Map<String, dynamic> pred) async {
     try {
       final client = supabase;
-      await client.from('prediction_votes').insert({
+      // 2026-06-07: Upsert auf UNIQUE(prediction_id, user_id) -- ein
+      // schneller Doppelklick erzeugt jetzt 1 Reihe statt 2. Idempotent.
+      await client.from('prediction_votes').upsert({
         'prediction_id': pred['id'],
         'vote': 1,
         'user_id': client.auth.currentUser?.id,
-      });
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'prediction_id,user_id');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -584,7 +587,7 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
       if (kDebugMode) debugPrint('vote err: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vote derzeit nicht moeglich')),
+        const SnackBar(content: Text('Vote derzeit nicht möglich')),
       );
     }
   }

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/branch_boss_test_service.dart'; // 👑 I3 Boss-Test
 import '../../services/gamification_service.dart';
+import '../../services/xp_retry_queue.dart';
 import '../../services/new_unlock_tracker.dart';
 import '../../services/storage_service.dart';
 import '../../services/unified_profile_service.dart';
@@ -855,14 +856,34 @@ class _BossTestScreenState extends State<_BossTestScreen> {
       result: result,
     );
     if (result.passed && mounted) {
-      // XP-Reward via GamificationService.
+      // XP-Reward via GamificationService. Bei Fehler in die Retry-Queue
+      // schreiben und User informieren -- vorher still verloren.
       try {
         await GamificationService().addXp(
           'ursprung',
           widget.test.xpReward,
           reason: 'boss_test_${widget.branch}',
         );
-      } catch (e) { if (kDebugMode) debugPrint('ursprung_modules_screen: silent catch -> $e'); }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('ursprung_modules_screen: XP-Sync fehlgeschlagen -> $e');
+        }
+        await XpRetryQueue.enqueue(
+          world: 'ursprung',
+          xp: widget.test.xpReward,
+          reason: 'boss_test_${widget.branch}',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '⚠️ XP-Sync fehlgeschlagen. Werden beim nächsten Login nachgeholt.'),
+              backgroundColor: Colors.orange.shade800,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
     }
   }
 

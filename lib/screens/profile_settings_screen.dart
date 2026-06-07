@@ -89,12 +89,23 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      // 2026-06-07: Sichtbarer roter SnackBar mit Retry statt nur "loading=false"
+      // (Spinner haengt sonst optisch im Hintergrund weiter, weil das Profil
+      // nicht angezeigt werden kann).
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'Fehler beim Laden der Profile. Bitte erneut versuchen.')),
+            content: const Text(
+                'Profil konnte nicht geladen werden. Bitte erneut versuchen.'),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Erneut versuchen',
+              textColor: Colors.white,
+              onPressed: _loadProfiles,
+            ),
+          ),
         );
       }
     }

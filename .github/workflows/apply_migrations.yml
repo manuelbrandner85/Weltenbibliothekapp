@@ -458,6 +458,9 @@ jobs:
           run_sql "v124 Sensitive Admin Features (profile_sessions fuer IP/Device-Linking)" \
             supabase/migrations/20260607_v124_sensitive_admin_features.sql
 
+          run_sql "v125 prediction_votes Tabelle (UNIQUE constraint + RLS)" \
+            supabase/migrations/20260607_v125_prediction_votes.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."

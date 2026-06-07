@@ -49,6 +49,7 @@ import 'screens/shared/world_admin_dashboard.dart';
 // import 'screens/energie/notification_settings_screen.dart'; // FIREBASE - deaktiviert
 // import 'screens/notification_settings_screen.dart' as new_notif; // FIREBASE - deaktiviert
 import 'services/service_manager.dart'; // ✅ NEW: Centralized service initialization
+import 'services/xp_retry_queue.dart'; // 2026-06-07: flush pending XP on app start
 import 'services/theme_service.dart';
 import 'services/user_presence_service.dart'; // 🟢 Online-Status
 import 'services/privacy_analytics_service.dart'; // 📊 PRIVACY ANALYTICS
@@ -291,6 +292,12 @@ void main() async {
   if (!kIsWeb) {
     unawaited(_triggerPushTestSuiteOnce());
   }
+
+  // 2026-06-07: Hat der letzte Lauf XP-Inkremente nicht durchgekriegt
+  // (offline, Backend kurz weg), liegen sie in SharedPreferences in der
+  // XpRetryQueue. Fire-and-forget Flush beim Start -- erfolgreiche Eintraege
+  // werden entfernt, der Rest bleibt fuer den naechsten Versuch.
+  unawaited(XpRetryQueue.flush());
 
   // ═══════════════════════════════════════════════════════════
   // APP STARTEN (NICHT BLOCKIEREND)
