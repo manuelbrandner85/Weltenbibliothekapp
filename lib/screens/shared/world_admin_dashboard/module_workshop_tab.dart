@@ -1952,6 +1952,7 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
   // Tools-Tab (T1/T4)
   List<Map<String, dynamic>> _tools = const [];
   bool _toolsLoading = false;
+  String _toolSearch = ''; // B1: Suche/Filter
 
   // KI & Status-Tab (T2/T3)
   List<Map<String, dynamic>> _toolSuggestions = const [];
@@ -2146,24 +2147,60 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
     if (_toolsLoading) {
       return Center(child: CircularProgressIndicator(color: widget.accentBright));
     }
-    if (_tools.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('Keine Tools im Verzeichnis.',
-              style: TextStyle(color: Colors.white38)),
-        ),
-      );
-    }
+    // B1: Filter nach Suchbegriff (Name/Kategorie/Beschreibung).
+    final q = _toolSearch.trim().toLowerCase();
+    final filtered = q.isEmpty
+        ? _tools
+        : _tools.where((t) {
+            final hay =
+                '${t['name'] ?? ''} ${t['category'] ?? ''} ${t['description'] ?? ''}'
+                    .toLowerCase();
+            return hay.contains(q);
+          }).toList();
     // Nach Kategorie gruppieren.
     final byCat = <String, List<Map<String, dynamic>>>{};
-    for (final t in _tools) {
+    for (final t in filtered) {
       final c = (t['category'] as String?) ?? 'Allgemein';
       byCat.putIfAbsent(c, () => []).add(t);
     }
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
+        // A1: Kurz-Hilfe
+        Container(
+          padding: const EdgeInsets.all(8),
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: widget.accent.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(children: [
+            Icon(Icons.info_outline, size: 13, color: widget.accentBright),
+            const SizedBox(width: 6),
+            const Expanded(
+              child: Text(
+                'Alle Tools dieser Welt. "Ändern lassen" baut Claude um. '
+                '"Inhalte" öffnet die Daten des Tools.',
+                style: TextStyle(color: Colors.white54, fontSize: 10.5),
+              ),
+            ),
+          ]),
+        ),
+        // B1: Suchfeld
+        TextField(
+          style: const TextStyle(color: Colors.white, fontSize: 13),
+          decoration: _deco('Tool suchen …')
+              .copyWith(prefixIcon: const Icon(Icons.search, size: 18, color: Colors.white38)),
+          onChanged: (v) => setState(() => _toolSearch = v),
+        ),
+        const SizedBox(height: 8),
+        if (filtered.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(
+              child: Text('Keine Treffer.', style: TextStyle(color: Colors.white38)),
+            ),
+          ),
         for (final entry in byCat.entries) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 10, 4, 6),
