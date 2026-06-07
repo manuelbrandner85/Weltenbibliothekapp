@@ -143,26 +143,27 @@ class AppRoles {
   // ============================================================================
 
   /// Kann Content bearbeiten (Tabs, Tools, Marker, Medien)
+  /// Admin+ und Content-Editor haben vollen Content-Zugriff.
   static bool canEditContent(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canManageTabs(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canManageTools(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canManageMarkers(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canManageMedia(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canManageFeatureFlags(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canPublishContent(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canManageVersions(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canViewChangeLog(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
   static bool canUseSandbox(String? role) =>
-      _isRoot(role) || role == contentEditor;
+      _isAdminLike(role) || role == contentEditor;
 
   // ============================================================================
   // HELPER FUNCTIONS
@@ -235,7 +236,7 @@ class AppRoles {
       case contentEditor:
         return 'Content-Management: Alle Inhalte bearbeiten, KEIN User-Management';
       case admin:
-        return 'Administrator-Zugriff';
+        return 'Administrator: User-Management + Content-Management (kein Root-Admin-Zugriff)';
       case user:
         return 'Standard-Benutzer-Zugriff';
       default:

@@ -10,8 +10,11 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart'
     show RealtimeChannel, PostgresChangeEvent, Supabase;
 import 'package:youtube_player_flutter/youtube_player_flutter.dart'
-    show YoutubePlayerController, YoutubePlayerFlags, YoutubePlayer,
-         YoutubePlayerBuilder;
+    show
+        YoutubePlayerController,
+        YoutubePlayerFlags,
+        YoutubePlayer,
+        YoutubePlayerBuilder;
 
 import '../../config/api_config.dart';
 import '../../core/constants/roles.dart';
@@ -130,9 +133,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           .timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final total = (data['total'] as int?) ??
-            (data['requests'] as List?)?.length ??
-            0;
+        final total =
+            (data['total'] as int?) ?? (data['requests'] as List?)?.length ?? 0;
         if (mounted) setState(() => _badgePendingUsernameRequests = total);
       }
     } catch (_) {/* degrade gracefully */}
@@ -179,8 +181,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       tabs.add(const _AdminTabDef(
           icon: Icons.analytics_rounded, label: 'Content', kind: 'content'));
     } else if (AppRoles.canAccessAdminDashboard(role)) {
-      // Alle anderen Admin-Rollen (Moderator/Admin): nur Video-Verwaltung
-      // unter "Inhalte" -- keine sonstigen Content-Funktionen.
+      // Moderator: nur Video-Verwaltung, keine sonstigen Content-Funktionen.
       tabs.add(const _AdminTabDef(
           icon: Icons.play_circle_outline_rounded,
           label: 'Videos',
@@ -446,8 +447,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
               failedPushes: _badgeFailedPushes,
               pendingVideos: _badgePendingVideos,
               maintenanceActive: _badgeMaintenanceActive,
-              onOpen: (section) =>
-                  setState(() => _activeSection = section),
+              onOpen: (section) => setState(() => _activeSection = section),
               onSearch: (query) => setState(() {
                 _pendingUserSearch = query;
                 _activeSection = 'users';
@@ -481,7 +481,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             accentBright: _accentBright);
       case 'users':
         return _UsersTab(
-            key: ValueKey('users-${_pendingUserSearch.isEmpty ? '_' : _pendingUserSearch}'),
+            key: ValueKey(
+                'users-${_pendingUserSearch.isEmpty ? '_' : _pendingUserSearch}'),
             world: 'all',
             admin: admin,
             accent: _accent,
@@ -508,9 +509,11 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             accentBright: _accentBright,
             isRootAdmin: admin.isRootAdmin);
       case 'insights':
-        return _InsightsTab(accent: _accent, accentBright: _accentBright, admin: admin);
+        return _InsightsTab(
+            accent: _accent, accentBright: _accentBright, admin: admin);
       case 'control':
-        return _ControlTab(accent: _accent, accentBright: _accentBright, admin: admin);
+        return _ControlTab(
+            accent: _accent, accentBright: _accentBright, admin: admin);
       case 'system':
         return _SystemTab(
             accent: _accent, accentBright: _accentBright, admin: admin);

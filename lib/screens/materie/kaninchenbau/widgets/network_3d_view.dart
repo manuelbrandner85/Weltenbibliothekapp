@@ -5,7 +5,10 @@
 /// Reine Custom-Painter-Implementierung — kein 3D-Plugin nötig.
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -14,11 +17,13 @@ import 'kb_design.dart';
 
 class Network3DView extends StatefulWidget {
   final List<NetworkNode> nodes;
+  final List<NetworkEdge> edges;
   final void Function(String label) onTapNode;
 
   const Network3DView({
     super.key,
     required this.nodes,
+    this.edges = const [],
     required this.onTapNode,
   });
 
@@ -33,6 +38,7 @@ class _Network3DViewState extends State<Network3DView>
   double _rotY = 0.0;
   double _zoom = 1.0;
   bool _userInteracting = false;
+  final Map<String, ui.Image?> _imageCache = {};
 
   @override
   void initState() {
@@ -41,12 +47,53 @@ class _Network3DViewState extends State<Network3DView>
       vsync: this,
       duration: const Duration(seconds: 30),
     )..repeat();
+    _preloadImages(widget.nodes);
+  }
+
+  @override
+  void didUpdateWidget(Network3DView old) {
+    super.didUpdateWidget(old);
+    if (old.nodes != widget.nodes) _preloadImages(widget.nodes);
   }
 
   @override
   void dispose() {
     _orbit.dispose();
     super.dispose();
+  }
+
+  void _preloadImages(List<NetworkNode> nodes) {
+    for (final node in nodes) {
+      final url = node.imageUrl;
+      if (url == null || url.isEmpty) continue;
+      if (_imageCache.containsKey(url)) continue;
+      _imageCache[url] = null; // mark as loading
+      _loadImage(url);
+    }
+  }
+
+  Future<void> _loadImage(String url) async {
+    try {
+      final imageProvider = NetworkImage(url);
+      final completer = Completer<ui.Image>();
+      final stream = imageProvider.resolve(ImageConfiguration.empty);
+      late ImageStreamListener listener;
+      listener = ImageStreamListener(
+        (info, _) {
+          completer.complete(info.image);
+          stream.removeListener(listener);
+        },
+        onError: (_, __) {
+          completer.completeError('load failed');
+          stream.removeListener(listener);
+        },
+      );
+      stream.addListener(listener);
+      final img = await completer.future;
+      if (mounted) setState(() => _imageCache[url] = img);
+    } catch (_) {
+      // silent — node renders as color circle instead
+    }
   }
 
   void _onPanUpdate(DragUpdateDetails d) {
@@ -99,9 +146,11 @@ class _Network3DViewState extends State<Network3DView>
                   child: CustomPaint(
                     painter: _Graph3DPainter(
                       nodes: widget.nodes,
+                      edges: widget.edges,
                       rotX: _rotX,
                       rotY: autoY,
                       zoom: _zoom,
+                      imageCache: _imageCache,
                     ),
                     size: Size.infinite,
                   ),
@@ -295,15 +344,19 @@ class _Projected {
 
 class _Graph3DPainter extends CustomPainter {
   final List<NetworkNode> nodes;
+  final List<NetworkEdge> edges;
   final double rotX;
   final double rotY;
   final double zoom;
+  final Map<String, ui.Image?> imageCache;
 
   _Graph3DPainter({
     required this.nodes,
+    this.edges = const [],
     required this.rotX,
     required this.rotY,
     required this.zoom,
+    required this.imageCache,
   });
 
   @override
@@ -328,19 +381,24 @@ class _Graph3DPainter extends CustomPainter {
       zoom: zoom,
     );
 
+    // id→index Map für Cross-Edge-Rendering
+    final idToIndex = <String, int>{};
+    for (var i = 0; i < nodes.length; i++) {
+      idToIndex[nodes[i].id] = i;
+    }
+
     // Sortiere nach Tiefe (entferntere zuerst zeichnen)
     final indices = List<int>.generate(positions.length, (i) => i);
     indices.sort((a, b) => positions[b].depth.compareTo(positions[a].depth));
 
     final centerPos = positions[0];
 
-    // Edges zuerst (zwischen center und outer, hinter den Knoten)
+    // Center→Outer Sternlinien
     final edgePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.8;
     for (var i = 1; i < positions.length; i++) {
       final p = positions[i];
-      // Tiefen-abhängige Opacity (entfernte Edges blasser)
       final depthFade = ((1.0 - (p.depth / (size.shortestSide * 0.5))) * 0.5)
           .clamp(0.05, 0.45);
       edgePaint.color = KbDesign.neonRed.withValues(alpha: depthFade);
@@ -351,37 +409,84 @@ class _Graph3DPainter extends CustomPainter {
       );
     }
 
-    // Knoten
+    // Cross-Edges zwischen beliebigen Knoten (aus dem edges-Parameter)
+    if (edges.isNotEmpty) {
+      final crossPaint = Paint()..style = PaintingStyle.stroke;
+      for (final edge in edges) {
+        final fromIdx = idToIndex[edge.fromId];
+        final toIdx = idToIndex[edge.toId];
+        if (fromIdx == null || toIdx == null) continue;
+        if (fromIdx == toIdx) continue;
+        final pFrom = positions[fromIdx];
+        final pTo = positions[toIdx];
+        final avgDepth = (pFrom.depth + pTo.depth) / 2;
+        final depthFade =
+            ((1.0 - (avgDepth / (size.shortestSide * 0.5))) * 0.5)
+                .clamp(0.05, 0.5);
+        crossPaint
+          ..strokeWidth = (1.0 + edge.strength * 3.0).clamp(1.0, 4.0)
+          ..color = KbDesign.neonRed.withValues(alpha: depthFade);
+        canvas.drawLine(
+          Offset(pFrom.x, pFrom.y),
+          Offset(pTo.x, pTo.y),
+          crossPaint,
+        );
+      }
+    }
+
+    // Knoten (Tiefenreihenfolge)
     for (final idx in indices) {
       final pos = positions[idx];
       final node = nodes[idx];
       final isCenter = node.id == 'center';
       final color = _typeColor(node.type, isCenter);
-      // Entfernung-zu-Kamera-Fade
       final depthFactor =
           ((1.0 - (pos.depth / (size.shortestSide * 0.5))) * 0.7 + 0.3)
               .clamp(0.2, 1.0);
 
-      // Glow
+      // Glow (immer, außerhalb jedes clipPath)
       canvas.drawCircle(
         Offset(pos.x, pos.y),
         pos.radius + 6,
         Paint()..color = color.withValues(alpha: 0.25 * depthFactor),
       );
-      // Body
-      canvas.drawCircle(
-        Offset(pos.x, pos.y),
-        pos.radius,
-        Paint()
-          ..shader = RadialGradient(
-            colors: [
-              color.withValues(alpha: 0.95 * depthFactor),
-              color.withValues(alpha: 0.4 * depthFactor),
-            ],
-          ).createShader(Rect.fromCircle(
-              center: Offset(pos.x, pos.y), radius: pos.radius)),
-      );
-      // Border
+
+      final imgUrl = node.imageUrl;
+      final hasImage = imgUrl != null &&
+          imgUrl.isNotEmpty &&
+          imageCache[imgUrl] != null;
+
+      if (hasImage) {
+        // Kreisförmig zugeschnittenes Foto/Logo
+        final img = imageCache[imgUrl]!;
+        canvas.save();
+        canvas.clipPath(Path()
+          ..addOval(Rect.fromCircle(
+              center: Offset(pos.x, pos.y), radius: pos.radius)));
+        final src =
+            Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble());
+        final dst =
+            Rect.fromCircle(center: Offset(pos.x, pos.y), radius: pos.radius);
+        canvas.drawImageRect(
+            img, src, dst, Paint()..filterQuality = FilterQuality.medium);
+        canvas.restore();
+      } else {
+        // Farbkreis-Fallback (RadialGradient wie bisher)
+        canvas.drawCircle(
+          Offset(pos.x, pos.y),
+          pos.radius,
+          Paint()
+            ..shader = RadialGradient(
+              colors: [
+                color.withValues(alpha: 0.95 * depthFactor),
+                color.withValues(alpha: 0.4 * depthFactor),
+              ],
+            ).createShader(Rect.fromCircle(
+                center: Offset(pos.x, pos.y), radius: pos.radius)),
+        );
+      }
+
+      // Border (immer)
       canvas.drawCircle(
         Offset(pos.x, pos.y),
         pos.radius,
@@ -392,7 +497,7 @@ class _Graph3DPainter extends CustomPainter {
               .withValues(alpha: (isCenter ? 0.85 : 0.45) * depthFactor),
       );
 
-      // Label
+      // Label (immer, unter dem Knoten)
       final tp = TextPainter(
         text: TextSpan(
           text: node.label.length > 14
@@ -437,5 +542,7 @@ class _Graph3DPainter extends CustomPainter {
       old.rotX != rotX ||
       old.rotY != rotY ||
       old.zoom != zoom ||
-      old.nodes != nodes;
+      old.nodes != nodes ||
+      old.edges != edges ||
+      old.imageCache != imageCache;
 }

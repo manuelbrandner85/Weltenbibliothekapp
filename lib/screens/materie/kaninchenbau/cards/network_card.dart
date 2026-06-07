@@ -160,6 +160,7 @@ class _NetworkCardState extends State<NetworkCard>
                       MaterialPageRoute(
                         builder: (_) => Network3DView(
                           nodes: _effectiveNodes,
+                          edges: _effectiveEdges,
                           onTapNode: widget.onTapNode,
                         ),
                       ),

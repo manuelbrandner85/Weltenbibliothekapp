@@ -37,37 +37,85 @@ class UrsprungService {
   ///   }
   static Future<Map<String, dynamic>> fetchModules({String? userId}) async {
     final supa = Supabase.instance.client;
+    final hasUser = userId != null && userId.isNotEmpty;
+
+    // 2026-06-07 BUGFIX: identisch zu VorhangService -- Worker speichert mit
+    // profiles.id ODER legacy_user_id, Client muss gegen beide pruefen damit
+    // der Admin-Override greift.
+    final candidateIds = <String>{};
+    if (hasUser) candidateIds.add(userId!);
+    final legacy = InvisibleAuthService().legacyUserId;
+    if (legacy != null && legacy.isNotEmpty) candidateIds.add(legacy);
+    final supaId = supa.auth.currentUser?.id;
+    if (supaId != null && supaId.isNotEmpty) candidateIds.add(supaId);
 
     // U2: nur Metadaten laden (kein theory_content/case_study/
     // exercise_description/test_questions). Voller Inhalt wird bei Tap auf
     // ein Modul via fetchModule(code) lazy nachgeladen.
-    final modulesRaw = await supa
-        .from('ursprung_modules')
-        .select(
-          'id,module_code,branch,branch_order,title,subtitle,'
-          'is_boss_module,xp_reward,prerequisites',
-        )
-        .order('branch_order', ascending: true)
-        .order('module_code', ascending: true);
-    final modules = (modulesRaw as List).cast<Map<String, dynamic>>();
-
-    final progressMap = <String, Map<String, dynamic>>{};
-    if (userId != null && userId.isNotEmpty) {
-      try {
-        final progressRaw = await supa
+    // Batch-fetch: modules + user-specific queries all run in parallel.
+    final futs = <Future<List<dynamic>>>[
+      supa
+          .from('ursprung_modules')
+          .select(
+            'id,module_code,branch,branch_order,title,subtitle,'
+            'is_boss_module,xp_reward,prerequisites',
+          )
+          .order('branch_order', ascending: true)
+          .order('module_code', ascending: true)
+          .then<List<dynamic>>((r) => r as List),
+    ];
+    if (hasUser) {
+      futs.add(
+        supa
             .from('user_ursprung_progress')
             .select()
-            .eq('user_id', userId);
-        for (final entry
-            in (progressRaw as List).cast<Map<String, dynamic>>()) {
-          final code = entry['module_code'] as String?;
-          if (code != null) progressMap[code] = entry;
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint(
-              '[UrsprungService] progress fetch failed (continuing without): $e');
-        }
+            .eq('user_id', userId!)
+            .then<List<dynamic>>((r) => r as List)
+            .catchError((Object e) {
+          if (kDebugMode) {
+            debugPrint(
+                '[UrsprungService] progress fetch failed (continuing without): $e');
+          }
+          return <dynamic>[];
+        }),
+      );
+    }
+    if (candidateIds.isNotEmpty) {
+      futs.add(
+        supa
+            .from('admin_module_access')
+            .select('module_code,is_granted')
+            .inFilter('user_id', candidateIds.toList())
+            .eq('module_type', 'ursprung')
+            .then<List<dynamic>>((r) => r as List)
+            .catchError((Object e) {
+          if (kDebugMode) {
+            debugPrint('[UrsprungService] module-override load failed: $e');
+          }
+          return <dynamic>[];
+        }),
+      );
+    }
+
+    final results = await Future.wait(futs);
+    final modules = results[0].cast<Map<String, dynamic>>();
+
+    final progressMap = <String, Map<String, dynamic>>{};
+    final adminOverrides = <String, bool>{};
+
+    var idx = 1;
+    if (hasUser) {
+      for (final entry in results[idx].cast<Map<String, dynamic>>()) {
+        final code = entry['module_code'] as String?;
+        if (code != null) progressMap[code] = entry;
+      }
+      idx++;
+    }
+    if (candidateIds.isNotEmpty) {
+      for (final o in results[idx].cast<Map<String, dynamic>>()) {
+        final code = o['module_code'] as String?;
+        final granted = o['is_granted'] as bool?;
+        if (code != null && granted != null) adminOverrides[code] = granted;
       }
     }
 
@@ -89,41 +137,6 @@ class UrsprungService {
         .where((p) => p['completed_at'] != null)
         .map((p) => p['module_code'] as String)
         .toSet();
-
-    // Admin-Overrides laden.
-    // 2026-06-07 BUGFIX: identisch zu VorhangService -- siehe Erlaeuterung
-    // dort. Worker speichert mit profiles.id ODER legacy_user_id, Client
-    // muss gegen beide pruefen damit der Override greift.
-    final candidateIds = <String>{};
-    if (userId != null && userId.isNotEmpty) candidateIds.add(userId);
-    final legacy = InvisibleAuthService().legacyUserId;
-    if (legacy != null && legacy.isNotEmpty) candidateIds.add(legacy);
-    final supaId = supa.auth.currentUser?.id;
-    if (supaId != null && supaId.isNotEmpty) candidateIds.add(supaId);
-
-    final adminOverrides = <String, bool>{};
-    if (candidateIds.isNotEmpty) {
-      try {
-        final overrideRaw = await supa
-            .from('admin_module_access')
-            .select('module_code,is_granted')
-            .inFilter('user_id', candidateIds.toList())
-            .eq('module_type', 'ursprung');
-        for (final o in (overrideRaw as List).cast<Map<String, dynamic>>()) {
-          final code = o['module_code'] as String?;
-          final granted = o['is_granted'] as bool?;
-          if (code != null && granted != null) adminOverrides[code] = granted;
-        }
-        if (kDebugMode) {
-          debugPrint(
-              '[UrsprungService] module-overrides loaded for ids=$candidateIds -> ${adminOverrides.length} entries');
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[UrsprungService] module-override load failed: $e');
-        }
-      }
-    }
 
     var completedCount = 0;
     for (final list in branches.values) {
