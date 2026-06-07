@@ -9,7 +9,7 @@
 // Aufwand bei maximalem Hinweis-Wert. Kann in einer Iteration später
 // auf programmatischen Prompt aufgerüstet werden.
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

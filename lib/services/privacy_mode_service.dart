@@ -5,7 +5,7 @@
 // rotierter Referrer-URL. Bessere Privacy (Ziel-Server sieht nur
 // Cloudflare-IP) auf Kosten von Latenz.
 
-import 'package:flutter/foundation.dart' show ChangeNotifier;
+import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode, debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrivacyModeService extends ChangeNotifier {
