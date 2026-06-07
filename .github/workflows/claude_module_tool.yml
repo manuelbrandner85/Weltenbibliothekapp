@@ -67,11 +67,35 @@ jobs:
             Implementiere das in diesem GitHub-Issue beschriebene interaktive Tool
             (LOGIK-Modul) fuer die Flutter-App. Halte dich an die Projektregeln in
             CLAUDE.md: keine Named Dart 3 Records in lib/, flutter analyze = 0 Errors,
-            deutsche UI-Texte, ASCII-only Commit-Messages. Erstelle einen Branch und
-            oeffne einen Pull-Request. Schreibe in den PR-Body unbedingt die Zeile
-            "Closes #${{ github.event.issue.number }}", damit der PR dem Issue
-            zugeordnet werden kann. Merge NICHT selbst -- das uebernimmt der
-            nachgelagerte Auto-Merge-Schritt.
+            deutsche UI-Texte, ASCII-only Commit-Messages.
+
+            WICHTIG -- das Tool MUSS in der App sichtbar + aufrufbar sein, sonst ist
+            die Aufgabe NICHT erledigt. Die App hat KEINE dynamische Tool-Ladung;
+            jedes Tool ist in einer hartkodierten Liste registriert. Pflichtschritte:
+
+            1. Widget-Screen anlegen:
+               - Welt 'energie' -> Datei unter lib/screens/energie/calculators/
+               - Welt 'materie' -> Datei unter lib/screens/materie/tools/
+            2. Tool in die zentrale Liste eintragen, damit es im Raster erscheint:
+               - energie: in lib/screens/energie/spirit_tab_modern.dart den neuen
+                 Screen importieren UND einen Eintrag zur Liste _allTools hinzufuegen
+                 (mit title, subtitle, category, icon, color, screen oder screenBuilder).
+                 Waehle eine PASSENDE bestehende category (z.B. numerologie, meditation,
+                 orakel, energie, astro, psyche, wissen).
+               - materie: in lib/screens/materie/tools/osint_tools_hub.dart den neuen
+                 Screen importieren UND einen _DbDef-Eintrag zur Liste _tools hinzufuegen
+                 (mit icon, label, sub, color, description, customScreenBuilder).
+            3. In den PR-Body einen Abschnitt schreiben:
+               "## Fundort in der App" mit dem GENAUEN Pfad, wo der User das Tool findet
+               (Welt -> Tab/Hub -> Kategorie -> Tool-Name).
+            4. In den PR-Body die Zeile "Closes #${{ github.event.issue.number }}".
+
+            Falls du die genaue Listenstelle nicht findest, suche nach "_allTools" bzw.
+            "_tools" / "_DbDef" in den genannten Dateien -- dort werden alle bestehenden
+            Tools registriert; haenge deinen Eintrag analog an.
+
+            Erstelle einen Branch und oeffne einen Pull-Request. Merge NICHT selbst --
+            das uebernimmt der nachgelagerte Auto-Merge-Schritt.
           # Branch-Praefix fuer den entstehenden PR.
           branch_prefix: "claude/tool-"
           # WICHTIG: Ohne diese Berechtigungen verweigert die Action jeden Schreib-,
@@ -120,3 +144,27 @@ jobs:
               pull_number: pr.number, merge_method: 'squash',
             });
             core.info('Tool-PR #' + pr.number + ' automatisch gemergt.');
+
+            // Fundort fuer den Admin: Welt aus dem Issue-Body lesen und den genauen
+            // Ort in der App nennen, plus den von Claude geschriebenen "Fundort"-Block.
+            const { data: iss } = await github.rest.issues.get({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: issue });
+            const body = iss.body || '';
+            const world = (body.match(/\*\*Welt:\*\*\s*(\w+)/i) || [])[1] || '';
+            let ort;
+            if (world === 'energie') {
+              ort = 'Energie-Welt -> unten Tab "Spirit" -> im Tool-Raster (Kategorie laut PR).';
+            } else if (world === 'materie') {
+              ort = 'Materie-Welt -> Home -> Kachel "Recherche-Werkzeuge" -> im Tool-Raster.';
+            } else {
+              ort = 'Im Tool-Raster der jeweiligen Welt (' + (world || 'siehe PR') + ').';
+            }
+            const claudeFundort = (pr.body || '').match(/##\s*Fundort in der App[\s\S]*?(?=\n##\s|$)/i);
+            const detail = claudeFundort ? '\n\n' + claudeFundort[0].trim() : '';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: issue,
+              body: '[OK] Tool gebaut + automatisch gemergt (PR #' + pr.number + ').\n\n' +
+                    '**Wo finde ich es in der App?**\n' + ort + '\n\n' +
+                    'Sichtbar nach dem naechsten Update (OTA-Patch automatisch, sonst neues APK). ' +
+                    'Daten/Inhalte aenderst du sofort ueber "Inhalte verwalten".' + detail,
+            });
