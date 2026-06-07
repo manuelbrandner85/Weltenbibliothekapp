@@ -1383,6 +1383,26 @@ export default {
           },
         );
         console.log('cron queue-cleanup:', cleanRes.status);
+
+        // 2026-06-07: Stau-Schutz. Pending-Zeilen die nie zugestellt wurden
+        // (z.B. weil FCM falsch konfiguriert ist und der Dispatcher skippt)
+        // wachsen sonst unbegrenzt. Aelter als 3 Tage -> als 'failed'
+        // markieren, damit sie vom 7-Tage-Cleanup oben erfasst werden.
+        const staleCutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+          .toISOString();
+        const staleRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/notification_queue?status=eq.pending&created_at=lt.${staleCutoff}`,
+          {
+            method: 'PATCH',
+            headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              status: 'failed',
+              last_error: 'stale: nie zugestellt (>3 Tage)',
+              processed_at: new Date().toISOString(),
+            }),
+          },
+        );
+        console.log('cron stale-pending-aging:', staleRes.status);
       }
     } catch (e) {
       console.error('cron queue-cleanup failed:', e.message);
@@ -5025,11 +5045,36 @@ export default {
             const d = new Date(Date.now() - i * 86400000).toISOString().substring(0, 10);
             daily.push({ date: d, ...(byDay[d] || { sent: 0, failed: 0, pending: 0 }) });
           }
+          // 2026-06-07: FCM-Konfigurationsstatus mitliefern, damit das
+          // Dashboard sofort sieht ob echte Pushes ueberhaupt rausgehen
+          // koennen. 'ok' = Secret valide, 'invalid' = gesetzt aber
+          // fehlerhaft (haeufigste Ursache fuer "Push kommt nicht an"),
+          // 'missing' = kein Secret (nur In-App-Polling).
+          let fcmStatus = 'missing';
+          let fcmError = null;
+          try {
+            const tok = await getFcmAccessToken(env);
+            fcmStatus = tok ? 'ok' : 'missing';
+          } catch (e) {
+            fcmStatus = 'invalid';
+            fcmError = e.message;
+          }
+          // Geraete-Zahl (ohne Tokens kann kein Push zugestellt werden).
+          let deviceCount = 0;
+          try {
+            const devRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_devices?fcm_token=not.is.null&select=id`,
+              { headers: svcH });
+            deviceCount = getCount(devRes);
+          } catch (_) {}
           return jsonResponse({
             success: true,
             total_sent: getCount(sentRes),
             total_failed: getCount(failedRes),
             total_pending: getCount(pendingRes),
+            fcm_status: fcmStatus,
+            fcm_error: fcmError,
+            registered_devices: deviceCount,
             daily,
           });
         } catch (e) { return errorResponse(`push-stats-Fehler: ${e.message}`); }
