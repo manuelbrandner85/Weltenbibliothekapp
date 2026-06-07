@@ -126,9 +126,11 @@ jobs:
               owner: context.repo.owner, repo: context.repo.repo,
               state: 'open', per_page: 50, sort: 'created', direction: 'desc',
             });
-            const pr = prs.find(p =>
-              p.head.ref.startsWith('claude/tool-') &&
-              (p.body || '').includes('#' + issue));
+            // PR ueber die Issue-Referenz im Body finden (NICHT ueber den Branch-Namen
+            // -- Claude vergibt den mal als claude/tool-*, mal als feature/issue-*).
+            const ref = new RegExp('(closes|fixes|resolves)\\s+#' + issue + '\\b', 'i');
+            const pr = prs.find(p => ref.test(p.body || '') ||
+              (p.head.ref.includes('-' + issue + '-') || p.head.ref.endsWith('-' + issue)));
             if (!pr) {
               core.warning('Kein Tool-PR fuer Issue #' + issue + ' gefunden -- Bau evtl. fehlgeschlagen, nichts gemergt.');
               return;
