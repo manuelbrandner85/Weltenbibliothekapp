@@ -2174,16 +2174,25 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             color: widget.accent.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(children: [
-            Icon(Icons.info_outline, size: 13, color: widget.accentBright),
-            const SizedBox(width: 6),
-            const Expanded(
-              child: Text(
-                'Alle Tools dieser Welt. "Ändern lassen" baut Claude um. '
-                '"Inhalte" öffnet die Daten des Tools.',
-                style: TextStyle(color: Colors.white54, fontSize: 10.5),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(Icons.info_outline, size: 13, color: widget.accentBright),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'Alle Tools dieser Welt. "Ändern lassen" baut Claude um. '
+                  '"Inhalte" öffnet die Daten des Tools.',
+                  style: TextStyle(color: Colors.white54, fontSize: 10.5),
+                ),
               ),
-            ),
+            ]),
+            const SizedBox(height: 6),
+            // A3: Status-Legende
+            Wrap(spacing: 12, runSpacing: 4, children: const [
+              _StatusLegend(color: Colors.green, label: 'live = aktiv in der App'),
+              _StatusLegend(color: Colors.amber, label: 'im_bau = Claude baut gerade'),
+              _StatusLegend(color: Colors.white38, label: 'geplant = noch nicht gestartet'),
+            ]),
           ]),
         ),
         // B1: Suchfeld
@@ -2816,4 +2825,24 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       );
+}
+
+// A3: kleine Status-Legende (Punkt + Text).
+class _StatusLegend extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _StatusLegend({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 7,
+        height: 7,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+      const SizedBox(width: 4),
+      Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9.5)),
+    ]);
+  }
 }
