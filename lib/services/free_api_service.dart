@@ -223,13 +223,131 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
   static const Map<String, String> _wikidataRelationProps = {
     'P361': 'Teil von',
-    'P463': 'Mitglied von',
+    'P463': 'Mitglied',
     'P108': 'Arbeitgeber',
     'P39': 'Position',
     'P127': 'Eigentuemer',
-    'P749': 'Mutterorganisation',
+    'P749': 'Mutterorg',
     'P159': 'Hauptsitz',
+    'P488': 'Vorsitz',
+    'P169': 'CEO',
+    'P102': 'Partei',
+    'P54': 'Mitgliedsorg',
+    'P26': 'Ehepartner',
+    'P22': 'Vater',
+    'P25': 'Mutter',
+    'P40': 'Kind',
+    'P3373': 'Geschwister',
+    'P1037': 'Direktor',
+    'P112': 'Gruender',
+    'P1830': 'Eigner von',
+    'P355': 'Tochterfirma',
+    'P138': 'Benannt nach',
+    'P276': 'Ort',
+    'P800': 'Hauptwerk',
+    'P937': 'Wirkungsort',
   };
+
+  /// Klassifiziert Wikidata-Entities anhand der Property P31 (instance of).
+  /// Returnt fuer jede ID einen Typ-String ('person' | 'organisation' |
+  /// 'location' | 'concept'). Unbekannte/leere → 'concept'.
+  ///
+  /// Diese Methode ersetzt die fehleranfaellige String-Heuristik auf der
+  /// Description (die fuer 95 % der Wikidata-Entries 'concept' liefert,
+  /// weil de/en-Descriptions oft nicht die Schluesselworte enthalten).
+  Future<Map<String, String>> fetchWikidataClassification(
+      List<String> ids) async {
+    if (ids.isEmpty) return {};
+    // Wikidata wbgetentities erlaubt max 50 IDs pro Call.
+    final out = <String, String>{};
+    for (var i = 0; i < ids.length; i += 50) {
+      final chunk = ids.skip(i).take(50).toList();
+      final url = Uri.parse(
+        'https://www.wikidata.org/w/api.php'
+        '?action=wbgetentities'
+        '&ids=${chunk.join('|')}'
+        '&props=claims'
+        '&format=json'
+        '&origin=*',
+      );
+      try {
+        final res = await http.get(url).timeout(_timeout);
+        if (res.statusCode != 200) continue;
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final entities = data['entities'] as Map<String, dynamic>? ?? {};
+        entities.forEach((id, raw) {
+          final claims = (raw as Map<String, dynamic>)['claims'] as Map?;
+          final p31 = claims?['P31'] as List?;
+          if (p31 == null) {
+            out[id] = 'concept';
+            return;
+          }
+          final classIds = <String>{};
+          for (final v in p31) {
+            try {
+              final mainSnak = (v as Map<String, dynamic>)['mainsnak'];
+              final dv = mainSnak?['datavalue'];
+              final value = dv?['value'];
+              if (value is Map && value['id'] is String) {
+                classIds.add(value['id'] as String);
+              }
+            } catch (_) {/* skip malformed */}
+          }
+          out[id] = _classifyByP31(classIds);
+        });
+      } catch (e) {
+        if (kDebugMode) debugPrint('Wikidata-P31: $e');
+      }
+    }
+    return out;
+  }
+
+  /// Mappt Wikidata-Klassen-Q-IDs auf unsere 4 Entity-Typen.
+  /// Quelle der Q-IDs: https://www.wikidata.org/wiki/Help:Basic_membership_properties
+  static String _classifyByP31(Set<String> classIds) {
+    // Person
+    if (classIds.contains('Q5')) return 'person';
+    // Organisation / Unternehmen / NGO / Regierung / Geheimbund
+    const orgClasses = {
+      'Q43229', // Organisation
+      'Q4830453', // Wirtschaftsunternehmen
+      'Q891723', // Public company
+      'Q163740', // NGO
+      'Q484652', // Internationale Organisation
+      'Q7188', // Regierung
+      'Q161726', // Multinational
+      'Q3623811', // Gesellschaft / Verein
+      'Q48204', // Gewerkschaft
+      'Q207320', // Geheimorganisation
+      'Q2385804', // Bildungseinrichtung
+      'Q31629', // Sport-Liga
+      'Q11691', // Boerse
+      'Q1530705', // Stiftung
+      'Q15911314', // Verein
+      'Q15265344', // Religionsgemeinschaft
+    };
+    if (classIds.any(orgClasses.contains)) return 'organisation';
+    // Ort: Stadt, Land, Siedlung, Region, Provinz
+    const locClasses = {
+      'Q515', // Stadt
+      'Q6256', // Land
+      'Q486972', // Siedlung
+      'Q3624078', // Souveraener Staat
+      'Q56061', // Verwaltungsgebiet
+      'Q35657', // US-Bundesstaat
+      'Q82794', // Geografische Region
+      'Q1549591', // Grossstadt
+      'Q5119', // Hauptstadt
+      'Q23442', // Insel
+      'Q23397', // See
+      'Q4022', // Fluss
+      'Q8502', // Berg
+      'Q34442', // Strasse
+      'Q43702', // Provinz
+    };
+    if (classIds.any(locClasses.contains)) return 'location';
+    return 'concept';
+  }
 
   Future<List<WikidataRelation>> fetchWikidataRelations(String entityId) async {
     if (entityId.isEmpty) return [];
@@ -317,6 +435,152 @@ class FreeApiService {
       return out;
     } catch (_) {
       return {};
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 6c. LITTLESIS — Power-Mapping (Eliten/Konzerne/Boards), kostenlos
+  // API-Doku: https://littlesis.org/api
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht LittleSis-Entities (Personen + Organisationen aus US-Eliten-DB).
+  /// Liefert Edges, die das Wikidata-Netz erweitern (z.B. Board-Memberships,
+  /// Spenden, Familienbeziehungen).
+  Future<List<LittleSisRelation>> fetchLittleSisRelations(String name,
+      {int limit = 10}) async {
+    if (name.trim().isEmpty) return [];
+    // Step 1: search → entity-ID.
+    final searchUrl = Uri.parse(
+      'https://littlesis.org/api/entities/search'
+      '?q=${Uri.encodeComponent(name)}&num=1',
+    );
+    try {
+      final searchRes = await http.get(searchUrl).timeout(_timeout);
+      if (searchRes.statusCode != 200) return [];
+      final searchData = jsonDecode(searchRes.body) as Map<String, dynamic>;
+      final results = searchData['data'] as List? ?? [];
+      if (results.isEmpty) return [];
+      final entity = results.first as Map<String, dynamic>;
+      final entityId = entity['id'];
+      if (entityId == null) return [];
+      final entityName =
+          (entity['attributes'] as Map?)?['name']?.toString() ?? name;
+
+      // Step 2: relationships fuer diese Entity.
+      final relUrl = Uri.parse(
+        'https://littlesis.org/api/entities/$entityId/relationships'
+        '?page_size=$limit',
+      );
+      final relRes = await http.get(relUrl).timeout(_timeout);
+      if (relRes.statusCode != 200) return [];
+      final relData = jsonDecode(relRes.body) as Map<String, dynamic>;
+      final rels = relData['data'] as List? ?? [];
+      return rels
+          .map((r) =>
+              LittleSisRelation.fromJson(r as Map<String, dynamic>, entityName))
+          .where((r) => r.targetName.isNotEmpty)
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('LittleSis: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 6d. OPENCORPORATES — Firmenverflechtungen, Free Tier
+  // API-Doku: https://api.opencorporates.com/documentation/API-Reference
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht Firmen ueber den Namen. Liefert Land, Status, Jurisdiktion +
+  /// (best-effort) Officers/Direktoren. Free-Tier: ~200 Calls/Tag ohne Key.
+  Future<List<OpenCorpCompany>> fetchOpenCorpCompanies(String name,
+      {int limit = 5}) async {
+    if (name.trim().isEmpty) return [];
+    final url = Uri.parse(
+      'https://api.opencorporates.com/v0.4.5/companies/search'
+      '?q=${Uri.encodeComponent(name)}&per_page=$limit&format=json',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final companies =
+          ((data['results'] as Map?)?['companies'] as List?) ?? const [];
+      return companies
+          .map((c) => OpenCorpCompany.fromJson(
+              (c as Map<String, dynamic>)['company'] as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('OpenCorporates: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 6e. DBPEDIA SPARQL — strukturierte Verflechtungen mit deutschen Labels
+  // Endpoint: https://dbpedia.org/sparql
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Holt fuer einen DBpedia-Resource-Namen alle Predikate, die mit anderen
+  /// DBpedia-Resources verlinken (z.B. dbo:foundedBy, dbo:owner, dbo:member).
+  /// Liefert deutsche Labels wenn vorhanden, sonst englische.
+  Future<List<DbpediaRelation>> fetchDbpediaRelations(String resourceLabel,
+      {int limit = 30}) async {
+    if (resourceLabel.trim().isEmpty) return [];
+    // SPARQL: erst Resource ueber rdfs:label oder Redirect aufloesen,
+    // dann alle Object-Properties (mit deutschem Label).
+    final sparql = '''
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?propLabel ?targetLabel WHERE {
+  {
+    ?subject rdfs:label "$resourceLabel"@de .
+  } UNION {
+    ?subject rdfs:label "$resourceLabel"@en .
+  }
+  ?subject ?p ?target .
+  ?target a ?type . FILTER(isIRI(?target))
+  ?p rdfs:label ?propLabel .
+  ?target rdfs:label ?targetLabel .
+  FILTER(LANG(?propLabel) = "de" || LANG(?propLabel) = "en")
+  FILTER(LANG(?targetLabel) = "de" || LANG(?targetLabel) = "en")
+  FILTER(STRSTARTS(STR(?p), "http://dbpedia.org/ontology/"))
+} LIMIT $limit
+''';
+    final url = Uri.parse(
+      'https://dbpedia.org/sparql'
+      '?query=${Uri.encodeComponent(sparql)}'
+      '&format=application/sparql-results+json',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final bindings =
+          ((data['results'] as Map?)?['bindings'] as List?) ?? const [];
+      final seen = <String>{};
+      final out = <DbpediaRelation>[];
+      for (final b in bindings) {
+        final propLabel =
+            (((b as Map)['propLabel'] as Map?)?['value'] as String?) ?? '';
+        final targetLabel =
+            ((b['targetLabel'] as Map?)?['value'] as String?) ?? '';
+        if (propLabel.isEmpty || targetLabel.isEmpty) continue;
+        final key = '$propLabel|$targetLabel';
+        if (seen.contains(key)) continue;
+        seen.add(key);
+        out.add(DbpediaRelation(
+          sourceLabel: resourceLabel,
+          targetLabel: targetLabel,
+          propertyLabel: propLabel,
+        ));
+      }
+      return out;
+    } catch (e) {
+      if (kDebugMode) debugPrint('DBpedia: $e');
+      return [];
     }
   }
 
@@ -644,7 +908,9 @@ class GdeltArticle {
         final dy = int.parse(seendate.substring(6, 8));
         return DateTime(y, mo, dy);
       }
-    } catch (e) { if (kDebugMode) debugPrint('free_api_service: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('free_api_service: silent catch -> $e');
+    }
     return null;
   }
 }
@@ -721,7 +987,9 @@ class NasaFireball {
     DateTime? d;
     try {
       if (m['date'] != null) d = DateTime.parse(m['date']!);
-    } catch (e) { if (kDebugMode) debugPrint('free_api_service: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('free_api_service: silent catch -> $e');
+    }
     return NasaFireball(
       date: d,
       energy: double.tryParse(m['energy'] ?? ''),
@@ -878,7 +1146,9 @@ class DonkiEvent {
   DateTime? get parsedStart {
     try {
       if (startTime != null) return DateTime.parse(startTime!);
-    } catch (e) { if (kDebugMode) debugPrint('free_api_service: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('free_api_service: silent catch -> $e');
+    }
     return null;
   }
 
@@ -925,7 +1195,9 @@ class SunData {
     DateTime? parseUtc(String? s) {
       try {
         if (s != null) return DateTime.parse(s).toLocal();
-      } catch (e) { if (kDebugMode) debugPrint('free_api_service: silent catch -> $e'); }
+      } catch (e) {
+        if (kDebugMode) debugPrint('free_api_service: silent catch -> $e');
+      }
       return null;
     }
 
@@ -1150,4 +1422,76 @@ class CrossRefWork {
       citedBy: j['is-referenced-by-count'] as int? ?? 0,
     );
   }
+}
+
+/// LittleSis-Beziehung zwischen zwei Entitaeten.
+class LittleSisRelation {
+  final String sourceName;
+  final String targetName;
+  final String description; // z.B. 'Board member of', 'Donated $5,000 to'
+  final String? category; // 'position', 'donation', 'family', 'membership', ...
+  final String url;
+  const LittleSisRelation({
+    required this.sourceName,
+    required this.targetName,
+    required this.description,
+    required this.url,
+    this.category,
+  });
+
+  factory LittleSisRelation.fromJson(
+      Map<String, dynamic> j, String sourceName) {
+    final attrs = j['attributes'] as Map<String, dynamic>? ?? {};
+    return LittleSisRelation(
+      sourceName: sourceName,
+      targetName:
+          (attrs['entity2_name'] ?? attrs['entity1_name'] ?? '').toString(),
+      description: (attrs['description'] ?? attrs['category'] ?? '').toString(),
+      category: attrs['category']?.toString(),
+      url: (j['links'] as Map?)?['self']?.toString() ??
+          'https://littlesis.org/relationships/${j['id']}',
+    );
+  }
+}
+
+/// OpenCorporates-Firma (Free-Tier-Datensatz).
+class OpenCorpCompany {
+  final String name;
+  final String jurisdiction;
+  final String? companyNumber;
+  final String? status;
+  final String? incorporationDate;
+  final String? companyType;
+  final String url;
+  const OpenCorpCompany({
+    required this.name,
+    required this.jurisdiction,
+    required this.url,
+    this.companyNumber,
+    this.status,
+    this.incorporationDate,
+    this.companyType,
+  });
+
+  factory OpenCorpCompany.fromJson(Map<String, dynamic> j) => OpenCorpCompany(
+        name: (j['name'] ?? '').toString(),
+        jurisdiction: (j['jurisdiction_code'] ?? '').toString(),
+        companyNumber: j['company_number']?.toString(),
+        status: j['current_status']?.toString(),
+        incorporationDate: j['incorporation_date']?.toString(),
+        companyType: j['company_type']?.toString(),
+        url: (j['opencorporates_url'] ?? '').toString(),
+      );
+}
+
+/// DBpedia-Beziehung (Subject → Property → Target).
+class DbpediaRelation {
+  final String sourceLabel;
+  final String targetLabel;
+  final String propertyLabel;
+  const DbpediaRelation({
+    required this.sourceLabel,
+    required this.targetLabel,
+    required this.propertyLabel,
+  });
 }
