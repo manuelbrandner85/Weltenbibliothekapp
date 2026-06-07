@@ -22,6 +22,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  id-token: write  # noetig: claude-code-action holt einen OIDC-Token (sonst rot)
 
 jobs:
   implement-tool:
