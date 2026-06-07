@@ -1519,9 +1519,24 @@ function normSources(raw) {
 // nur 1 Welt/Tag, Quality-Check (gratis) + 1 KI-Vorschlag.
 // ══════════════════════════════════════════════════════════════════════════
 async function runAutoScanCron(env, svcHeaders) {
-  // Welt rotiert nach Tag-im-Jahr -> jede Welt ~alle 4 Tage.
+  // W7: Konfiguration beachten (enabled + erlaubte Welten).
+  let allowedWorlds = WORKSHOP_WORLDS;
+  try {
+    const cr = await fetch(`${SUPABASE_URL}/rest/v1/module_scan_config?id=eq.1&limit=1`, { headers: svcHeaders });
+    const carr = cr.ok ? await cr.json().catch(() => []) : [];
+    const cfg = Array.isArray(carr) && carr[0];
+    if (cfg) {
+      if (cfg.enabled === false) return { skipped: 'disabled' };
+      if (Array.isArray(cfg.worlds) && cfg.worlds.length > 0) {
+        allowedWorlds = cfg.worlds.filter((w) => WORKSHOP_WORLDS.includes(w));
+        if (allowedWorlds.length === 0) allowedWorlds = WORKSHOP_WORLDS;
+      }
+    }
+  } catch (_) { /* Default: alle Welten, aktiviert */ }
+
+  // Welt rotiert nach Tag-im-Jahr -> jede erlaubte Welt der Reihe nach.
   const dayOfYear = Math.floor((Date.now() - Date.UTC(new Date().getUTCFullYear(), 0, 0)) / 86400000);
-  const world = WORKSHOP_WORLDS[dayOfYear % WORKSHOP_WORLDS.length];
+  const world = allowedWorlds[dayOfYear % allowedWorlds.length];
   const tbl = tableForWorld(world);
   const branches = WORKSHOP_BRANCHES[world];
 
@@ -8585,6 +8600,84 @@ export default {
           });
         } catch (e) {
           return errorResponse(`Modul-Ausarbeitung fehlgeschlagen: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/translate (W4) ─────────────
+      // Body: { module, target_lang }  -> uebersetzt Modul-Felder per KI.
+      if (method === 'POST' && path === '/api/admin/module-workshop/translate') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const mod = body?.module || {};
+          const langMap = { en: 'Englisch', tr: 'Tuerkisch', fr: 'Franzoesisch', es: 'Spanisch', ru: 'Russisch', ar: 'Arabisch' };
+          const langCode = String(body?.target_lang || 'en').toLowerCase();
+          const langName = langMap[langCode] || 'Englisch';
+          const system = [
+            `Du uebersetzt ein Lern-Modul vollstaendig nach ${langName}.`,
+            'Behalte Markdown-Formatierung und Fachbegriffe sinnvoll bei.',
+            'Antworte als JSON-Objekt mit EXAKT diesen Schluesseln (Werte uebersetzt):',
+            '  title, subtitle, theory_content, case_study, exercise_description,',
+            '  test_questions (Array {question, options[], answer_index unveraendert}).',
+          ].join('\n');
+          const payload = JSON.stringify({
+            title: mod.title || '', subtitle: mod.subtitle || '',
+            theory_content: mod.theory_content || '', case_study: mod.case_study || '',
+            exercise_description: mod.exercise_description || '',
+            test_questions: Array.isArray(mod.test_questions) ? mod.test_questions : [],
+          });
+          const tr = await aiJson(env, system, `Modul (JSON):\n${payload}`, 2600);
+          return jsonResponse({
+            success: true,
+            lang: langCode,
+            module: {
+              ...mod,
+              title: String(tr.title || mod.title || '').slice(0, 120),
+              subtitle: String(tr.subtitle || mod.subtitle || '').slice(0, 240),
+              theory_content: String(tr.theory_content || mod.theory_content || ''),
+              case_study: String(tr.case_study || mod.case_study || ''),
+              exercise_description: String(tr.exercise_description || mod.exercise_description || ''),
+              test_questions: normTestQuestions(tr.test_questions).length > 0
+                ? normTestQuestions(tr.test_questions)
+                : (Array.isArray(mod.test_questions) ? mod.test_questions : []),
+            },
+          });
+        } catch (e) {
+          return errorResponse(`Uebersetzung fehlgeschlagen: ${e.message}`);
+        }
+      }
+
+      // ── GET/POST /api/admin/module-workshop/scan-config (W7) ───────
+      if (path === '/api/admin/module-workshop/scan-config') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          if (method === 'GET') {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/module_scan_config?id=eq.1&limit=1`,
+              { headers: svcHeaders });
+            const arr = r.ok ? await r.json().catch(() => []) : [];
+            const cfg = (Array.isArray(arr) && arr[0]) || { enabled: true, worlds: WORKSHOP_WORLDS };
+            return jsonResponse({ success: true, config: cfg });
+          }
+          // POST: { enabled?, worlds? }
+          const body = await request.clone().json().catch(() => ({}));
+          const patch = { updated_at: new Date().toISOString(), updated_by: caller.username };
+          if (typeof body?.enabled === 'boolean') patch.enabled = body.enabled;
+          if (Array.isArray(body?.worlds)) {
+            patch.worlds = body.worlds.filter((w) => WORKSHOP_WORLDS.includes(w));
+          }
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/module_scan_config?id=eq.1`,
+            { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify(patch) });
+          if (!r.ok) return errorResponse(`scan-config Update ${r.status}`, r.status);
+          const arr = await r.json().catch(() => []);
+          return jsonResponse({ success: true, config: (Array.isArray(arr) && arr[0]) || patch });
+        } catch (e) {
+          return errorResponse(`scan-config Fehler: ${e.message}`);
         }
       }
 
