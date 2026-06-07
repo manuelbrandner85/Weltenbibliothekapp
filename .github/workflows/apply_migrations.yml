@@ -487,6 +487,8 @@ jobs:
             supabase/migrations/20260607_v136_fix_branch_order_resequence.sql
           run_sql "v137 app_tools registry + tool_suggestions" \
             supabase/migrations/20260607_v137_app_tools_registry.sql
+          run_sql "v138 tool_request approval (admin->root-admin)" \
+            supabase/migrations/20260607_v138_tool_request_approval.sql
 
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
