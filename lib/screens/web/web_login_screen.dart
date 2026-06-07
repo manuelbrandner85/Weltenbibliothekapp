@@ -8,7 +8,7 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -153,7 +153,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
         Map<String, dynamic> data = const {};
         try {
           data = jsonDecode(res.body) as Map<String, dynamic>;
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('web_login_screen: silent catch -> $e'); }
         if (res.statusCode != 200 || data['success'] != true) {
           final msg = (data['error'] as String?) ?? 'Falsches Passwort.';
           setState(() {
@@ -211,7 +211,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
               .from('web_access_requests')
               .update({'last_login_at': DateTime.now().toIso8601String()}).eq(
                   'display_name', name);
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('web_login_screen: silent catch -> $e'); }
 
         if (!mounted) return;
 

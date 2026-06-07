@@ -244,7 +244,7 @@ class AvatarUploadService {
       for (final ext in ['jpg', 'jpeg', 'png', 'webp']) {
         try {
           await client.storage.from('avatars').remove(['$userId/avatar.$ext']);
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('avatar_upload_service: silent catch -> $e'); }
       }
       await client
           .from('profiles')

@@ -16,6 +16,8 @@ class _InsightsTab extends StatefulWidget {
 class _InsightsTabState extends State<_InsightsTab> {
   bool _loading = true;
   Map<String, dynamic> _data = {};
+  // v124 2026-06-07: Analytics aus dem Uebersicht-Tab nach hier verschoben.
+  Map<String, dynamic> _analytics = {};
   // Realtime online-counter channel.
   RealtimeChannel? _channel;
   int _onlineNow = 0;
@@ -43,9 +45,19 @@ class _InsightsTabState extends State<_InsightsTab> {
   Future<void> _load() async {
     try {
       final data = await WorldAdminServiceV162.getInsights();
+      // Analytics zusaetzlich laden (Nutzer/Nachrichten/Interaktionen 7 Tage).
+      Map<String, dynamic> analytics = const {};
+      try {
+        analytics = await WorldAdminServiceV162.getAnalytics(
+          realm: 'all',
+          days: 7,
+          adminUserId: widget.admin.username,
+        );
+      } catch (_) {/* analytics optional -- best effort */}
       if (!mounted) return;
       setState(() {
         _data = data;
+        _analytics = analytics;
         _loading = false;
       });
     } catch (e) {
@@ -83,11 +95,11 @@ class _InsightsTabState extends State<_InsightsTab> {
                     ..clear()
                     ..addAll(worlds);
                 });
-              } catch (_) {}
+              } catch (e) { if (kDebugMode) debugPrint('insights_tab: silent catch -> $e'); }
             },
           )
           .subscribe();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('insights_tab: silent catch -> $e'); }
   }
 
   @override
@@ -129,6 +141,15 @@ class _InsightsTabState extends State<_InsightsTab> {
           ]),
           const SizedBox(height: 16),
 
+          // ── Statistiken (aus Uebersicht verschoben) ─────────────────
+          _SectionHeader(Icons.analytics_rounded, 'Statistiken', widget.accent),
+          const SizedBox(height: 8),
+          _AnalyticsSection(
+              analytics: _analytics,
+              accent: widget.accent,
+              accentBright: widget.accentBright),
+          const SizedBox(height: 16),
+
           // ── Growth ──────────────────────────────────────────────────
           _SectionHeader(Icons.trending_up_rounded, 'Wachstum', widget.accent),
           const SizedBox(height: 8),
@@ -151,10 +172,85 @@ class _InsightsTabState extends State<_InsightsTab> {
           _SectionHeader(Icons.star_rounded, 'Top-Inhalte', widget.accent),
           const SizedBox(height: 8),
           _TopContentSection(data: _data, accent: widget.accent),
+          const SizedBox(height: 16),
+
+          // ── Modul-Fortschritt (aus Content verschoben) ──────────────
+          // Embed mit fester Hoehe damit die innere TabBar des Progress-
+          // Widgets nicht ueber die gesamte Insights-Seite scrollt.
+          _SectionHeader(
+              Icons.school_rounded, 'Modul-Fortschritt', widget.accent),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 520,
+            child: _ModuleProgressTab(
+                accent: widget.accent, accentBright: widget.accentBright),
+          ),
           const SizedBox(height: 24),
         ],
       ),
     );
+  }
+}
+
+// ── Analytics section (Statistiken aus Uebersicht) ────────────────────────
+class _AnalyticsSection extends StatelessWidget {
+  final Map<String, dynamic> analytics;
+  final Color accent, accentBright;
+  const _AnalyticsSection(
+      {required this.analytics,
+      required this.accent,
+      required this.accentBright});
+
+  int _i(String a, String b) {
+    final v = analytics[a] ?? analytics[b];
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalUsers = _i('totalUsers', 'total_users');
+    final newUsers = _i('newUsers', 'new_users');
+    final totalMsgs = _i('totalMessages', 'total_messages');
+    final interactions = _i('interactions', 'interactions');
+    return Column(children: [
+      Row(children: [
+        Expanded(
+            child: _InsightCard(
+                icon: Icons.people_rounded,
+                iconColor: const Color(0xFF1E88E5),
+                title: 'Nutzer gesamt',
+                value: '$totalUsers',
+                accent: accent)),
+        const SizedBox(width: 12),
+        Expanded(
+            child: _InsightCard(
+                icon: Icons.person_add_rounded,
+                iconColor: const Color(0xFF43A047),
+                title: 'Neu (7 Tage)',
+                value: '+$newUsers',
+                accent: accent)),
+      ]),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(
+            child: _InsightCard(
+                icon: Icons.chat_rounded,
+                iconColor: const Color(0xFF8E24AA),
+                title: 'Nachrichten',
+                value: '$totalMsgs',
+                accent: accent)),
+        const SizedBox(width: 12),
+        Expanded(
+            child: _InsightCard(
+                icon: Icons.touch_app_rounded,
+                iconColor: const Color(0xFFE53935),
+                title: 'Interaktionen',
+                value: '$interactions',
+                accent: accent)),
+      ]),
+    ]);
   }
 }
 

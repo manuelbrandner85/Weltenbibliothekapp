@@ -231,7 +231,7 @@ class ImageAnalysisService {
           }
         }
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('image_analysis_service: silent catch -> $e'); }
     return null;
   }
 

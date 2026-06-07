@@ -15,6 +15,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants/roles.dart';
@@ -82,7 +83,7 @@ class _AdminDashboardButtonState extends State<AdminDashboardButton> {
           // Web-Login schreibt manchmal die Rolle in web_user_role.
           webRole = prefs.getString('web_user_role');
         }
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('admin_dashboard_button: silent catch -> $e'); }
 
       String? resolvedRole;
       if (mRole != null && mRole.isNotEmpty) resolvedRole = mRole;

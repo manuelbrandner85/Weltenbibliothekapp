@@ -214,7 +214,7 @@ class LeaderboardService {
             entries.length + 1,
             currentId,
           ));
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('leaderboard_service: silent catch -> $e'); }
       }
 
       return entries;

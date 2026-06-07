@@ -1,5 +1,6 @@
 // 📖 Book Detail Screen — Geheime Bibliothek
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 
 class BookDetailScreen extends StatelessWidget {
@@ -11,7 +12,7 @@ class BookDetailScreen extends StatelessWidget {
     if (hex != null && hex.startsWith('#') && hex.length == 7) {
       try {
         return Color(int.parse('FF${hex.substring(1)}', radix: 16));
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('book_detail_screen: silent catch -> $e'); }
     }
     return const Color(0xFF5D4037);
   }
@@ -216,7 +217,7 @@ class BookDetailScreen extends StatelessWidget {
                         try {
                           await launchUrl(uri,
                               mode: LaunchMode.externalApplication);
-                        } catch (_) {}
+                        } catch (e) { if (kDebugMode) debugPrint('book_detail_screen: silent catch -> $e'); }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFC9A84C),

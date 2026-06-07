@@ -3,6 +3,7 @@
 // Prüft alle 30 Sekunden ob er freigeschaltet wurde.
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -87,7 +88,7 @@ class _WebWaitingApprovalScreenState extends State<WebWaitingApprovalScreen>
   Future<void> _signOut() async {
     try {
       await Supabase.instance.client.auth.signOut();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('web_waiting_approval_screen: silent catch -> $e'); }
     // WebAuthGate übernimmt automatisch nach signOut
   }
 

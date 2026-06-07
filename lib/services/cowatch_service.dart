@@ -89,7 +89,7 @@ class CoWatchService {
         position: position,
         fromIdentity: identity,
       ));
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('cowatch_service: silent catch -> $e'); }
   }
 
   // ── Host-Aktionen (werden gebroadcastet + lokal angezeigt) ───────────────

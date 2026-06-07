@@ -11,6 +11,7 @@
 //   WBToast.info(context, 'Synchronisiert');
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 class WBToast {
   static OverlayEntry? _current;
@@ -35,7 +36,7 @@ class WBToast {
       if (_current == entry) {
         try {
           entry.remove();
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('wb_toast: silent catch -> $e'); }
         _current = null;
       }
     });

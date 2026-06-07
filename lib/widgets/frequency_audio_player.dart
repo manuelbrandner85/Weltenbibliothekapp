@@ -37,6 +37,13 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
+  // 2026-06-07: StreamSubscriptions tracken, damit dispose() sie cancelt.
+  // Vorher .listen(...) ohne Referenz -> Memory-Leak bei wiederholtem
+  // Mount/Unmount.
+  StreamSubscription<Duration>? _durSub;
+  StreamSubscription<Duration>? _posSub;
+  StreamSubscription<void>? _completeSub;
+
   @override
   void initState() {
     super.initState();
@@ -50,20 +57,20 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Audio player listeners
-    _audioPlayer.onDurationChanged.listen((duration) {
+    // Audio player listeners -- subscriptions in dispose() canceln.
+    _durSub = _audioPlayer.onDurationChanged.listen((duration) {
       if (mounted) {
         setState(() => _totalDuration = duration);
       }
     });
 
-    _audioPlayer.onPositionChanged.listen((position) {
+    _posSub = _audioPlayer.onPositionChanged.listen((position) {
       if (mounted) {
         setState(() => _currentPosition = position);
       }
     });
 
-    _audioPlayer.onPlayerComplete.listen((_) {
+    _completeSub = _audioPlayer.onPlayerComplete.listen((_) {
       // Loop the audio
       _audioPlayer.seek(Duration.zero);
       _audioPlayer.resume();
@@ -75,6 +82,9 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer>
 
   @override
   void dispose() {
+    _durSub?.cancel();
+    _posSub?.cancel();
+    _completeSub?.cancel();
     _audioPlayer.dispose();
     _sessionTimer?.cancel();
     _pulseController.dispose();

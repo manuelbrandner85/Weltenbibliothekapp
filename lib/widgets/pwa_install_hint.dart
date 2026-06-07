@@ -9,7 +9,7 @@
 // Aufwand bei maximalem Hinweis-Wert. Kann in einer Iteration später
 // auf programmatischen Prompt aufgerüstet werden.
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,7 +35,7 @@ class _PwaInstallHintState extends State<PwaInstallHint> {
       final prefs = await SharedPreferences.getInstance();
       final dismissed = prefs.getBool(_prefKey) ?? false;
       if (!dismissed && mounted) setState(() => _show = true);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('pwa_install_hint: silent catch -> $e'); }
   }
 
   Future<void> _dismiss() async {
@@ -43,7 +43,7 @@ class _PwaInstallHintState extends State<PwaInstallHint> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefKey, true);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('pwa_install_hint: silent catch -> $e'); }
   }
 
   @override

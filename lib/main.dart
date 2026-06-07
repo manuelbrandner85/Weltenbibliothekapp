@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 // ✅ FÜR kDebugMode
@@ -49,6 +49,7 @@ import 'screens/shared/world_admin_dashboard.dart';
 // import 'screens/energie/notification_settings_screen.dart'; // FIREBASE - deaktiviert
 // import 'screens/notification_settings_screen.dart' as new_notif; // FIREBASE - deaktiviert
 import 'services/service_manager.dart'; // ✅ NEW: Centralized service initialization
+import 'services/xp_retry_queue.dart'; // 2026-06-07: flush pending XP on app start
 import 'services/theme_service.dart';
 import 'services/user_presence_service.dart'; // 🟢 Online-Status
 import 'services/privacy_analytics_service.dart'; // 📊 PRIVACY ANALYTICS
@@ -291,6 +292,12 @@ void main() async {
   if (!kIsWeb) {
     unawaited(_triggerPushTestSuiteOnce());
   }
+
+  // 2026-06-07: Hat der letzte Lauf XP-Inkremente nicht durchgekriegt
+  // (offline, Backend kurz weg), liegen sie in SharedPreferences in der
+  // XpRetryQueue. Fire-and-forget Flush beim Start -- erfolgreiche Eintraege
+  // werden entfernt, der Rest bleibt fuer den naechsten Versuch.
+  unawaited(XpRetryQueue.flush());
 
   // ═══════════════════════════════════════════════════════════
   // APP STARTEN (NICHT BLOCKIEREND)
@@ -690,7 +697,7 @@ Future<void> _triggerPushTestSuiteOnce() async {
         final body = response.body;
         // Light parse to log -- not strict.
         debugPrint('✅ Push-Test-Suite Response: $body');
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('main: silent catch -> $e'); }
       // Flag setzen → passiert nie wieder
       await prefs.setBool('push_test_suite_v1_done', true);
     } else {

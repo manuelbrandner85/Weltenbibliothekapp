@@ -5,6 +5,7 @@
 // mit Swipe/Tap-Navigation + Favoriten-System via SharedPreferences.
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -95,16 +96,16 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
           if (favRaw != null) {
             try {
               _favorites = (jsonDecode(favRaw) as List).cast<String>().toSet();
-            } catch (_) {}
+            } catch (e) { if (kDebugMode) debugPrint('hidden_facts_screen: silent catch -> $e'); }
           }
           if (seenRaw != null) {
             try {
               _seen = (jsonDecode(seenRaw) as List).cast<String>().toSet();
-            } catch (_) {}
+            } catch (e) { if (kDebugMode) debugPrint('hidden_facts_screen: silent catch -> $e'); }
           }
         });
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('hidden_facts_screen: silent catch -> $e'); }
     _markSeen(_currentIndex);
   }
 
@@ -112,14 +113,14 @@ class _HiddenFactsScreenState extends State<HiddenFactsScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kFavoritesKey, jsonEncode(_favorites.toList()));
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('hidden_facts_screen: silent catch -> $e'); }
   }
 
   Future<void> _persistSeen() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_kSeenKey, jsonEncode(_seen.toList()));
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('hidden_facts_screen: silent catch -> $e'); }
   }
 
   String _idFor(Map<String, String> fact) => fact['title'] ?? '';

@@ -45,7 +45,7 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
   Future<void> _trackWorldVisit() async {
     try {
       await AchievementService().incrementProgress('world_traveler');
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('materie_world_wrapper: silent catch -> $e'); }
   }
 
   @override

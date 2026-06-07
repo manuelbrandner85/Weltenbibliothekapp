@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/api_config.dart';
 import '../../services/gamification_service.dart';
+import '../../services/xp_retry_queue.dart';
 import '../../services/ursprung_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -176,7 +178,7 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
         final xpAwarded = (data['xp_awarded'] as num?)?.toInt() ?? 0;
         final alreadyCompleted = data['already_completed'] == true;
         if (xpAwarded > 0 && !alreadyCompleted) {
-          // Mirror in local gamification service
+          // Mirror in local gamification service. Failure -> Retry-Queue.
           try {
             await GamificationService().addXp(
               'ursprung',
@@ -184,7 +186,16 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
               reason: 'ursprung_module:${widget.moduleCode}',
               syncServer: false,
             );
-          } catch (_) {}
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('ursprung_lesson_screen: XP-Sync fehlgeschlagen -> $e');
+            }
+            await XpRetryQueue.enqueue(
+              world: 'ursprung',
+              xp: xpAwarded,
+              reason: 'ursprung_module:${widget.moduleCode}',
+            );
+          }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -219,7 +230,7 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
               .map((e) => e.cast<String, dynamic>())
               .toList();
         }
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('ursprung_lesson_screen: silent catch -> $e'); }
     }
     return const [];
   }

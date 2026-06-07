@@ -9,6 +9,7 @@
 // Hard cap: 50 Nodes.
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import 'package:flutter/material.dart';
 import 'package:graphview/GraphView.dart';
@@ -161,7 +162,7 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
       for (final r in rels) {
         _ingestRelation(r);
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('conspiracy_network_screen: silent catch -> $e'); }
     if (!mounted) return;
     setState(() => _loading = false);
   }

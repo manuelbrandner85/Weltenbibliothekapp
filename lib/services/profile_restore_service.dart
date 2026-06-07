@@ -160,7 +160,7 @@ class ProfileRestoreService {
           if (p != null) await _sync.saveEnergieProfile(p);
         }
         if (kDebugMode) debugPrint('☁️ Background-Sync OK: $world/$username');
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('profile_restore_service: silent catch -> $e'); }
     });
   }
 

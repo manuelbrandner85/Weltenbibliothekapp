@@ -4,6 +4,7 @@
 // 🔥-Icon pulsiert wenn Streak ≥ 3 Tage. Tap → Stats-Dashboard.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import '../services/gamification_service.dart';
 import '../screens/shared/stats_dashboard_screen.dart';
@@ -40,7 +41,7 @@ class _DailyStreakIndicatorState extends State<DailyStreakIndicator>
         if (p.streakDays > max) max = p.streakDays;
       }
       if (mounted) setState(() => _streak = max);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('daily_streak_indicator: silent catch -> $e'); }
   }
 
   @override

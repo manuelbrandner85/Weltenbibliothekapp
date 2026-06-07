@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/api_config.dart';
 import '../../services/gamification_service.dart';
+import '../../services/xp_retry_queue.dart';
 import '../../services/module_rating_service.dart'; // ⭐ V-X5
 import '../../services/storage_service.dart'; // 📝 I1
 import '../../services/vorhang_lesson_notes_service.dart'; // 📝 I1
@@ -178,7 +180,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         final xpAwarded = (data['xp_awarded'] as num?)?.toInt() ?? 0;
         final alreadyCompleted = data['already_completed'] == true;
         if (xpAwarded > 0 && !alreadyCompleted) {
-          // Mirror in local gamification service
+          // Mirror in local gamification service. Failure -> Retry-Queue.
           try {
             await GamificationService().addXp(
               'vorhang',
@@ -186,7 +188,16 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               reason: 'vorhang_module:${widget.moduleCode}',
               syncServer: false,
             );
-          } catch (_) {}
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('vorhang_lesson_screen: XP-Sync fehlgeschlagen -> $e');
+            }
+            await XpRetryQueue.enqueue(
+              world: 'vorhang',
+              xp: xpAwarded,
+              reason: 'vorhang_module:${widget.moduleCode}',
+            );
+          }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -221,7 +232,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               .map((e) => e.cast<String, dynamic>())
               .toList();
         }
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('vorhang_lesson_screen: silent catch -> $e'); }
     }
     return const [];
   }
@@ -1745,7 +1756,7 @@ class _ModuleRatingCardState extends State<_ModuleRatingCard> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Danke fuer deine Bewertung: $stars/5'),
+          content: Text('Danke für deine Bewertung: $stars/5'),
           duration: const Duration(seconds: 2),
           backgroundColor: const Color(0xFF1A1230),
         ),

@@ -58,7 +58,7 @@ class QuietHoursService {
       await prefs.setBool(_kEnabled, p.enabled);
       await prefs.setInt(_kStart, p.startHour);
       await prefs.setInt(_kEnd, p.endHour);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('quiet_hours_service: silent catch -> $e'); }
 
     if (userId != null && userId.isNotEmpty) {
       try {

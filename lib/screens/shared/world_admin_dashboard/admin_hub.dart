@@ -110,7 +110,7 @@ class _AdminHubState extends State<_AdminHub> {
       areas.add(const _AdminAreaDef(
         icon: Icons.menu_book_rounded,
         title: 'Inhalte',
-        subtitle: 'Module, Lektionen, Insights',
+        subtitle: 'Module, Artikel, Videos',
         section: 'content',
       ));
     }
@@ -493,11 +493,16 @@ class _ModerationHub extends StatelessWidget {
                 admin: admin,
                 accent: accent,
                 accentBright: accentBright),
-            _AuditReportsWrapper(
-                world: world,
-                accent: accent,
-                accentBright: accentBright,
-                isRootAdmin: admin.isRootAdmin),
+            // Reports-Inbox lebt direkt unter Moderation -- KEIN
+            // _AuditReportsWrapper hier mehr, damit Audit-Log und
+            // Username-Antraege nicht doppelt erscheinen (die liegen unter
+            // Protokoll). 2026-06-07 Konsolidierung.
+            _ReportsInboxTab(
+              accent: accent,
+              accentBright: accentBright,
+              isRootAdmin: admin.isRootAdmin,
+              onChanged: () {},
+            ),
           ]),
         ),
       ]),

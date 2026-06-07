@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/branch_boss_test_service.dart'; // 👑 I3 Boss-Test
 import '../../services/gamification_service.dart';
+import '../../services/xp_retry_queue.dart';
 import '../../services/new_unlock_tracker.dart';
 import '../../services/storage_service.dart';
 import '../../services/unified_profile_service.dart';
@@ -44,6 +48,9 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
   // V1-Pattern: Modul-Suche
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  // 2026-06-07: 200ms Debounce -- bei 25+ Modulen filterte jeder Tastendruck
+  // sofort und liess die UI laggy wirken. Jetzt erst nach kurzer Pause.
+  Timer? _searchDebounce;
 
   // A3: neu freigeschaltete Module (seit letztem Besuch)
   Set<String> _newModuleCodes = {};
@@ -84,6 +91,7 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -382,7 +390,13 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
         TextField(
           controller: _searchCtrl,
           style: const TextStyle(color: Colors.white),
-          onChanged: (v) => setState(() => _searchQuery = v),
+          onChanged: (v) {
+            // 200ms Debounce: Filter setzt erst wenn der User kurz pausiert.
+            _searchDebounce?.cancel();
+            _searchDebounce = Timer(const Duration(milliseconds: 200), () {
+              if (mounted) setState(() => _searchQuery = v);
+            });
+          },
           decoration: InputDecoration(
             hintText: 'Modul suchen (Code oder Stichwort)',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
@@ -855,14 +869,34 @@ class _BossTestScreenState extends State<_BossTestScreen> {
       result: result,
     );
     if (result.passed && mounted) {
-      // XP-Reward via GamificationService.
+      // XP-Reward via GamificationService. Bei Fehler in die Retry-Queue
+      // schreiben und User informieren -- vorher still verloren.
       try {
         await GamificationService().addXp(
           'ursprung',
           widget.test.xpReward,
           reason: 'boss_test_${widget.branch}',
         );
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('ursprung_modules_screen: XP-Sync fehlgeschlagen -> $e');
+        }
+        await XpRetryQueue.enqueue(
+          world: 'ursprung',
+          xp: widget.test.xpReward,
+          reason: 'boss_test_${widget.branch}',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '⚠️ XP-Sync fehlgeschlagen. Werden beim nächsten Login nachgeholt.'),
+              backgroundColor: Colors.orange.shade800,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
     }
   }
 

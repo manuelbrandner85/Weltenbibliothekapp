@@ -167,7 +167,7 @@ class SpiritProfileData {
     if (map['birth_date'] != null) {
       try {
         birthDate = DateTime.parse(map['birth_date'].toString());
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('spirit_profile_service: silent catch -> $e'); }
     }
     return SpiritProfileData(
       fullName: map['full_name'] as String?,

@@ -59,7 +59,7 @@ class _VorhangLiveChatScreenState extends State<VorhangLiveChatScreen> {
     'orakel': {
       'name': '🔮 Orakel & Prophetie',
       'description':
-          'Seherische Traeume, Orakel-Praktiken und prophetische Visionen',
+          'Seherische Träume, Orakel-Praktiken und prophetische Visionen',
       'icon': '🔮',
     },
     'rituale': {

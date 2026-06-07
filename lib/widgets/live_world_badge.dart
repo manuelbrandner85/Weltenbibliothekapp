@@ -6,6 +6,7 @@
 // verschwendet auf inaktive Welten).
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -60,7 +61,7 @@ class _LiveWorldBadgeState extends State<LiveWorldBadge>
       if (!mounted) return;
       final total = sessions.values.fold<int>(0, (s, list) => s + list.length);
       if (total != _liveCount) setState(() => _liveCount = total);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('live_world_badge: silent catch -> $e'); }
   }
 
   void _subscribe() {
@@ -75,7 +76,7 @@ class _LiveWorldBadgeState extends State<LiveWorldBadge>
             callback: (_) => _load(),
           )
           .subscribe();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('live_world_badge: silent catch -> $e'); }
   }
 
   @override

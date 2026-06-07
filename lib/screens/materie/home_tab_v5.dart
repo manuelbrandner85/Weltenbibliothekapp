@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -200,7 +201,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           _shares = streak;
         });
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e'); }
   }
 
   int _calcStreak(List<DateTime> dates) {
@@ -237,7 +238,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           _notifs = (unreadResult as List).length;
         });
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e'); }
   }
 
   void _startLive() {
@@ -328,7 +329,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           .eq('user_id', uid)
           .isFilter('read_at', null);
       if (mounted) setState(() => _notifs = (result as List).length);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e'); }
   }
 
   Future<void> _loadWorldSubscription() async {

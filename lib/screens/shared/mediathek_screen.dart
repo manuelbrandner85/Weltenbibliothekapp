@@ -87,8 +87,14 @@ class _MediathekScreenState extends State<MediathekScreen> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final videos = await _svc.search(world: widget.world, query: '');
-    final cats = await _svc.fetchCategories(widget.world);
+    // 2026-06-07: search + fetchCategories parallelisieren -- vorher
+    // seriell, ~200-400ms Mehrlatenz beim ersten Aufruf.
+    final results = await Future.wait([
+      _svc.search(world: widget.world, query: ''),
+      _svc.fetchCategories(widget.world),
+    ]);
+    final videos = (results[0] as List).cast<ArchiveVideo>();
+    final cats = (results[1] as List).cast<String>();
     if (!mounted) return;
     setState(() {
       _videos = videos;

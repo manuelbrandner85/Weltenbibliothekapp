@@ -7,6 +7,7 @@
 // (CLAUDE.md TODO #1).
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -162,7 +163,7 @@ class _NotificationListViewState extends State<_NotificationListView> {
     try {
       await SupabaseNotificationService.instance.markAllAsRead();
       await _load();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('notification_center_button: silent catch -> $e'); }
   }
 
   String _relTime(String? iso) {

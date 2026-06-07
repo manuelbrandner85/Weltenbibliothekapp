@@ -178,8 +178,10 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
         // sendPushToUser direkt an alle aktiven Subscriptions.
         // Fire-and-forget, blockiert die UI nicht.
         if (_target == 'all') {
-          final adminName = StorageService().getMaterieProfile()?.username ??
-              StorageService().getEnergieProfile()?.username ??
+          // 2026-06-07: Ein-Profil-Migration -- vorher wurden getMaterieProfile()
+          // UND getEnergieProfile() abgefragt; beide projizieren auf denselben
+          // Unified-Store. Einmal getProfile() reicht.
+          final adminName = StorageService().getProfile()?.username ??
               supabase.auth.currentUser?.email ??
               'admin';
           PushNotificationHelper.instance

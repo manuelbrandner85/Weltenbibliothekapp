@@ -5,6 +5,7 @@
 // PinnedMessageBanner aus pinned_message_banner.dart (Cloudflare-basiert).
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -68,7 +69,7 @@ class _PinnedBannerV2State extends State<PinnedBannerV2> {
           if (_activeIndex >= list.length) _activeIndex = 0;
         });
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('pinned_banner_v2: silent catch -> $e'); }
   }
 
   void _subscribe() {

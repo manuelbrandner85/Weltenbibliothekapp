@@ -3,6 +3,7 @@
 // ungeloeste Raetsel). Inspiriert statt veraengstigt.
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -552,7 +553,7 @@ class _GeheimeKarteScreenState extends State<GeheimeKarteScreen>
                 try {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.remove(_prefsKey);
-                } catch (_) {}
+                } catch (e) { if (kDebugMode) debugPrint('geheime_karte_screen: silent catch -> $e'); }
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(

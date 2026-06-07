@@ -640,7 +640,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
           'avatar_emoji': profile.avatarEmoji,
           'avatar_url': profile.avatarUrl,
         });
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('materie_live_chat_screen: silent catch -> $e'); }
       _notificationService.setCurrentUsername(_username);
       if (kDebugMode) {
         debugPrint(
@@ -3467,7 +3467,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
               ),
             );
           }
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('materie_live_chat_screen: silent catch -> $e'); }
         return;
       }
 

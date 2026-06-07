@@ -122,7 +122,7 @@ class UserService {
       final prefs = await SharedPreferences.getInstance();
       final web = prefs.getString('web_user_name');
       if (web != null && web.isNotEmpty) return web;
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('user_service: silent catch -> $e'); }
     return 'Gast';
   }
 }

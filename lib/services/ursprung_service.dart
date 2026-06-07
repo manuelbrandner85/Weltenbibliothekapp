@@ -13,6 +13,8 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'invisible_auth_service.dart';
+
 class UrsprungService {
   // Branch-Codes wie in der ursprung_modules-Tabelle (snake_case),
   // sortiert nach inhaltlicher Progression durch CIA-Gateway-Material.
@@ -36,6 +38,16 @@ class UrsprungService {
   static Future<Map<String, dynamic>> fetchModules({String? userId}) async {
     final supa = Supabase.instance.client;
     final hasUser = userId != null && userId.isNotEmpty;
+
+    // 2026-06-07 BUGFIX: identisch zu VorhangService -- Worker speichert mit
+    // profiles.id ODER legacy_user_id, Client muss gegen beide pruefen damit
+    // der Admin-Override greift.
+    final candidateIds = <String>{};
+    if (hasUser) candidateIds.add(userId!);
+    final legacy = InvisibleAuthService().legacyUserId;
+    if (legacy != null && legacy.isNotEmpty) candidateIds.add(legacy);
+    final supaId = supa.auth.currentUser?.id;
+    if (supaId != null && supaId.isNotEmpty) candidateIds.add(supaId);
 
     // U2: nur Metadaten laden (kein theory_content/case_study/
     // exercise_description/test_questions). Voller Inhalt wird bei Tap auf
@@ -67,14 +79,21 @@ class UrsprungService {
           return <dynamic>[];
         }),
       );
+    }
+    if (candidateIds.isNotEmpty) {
       futs.add(
         supa
             .from('admin_module_access')
             .select('module_code,is_granted')
-            .eq('user_id', userId!)
+            .inFilter('user_id', candidateIds.toList())
             .eq('module_type', 'ursprung')
             .then<List<dynamic>>((r) => r as List)
-            .catchError((Object _) => <dynamic>[]),
+            .catchError((Object e) {
+          if (kDebugMode) {
+            debugPrint('[UrsprungService] module-override load failed: $e');
+          }
+          return <dynamic>[];
+        }),
       );
     }
 
@@ -84,12 +103,16 @@ class UrsprungService {
     final progressMap = <String, Map<String, dynamic>>{};
     final adminOverrides = <String, bool>{};
 
+    var idx = 1;
     if (hasUser) {
-      for (final entry in results[1].cast<Map<String, dynamic>>()) {
+      for (final entry in results[idx].cast<Map<String, dynamic>>()) {
         final code = entry['module_code'] as String?;
         if (code != null) progressMap[code] = entry;
       }
-      for (final o in results[2].cast<Map<String, dynamic>>()) {
+      idx++;
+    }
+    if (candidateIds.isNotEmpty) {
+      for (final o in results[idx].cast<Map<String, dynamic>>()) {
         final code = o['module_code'] as String?;
         final granted = o['is_granted'] as bool?;
         if (code != null && granted != null) adminOverrides[code] = granted;

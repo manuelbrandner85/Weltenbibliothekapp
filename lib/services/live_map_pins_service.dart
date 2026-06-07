@@ -125,7 +125,7 @@ class LiveMapPinsService {
     if (ch != null) {
       try {
         Supabase.instance.client.removeChannel(ch);
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('live_map_pins_service: silent catch -> $e'); }
     }
     _ctrls.remove(world)?.close();
     _pinsByWorld.remove(world);

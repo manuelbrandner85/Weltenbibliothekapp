@@ -185,7 +185,7 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
       final list = prefs.getStringList(_bookmarksKey) ?? [];
       if (!mounted) return;
       setState(() => _bookmarks = list.toSet());
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('additional_sources_screen: silent catch -> $e'); }
   }
 
   Future<void> _toggleBookmark(String url) async {
@@ -200,7 +200,7 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
       await prefs.setStringList(_bookmarksKey, next.toList());
       if (!mounted) return;
       setState(() => _bookmarks = next);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('additional_sources_screen: silent catch -> $e'); }
   }
 
   List<_Source> get _filtered {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import './guild_challenge_screen.dart';
 
@@ -1081,7 +1082,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
         isActive =
             DateTime.parse(challenge['end_date'].toString()).isAfter(now);
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('guild_detail_screen: silent catch -> $e'); }
 
     return GestureDetector(
       onTap: () {
@@ -1310,7 +1311,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
       if (hex.length == 8) {
         return Color(int.parse(hex, radix: 16));
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('guild_detail_screen: silent catch -> $e'); }
     return fallback;
   }
 }

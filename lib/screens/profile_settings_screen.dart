@@ -89,12 +89,23 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      // 2026-06-07: Sichtbarer roter SnackBar mit Retry statt nur "loading=false"
+      // (Spinner haengt sonst optisch im Hintergrund weiter, weil das Profil
+      // nicht angezeigt werden kann).
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'Fehler beim Laden der Profile. Bitte erneut versuchen.')),
+            content: const Text(
+                'Profil konnte nicht geladen werden. Bitte erneut versuchen.'),
+            backgroundColor: Colors.red.shade700,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Erneut versuchen',
+              textColor: Colors.white,
+              onPressed: _loadProfiles,
+            ),
+          ),
         );
       }
     }
@@ -444,28 +455,68 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF12101C),
-        title: const Text('Konto-Loeschung',
+        title: const Text('Konto-Löschung',
             style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Dein Antrag wird an einen Admin geschickt. Nach Bestaetigung '
-              'wird dein Konto endgueltig geloescht und eine Neuanmeldung mit '
-              'denselben Daten ist gesperrt.',
-              style: TextStyle(color: Colors.white60, fontSize: 12),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: ctrl,
-              maxLines: 2,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: 'Grund (optional)',
-                hintStyle: TextStyle(color: Colors.white30),
+        // 2026-06-07: DSGVO-konforme Aufklärung. User soll wissen, dass
+        // a) Backups noch 30 Tage existieren, b) ein Audit-Log-Eintrag
+        // 90 Tage erhalten bleibt (gesetzliche Nachweispflicht), c) der
+        // Antrag erst nach Admin-Bestätigung wirksam wird.
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Dein Antrag wird an einen Admin geschickt. Nach Bestätigung '
+                'wird dein Konto endgültig gelöscht und eine Neuanmeldung mit '
+                'denselben Daten ist gesperrt.',
+                style: TextStyle(color: Colors.white60, fontSize: 12),
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: Colors.amber.withValues(alpha: 0.3)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Icon(Icons.privacy_tip_rounded,
+                          color: Colors.amber, size: 14),
+                      SizedBox(width: 6),
+                      Text('DSGVO-Hinweis',
+                          style: TextStyle(
+                              color: Colors.amber,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11)),
+                    ]),
+                    SizedBox(height: 6),
+                    Text(
+                      '• Profil + alle eigenen Inhalte werden binnen 24 Stunden gelöscht.\n'
+                      '• Backups werden nach 30 Tagen automatisch überschrieben.\n'
+                      '• Ein Audit-Log-Eintrag deiner Löschanfrage bleibt 90 Tage erhalten (gesetzliche Nachweispflicht).',
+                      style: TextStyle(
+                          color: Colors.white70, fontSize: 11, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                maxLines: 2,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Grund (optional)',
+                  hintStyle: TextStyle(color: Colors.white30),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -473,7 +524,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               child: const Text('Abbrechen')),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Loeschung beantragen',
+              child: const Text('Löschung beantragen',
                   style: TextStyle(color: Colors.redAccent))),
         ],
       ),
@@ -492,7 +543,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content:
-          Text(sent ? 'Loeschungs-Antrag gesendet.' : 'Senden fehlgeschlagen.'),
+          Text(sent ? 'Löschungs-Antrag gesendet.' : 'Senden fehlgeschlagen.'),
     ));
   }
 

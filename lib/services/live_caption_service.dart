@@ -79,7 +79,7 @@ class LiveCaptionService {
         text: text,
         timestamp: DateTime.now(),
       ));
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('live_caption_service: silent catch -> $e'); }
   }
 
   /// Untertitel ein-/ausschalten.

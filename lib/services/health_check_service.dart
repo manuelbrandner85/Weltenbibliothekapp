@@ -290,7 +290,7 @@ class HealthCheckService extends ChangeNotifier {
       timeout?.cancel();
       try {
         await channel?.unsubscribe();
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('health_check_service: silent catch -> $e'); }
     }
   }
 

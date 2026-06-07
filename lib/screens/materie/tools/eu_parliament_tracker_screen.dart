@@ -6,6 +6,7 @@
 // 👍/👎 → App berechnet welche Fraktionen am häufigsten so abgestimmt haben).
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -82,7 +83,7 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         final m = jsonDecode(raw) as Map<String, dynamic>;
         _alignments =
             m.map((k, v) => MapEntry(int.parse(k), (v as num).toInt()));
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('eu_parliament_tracker_screen: silent catch -> $e'); }
     }
     if (mounted) setState(() {});
   }

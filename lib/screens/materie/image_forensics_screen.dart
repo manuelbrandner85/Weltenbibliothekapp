@@ -262,7 +262,7 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Image Forensics',
+              const Text('Bild-Forensik',
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -287,7 +287,7 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
               children: [
                 Icon(Icons.auto_awesome, color: Color(0xFF00E676), size: 12),
                 SizedBox(width: 5),
-                Text('AI-powered',
+                Text('KI-gestützt',
                     style: TextStyle(
                         color: Color(0xFF00E676),
                         fontSize: 10,

@@ -9,6 +9,7 @@
 // damit der Aufrufer nichts wissen muss.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../animations/world_transition_video.dart';
@@ -33,7 +34,7 @@ class MentorTour {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefKey, true);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('mentor_tour_screen: silent catch -> $e'); }
   }
 
   /// Zeigt die Tour, sofern noch nicht abgeschlossen. Gibt true zurück

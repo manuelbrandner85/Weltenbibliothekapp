@@ -69,7 +69,7 @@ class DeviceLocationService {
             _memCache = loc;
             return loc;
           }
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('device_location_service: silent catch -> $e'); }
       }
     }
 

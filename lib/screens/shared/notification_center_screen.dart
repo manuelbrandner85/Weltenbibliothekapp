@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
@@ -150,7 +151,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           .from('notifications')
           .update({'read_at': DateTime.now().toIso8601String()}).eq('id', id);
       // Realtime UPDATE event aktualisiert die Liste automatisch
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('notification_center_screen: silent catch -> $e'); }
   }
 
   /// Loescht eine Notification ueber den Worker (InvisibleAuth-tauglich).
@@ -236,7 +237,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           }).toList();
         });
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('notification_center_screen: silent catch -> $e'); }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

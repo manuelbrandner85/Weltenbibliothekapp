@@ -78,7 +78,10 @@ class NetworkNode {
   final String label;
   final String type; // person | company | org | concept
   final double weight; // 0..1 für Knotengröße
-  final String? imageUrl; // Wikidata P18 Commons thumbnail URL (optional)
+  // 2026-06-07: optionales Bild fuer den Knoten.
+  // - Wikidata: thumbnail-URL aus P18 (Commons "Special:FilePath/<file>?width=160")
+  // - sonst Twemoji-PNG fuer den Typ als Fallback (siehe network_card.dart)
+  final String? imageUrl;
   const NetworkNode({
     required this.id,
     required this.label,
