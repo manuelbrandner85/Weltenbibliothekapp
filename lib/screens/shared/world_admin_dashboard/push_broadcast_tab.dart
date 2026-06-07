@@ -38,19 +38,35 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
     _loadStats();
   }
 
-  /// Leert die Push-Zaehler: scope='failed' (nur Fehler) oder 'all' (sent+failed).
+  /// Leert die Push-Zaehler.
+  /// scope='failed' (nur Fehler), 'pending' (nur Ausstehend),
+  /// 'all' (sent+failed) oder 'everything' (alle drei Zaehler -> Voll-Reset).
   Future<void> _clearQueue(String scope) async {
+    final titles = {
+      'failed': 'Fehler loeschen',
+      'pending': 'Ausstehende loeschen',
+      'all': 'Statistik leeren',
+      'everything': 'Alle Zaehler zuruecksetzen',
+    };
+    final bodies = {
+      'failed':
+          'Alle fehlgeschlagenen Push-Eintraege entfernen? Der Fehler-Zaehler wird auf 0 gesetzt.',
+      'pending':
+          'Alle ausstehenden Push-Eintraege entfernen? Diese werden dann NICHT mehr zugestellt. '
+              'Sinnvoll um einen festgefahrenen Backlog zu raeumen.',
+      'all':
+          'Alle erledigten Push-Eintraege (zugestellt + fehlgeschlagen) entfernen?',
+      'everything':
+          'ALLE Push-Eintraege entfernen (zugestellt + fehlgeschlagen + ausstehend)? '
+              'Setzt alle drei Zaehler auf 0. Ausstehende werden nicht mehr gesendet.',
+    };
     final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: const Color(0xFF12121E),
-            title: Text(
-                scope == 'failed' ? 'Fehler loeschen' : 'Statistik leeren',
+            title: Text(titles[scope] ?? 'Loeschen',
                 style: const TextStyle(color: Colors.white)),
-            content: Text(
-                scope == 'failed'
-                    ? 'Alle fehlgeschlagenen Push-Eintraege entfernen? Der Fehler-Zaehler wird auf 0 gesetzt.'
-                    : 'Alle erledigten Push-Eintraege (zugestellt + fehlgeschlagen) entfernen?',
+            content: Text(bodies[scope] ?? '',
                 style: const TextStyle(color: Colors.white70)),
             actions: [
               TextButton(
@@ -394,39 +410,75 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
                     Icons.schedule_rounded, Colors.orange, widget.accent)),
           ]),
           // Aufraeumen-Aktionen fuer die Zaehler (sonst bleiben Zahlen ewig).
-          if (totalFailed > 0 || totalSent > 0) ...[
+          // Jeder Zaehler einzeln loeschbar + ein Voll-Reset.
+          if (totalFailed > 0 || totalSent > 0 || totalPending > 0) ...[
             const SizedBox(height: 8),
-            Row(children: [
-              if (totalFailed > 0)
-                Expanded(
-                  child: OutlinedButton.icon(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (totalFailed > 0)
+                  OutlinedButton.icon(
                     onPressed:
                         _clearingQueue ? null : () => _clearQueue('failed'),
                     icon: const Icon(Icons.cleaning_services_rounded, size: 14),
-                    label: const Text('Fehler loeschen',
-                        style: TextStyle(fontSize: 12)),
+                    label: Text('Fehler ($totalFailed)',
+                        style: const TextStyle(fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.redAccent,
                       side: BorderSide(
                           color: Colors.redAccent.withValues(alpha: 0.5)),
                     ),
                   ),
-                ),
-              if (totalFailed > 0 && totalSent > 0) const SizedBox(width: 8),
-              if (totalSent > 0)
-                Expanded(
-                  child: OutlinedButton.icon(
+                if (totalPending > 0)
+                  OutlinedButton.icon(
+                    onPressed:
+                        _clearingQueue ? null : () => _clearQueue('pending'),
+                    icon: const Icon(Icons.schedule_rounded, size: 14),
+                    label: Text('Ausstehend ($totalPending)',
+                        style: const TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                      side: BorderSide(
+                          color: Colors.orange.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                if (totalSent > 0)
+                  OutlinedButton.icon(
                     onPressed: _clearingQueue ? null : () => _clearQueue('all'),
                     icon: const Icon(Icons.delete_sweep_rounded, size: 14),
-                    label: const Text('Statistik leeren',
-                        style: TextStyle(fontSize: 12)),
+                    label: Text('Erledigte ($totalSent)',
+                        style: const TextStyle(fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white54,
                       side: const BorderSide(color: Colors.white24),
                     ),
                   ),
-                ),
-            ]),
+                // Voll-Reset immer anbieten wenn mind. 2 Zaehler belegt sind.
+                if ([totalFailed, totalPending, totalSent]
+                        .where((n) => n > 0)
+                        .length >=
+                    2)
+                  OutlinedButton.icon(
+                    onPressed:
+                        _clearingQueue ? null : () => _clearQueue('everything'),
+                    icon: _clearingQueue
+                        ? const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.restart_alt_rounded, size: 14),
+                    label: const Text('Alles zuruecksetzen',
+                        style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.red.withValues(alpha: 0.25),
+                      side: const BorderSide(color: Colors.redAccent),
+                    ),
+                  ),
+              ],
+            ),
           ],
           const SizedBox(height: 14),
 

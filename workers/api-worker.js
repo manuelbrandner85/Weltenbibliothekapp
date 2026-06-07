@@ -5247,7 +5247,10 @@ export default {
       // ?scope=broadcast (default) -> nur admin_broadcast-Eintraege
       // ?scope=failed            -> alle fehlgeschlagenen Queue-Zeilen
       //                             (raeumt den "Push-Fehler"-Zaehler im Dashboard)
+      // ?scope=pending           -> alle ausstehenden Queue-Zeilen
+      //                             (raeumt den "Ausstehend"-Zaehler, z.B. stuck-Backlog)
       // ?scope=all               -> alle erledigten (sent+failed) Queue-Zeilen
+      // ?scope=everything        -> ALLE Queue-Zeilen (sent+failed+pending) - Voll-Reset
       if (method === 'DELETE' && path === '/api/admin/push/history') {
         try {
           if (!['admin', 'root_admin'].includes(caller.role)) {
@@ -5259,8 +5262,14 @@ export default {
           let filter;
           if (scope === 'failed') {
             filter = 'status=eq.failed';
+          } else if (scope === 'pending') {
+            filter = 'status=eq.pending';
           } else if (scope === 'all') {
             filter = 'status=in.(sent,failed)';
+          } else if (scope === 'everything') {
+            // Voll-Reset: alle Zeilen. PostgREST verlangt einen Filter -> id!=null
+            // matched alle Zeilen (id ist NOT NULL).
+            filter = 'id=not.is.null';
           } else {
             filter = 'data->>source=eq.admin_broadcast';
           }
