@@ -184,6 +184,149 @@ class _SystemTabState extends State<_SystemTab> {
     }
   }
 
+  // ── 2026-06-07: Wartungs-Aktionen verschoben aus Uebersicht-Tab ─────────
+  // Sync, Diagnose und Reparatur leben jetzt unter System (klare Trennung:
+  // Uebersicht = nur Anzeige, System = Wartung). Implementierung 1:1 wie
+  // vorher im overview_tab.dart.
+
+  Future<void> _sysSync() async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(
+      content: Text('🔄 Synchronisation gestartet...'),
+      duration: Duration(seconds: 2),
+    ));
+    int totalInserted = 0;
+    int totalAuthSeen = 0;
+    try {
+      final result = await WorldAdminServiceV162.syncUsers();
+      if (result != null) {
+        totalInserted += (result['profiles_inserted'] as int?) ?? 0;
+        totalAuthSeen += (result['auth_users_seen'] as int?) ?? 0;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Auth-Sync: $e');
+    }
+    int legacySynced = 0;
+    try {
+      final legacyResult =
+          await WorldAdminServiceV162.syncUsers(extraUsers: []);
+      if (legacyResult != null) {
+        legacySynced = (legacyResult['legacy_profiles_synced'] as int?) ?? 0;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Legacy-Sync: $e');
+    }
+    if (!mounted) return;
+    final total = totalInserted + legacySynced;
+    messenger.showSnackBar(SnackBar(
+      content: Text(total > 0
+          ? '✅ $total neue Profile synchronisiert (Auth: $totalInserted, Legacy: $legacySynced)'
+          : '✅ Alle Profile sind aktuell ($totalAuthSeen Auth-User geprueft)'),
+      duration: const Duration(seconds: 3),
+    ));
+  }
+
+  Future<void> _sysDiagnose() async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    Map<String, dynamic> diag;
+    try {
+      diag = await AdminApiClient.instance.diagnose();
+    } catch (e) {
+      diag = {'error': e.toString()};
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    final pretty = const JsonEncoder.withIndent('  ').convert(diag);
+    final adminUsers = diag['admin_users'] as Map?;
+    final hasError = adminUsers != null && adminUsers['ok'] != true;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        title: Row(children: [
+          Icon(
+            hasError ? Icons.warning_rounded : Icons.check_circle_rounded,
+            color: hasError ? Colors.orange : const Color(0xFF26A69A),
+          ),
+          const SizedBox(width: 8),
+          const Text('Worker-Diagnose',
+              style: TextStyle(color: Colors.white, fontSize: 16)),
+        ]),
+        content: SizedBox(
+          width: 520,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (hasError)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: Colors.orange.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      'Admin-Endpoint lieferte HTTP '
+                      '${adminUsers['status']}. Probier "Reparieren" '
+                      'unten -- das laedt deine Rolle neu, leert den '
+                      'Cache und versucht es nochmal.',
+                      style: const TextStyle(
+                          color: Colors.orangeAccent, fontSize: 12),
+                    ),
+                  ),
+                if (hasError) const SizedBox(height: 12),
+                SelectableText(
+                  pretty,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.build_rounded, size: 16),
+            label: const Text('Reparieren'),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await _sysRepair();
+            },
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Schliessen'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sysRepair() async {
+    final messenger = ScaffoldMessenger.of(context);
+    AdminApiClient.instance.invalidateCache();
+    try {
+      await AdminResolver.resolveCurrentRole();
+    } catch (_) {/* best-effort */}
+    if (!mounted) return;
+    messenger.showSnackBar(const SnackBar(
+      content: Text('🛠 Cache geleert + Rolle neu aufgeloest.'),
+      duration: Duration(seconds: 2),
+    ));
+  }
+
   @override
   void dispose() {
     _health.removeListener(_onHealthChanged);
@@ -434,11 +577,74 @@ class _SystemTabState extends State<_SystemTab> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-          // ── App-Update-Konfiguration (nur root_admin) ─────────────
+          // ── Wartung (Sync / Diagnose / Reparatur) ─────────────────
+          // 2026-06-07: Verschoben aus der Uebersicht. Uebersicht zeigt nur
+          // noch Anzeige-Werte; Wartungs-Buttons leben jetzt hier unter System.
+          _SectionLabel('Wartung', Icons.build_rounded, widget.accent),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: Icon(Icons.sync_rounded,
+                    size: 16, color: widget.accentBright),
+                label: const Text('Sync',
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+                style: OutlinedButton.styleFrom(
+                  side:
+                      BorderSide(color: widget.accent.withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: _sysSync,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: Icon(Icons.medical_services_rounded,
+                    size: 16, color: widget.accentBright),
+                label: const Text('Diagnose',
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+                style: OutlinedButton.styleFrom(
+                  side:
+                      BorderSide(color: widget.accent.withValues(alpha: 0.5)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: _sysDiagnose,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.build_rounded,
+                    size: 16, color: Colors.orangeAccent),
+                label: const Text('Reparatur',
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.orangeAccent),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: _sysRepair,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          const Text(
+            'Sync = fehlende Profile aus auth.users nachziehen. '
+            'Diagnose = Worker-Erreichbarkeit + HMAC pruefen. '
+            'Reparatur = Cache leeren + Rolle neu aufloesen.',
+            style: TextStyle(color: Colors.white38, fontSize: 11),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── App-Releases-Konfiguration (nur root_admin) ───────────
+          // Aktuelle / Mindest-Version, APK-Download-URL und beide
+          // Changelog-Felder (Release + OTA-Patch). Persistiert in
+          // app_config pro Plattform via Worker.
           if (widget.admin.isRootAdmin) ...[
-            _SectionLabel('App-Update-Konfiguration',
+            _SectionLabel('App-Releases-Konfiguration',
                 Icons.system_update_rounded, widget.accent),
             const SizedBox(height: 10),
             if (_appConfigLoading)
