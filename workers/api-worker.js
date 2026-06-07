@@ -9705,6 +9705,190 @@ export default {
       }
 
       // ════════════════════════════════════════════════════════════════
+      // TOOL-WERKSTATT (T1-T4): Verzeichnis, KI-Vorschlaege, Auto-Bau, Status
+      // ════════════════════════════════════════════════════════════════
+      const GH_REPO = 'manuelbrandner85/Weltenbibliothekapp';
+
+      // Hilfs-Funktion: GitHub-Issue automatisch erstellen (Vollautomatik T3).
+      // Gibt { url, number } oder null (kein Token / Fehler).
+      async function createToolIssue(env, { title, world, mode, target, description, spec }) {
+        if (!env.GITHUB_TOKEN) return null;
+        const issueTitle = `[${mode === 'extend' ? 'Tool-Erweiterung' : 'Neues Tool'}] ${title}`;
+        const issueBody = [
+          `## ${mode === 'extend' ? 'Erweiterung eines Tools' : 'Neues interaktives Tool/Feature'}`,
+          '', `**Welt:** ${world || 'unbestimmt'}`,
+          mode === 'extend' && target ? `**Bestehendes Tool:** ${target}` : '',
+          '', '### Wunsch', description || '',
+          spec ? '\n### KI-Spezifikation\n' + spec : '',
+          '', '---', '<!-- claude-code: bitte dieses Tool/Feature implementieren und einen PR oeffnen -->',
+        ].filter((l) => l !== '').join('\n');
+        try {
+          const r = await fetch(`https://api.github.com/repos/${GH_REPO}/issues`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github+json', 'User-Agent': 'WeltenbibliothekWorker', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: issueTitle, body: issueBody, labels: ['module-tool-request', 'claude-code'] }),
+          });
+          if (r.ok) { const d = await r.json().catch(() => ({})); return { url: d.html_url || null, number: d.number || null }; }
+        } catch (_) {}
+        return null;
+      }
+
+      // ── GET /api/admin/tools?world=  (T1: Verzeichnis) ──
+      if (method === 'GET' && path === '/api/admin/tools') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) return errorResponse('Keine Berechtigung', 403);
+        try {
+          const world = String(url.searchParams.get('world') || '').toLowerCase();
+          const filter = world ? `&world=eq.${encodeURIComponent(world)}` : '';
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/app_tools?select=*${filter}&order=category.asc,name.asc`, { headers: svcHeaders });
+          const rows = r.ok ? await r.json().catch(() => []) : [];
+          return jsonResponse({ success: true, tools: Array.isArray(rows) ? rows : [] });
+        } catch (e) { return errorResponse(`tools GET Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/tools  (T1: Tool anlegen/bearbeiten) ──
+      if (method === 'POST' && path === '/api/admin/tools') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) return errorResponse('Keine Berechtigung', 403);
+        try {
+          const b = await request.clone().json().catch(() => ({}));
+          const id = b?.id;
+          const row = {
+            world: String(b?.world || '').toLowerCase(),
+            category: String(b?.category || 'Allgemein').slice(0, 60),
+            name: String(b?.name || '').slice(0, 120),
+            description: String(b?.description || '').slice(0, 600),
+            content_table: b?.content_table ? String(b.content_table).slice(0, 80) : null,
+            status: ['live', 'geplant', 'im_bau'].includes(b?.status) ? b.status : 'live',
+            updated_at: new Date().toISOString(),
+          };
+          if (!row.world || !row.name) return errorResponse('world + name noetig', 400);
+          let res;
+          if (id) {
+            res = await fetch(`${SUPABASE_URL}/rest/v1/app_tools?id=eq.${encodeURIComponent(id)}`,
+              { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify(row) });
+          } else {
+            res = await fetch(`${SUPABASE_URL}/rest/v1/app_tools?on_conflict=world,name`,
+              { method: 'POST', headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(row) });
+          }
+          if (!res.ok) { const t = await res.text().catch(() => ''); return errorResponse(`tools speichern ${res.status}: ${t.slice(0, 200)}`, res.status); }
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`tools POST Fehler: ${e.message}`); }
+      }
+
+      // ── DELETE /api/admin/tools?id=  ──
+      if (method === 'DELETE' && path === '/api/admin/tools') {
+        if (!['admin', 'root_admin'].includes(caller.role)) return errorResponse('Admin-Rolle erforderlich', 403);
+        try {
+          const id = url.searchParams.get('id');
+          if (!id) return errorResponse('id fehlt', 400);
+          await fetch(`${SUPABASE_URL}/rest/v1/app_tools?id=eq.${encodeURIComponent(id)}`,
+            { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`tools DELETE Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/tools/scan  (T2: KI schlaegt neue Tools vor) ──
+      if (method === 'POST' && path === '/api/admin/tools/scan') {
+        if (!['admin', 'root_admin'].includes(caller.role)) return errorResponse('Admin-Rolle erforderlich', 403);
+        try {
+          const b = await request.clone().json().catch(() => ({}));
+          const world = String(b?.world || '').toLowerCase();
+          if (!['materie', 'energie', 'vorhang', 'ursprung'].includes(world)) return errorResponse('world ungueltig', 400);
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/app_tools?select=name,category&world=eq.${world}`, { headers: svcHeaders });
+          const existing = r.ok ? await r.json().catch(() => []) : [];
+          const names = existing.map((t) => t.name).join(', ');
+          const sys = [
+            `Du planst neue interaktive Tools/Features fuer die "${world}"-Welt der Weltenbibliothek-App.`,
+            'Schlage GENAU 3 NEUE, konkrete Tools vor, die den Bestand sinnvoll ergaenzen (keine Duplikate).',
+            'Antworte als JSON-Array von 3 Objekten:',
+            '{ "name": "kurzer Tool-Name", "category": "Kategorie", "description": "1-2 Saetze was es tut", "rationale": "warum es fehlt/passt" }. Deutsch.',
+          ].join('\n');
+          const arr = await aiJson(env, sys, `Bestehende Tools: ${names || '(keine)'}\n\nWelche 3 Tools fehlen?`, 800);
+          const ideas = (Array.isArray(arr) ? arr : []).slice(0, 3)
+            .map((i) => ({
+              world, category: String(i.category || 'Allgemein').slice(0, 60),
+              name: String(i.name || '').slice(0, 120), description: String(i.description || '').slice(0, 400),
+              rationale: String(i.rationale || '').slice(0, 400), status: 'pending',
+            })).filter((i) => i.name);
+          if (ideas.length > 0) {
+            await fetch(`${SUPABASE_URL}/rest/v1/tool_suggestions`,
+              { method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify(ideas) });
+          }
+          return jsonResponse({ success: true, created: ideas.length });
+        } catch (e) { return errorResponse(`tools scan Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/tools/suggestions?world=  ──
+      if (method === 'GET' && path === '/api/admin/tools/suggestions') {
+        if (!['admin', 'root_admin'].includes(caller.role)) return errorResponse('Admin-Rolle erforderlich', 403);
+        try {
+          const world = String(url.searchParams.get('world') || '').toLowerCase();
+          const filter = world ? `&world=eq.${encodeURIComponent(world)}` : '';
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/tool_suggestions?select=*&status=eq.pending${filter}&order=created_at.desc`, { headers: svcHeaders });
+          const rows = r.ok ? await r.json().catch(() => []) : [];
+          return jsonResponse({ success: true, suggestions: Array.isArray(rows) ? rows : [] });
+        } catch (e) { return errorResponse(`tool-suggestions Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/tools/suggestions/:id/(accept|reject) (T2->T3) ──
+      if (method === 'POST' && path.startsWith('/api/admin/tools/suggestions/') &&
+          (path.endsWith('/accept') || path.endsWith('/reject'))) {
+        if (!caller.isRootAdmin) return errorResponse('Nur Root-Admin', 403);
+        try {
+          const parts = path.split('/');
+          const id = parts[5];
+          const action = parts[6];
+          const sr = await fetch(`${SUPABASE_URL}/rest/v1/tool_suggestions?id=eq.${encodeURIComponent(id)}&limit=1`, { headers: svcHeaders });
+          const arr = sr.ok ? await sr.json().catch(() => []) : [];
+          const sug = Array.isArray(arr) && arr[0];
+          if (!sug) return errorResponse('Vorschlag nicht gefunden', 404);
+          if (action === 'reject') {
+            await fetch(`${SUPABASE_URL}/rest/v1/tool_suggestions?id=eq.${encodeURIComponent(id)}`,
+              { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify({ status: 'rejected' }) });
+            return jsonResponse({ success: true, action: 'rejected' });
+          }
+          // accept -> Issue auto-erstellen (Vollautomatik) + in app_tools als 'im_bau'
+          const issue = await createToolIssue(env, {
+            title: sug.name, world: sug.world, mode: 'new',
+            description: sug.description, spec: sug.rationale,
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/tool_suggestions?id=eq.${encodeURIComponent(id)}`,
+            { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify({ status: 'accepted', github_issue_url: issue?.url || null }) });
+          // im Verzeichnis als geplant/im_bau vermerken
+          await fetch(`${SUPABASE_URL}/rest/v1/app_tools?on_conflict=world,name`,
+            { method: 'POST', headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+              body: JSON.stringify({ world: sug.world, category: sug.category || 'Allgemein', name: sug.name, description: sug.description || '', status: issue ? 'im_bau' : 'geplant' }) }).catch(() => {});
+          logAudit(svcHeaders, { admin_username: caller.username, action: 'tool_suggestion_accept', target_id: sug.name, details: { world: sug.world, auto_issue: !!issue } });
+          return jsonResponse({ success: true, action: 'accepted', auto_created: !!issue, issue_url: issue?.url || null });
+        } catch (e) { return errorResponse(`tool-suggestion accept Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/tools/requests?world=  (T3: Status der Anfragen) ──
+      if (method === 'GET' && path === '/api/admin/tools/requests') {
+        if (!['admin', 'root_admin'].includes(caller.role)) return errorResponse('Admin-Rolle erforderlich', 403);
+        try {
+          const world = String(url.searchParams.get('world') || '').toLowerCase();
+          const filter = world ? `&world=eq.${encodeURIComponent(world)}` : '';
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/tool_requests?select=*${filter}&order=created_at.desc&limit=30`, { headers: svcHeaders });
+          const rows = r.ok ? await r.json().catch(() => []) : [];
+          // Best-effort: GitHub-Issue-Status nachladen (offen/geschlossen + PR).
+          const out = [];
+          for (const req of (Array.isArray(rows) ? rows : [])) {
+            let state = null, prUrl = null;
+            const m = String(req.github_issue_url || '').match(/\/issues\/(\d+)/);
+            if (m && env.GITHUB_TOKEN) {
+              try {
+                const gr = await fetch(`https://api.github.com/repos/${GH_REPO}/issues/${m[1]}`,
+                  { headers: { 'Authorization': `Bearer ${env.GITHUB_TOKEN}`, 'Accept': 'application/vnd.github+json', 'User-Agent': 'WeltenbibliothekWorker' } });
+                if (gr.ok) { const gd = await gr.json().catch(() => ({})); state = gd.state || null; prUrl = gd.pull_request?.html_url || null; }
+              } catch (_) {}
+            }
+            out.push({ ...req, gh_state: state, pr_url: prUrl });
+          }
+          return jsonResponse({ success: true, requests: out });
+        } catch (e) { return errorResponse(`tool-requests Fehler: ${e.message}`); }
+      }
+
+      // ════════════════════════════════════════════════════════════════
       // v123: NEW ENDPOINTS -- Shadow-ban, Temp-Mute, Bulk, Feature Flags,
       //   Announcements, Insights, Health (enriched).
       // ════════════════════════════════════════════════════════════════
