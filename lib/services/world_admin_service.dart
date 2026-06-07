@@ -2092,8 +2092,9 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
-  /// Loescht fehlgeschlagene Push-Eintraege (raeumt den "Push-Fehler"-Zaehler).
-  /// [scope] = 'failed' (default) | 'all' (sent+failed) | 'broadcast'.
+  /// Loescht Push-Eintraege aus der notification_queue (raeumt die Zaehler).
+  /// [scope] = 'failed' | 'pending' | 'all' (sent+failed) |
+  ///           'everything' (alle drei) | 'broadcast'.
   static Future<bool> clearPushQueue({String scope = 'failed'}) async {
     try {
       await AdminApiClient.instance
