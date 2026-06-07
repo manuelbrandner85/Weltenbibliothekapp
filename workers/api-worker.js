@@ -9505,10 +9505,15 @@ export default {
                 '## Datenquellen/Tabellen (falls noetig), ## UI-Skizze, ## Akzeptanzkriterien.',
                 'Konkret, knapp, umsetzbar. Keine Floskeln.',
               ].join('\n');
-              refinedSpec = await aiText(env,
-                sys,
-                `Welt: ${world || 'unbestimmt'}\nTitel: ${title}\nWunsch: ${description}`,
-                1400);
+              // Zeitlich begrenzen (9s): die KI-Spec ist optional -- wenn eine
+              // KI-Quelle lahmt, darf der Endpunkt NICHT in den Client-Timeout
+              // laufen (sonst "HTTP 0"). Issue wird dann ohne Spec erstellt.
+              refinedSpec = await Promise.race([
+                aiText(env, sys,
+                  `Welt: ${world || 'unbestimmt'}\nTitel: ${title}\nWunsch: ${description}`,
+                  900),
+                new Promise((resolve) => setTimeout(() => resolve(''), 9000)),
+              ]);
             } catch (_) { refinedSpec = ''; }
           }
 

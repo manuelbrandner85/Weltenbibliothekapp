@@ -101,7 +101,9 @@ class AdminApiClient {
   AdminApiClient._();
   static final AdminApiClient instance = AdminApiClient._();
 
-  static const Duration _defaultTimeout = Duration(seconds: 12);
+  // 20s statt 12s: KI-Endpunkte (Themen-Vorschlaege, Triage, Tool-Idee, Scan)
+  // brauchen laenger; einzelne sehr schwere Generatoren setzen explizit mehr.
+  static const Duration _defaultTimeout = Duration(seconds: 20);
   static const int _bodySnippetMax = 240;
 
   /// Ring-Buffer der letzten 10 Calls (success + failed). Wird vom
