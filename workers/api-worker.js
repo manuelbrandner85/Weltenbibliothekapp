@@ -7832,6 +7832,405 @@ export default {
       }
 
       // ════════════════════════════════════════════════════════════════
+      // v128b (2026-06-07): MODUL-WERKSTATT AUTOMATIK (Vorschlaege A/B/C/D)
+      // Manueller Button-Scan statt Cron -> spart Worker-Quota.
+      // ════════════════════════════════════════════════════════════════
+
+      // ── POST /api/admin/module-workshop/scan ───────────────────────
+      // Body: { world, modes: ['new','improve','quality'] }
+      // Analysiert den Modul-Bestand und schreibt Vorschlaege in
+      // module_suggestions (status=pending). Returns { created: { new, improve, quality } }.
+      if (method === 'POST' && path === '/api/admin/module-workshop/scan') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const modes = Array.isArray(body?.modes) ? body.modes : ['new', 'improve', 'quality'];
+          const tbl = tableForWorld(world);
+          const branches = WORKSHOP_BRANCHES[world];
+
+          // Bestehende Module laden (fuer Analyse).
+          const listR = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,title,subtitle,xp_reward,theory_content,case_study,exercise_description&order=branch.asc,module_code.asc`,
+            { headers: svcHeaders },
+          );
+          const existing = listR.ok ? (await listR.json().catch(() => [])) : [];
+          const created = { new: 0, improve: 0, quality: 0 };
+          const rowsToInsert = [];
+
+          // ── Modus A: NEUE Module (Luecken pro Branch finden) ────────
+          if (modes.includes('new')) {
+            // Branch-Abdeckung zaehlen.
+            const perBranch = {};
+            for (const b of branches) perBranch[b] = 0;
+            for (const m of existing) {
+              if (perBranch[m.branch] !== undefined) perBranch[m.branch]++;
+            }
+            // Schwaechste 2 Branches gezielt fuellen.
+            const weakest = Object.entries(perBranch)
+              .sort((a, b) => a[1] - b[1])
+              .slice(0, 2)
+              .map(e => e[0]);
+            const titles = existing.map(m => m.title).filter(Boolean).join('; ');
+            try {
+              const system = [
+                'Du planst neue Lern-Module fuer die Weltenbibliothek-App.',
+                'Schlage GENAU 2 neue Modul-Themen vor, die thematische Luecken fuellen.',
+                'Antworte AUSSCHLIESSLICH als JSON-Array mit 2 Objekten:',
+                '  { "topic": "...", "branch": "<einer der Branches>", "rationale": "kurze Begruendung auf Deutsch warum dieses Modul fehlt" }',
+                `Bevorzugte (schwach abgedeckte) Branches: ${weakest.join(', ')}.`,
+                `Erlaubte Branches: ${branches.join(' | ')}.`,
+              ].join('\n');
+              const user = `Bereits vorhandene Modul-Titel: ${titles || '(keine)'}\n\nWelche 2 Module fehlen?`;
+              const ideas = await workshopAiJson(system, user, 600);
+              for (const idea of (Array.isArray(ideas) ? ideas : []).slice(0, 2)) {
+                const topic = String(idea.topic || '').trim();
+                if (topic.length < 3) continue;
+                const branch = branches.includes(idea.branch) ? idea.branch : weakest[0];
+                // Vollstaendiges Modul generieren.
+                const genSystem = [
+                  'Du bist Lehrredaktion der Weltenbibliothek. Erstelle ein vollstaendiges Lern-Modul.',
+                  'Antworte AUSSCHLIESSLICH als JSON-Objekt mit: title, subtitle, theory_content (300-600 Worte, Markdown), case_study (150-300 Worte), exercise_description (100-250 Worte), xp_reward (50-200). Deutsch.',
+                ].join('\n');
+                const mod = await workshopAiJson(genSystem, `Thema: ${topic}\nBranch: ${branch}`, 1800);
+                rowsToInsert.push({
+                  world, kind: 'new', status: 'pending',
+                  title: String(mod.title || topic).slice(0, 120),
+                  subtitle: String(mod.subtitle || '').slice(0, 240),
+                  branch,
+                  theory_content: String(mod.theory_content || ''),
+                  case_study: String(mod.case_study || ''),
+                  exercise_description: String(mod.exercise_description || ''),
+                  xp_reward: Math.max(50, Math.min(200, Math.round(Number(mod.xp_reward) || 100))),
+                  rationale: String(idea.rationale || `Fuellt Luecke im Branch "${branch}"`).slice(0, 500),
+                  created_by: `scan:${caller.username}`,
+                });
+                created.new++;
+              }
+            } catch (e) {
+              console.warn(`[scan/new] ${e.message}`);
+            }
+          }
+
+          // ── Modus B: VERBESSERUNGEN (duenne Module finden) ──────────
+          if (modes.includes('improve')) {
+            // Module mit kurzem theory_content (< 400 Zeichen) = Kandidaten.
+            const thin = existing
+              .filter(m => (m.theory_content || '').length < 400)
+              .slice(0, 2);
+            for (const m of thin) {
+              try {
+                const system = [
+                  'Du verbesserst ein bestehendes, zu duennes Lern-Modul der Weltenbibliothek.',
+                  'Baue Theorie, Fallstudie und Uebung substantiell aus. Behalte das Thema bei.',
+                  'Antworte AUSSCHLIESSLICH als JSON-Objekt mit: title, subtitle, theory_content (300-600 Worte), case_study (150-300 Worte), exercise_description (100-250 Worte), xp_reward (50-200). Deutsch.',
+                ].join('\n');
+                const user = `Bestehend:\nTitel: ${m.title}\nTheorie: ${m.theory_content || '(leer)'}\nFallstudie: ${m.case_study || '(leer)'}\nUebung: ${m.exercise_description || '(leer)'}\n\nBaue aus.`;
+                const mod = await workshopAiJson(system, user, 1800);
+                rowsToInsert.push({
+                  world, kind: 'improve', status: 'pending',
+                  target_module_code: m.module_code,
+                  title: String(mod.title || m.title).slice(0, 120),
+                  subtitle: String(mod.subtitle || m.subtitle || '').slice(0, 240),
+                  branch: m.branch,
+                  theory_content: String(mod.theory_content || ''),
+                  case_study: String(mod.case_study || ''),
+                  exercise_description: String(mod.exercise_description || ''),
+                  xp_reward: Math.max(50, Math.min(200, Math.round(Number(mod.xp_reward) || m.xp_reward || 100))),
+                  rationale: `Modul "${m.title}" hatte nur ${(m.theory_content || '').length} Zeichen Theorie -- ausgebaut.`,
+                  created_by: `scan:${caller.username}`,
+                });
+                created.improve++;
+              } catch (e) {
+                console.warn(`[scan/improve ${m.module_code}] ${e.message}`);
+              }
+            }
+          }
+
+          // ── Modus C: QUALITAETS-CHECK (kein KI-Verbrauch) ───────────
+          if (modes.includes('quality')) {
+            const placeholderRe = /(\[einfuegen\]|\[bitte ergaenzen\]|\.\.\.tbd|TODO|XXX|Lorem ipsum)/i;
+            for (const m of existing) {
+              const findings = [];
+              if (!m.title || m.title.trim().length < 3) findings.push('Titel fehlt oder zu kurz');
+              if (!m.theory_content || m.theory_content.trim().length < 200) {
+                findings.push(`Theorie zu kurz (${(m.theory_content || '').length} Zeichen)`);
+              }
+              if (!m.case_study || m.case_study.trim().length < 80) findings.push('Fallstudie fehlt/zu kurz');
+              if (!m.exercise_description || m.exercise_description.trim().length < 50) findings.push('Uebung fehlt/zu kurz');
+              if (!branches.includes(m.branch)) findings.push(`Branch "${m.branch}" ist ungueltig`);
+              for (const f of ['title', 'subtitle', 'theory_content', 'case_study', 'exercise_description']) {
+                if (m[f] && placeholderRe.test(String(m[f]))) findings.push(`${f} enthaelt Platzhalter`);
+              }
+              if (findings.length > 0) {
+                rowsToInsert.push({
+                  world, kind: 'quality', status: 'pending',
+                  target_module_code: m.module_code,
+                  title: m.title || m.module_code,
+                  branch: m.branch,
+                  quality_findings: findings,
+                  rationale: `${findings.length} Qualitaets-Problem(e) in Modul ${m.module_code}`,
+                  created_by: `scan:${caller.username}`,
+                });
+                created.quality++;
+              }
+            }
+          }
+
+          // Vor dem Insert: alte pending-Vorschlaege desselben Scans verwerfen,
+          // damit keine Duplikate auflaufen (idempotenter Re-Scan).
+          if (rowsToInsert.length > 0) {
+            const kinds = [...new Set(rowsToInsert.map(r => r.kind))];
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/module_suggestions?world=eq.${world}&status=eq.pending&kind=in.(${kinds.join(',')})`,
+              { method: 'DELETE', headers: svcHeaders },
+            ).catch(() => {});
+            const insR = await fetch(`${SUPABASE_URL}/rest/v1/module_suggestions`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify(rowsToInsert),
+            });
+            if (!insR.ok) {
+              const t = await insR.text().catch(() => '');
+              return errorResponse(`Vorschlaege speichern fehlgeschlagen: ${insR.status} ${t.slice(0, 200)}`);
+            }
+          }
+
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'module_workshop_scan',
+            target_id: world,
+            details: { modes, created },
+          });
+          return jsonResponse({ success: true, created });
+        } catch (e) {
+          return errorResponse(`module-workshop scan Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/admin/module-workshop/suggestions?world=&status= ──
+      if (method === 'GET' && path === '/api/admin/module-workshop/suggestions') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const world = url.searchParams.get('world') === 'ursprung' ? 'ursprung' : 'vorhang';
+          const status = url.searchParams.get('status') || 'pending';
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/module_suggestions?world=eq.${world}&status=eq.${encodeURIComponent(status)}&order=created_at.desc`,
+            { headers: svcHeaders },
+          );
+          const rows = r.ok ? await r.json().catch(() => []) : [];
+          return jsonResponse({ success: true, suggestions: Array.isArray(rows) ? rows : [] });
+        } catch (e) {
+          return errorResponse(`suggestions GET Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/suggestions/:id/accept ─────
+      // Nur Root-Admin darf Vorschlaege final veroeffentlichen.
+      if (method === 'POST' && path.startsWith('/api/admin/module-workshop/suggestions/') && path.endsWith('/accept')) {
+        if (!caller.isRootAdmin) {
+          return errorResponse('Nur Root-Admin darf Vorschlaege veroeffentlichen', 403);
+        }
+        try {
+          const id = path.split('/')[5];
+          if (!id) return errorResponse('id fehlt', 400);
+          const sr = await fetch(
+            `${SUPABASE_URL}/rest/v1/module_suggestions?id=eq.${encodeURIComponent(id)}&limit=1`,
+            { headers: svcHeaders },
+          );
+          const arr = sr.ok ? await sr.json().catch(() => []) : [];
+          const sug = Array.isArray(arr) && arr[0];
+          if (!sug) return errorResponse('Vorschlag nicht gefunden', 404);
+          if (sug.status !== 'pending') return errorResponse('Vorschlag bereits bearbeitet', 409);
+
+          const world = sug.world;
+          const tbl = tableForWorld(world);
+
+          // Quality-Findings haben keinen Inhalt -> nur als erledigt markieren.
+          if (sug.kind === 'quality') {
+            await fetch(`${SUPABASE_URL}/rest/v1/module_suggestions?id=eq.${encodeURIComponent(id)}`, {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({ status: 'accepted', reviewed_at: new Date().toISOString(), reviewed_by: caller.username }),
+            });
+            return jsonResponse({ success: true, action: 'quality_acknowledged' });
+          }
+
+          // new/improve: in die Modul-Tabelle schreiben.
+          let moduleCode = sug.target_module_code;
+          if (!moduleCode) {
+            const prefix = world === 'ursprung' ? 'U-' : 'V-';
+            const exR = await fetch(
+              `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code&module_code=like.${prefix}*`,
+              { headers: svcHeaders },
+            );
+            const ex = exR.ok ? await exR.json().catch(() => []) : [];
+            const nums = (ex || []).map(e => parseInt(String(e.module_code || '').replace(prefix, ''), 10)).filter(n => !isNaN(n));
+            moduleCode = `${prefix}${nums.length > 0 ? Math.max(...nums) + 1 : 1}`;
+          }
+          const branches = WORKSHOP_BRANCHES[world];
+          const row = {
+            module_code: moduleCode,
+            branch: branches.includes(sug.branch) ? sug.branch : branches[0],
+            branch_order: branches.indexOf(sug.branch) + 1,
+            title: sug.title,
+            subtitle: sug.subtitle || '',
+            is_boss_module: false,
+            xp_reward: sug.xp_reward || 100,
+            prerequisites: [],
+            theory_content: sug.theory_content || '',
+            case_study: sug.case_study || '',
+            exercise_description: sug.exercise_description || '',
+          };
+          const saveR = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}?on_conflict=module_code`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+            body: JSON.stringify(row),
+          });
+          if (!saveR.ok) {
+            const t = await saveR.text().catch(() => '');
+            return errorResponse(`Modul speichern fehlgeschlagen: ${saveR.status} ${t.slice(0, 200)}`);
+          }
+          await fetch(`${SUPABASE_URL}/rest/v1/module_suggestions?id=eq.${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ status: 'accepted', reviewed_at: new Date().toISOString(), reviewed_by: caller.username }),
+          });
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: sug.kind === 'new' ? 'suggestion_accept_new' : 'suggestion_accept_improve',
+            target_id: moduleCode,
+            details: { world, suggestion_id: id },
+          });
+          return jsonResponse({ success: true, action: sug.target_module_code ? 'updated' : 'created', module_code: moduleCode });
+        } catch (e) {
+          return errorResponse(`suggestion accept Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/suggestions/:id/reject ─────
+      if (method === 'POST' && path.startsWith('/api/admin/module-workshop/suggestions/') && path.endsWith('/reject')) {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const id = path.split('/')[5];
+          if (!id) return errorResponse('id fehlt', 400);
+          await fetch(`${SUPABASE_URL}/rest/v1/module_suggestions?id=eq.${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ status: 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: caller.username }),
+          });
+          return jsonResponse({ success: true, action: 'rejected' });
+        } catch (e) {
+          return errorResponse(`suggestion reject Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/tool-request ───────────────
+      // Vorschlag D: LOGIK-Modul anfragen -> GitHub-Issue-Bruecke.
+      // Body: { world?, title, description }
+      // Wenn env.GITHUB_TOKEN gesetzt: Issue automatisch erstellen.
+      // Sonst: vorbefuellte GitHub-Issue-URL zurueckgeben (Admin klickt selbst).
+      if (method === 'POST' && path === '/api/admin/module-workshop/tool-request') {
+        if (!caller.isRootAdmin) {
+          return errorResponse('Nur Root-Admin darf Tool-Anfragen stellen', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const title = String(body?.title || '').trim().slice(0, 120);
+          const description = String(body?.description || '').trim().slice(0, 2000);
+          const world = body?.world || null;
+          if (title.length < 3 || description.length < 10) {
+            return errorResponse('Titel (min 3) und Beschreibung (min 10) noetig', 400);
+          }
+          const repo = 'manuelbrandner85/Weltenbibliothekapp';
+          const issueTitle = `[Tool-Anfrage] ${title}`;
+          const issueBody = [
+            '## Neues interaktives Tool (LOGIK-Modul) angefragt',
+            '',
+            `**Welt:** ${world || 'unbestimmt'}`,
+            `**Angefragt von:** @${caller.username}`,
+            '',
+            '### Beschreibung',
+            description,
+            '',
+            '---',
+            '_Diese Anfrage wurde aus der Modul-Werkstatt im Admin-Dashboard erstellt.',
+            'Ein LOGIK-Modul braucht echten Code + App-Build durch Claude Code._',
+            '',
+            '<!-- claude-code: bitte dieses Tool implementieren und einen PR oeffnen -->',
+          ].join('\n');
+
+          let issueUrl = null;
+          let autoCreated = false;
+          if (env.GITHUB_TOKEN) {
+            try {
+              const ghR = await fetch(`https://api.github.com/repos/${repo}/issues`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
+                  'Accept': 'application/vnd.github+json',
+                  'User-Agent': 'WeltenbibliothekWorker',
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  title: issueTitle,
+                  body: issueBody,
+                  labels: ['module-tool-request', 'claude-code'],
+                }),
+              });
+              if (ghR.ok) {
+                const data = await ghR.json().catch(() => ({}));
+                issueUrl = data.html_url || null;
+                autoCreated = true;
+              } else {
+                console.warn(`[tool-request] GitHub API ${ghR.status}`);
+              }
+            } catch (e) {
+              console.warn(`[tool-request] GitHub Fehler: ${e.message}`);
+            }
+          }
+
+          // Fallback: vorbefuellte "new issue"-URL (kein Secret noetig).
+          const prefillUrl = `https://github.com/${repo}/issues/new?title=${encodeURIComponent(issueTitle)}&body=${encodeURIComponent(issueBody)}&labels=module-tool-request,claude-code`;
+
+          // In tool_requests protokollieren.
+          await fetch(`${SUPABASE_URL}/rest/v1/tool_requests`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              world, title, description,
+              status: autoCreated ? 'issue_created' : 'open',
+              github_issue_url: issueUrl,
+              requested_by: caller.username,
+            }),
+          }).catch(() => {});
+
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'tool_request',
+            target_id: title,
+            details: { world, auto_created: autoCreated },
+          });
+
+          return jsonResponse({
+            success: true,
+            auto_created: autoCreated,
+            issue_url: issueUrl,
+            // Wenn nicht auto-erstellt: Admin oeffnet diese URL und klickt "Submit".
+            prefill_url: autoCreated ? null : prefillUrl,
+          });
+        } catch (e) {
+          return errorResponse(`tool-request Fehler: ${e.message}`);
+        }
+      }
+
+      // ════════════════════════════════════════════════════════════════
       // v123: NEW ENDPOINTS -- Shadow-ban, Temp-Mute, Bulk, Feature Flags,
       //   Announcements, Insights, Health (enriched).
       // ════════════════════════════════════════════════════════════════

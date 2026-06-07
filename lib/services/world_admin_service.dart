@@ -1730,6 +1730,117 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  // ── Modul-Werkstatt-Automatik (Vorschlaege A/B/C/D) ─────────────────
+
+  /// Startet einen manuellen Scan: KI analysiert den Modul-Bestand und
+  /// erzeugt Vorschlaege (neue Module / Verbesserungen / Qualitaets-Findings).
+  /// [modes] = Teilmenge von ['new','improve','quality'].
+  /// Returns Map { success, created: { new, improve, quality } } oder null.
+  static Future<Map<String, dynamic>?> scanModuleSuggestions({
+    required String world,
+    required List<String> modes,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/scan',
+        body: {'world': world, 'modes': modes},
+      );
+      return Map<String, dynamic>.from(data);
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('scanModuleSuggestions: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('scanModuleSuggestions: $e');
+      return null;
+    }
+  }
+
+  /// Liefert offene (oder beliebige) Modul-Vorschlaege einer Welt.
+  static Future<List<Map<String, dynamic>>> getModuleSuggestions({
+    required String world,
+    String status = 'pending',
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+          '/api/admin/module-workshop/suggestions?world=$world&status=$status');
+      final list = (data['suggestions'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('getModuleSuggestions: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('getModuleSuggestions: $e');
+      return const [];
+    }
+  }
+
+  /// Nimmt einen Vorschlag an (Root-Admin only). Bei new/improve wird das
+  /// Modul live geschrieben, bei quality wird das Finding als erledigt markiert.
+  static Future<Map<String, dynamic>> acceptModuleSuggestion(String id) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/module-workshop/suggestions/$id/accept');
+      return Map<String, dynamic>.from(data);
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('acceptModuleSuggestion: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return {'success': false, 'error': 'HTTP ${e.statusCode}'};
+    } catch (e) {
+      if (kDebugMode) debugPrint('acceptModuleSuggestion: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Lehnt einen Vorschlag ab.
+  static Future<bool> rejectModuleSuggestion(String id) async {
+    try {
+      await AdminApiClient.instance
+          .postJson('/api/admin/module-workshop/suggestions/$id/reject');
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('rejectModuleSuggestion: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('rejectModuleSuggestion: $e');
+      return false;
+    }
+  }
+
+  /// Stellt eine Tool-Anfrage (LOGIK-Modul) -> GitHub-Issue-Bruecke.
+  /// Returns Map { success, auto_created, issue_url?, prefill_url? }.
+  static Future<Map<String, dynamic>> requestTool({
+    required String title,
+    required String description,
+    String? world,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/tool-request',
+        body: {
+          'title': title,
+          'description': description,
+          if (world != null) 'world': world,
+        },
+      );
+      return Map<String, dynamic>.from(data);
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('requestTool: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return {'success': false, 'error': 'HTTP ${e.statusCode}'};
+    } catch (e) {
+      if (kDebugMode) debugPrint('requestTool: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   // ════════════════════════════════════════════════════════════
   // v115 Feature E: Moderations-Queue (User-Reports)
   // ════════════════════════════════════════════════════════════

@@ -1,0 +1,73 @@
+# Vorschlag D: Claude-Code-Bruecke fuer LOGIK-Module (interaktive Tools).
+#
+# Reagiert auf GitHub-Issues mit dem Label 'module-tool-request' (erstellt aus
+# der Modul-Werkstatt im Admin-Dashboard). Claude Code liest die Spezifikation
+# aus dem Issue, implementiert das Tool und oeffnet einen Pull Request.
+#
+# WICHTIG -- einmalig einzurichten (sonst laeuft der Job nicht):
+#   1. Repo-Secret ANTHROPIC_API_KEY setzen
+#      (Settings -> Secrets and variables -> Actions -> New repository secret)
+#   2. Optional: CLAUDE_CODE_OAUTH_TOKEN statt API-Key (Claude-Abo)
+#
+# Der entstehende PR wird NICHT automatisch gemergt -- Root-Admin reviewt + merged
+# manuell, danach greift der bestehende Shorebird/APK-Build.
+
+name: Claude Modul-Tool
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  implement-tool:
+    # Nur wenn das Label gesetzt ist.
+    if: contains(github.event.issue.labels.*.name, 'module-tool-request')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Guard -- Secret vorhanden?
+        id: guard
+        run: |
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ] && [ -z "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" ]; then
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Hinweis wenn kein Secret
+        if: steps.guard.outputs.has_key == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'Claude Code ist noch nicht eingerichtet: bitte das Repo-Secret `ANTHROPIC_API_KEY` (oder `CLAUDE_CODE_OAUTH_TOKEN`) setzen. Danach das Label erneut setzen, um den Lauf zu starten.'
+            });
+
+      - name: Claude Code -- Tool implementieren
+        if: steps.guard.outputs.has_key == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Claude liest das Issue (Titel + Body) als Aufgabe und oeffnet einen PR.
+          prompt: |
+            Implementiere das in diesem GitHub-Issue beschriebene interaktive Tool
+            (LOGIK-Modul) fuer die Flutter-App. Halte dich an die Projektregeln in
+            CLAUDE.md: keine Named Dart 3 Records in lib/, flutter analyze = 0 Errors,
+            deutsche UI-Texte, ASCII-only Commit-Messages. Erstelle einen Branch und
+            oeffne einen Draft-Pull-Request. Merge NICHT selbst -- der Root-Admin
+            reviewt und merged.
+          # Branch-Praefix fuer den entstehenden PR.
+          branch_prefix: "claude/tool-"
