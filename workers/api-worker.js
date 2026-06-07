@@ -8679,21 +8679,44 @@ export default {
       }
     }
 
-    // ── LibreTranslate-Proxy (kein Key, public instance) ──
+    // ── Translate-Endpoint: Workers-AI m2m100 primary, LibreTranslate fallback ──
+    // Workers-AI ist kostenlos (gehoert zum Free-Plan-Kontingent), m2m100 ist
+    // ein Multi-Sprach-Modell von Meta. Bei Fehler: LibreTranslate als Backup.
     if (path === '/api/translate' && method === 'POST') {
       try {
-        const { text, source = 'auto', target = 'de' } = await request.json();
+        const { text, source = 'en', target = 'de' } = await request.json();
         if (!text) return errorResponse('text fehlt', 400);
-        // Public LibreTranslate-Instanz (libretranslate.de, FOSS)
-        const r = await fetch('https://libretranslate.de/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ q: text, source, target, format: 'text' }),
-          signal: AbortSignal.timeout(15000),
-        });
-        if (!r.ok) return errorResponse(`LibreTranslate ${r.status}`, 502);
-        const data = await r.json();
-        return jsonResponse({ translated: data.translatedText || '', source, target });
+
+        // 1) Primary: Workers-AI (kostenlos, schnell, zuverlaessig)
+        if (env.AI) {
+          try {
+            const aiRes = await env.AI.run('@cf/meta/m2m100-1.2b', {
+              text: String(text).slice(0, 4000),
+              source_lang: source === 'auto' ? 'en' : source,
+              target_lang: target,
+            });
+            const translated = aiRes?.translated_text || '';
+            if (translated) {
+              return jsonResponse({ translated, source, target, model: 'workers-ai-m2m100' });
+            }
+          } catch (_) { /* fall through */ }
+        }
+
+        // 2) Fallback: LibreTranslate public instance
+        try {
+          const r = await fetch('https://libretranslate.de/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: text, source: source === 'en' ? 'auto' : source, target, format: 'text' }),
+            signal: AbortSignal.timeout(12000),
+          });
+          if (r.ok) {
+            const data = await r.json();
+            return jsonResponse({ translated: data.translatedText || '', source, target, model: 'libretranslate' });
+          }
+        } catch (_) { /* fall through */ }
+
+        return errorResponse('Keine Uebersetzung verfuegbar', 503);
       } catch (e) {
         return errorResponse(`Translate-Fehler: ${e.message}`);
       }
@@ -8755,43 +8778,66 @@ export default {
       }
     }
 
-    // ── Batch-Übersetzung Englisch→Deutsch via Groq (kostengünstig: 1 Call statt N) ──
+    // ── Batch-Übersetzung Englisch→Deutsch ──
+    // Priority: Groq (1 Call) -> Workers-AI llama (1 Call) -> Items unuebersetzt
     if (path === '/api/translate/batch' && method === 'POST') {
       try {
         const { items } = await request.json();
         if (!Array.isArray(items) || items.length === 0) {
           return jsonResponse({ translated: [] });
         }
-        if (!env.GROQ_API_KEY) {
-          // Ohne Groq: Items unübersetzt zurückgeben
-          return jsonResponse({ translated: items, fallback: true });
-        }
         const numbered = items.map((s, i) => `${i + 1}. ${String(s).replace(/\n/g, ' ').slice(0, 300)}`).join('\n');
-        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-              { role: 'system', content: 'Du übersetzt nummerierte englische Texte ins Deutsche. Gib NUR die Übersetzungen in der gleichen Nummerierung zurück, ohne Kommentare. Behalte Eigennamen und Firmennamen unverändert.' },
-              { role: 'user', content: numbered },
-            ],
-            temperature: 0.3,
-            max_tokens: 1500,
-          }),
-        });
-        if (!r.ok) return jsonResponse({ translated: items, error: `Groq ${r.status}` });
-        const data = await r.json();
-        const text = data?.choices?.[0]?.message?.content || '';
-        // Parse: "1. text\n2. text\n…"
-        const translated = items.map((orig, i) => {
+        const systemMsg = 'Du übersetzt nummerierte englische Texte ins Deutsche. Gib NUR die Übersetzungen in der gleichen Nummerierung zurück, ohne Kommentare. Behalte Eigennamen und Firmennamen unverändert.';
+        const parseNumbered = (text) => items.map((orig, i) => {
           const match = text.match(new RegExp(`(?:^|\\n)\\s*${i + 1}\\.\\s*(.+?)(?=(?:\\n\\s*\\d+\\.)|$)`, 's'));
           return match ? match[1].trim() : orig;
         });
-        return jsonResponse({ translated });
+
+        // 1) Primary: Groq (am schnellsten + akkuratesten)
+        if (env.GROQ_API_KEY) {
+          try {
+            const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                  { role: 'system', content: systemMsg },
+                  { role: 'user', content: numbered },
+                ],
+                temperature: 0.3,
+                max_tokens: 1500,
+              }),
+              signal: AbortSignal.timeout(20000),
+            });
+            if (r.ok) {
+              const data = await r.json();
+              const text = data?.choices?.[0]?.message?.content || '';
+              if (text) return jsonResponse({ translated: parseNumbered(text), model: 'groq-llama-3.3-70b' });
+            }
+          } catch (_) { /* fall through */ }
+        }
+
+        // 2) Fallback: Workers-AI llama-3.1-8b (kostenlos)
+        if (env.AI) {
+          try {
+            const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages: [
+                { role: 'system', content: systemMsg },
+                { role: 'user', content: numbered },
+              ],
+              max_tokens: 1500,
+            });
+            const text = aiRes?.response || '';
+            if (text) return jsonResponse({ translated: parseNumbered(text), model: 'workers-ai-llama-3.1-8b' });
+          } catch (_) { /* fall through */ }
+        }
+
+        // 3) Letzte Option: unuebersetzt zurueck
+        return jsonResponse({ translated: items, fallback: true });
       } catch (e) {
         return errorResponse(`Translate-Fehler: ${e.message}`);
       }

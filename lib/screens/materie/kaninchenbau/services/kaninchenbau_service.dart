@@ -666,7 +666,8 @@ LIMIT 60
     }
   }
 
-  /// LibreTranslate via Worker.
+  /// Uebersetzt einen Text via Worker. Worker nutzt Workers-AI m2m100
+  /// (kostenlos) als Primary, LibreTranslate als Fallback.
   Future<String?> translate(String text, {String target = 'de'}) async {
     try {
       final resp = await http
@@ -682,6 +683,29 @@ LIMIT 60
     } catch (e) {
       debugPrint('Translate-Error: $e');
       return null;
+    }
+  }
+
+  /// Batch-Uebersetzung mehrerer Strings auf Deutsch (1 Worker-Call statt N).
+  /// Worker waehlt selbst zwischen Groq und Workers-AI. Liefert die Liste in
+  /// derselben Reihenfolge zurueck; bei Fehler die Originaltexte (best-effort).
+  Future<List<String>> translateBatch(List<String> items) async {
+    if (items.isEmpty) return const [];
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/translate/batch'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'items': items}),
+          )
+          .timeout(const Duration(seconds: 25));
+      if (resp.statusCode != 200) return items;
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final raw = data['translated'] as List? ?? items;
+      return raw.map((e) => e.toString()).toList();
+    } catch (e) {
+      debugPrint('TranslateBatch-Error: $e');
+      return items;
     }
   }
 
