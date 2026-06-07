@@ -110,7 +110,7 @@ class _AdminHubState extends State<_AdminHub> {
       areas.add(const _AdminAreaDef(
         icon: Icons.menu_book_rounded,
         title: 'Inhalte',
-        subtitle: 'Module, Lektionen, Insights',
+        subtitle: 'Module, Artikel, Videos',
         section: 'content',
       ));
     }
