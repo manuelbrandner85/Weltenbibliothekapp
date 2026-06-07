@@ -54,7 +54,9 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
             (data['total'] as int?) ?? (data['requests'] as List?)?.length ?? 0;
         setState(() => _openUsernameRequests = total);
       }
-    } catch (e) { if (kDebugMode) debugPrint('audit_tabs: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('audit_tabs: silent catch -> $e');
+    }
   }
 
   @override
@@ -135,11 +137,14 @@ class _ReportsInboxTab extends StatefulWidget {
   final Color accentBright;
   final VoidCallback onChanged;
   final bool isRootAdmin;
+  // Wer darf Meldungen loeschen/leeren? Admin + Root (Worker erzwingt es).
+  final bool canDelete;
   const _ReportsInboxTab({
     required this.accent,
     required this.accentBright,
     required this.onChanged,
     this.isRootAdmin = false,
+    this.canDelete = false,
   });
 
   @override
@@ -464,7 +469,7 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                     backgroundColor: Colors.blueGrey,
                     foregroundColor: Colors.white),
               ),
-              if (widget.isRootAdmin)
+              if (widget.canDelete)
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pop(ctx);
@@ -729,8 +734,8 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                     }),
                   ],
                 )),
-            // Root-Admin: alle (gefilterten) Meldungen loeschen.
-            if (widget.isRootAdmin && _reports.isNotEmpty) ...[
+            // Admin+: alle (gefilterten) Meldungen loeschen.
+            if (widget.canDelete && _reports.isNotEmpty) ...[
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerRight,
@@ -862,10 +867,10 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                                 ),
                               ),
                             );
-                            if (!widget.isRootAdmin) return card;
+                            if (!widget.canDelete) return card;
                             final id = r['id'] as String?;
                             if (id == null) return card;
-                            // Root-Admin: per Swipe loeschbar.
+                            // Admin+: per Swipe loeschbar.
                             return Dismissible(
                               key: ValueKey('report_$id'),
                               direction: DismissDirection.endToStart,
@@ -982,7 +987,10 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                 action.contains('role') ||
                 action.contains('ban') ||
                 action.contains('suspend');
-            if (isReversible) { undoable = item; break; }
+            if (isReversible) {
+              undoable = item;
+              break;
+            }
           }
           setState(() {
             _logs = list.cast<Map<String, dynamic>>();
@@ -1006,7 +1014,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
       }
       if (!_matchesRange(_parseLogTs(l))) return false;
       if (_filterActor.isNotEmpty) {
-        final actor = (l['actor_id'] ?? l['actor'] ?? '').toString().toLowerCase();
+        final actor =
+            (l['actor_id'] ?? l['actor'] ?? '').toString().toLowerCase();
         if (!actor.contains(_filterActor.toLowerCase())) return false;
       }
       return true;
@@ -1022,9 +1031,15 @@ class _AuditLogTabState extends State<_AuditLogTab> {
     for (final l in rows) {
       final ts = (l['created_at'] ?? l['timestamp'] ?? '').toString();
       final action = (l['action'] ?? '').toString().replaceAll(',', ';');
-      final actor = (l['actor_id'] ?? l['actor'] ?? '').toString().replaceAll(',', ';');
-      final target = (l['target_identity'] ?? l['target_id'] ?? '').toString().replaceAll(',', ';');
-      final details = (l['details'] ?? l['reason'] ?? '').toString().replaceAll(',', ';').replaceAll('\n', ' ');
+      final actor =
+          (l['actor_id'] ?? l['actor'] ?? '').toString().replaceAll(',', ';');
+      final target = (l['target_identity'] ?? l['target_id'] ?? '')
+          .toString()
+          .replaceAll(',', ';');
+      final details = (l['details'] ?? l['reason'] ?? '')
+          .toString()
+          .replaceAll(',', ';')
+          .replaceAll('\n', ' ');
       buf.writeln('"$ts","$action","$actor","$target","$details"');
     }
     await Clipboard.setData(ClipboardData(text: buf.toString()));
@@ -1047,13 +1062,17 @@ class _AuditLogTabState extends State<_AuditLogTab> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF12121E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Aktion rueckgaengig?', style: TextStyle(color: Colors.white)),
+        title: const Text('Aktion rueckgaengig?',
+            style: TextStyle(color: Colors.white)),
         content: Text(
           'Letzte Aktion: ${entry['action'] ?? '?'}\nZiel: ${entry['target_identity'] ?? entry['target_id'] ?? '?'}',
           style: const TextStyle(color: Colors.white70, fontSize: 13),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
@@ -1066,7 +1085,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
     final ok = await WorldAdminServiceV162.undoAuditEntry(entryId);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok ? '↩️ Aktion rueckgaengig gemacht' : '❌ Undo fehlgeschlagen'),
+        content: Text(
+            ok ? '↩️ Aktion rueckgaengig gemacht' : '❌ Undo fehlgeschlagen'),
         backgroundColor: ok ? Colors.green : Colors.red,
       ));
       if (ok) _load();
@@ -1158,7 +1178,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             if (_filtered.isNotEmpty)
               IconButton(
                 tooltip: 'Als CSV kopieren',
-                icon: const Icon(Icons.download_rounded, color: Colors.greenAccent),
+                icon: const Icon(Icons.download_rounded,
+                    color: Colors.greenAccent),
                 onPressed: _exportCsv,
                 iconSize: 20,
                 padding: EdgeInsets.zero,
@@ -1168,7 +1189,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             if (widget.isRootAdmin && _lastUndoableEntry != null)
               IconButton(
                 tooltip: 'Letzte Aktion rueckgaengig',
-                icon: const Icon(Icons.undo_rounded, color: Colors.orangeAccent),
+                icon:
+                    const Icon(Icons.undo_rounded, color: Colors.orangeAccent),
                 onPressed: _undo,
                 iconSize: 20,
                 padding: EdgeInsets.zero,
@@ -1182,7 +1204,8 @@ class _AuditLogTabState extends State<_AuditLogTab> {
                   onPressed: _clearAll,
                   iconSize: 20,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36)),
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36)),
             IconButton(
                 icon: Icon(Icons.refresh, color: widget.accent),
                 onPressed: _load,
@@ -1200,12 +1223,16 @@ class _AuditLogTabState extends State<_AuditLogTab> {
             decoration: InputDecoration(
               hintText: 'Nach Admin-ID filtern...',
               hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
-              prefixIcon: const Icon(Icons.person_search_rounded, color: Colors.white38, size: 16),
+              prefixIcon: const Icon(Icons.person_search_rounded,
+                  color: Colors.white38, size: 16),
               isDense: true,
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none),
             ),
           ),
         ),

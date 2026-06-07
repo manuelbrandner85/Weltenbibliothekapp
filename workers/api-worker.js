@@ -5243,7 +5243,11 @@ export default {
         } catch (e) { return errorResponse(`Broadcast-Fehler: ${e.message}`); }
       }
 
-      // ── DELETE /api/admin/push/history  (Verlauf loeschen, nur Admin+) ──
+      // ── DELETE /api/admin/push/history  (Verlauf/Statistik leeren, Admin+) ──
+      // ?scope=broadcast (default) -> nur admin_broadcast-Eintraege
+      // ?scope=failed            -> alle fehlgeschlagenen Queue-Zeilen
+      //                             (raeumt den "Push-Fehler"-Zaehler im Dashboard)
+      // ?scope=all               -> alle erledigten (sent+failed) Queue-Zeilen
       if (method === 'DELETE' && path === '/api/admin/push/history') {
         try {
           if (!['admin', 'root_admin'].includes(caller.role)) {
@@ -5251,9 +5255,17 @@ export default {
           }
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
           const svcH = { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` };
-          // Loescht alle Eintraege mit source=admin_broadcast aus der Queue
+          const scope = url.searchParams.get('scope') || 'broadcast';
+          let filter;
+          if (scope === 'failed') {
+            filter = 'status=eq.failed';
+          } else if (scope === 'all') {
+            filter = 'status=in.(sent,failed)';
+          } else {
+            filter = 'data->>source=eq.admin_broadcast';
+          }
           const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/notification_queue?data->>source=eq.admin_broadcast`,
+            `${SUPABASE_URL}/rest/v1/notification_queue?${filter}`,
             { method: 'DELETE', headers: svcH },
           );
           if (!res.ok && res.status !== 204) {
@@ -5262,8 +5274,9 @@ export default {
           logAudit(svcHeaders, {
             admin_username: caller.username,
             action: 'push_history_clear',
+            details: { scope },
           });
-          return jsonResponse({ success: true });
+          return jsonResponse({ success: true, scope });
         } catch (e) { return errorResponse(`History-Delete-Fehler: ${e.message}`); }
       }
 
@@ -5719,12 +5732,12 @@ export default {
       }
 
       // ── DELETE /api/admin/reports[/:id]  (Meldungen loeschen) ──
-      // NUR root_admin.  /api/admin/reports/:id -> einzeln
-      //                  /api/admin/reports?all=true -> alle (opt. ?status=)
+      // Admin + Root-Admin.  /api/admin/reports/:id -> einzeln
+      //                      /api/admin/reports?all=true -> alle (opt. ?status=)
       if (method === 'DELETE' && path.startsWith('/api/admin/reports')) {
         try {
-          if (caller.role !== 'root_admin') {
-            return errorResponse('Nur Root-Admin darf Meldungen loeschen', 403, 'insufficient_privilege');
+          if (!['admin', 'root_admin'].includes(caller.role)) {
+            return errorResponse('Admin-Rolle erforderlich um Meldungen zu loeschen', 403, 'insufficient_privilege');
           }
           const parts = path.split('/');
           const reportId = parts[4]; // undefined bei /api/admin/reports
@@ -6114,14 +6127,39 @@ export default {
 
           let userId = body.userId;
           if (!userId && body.username) {
-            const res = await fetch(
-              `${SUPABASE_URL}/rest/v1/profiles?username=eq.${encodeURIComponent(body.username)}&select=id&limit=1`,
-              { headers: svcHeaders }
-            );
-            const rows = res.ok ? await res.json().catch(() => []) : [];
+            // 2026-06-07: Suche nach Name ODER Benutzername. Reihenfolge:
+            //   1) exakter username (case-insensitiv)
+            //   2) exakter display_name / full_name (case-insensitiv)
+            //   3) Teiltreffer (ilike) ueber username/display_name/full_name
+            const q = String(body.username).trim();
+            const enc = encodeURIComponent(q);
+            const tryFetch = async (filter) => {
+              const r = await fetch(
+                `${SUPABASE_URL}/rest/v1/profiles?${filter}&select=id,username,display_name,full_name&limit=2`,
+                { headers: svcHeaders });
+              return r.ok ? (await r.json().catch(() => [])) : [];
+            };
+            // 1) exakter username
+            let rows = await tryFetch(`username=ilike.${enc}`);
+            // 2) exakter Name
+            if (rows.length === 0) {
+              rows = await tryFetch(`or=(display_name.ilike.${enc},full_name.ilike.${enc})`);
+            }
+            // 3) Teiltreffer
+            if (rows.length === 0) {
+              const wild = encodeURIComponent(`*${q}*`);
+              rows = await tryFetch(`or=(username.ilike.${wild},display_name.ilike.${wild},full_name.ilike.${wild})`);
+            }
+            if (Array.isArray(rows) && rows.length > 1) {
+              // Mehrdeutig -> Kandidaten zurueckmelden statt blind den ersten zu nehmen.
+              const names = rows.map(r => r.username || r.display_name || r.full_name).filter(Boolean);
+              return errorResponse(
+                `Mehrere Treffer fuer "${q}": ${names.join(', ')}. Bitte praezisieren (@Username).`,
+                409, 'ambiguous_recipient');
+            }
             userId = Array.isArray(rows) && rows.length > 0 ? rows[0].id : null;
           }
-          if (!userId) return errorResponse('Nutzer nicht gefunden', 404);
+          if (!userId) return errorResponse('Nutzer nicht gefunden (weder Name noch Benutzername)', 404);
 
           await pushNotif(userId, body.type || 'admin_message', title, msgBody,
             { source: 'admin_direct', admin: caller.username });

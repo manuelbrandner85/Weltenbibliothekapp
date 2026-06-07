@@ -224,8 +224,7 @@ class _AdminHubState extends State<_AdminHub> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide:
-                  BorderSide(color: widget.accentBright, width: 1.5),
+              borderSide: BorderSide(color: widget.accentBright, width: 1.5),
             ),
           ),
         ),
@@ -238,12 +237,11 @@ class _AdminHubState extends State<_AdminHub> {
           borderRadius: BorderRadius.circular(14),
           onTap: widget.onOpenGlobalSearch,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                  color: widget.accentBright.withValues(alpha: 0.5)),
+              border:
+                  Border.all(color: widget.accentBright.withValues(alpha: 0.5)),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.travel_explore_rounded,
@@ -354,9 +352,7 @@ class _AdminHubState extends State<_AdminHub> {
             const SizedBox(width: 6),
             Text(warning ? label : '$label ($count)',
                 style: TextStyle(
-                    color: bright,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
+                    color: bright, fontSize: 12, fontWeight: FontWeight.w600)),
           ]),
         ),
       ),
@@ -390,8 +386,7 @@ class _AdminHubState extends State<_AdminHub> {
                     ]),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child:
-                      Icon(area.icon, color: widget.accentBright, size: 24),
+                  child: Icon(area.icon, color: widget.accentBright, size: 24),
                 ),
                 const SizedBox(height: 12),
                 Text(area.title,
@@ -401,8 +396,7 @@ class _AdminHubState extends State<_AdminHub> {
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(area.subtitle,
-                    style: const TextStyle(
-                        color: Colors.white54, fontSize: 12),
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis),
               ],
@@ -438,8 +432,8 @@ class _AdminHubState extends State<_AdminHub> {
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
         onPressed: () => widget.onOpen('overview'),
-        icon: Icon(Icons.dashboard_rounded,
-            size: 18, color: widget.accentBright),
+        icon:
+            Icon(Icons.dashboard_rounded, size: 18, color: widget.accentBright),
         label: Text('Uebersicht & Diagnose',
             style: TextStyle(
                 color: widget.accentBright,
@@ -509,6 +503,7 @@ class _ModerationHub extends StatelessWidget {
               accent: accent,
               accentBright: accentBright,
               isRootAdmin: admin.isRootAdmin,
+              canDelete: AppRoles.isAdmin(admin.role),
               onChanged: () {},
             ),
           ]),
@@ -541,8 +536,8 @@ Future<String?> showAdminConfirm(
       return StatefulBuilder(builder: (ctx, setLocal) {
         return AlertDialog(
           backgroundColor: const Color(0xFF14141F),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(title,
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.bold)),
@@ -597,10 +592,9 @@ Future<String?> showAdminConfirm(
               ),
               onPressed: (requireReason && reasonCtrl.text.trim().isEmpty)
                   ? null
-                  : () => Navigator.of(ctx)
-                      .pop(reasonCtrl.text.trim().isEmpty
-                          ? ''
-                          : reasonCtrl.text.trim()),
+                  : () => Navigator.of(ctx).pop(reasonCtrl.text.trim().isEmpty
+                      ? ''
+                      : reasonCtrl.text.trim()),
               child: Text(confirmLabel),
             ),
           ],

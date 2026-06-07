@@ -29,12 +29,51 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
   // Push delivery stats
   Map<String, dynamic>? _pushStats;
   bool _loadingStats = true;
+  bool _clearingQueue = false;
 
   @override
   void initState() {
     super.initState();
     _loadHistory();
     _loadStats();
+  }
+
+  /// Leert die Push-Zaehler: scope='failed' (nur Fehler) oder 'all' (sent+failed).
+  Future<void> _clearQueue(String scope) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF12121E),
+            title: Text(
+                scope == 'failed' ? 'Fehler loeschen' : 'Statistik leeren',
+                style: const TextStyle(color: Colors.white)),
+            content: Text(
+                scope == 'failed'
+                    ? 'Alle fehlgeschlagenen Push-Eintraege entfernen? Der Fehler-Zaehler wird auf 0 gesetzt.'
+                    : 'Alle erledigten Push-Eintraege (zugestellt + fehlgeschlagen) entfernen?',
+                style: const TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Abbrechen')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Loeschen',
+                      style: TextStyle(color: Colors.redAccent))),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+    setState(() => _clearingQueue = true);
+    final ok = await WorldAdminServiceV162.clearPushQueue(scope: scope);
+    if (!mounted) return;
+    setState(() => _clearingQueue = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(ok ? 'Push-Zaehler bereinigt' : 'Loeschen fehlgeschlagen'),
+      backgroundColor: ok ? Colors.green : Colors.redAccent,
+    ));
+    if (ok) _loadStats();
   }
 
   Future<void> _loadStats() async {
@@ -238,19 +277,19 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
   }
 
   Future<void> _sendDirect() async {
-    final username = _directUsername.text.trim();
+    final recipient = _directUsername.text.trim();
     final title = _directTitle.text.trim();
     final body = _directBody.text.trim();
-    if (username.isEmpty || title.isEmpty || body.isEmpty) {
+    if (recipient.isEmpty || title.isEmpty || body.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Username, Titel und Body sind Pflichtfelder'),
+        content: Text('Empfaenger, Titel und Nachricht sind Pflichtfelder'),
         backgroundColor: Colors.redAccent,
       ));
       return;
     }
     setState(() => _sendingDirect = true);
-    final ok = await WorldAdminServiceV162.sendDirectPush(
-      username: username,
+    final (ok, errMsg) = await WorldAdminServiceV162.sendDirectPush(
+      username: recipient,
       title: title,
       body: body,
     );
@@ -258,8 +297,8 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
     setState(() => _sendingDirect = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(ok
-          ? '✅ Push an @$username gesendet'
-          : '❌ Fehler: Nutzer nicht gefunden oder Push fehlgeschlagen'),
+          ? '✅ Push an "$recipient" gesendet'
+          : '❌ ${errMsg ?? "Nutzer nicht gefunden oder Push fehlgeschlagen"}'),
       backgroundColor: ok ? Colors.green : Colors.redAccent,
     ));
     if (ok) {
@@ -300,9 +339,7 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
             Expanded(
               child: Text(title,
                   style: TextStyle(
-                      color: color,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold)),
+                      color: color, fontSize: 13, fontWeight: FontWeight.bold)),
             ),
           ]),
           const SizedBox(height: 6),
@@ -356,6 +393,41 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
                 child: _PushStatCard('Ausstehend', totalPending.toString(),
                     Icons.schedule_rounded, Colors.orange, widget.accent)),
           ]),
+          // Aufraeumen-Aktionen fuer die Zaehler (sonst bleiben Zahlen ewig).
+          if (totalFailed > 0 || totalSent > 0) ...[
+            const SizedBox(height: 8),
+            Row(children: [
+              if (totalFailed > 0)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed:
+                        _clearingQueue ? null : () => _clearQueue('failed'),
+                    icon: const Icon(Icons.cleaning_services_rounded, size: 14),
+                    label: const Text('Fehler loeschen',
+                        style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: BorderSide(
+                          color: Colors.redAccent.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                ),
+              if (totalFailed > 0 && totalSent > 0) const SizedBox(width: 8),
+              if (totalSent > 0)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _clearingQueue ? null : () => _clearQueue('all'),
+                    icon: const Icon(Icons.delete_sweep_rounded, size: 14),
+                    label: const Text('Statistik leeren',
+                        style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white54,
+                      side: const BorderSide(color: Colors.white24),
+                    ),
+                  ),
+                ),
+            ]),
+          ],
           const SizedBox(height: 14),
 
           Container(
@@ -474,7 +546,7 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
                 TextField(
                   controller: _directUsername,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _inputDeco('@Username des Empfaengers'),
+                  decoration: _inputDeco('Name oder @Username des Empfaengers'),
                 ),
                 const SizedBox(height: 10),
                 TextField(
