@@ -93,6 +93,10 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          # GitHub-PAT (GitHub verbietet Secret-Namen die mit GITHUB_ beginnen,
+          # daher heisst das Repo-Secret GH_PAT und wird als Worker-Secret
+          # GITHUB_TOKEN gesetzt -> Auto-Issue-Erstellung der Tool-Werkstatt).
+          GH_PAT: ${{ secrets.GH_PAT }}
           GOOGLE_FACTCHECK_API_KEY: ${{ secrets.GOOGLE_FACTCHECK_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           ALEPH_API_KEY: ${{ secrets.ALEPH_API_KEY }}
@@ -123,6 +127,7 @@ jobs:
           [ -n "${MIGRATION_TOKEN_V15:-}" ]       && set_secret "MIGRATION_TOKEN_V15" "$MIGRATION_TOKEN_V15"           || echo "ℹ️  MIGRATION_TOKEN_V15 nicht gesetzt"
           [ -n "${FCM_SERVICE_ACCOUNT_JSON:-}" ]  && set_secret "FCM_SERVICE_ACCOUNT" "$FCM_SERVICE_ACCOUNT_JSON"        || echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt"
           [ -n "${GROQ_API_KEY:-}" ]              && set_secret "GROQ_API_KEY" "$GROQ_API_KEY"                          || echo "ℹ️  GROQ_API_KEY fehlt"
+          [ -n "${GH_PAT:-}" ]                    && set_secret "GITHUB_TOKEN" "$GH_PAT"                                || echo "ℹ️  GH_PAT fehlt -- Tool-Auto-Issue deaktiviert"
           [ -n "${GEMINI_API_KEY:-}" ]            && set_secret "GEMINI_API_KEY" "$GEMINI_API_KEY"                      || echo "ℹ️  GEMINI_API_KEY fehlt"
           [ -n "${OPENROUTER_API_KEY:-}" ]        && set_secret "OPENROUTER_API_KEY" "$OPENROUTER_API_KEY"              || echo "ℹ️  OPENROUTER_API_KEY fehlt"
           [ -n "${GOOGLE_FACTCHECK_API_KEY:-}" ]  && set_secret "GOOGLE_FACTCHECK_API_KEY" "$GOOGLE_FACTCHECK_API_KEY"  || echo "ℹ️  GOOGLE_FACTCHECK_API_KEY fehlt"
