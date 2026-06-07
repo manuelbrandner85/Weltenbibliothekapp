@@ -79,6 +79,28 @@ class ArchiveVideoService {
     }
   }
 
+  /// C3: Videos, die einem konkreten Lern-Modul zugeordnet sind.
+  Future<List<ArchiveVideo>> fetchByModule({
+    required String world,
+    required String moduleCode,
+  }) async {
+    try {
+      final res = await _db
+          .from('archive_videos')
+          .select()
+          .eq('status', 'confirmed')
+          .eq('module_world', world)
+          .eq('module_code', moduleCode.toUpperCase())
+          .order('created_at', ascending: false);
+      return (res as List)
+          .map((e) => ArchiveVideo.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('ArchiveVideoService.fetchByModule: $e');
+      return [];
+    }
+  }
+
   Future<List<ArchiveVideo>> fetchByCategory({
     required String world,
     required String category,

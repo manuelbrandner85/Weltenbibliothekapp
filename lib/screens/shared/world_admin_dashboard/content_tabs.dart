@@ -1182,6 +1182,10 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
     final selectedWorlds = <String>{
       ...(rawWorlds is List ? rawWorlds.map((e) => e.toString()) : <String>[]),
     };
+    // C3: Modul-Verknuepfung
+    final moduleCodeCtrl = TextEditingController(
+        text: (v['module_code'] as String?) ?? '');
+    String moduleWorld = (v['module_world'] as String?) ?? 'vorhang';
 
     final saved = await showDialog<bool>(
       context: context,
@@ -1267,6 +1271,61 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                         borderSide: BorderSide(color: widget.accent)),
                   ),
                 ),
+                const SizedBox(height: 14),
+                const Text('Modul-Verknüpfung (optional)',
+                    style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
+                        letterSpacing: 1.2)),
+                const SizedBox(height: 6),
+                Row(children: [
+                  SizedBox(
+                    width: 110,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: moduleWorld,
+                        isDense: true,
+                        dropdownColor: const Color(0xFF1A1A2E),
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 12),
+                        items: const [
+                          DropdownMenuItem(
+                              value: 'vorhang', child: Text('Vorhang')),
+                          DropdownMenuItem(
+                              value: 'ursprung', child: Text('Ursprung')),
+                          DropdownMenuItem(
+                              value: 'materie', child: Text('Materie')),
+                          DropdownMenuItem(
+                              value: 'energie', child: Text('Energie')),
+                        ],
+                        onChanged: (val) =>
+                            setLocal(() => moduleWorld = val ?? 'vorhang'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: moduleCodeCtrl,
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        labelText: 'Modul-Code (z.B. V-03)',
+                        labelStyle: const TextStyle(
+                            color: Colors.white38, fontSize: 11),
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.05),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide:
+                                const BorderSide(color: Colors.white12)),
+                      ),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 4),
+                const Text('Leer lassen = keine Verknüpfung',
+                    style: TextStyle(color: Colors.white30, fontSize: 10)),
               ],
             ),
           ),
@@ -1302,6 +1361,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
           ? null
           : categoryCtrl.text.trim(),
       worlds: selectedWorlds.toList(),
+      moduleCode: moduleCodeCtrl.text.trim(),
+      moduleWorld: moduleWorld,
     );
     _snack(ok ? 'Video aktualisiert' : 'Fehler beim Aktualisieren',
         color: ok ? Colors.green : Colors.orange);
@@ -1553,24 +1614,151 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                         ),
                       ),
       ),
-      // Add-Button
+      // C2: Batch-Aktionen wenn wartende Videos da sind
+      if (videos.any((v) => v['status'] == 'pending'))
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _batchBusy ? null : () => _batch('confirm'),
+                icon: const Icon(Icons.done_all_rounded, size: 15),
+                label: const Text('Alle freigeben',
+                    style: TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.green,
+                  side: const BorderSide(color: Colors.green),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _batchBusy ? null : () => _batch('reject'),
+                icon: const Icon(Icons.block_rounded, size: 15),
+                label: const Text('Alle ablehnen',
+                    style: TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  side: const BorderSide(color: Colors.redAccent),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      // Buttons: KI-Vorschläge + Video einpflegen
       Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _addVideo,
-            icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text('Video einpflegen',
-                style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.accent,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: Row(children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _suggestBusy ? null : _openVideoSuggestions,
+              icon: _suggestBusy
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.auto_awesome, size: 15),
+              label: const Text('KI-Vorschläge',
+                  style: TextStyle(fontSize: 12)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: widget.accentBright,
+                side: BorderSide(color: widget.accent),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
             ),
           ),
-        ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _addVideo,
+              icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+              label: const Text('Einpflegen',
+                  style: TextStyle(color: Colors.white, fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.accent,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ]),
       ),
     ]);
+  }
+
+  bool _batchBusy = false;
+  bool _suggestBusy = false;
+
+  // C2: Batch confirm/reject aller wartenden Videos.
+  Future<void> _batch(String action) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        title: Text(
+            action == 'confirm'
+                ? 'Alle wartenden freigeben?'
+                : 'Alle wartenden ablehnen?',
+            style: const TextStyle(color: Colors.white, fontSize: 15)),
+        content: Text(
+            action == 'confirm'
+                ? 'Alle wartenden Videos werden sichtbar geschaltet.'
+                : 'Alle wartenden Videos werden versteckt.',
+            style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      action == 'confirm' ? Colors.green : Colors.redAccent),
+              child: const Text('OK', style: TextStyle(color: Colors.white))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _batchBusy = true);
+    final count = await WorldAdminServiceV162.batchVideos(
+        action: action, allPending: true);
+    if (!mounted) return;
+    setState(() => _batchBusy = false);
+    _snack(
+        count > 0
+            ? '$count Video(s) ${action == 'confirm' ? 'freigegeben' : 'abgelehnt'}'
+            : 'Keine Änderung',
+        color: count > 0 ? Colors.green : Colors.orange);
+    if (count > 0) _load();
+  }
+
+  // C1: KI-Video-Vorschläge als Bottom-Sheet.
+  Future<void> _openVideoSuggestions() async {
+    final world = _worldFilter == 'all' ? 'materie' : _worldFilter;
+    setState(() => _suggestBusy = true);
+    final candidates =
+        await WorldAdminServiceV162.aiSuggestVideos(world: world);
+    if (!mounted) return;
+    setState(() => _suggestBusy = false);
+    if (candidates.isEmpty) {
+      _snack('Keine Vorschläge gefunden', color: Colors.orange);
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _VideoSuggestionsSheet(
+        accent: widget.accent,
+        accentBright: widget.accentBright,
+        world: world,
+        candidates: candidates,
+        onAdded: _load,
+      ),
+    );
   }
 }
 
@@ -2518,6 +2706,261 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
             const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// C1+C4: KI-Video-Vorschläge Sheet — Kandidaten + Qualitätscheck + Einpflegen
+// ═══════════════════════════════════════════════════════════════════════════
+class _VideoSuggestionsSheet extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  final String world;
+  final List<Map<String, dynamic>> candidates;
+  final VoidCallback onAdded;
+  const _VideoSuggestionsSheet({
+    required this.accent,
+    required this.accentBright,
+    required this.world,
+    required this.candidates,
+    required this.onAdded,
+  });
+
+  @override
+  State<_VideoSuggestionsSheet> createState() => _VideoSuggestionsSheetState();
+}
+
+class _VideoSuggestionsSheetState extends State<_VideoSuggestionsSheet> {
+  final Set<String> _busy = {};
+  final Set<String> _added = {};
+  final Map<String, Map<String, dynamic>> _quality = {};
+
+  void _snack(String m, {Color? c}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A2E)));
+  }
+
+  Future<void> _add(Map<String, dynamic> v) async {
+    final vid = v['video_id'] as String? ?? '';
+    if (vid.isEmpty) return;
+    setState(() => _busy.add(vid));
+    final res = await WorldAdminServiceV162.createArchiveVideo(
+      youtubeUrl: 'https://www.youtube.com/watch?v=$vid',
+      worlds: [widget.world],
+      rawTitle: v['title'] as String?,
+      status: 'confirmed',
+    );
+    if (!mounted) return;
+    setState(() {
+      _busy.remove(vid);
+      if (res != null) _added.add(vid);
+    });
+    if (res != null) {
+      _snack('Video eingepflegt', c: Colors.green);
+      widget.onAdded();
+    } else {
+      _snack('Einpflegen fehlgeschlagen', c: Colors.redAccent);
+    }
+  }
+
+  Future<void> _qualityCheck(Map<String, dynamic> v) async {
+    final vid = v['video_id'] as String? ?? '';
+    if (vid.isEmpty) return;
+    setState(() => _busy.add('q_$vid'));
+    final res = await WorldAdminServiceV162.checkVideoQuality(
+      title: v['title']?.toString() ?? '',
+      channel: v['channel_title']?.toString(),
+    );
+    if (!mounted) return;
+    setState(() {
+      _busy.remove('q_$vid');
+      if (res != null) _quality[vid] = res;
+    });
+  }
+
+  Color _scoreColor(int s) {
+    if (s >= 70) return Colors.green;
+    if (s >= 40) return Colors.amber;
+    return Colors.redAccent;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (_, scroll) => ListView(
+        controller: scroll,
+        padding: const EdgeInsets.all(16),
+        children: [
+          Row(children: [
+            Icon(Icons.auto_awesome, color: widget.accentBright, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('KI-Video-Vorschläge · ${widget.world}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white54),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          for (final v in widget.candidates) _buildCandidate(v),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCandidate(Map<String, dynamic> v) {
+    final vid = v['video_id'] as String? ?? '';
+    final added = _added.contains(vid);
+    final q = _quality[vid];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: widget.accent.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                (v['thumbnail_url'] ?? '').toString(),
+                width: 100,
+                height: 56,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 100,
+                  height: 56,
+                  color: Colors.white10,
+                  child: const Icon(Icons.ondemand_video,
+                      color: Colors.white24, size: 20),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text((v['title'] ?? '').toString(),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                  if ((v['channel_title'] ?? '').toString().isNotEmpty)
+                    Text(v['channel_title'].toString(),
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 10)),
+                  if ((v['query'] ?? '').toString().isNotEmpty)
+                    Text('🔎 ${v['query']}',
+                        style: const TextStyle(
+                            color: Colors.white24, fontSize: 9)),
+                ],
+              ),
+            ),
+          ]),
+          if (q != null) ...[
+            const SizedBox(height: 8),
+            Builder(builder: (_) {
+              final score = (q['score'] as num?)?.toInt() ?? 50;
+              final reasons = ((q['reasons'] as List?) ?? const [])
+                  .map((e) => e.toString())
+                  .toList();
+              final c = _scoreColor(score);
+              return Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: c.withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Icon(Icons.verified, size: 12, color: c),
+                      const SizedBox(width: 4),
+                      Text(
+                          'Qualität: $score/100 · ${(q['verdict'] ?? '').toString()}',
+                          style: TextStyle(
+                              color: c,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
+                    ]),
+                    for (final r in reasons)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text('• $r',
+                            style: const TextStyle(
+                                color: Colors.white60, fontSize: 10)),
+                      ),
+                  ],
+                ),
+              );
+            }),
+          ],
+          const SizedBox(height: 8),
+          Row(children: [
+            if (q == null)
+              TextButton.icon(
+                onPressed: _busy.contains('q_$vid')
+                    ? null
+                    : () => _qualityCheck(v),
+                icon: _busy.contains('q_$vid')
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.fact_check, size: 14),
+                label: const Text('KI-Check', style: TextStyle(fontSize: 11)),
+                style: TextButton.styleFrom(
+                    foregroundColor: widget.accentBright),
+              ),
+            const Spacer(),
+            if (added)
+              const Chip(
+                label: Text('Hinzugefügt',
+                    style: TextStyle(color: Colors.green, fontSize: 11)),
+                backgroundColor: Color(0x1A4CAF50),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: _busy.contains(vid) ? null : () => _add(v),
+                icon: _busy.contains(vid)
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.add, size: 15),
+                label: const Text('Einpflegen', style: TextStyle(fontSize: 12)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700,
+                  foregroundColor: Colors.white,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+          ]),
+        ],
       ),
     );
   }

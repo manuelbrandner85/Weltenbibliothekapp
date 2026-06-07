@@ -2395,11 +2395,17 @@ extension WorldAdminServiceV162 on WorldAdminService {
     required String videoId,
     String? category,
     List<String>? worlds,
+    String? moduleCode, // C3: '' loest die Bindung
+    String? moduleWorld,
   }) async {
     try {
       final body = <String, dynamic>{};
       if (category != null) body['category'] = category;
       if (worlds != null) body['worlds'] = worlds;
+      if (moduleCode != null) {
+        body['module_code'] = moduleCode;
+        if (moduleWorld != null) body['module_world'] = moduleWorld;
+      }
       if (body.isEmpty) return false;
       final data = await AdminApiClient.instance
           .patchJson('/api/admin/videos/$videoId', body: body);
@@ -2412,6 +2418,62 @@ extension WorldAdminServiceV162 on WorldAdminService {
     } catch (e) {
       if (kDebugMode) debugPrint('❌ updateArchiveVideo: $e');
       return false;
+    }
+  }
+
+  /// C1: KI-Video-Vorschlaege fuer eine Welt (sucht passende YouTube-Videos).
+  static Future<List<Map<String, dynamic>>> aiSuggestVideos(
+      {required String world}) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/videos/ai-suggest',
+        body: {'world': world},
+      );
+      final list = (data['candidates'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ aiSuggestVideos: $e');
+      return const [];
+    }
+  }
+
+  /// C2: Batch-Aktion fuer mehrere Videos. action = confirm|reject|delete.
+  static Future<int> batchVideos({
+    required String action,
+    List<String>? ids,
+    bool allPending = false,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/videos/batch',
+        body: {
+          'action': action,
+          if (ids != null) 'ids': ids,
+          if (allPending) 'all_pending': true,
+        },
+      );
+      return (data['count'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ batchVideos: $e');
+      return 0;
+    }
+  }
+
+  /// C4: KI-Qualitaetscheck fuer ein Video. {score, verdict, clickbait, reasons}.
+  static Future<Map<String, dynamic>?> checkVideoQuality({
+    required String title,
+    String? channel,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/videos/quality',
+        body: {'title': title, if (channel != null) 'channel': channel},
+      );
+      if (data['success'] == true) return data;
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ checkVideoQuality: $e');
+      return null;
     }
   }
 

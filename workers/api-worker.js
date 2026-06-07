@@ -4997,6 +4997,138 @@ export default {
           return errorResponse(`Suche fehlgeschlagen: ${e.message}`);
         }
       }
+
+      // ── POST /api/admin/videos/ai-suggest  (C1: KI-Video-Vorschlaege) ──
+      // Body: { world }. KI erzeugt Suchbegriffe pro Branch, sucht via Piped,
+      // liefert passende Kandidaten-Videos (mit Branch-Hinweis).
+      if (method === 'POST' && path === '/api/admin/videos/ai-suggest') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = normWorld(body?.world);
+          const branches = WORKSHOP_BRANCHES[world] || [];
+          // KI: 5 konkrete YouTube-Suchbegriffe (deutsch) fuer diese Welt.
+          let queries = [];
+          try {
+            const sys = `Du schlaegst YouTube-Suchbegriffe fuer Lern-Videos der Welt "${world}" vor ` +
+              `(Themen: ${branches.join(', ')}). Antworte als JSON-Array von 5 praezisen deutschen Suchbegriffen (je 2-5 Worte).`;
+            const arr = await aiJson(env, sys, 'Schlage 5 Suchbegriffe vor.', 300);
+            queries = (Array.isArray(arr) ? arr : []).map(String).slice(0, 5);
+          } catch (_) { queries = branches.slice(0, 5); }
+
+          // Bereits vorhandene Video-IDs (Duplikate vermeiden).
+          const existR = await fetch(
+            `${SUPABASE_URL}/rest/v1/archive_videos?select=youtube_video_id`,
+            { headers: svcHeaders });
+          const existIds = new Set(
+            (existR.ok ? await existR.json().catch(() => []) : [])
+              .map((v) => v.youtube_video_id));
+
+          const pipedHosts = ['https://pipedapi.kavin.rocks', 'https://pipedapi.adminforge.de', 'https://api-piped.mha.fi'];
+          const candidates = [];
+          for (const q of queries) {
+            let found = null;
+            for (const host of pipedHosts) {
+              try {
+                const pr = await fetch(`${host}/search?q=${encodeURIComponent(q)}&filter=videos`,
+                  { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' }, signal: AbortSignal.timeout(7000) });
+                if (!pr.ok) continue;
+                const pd = await pr.json();
+                const items = (pd.items || []).filter((i) => i.url && i.url.startsWith('/watch?v='));
+                for (const i of items) {
+                  const vid = i.url.replace('/watch?v=', '').split('&')[0];
+                  if (vid && !existIds.has(vid)) {
+                    found = {
+                      video_id: vid,
+                      title: i.title || '',
+                      thumbnail_url: i.thumbnail || `https://img.youtube.com/vi/${vid}/mqdefault.jpg`,
+                      channel_title: i.uploaderName || null,
+                      query: q,
+                    };
+                    existIds.add(vid);
+                    break;
+                  }
+                }
+                if (found) break;
+              } catch (_) { /* naechster Spiegel */ }
+            }
+            if (found) candidates.push(found);
+          }
+          return jsonResponse({ success: true, world, candidates });
+        } catch (e) { return errorResponse(`Video-KI-Vorschlag-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/videos/batch  (C2: Batch-Freigabe/-Ablehnung) ──
+      // Body: { ids: [...], action: 'confirm'|'reject'|'delete' }
+      //   oder { action, all_pending: true } -> alle pending-Videos.
+      if (method === 'POST' && path === '/api/admin/videos/batch') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const action = String(body?.action || '');
+          if (!['confirm', 'reject', 'delete'].includes(action)) {
+            return errorResponse('action muss confirm|reject|delete sein', 400);
+          }
+          let ids = Array.isArray(body?.ids) ? body.ids.map(String) : [];
+          // all_pending: IDs aller pending-Videos laden.
+          if (body?.all_pending === true) {
+            const pr = await fetch(
+              `${SUPABASE_URL}/rest/v1/archive_videos?status=eq.pending&select=id`,
+              { headers: svcHeaders });
+            ids = (pr.ok ? await pr.json().catch(() => []) : []).map((v) => v.id);
+          }
+          if (ids.length === 0) return jsonResponse({ success: true, count: 0 });
+          const idList = ids.map(encodeURIComponent).join(',');
+
+          let res;
+          if (action === 'delete') {
+            res = await fetch(`${SUPABASE_URL}/rest/v1/archive_videos?id=in.(${idList})`,
+              { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+          } else {
+            const status = action === 'confirm' ? 'confirmed' : 'rejected';
+            res = await fetch(`${SUPABASE_URL}/rest/v1/archive_videos?id=in.(${idList})`,
+              { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify({ status }) });
+          }
+          if (!res.ok && res.status !== 204) {
+            return errorResponse(`Batch-${action} fehlgeschlagen: ${res.status}`);
+          }
+          logAudit(svcHeaders, { admin_username: caller.username, action: `video_batch_${action}`, details: { count: ids.length } });
+          return jsonResponse({ success: true, count: ids.length, action });
+        } catch (e) { return errorResponse(`Batch-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/videos/quality  (C4: KI-Qualitaetscheck) ──
+      // Body: { title, channel? } -> { score, verdict, clickbait, reasons }
+      if (method === 'POST' && path === '/api/admin/videos/quality') {
+        if (!['admin', 'root_admin', 'content_editor', 'moderator'].includes(caller.role)) {
+          return errorResponse('Keine Berechtigung', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const title = String(body?.title || '').slice(0, 300);
+          const channel = String(body?.channel || '').slice(0, 120);
+          if (!title) return errorResponse('title fehlt', 400);
+          const sys = [
+            'Du bewertest die Serioesitaet eines YouTube-Videos anhand von Titel + Kanal.',
+            'Antworte als JSON-Objekt:',
+            '{ "score": 0-100 (Serioesitaet/Qualitaet), "verdict": einer aus "serioes"|"unsicher"|"clickbait",',
+            '  "clickbait": true|false, "reasons": [ kurze Stichpunkte auf Deutsch, max 4 ] }.',
+          ].join('\n');
+          const q = await aiJson(env, sys, `Titel: ${title}\nKanal: ${channel || '(unbekannt)'}`, 300);
+          return jsonResponse({
+            success: true,
+            score: Math.max(0, Math.min(100, Math.round(Number(q.score) || 50))),
+            verdict: ['serioes', 'unsicher', 'clickbait'].includes((q.verdict || '').toLowerCase()) ? q.verdict.toLowerCase() : 'unsicher',
+            clickbait: q.clickbait === true,
+            reasons: Array.isArray(q.reasons) ? q.reasons.map(String).slice(0, 4) : [],
+          });
+        } catch (e) { return errorResponse(`Quality-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/videos  (Liste fuer Admin-Review, alle Status) ──
       // ?world=... &status=pending|confirmed|rejected|all &limit=200
       if (method === 'GET' && path === '/api/admin/videos') {
@@ -5186,8 +5318,16 @@ export default {
             }
             patch.worlds = worlds;
           }
+          // C3: Video <-> Modul-Verknuepfung. module_code='' loest die Bindung.
+          if (body.module_code !== undefined) {
+            const code = String(body.module_code || '').trim().toUpperCase();
+            patch.module_code = code || null;
+            patch.module_world = code
+              ? (VIDEO_WORLDS.has(String(body.module_world)) ? String(body.module_world) : null)
+              : null;
+          }
           if (Object.keys(patch).length === 0) {
-            return errorResponse('Nichts zu aendern (category/worlds)', 400);
+            return errorResponse('Nichts zu aendern (category/worlds/module)', 400);
           }
           const res = await fetch(
             `${SUPABASE_URL}/rest/v1/archive_videos?id=eq.${encodeURIComponent(id)}`,
