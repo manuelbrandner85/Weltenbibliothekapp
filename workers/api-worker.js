@@ -1343,6 +1343,238 @@ async function dispatchPushQueue(env, pushAuth) {
   return { drained: list.length, sent, failed, fcmEnabled: true };
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// SHARED AI CORE (2026-06-07) -- 5-Quellen-Kette fuer ALLE Endpunkte.
+// Groq -> Gemini 2.0 Flash -> OpenRouter -> Workers-AI 70b -> 8b.
+// Top-Level damit /recherche, /api/virgil/chat, Modul-Werkstatt, Video-KI,
+// Moderation etc. dieselbe robuste Pipeline teilen.
+// ══════════════════════════════════════════════════════════════════════════
+
+// Robuste JSON-Extraktion: schneidet das erste balancierte {} oder [] aus
+// einem KI-Text heraus (auch wenn Prosa/Markdown drumherum steht).
+function extractJson(text) {
+  if (!text) return null;
+  let t = String(text).trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fence) t = fence[1].trim();
+  const start = t.search(/[\{\[]/);
+  if (start < 0) return null;
+  const open = t[start];
+  const close = open === '{' ? '}' : ']';
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < t.length; i++) {
+    const c = t[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === open) depth++;
+    else if (c === close) {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(t.slice(start, i + 1)); } catch (_) { return null; }
+      }
+    }
+  }
+  return null;
+}
+
+// Interner Multi-Quellen-Call. jsonMode=true -> Gemini responseMimeType JSON
+// + extractJson; jsonMode=false -> roher Text-Output. Gibt bei JSON-Mode das
+// geparste Objekt zurueck, sonst den String. null/'' bei Totalausfall.
+async function _aiCall(env, systemMsg, userMsg, maxTokens, jsonMode) {
+  const sys = jsonMode
+    ? systemMsg + '\n\nWICHTIG: Antworte AUSSCHLIESSLICH mit gueltigem JSON. ' +
+        'Kein Markdown, keine Code-Fences, keine Erklaerung, kein Text davor oder danach.'
+    : systemMsg;
+  const pick = (content) => jsonMode ? extractJson(content) : (content || '').trim() || null;
+
+  const tryOpenAi = async (apiUrl, apiKey, model, extraHeaders = {}) => {
+    try {
+      const r = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'system', content: sys }, { role: 'user', content: userMsg }],
+          temperature: 0.6,
+          max_tokens: maxTokens,
+        }),
+        signal: AbortSignal.timeout(28000),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        return pick(data?.choices?.[0]?.message?.content || '');
+      }
+    } catch (_) { /* fall through */ }
+    return null;
+  };
+
+  // 1) Groq
+  if (env.GROQ_API_KEY) {
+    const out = await tryOpenAi('https://api.groq.com/openai/v1/chat/completions',
+      env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
+    if (out) return out;
+  }
+  // 2) Gemini 2.0 Flash
+  if (env.GEMINI_API_KEY) {
+    try {
+      const genConfig = { temperature: 0.6, maxOutputTokens: maxTokens };
+      if (jsonMode) genConfig.responseMimeType = 'application/json';
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: sys }] },
+            contents: [{ role: 'user', parts: [{ text: userMsg }] }],
+            generationConfig: genConfig,
+          }),
+          signal: AbortSignal.timeout(28000),
+        },
+      );
+      if (r.ok) {
+        const data = await r.json();
+        const out = pick(data?.candidates?.[0]?.content?.parts?.[0]?.text || '');
+        if (out) return out;
+      }
+    } catch (_) { /* fall through */ }
+  }
+  // 3) OpenRouter (free)
+  if (env.OPENROUTER_API_KEY) {
+    const out = await tryOpenAi('https://openrouter.ai/api/v1/chat/completions',
+      env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct:free',
+      { 'HTTP-Referer': 'https://weltenbibliothek-api.brandy13062.workers.dev', 'X-Title': 'Weltenbibliothek' });
+    if (out) return out;
+  }
+  // 4+5) Workers-AI
+  if (env.AI) {
+    const models = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
+    for (const model of models) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await env.AI.run(model, {
+            messages: [{ role: 'system', content: sys }, { role: 'user', content: userMsg }],
+            max_tokens: maxTokens,
+          });
+          const out = pick(res?.response || '');
+          if (out) return out;
+        } catch (_) { /* naechster Versuch */ }
+      }
+    }
+  }
+  return null;
+}
+
+// Oeffentliche Helfer: aiJson (JSON-Objekt/Array) + aiText (Freitext).
+async function aiJson(env, systemMsg, userMsg, maxTokens = 1200) {
+  const out = await _aiCall(env, systemMsg, userMsg, maxTokens, true);
+  if (out == null) throw new Error('KI lieferte kein gueltiges JSON (alle Quellen versucht)');
+  return out;
+}
+async function aiText(env, systemMsg, userMsg, maxTokens = 800) {
+  const out = await _aiCall(env, systemMsg, userMsg, maxTokens, false);
+  if (out == null) throw new Error('KI lieferte keinen Text (alle Quellen versucht)');
+  return out;
+}
+
+// ── Modul-Werkstatt: Welt-Schema (Top-Level, von Endpunkten + Cron geteilt) ──
+const WORKSHOP_BRANCHES = {
+  materie: ['Recherche-Grundlagen', 'Netzwerk-Analyse', 'Quellenkritik', 'Geopolitik & Macht', 'Wirtschaft & Finanzen', 'Desinformation erkennen'],
+  energie: ['Energiearbeit', 'Meditation & Stille', 'Chakren & Aura', 'Manifestation', 'Intuition & Wahrnehmung', 'Heilung & Balance'],
+  vorhang: ['Machtpsychologie', 'Manipulationserkennung', 'Verhandlung & Überzeugung', 'Körpersprache & Nonverbales', 'Strategisches Denken', 'Schattenarbeit'],
+  ursprung: ['gateway_foundation', 'focus_levels', 'energy_tools', 'patterning_manifestation', 'remote_viewing'],
+};
+const WORKSHOP_WORLDS = ['materie', 'energie', 'vorhang', 'ursprung'];
+function normWorld(w) { return WORKSHOP_WORLDS.includes(w) ? w : 'vorhang'; }
+function tableForWorld(w) { return `${normWorld(w)}_modules`; }
+
+// ══════════════════════════════════════════════════════════════════════════
+// B1: KI-AUTO-SCAN (Cron, 2026-06-07)
+// Periodischer Hintergrund-Scan, der pro Tag EINE Welt prueft und Modul-
+// Vorschlaege in module_suggestions schreibt (Status pending) -- erscheinen
+// dann automatisch im Admin-Dashboard zur Bestaetigung. Quota-schonend:
+// nur 1 Welt/Tag, Quality-Check (gratis) + 1 KI-Vorschlag.
+// ══════════════════════════════════════════════════════════════════════════
+async function runAutoScanCron(env, svcHeaders) {
+  // Welt rotiert nach Tag-im-Jahr -> jede Welt ~alle 4 Tage.
+  const dayOfYear = Math.floor((Date.now() - Date.UTC(new Date().getUTCFullYear(), 0, 0)) / 86400000);
+  const world = WORKSHOP_WORLDS[dayOfYear % WORKSHOP_WORLDS.length];
+  const tbl = tableForWorld(world);
+  const branches = WORKSHOP_BRANCHES[world];
+
+  const listR = await fetch(
+    `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,title,subtitle,xp_reward,theory_content,case_study,exercise_description&order=branch.asc`,
+    { headers: svcHeaders },
+  );
+  const existing = listR.ok ? (await listR.json().catch(() => [])) : [];
+  const rowsToInsert = [];
+
+  // Quality-Check (gratis, keine KI).
+  const placeholderRe = /(\[einfuegen\]|\[bitte ergaenzen\]|\.\.\.tbd|TODO|XXX|Lorem ipsum)/i;
+  for (const m of existing) {
+    const findings = [];
+    if (!m.theory_content || m.theory_content.trim().length < 200) findings.push(`Theorie zu kurz (${(m.theory_content || '').length} Zeichen)`);
+    if (!m.case_study || m.case_study.trim().length < 80) findings.push('Fallstudie fehlt/zu kurz');
+    if (!m.exercise_description || m.exercise_description.trim().length < 50) findings.push('Uebung fehlt/zu kurz');
+    for (const f of ['title', 'theory_content', 'case_study', 'exercise_description']) {
+      if (m[f] && placeholderRe.test(String(m[f]))) findings.push(`${f} enthaelt Platzhalter`);
+    }
+    if (findings.length > 0) {
+      rowsToInsert.push({
+        world, kind: 'quality', status: 'pending', target_module_code: m.module_code,
+        title: m.title || m.module_code, branch: m.branch, quality_findings: findings,
+        rationale: `${findings.length} Qualitaets-Problem(e) in ${m.module_code}`, created_by: 'cron:auto-scan',
+      });
+    }
+  }
+
+  // 1 neues Modul fuer den schwaechsten Branch (KI).
+  try {
+    const perBranch = {};
+    for (const b of branches) perBranch[b] = 0;
+    for (const m of existing) if (perBranch[m.branch] !== undefined) perBranch[m.branch]++;
+    const weakest = Object.entries(perBranch).sort((a, b) => a[1] - b[1])[0]?.[0] || branches[0];
+    const titles = existing.map(m => m.title).filter(Boolean).join('; ');
+    const idea = await aiJson(env,
+      `Du planst ein neues Lern-Modul fuer die Weltenbibliothek (Welt: ${world}, Branch: ${weakest}). ` +
+      'Antworte als JSON-Objekt: { "topic": "...", "rationale": "kurze Begruendung auf Deutsch" }.',
+      `Bereits vorhanden: ${titles || '(keine)'}\n\nWelches Modul fehlt im Branch "${weakest}"?`, 400);
+    const topic = String(idea.topic || '').trim();
+    if (topic.length >= 3) {
+      const mod = await aiJson(env,
+        'Du bist Lehrredaktion der Weltenbibliothek. Erstelle ein vollstaendiges Lern-Modul. ' +
+        'Antworte als JSON: title, subtitle, theory_content (300-600 Worte, Markdown), case_study (150-300 Worte), exercise_description (100-250 Worte), xp_reward (50-200). Deutsch.',
+        `Thema: ${topic}\nBranch: ${weakest}`, 1800);
+      rowsToInsert.push({
+        world, kind: 'new', status: 'pending', branch: weakest,
+        title: String(mod.title || topic).slice(0, 120),
+        subtitle: String(mod.subtitle || '').slice(0, 240),
+        theory_content: String(mod.theory_content || ''),
+        case_study: String(mod.case_study || ''),
+        exercise_description: String(mod.exercise_description || ''),
+        xp_reward: Math.max(50, Math.min(200, Math.round(Number(mod.xp_reward) || 100))),
+        rationale: String(idea.rationale || `Fuellt Luecke im Branch "${weakest}"`).slice(0, 500),
+        created_by: 'cron:auto-scan',
+      });
+    }
+  } catch (e) { console.warn(`[auto-scan/new] ${e.message}`); }
+
+  if (rowsToInsert.length > 0) {
+    // Alte cron-Vorschlaege dieser Welt verwerfen (idempotent).
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/module_suggestions?world=eq.${world}&status=eq.pending&created_by=eq.cron:auto-scan`,
+      { method: 'DELETE', headers: svcHeaders },
+    ).catch(() => {});
+    await fetch(`${SUPABASE_URL}/rest/v1/module_suggestions`, {
+      method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(rowsToInsert),
+    });
+  }
+  return { world, created: rowsToInsert.length };
+}
+
 export default {
   // ⏰ Cron-Trigger — ruft den Dispatcher einmal pro Minute auf.
   async scheduled(event, env, ctx) {
@@ -1372,6 +1604,17 @@ export default {
     } catch (e) {
       console.error('cron numerology-daily failed:', e.message);
     }
+    // 🤖 B1: KI-Auto-Scan -- einmal pro UTC-Tag um ~07:30 (eine Welt/Tag).
+    try {
+      const nowUTC = new Date();
+      if (nowUTC.getUTCHours() === 7 && nowUTC.getUTCMinutes() >= 30 && nowUTC.getUTCMinutes() < 35) {
+        const res = await runAutoScanCron(env, pushAuth);
+        console.log('cron auto-scan:', JSON.stringify(res));
+      }
+    } catch (e) {
+      console.error('cron auto-scan failed:', e.message);
+    }
+
     // 🧹 6h Chat-Reset: ALLE Nachrichten aus allen Räumen löschen.
     // Läuft ca. einmal pro 6h (random 1/360 per Minute-Cron).
     try {
@@ -1771,21 +2014,21 @@ export default {
 
         const allResults = [...dbResults, ...ddgResults, ...wikiResults];
 
-        // ── PHASE 2: KI-Zusammenfassung (Cloudflare Workers AI – kostenlos) ──
+        // ── PHASE 2: KI-Zusammenfassung (5-Quellen-Kette: Groq->Gemini->...) ──
+        // A3 (2026-06-07): nutzt jetzt aiText statt nur llama-3.1-8b -> deutlich
+        // bessere, sachlichere deutsche Zusammenfassungen.
         let aiSummary = null;
-        if (env.AI && allResults.length > 0) {
+        if (allResults.length > 0) {
           try {
-            const context = allResults.slice(0, 5).map(r => `${r.title}: ${r.snippet}`).join('\n');
-            const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-              messages: [
-                { role: 'system', content: 'Du bist ein Recherche-Assistent. Fasse die folgenden Suchergebnisse in 3-5 Sätzen auf Deutsch zusammen. Sei sachlich und informativ.' },
-                { role: 'user', content: `Suchanfrage: "${query}"\n\nErgebnisse:\n${context}` },
-              ],
-              max_tokens: 500,
-            });
-            aiSummary = aiRes?.response || null;
+            const context = allResults.slice(0, 6).map(r => `${r.title}: ${r.snippet}`).join('\n');
+            aiSummary = await aiText(
+              env,
+              'Du bist ein sachlicher Recherche-Assistent. Fasse die Suchergebnisse in 3-5 Saetzen auf Deutsch zusammen. Nur belegbare Aussagen, keine Spekulation, keine Floskeln.',
+              `Suchanfrage: "${query}"\n\nErgebnisse:\n${context}`,
+              500,
+            );
           } catch (aiErr) {
-            // AI ist optional – kein Error
+            // AI ist optional - kein Error
           }
         }
 
@@ -1801,35 +2044,98 @@ export default {
       }
     }
 
-    // ── Rabbit-Hole Recherche ──────────────────────────────────
+    // ── Rabbit-Hole: KI-generierte Kaninchenbau-Pfade (A1, 2026-06-07) ──
+    // Vorher nur Stub (leere connections). Jetzt: die KI schlaegt 6 konkrete
+    // weiterfuehrende Verbindungen vor, jede mit Typ, Aufhaenger und einem
+    // fertigen Suchbegriff zum Tiefer-Graben.
     if (path.startsWith('/api/rabbit-hole')) {
       try {
-        const topic = path.replace('/api/rabbit-hole/', '').replace('/api/rabbit-hole', '');
-        const gatewayUrl = env.OPENCLAW_GATEWAY_URL || 'http://72.62.154.95:50074';
-
+        let topic = '';
         if (method === 'POST') {
-          const body = await request.json();
-          const res = await fetch(`${gatewayUrl}/rabbit-hole`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          }).catch(() => null);
-          if (!res || !res.ok) {
-            return jsonResponse({ connections: [], topic: body.topic || topic });
-          }
-          const data = await res.json();
-          return jsonResponse(data);
+          const body = await request.json().catch(() => ({}));
+          topic = (body.topic || body.query || '').toString().trim();
+        } else {
+          topic = decodeURIComponent(
+            path.replace('/api/rabbit-hole/', '').replace('/api/rabbit-hole', '')
+          ).trim();
         }
+        if (!topic) return jsonResponse({ topic: '', paths: [], connections: [] });
 
-        // GET: Rabbit-Hole für Topic
-        return jsonResponse({
-          topic: decodeURIComponent(topic),
-          connections: [],
-          depth: 0,
-          message: 'Rabbit-Hole-Daten werden geladen...',
-        });
+        const system = [
+          'Du bist VIRGIL, ein investigativer Recherche-Begleiter.',
+          'Zu einem Ausgangsthema schlaegst du weiterfuehrende Recherche-Pfade vor --',
+          'das, was einen Menschen "tiefer in den Kaninchenbau" zieht.',
+          'Antworte als JSON-Objekt mit dem Feld "paths": Array von genau 6 Objekten.',
+          'Jedes Objekt: {',
+          '  "label": kurzer Titel der Verbindung (2-5 Worte),',
+          '  "type": einer aus "person"|"organisation"|"ereignis"|"ort"|"konzept"|"geldfluss"|"dokument",',
+          '  "hook": EIN Satz warum das spannend/relevant ist (sachlich, kein Clickbait),',
+          '  "query": ein praeziser Suchbegriff zum Weitergraben (Eigennamen bevorzugt)',
+          '}.',
+          'Vielfalt: verschiedene Typen mischen. Sachlich bleiben, keine erfundenen Fakten.',
+          'Alles auf Deutsch.',
+        ].join('\n');
+        const user = `Ausgangsthema: "${topic}"\nSchlage 6 weiterfuehrende Recherche-Pfade vor.`;
+
+        let paths = [];
+        try {
+          const parsed = await aiJson(env, system, user, 1000);
+          const raw = Array.isArray(parsed) ? parsed : (parsed.paths || parsed.connections || []);
+          paths = (Array.isArray(raw) ? raw : []).slice(0, 6).map((p) => ({
+            label: (p.label || p.title || '').toString().slice(0, 80),
+            type: (p.type || 'konzept').toString().toLowerCase(),
+            hook: (p.hook || p.why || p.reason || '').toString().slice(0, 240),
+            query: (p.query || p.next_query || p.label || '').toString().slice(0, 120),
+          })).filter((p) => p.label && p.query);
+        } catch (_) { paths = []; }
+
+        return jsonResponse({ topic, paths, connections: paths, depth: 1 });
       } catch (e) {
         return errorResponse(`Rabbit-Hole-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── KI-Dossier: strukturierter Recherche-Report (A2, 2026-06-07) ──
+    // POST /api/kaninchenbau/dossier  Body: { topic, context }
+    //   context = aggregierte Kurzfassung der geladenen Karten (Client baut es).
+    // Liefert ein strukturiertes Dossier (Markdown) + Abschnitte als JSON.
+    if (path === '/api/kaninchenbau/dossier' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const topic = (body.topic || '').toString().trim();
+        const context = (body.context || '').toString().slice(0, 12000);
+        if (!topic) return errorResponse('topic fehlt', 400);
+
+        const system = [
+          'Du bist ein investigativer Analyst. Erstelle aus den vorliegenden',
+          'Recherche-Daten ein strukturiertes Dossier. Streng sachlich, nur was die',
+          'Daten hergeben; markiere Unsicheres als solches. Kein Clickbait.',
+          'Antworte als JSON-Objekt:',
+          '{',
+          '  "summary": 3-4 Saetze Gesamtbild,',
+          '  "actors": [ { "name", "role" } ]  (Schluesselakteure, max 8),',
+          '  "money": [ String ]  (Geld-/Macht-Verbindungen, max 6),',
+          '  "contradictions": [ String ]  (Widersprueche/Ungereimtheiten, max 6),',
+          '  "open_questions": [ String ]  (offene Fragen zum Weitergraben, max 6),',
+          '  "markdown": vollstaendiges Dossier als Markdown (## Abschnitte)',
+          '}.',
+          'Alles auf Deutsch.',
+        ].join('\n');
+        const user = `Thema: "${topic}"\n\nRecherche-Daten:\n${context || '(keine zusaetzlichen Daten -- nutze Allgemeinwissen, kennzeichne das)'}`;
+
+        const d = await aiJson(env, system, user, 2200);
+        return jsonResponse({
+          success: true,
+          topic,
+          summary: (d.summary || '').toString(),
+          actors: Array.isArray(d.actors) ? d.actors.slice(0, 8) : [],
+          money: Array.isArray(d.money) ? d.money.slice(0, 6) : [],
+          contradictions: Array.isArray(d.contradictions) ? d.contradictions.slice(0, 6) : [],
+          open_questions: Array.isArray(d.open_questions) ? d.open_questions.slice(0, 6) : [],
+          markdown: (d.markdown || '').toString(),
+        });
+      } catch (e) {
+        return errorResponse(`Dossier-Fehler: ${e.message}`);
       }
     }
 
@@ -4691,6 +4997,138 @@ export default {
           return errorResponse(`Suche fehlgeschlagen: ${e.message}`);
         }
       }
+
+      // ── POST /api/admin/videos/ai-suggest  (C1: KI-Video-Vorschlaege) ──
+      // Body: { world }. KI erzeugt Suchbegriffe pro Branch, sucht via Piped,
+      // liefert passende Kandidaten-Videos (mit Branch-Hinweis).
+      if (method === 'POST' && path === '/api/admin/videos/ai-suggest') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = normWorld(body?.world);
+          const branches = WORKSHOP_BRANCHES[world] || [];
+          // KI: 5 konkrete YouTube-Suchbegriffe (deutsch) fuer diese Welt.
+          let queries = [];
+          try {
+            const sys = `Du schlaegst YouTube-Suchbegriffe fuer Lern-Videos der Welt "${world}" vor ` +
+              `(Themen: ${branches.join(', ')}). Antworte als JSON-Array von 5 praezisen deutschen Suchbegriffen (je 2-5 Worte).`;
+            const arr = await aiJson(env, sys, 'Schlage 5 Suchbegriffe vor.', 300);
+            queries = (Array.isArray(arr) ? arr : []).map(String).slice(0, 5);
+          } catch (_) { queries = branches.slice(0, 5); }
+
+          // Bereits vorhandene Video-IDs (Duplikate vermeiden).
+          const existR = await fetch(
+            `${SUPABASE_URL}/rest/v1/archive_videos?select=youtube_video_id`,
+            { headers: svcHeaders });
+          const existIds = new Set(
+            (existR.ok ? await existR.json().catch(() => []) : [])
+              .map((v) => v.youtube_video_id));
+
+          const pipedHosts = ['https://pipedapi.kavin.rocks', 'https://pipedapi.adminforge.de', 'https://api-piped.mha.fi'];
+          const candidates = [];
+          for (const q of queries) {
+            let found = null;
+            for (const host of pipedHosts) {
+              try {
+                const pr = await fetch(`${host}/search?q=${encodeURIComponent(q)}&filter=videos`,
+                  { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' }, signal: AbortSignal.timeout(7000) });
+                if (!pr.ok) continue;
+                const pd = await pr.json();
+                const items = (pd.items || []).filter((i) => i.url && i.url.startsWith('/watch?v='));
+                for (const i of items) {
+                  const vid = i.url.replace('/watch?v=', '').split('&')[0];
+                  if (vid && !existIds.has(vid)) {
+                    found = {
+                      video_id: vid,
+                      title: i.title || '',
+                      thumbnail_url: i.thumbnail || `https://img.youtube.com/vi/${vid}/mqdefault.jpg`,
+                      channel_title: i.uploaderName || null,
+                      query: q,
+                    };
+                    existIds.add(vid);
+                    break;
+                  }
+                }
+                if (found) break;
+              } catch (_) { /* naechster Spiegel */ }
+            }
+            if (found) candidates.push(found);
+          }
+          return jsonResponse({ success: true, world, candidates });
+        } catch (e) { return errorResponse(`Video-KI-Vorschlag-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/videos/batch  (C2: Batch-Freigabe/-Ablehnung) ──
+      // Body: { ids: [...], action: 'confirm'|'reject'|'delete' }
+      //   oder { action, all_pending: true } -> alle pending-Videos.
+      if (method === 'POST' && path === '/api/admin/videos/batch') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const action = String(body?.action || '');
+          if (!['confirm', 'reject', 'delete'].includes(action)) {
+            return errorResponse('action muss confirm|reject|delete sein', 400);
+          }
+          let ids = Array.isArray(body?.ids) ? body.ids.map(String) : [];
+          // all_pending: IDs aller pending-Videos laden.
+          if (body?.all_pending === true) {
+            const pr = await fetch(
+              `${SUPABASE_URL}/rest/v1/archive_videos?status=eq.pending&select=id`,
+              { headers: svcHeaders });
+            ids = (pr.ok ? await pr.json().catch(() => []) : []).map((v) => v.id);
+          }
+          if (ids.length === 0) return jsonResponse({ success: true, count: 0 });
+          const idList = ids.map(encodeURIComponent).join(',');
+
+          let res;
+          if (action === 'delete') {
+            res = await fetch(`${SUPABASE_URL}/rest/v1/archive_videos?id=in.(${idList})`,
+              { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } });
+          } else {
+            const status = action === 'confirm' ? 'confirmed' : 'rejected';
+            res = await fetch(`${SUPABASE_URL}/rest/v1/archive_videos?id=in.(${idList})`,
+              { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify({ status }) });
+          }
+          if (!res.ok && res.status !== 204) {
+            return errorResponse(`Batch-${action} fehlgeschlagen: ${res.status}`);
+          }
+          logAudit(svcHeaders, { admin_username: caller.username, action: `video_batch_${action}`, details: { count: ids.length } });
+          return jsonResponse({ success: true, count: ids.length, action });
+        } catch (e) { return errorResponse(`Batch-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/videos/quality  (C4: KI-Qualitaetscheck) ──
+      // Body: { title, channel? } -> { score, verdict, clickbait, reasons }
+      if (method === 'POST' && path === '/api/admin/videos/quality') {
+        if (!['admin', 'root_admin', 'content_editor', 'moderator'].includes(caller.role)) {
+          return errorResponse('Keine Berechtigung', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const title = String(body?.title || '').slice(0, 300);
+          const channel = String(body?.channel || '').slice(0, 120);
+          if (!title) return errorResponse('title fehlt', 400);
+          const sys = [
+            'Du bewertest die Serioesitaet eines YouTube-Videos anhand von Titel + Kanal.',
+            'Antworte als JSON-Objekt:',
+            '{ "score": 0-100 (Serioesitaet/Qualitaet), "verdict": einer aus "serioes"|"unsicher"|"clickbait",',
+            '  "clickbait": true|false, "reasons": [ kurze Stichpunkte auf Deutsch, max 4 ] }.',
+          ].join('\n');
+          const q = await aiJson(env, sys, `Titel: ${title}\nKanal: ${channel || '(unbekannt)'}`, 300);
+          return jsonResponse({
+            success: true,
+            score: Math.max(0, Math.min(100, Math.round(Number(q.score) || 50))),
+            verdict: ['serioes', 'unsicher', 'clickbait'].includes((q.verdict || '').toLowerCase()) ? q.verdict.toLowerCase() : 'unsicher',
+            clickbait: q.clickbait === true,
+            reasons: Array.isArray(q.reasons) ? q.reasons.map(String).slice(0, 4) : [],
+          });
+        } catch (e) { return errorResponse(`Quality-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/videos  (Liste fuer Admin-Review, alle Status) ──
       // ?world=... &status=pending|confirmed|rejected|all &limit=200
       if (method === 'GET' && path === '/api/admin/videos') {
@@ -4880,8 +5318,16 @@ export default {
             }
             patch.worlds = worlds;
           }
+          // C3: Video <-> Modul-Verknuepfung. module_code='' loest die Bindung.
+          if (body.module_code !== undefined) {
+            const code = String(body.module_code || '').trim().toUpperCase();
+            patch.module_code = code || null;
+            patch.module_world = code
+              ? (VIDEO_WORLDS.has(String(body.module_world)) ? String(body.module_world) : null)
+              : null;
+          }
           if (Object.keys(patch).length === 0) {
-            return errorResponse('Nichts zu aendern (category/worlds)', 400);
+            return errorResponse('Nichts zu aendern (category/worlds/module)', 400);
           }
           const res = await fetch(
             `${SUPABASE_URL}/rest/v1/archive_videos?id=eq.${encodeURIComponent(id)}`,
@@ -5032,6 +5478,122 @@ export default {
           });
           return jsonResponse({ success: true });
         } catch (e) { return errorResponse(`article-PATCH-Fehler: ${e.message}`); }
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // B3: KI-ARTIKEL-WERKSTATT (2026-06-07)
+      //   POST /api/admin/article-workshop/generate { topic, world }
+      //   POST /api/admin/article-workshop/expand   { title, content, world }
+      //   POST /api/admin/article-workshop/save     { title, content, world, ... }
+      // ════════════════════════════════════════════════════════════════
+      if (method === 'POST' && path.startsWith('/api/admin/article-workshop/')) {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        const action = path.split('/').pop();
+        const worldList = ['materie', 'energie', 'vorhang', 'ursprung'];
+        const worldContextMap = {
+          materie: 'Recherche, Geopolitik, Wirtschaft, Aufklaerung, kritisches Denken',
+          energie: 'Spiritualitaet, Energiearbeit, Meditation, Bewusstsein, Heilung',
+          vorhang: 'Machtpsychologie, Manipulation, Strategie, Menschenkenntnis',
+          ursprung: 'Bewusstsein, Gateway-Erfahrungen, Manifestation, Remote Viewing',
+        };
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = worldList.includes(body?.world) ? body.world : 'materie';
+
+          if (action === 'generate') {
+            const topic = String(body?.topic || '').trim();
+            if (topic.length < 3) return errorResponse('topic fehlt', 400);
+            const system = [
+              'Du bist Redakteur der Weltenbibliothek-App.',
+              `Thema-Welt: ${world} (${worldContextMap[world]}).`,
+              'Schreibe einen fundierten, sachlichen Artikel. Kein Clickbait, keine Floskeln.',
+              'Antworte als JSON-Objekt:',
+              '{ "title" (max 90 Zeichen), "excerpt" (1-2 Saetze Teaser),',
+              '  "content" (600-1200 Worte, Markdown: ## Ueberschriften, **fett**, Listen),',
+              '  "category" (1 Wort), "tags" (Array aus 3-6 Schlagworten) }.',
+              'Alles auf Deutsch.',
+            ].join('\n');
+            const a = await aiJson(env, system, `Thema: ${topic}`, 2400);
+            return jsonResponse({
+              success: true,
+              article: {
+                title: String(a.title || topic).slice(0, 200),
+                excerpt: String(a.excerpt || '').slice(0, 400),
+                content: String(a.content || ''),
+                category: String(a.category || '').slice(0, 60),
+                tags: Array.isArray(a.tags) ? a.tags.map(String).slice(0, 6) : [],
+                world,
+              },
+            });
+          }
+
+          if (action === 'expand') {
+            const title = String(body?.title || '').trim();
+            const content = String(body?.content || '').trim();
+            if (!title && !content) return errorResponse('title/content noetig', 400);
+            const system = [
+              'Du baust einen bestehenden Artikel der Weltenbibliothek substantiell aus.',
+              'Vertiefe Argumente, ergaenze Beispiele/Quellenhinweise, behalte Thema + Stil bei.',
+              'Antworte als JSON-Objekt: { "title", "excerpt", "content" (Markdown), "category", "tags" (Array) }. Deutsch.',
+            ].join('\n');
+            const a = await aiJson(env, system, `Titel: ${title}\n\nInhalt:\n${content}`, 2600);
+            return jsonResponse({
+              success: true,
+              article: {
+                title: String(a.title || title).slice(0, 200),
+                excerpt: String(a.excerpt || '').slice(0, 400),
+                content: String(a.content || content),
+                category: String(a.category || '').slice(0, 60),
+                tags: Array.isArray(a.tags) ? a.tags.map(String).slice(0, 6) : [],
+                world,
+              },
+            });
+          }
+
+          if (action === 'save') {
+            const title = String(body?.title || '').trim();
+            const content = String(body?.content || '').trim();
+            if (!title) return errorResponse('title pflicht', 400);
+            const editId = body?.edit_id ? String(body.edit_id) : null;
+            const isPublished = body?.is_published !== false;
+            const category = body?.category ? String(body.category).slice(0, 60) : null;
+            const tags = Array.isArray(body?.tags) ? body.tags.map(String).slice(0, 8) : [];
+            const excerpt = body?.excerpt ? String(body.excerpt).slice(0, 400) : null;
+
+            if (editId) {
+              const patch = { title, content, world, category, tags, updated_at: new Date().toISOString() };
+              if (excerpt) patch.excerpt = excerpt;
+              const r = await fetch(`${SUPABASE_URL}/rest/v1/articles?id=eq.${encodeURIComponent(editId)}`,
+                { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify(patch) });
+              if (!r.ok) return errorResponse(`Artikel-Update ${r.status}`, r.status);
+              logAudit(svcHeaders, { admin_username: caller.username, action: 'article_ai_update', target_id: editId, details: { world } });
+              return jsonResponse({ success: true, action: 'updated', id: editId });
+            }
+
+            // Slug aus Titel + kurzer Zufallssuffix (Eindeutigkeit).
+            const slug = title.toLowerCase()
+              .replace(/[äöüß]/g, (c) => ({ 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss' }[c]))
+              .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
+              + '-' + Math.random().toString(36).slice(2, 7);
+            const row = {
+              title, slug, content, world,
+              username: caller.username || 'Redaktion',
+              category, tags,
+              is_published: isPublished,
+              published_at: isPublished ? new Date().toISOString() : null,
+            };
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/articles`,
+              { method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify(row) });
+            if (!r.ok) { const t = await r.text().catch(() => ''); return errorResponse(`Artikel-Insert ${r.status}: ${t.slice(0, 200)}`, r.status); }
+            const created = await r.json().catch(() => []);
+            logAudit(svcHeaders, { admin_username: caller.username, action: 'article_ai_create', target_id: created?.[0]?.id, details: { world, slug } });
+            return jsonResponse({ success: true, action: 'created', id: created?.[0]?.id, slug });
+          }
+
+          return errorResponse('Unbekannte Aktion', 404);
+        } catch (e) { return errorResponse(`article-workshop ${action} Fehler: ${e.message}`); }
       }
 
       // ── GET /api/admin/push/stats  (Zustellstatistiken notification_queue) ──
@@ -5693,6 +6255,44 @@ export default {
           }
           return jsonResponse({ success: true, reports: rows, counts, by_type: byType });
         } catch (e) { return errorResponse(`Reports-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/reports/triage  (B2: KI-Moderation, 2026-06-07) ──
+      // Body: { title, body?, type? }  -> klassifiziert eine Meldung.
+      // Returns: { severity, action, summary }.
+      if (method === 'POST' && path === '/api/admin/reports/triage') {
+        try {
+          if (!['admin', 'root_admin', 'moderator'].includes(caller.role)) {
+            return errorResponse('Keine Berechtigung', 403);
+          }
+          const body = await request.json().catch(() => ({}));
+          const title = String(body.title || '').slice(0, 300);
+          const text = String(body.body || '').slice(0, 3000);
+          const type = String(body.type || 'content');
+          if (!title && !text) return errorResponse('title oder body noetig', 400);
+
+          const system = [
+            'Du bist Moderations-Assistent einer Community-App. Klassifiziere eine Nutzer-Meldung.',
+            'Antworte als JSON-Objekt:',
+            '{',
+            '  "severity": einer aus "niedrig"|"mittel"|"hoch"|"kritisch",',
+            '  "action": kurzer konkreter Handlungsvorschlag fuer den Moderator (1 Satz, Deutsch),',
+            '  "summary": 1-Satz-Zusammenfassung der Meldung (Deutsch)',
+            '}.',
+            'kritisch = Gewaltandrohung/illegale Inhalte/akute Gefahr. hoch = Hassrede/Belaestigung.',
+            'mittel = Spam/Regelverstoss. niedrig = Feedback/Bagatelle.',
+          ].join('\n');
+          const user = `Meldungstyp: ${type}\nTitel: ${title}\nInhalt: ${text || '(kein Text)'}`;
+          const c = await aiJson(env, system, user, 300);
+          const sev = ['niedrig', 'mittel', 'hoch', 'kritisch'].includes((c.severity || '').toLowerCase())
+            ? c.severity.toLowerCase() : 'mittel';
+          return jsonResponse({
+            success: true,
+            severity: sev,
+            action: String(c.action || '').slice(0, 300),
+            summary: String(c.summary || '').slice(0, 300),
+          });
+        } catch (e) { return errorResponse(`Triage-Fehler: ${e.message}`); }
       }
 
       // ── PATCH /api/admin/reports/:id  (Status setzen + reviewer) ──
@@ -7809,174 +8409,14 @@ export default {
       //   GET  /api/admin/module-workshop/list      -> Vollst. Liste fuer Edit
       // Welt-Param: 'vorhang' oder 'ursprung' -> bestimmt die Tabelle.
 
-      // Hilfs-Schema: bekannte Branches pro Welt (Auto-Wahl + Validierung).
-      // 2026-06-07: alle 4 Welten (materie, energie, vorhang, ursprung).
-      const WORKSHOP_BRANCHES = {
-        materie: [
-          'Recherche-Grundlagen',
-          'Netzwerk-Analyse',
-          'Quellenkritik',
-          'Geopolitik & Macht',
-          'Wirtschaft & Finanzen',
-          'Desinformation erkennen',
-        ],
-        energie: [
-          'Energiearbeit',
-          'Meditation & Stille',
-          'Chakren & Aura',
-          'Manifestation',
-          'Intuition & Wahrnehmung',
-          'Heilung & Balance',
-        ],
-        vorhang: [
-          'Machtpsychologie',
-          'Manipulationserkennung',
-          'Verhandlung & Überzeugung',
-          'Körpersprache & Nonverbales',
-          'Strategisches Denken',
-          'Schattenarbeit',
-        ],
-        ursprung: [
-          'gateway_foundation',
-          'focus_levels',
-          'energy_tools',
-          'patterning_manifestation',
-          'remote_viewing',
-        ],
-      };
-      const WORKSHOP_WORLDS = ['materie', 'energie', 'vorhang', 'ursprung'];
-      const normWorld = (w) => WORKSHOP_WORLDS.includes(w) ? w : 'vorhang';
-      const tableForWorld = (w) => `${normWorld(w)}_modules`;
+      // WORKSHOP_BRANCHES / WORKSHOP_WORLDS / normWorld / tableForWorld sind
+      // jetzt Top-Level (s.o.) damit auch der Cron-Auto-Scan sie nutzen kann.
 
-      // Robuste JSON-Extraktion: schneidet das erste balancierte {} oder []
-      // aus einem KI-Text heraus (auch wenn Prosa drumherum steht). Beachtet
-      // Strings + Escapes, damit Klammern in Texten nicht mitzaehlen.
-      const extractJson = (text) => {
-        if (!text) return null;
-        let t = String(text).trim();
-        const fence = t.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (fence) t = fence[1].trim();
-        const start = t.search(/[\{\[]/);
-        if (start < 0) return null;
-        const open = t[start];
-        const close = open === '{' ? '}' : ']';
-        let depth = 0, inStr = false, esc = false;
-        for (let i = start; i < t.length; i++) {
-          const c = t[i];
-          if (esc) { esc = false; continue; }
-          if (c === '\\') { esc = true; continue; }
-          if (c === '"') { inStr = !inStr; continue; }
-          if (inStr) continue;
-          if (c === open) depth++;
-          else if (c === close) {
-            depth--;
-            if (depth === 0) {
-              try { return JSON.parse(t.slice(start, i + 1)); } catch (_) { return null; }
-            }
-          }
-        }
-        return null;
-      };
-
-      // Hilfs-Funktion: KI-Call mit zuverlaessigem JSON-Output.
-      // Strategie (von zuverlaessig nach Fallback):
-      //   1) Groq llama-3.3-70b (wenn GROQ_API_KEY) -- folgt JSON-Anweisungen am besten
-      //   2) Google Gemini 2.0 Flash (wenn GEMINI_API_KEY) -- bestes Deutsch
-      //   3) OpenRouter (wenn OPENROUTER_API_KEY) -- viele Free-Modelle
-      //   4) Workers-AI llama-3.3-70b-fp8-fast -- deutlich besser als 3.1-8b
-      //   5) Workers-AI llama-3.1-8b -- letzter Fallback
-      // Jeweils mit robuster Extraktion + Retry. Jede zusaetzliche Quelle
-      // erhoeht die Wahrscheinlichkeit auf gueltiges JSON -> keine "0 Ergebnisse".
-      async function workshopAiJson(systemMsg, userMsg, maxTokens = 1200) {
-        const strictSystem = systemMsg +
-          '\n\nWICHTIG: Antworte AUSSCHLIESSLICH mit gueltigem JSON. ' +
-          'Kein Markdown, keine Code-Fences, keine Erklaerung, kein Text davor oder danach.';
-
-        // Helper: OpenAI-kompatibler Chat-Endpunkt (Groq + OpenRouter teilen das Format)
-        const tryOpenAiCompatible = async (url, apiKey, model, extraHeaders = {}) => {
-          try {
-            const r = await fetch(url, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                ...extraHeaders,
-              },
-              body: JSON.stringify({
-                model,
-                messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userMsg }],
-                temperature: 0.6,
-                max_tokens: maxTokens,
-              }),
-              signal: AbortSignal.timeout(28000),
-            });
-            if (r.ok) {
-              const data = await r.json();
-              return extractJson(data?.choices?.[0]?.message?.content || '');
-            }
-          } catch (_) { /* fall through */ }
-          return null;
-        };
-
-        // 1) Groq
-        if (env.GROQ_API_KEY) {
-          const parsed = await tryOpenAiCompatible(
-            'https://api.groq.com/openai/v1/chat/completions',
-            env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
-          if (parsed) return parsed;
-        }
-
-        // 2) Google Gemini 2.0 Flash (eigenes Request-Format)
-        if (env.GEMINI_API_KEY) {
-          try {
-            const r = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  systemInstruction: { parts: [{ text: strictSystem }] },
-                  contents: [{ role: 'user', parts: [{ text: userMsg }] }],
-                  generationConfig: { temperature: 0.6, maxOutputTokens: maxTokens, responseMimeType: 'application/json' },
-                }),
-                signal: AbortSignal.timeout(28000),
-              },
-            );
-            if (r.ok) {
-              const data = await r.json();
-              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-              const parsed = extractJson(txt);
-              if (parsed) return parsed;
-            }
-          } catch (_) { /* fall through */ }
-        }
-
-        // 3) OpenRouter (kostenlose Modelle)
-        if (env.OPENROUTER_API_KEY) {
-          const parsed = await tryOpenAiCompatible(
-            'https://openrouter.ai/api/v1/chat/completions',
-            env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct:free',
-            { 'HTTP-Referer': 'https://weltenbibliothek-api.brandy13062.workers.dev', 'X-Title': 'Weltenbibliothek' });
-          if (parsed) return parsed;
-        }
-
-        // 4+5) Workers-AI mit staerkerem Modell + Fallback + Retry
-        if (!env.AI) throw new Error('Keine KI verfuegbar (keine API-Keys + kein Workers-AI)');
-        const models = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
-        for (const model of models) {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              const res = await env.AI.run(model, {
-                messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userMsg }],
-                max_tokens: maxTokens,
-              });
-              const parsed = extractJson(res?.response || '');
-              if (parsed) return parsed;
-            } catch (_) { /* naechster Versuch */ }
-          }
-        }
-        throw new Error('KI lieferte kein gueltiges JSON (alle Quellen versucht)');
-      }
+      // workshopAiJson -> nutzt jetzt den globalen aiJson-Helper (5-Quellen-Kette).
+      // Bleibt als duenner Alias erhalten damit die bestehenden Call-Sites
+      // unveraendert weiterlaufen.
+      const workshopAiJson = (systemMsg, userMsg, maxTokens = 1200) =>
+        aiJson(env, systemMsg, userMsg, maxTokens);
 
       // ── POST /api/admin/module-workshop/topics ─────────────────────
       // Body: { hint: 'Freitext (kurz)', world: 'vorhang'|'ursprung' }
@@ -9831,43 +10271,35 @@ export default {
       try {
         const body = await request.json();
         const messages = Array.isArray(body.messages) ? body.messages : [];
-        const system = body.system || 'Du bist VIRGIL, ein investigativer KI-Begleiter. Antworte auf Deutsch, knapp, präzise.';
-        const maxTokens = Math.min(body.max_tokens || 600, 1500);
+        const maxTokens = Math.min(body.max_tokens || 700, 1500);
 
-        // Bevorzugt Groq (700+ tok/s, Llama 3 70B), Fallback Workers AI Llama 8B
-        if (env.GROQ_API_KEY) {
-          const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${env.GROQ_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
-              messages: [{ role: 'system', content: system }, ...messages],
-              max_tokens: maxTokens,
-              temperature: 0.6,
-            }),
-          });
-          if (r.ok) {
-            const data = await r.json();
-            return jsonResponse({
-              answer: data?.choices?.[0]?.message?.content || '',
-              model: 'groq-llama-3.3-70b',
-            });
-          }
+        // A4 (2026-06-07): RAG-Kontext. Der Client kann `context` (Zusammen-
+        // fassung der geladenen Recherche-Karten) + `topic` mitschicken.
+        // Virgil beantwortet Fragen dann AUF BASIS dieser Daten statt generisch.
+        const topic = (body.topic || '').toString().trim();
+        const context = (body.context || '').toString().slice(0, 8000);
+
+        let system = body.system || 'Du bist VIRGIL, ein investigativer KI-Begleiter der Weltenbibliothek. Antworte auf Deutsch, knapp, praezise und sachlich.';
+        if (context) {
+          system += `\n\nDir liegen aktuelle Recherche-Daten${topic ? ` zum Thema "${topic}"` : ''} vor. ` +
+            'Beziehe deine Antwort primaer auf diese Daten. Wenn etwas nicht in den Daten steht, sage das offen statt zu spekulieren. ' +
+            'Nenne bei konkreten Aussagen die jeweilige Quelle/Karte.\n\n--- RECHERCHE-DATEN ---\n' + context + '\n--- ENDE DATEN ---';
         }
 
-        // Fallback: Workers AI
-        if (!env.AI) return errorResponse('Kein AI-Backend verfügbar', 503);
-        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-          messages: [{ role: 'system', content: system }, ...messages],
-          max_tokens: maxTokens,
-        });
-        return jsonResponse({
-          answer: res?.response || '',
-          model: 'workers-ai-llama-3.1-8b',
-        });
+        // Konversation zu einem User-Prompt verflachen (aiText nimmt 1 User-Msg).
+        let userMsg;
+        if (messages.length <= 1) {
+          userMsg = (messages[0]?.content || '').toString();
+        } else {
+          userMsg = messages
+            .map((m) => `${m.role === 'assistant' ? 'VIRGIL' : 'NUTZER'}: ${m.content}`)
+            .join('\n') + '\n\nVIRGIL:';
+        }
+        if (!userMsg.trim()) return errorResponse('Keine Nachricht', 400);
+
+        // 5-Quellen-Kette (Groq -> Gemini -> OpenRouter -> Workers-AI).
+        const answer = await aiText(env, system, userMsg, maxTokens);
+        return jsonResponse({ answer, model: 'multi-source-chain' });
       } catch (e) {
         return errorResponse(`Virgil-Chat-Fehler: ${e.message}`);
       }

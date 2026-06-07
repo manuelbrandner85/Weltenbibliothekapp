@@ -2159,6 +2159,95 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  // ── B2: KI-MODERATION ─────────────────────────────────────────────────────
+
+  /// Klassifiziert eine Meldung per KI. Liefert {severity, action, summary}.
+  static Future<Map<String, dynamic>?> triageReport({
+    required String title,
+    String? body,
+    String? type,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/reports/triage',
+        body: {
+          'title': title,
+          if (body != null && body.isNotEmpty) 'body': body,
+          if (type != null) 'type': type,
+        },
+      );
+      if (data['success'] == true) return data;
+      return null;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ triageReport: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ triageReport: $e');
+      return null;
+    }
+  }
+
+  // ── B3: KI-ARTIKEL-WERKSTATT ──────────────────────────────────────────────
+
+  /// Generiert einen kompletten Artikel-Entwurf aus einem Thema.
+  static Future<Map<String, dynamic>?> generateArticle({
+    required String topic,
+    required String world,
+  }) async {
+    return _articleWorkshop('generate', {'topic': topic, 'world': world});
+  }
+
+  /// Baut einen bestehenden Artikel-Entwurf per KI aus.
+  static Future<Map<String, dynamic>?> expandArticle({
+    required String title,
+    required String content,
+    required String world,
+  }) async {
+    return _articleWorkshop(
+        'expand', {'title': title, 'content': content, 'world': world});
+  }
+
+  /// Speichert/veroeffentlicht einen Artikel (neu oder Update via editId).
+  static Future<Map<String, dynamic>?> saveArticle({
+    required String title,
+    required String content,
+    required String world,
+    String? excerpt,
+    String? category,
+    List<String>? tags,
+    bool isPublished = true,
+    String? editId,
+  }) async {
+    return _articleWorkshop('save', {
+      'title': title,
+      'content': content,
+      'world': world,
+      if (excerpt != null) 'excerpt': excerpt,
+      if (category != null) 'category': category,
+      if (tags != null) 'tags': tags,
+      'is_published': isPublished,
+      if (editId != null) 'edit_id': editId,
+    });
+  }
+
+  static Future<Map<String, dynamic>?> _articleWorkshop(
+      String action, Map<String, dynamic> body) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/article-workshop/$action', body: body);
+      if (data['success'] == true) return data;
+      return null;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ articleWorkshop/$action: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ articleWorkshop/$action: $e');
+      return null;
+    }
+  }
+
   // ── VIDEO-ARCHIV (Mediathek) ──────────────────────────────────────────────
 
   /// Laedt Videos fuer das Admin-Review (alle Status oder gefiltert).
@@ -2306,11 +2395,17 @@ extension WorldAdminServiceV162 on WorldAdminService {
     required String videoId,
     String? category,
     List<String>? worlds,
+    String? moduleCode, // C3: '' loest die Bindung
+    String? moduleWorld,
   }) async {
     try {
       final body = <String, dynamic>{};
       if (category != null) body['category'] = category;
       if (worlds != null) body['worlds'] = worlds;
+      if (moduleCode != null) {
+        body['module_code'] = moduleCode;
+        if (moduleWorld != null) body['module_world'] = moduleWorld;
+      }
       if (body.isEmpty) return false;
       final data = await AdminApiClient.instance
           .patchJson('/api/admin/videos/$videoId', body: body);
@@ -2323,6 +2418,62 @@ extension WorldAdminServiceV162 on WorldAdminService {
     } catch (e) {
       if (kDebugMode) debugPrint('❌ updateArchiveVideo: $e');
       return false;
+    }
+  }
+
+  /// C1: KI-Video-Vorschlaege fuer eine Welt (sucht passende YouTube-Videos).
+  static Future<List<Map<String, dynamic>>> aiSuggestVideos(
+      {required String world}) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/videos/ai-suggest',
+        body: {'world': world},
+      );
+      final list = (data['candidates'] as List?) ?? const [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ aiSuggestVideos: $e');
+      return const [];
+    }
+  }
+
+  /// C2: Batch-Aktion fuer mehrere Videos. action = confirm|reject|delete.
+  static Future<int> batchVideos({
+    required String action,
+    List<String>? ids,
+    bool allPending = false,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/videos/batch',
+        body: {
+          'action': action,
+          if (ids != null) 'ids': ids,
+          if (allPending) 'all_pending': true,
+        },
+      );
+      return (data['count'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ batchVideos: $e');
+      return 0;
+    }
+  }
+
+  /// C4: KI-Qualitaetscheck fuer ein Video. {score, verdict, clickbait, reasons}.
+  static Future<Map<String, dynamic>?> checkVideoQuality({
+    required String title,
+    String? channel,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/videos/quality',
+        body: {'title': title, if (channel != null) 'channel': channel},
+      );
+      if (data['success'] == true) return data;
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ checkVideoQuality: $e');
+      return null;
     }
   }
 

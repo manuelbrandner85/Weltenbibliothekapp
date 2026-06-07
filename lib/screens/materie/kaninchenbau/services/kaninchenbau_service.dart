@@ -724,13 +724,15 @@ LIMIT 60
       final system =
           'Du bist VIRGIL, ein investigativer Recherche-KI im Stil eines erfahrenen '
           'Whistleblower-Beraters. Du sprichst Deutsch, knapp, präzise, ohne Floskeln. '
-          'Aktuelles Thema des Users: "$topic". '
-          '${cardContext != null ? "Bekannte Fakten aus den Karten: $cardContext" : ""} '
           'Antworte direkt auf die Frage des Users — wenn etwas unklar ist, '
           'sage was du nicht weißt. Schlage konkrete nächste Recherche-Schritte vor.';
 
+      // A4 (2026-06-07): topic + context als eigene Felder -> der Worker baut
+      // daraus einen RAG-Kontext und Virgil antwortet auf Basis der Karten.
       final body = jsonEncode({
         'system': system,
+        'topic': topic,
+        if (cardContext != null && cardContext.isNotEmpty) 'context': cardContext,
         'messages': messages,
         'max_tokens': 800,
       });
@@ -750,6 +752,54 @@ LIMIT 60
           .trim();
     } catch (e) {
       debugPrint('VIRGIL-Chat-Error: $e');
+      return null;
+    }
+  }
+
+  /// A1: KI-generierte Kaninchenbau-Pfade (weiterfuehrende Verbindungen).
+  /// Ruft /api/rabbit-hole und liefert reiche Pfade (Typ, Aufhaenger, Suchbegriff).
+  Future<List<RabbitPath>> fetchRabbitHolePaths(String topic) async {
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/rabbit-hole'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'topic': topic}),
+          )
+          .timeout(const Duration(seconds: 35));
+      if (resp.statusCode != 200) return const [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final raw = (data['paths'] as List?) ?? (data['connections'] as List?) ?? const [];
+      return raw
+          .whereType<Map>()
+          .map((e) => RabbitPath.fromJson(Map<String, dynamic>.from(e)))
+          .where((p) => p.label.isNotEmpty && p.query.isNotEmpty)
+          .toList();
+    } catch (e) {
+      debugPrint('RabbitHole-Error: $e');
+      return const [];
+    }
+  }
+
+  /// A2: KI-Dossier aus den geladenen Karten-Daten generieren.
+  Future<Dossier?> generateDossier(String topic, {String? context}) async {
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/dossier'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'topic': topic,
+              if (context != null && context.isNotEmpty) 'context': context,
+            }),
+          )
+          .timeout(const Duration(seconds: 45));
+      if (resp.statusCode != 200) return null;
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (data['success'] != true) return null;
+      return Dossier.fromJson(data);
+    } catch (e) {
+      debugPrint('Dossier-Error: $e');
       return null;
     }
   }

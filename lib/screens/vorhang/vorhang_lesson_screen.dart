@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/api_config.dart';
+import '../../services/archive_video_service.dart'; // C3: kuratierte Modul-Videos
 import '../../services/gamification_service.dart';
 import '../../services/xp_retry_queue.dart';
 import '../../services/module_rating_service.dart'; // ⭐ V-X5
@@ -98,22 +99,44 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
     if (_loadingVideos || _videos.isNotEmpty) return;
     setState(() => _loadingVideos = true);
     try {
+      // C3: zuerst kuratierte (vom Admin zugeordnete) Videos laden.
+      final curated = await ArchiveVideoService.instance.fetchByModule(
+        world: 'vorhang',
+        moduleCode: widget.moduleCode,
+      );
+      final curatedMapped = curated
+          .map((v) => <String, dynamic>{
+                'videoId': v.youtubeVideoId,
+                'title': v.title.isNotEmpty ? v.title : v.rawTitle,
+                'thumbnail': v.effectiveThumbnail,
+                'curated': true,
+              })
+          .toList();
+
       final uri = Uri.parse(
         '${ApiConfig.workerUrl}/api/vorhang/youtube/${Uri.encodeComponent(widget.moduleCode)}',
       );
       final res = await http.get(uri, headers: {
         'Accept': 'application/json'
       }).timeout(const Duration(seconds: 15));
+      final fetched = <Map<String, dynamic>>[];
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final list = (data['videos'] as List?) ?? const [];
-        setState(() {
-          _videos = list
-              .whereType<Map>()
-              .map((e) => e.cast<String, dynamic>())
-              .toList();
-        });
+        fetched.addAll(list
+            .whereType<Map>()
+            .map((e) => e.cast<String, dynamic>()));
       }
+      // Kuratierte zuerst, dann Suchergebnisse (ohne Duplikate).
+      final seen = curatedMapped
+          .map((e) => e['videoId'] as String?)
+          .whereType<String>()
+          .toSet();
+      final merged = [
+        ...curatedMapped,
+        ...fetched.where((e) => !seen.contains(e['videoId'] as String?)),
+      ];
+      if (mounted) setState(() => _videos = merged);
     } catch (_) {
       // silent
     } finally {
