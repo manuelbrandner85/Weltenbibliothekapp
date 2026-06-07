@@ -1468,14 +1468,17 @@ async function _aiCall(env, systemMsg, userMsg, maxTokens, jsonMode) {
 }
 
 // Oeffentliche Helfer: aiJson (JSON-Objekt/Array) + aiText (Freitext).
+// A4: verstaendliche Fehlermeldung statt technischem Text -- propagiert in
+// alle KI-Endpunkte (Modul-/Tool-Generierung, Dossier, Uebersetzung ...).
+const AI_BUSY_MSG = 'Die KI ist gerade ausgelastet oder nicht erreichbar. Bitte in ein paar Sekunden erneut versuchen.';
 async function aiJson(env, systemMsg, userMsg, maxTokens = 1200) {
   const out = await _aiCall(env, systemMsg, userMsg, maxTokens, true);
-  if (out == null) throw new Error('KI lieferte kein gueltiges JSON (alle Quellen versucht)');
+  if (out == null) throw new Error(AI_BUSY_MSG);
   return out;
 }
 async function aiText(env, systemMsg, userMsg, maxTokens = 800) {
   const out = await _aiCall(env, systemMsg, userMsg, maxTokens, false);
-  if (out == null) throw new Error('KI lieferte keinen Text (alle Quellen versucht)');
+  if (out == null) throw new Error(AI_BUSY_MSG);
   return out;
 }
 
