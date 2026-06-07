@@ -1949,11 +1949,26 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
   List<String> _columns = const [];
   bool _contentLoading = false;
 
+  // Tools-Tab (T1/T4)
+  List<Map<String, dynamic>> _tools = const [];
+  bool _toolsLoading = false;
+
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
+    _tabs = TabController(length: 3, vsync: this);
+    _loadTools();
     _loadContentTables();
+  }
+
+  Future<void> _loadTools() async {
+    setState(() => _toolsLoading = true);
+    final t = await WorldAdminServiceV162.getTools(widget.world);
+    if (!mounted) return;
+    setState(() {
+      _tools = t;
+      _toolsLoading = false;
+    });
   }
 
   @override
@@ -2037,20 +2052,205 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
           indicatorColor: widget.accentBright,
           labelColor: widget.accentBright,
           unselectedLabelColor: Colors.white38,
-          tabs: const [
-            Tab(icon: Icon(Icons.build_circle_outlined, size: 16), text: 'Funktion (KI baut)'),
-            Tab(icon: Icon(Icons.dataset_outlined, size: 16), text: 'Inhalte'),
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          tabs: [
+            Tab(
+              icon: const Icon(Icons.apps_rounded, size: 16),
+              text: _tools.isEmpty ? 'Tools' : 'Tools (${_tools.length})',
+            ),
+            const Tab(icon: Icon(Icons.build_circle_outlined, size: 16), text: 'Funktion (KI baut)'),
+            const Tab(icon: Icon(Icons.dataset_outlined, size: 16), text: 'Inhalte'),
           ],
         ),
         const Divider(color: Colors.white10, height: 1),
         Expanded(
           child: TabBarView(
             controller: _tabs,
-            children: [_buildFunctionTab(), _buildContentTab()],
+            children: [_buildToolsTab(), _buildFunctionTab(), _buildContentTab()],
           ),
         ),
       ],
     );
+  }
+
+  // ── Tab: Tools-Verzeichnis (T1) + bearbeiten/erweitern (T4) ──
+  Widget _buildToolsTab() {
+    if (_toolsLoading) {
+      return Center(child: CircularProgressIndicator(color: widget.accentBright));
+    }
+    if (_tools.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text('Keine Tools im Verzeichnis.',
+              style: TextStyle(color: Colors.white38)),
+        ),
+      );
+    }
+    // Nach Kategorie gruppieren.
+    final byCat = <String, List<Map<String, dynamic>>>{};
+    for (final t in _tools) {
+      final c = (t['category'] as String?) ?? 'Allgemein';
+      byCat.putIfAbsent(c, () => []).add(t);
+    }
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        for (final entry in byCat.entries) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 10, 4, 6),
+            child: Text(entry.key.toUpperCase(),
+                style: TextStyle(
+                    color: widget.accentBright,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8)),
+          ),
+          for (final t in entry.value) _buildToolTile(t),
+        ],
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () => _editTool(null),
+          icon: const Icon(Icons.add, size: 16),
+          label: const Text('Tool manuell eintragen'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: widget.accentBright,
+            side: BorderSide(color: widget.accent),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildToolTile(Map<String, dynamic> t) {
+    final status = (t['status'] as String?) ?? 'live';
+    final statusColor = status == 'live'
+        ? Colors.green
+        : (status == 'im_bau' ? Colors.amber : Colors.white38);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(
+              child: Text((t['name'] as String?) ?? '',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(status,
+                  style: TextStyle(color: statusColor, fontSize: 9)),
+            ),
+          ]),
+          if ((t['description'] as String?)?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 3),
+            Text(t['description'].toString(),
+                style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          ],
+          const SizedBox(height: 6),
+          Row(children: [
+            TextButton.icon(
+              onPressed: () => _extendTool(t),
+              icon: const Icon(Icons.auto_fix_high, size: 14),
+              label: const Text('Ändern lassen', style: TextStyle(fontSize: 11)),
+              style: TextButton.styleFrom(
+                  foregroundColor: widget.accentBright,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 30)),
+            ),
+            if ((t['content_table'] as String?)?.isNotEmpty ?? false)
+              TextButton.icon(
+                onPressed: () {
+                  _tabs.animateTo(2);
+                  _loadRows(t['content_table'] as String);
+                },
+                icon: const Icon(Icons.dataset_outlined, size: 14),
+                label: const Text('Inhalte', style: TextStyle(fontSize: 11)),
+                style: TextButton.styleFrom(
+                    foregroundColor: Colors.white54,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 30)),
+              ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.edit, size: 15, color: Colors.white38),
+              tooltip: 'Metadaten bearbeiten',
+              onPressed: () => _editTool(t),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  // T4: Bestehendes Tool aendern lassen -> Funktion-Tab im Extend-Modus.
+  void _extendTool(Map<String, dynamic> t) {
+    setState(() {
+      _extend = true;
+      _fnTarget.text = (t['name'] as String?) ?? '';
+      _fnTitle.text = '${t['name']} erweitern';
+      _fnDesc.clear();
+      _resultMsg = null;
+    });
+    _tabs.animateTo(1);
+  }
+
+  // Tool-Metadaten bearbeiten/anlegen (Verzeichnis-Pflege).
+  Future<void> _editTool(Map<String, dynamic>? t) async {
+    final nameCtrl = TextEditingController(text: t?['name']?.toString() ?? '');
+    final catCtrl = TextEditingController(text: t?['category']?.toString() ?? 'Allgemein');
+    final descCtrl = TextEditingController(text: t?['description']?.toString() ?? '');
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A30),
+        title: Text(t == null ? 'Tool eintragen' : 'Tool bearbeiten',
+            style: const TextStyle(color: Colors.white, fontSize: 15)),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: nameCtrl, style: const TextStyle(color: Colors.white), decoration: _deco('Name')),
+            const SizedBox(height: 8),
+            TextField(controller: catCtrl, style: const TextStyle(color: Colors.white), decoration: _deco('Kategorie')),
+            const SizedBox(height: 8),
+            TextField(controller: descCtrl, maxLines: 3, style: const TextStyle(color: Colors.white), decoration: _deco('Beschreibung')),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
+    if (saved != true) return;
+    final ok = await WorldAdminServiceV162.saveTool({
+      if (t?['id'] != null) 'id': t!['id'],
+      'world': widget.world,
+      'name': nameCtrl.text.trim(),
+      'category': catCtrl.text.trim(),
+      'description': descCtrl.text.trim(),
+    });
+    _snack(ok ? 'Gespeichert' : 'Speichern fehlgeschlagen',
+        c: ok ? Colors.green : Colors.redAccent);
+    if (ok) _loadTools();
   }
 
   // ── Tab 1: Funktion anfragen (Claude baut) ──

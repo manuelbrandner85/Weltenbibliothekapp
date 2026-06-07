@@ -1976,6 +1976,95 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  // ── Tool-Werkstatt (T1-T4) ─────────────────────────────────────────────
+  static Future<List<Map<String, dynamic>>> getTools(String world) async {
+    try {
+      final data = await AdminApiClient.instance.getJson('/api/admin/tools?world=$world');
+      return ((data['tools'] as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('getTools: $e');
+      return const [];
+    }
+  }
+
+  static Future<bool> saveTool(Map<String, dynamic> tool) async {
+    try {
+      final data = await AdminApiClient.instance.postJson('/api/admin/tools', body: tool);
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('saveTool: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> deleteTool(String id) async {
+    try {
+      final data = await AdminApiClient.instance.deleteJson('/api/admin/tools?id=$id');
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('deleteTool: $e');
+      return false;
+    }
+  }
+
+  static Future<int> scanTools(String world) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/tools/scan', body: {'world': world});
+      return (data['created'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      if (kDebugMode) debugPrint('scanTools: $e');
+      return 0;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getToolSuggestions(String world) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/tools/suggestions?world=$world');
+      return ((data['suggestions'] as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('getToolSuggestions: $e');
+      return const [];
+    }
+  }
+
+  static Future<Map<String, dynamic>> acceptToolSuggestion(String id) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/tools/suggestions/$id/accept', body: {});
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      if (kDebugMode) debugPrint('acceptToolSuggestion: $e');
+      return {'success': false};
+    }
+  }
+
+  static Future<bool> rejectToolSuggestion(String id) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/tools/suggestions/$id/reject', body: {});
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('rejectToolSuggestion: $e');
+      return false;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getToolRequests(String world) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/tools/requests?world=$world');
+      return ((data['requests'] as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('getToolRequests: $e');
+      return const [];
+    }
+  }
+
   /// Stellt eine Tool-Anfrage (LOGIK-Modul) -> GitHub-Issue-Bruecke.
   /// Returns Map { success, auto_created, issue_url?, prefill_url? }.
   static Future<Map<String, dynamic>> requestTool({
