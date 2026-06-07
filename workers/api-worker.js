@@ -1064,7 +1064,7 @@ async function dispatchDailyNumerology(env, pushAuth) {
   let profiles = [];
   let usedFallback = false;
   const tryRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?select=id,birth_date&birth_date=not.is.null&numerology_push_enabled=eq.true&limit=2000`,
+    `${SUPABASE_URL}/rest/v1/profiles?select=id,legacy_user_id,birth_date&birth_date=not.is.null&numerology_push_enabled=eq.true&limit=2000`,
     { headers: pushAuth },
   );
   if (tryRes.ok) {
@@ -1072,7 +1072,7 @@ async function dispatchDailyNumerology(env, pushAuth) {
   } else {
     usedFallback = true;
     const fbRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id,birth_date&birth_date=not.is.null&limit=2000`,
+      `${SUPABASE_URL}/rest/v1/profiles?select=id,legacy_user_id,birth_date&birth_date=not.is.null&limit=2000`,
       { headers: pushAuth },
     );
     if (fbRes.ok) profiles = await fbRes.json().catch(() => []);
@@ -1102,6 +1102,7 @@ async function dispatchDailyNumerology(env, pushAuth) {
           },
           body: JSON.stringify({
             user_id: p.id,
+            legacy_user_id: p.legacy_user_id || null,
             title,
             body: body.substring(0, 120),
             data: {
@@ -1226,13 +1227,43 @@ async function dispatchPushQueue(env, pushAuth) {
       continue;
     }
 
-    const subsRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_devices?${lookupColumn}=eq.${encodeURIComponent(lookupValue)}&fcm_token=not.is.null&select=fcm_token`,
-      { headers: pushAuth }
-    );
-    const subs = await subsRes.json().catch(() => []);
-    const tokens = (Array.isArray(subs) ? subs : [])
-        .map(s => s.fcm_token).filter(Boolean);
+    // AUDIT-FIX 2026-06-07: Token-Tabellen- UND Identitaets-Mismatch behoben.
+    // Der Client registriert FCM-Token mal in user_devices (v91+) und mal in
+    // push_subscriptions (v13). Ausserdem kennt ein InvisibleAuth-Client nur
+    // seine legacy_user_id, registriert sein Geraet also unter
+    // legacy_user_id -- ein Broadcast enqueued die Notification aber unter
+    // der profiles.id (UUID). Frueher matchte der Dispatch nur EINE Spalte.
+    // Jetzt: BEIDE Tabellen UND BEIDE Identitaeten (user_id + legacy_user_id)
+    // werden abgefragt und die Tokens zusammengefuehrt.
+    const tokenSet = new Set();
+    const collectTokens = async (urlStr, label) => {
+      try {
+        const res = await fetch(urlStr, { headers: pushAuth });
+        const arr = await res.json().catch(() => []);
+        for (const s of (Array.isArray(arr) ? arr : [])) {
+          if (s.fcm_token) tokenSet.add(s.fcm_token);
+        }
+      } catch (e) { console.warn(`${label} lookup:`, e.message); }
+    };
+    // user_devices ueber profile_id (UUID)
+    if (row.user_id) {
+      await collectTokens(
+        `${SUPABASE_URL}/rest/v1/user_devices?profile_id=eq.${encodeURIComponent(row.user_id)}&fcm_token=not.is.null&select=fcm_token`,
+        'user_devices.profile_id');
+    }
+    // user_devices ueber legacy_user_id (InvisibleAuth)
+    if (row.legacy_user_id) {
+      await collectTokens(
+        `${SUPABASE_URL}/rest/v1/user_devices?legacy_user_id=eq.${encodeURIComponent(row.legacy_user_id)}&fcm_token=not.is.null&select=fcm_token`,
+        'user_devices.legacy');
+    }
+    // push_subscriptions (nur user_id=UUID, Spalte ist uuid-typisiert)
+    if (row.user_id) {
+      await collectTokens(
+        `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${encodeURIComponent(row.user_id)}&fcm_token=not.is.null&is_active=eq.true&select=fcm_token`,
+        'push_subscriptions');
+    }
+    const tokens = [...tokenSet];
 
     // AUDIT-FIX C9: FCM-Limits einhalten -- Title 150, Body 240 Zeichen.
     const trimmedTitle = String(row.title || '').slice(0, 150);
@@ -1249,13 +1280,16 @@ async function dispatchPushQueue(env, pushAuth) {
             deliveryOk = true;
             console.log(`FCM ok: ${lookupColumn}=${lookupValue}`);
           } else if (r.status === 404 || r.status === 410) {
-            // Token invalid / unregistered → deaktivieren
+            // Token invalid / unregistered → aus BEIDEN Tabellen entfernen.
             console.warn(`FCM token invalid (${r.status}), entferne: ${token.slice(0, 20)}…`);
-            // user_devices hat keine is_active-Spalte -- direkt loeschen.
             await fetch(
               `${SUPABASE_URL}/rest/v1/user_devices?fcm_token=eq.${encodeURIComponent(token)}`,
               { method: 'DELETE', headers: pushAuth }
-            );
+            ).catch(() => {});
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/push_subscriptions?fcm_token=eq.${encodeURIComponent(token)}`,
+              { method: 'PATCH', headers: { ...pushAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: false }) }
+            ).catch(() => {});
           } else {
             const errBody = await r.text().catch(() => '');
             console.error(`FCM error ${r.status}: ${errBody}`);
@@ -3985,7 +4019,8 @@ export default {
       }
 
       // ── DELETE /api/notifications/:id?userId=X  (eine loeschen) ──────
-      if (method === 'DELETE' && /^\/api\/notifications\/[^/]+\/?$/.test(path)) {
+      if (method === 'DELETE' && /^\/api\/notifications\/[^/]+\/?$/.test(path) &&
+          path !== '/api/notifications/mark-read') {
         const id = path.split('/')[3];
         const uid = url.searchParams.get('userId');
         if (!id || !uid) return errorResponse('id/userId fehlt', 400);
@@ -3994,6 +4029,50 @@ export default {
           `${SUPABASE_URL}/rest/v1/notifications?id=eq.${encodeURIComponent(id)}&${notifIdentityFilter(uid)}`,
           { method: 'DELETE', headers: { ...pubHeaders, 'Prefer': 'return=minimal' } });
         return jsonResponse({ success: res.ok });
+      }
+
+      // ── GET /api/notifications?userId=X&unreadOnly=&limit= ───────────
+      // Liest die In-App-Notifications via service_role (umgeht RLS).
+      // KRITISCH fuer InvisibleAuth-User: die haben kein auth.uid(), koennen
+      // die notifications-Tabelle also NICHT direkt via Supabase lesen
+      // (RLS-Policy auth.uid()=user_id schlaegt fehl). Der Worker liefert
+      // die Daten identitaetsgefiltert (user_id ODER legacy_user_id).
+      if (method === 'GET' && path === '/api/notifications') {
+        const uid = url.searchParams.get('userId');
+        if (!uid) return errorResponse('userId fehlt', 400);
+        const unreadOnly = url.searchParams.get('unreadOnly') === 'true';
+        const limit = Math.min(
+          parseInt(url.searchParams.get('limit') || '100', 10) || 100, 200);
+        let q = `${SUPABASE_URL}/rest/v1/notifications?${notifIdentityFilter(uid)}&order=created_at.desc&limit=${limit}`;
+        if (unreadOnly) q += `&or=(is_read.is.false,is_read.is.null)`;
+        const r = await fetch(q, { headers: pubHeaders });
+        const rows = r.ok ? await r.json().catch(() => []) : [];
+        return jsonResponse({
+          success: true,
+          notifications: Array.isArray(rows) ? rows : [],
+        });
+      }
+
+      // ── POST /api/notifications/mark-read  { userId, id? } ───────────
+      // id gesetzt -> diese eine; sonst ALLE ungelesenen des Users.
+      // Setzt beide Gelesen-Spalten (is_read + read_at) konsistent.
+      if (method === 'POST' && path === '/api/notifications/mark-read') {
+        const body = await request.json().catch(() => ({}));
+        const uid = body.userId;
+        if (!uid) return errorResponse('userId fehlt', 400);
+        const patch = { is_read: true, read_at: new Date().toISOString() };
+        let target = `${SUPABASE_URL}/rest/v1/notifications?${notifIdentityFilter(uid)}`;
+        if (body.id) {
+          target += `&id=eq.${encodeURIComponent(body.id)}`;
+        } else {
+          target += `&or=(is_read.is.false,is_read.is.null)`;
+        }
+        const r = await fetch(target, {
+          method: 'PATCH',
+          headers: { ...pubHeaders, 'Prefer': 'return=minimal' },
+          body: JSON.stringify(patch),
+        });
+        return jsonResponse({ success: r.ok });
       }
 
       // ── GET /api/account/identity-lookup ────────────────────────────
@@ -5055,28 +5134,36 @@ export default {
             const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
             filter = `&last_seen_at=gte.${sevenDaysAgo}`;
           }
+          // AUDIT-FIX 2026-06-07: auch legacy_user_id mitziehen, damit
+          // InvisibleAuth-User (Geraet unter legacy_user_id registriert)
+          // den Broadcast erhalten. Der Dispatcher matcht beide Identitaeten.
           const recRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?select=id${filter}&limit=2000`,
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,legacy_user_id${filter}&limit=5000`,
             { headers: svcH }
           );
           if (!recRes.ok) return errorResponse(`Empfänger-Fetch ${recRes.status}`);
           const recipients = await recRes.json().catch(() => []);
-          const userIds = (Array.isArray(recipients) ? recipients : [])
-            .map(r => r.id).filter(id => id && !id.startsWith('00000000-'));
-          if (userIds.length === 0) {
+          const valid = (Array.isArray(recipients) ? recipients : [])
+            .filter(r => r.id && !r.id.startsWith('00000000-'));
+          if (valid.length === 0) {
             return jsonResponse({ success: true, enqueued: 0, target, note: 'keine Empfänger' });
           }
 
-          // Bulk-Insert in notification_queue
+          // Bulk-Insert in notification_queue (data.type=admin_broadcast damit
+          // der Client-Pref-Filter + Realtime greift).
           const now = new Date().toISOString();
-          const rows = userIds.map(uid => ({
-            user_id: uid,
+          const rows = valid.map(r => ({
+            user_id: r.id,
+            legacy_user_id: r.legacy_user_id || null,
             title,
             body: msgBody,
-            data: deeplink ? { deeplink, source: 'admin_broadcast' } : { source: 'admin_broadcast' },
+            data: deeplink
+              ? { deeplink, type: 'admin_broadcast', source: 'admin_broadcast' }
+              : { type: 'admin_broadcast', source: 'admin_broadcast' },
             status: 'pending',
             created_at: now,
           }));
+          const userIds = valid.map(r => r.id);
           const insRes = await fetch(
             `${SUPABASE_URL}/rest/v1/notification_queue`,
             { method: 'POST', headers: { ...svcH, 'Prefer': 'return=minimal' }, body: JSON.stringify(rows) }

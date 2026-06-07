@@ -57,6 +57,23 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   // ── Data ─────────────────────────────────────────────────────────────────
 
+  /// Loest die wirksame Identitaet auf. InvisibleAuth-User haben KEINE
+  /// Supabase-UUID (auth.currentUser == null), nutzen aber eine
+  /// legacy_user_id ('user_<ts>_<rand>') aus dem UnifiedProfileService.
+  /// Returnt (spaltenname, wert) -- entweder ('user_id', uuid) oder
+  /// ('legacy_user_id', legacyId). Returnt null wenn keine Identitaet da ist.
+  (String, String)? _identity() {
+    final authUid = _supabase.auth.currentUser?.id;
+    if (authUid != null && authUid.isNotEmpty) return ('user_id', authUid);
+    final unified = UnifiedProfileService.instance.userId;
+    if (unified == null || unified.isEmpty) return null;
+    // InvisibleAuth-IDs beginnen mit 'user_'. Eine UUID nicht.
+    if (unified.startsWith('user_')) return ('legacy_user_id', unified);
+    return ('user_id', unified);
+  }
+
+  bool get _isLegacy => _identity()?.$1 == 'legacy_user_id';
+
   Future<void> _loadNotifications() async {
     if (mounted) {
       setState(() {
@@ -65,8 +82,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       });
     }
     try {
-      final uid = _supabase.auth.currentUser?.id;
-      if (uid == null) {
+      final id = _identity();
+      if (id == null) {
         if (mounted) {
           setState(() {
             _loading = false;
@@ -75,16 +92,23 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         }
         return;
       }
-      final result = await _supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', uid)
-          .order('created_at', ascending: false)
-          .limit(100);
+      List<Map<String, dynamic>> result;
+      if (id.$1 == 'legacy_user_id') {
+        // InvisibleAuth: RLS blockiert Direktzugriff -> ueber Worker laden.
+        result = await AccountService.instance.getNotifications(userId: id.$2);
+      } else {
+        final raw = await _supabase
+            .from('notifications')
+            .select('*')
+            .eq(id.$1, id.$2)
+            .order('created_at', ascending: false)
+            .limit(100);
+        result = (raw as List).cast<Map<String, dynamic>>();
+      }
 
       if (mounted) {
         setState(() {
-          _notifs = (result as List).cast<Map<String, dynamic>>();
+          _notifs = result;
           _loading = false;
         });
       }
@@ -100,8 +124,12 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   void _subscribeRealtime() {
     if (!mounted) return;
-    final uid = _supabase.auth.currentUser?.id;
-    if (uid == null) return;
+    final id = _identity();
+    if (id == null) return;
+    // InvisibleAuth: Supabase-Realtime ist durch RLS (auth.uid()=user_id)
+    // blockiert -> keine Live-Subscription moeglich. Die 30s-Polling-Schicht
+    // im PushNotificationManager + Reload beim Oeffnen decken das ab.
+    if (id.$1 == 'legacy_user_id') return;
     // Prevent duplicate channels if called more than once
     _channel?.unsubscribe();
 
@@ -112,8 +140,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         table: 'notifications',
         filter: PostgresChangeFilter(
           type: PostgresChangeFilterType.eq,
-          column: 'user_id',
-          value: uid,
+          column: id.$1,
+          value: id.$2,
         ),
         callback: (payload) {
           if (!mounted) return;
@@ -129,8 +157,8 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         table: 'notifications',
         filter: PostgresChangeFilter(
           type: PostgresChangeFilterType.eq,
-          column: 'user_id',
-          value: uid,
+          column: id.$1,
+          value: id.$2,
         ),
         callback: (payload) {
           if (!mounted) return;
@@ -147,11 +175,34 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
 
   Future<void> _markAsRead(String id) async {
     try {
-      await _supabase
-          .from('notifications')
-          .update({'read_at': DateTime.now().toIso8601String()}).eq('id', id);
+      if (_isLegacy) {
+        final me = _identity();
+        if (me == null) return;
+        await AccountService.instance
+            .markNotificationsRead(userId: me.$2, id: id);
+        // Lokal aktualisieren (kein Realtime fuer Legacy).
+        if (mounted) {
+          setState(() {
+            final idx = _notifs.indexWhere((n) => n['id'] == id);
+            if (idx >= 0) {
+              _notifs[idx] = {..._notifs[idx], 'is_read': true};
+            }
+          });
+        }
+        return;
+      }
+      // Beide Spalten setzen -- die App nutzt an verschiedenen Stellen
+      // read_at (dieser Screen) UND is_read (Badge-Button). Sonst springt
+      // der Gelesen-Status.
+      await _supabase.from('notifications').update({
+        'read_at': DateTime.now().toIso8601String(),
+        'is_read': true,
+      }).eq('id', id);
       // Realtime UPDATE event aktualisiert die Liste automatisch
-    } catch (e) { if (kDebugMode) debugPrint('notification_center_screen: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode)
+        debugPrint('notification_center_screen: silent catch -> $e');
+    }
   }
 
   /// Loescht eine Notification ueber den Worker (InvisibleAuth-tauglich).
@@ -212,37 +263,47 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   }
 
   Future<void> _markAllRead() async {
-    final uid = _supabase.auth.currentUser?.id;
-    if (uid == null) return;
-    final unreadIds = _notifs
-        .where((n) => n['read_at'] == null)
-        .map((n) => n['id'] as String)
-        .toList();
-    if (unreadIds.isEmpty) return;
+    final id = _identity();
+    if (id == null) return;
+    if (_notifs.where((n) => !_isRead(n)).isEmpty) return;
     try {
-      await _supabase
-          .from('notifications')
-          .update({'read_at': DateTime.now().toIso8601String()})
-          .eq('user_id', uid)
-          .isFilter('read_at', null);
-      // Lokal sofort aktualisieren (Realtime-UPDATE folgt)
+      if (id.$1 == 'legacy_user_id') {
+        await AccountService.instance.markNotificationsRead(userId: id.$2);
+      } else {
+        await _supabase
+            .from('notifications')
+            .update({
+              'read_at': DateTime.now().toIso8601String(),
+              'is_read': true,
+            })
+            .eq(id.$1, id.$2)
+            .isFilter('read_at', null);
+      }
+      // Lokal sofort aktualisieren (Realtime-UPDATE folgt bei UUID)
       if (mounted) {
         setState(() {
           final now = DateTime.now().toIso8601String();
           _notifs = _notifs.map((n) {
-            if (n['read_at'] == null) {
-              return {...n, 'read_at': now};
+            if (!_isRead(n)) {
+              return {...n, 'read_at': now, 'is_read': true};
             }
             return n;
           }).toList();
         });
       }
-    } catch (e) { if (kDebugMode) debugPrint('notification_center_screen: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode)
+        debugPrint('notification_center_screen: silent catch -> $e');
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  bool _isRead(Map<String, dynamic> n) => n['read_at'] != null;
+  // Liest BEIDE moeglichen Gelesen-Spalten (read_at-Timestamp ODER
+  // is_read-Boolean), damit der Status konsistent ist egal welche der
+  // Worker/Client-Pfade die Notification als gelesen markiert hat.
+  bool _isRead(Map<String, dynamic> n) =>
+      n['read_at'] != null || n['is_read'] == true;
 
   int get _unreadCount => _notifs.where((n) => !_isRead(n)).length;
 
