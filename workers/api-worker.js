@@ -863,7 +863,15 @@ function base64UrlEncode(data) {
 }
 
 function pemToArrayBuffer(pem) {
-  const b64 = pem
+  const b64 = String(pem)
+    // 2026-06-07 ROBUSTHEIT: literal \n / \r (Backslash+Buchstabe, zwei
+    // Zeichen) entfernen. Haeufigster FCM-in-Worker-Bug: der private_key
+    // im Secret enthaelt escaped Newlines (z.B. weil das JSON doppelt
+    // ge-stringified oder via Editor eingefuegt wurde). Ohne das bleibt
+    // "\n" im Base64 stehen und atob wirft InvalidCharacterError.
+    .replace(/\\r\\n/g, '')
+    .replace(/\\n/g, '')
+    .replace(/\\r/g, '')
     .replace(/-----BEGIN [^-]+-----/g, '')
     .replace(/-----END [^-]+-----/g, '')
     .replace(/\s+/g, '');
@@ -875,15 +883,29 @@ function pemToArrayBuffer(pem) {
 }
 
 async function getFcmAccessToken(env) {
-  const raw = env.FCM_SERVICE_ACCOUNT;
+  let raw = env.FCM_SERVICE_ACCOUNT;
   if (!raw) return null;
   let sa;
   try {
-    sa = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (typeof raw === 'string') {
+      // 2026-06-07 ROBUSTHEIT: umschliessende Quotes + Whitespace trimmen
+      // (z.B. wenn das Secret versehentlich mit Anfuehrungszeichen oder
+      // fuehrendem Newline gespeichert wurde).
+      raw = raw.trim();
+      if ((raw.startsWith('"') && raw.endsWith('"')) ||
+          (raw.startsWith("'") && raw.endsWith("'"))) {
+        raw = raw.slice(1, -1);
+      }
+      sa = JSON.parse(raw);
+      // Doppelt-kodiertes JSON (JSON.parse liefert nochmal einen String).
+      if (typeof sa === 'string') sa = JSON.parse(sa);
+    } else {
+      sa = raw;
+    }
   } catch (e) {
     throw new Error(`FCM_SERVICE_ACCOUNT ist kein gültiges JSON: ${e.message}`);
   }
-  if (!sa.client_email || !sa.private_key || !sa.project_id) {
+  if (!sa || !sa.client_email || !sa.private_key || !sa.project_id) {
     throw new Error('FCM_SERVICE_ACCOUNT fehlt client_email/private_key/project_id');
   }
   const now = Math.floor(Date.now() / 1000);
