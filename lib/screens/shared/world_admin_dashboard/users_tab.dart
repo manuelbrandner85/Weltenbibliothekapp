@@ -28,8 +28,9 @@ class _UsersTabState extends State<_UsersTab> {
   String _search = '';
   String _roleFilter = 'all';
   String _sourceFilter = 'all'; // 'all' | 'web' | 'app'
-  String _sortMode = 'role'; // 'role' | 'newest' | 'oldest' | 'az' | 'online'
+  String _sortMode = 'role'; // 'role' | 'newest' | 'oldest' | 'az' | 'online' | 'bot'
   bool _hideGhosts = true; // hide auto-generated user_* accounts
+  bool _showBotSuspects = false; // Priority 1.6: Bot-Verdacht filter
   final _searchCtrl = TextEditingController();
 
   // Bulk-Selection — UserIDs der angehakten User. Bulk-Action-Bar erscheint
@@ -136,7 +137,9 @@ class _UsersTabState extends State<_UsersTab> {
     if (_hideGhosts) {
       list = list.where((u) => !u.isGhostUser).toList();
     }
-    if (_roleFilter == 'banned') {
+    if (_showBotSuspects) {
+      list = list.where((u) => u.isBotSuspect).toList();
+    } else if (_roleFilter == 'banned') {
       list = list.where((u) => u.isSuspended).toList();
     } else if (_roleFilter != 'all') {
       list = list.where((u) => u.role == _roleFilter).toList();
@@ -306,6 +309,153 @@ class _UsersTabState extends State<_UsersTab> {
         onChanged: _load,
       ),
     );
+  }
+
+  // ── v123: Shadow-Ban (root_admin only) ──────────────────────────────────
+  Future<void> _shadowBan(WorldUser u) async {
+    if (!widget.admin.isRootAdmin) return;
+    final enable = !u.isShadowBanned;
+    final action = enable ? 'Shadow-sperren' : 'Shadow-Sperre aufheben';
+    final confirmed = await _confirm(
+      action,
+      enable
+          ? '@${u.username} wird Shadow-gesperrt.\n\nDer Nutzer sieht eigene '
+              'Posts normal, aber andere Nutzer sehen sie nicht.'
+          : '@${u.username} Shadow-Sperre wird aufgehoben.',
+      confirmColor: enable ? const Color(0xFF9C27B0) : Colors.teal,
+    );
+    if (!confirmed) return;
+    setState(() => _processing = true);
+    final ok = await WorldAdminServiceV162.shadowBanUser(
+      userId: u.userId,
+      enable: enable,
+      adminUsername: widget.admin.username,
+    );
+    if (!mounted) return;
+    setState(() => _processing = false);
+    if (ok) {
+      _snack(
+        enable ? '👻 @${u.username} shadow-gesperrt' : '👻 Shadow-Sperre aufgehoben',
+        color: enable ? const Color(0xFF9C27B0) : Colors.teal,
+      );
+      _load();
+    } else {
+      _snack('❌ Shadow-Ban fehlgeschlagen', color: Colors.red);
+    }
+  }
+
+  // ── v123: Temp-Mute (admin+) ─────────────────────────────────────────────
+  Future<void> _tempMute(WorldUser u) async {
+    if (u.isMuted) {
+      // Immediately unmute
+      final confirmed = await _confirm(
+        'Entmuten',
+        '@${u.username} Stummschaltung aufheben?',
+        confirmColor: Colors.teal,
+      );
+      if (!confirmed) return;
+      setState(() => _processing = true);
+      final ok = await WorldAdminServiceV162.tempMuteUser(
+        userId: u.userId,
+        durationMinutes: 0,
+        adminUsername: widget.admin.username,
+      );
+      if (!mounted) return;
+      setState(() => _processing = false);
+      if (ok) {
+        _snack('🔊 @${u.username} ist nicht mehr stumm', color: Colors.teal);
+        _load();
+      } else {
+        _snack('❌ Entmuten fehlgeschlagen', color: Colors.red);
+      }
+      return;
+    }
+
+    // Pick duration
+    const durationLabels = ['5 Minuten', '30 Minuten', '1 Stunde', '6 Stunden', '24 Stunden', '7 Tage'];
+    const durationMinutes = [5, 30, 60, 360, 1440, 10080];
+    int selectedIdx = 2;
+    final reasonCtrl = TextEditingController();
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setDs) => AlertDialog(
+          backgroundColor: const Color(0xFF12121E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(children: [
+            Icon(Icons.volume_off_rounded, color: Colors.blueGrey, size: 20),
+            SizedBox(width: 8),
+            Text('Stummschalten', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          ]),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('@${u.username}', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              const SizedBox(height: 14),
+              const Text('Dauer', style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1.2)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: List.generate(durationLabels.length, (i) {
+                  final sel = i == selectedIdx;
+                  return GestureDetector(
+                    onTap: () => setDs(() => selectedIdx = i),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: sel ? Colors.blueGrey.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: sel ? Colors.blueGrey : Colors.white12),
+                      ),
+                      child: Text(durationLabels[i], style: TextStyle(color: sel ? Colors.white : Colors.white54, fontSize: 12)),
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: reasonCtrl,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'Grund (optional)',
+                  hintStyle: const TextStyle(color: Colors.white30),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, selectedIdx),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
+              child: const Text('Stummschalten'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == null) return;
+    setState(() => _processing = true);
+    final ok = await WorldAdminServiceV162.tempMuteUser(
+      userId: u.userId,
+      durationMinutes: durationMinutes[result],
+      reason: reasonCtrl.text.trim().isEmpty ? null : reasonCtrl.text.trim(),
+      adminUsername: widget.admin.username,
+    );
+    if (!mounted) return;
+    setState(() => _processing = false);
+    if (ok) {
+      _snack('🔇 @${u.username} für ${durationLabels[result]} stumm', color: Colors.blueGrey);
+      _load();
+    } else {
+      _snack('❌ Stummschalten fehlgeschlagen', color: Colors.red);
+    }
   }
 
   /// Shows a dialog to pick ban reason and duration.
@@ -1439,6 +1589,39 @@ class _UsersTabState extends State<_UsersTab> {
                   }).toList(),
                 ),
               ),
+              // v123: Bot-Verdacht Filter (Moderator+)
+              if (AppRoles.canBanUsers(widget.admin.role))
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _showBotSuspects = !_showBotSuspects;
+                      _applyFilter();
+                    }),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _showBotSuspects
+                            ? const Color(0xFFFF6F00).withValues(alpha: 0.18)
+                            : Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _showBotSuspects ? const Color(0xFFFF6F00) : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        '🤖 Bot-Verdacht',
+                        style: TextStyle(
+                          color: _showBotSuspects ? const Color(0xFFFF6F00) : Colors.white54,
+                          fontSize: 12,
+                          fontWeight: _showBotSuspects ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 6),
               // Ghost-User toggle + Sort-Dropdown
               Row(children: [
@@ -1668,6 +1851,13 @@ class _UsersTabState extends State<_UsersTab> {
                                         AppRoles.canBanUsers(widget.admin.role)
                                             ? () => _restrict(u)
                                             : null,
+                                    onShadowBan: widget.admin.isRootAdmin
+                                        ? () => _shadowBan(u)
+                                        : null,
+                                    onTempMute:
+                                        AppRoles.canBanUsers(widget.admin.role)
+                                            ? () => _tempMute(u)
+                                            : null,
                                   ),
                                 ),
                               ]);
@@ -1699,6 +1889,8 @@ class _UsersTabState extends State<_UsersTab> {
               onBan: _bulkBan,
               onUnban: _bulkUnban,
               onDelete: widget.admin.isRootAdmin ? _bulkDelete : null,
+              onWarn: AppRoles.canBanUsers(widget.admin.role) ? _bulkWarn : null,
+              onRoleChange: AppRoles.canPromoteDemote(widget.admin.role) ? _bulkChangeRoleDialog : null,
               onClear: () => setState(_selectedIds.clear),
             ),
           ),
@@ -1793,6 +1985,96 @@ class _UsersTabState extends State<_UsersTab> {
           adminUserId: widget.admin.username,
         ),
       );
+
+  // v123: Bulk-Warn via single Worker call (more efficient than _bulkApply loop).
+  Future<void> _bulkWarn() async {
+    final targets = _all.where((u) => _selectedIds.contains(u.userId)).toList();
+    if (targets.isEmpty) return;
+    final reasonCtrl = TextEditingController(text: 'Regelverstoß (Bulk)');
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('${targets.length} Nutzer verwarnen', style: const TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: reasonCtrl,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Grund',
+            hintStyle: const TextStyle(color: Colors.white30),
+            filled: true,
+            fillColor: Colors.white.withValues(alpha: 0.05),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, reasonCtrl.text.trim().isEmpty ? 'Regelverstoß' : reasonCtrl.text.trim()),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+            child: const Text('Verwarnen', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+    if (reason == null) return;
+    setState(() => _processing = true);
+    final ok = await WorldAdminServiceV162.bulkWarnUsers(
+      userIds: targets.map((u) => u.userId).toList(),
+      reason: reason,
+      adminUsername: widget.admin.username,
+    );
+    if (!mounted) return;
+    setState(() {
+      _processing = false;
+      _selectedIds.clear();
+    });
+    _snack(ok ? '⚠️ ${targets.length} Nutzer verwarnt' : '❌ Bulk-Verwarnung fehlgeschlagen',
+        color: ok ? Colors.orange : Colors.red);
+    if (ok) _load();
+  }
+
+  // v123: Bulk-Rollenwechsel via single Worker call.
+  Future<void> _bulkChangeRoleDialog() async {
+    final targets = _all.where((u) => _selectedIds.contains(u.userId)).toList();
+    if (targets.isEmpty) return;
+    String? newRole;
+    final roles = AppRoles.rolesForPromotion(widget.admin.role);
+    newRole = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('${targets.length} Nutzer: Rolle setzen', style: const TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: roles.map((r) => ListTile(
+            title: Text(_prettyRole(r), style: const TextStyle(color: Colors.white)),
+            onTap: () => Navigator.pop(ctx, r),
+          )).toList(),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+        ],
+      ),
+    );
+    if (newRole == null) return;
+    setState(() => _processing = true);
+    final ok = await WorldAdminServiceV162.bulkChangeRole(
+      userIds: targets.map((u) => u.userId).toList(),
+      newRole: newRole,
+      adminUsername: widget.admin.username,
+    );
+    if (!mounted) return;
+    setState(() {
+      _processing = false;
+      _selectedIds.clear();
+    });
+    _snack(ok ? '🛡️ Rolle auf $_prettyRole($newRole) gesetzt' : '❌ Bulk-Rollenwechsel fehlgeschlagen',
+        color: ok ? Colors.green : Colors.red);
+    if (ok) _load();
+  }
 
   // Hard-Delete der aktuell ausgewaehlten Nutzer (root_admin only).
   // Separate Methode statt _bulkApply weil Loeschen destruktiv ist und einen

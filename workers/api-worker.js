@@ -5063,11 +5063,13 @@ export default {
           }
           // v5.44.7: legacy_user_id (v91) + xp dazu, damit InvisibleAuth-User
           // korrekt erscheinen + Admin XP-Statistik sieht.
+          // v123: shadow_banned + muted_until fuer neue Moderation-Features.
           const baseCols = ['id','username','display_name','role','is_banned','avatar_url','avatar_emoji','created_at'];
           // world_preference existiert nicht (entfernt) -> nicht mehr anfragen.
           // xp existiert ab v128. Restliche optionalCols bleiben fuer den
           // 42703-Fallback-Loop defensiv erhalten.
-          const optionalCols = ['world','last_seen_at','legacy_user_id','xp','full_name'];
+          // v123: shadow_banned + muted_until fuer Moderation-Features.
+          const optionalCols = ['world','last_seen_at','legacy_user_id','xp','full_name','shadow_banned','muted_until'];
           // Versuche zuerst mit allen Spalten, droppe optional bei 42703.
           let cols = [...baseCols, ...optionalCols];
           let res;
@@ -5146,6 +5148,14 @@ export default {
               warning_count: warnCounts[u.id] || 0,
               source: (u.legacy_user_id && String(u.legacy_user_id).length > 0)
                 ? 'app' : 'web',
+              shadow_banned: u.shadow_banned || false,
+              muted_until: u.muted_until || null,
+              // v123: Bot-suspect heuristic: account < 24h AND warning_count > 0
+              is_bot_suspect: (() => {
+                if (!u.created_at) return false;
+                const ageSec = (Date.now() - new Date(u.created_at).getTime()) / 1000;
+                return ageSec < 86400 && (warnCounts[u.id] || 0) > 0;
+              })(),
             }));
 
           // v117: Genehmigte Web-Zugangs-Antraege (web_access_requests) als
@@ -7318,6 +7328,382 @@ export default {
             module_type: moduleType,
           });
         } catch (e) { return errorResponse(`module-access POST Fehler: ${e.message}`); }
+      }
+
+      // ════════════════════════════════════════════════════════════════
+      // v123: NEW ENDPOINTS -- Shadow-ban, Temp-Mute, Bulk, Feature Flags,
+      //   Announcements, Insights, Health (enriched).
+      // ════════════════════════════════════════════════════════════════
+
+      // ── POST /api/admin/users/:userId/shadow-ban ─────────────────
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/shadow-ban')) {
+        if (!caller.isRootAdmin) return errorResponse('Root-Admin erforderlich', 403);
+        try {
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
+          const body = await request.json().catch(() => ({}));
+          const enable = body.enable !== false;
+          const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ shadow_banned: enable }),
+          });
+          if (!patchRes.ok) return errorResponse(`Shadow-ban patch failed: ${patchRes.status}`);
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: enable ? 'shadow_ban' : 'shadow_unban',
+            target_id: userId,
+            details: { enable },
+            undo_payload: JSON.stringify({ action: enable ? 'shadow_unban' : 'shadow_ban', user_id: userId }),
+          });
+          return jsonResponse({ success: true, shadow_banned: enable, user_id: userId });
+        } catch (e) { return errorResponse(`Shadow-ban Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/:userId/temp-mute ──────────────────
+      // duration_minutes=0 = unmute
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/temp-mute')) {
+        try {
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          const userId = await resolveProfileUuid(rawUserId, svcHeaders) ?? rawUserId;
+          const body = await request.json().catch(() => ({}));
+          const durationMinutes = Math.max(0, Math.min(10080, Number(body.duration_minutes) || 60));
+          const mutedUntil = durationMinutes > 0
+            ? new Date(Date.now() + durationMinutes * 60 * 1000).toISOString()
+            : null;
+          const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ muted_until: mutedUntil }),
+          });
+          if (!patchRes.ok) return errorResponse(`Temp-mute patch failed: ${patchRes.status}`);
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: durationMinutes > 0 ? 'temp_mute' : 'temp_unmute',
+            target_id: userId,
+            details: { duration_minutes: durationMinutes, muted_until: mutedUntil, reason: body.reason },
+            undo_payload: JSON.stringify({ action: 'temp_unmute', user_id: userId }),
+          });
+          return jsonResponse({ success: true, muted_until: mutedUntil, user_id: userId });
+        } catch (e) { return errorResponse(`Temp-mute Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/bulk-warn ──────────────────────────
+      if (method === 'POST' && path === '/api/admin/users/bulk-warn') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const userIds = Array.isArray(body.user_ids) ? body.user_ids : [];
+          const reason = String(body.reason || 'Regelverstoß (Bulk)').slice(0, 500);
+          if (userIds.length === 0) return errorResponse('user_ids erforderlich', 400);
+          let warned = 0;
+          for (const rawUid of userIds) {
+            try {
+              const uid = await resolveProfileUuid(rawUid, svcHeaders) ?? rawUid;
+              // Insert into admin_warnings
+              await fetch(`${SUPABASE_URL}/rest/v1/admin_warnings`, {
+                method: 'POST',
+                headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+                body: JSON.stringify({
+                  user_id: uid,
+                  warned_by: caller.userId,
+                  reason,
+                  created_at: new Date().toISOString(),
+                }),
+              });
+              warned++;
+            } catch (_) {}
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'bulk_warn',
+            details: { count: warned, reason, user_ids: userIds.slice(0, 10) },
+          });
+          return jsonResponse({ success: true, warned });
+        } catch (e) { return errorResponse(`Bulk-warn Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/bulk-role ──────────────────────────
+      if (method === 'POST' && path === '/api/admin/users/bulk-role') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const userIds = Array.isArray(body.user_ids) ? body.user_ids : [];
+          const newRole = String(body.role || '').toLowerCase().replace('-', '_');
+          const allowedRoles = ['user', 'moderator', 'content_editor', 'admin', 'root_admin'];
+          if (!allowedRoles.includes(newRole)) return errorResponse('Ungueltige Rolle', 400);
+          if (userIds.length === 0) return errorResponse('user_ids erforderlich', 400);
+          // Role hierarchy check
+          const callerLevel = caller.isRootAdmin ? 3 : caller.role === 'admin' ? 2 : 1;
+          const targetLevel = newRole === 'root_admin' ? 3 : newRole === 'admin' ? 2 : 1;
+          if (targetLevel >= callerLevel) return errorResponse('Unzureichende Berechtigung', 403);
+          let changed = 0;
+          for (const rawUid of userIds) {
+            try {
+              const uid = await resolveProfileUuid(rawUid, svcHeaders) ?? rawUid;
+              const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${uid}`, {
+                method: 'PATCH',
+                headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+                body: JSON.stringify({ role: newRole }),
+              });
+              if (res.ok) changed++;
+            } catch (_) {}
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'bulk_role_change',
+            details: { new_role: newRole, count: changed, user_ids: userIds.slice(0, 10) },
+          });
+          return jsonResponse({ success: true, changed, new_role: newRole });
+        } catch (e) { return errorResponse(`Bulk-role Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/feature-flags ──────────────────────────────
+      if (method === 'GET' && path === '/api/admin/feature-flags') {
+        try {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/feature_flags?select=*&order=key.asc`, {
+            headers: svcHeaders,
+          });
+          const flags = res.ok ? await res.json() : [];
+          return jsonResponse({ success: true, flags });
+        } catch (e) { return errorResponse(`Feature-flags Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/feature-flags/:key ────────────────────────
+      if (method === 'POST' && path.startsWith('/api/admin/feature-flags/')) {
+        if (!caller.isRootAdmin) return errorResponse('Root-Admin erforderlich', 403);
+        try {
+          const key = path.split('/').pop();
+          if (!key) return errorResponse('key fehlt', 400);
+          const body = await request.json().catch(() => ({}));
+          const enabled = body.enabled !== false;
+          const world = body.world || null;
+          const value = body.value || null;
+          const upsertRes = await fetch(`${SUPABASE_URL}/rest/v1/feature_flags`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+            body: JSON.stringify({
+              key,
+              enabled,
+              world,
+              value,
+              updated_by: caller.username,
+              updated_at: new Date().toISOString(),
+            }),
+          });
+          if (!upsertRes.ok) return errorResponse(`Feature-flag upsert failed: ${upsertRes.status}`);
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: enabled ? 'feature_flag_enable' : 'feature_flag_disable',
+            details: { key, world, value },
+            undo_payload: JSON.stringify({ action: enabled ? 'feature_flag_disable' : 'feature_flag_enable', key, world }),
+          });
+          return jsonResponse({ success: true, key, enabled });
+        } catch (e) { return errorResponse(`Feature-flag Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/announcements ──────────────────────────────
+      if (method === 'GET' && path === '/api/admin/announcements') {
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/scheduled_announcements?select=*&order=run_at.asc&limit=100`,
+            { headers: svcHeaders }
+          );
+          const announcements = res.ok ? await res.json() : [];
+          return jsonResponse({ success: true, announcements });
+        } catch (e) { return errorResponse(`Announcements Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/announcements ─────────────────────────────
+      if (method === 'POST' && path === '/api/admin/announcements') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const title = String(body.title || '').slice(0, 200);
+          const msgBody = String(body.body || '').slice(0, 2000);
+          const runAt = body.run_at ? new Date(body.run_at).toISOString() : new Date(Date.now() + 3600000).toISOString();
+          if (!title || !msgBody) return errorResponse('title und body erforderlich', 400);
+          const insRes = await fetch(`${SUPABASE_URL}/rest/v1/scheduled_announcements`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify({
+              title,
+              body: msgBody,
+              run_at: runAt,
+              world: body.world || null,
+              push: body.push === true,
+              sent: false,
+              created_by: caller.username,
+            }),
+          });
+          const row = insRes.ok ? (await insRes.json())[0] : null;
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'announcement_scheduled',
+            details: { title, run_at: runAt, world: body.world },
+          });
+          return jsonResponse({ success: insRes.ok, announcement: row });
+        } catch (e) { return errorResponse(`Announcement Fehler: ${e.message}`); }
+      }
+
+      // ── DELETE /api/admin/announcements/:id ───────────────────────
+      if (method === 'DELETE' && path.startsWith('/api/admin/announcements/')) {
+        try {
+          const id = path.split('/').pop();
+          if (!id) return errorResponse('id fehlt', 400);
+          const delRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/scheduled_announcements?id=eq.${id}&sent=eq.false`,
+            { method: 'DELETE', headers: svcHeaders }
+          );
+          return jsonResponse({ success: delRes.ok });
+        } catch (e) { return errorResponse(`Announcement-Delete Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/audit-log/:id/undo ──────────────────────
+      if (method === 'POST' && path.includes('/audit-log/') && path.endsWith('/undo')) {
+        if (!caller.isRootAdmin) return errorResponse('Root-Admin erforderlich', 403);
+        try {
+          const parts = path.split('/');
+          const entryId = parts[parts.length - 2];
+          // Fetch entry to get undo_payload
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/admin_audit_log?id=eq.${encodeURIComponent(entryId)}&select=*&limit=1`,
+            { headers: svcHeaders }
+          );
+          const rows = res.ok ? await res.json() : [];
+          const entry = rows[0];
+          if (!entry) return errorResponse('Eintrag nicht gefunden', 404);
+          const undoPayload = entry.undo_payload;
+          if (!undoPayload) return errorResponse('Keine Undo-Information vorhanden', 422);
+          let payload;
+          try { payload = typeof undoPayload === 'string' ? JSON.parse(undoPayload) : undoPayload; } catch (_) {
+            return errorResponse('Undo-Payload konnte nicht geparst werden', 422);
+          }
+          // Execute undo based on action
+          const undoAction = payload.action;
+          if (undoAction === 'shadow_unban' || undoAction === 'shadow_ban') {
+            const enable = undoAction === 'shadow_ban';
+            await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${payload.user_id}`, {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({ shadow_banned: enable }),
+            });
+          } else if (undoAction === 'temp_unmute') {
+            await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${payload.user_id}`, {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({ muted_until: null }),
+            });
+          } else if (undoAction === 'feature_flag_enable' || undoAction === 'feature_flag_disable') {
+            const enable = undoAction === 'feature_flag_enable';
+            await fetch(`${SUPABASE_URL}/rest/v1/feature_flags`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+              body: JSON.stringify({ key: payload.key, enabled: enable, world: payload.world, updated_by: caller.username, updated_at: new Date().toISOString() }),
+            });
+          } else {
+            return errorResponse(`Undo fuer Aktion '${undoAction}' nicht unterstuetzt`, 422);
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: `undo_${entry.action || 'action'}`,
+            details: { original_entry_id: entryId, undo_action: undoAction },
+          });
+          return jsonResponse({ success: true, undo_action: undoAction });
+        } catch (e) { return errorResponse(`Undo Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/insights ───────────────────────────────────
+      if (method === 'GET' && path === '/api/admin/insights') {
+        try {
+          // Parallel fetch for all insights data.
+          const now = new Date();
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+          const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+          const [usersRes, todayRes, weekRes, activityRes, videosRes] = await Promise.allSettled([
+            fetch(`${SUPABASE_URL}/rest/v1/profiles?select=count&head=true`, { headers: svcHeaders }),
+            fetch(`${SUPABASE_URL}/rest/v1/profiles?select=count&created_at=gte.${todayStart}&head=true`, { headers: svcHeaders }),
+            fetch(`${SUPABASE_URL}/rest/v1/profiles?select=count&created_at=gte.${weekAgo}&head=true`, { headers: svcHeaders }),
+            fetch(`${SUPABASE_URL}/rest/v1/user_activity_log?select=world,created_at&created_at=gte.${weekAgo}&limit=5000`, { headers: svcHeaders }),
+            fetch(`${SUPABASE_URL}/rest/v1/archive_videos?select=youtube_title,worlds&status=eq.confirmed&order=created_at.desc&limit=5`, { headers: svcHeaders }),
+          ]);
+
+          const totalUsers = usersRes.status === 'fulfilled' && usersRes.value.ok
+            ? parseInt(usersRes.value.headers.get('content-range')?.split('/')[1] || '0')
+            : 0;
+          const usersToday = todayRes.status === 'fulfilled' && todayRes.value.ok
+            ? parseInt(todayRes.value.headers.get('content-range')?.split('/')[1] || '0')
+            : 0;
+          const usersWeek = weekRes.status === 'fulfilled' && weekRes.value.ok
+            ? parseInt(weekRes.value.headers.get('content-range')?.split('/')[1] || '0')
+            : 0;
+
+          // World comparison from activity log
+          const activityRows = activityRes.status === 'fulfilled' && activityRes.value.ok
+            ? await activityRes.value.json() : [];
+          const worldCounts = {};
+          for (const row of activityRows) {
+            const w = row.world || 'unknown';
+            worldCounts[w] = (worldCounts[w] || 0) + 1;
+          }
+          const worlds = {};
+          for (const [w, count] of Object.entries(worldCounts)) {
+            worlds[w] = { users: 0, active_today: count };
+          }
+
+          // Heatmap from activity log (hour x weekday)
+          const heatmap = [];
+          const heatmapCells = {};
+          for (const row of activityRows) {
+            try {
+              const dt = new Date(row.created_at);
+              const wd = dt.getDay() || 7; // 1=Mon, 7=Sun
+              const h = dt.getHours();
+              const k = `${wd}-${h}`;
+              heatmapCells[k] = (heatmapCells[k] || 0) + 1;
+            } catch (_) {}
+          }
+          for (const [k, count] of Object.entries(heatmapCells)) {
+            const [wd, h] = k.split('-').map(Number);
+            heatmap.push({ weekday: wd, hour: h, count });
+          }
+
+          // Top videos
+          const topVideos = videosRes.status === 'fulfilled' && videosRes.value.ok
+            ? (await videosRes.value.json()).map(v => ({ title: v.youtube_title, plays: 0 }))
+            : [];
+
+          return jsonResponse({
+            success: true,
+            growth: {
+              total_users: totalUsers,
+              users_today: usersToday,
+              users_week: usersWeek,
+              daily_new: [],
+            },
+            heatmap,
+            worlds,
+            top_articles: [],
+            top_videos: topVideos,
+          });
+        } catch (e) { return errorResponse(`Insights Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/health (enriched) ──────────────────────────
+      if (method === 'GET' && path === '/api/admin/health') {
+        try {
+          const checks = await Promise.allSettled([
+            fetch(`${SUPABASE_URL}/rest/v1/profiles?select=count&limit=1`, { headers: svcHeaders, signal: AbortSignal.timeout(5000) }),
+          ]);
+          const dbOk = checks[0].status === 'fulfilled' && checks[0].value.ok;
+          return jsonResponse({
+            success: true,
+            services: {
+              supabase: { status: dbOk ? 'green' : 'red', label: dbOk ? 'Verbunden' : 'Fehler' },
+              worker: { status: 'green', label: 'Laufend' },
+            },
+            timestamp: new Date().toISOString(),
+          });
+        } catch (e) { return errorResponse(`Health Fehler: ${e.message}`); }
       }
 
       // ── POST /api/activity/log  (v95 Echtzeit Activity Tracking) ──
