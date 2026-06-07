@@ -8516,9 +8516,10 @@ export default {
           if (topic.length < 3) return errorResponse('topic fehlt', 400);
           const world = normWorld(body?.world);
           const branches = WORKSHOP_BRANCHES[world];
-          const branchHint = body?.branch && branches.includes(body.branch)
-            ? body.branch
-            : null;
+          // Branch-Hinweis darf bestehend ODER ein komplett neues Thema sein.
+          const branchHint = body?.branch ? String(body.branch).trim() : null;
+          // Wenn der Admin explizit ein neues Thema will:
+          const wantNewTheme = body?.new_theme === true;
 
           const system = [
             'Du bist Lehrredaktion fuer die Weltenbibliothek-App. Erstellst ein neues Lern-Modul.',
@@ -8526,7 +8527,9 @@ export default {
             'Antworte AUSSCHLIESSLICH als JSON-Objekt mit den Feldern:',
             '  title (max 60 Zeichen),',
             '  subtitle (max 120 Zeichen),',
-            `  branch (einer aus: ${branches.join(' | ')}),`,
+            wantNewTheme
+              ? '  branch (Name eines NEUEN, treffenden Themas/Bereichs, 2-4 Worte),'
+              : `  branch (passendes Thema -- bevorzugt eines aus: ${branches.join(' | ')}; ein neues Thema ist erlaubt wenn es besser passt),`,
             '  theory_content (300-700 Worte, Markdown erlaubt: ## Ueberschriften, **fett**, Listen),',
             '  case_study (eine konkrete Fallgeschichte, 150-350 Worte),',
             '  exercise_description (1-3 praktische Uebungen, 100-300 Worte),',
@@ -8536,11 +8539,14 @@ export default {
             'Inhalte auf Deutsch.',
           ].join('\n');
           const user = branchHint
-            ? `Thema: ${topic}\nGewuenschter Branch: ${branchHint}\nErstelle das vollstaendige Modul.`
-            : `Thema: ${topic}\nWaehle den passenden Branch selbst und erstelle das vollstaendige Modul.`;
+            ? `Thema-Inhalt: ${topic}\nGewuenschtes Thema/Bereich (branch): ${branchHint}\nErstelle das vollstaendige Modul.`
+            : (wantNewTheme
+              ? `Thema-Inhalt: ${topic}\nErfinde dafuer ein passendes NEUES Thema/Bereich (branch) und erstelle das vollstaendige Modul.`
+              : `Thema-Inhalt: ${topic}\nWaehle das passende Thema (branch) selbst und erstelle das vollstaendige Modul.`);
           const moduleData = await workshopAiJson(system, user, 2200);
-          // Sanity-Check + Defaults
-          const branch = branches.includes(moduleData.branch) ? moduleData.branch : (branchHint || branches[0]);
+          // branch: KI-Vorschlag (auch neues Thema) > Hint > erster bestehender.
+          const branch = (String(moduleData.branch || '').trim())
+            || branchHint || branches[0];
           const xpRaw = Number(moduleData.xp_reward) || 100;
           const xp = Math.max(50, Math.min(200, Math.round(xpRaw)));
           return jsonResponse({
@@ -8920,7 +8926,9 @@ export default {
           // ── Inhalts-Check ─────────────────────────────────────────
           const errors = [];
           if (!mod.title || String(mod.title).trim().length < 3) errors.push('title fehlt oder zu kurz');
-          if (!mod.branch || !WORKSHOP_BRANCHES[world].includes(mod.branch)) errors.push('branch ungueltig');
+          // Branch darf bestehend ODER ein komplett neues Thema sein (Freitext).
+          const branchName = String(mod.branch || '').trim();
+          if (branchName.length < 2 || branchName.length > 60) errors.push('branch (Thema) fehlt oder ungueltig');
           if (!mod.theory_content || String(mod.theory_content).trim().length < 200) {
             errors.push('theory_content zu kurz (min 200 Zeichen)');
           }
@@ -8941,22 +8949,41 @@ export default {
             return jsonResponse({ success: false, errors }, 400);
           }
 
-          // ── module_code bestimmen ─────────────────────────────────
+          // ── module_code + branch_order bestimmen ──────────────────
+          // Gesamte Tabelle einmal laden (Codes + Branch + Order).
+          const allR = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,branch_order`,
+            { headers: svcHeaders },
+          );
+          const allRows = allR.ok ? (await allR.json().catch(() => [])) : [];
+          const prefix = WORLD_CODE_PREFIX[world] || 'V-';
+
           let moduleCode = editCode;
           if (!moduleCode) {
-            // Naechste freie Nummer im Branch finden.
-            // V-/U-/M-/E- je nach Welt.
-            const prefix = WORLD_CODE_PREFIX[world] || 'V-';
-            const r = await fetch(
-              `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code&module_code=like.${prefix}*`,
-              { headers: svcHeaders },
-            );
-            const existing = r.ok ? await r.json().catch(() => []) : [];
-            const nums = (existing || [])
+            const nums = allRows
               .map(e => parseInt(String(e.module_code || '').replace(prefix, ''), 10))
               .filter(n => !isNaN(n));
             const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
-            moduleCode = `${prefix}${nextNum}`;
+            // Zero-padded auf 2 Stellen (V-06) -> konsistent mit Bestand.
+            moduleCode = `${prefix}${String(nextNum).padStart(2, '0')}`;
+          }
+
+          // branch_order = Position INNERHALB des Branches.
+          // FIX: bisher faelschlich der Branch-Index -> Kollision (V-31 unter V-01).
+          // Neu: bei neuem Modul ans Ende des (ggf. neuen) Branches; bei Edit
+          // bestehende Order behalten.
+          let branchOrder;
+          if (editCode) {
+            const cur = allRows.find(e => String(e.module_code).toUpperCase() === editCode);
+            branchOrder = (cur && Number.isFinite(Number(cur.branch_order)))
+              ? Number(cur.branch_order)
+              : 1;
+          } else {
+            const inBranch = allRows
+              .filter(e => String(e.branch || '').trim() === branchName)
+              .map(e => Number(e.branch_order))
+              .filter(n => Number.isFinite(n));
+            branchOrder = inBranch.length > 0 ? Math.max(...inBranch) + 1 : 1;
           }
 
           // W5: Vor dem Ueberschreiben eines bestehenden Moduls Snapshot sichern.
@@ -8967,8 +8994,8 @@ export default {
           // ── Schreiben (UPSERT bei edit, INSERT bei new) ───────────
           const row = {
             module_code: moduleCode,
-            branch: mod.branch,
-            branch_order: Number(mod.branch_order) || (WORKSHOP_BRANCHES[world].indexOf(mod.branch) + 1),
+            branch: branchName,
+            branch_order: branchOrder,
             title: String(mod.title).trim(),
             subtitle: String(mod.subtitle || '').trim(),
             is_boss_module: !!mod.is_boss_module,
@@ -9061,24 +9088,27 @@ export default {
             try {
               const system = [
                 'Du planst neue Lern-Module fuer die Weltenbibliothek-App.',
-                'Schlage GENAU 2 neue Modul-Themen vor, die thematische Luecken fuellen.',
+                'Schlage GENAU 2 Vorschlaege vor: 1x ein neues Modul in einem BESTEHENDEN Thema,',
+                'und 1x ein komplett NEUES Thema (Bereich), falls ein ganzer Themenbereich fehlt.',
                 'Antworte AUSSCHLIESSLICH als JSON-Array mit 2 Objekten:',
-                '  { "topic": "...", "branch": "<einer der Branches>", "rationale": "kurze Begruendung auf Deutsch warum dieses Modul fehlt" }',
-                `Bevorzugte (schwach abgedeckte) Branches: ${weakest.join(', ')}.`,
-                `Erlaubte Branches: ${branches.join(' | ')}.`,
+                '  { "topic": "...", "branch": "Thema-Name", "is_new_theme": true|false, "rationale": "kurze Begruendung auf Deutsch" }',
+                `Bestehende Themen: ${branches.join(' | ')}.`,
+                `Bevorzugt schwach abgedeckt: ${weakest.join(', ')}.`,
               ].join('\n');
-              const user = `Bereits vorhandene Modul-Titel: ${titles || '(keine)'}\n\nWelche 2 Module fehlen?`;
+              const user = `Bereits vorhandene Modul-Titel: ${titles || '(keine)'}\n\nWelche 2 Vorschlaege (1 bestehend, 1 neues Thema)?`;
               const ideas = await workshopAiJson(system, user, 600);
               for (const idea of (Array.isArray(ideas) ? ideas : []).slice(0, 2)) {
                 const topic = String(idea.topic || '').trim();
                 if (topic.length < 3) continue;
-                const branch = branches.includes(idea.branch) ? idea.branch : weakest[0];
+                // Branch darf bestehend ODER neues Thema sein.
+                const branch = String(idea.branch || '').trim() || weakest[0];
+                const isNewTheme = !branches.includes(branch);
                 // Vollstaendiges Modul generieren.
                 const genSystem = [
                   'Du bist Lehrredaktion der Weltenbibliothek. Erstelle ein vollstaendiges Lern-Modul.',
                   'Antworte AUSSCHLIESSLICH als JSON-Objekt mit: title, subtitle, theory_content (300-600 Worte, Markdown), case_study (150-300 Worte), exercise_description (100-250 Worte), xp_reward (50-200). Deutsch.',
                 ].join('\n');
-                const mod = await workshopAiJson(genSystem, `Thema: ${topic}\nBranch: ${branch}`, 1800);
+                const mod = await workshopAiJson(genSystem, `Thema: ${topic}\nBranch/Bereich: ${branch}`, 1800);
                 rowsToInsert.push({
                   world, kind: 'new', status: 'pending',
                   title: String(mod.title || topic).slice(0, 120),
@@ -9088,7 +9118,8 @@ export default {
                   case_study: String(mod.case_study || ''),
                   exercise_description: String(mod.exercise_description || ''),
                   xp_reward: Math.max(50, Math.min(200, Math.round(Number(mod.xp_reward) || 100))),
-                  rationale: String(idea.rationale || `Fuellt Luecke im Branch "${branch}"`).slice(0, 500),
+                  rationale: (isNewTheme ? '[NEUES THEMA] ' : '') +
+                    String(idea.rationale || `Modul im Bereich "${branch}"`).slice(0, 480),
                   created_by: `scan:${caller.username}`,
                 });
                 created.new++;
@@ -9245,23 +9276,36 @@ export default {
           }
 
           // new/improve: in die Modul-Tabelle schreiben.
+          const branches = WORKSHOP_BRANCHES[world];
+          // Branch darf bestehend ODER neues Thema (Freitext aus dem Vorschlag) sein.
+          const accBranch = String(sug.branch || '').trim() || branches[0];
+          const prefix = WORLD_CODE_PREFIX[world] || 'V-';
+          const exR = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,branch_order`,
+            { headers: svcHeaders },
+          );
+          const exAll = exR.ok ? (await exR.json().catch(() => [])) : [];
+
           let moduleCode = sug.target_module_code;
           if (!moduleCode) {
-            const prefix = WORLD_CODE_PREFIX[world] || 'V-';
-            const exR = await fetch(
-              `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code&module_code=like.${prefix}*`,
-              { headers: svcHeaders },
-            );
-            const ex = exR.ok ? await exR.json().catch(() => []) : [];
-            const nums = (ex || []).map(e => parseInt(String(e.module_code || '').replace(prefix, ''), 10)).filter(n => !isNaN(n));
-            moduleCode = `${prefix}${nums.length > 0 ? Math.max(...nums) + 1 : 1}`;
+            const nums = exAll.map(e => parseInt(String(e.module_code || '').replace(prefix, ''), 10)).filter(n => !isNaN(n));
+            const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+            moduleCode = `${prefix}${String(nextNum).padStart(2, '0')}`;
           }
-          const branches = WORKSHOP_BRANCHES[world];
-          const accBranch = branches.includes(sug.branch) ? sug.branch : branches[0];
+          // branch_order: bei improve bestehende behalten, sonst ans Branch-Ende.
+          let accBranchOrder;
+          if (sug.target_module_code) {
+            const cur = exAll.find(e => String(e.module_code).toUpperCase() === String(moduleCode).toUpperCase());
+            accBranchOrder = (cur && Number.isFinite(Number(cur.branch_order))) ? Number(cur.branch_order) : 1;
+          } else {
+            const inBranch = exAll.filter(e => String(e.branch || '').trim() === accBranch)
+              .map(e => Number(e.branch_order)).filter(n => Number.isFinite(n));
+            accBranchOrder = inBranch.length > 0 ? Math.max(...inBranch) + 1 : 1;
+          }
           const row = {
             module_code: moduleCode,
             branch: accBranch,
-            branch_order: branches.indexOf(accBranch) + 1,
+            branch_order: accBranchOrder,
             title: sug.title || moduleCode,
             subtitle: sug.subtitle || '',
             is_boss_module: false,

@@ -1644,6 +1644,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
     required String world,
     required String topic,
     String? branch,
+    bool newTheme = false,
   }) async {
     try {
       final data = await AdminApiClient.instance.postJson(
@@ -1652,6 +1653,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
           'world': world,
           'topic': topic,
           if (branch != null && branch.isNotEmpty) 'branch': branch,
+          if (newTheme) 'new_theme': true,
         },
       );
       return (data['module'] as Map?)?.cast<String, dynamic>();
