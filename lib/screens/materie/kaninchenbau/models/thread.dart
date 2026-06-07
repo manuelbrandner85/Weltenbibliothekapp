@@ -78,11 +78,13 @@ class NetworkNode {
   final String label;
   final String type; // person | company | org | concept
   final double weight; // 0..1 für Knotengröße
+  final String? imageUrl; // Wikidata P18 Commons thumbnail URL (optional)
   const NetworkNode({
     required this.id,
     required this.label,
     required this.type,
     this.weight = 0.5,
+    this.imageUrl,
   });
 }
 
