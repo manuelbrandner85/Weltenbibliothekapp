@@ -40,7 +40,7 @@ class _DailyStreakIndicatorState extends State<DailyStreakIndicator>
         if (p.streakDays > max) max = p.streakDays;
       }
       if (mounted) setState(() => _streak = max);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('daily_streak_indicator: silent catch -> $e'); }
   }
 
   @override

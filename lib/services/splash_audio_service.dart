@@ -64,7 +64,7 @@ class SplashAudioService {
     try {
       await _player?.stop();
       await _player?.dispose();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('splash_audio_service: silent catch -> $e'); }
     _player = null;
   }
 }

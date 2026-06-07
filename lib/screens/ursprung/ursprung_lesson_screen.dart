@@ -184,7 +184,7 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
               reason: 'ursprung_module:${widget.moduleCode}',
               syncServer: false,
             );
-          } catch (_) {}
+          } catch (e) { if (kDebugMode) debugPrint('ursprung_lesson_screen: silent catch -> $e'); }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -219,7 +219,7 @@ class _UrsprungLessonScreenState extends State<UrsprungLessonScreen> {
               .map((e) => e.cast<String, dynamic>())
               .toList();
         }
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('ursprung_lesson_screen: silent catch -> $e'); }
     }
     return const [];
   }

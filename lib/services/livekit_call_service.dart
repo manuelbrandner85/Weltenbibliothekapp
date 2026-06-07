@@ -863,7 +863,7 @@ class LiveKitCallService extends ChangeNotifier {
         if (!event.publication.subscribed) {
           event.publication.subscribe();
         }
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('livekit_call_service: silent catch -> $e'); }
       notifyListeners();
     });
     listener.on<TrackUnpublishedEvent>((event) {
@@ -1550,7 +1550,7 @@ class LiveKitCallService extends ChangeNotifier {
             // ignore: avoid_dynamic_calls
             (pub as dynamic).subscribed = wantSubscribed;
             ok = true;
-          } catch (_) {} // ignore: dynamic API nicht verfügbar → Fallback
+          } catch (e) { if (kDebugMode) debugPrint('livekit_call_service: silent catch -> $e'); } // ignore: dynamic API nicht verfügbar → Fallback
           if (!ok) {
             try {
               if (wantSubscribed) {

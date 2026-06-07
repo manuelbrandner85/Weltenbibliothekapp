@@ -223,7 +223,7 @@ class _EventPredictorScreenState extends State<EventPredictorScreen>
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D47A1),
         elevation: 0,
-        title: const Text('EVENT PREDICTOR',
+        title: const Text('EREIGNISPROGNOSE',
             style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,

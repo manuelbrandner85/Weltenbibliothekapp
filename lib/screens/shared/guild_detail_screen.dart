@@ -1081,7 +1081,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
         isActive =
             DateTime.parse(challenge['end_date'].toString()).isAfter(now);
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('guild_detail_screen: silent catch -> $e'); }
 
     return GestureDetector(
       onTap: () {
@@ -1310,7 +1310,7 @@ class _GuildDetailScreenState extends State<GuildDetailScreen>
       if (hex.length == 8) {
         return Color(int.parse(hex, radix: 16));
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('guild_detail_screen: silent catch -> $e'); }
     return fallback;
   }
 }

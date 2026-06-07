@@ -864,7 +864,7 @@ class _BossTestScreenState extends State<_BossTestScreen> {
           widget.test.xpReward,
           reason: 'boss_test_${widget.branch}',
         );
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('vorhang_modules_screen: silent catch -> $e'); }
     }
   }
 

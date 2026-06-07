@@ -161,7 +161,7 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
       for (final r in rels) {
         _ingestRelation(r);
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('conspiracy_network_screen: silent catch -> $e'); }
     if (!mounted) return;
     setState(() => _loading = false);
   }

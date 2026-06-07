@@ -186,7 +186,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               reason: 'vorhang_module:${widget.moduleCode}',
               syncServer: false,
             );
-          } catch (_) {}
+          } catch (e) { if (kDebugMode) debugPrint('vorhang_lesson_screen: silent catch -> $e'); }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -221,7 +221,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               .map((e) => e.cast<String, dynamic>())
               .toList();
         }
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('vorhang_lesson_screen: silent catch -> $e'); }
     }
     return const [];
   }
@@ -1745,7 +1745,7 @@ class _ModuleRatingCardState extends State<_ModuleRatingCard> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Danke fuer deine Bewertung: $stars/5'),
+          content: Text('Danke für deine Bewertung: $stars/5'),
           duration: const Duration(seconds: 2),
           backgroundColor: const Color(0xFF1A1230),
         ),

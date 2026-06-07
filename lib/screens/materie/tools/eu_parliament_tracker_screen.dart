@@ -82,7 +82,7 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
         final m = jsonDecode(raw) as Map<String, dynamic>;
         _alignments =
             m.map((k, v) => MapEntry(int.parse(k), (v as num).toInt()));
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('eu_parliament_tracker_screen: silent catch -> $e'); }
     }
     if (mounted) setState(() {});
   }

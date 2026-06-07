@@ -33,7 +33,7 @@ class MentorTour {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_prefKey, true);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('mentor_tour_screen: silent catch -> $e'); }
   }
 
   /// Zeigt die Tour, sofern noch nicht abgeschlossen. Gibt true zurück

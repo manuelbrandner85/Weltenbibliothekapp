@@ -131,7 +131,7 @@ class _VorhangSymbolDecoderScreenState
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: _gold),
-              title: const Text('Aus Galerie waehlen',
+              title: const Text('Aus Galerie wählen',
                   style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);

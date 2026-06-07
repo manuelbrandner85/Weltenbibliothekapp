@@ -58,7 +58,7 @@ class _VorhangWorldWrapperState extends State<VorhangWorldWrapper> {
   Future<void> _trackWorldVisit() async {
     try {
       await AchievementService().incrementProgress('world_traveler');
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('vorhang_world_wrapper: silent catch -> $e'); }
   }
 
   @override

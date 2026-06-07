@@ -51,7 +51,7 @@ class OsintApis {
           );
         }).toList();
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('osint_apis: silent catch -> $e'); }
 
     // Direkter Fallback wenn Worker nicht erreichbar
     try {

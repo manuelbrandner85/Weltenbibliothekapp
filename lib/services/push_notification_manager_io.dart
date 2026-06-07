@@ -374,7 +374,7 @@ class PushNotificationManager with WidgetsBindingObserver {
     try {
       final msg = await FirebaseMessaging.instance.getInitialMessage();
       if (msg != null) _onFcmOpenedApp(msg);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('push_notification_manager_io: silent catch -> $e'); }
   }
 
   @override

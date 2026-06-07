@@ -377,7 +377,7 @@ class AdminActionService {
   Future<void> clearWarnings(String userId) async {
     try {
       await supabase.from('admin_warnings').delete().eq('user_id', userId);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('admin_action_service: silent catch -> $e'); }
   }
 
   /// Letzte N Admin-Aktionen.

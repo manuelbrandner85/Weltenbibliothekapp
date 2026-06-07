@@ -147,7 +147,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           .from('notifications')
           .update({'read_at': DateTime.now().toIso8601String()}).eq('id', id);
       // Realtime UPDATE event aktualisiert die Liste automatisch
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('notification_center_screen: silent catch -> $e'); }
   }
 
   /// Loescht eine Notification ueber den Worker (InvisibleAuth-tauglich).
@@ -233,7 +233,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
           }).toList();
         });
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('notification_center_screen: silent catch -> $e'); }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

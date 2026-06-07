@@ -613,7 +613,7 @@ class AchievementService {
             'xp': achievement.xpReward,
           },
         );
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('achievement_service: silent catch -> $e'); }
     });
 
     for (final listener in _unlockListeners) {
@@ -679,7 +679,7 @@ class AchievementService {
                 'Herzlichen Glückwunsch! Du hast Level $newLevel erreicht! 🎉',
             data: {'new_level': newLevel},
           );
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('achievement_service: silent catch -> $e'); }
       });
     }
 

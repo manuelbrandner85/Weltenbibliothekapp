@@ -100,7 +100,7 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
           return;
         }
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('chat_moderation_tab: silent catch -> $e'); }
     // Fallback to hardcoded list
     if (mounted) {
       setState(() {

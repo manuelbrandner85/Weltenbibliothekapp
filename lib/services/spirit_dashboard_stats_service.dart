@@ -85,9 +85,9 @@ class SpiritDashboardStatsService {
                   chakraCount[dom] = (chakraCount[dom] ?? 0) + 1;
                 }
               }
-            } catch (_) {}
+            } catch (e) { if (kDebugMode) debugPrint('spirit_dashboard_stats_service: silent catch -> $e'); }
           }
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('spirit_dashboard_stats_service: silent catch -> $e'); }
       }
 
       if (chakraCount.isNotEmpty) {

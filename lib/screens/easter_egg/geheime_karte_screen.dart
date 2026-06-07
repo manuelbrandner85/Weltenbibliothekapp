@@ -552,7 +552,7 @@ class _GeheimeKarteScreenState extends State<GeheimeKarteScreen>
                 try {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.remove(_prefsKey);
-                } catch (_) {}
+                } catch (e) { if (kDebugMode) debugPrint('geheime_karte_screen: silent catch -> $e'); }
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(

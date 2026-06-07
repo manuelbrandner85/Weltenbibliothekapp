@@ -54,7 +54,7 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
             (data['total'] as int?) ?? (data['requests'] as List?)?.length ?? 0;
         setState(() => _openUsernameRequests = total);
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('audit_tabs: silent catch -> $e'); }
   }
 
   @override

@@ -173,7 +173,7 @@ class EuParliamentService {
     if (dateStr != null) {
       try {
         date = DateTime.parse(dateStr);
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('eu_parliament_service: silent catch -> $e'); }
     }
     final stats = (raw['stats'] as Map?)?.cast<String, dynamic>();
     final categories = ((raw['geo_areas'] as List?) ?? const [])

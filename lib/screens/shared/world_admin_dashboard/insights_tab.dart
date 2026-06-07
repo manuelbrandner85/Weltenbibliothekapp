@@ -95,11 +95,11 @@ class _InsightsTabState extends State<_InsightsTab> {
                     ..clear()
                     ..addAll(worlds);
                 });
-              } catch (_) {}
+              } catch (e) { if (kDebugMode) debugPrint('insights_tab: silent catch -> $e'); }
             },
           )
           .subscribe();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('insights_tab: silent catch -> $e'); }
   }
 
   @override

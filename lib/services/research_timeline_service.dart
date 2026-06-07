@@ -162,7 +162,7 @@ class ResearchTimelineService {
       final prefs = await SharedPreferences.getInstance();
       final list = events.map((e) => e.toJson()).toList();
       await prefs.setString(_cacheKey, jsonEncode(list));
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('research_timeline_service: silent catch -> $e'); }
   }
 
   Future<List<TimelineEventV2>> _loadCache() async {

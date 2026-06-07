@@ -644,7 +644,7 @@ class GdeltArticle {
         final dy = int.parse(seendate.substring(6, 8));
         return DateTime(y, mo, dy);
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('free_api_service: silent catch -> $e'); }
     return null;
   }
 }
@@ -721,7 +721,7 @@ class NasaFireball {
     DateTime? d;
     try {
       if (m['date'] != null) d = DateTime.parse(m['date']!);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('free_api_service: silent catch -> $e'); }
     return NasaFireball(
       date: d,
       energy: double.tryParse(m['energy'] ?? ''),
@@ -878,7 +878,7 @@ class DonkiEvent {
   DateTime? get parsedStart {
     try {
       if (startTime != null) return DateTime.parse(startTime!);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('free_api_service: silent catch -> $e'); }
     return null;
   }
 
@@ -925,7 +925,7 @@ class SunData {
     DateTime? parseUtc(String? s) {
       try {
         if (s != null) return DateTime.parse(s).toLocal();
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('free_api_service: silent catch -> $e'); }
       return null;
     }
 

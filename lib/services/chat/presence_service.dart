@@ -81,7 +81,7 @@ class PresenceService extends ChangeNotifier {
     if (ch != null) {
       try {
         await ch.untrack();
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('presence_service: silent catch -> $e'); }
       await Supabase.instance.client.removeChannel(ch);
     }
   }

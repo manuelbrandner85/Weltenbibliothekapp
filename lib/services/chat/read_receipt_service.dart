@@ -131,7 +131,7 @@ class ReadReceiptService extends ChangeNotifier {
     if (ch != null) {
       try {
         await _client.removeChannel(ch);
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('read_receipt_service: silent catch -> $e'); }
     }
   }
 

@@ -92,7 +92,7 @@ class InCallChatService {
       _ctrl.add(msg);
       _unreadCount++;
       _unreadNotifier.value = _unreadCount;
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('incall_chat_service: silent catch -> $e'); }
   }
 
   /// Sendet eine Nachricht an alle Teilnehmer.

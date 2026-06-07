@@ -690,7 +690,7 @@ Future<void> _triggerPushTestSuiteOnce() async {
         final body = response.body;
         // Light parse to log -- not strict.
         debugPrint('✅ Push-Test-Suite Response: $body');
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('main: silent catch -> $e'); }
       // Flag setzen → passiert nie wieder
       await prefs.setBool('push_test_suite_v1_done', true);
     } else {

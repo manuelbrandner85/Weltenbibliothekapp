@@ -35,7 +35,7 @@ class WBToast {
       if (_current == entry) {
         try {
           entry.remove();
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('wb_toast: silent catch -> $e'); }
         _current = null;
       }
     });

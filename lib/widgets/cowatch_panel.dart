@@ -105,7 +105,7 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
       if (event == 'play') widget.service.broadcastPlay(position);
       if (event == 'pause') widget.service.broadcastPause(position);
       if (event == 'seek') widget.service.broadcastSeek(position);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('cowatch_panel: silent catch -> $e'); }
   }
 
   void _onEvent(CoWatchEvent event) {

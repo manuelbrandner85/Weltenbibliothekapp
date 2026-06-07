@@ -60,7 +60,7 @@ class _OverviewTabState extends State<_OverviewTab> {
   void dispose() {
     try {
       _channel?.unsubscribe();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('overview_tab: silent catch -> $e'); }
     super.dispose();
   }
 

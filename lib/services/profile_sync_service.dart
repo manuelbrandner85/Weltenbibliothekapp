@@ -492,7 +492,7 @@ class SupabaseProfileSync {
             debugPrint(
                 '🔄 SupabaseProfileSync: Fallback auf InvisibleAuth-ID: $effectiveLegacyId');
           }
-        } catch (_) {}
+        } catch (e) { if (kDebugMode) debugPrint('profile_sync_service: silent catch -> $e'); }
       }
       if (effectiveLegacyId == null || effectiveLegacyId.isEmpty) return false;
       await supa.rpc('ensure_legacy_profile', params: {

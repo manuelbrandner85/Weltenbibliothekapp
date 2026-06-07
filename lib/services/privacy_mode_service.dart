@@ -22,7 +22,7 @@ class PrivacyModeService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _enabled = prefs.getBool(_key) ?? false;
       notifyListeners();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('privacy_mode_service: silent catch -> $e'); }
   }
 
   Future<void> setEnabled(bool v) async {
@@ -32,7 +32,7 @@ class PrivacyModeService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_key, v);
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('privacy_mode_service: silent catch -> $e'); }
   }
 
   /// Hilfsfunktion: rewrite-URL über Proxy wenn aktiv.

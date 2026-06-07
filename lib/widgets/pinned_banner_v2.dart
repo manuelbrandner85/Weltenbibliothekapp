@@ -68,7 +68,7 @@ class _PinnedBannerV2State extends State<PinnedBannerV2> {
           if (_activeIndex >= list.length) _activeIndex = 0;
         });
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('pinned_banner_v2: silent catch -> $e'); }
   }
 
   void _subscribe() {

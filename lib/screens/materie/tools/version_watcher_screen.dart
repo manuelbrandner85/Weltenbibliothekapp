@@ -81,7 +81,7 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
       try {
         final m = jsonDecode(raw) as Map<String, dynamic>;
         _watchlist = m.map((k, v) => MapEntry(k, v.toString()));
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('version_watcher_screen: silent catch -> $e'); }
     }
     if (mounted) setState(() {});
   }

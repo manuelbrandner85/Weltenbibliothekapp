@@ -595,7 +595,7 @@ LIMIT 60
           result.add(word);
         }
       }
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e'); }
 
     if (result.length < 6) {
       try {
@@ -607,7 +607,7 @@ LIMIT 60
           }
           if (result.length >= 6) break;
         }
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e'); }
     }
 
     return result.take(6).toList();

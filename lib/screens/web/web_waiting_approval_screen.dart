@@ -87,7 +87,7 @@ class _WebWaitingApprovalScreenState extends State<WebWaitingApprovalScreen>
   Future<void> _signOut() async {
     try {
       await Supabase.instance.client.auth.signOut();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('web_waiting_approval_screen: silent catch -> $e'); }
     // WebAuthGate übernimmt automatisch nach signOut
   }
 

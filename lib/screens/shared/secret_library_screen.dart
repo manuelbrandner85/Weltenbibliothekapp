@@ -368,7 +368,7 @@ class _BookCard extends StatelessWidget {
     if (hex != null && hex.startsWith('#') && hex.length == 7) {
       try {
         return Color(int.parse('FF${hex.substring(1)}', radix: 16));
-      } catch (_) {}
+      } catch (e) { if (kDebugMode) debugPrint('secret_library_screen: silent catch -> $e'); }
     }
     return const Color(0xFF5D4037);
   }

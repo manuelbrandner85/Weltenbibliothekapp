@@ -162,7 +162,7 @@ class _NotificationListViewState extends State<_NotificationListView> {
     try {
       await SupabaseNotificationService.instance.markAllAsRead();
       await _load();
-    } catch (_) {}
+    } catch (e) { if (kDebugMode) debugPrint('notification_center_button: silent catch -> $e'); }
   }
 
   String _relTime(String? iso) {
