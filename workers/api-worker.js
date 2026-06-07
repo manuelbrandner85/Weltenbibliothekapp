@@ -7872,24 +7872,29 @@ export default {
       // Hilfs-Funktion: KI-Call mit zuverlaessigem JSON-Output.
       // Strategie (von zuverlaessig nach Fallback):
       //   1) Groq llama-3.3-70b (wenn GROQ_API_KEY) -- folgt JSON-Anweisungen am besten
-      //   2) Workers-AI llama-3.3-70b-fp8-fast -- deutlich besser als 3.1-8b
-      //   3) Workers-AI llama-3.1-8b -- letzter Fallback
-      // Jeweils mit robuster Extraktion + 1 Retry. llama-3.1-8b (vorher einzige
-      // Quelle) gab haeufig kaputtes JSON zurueck -> "0 Ergebnisse"/"Ausarbeitung
-      // fehlgeschlagen".
+      //   2) Google Gemini 2.0 Flash (wenn GEMINI_API_KEY) -- bestes Deutsch
+      //   3) OpenRouter (wenn OPENROUTER_API_KEY) -- viele Free-Modelle
+      //   4) Workers-AI llama-3.3-70b-fp8-fast -- deutlich besser als 3.1-8b
+      //   5) Workers-AI llama-3.1-8b -- letzter Fallback
+      // Jeweils mit robuster Extraktion + Retry. Jede zusaetzliche Quelle
+      // erhoeht die Wahrscheinlichkeit auf gueltiges JSON -> keine "0 Ergebnisse".
       async function workshopAiJson(systemMsg, userMsg, maxTokens = 1200) {
         const strictSystem = systemMsg +
           '\n\nWICHTIG: Antworte AUSSCHLIESSLICH mit gueltigem JSON. ' +
           'Kein Markdown, keine Code-Fences, keine Erklaerung, kein Text davor oder danach.';
 
-        // 1) Groq
-        if (env.GROQ_API_KEY) {
+        // Helper: OpenAI-kompatibler Chat-Endpunkt (Groq + OpenRouter teilen das Format)
+        const tryOpenAiCompatible = async (url, apiKey, model, extraHeaders = {}) => {
           try {
-            const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            const r = await fetch(url, {
               method: 'POST',
-              headers: { 'Authorization': `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+              headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                ...extraHeaders,
+              },
               body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
+                model,
                 messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userMsg }],
                 temperature: 0.6,
                 max_tokens: maxTokens,
@@ -7898,14 +7903,56 @@ export default {
             });
             if (r.ok) {
               const data = await r.json();
-              const parsed = extractJson(data?.choices?.[0]?.message?.content || '');
+              return extractJson(data?.choices?.[0]?.message?.content || '');
+            }
+          } catch (_) { /* fall through */ }
+          return null;
+        };
+
+        // 1) Groq
+        if (env.GROQ_API_KEY) {
+          const parsed = await tryOpenAiCompatible(
+            'https://api.groq.com/openai/v1/chat/completions',
+            env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
+          if (parsed) return parsed;
+        }
+
+        // 2) Google Gemini 2.0 Flash (eigenes Request-Format)
+        if (env.GEMINI_API_KEY) {
+          try {
+            const r = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  systemInstruction: { parts: [{ text: strictSystem }] },
+                  contents: [{ role: 'user', parts: [{ text: userMsg }] }],
+                  generationConfig: { temperature: 0.6, maxOutputTokens: maxTokens, responseMimeType: 'application/json' },
+                }),
+                signal: AbortSignal.timeout(28000),
+              },
+            );
+            if (r.ok) {
+              const data = await r.json();
+              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+              const parsed = extractJson(txt);
               if (parsed) return parsed;
             }
           } catch (_) { /* fall through */ }
         }
 
-        // 2+3) Workers-AI mit staerkerem Modell + Fallback + Retry
-        if (!env.AI) throw new Error('Keine KI verfuegbar (weder Groq noch Workers-AI)');
+        // 3) OpenRouter (kostenlose Modelle)
+        if (env.OPENROUTER_API_KEY) {
+          const parsed = await tryOpenAiCompatible(
+            'https://openrouter.ai/api/v1/chat/completions',
+            env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct:free',
+            { 'HTTP-Referer': 'https://weltenbibliothek-api.brandy13062.workers.dev', 'X-Title': 'Weltenbibliothek' });
+          if (parsed) return parsed;
+        }
+
+        // 4+5) Workers-AI mit staerkerem Modell + Fallback + Retry
+        if (!env.AI) throw new Error('Keine KI verfuegbar (keine API-Keys + kein Workers-AI)');
         const models = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
         for (const model of models) {
           for (let attempt = 0; attempt < 2; attempt++) {
@@ -7919,7 +7966,7 @@ export default {
             } catch (_) { /* naechster Versuch */ }
           }
         }
-        throw new Error('KI lieferte kein gueltiges JSON (Groq + Workers-AI versucht)');
+        throw new Error('KI lieferte kein gueltiges JSON (alle Quellen versucht)');
       }
 
       // ── POST /api/admin/module-workshop/topics ─────────────────────
