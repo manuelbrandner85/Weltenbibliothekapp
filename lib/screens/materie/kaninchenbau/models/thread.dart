@@ -1055,3 +1055,68 @@ class CorpWatchArticle {
         url: (j['url'] ?? '').toString(),
       );
 }
+
+/// A1: KI-generierter Kaninchenbau-Pfad (weiterfuehrende Verbindung).
+class RabbitPath {
+  final String label;
+  final String type; // person|organisation|ereignis|ort|konzept|geldfluss|dokument
+  final String hook; // 1 Satz warum interessant
+  final String query; // Suchbegriff zum Weitergraben
+  const RabbitPath({
+    required this.label,
+    required this.type,
+    required this.hook,
+    required this.query,
+  });
+  factory RabbitPath.fromJson(Map<String, dynamic> j) => RabbitPath(
+        label: (j['label'] ?? '').toString(),
+        type: (j['type'] ?? 'konzept').toString().toLowerCase(),
+        hook: (j['hook'] ?? '').toString(),
+        query: (j['query'] ?? j['label'] ?? '').toString(),
+      );
+}
+
+/// A2: KI-Dossier (strukturierter Recherche-Report).
+class Dossier {
+  final String summary;
+  final List<DossierActor> actors;
+  final List<String> money;
+  final List<String> contradictions;
+  final List<String> openQuestions;
+  final String markdown;
+  const Dossier({
+    required this.summary,
+    required this.actors,
+    required this.money,
+    required this.contradictions,
+    required this.openQuestions,
+    required this.markdown,
+  });
+  factory Dossier.fromJson(Map<String, dynamic> j) => Dossier(
+        summary: (j['summary'] ?? '').toString(),
+        actors: ((j['actors'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((e) => DossierActor.fromJson(Map<String, dynamic>.from(e)))
+            .toList(),
+        money: ((j['money'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
+        contradictions: ((j['contradictions'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
+        openQuestions: ((j['open_questions'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
+        markdown: (j['markdown'] ?? '').toString(),
+      );
+}
+
+class DossierActor {
+  final String name;
+  final String role;
+  const DossierActor({required this.name, required this.role});
+  factory DossierActor.fromJson(Map<String, dynamic> j) => DossierActor(
+        name: (j['name'] ?? '').toString(),
+        role: (j['role'] ?? '').toString(),
+      );
+}

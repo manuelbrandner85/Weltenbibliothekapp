@@ -40,6 +40,7 @@ import 'cards/money_flow_card.dart';
 import 'cards/network_card.dart';
 import 'cards/power_relations_card.dart';
 import 'cards/pubmed_card.dart';
+import 'cards/rabbit_hole_paths_card.dart';
 import 'cards/related_paths_card.dart';
 import 'cards/rss_mentions_card.dart';
 import 'cards/sanctions_card.dart';
@@ -201,6 +202,16 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       setState(() {
         s.relatedTopics = topics;
         s.relatedLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
+    // A1: KI-Kaninchenbau-Pfade laden
+    _service.fetchRabbitHolePaths(s.topic).then((paths) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.rabbitPaths = paths;
+        s.rabbitLoading = false;
         s.loadedApiCount++;
       });
     });
@@ -756,7 +767,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                         key: const ValueKey('loading'),
                         topic: s.topic,
                         loadedCount: s.loadedApiCount,
-                        totalCount: 46,
+                        totalCount: 47,
                       )
                     : _buildScrollContent(s),
               ),
@@ -948,6 +959,138 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
               );
             }).toList(),
           ),
+          const SizedBox(height: 12),
+          // A2: KI-Dossier-Generierung
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: s.dossierGenerating ? null : () => _generateDossier(s),
+              icon: s.dossierGenerating
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: KbDesign.neonRedSoft))
+                  : const Icon(Icons.auto_awesome, size: 16),
+              label: Text(s.dossierGenerating
+                  ? 'KI erstellt Dossier …'
+                  : (s.aiDossier == null
+                      ? 'KI-Dossier erstellen'
+                      : 'Dossier neu erstellen')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: KbDesign.neonRedSoft,
+                side: BorderSide(color: KbDesign.neonRed.withValues(alpha: 0.5)),
+              ),
+            ),
+          ),
+          if (s.aiDossier != null) ...[
+            const SizedBox(height: 12),
+            _buildAiDossier(s.aiDossier!),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _generateDossier(_ThreadState s) async {
+    setState(() => s.dossierGenerating = true);
+    final dossier = await _service.generateDossier(
+      s.topic,
+      context: _buildCardContext(s),
+    );
+    if (!mounted || s.disposed) return;
+    setState(() {
+      s.aiDossier = dossier;
+      s.dossierGenerating = false;
+    });
+    if (dossier == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Dossier konnte nicht erstellt werden'),
+        backgroundColor: Colors.redAccent,
+      ));
+    }
+  }
+
+  Widget _buildAiDossier(Dossier d) {
+    Widget section(String title, List<Widget> children) {
+      if (children.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+          Text(title,
+              style: const TextStyle(
+                  color: KbDesign.neonRedSoft,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8)),
+          const SizedBox(height: 4),
+          ...children,
+        ],
+      );
+    }
+
+    Widget bullet(String text) => Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('• ', style: TextStyle(color: Colors.white54)),
+            Expanded(
+              child: Text(text,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 12, height: 1.35)),
+            ),
+          ]),
+        );
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: KbDesign.neonRed.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            const Icon(Icons.psychology_rounded,
+                color: KbDesign.neonRedSoft, size: 14),
+            const SizedBox(width: 6),
+            const Expanded(
+              child: Text('KI-DOSSIER',
+                  style: TextStyle(
+                      color: KbDesign.neonRedSoft,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.copy_rounded,
+                  size: 16, color: Colors.white38),
+              tooltip: 'Als Markdown kopieren',
+              onPressed: () {
+                Clipboard.setData(ClipboardData(
+                    text: d.markdown.isNotEmpty ? d.markdown : d.summary));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Dossier kopiert'),
+                  duration: Duration(seconds: 2),
+                ));
+              },
+            ),
+          ]),
+          if (d.summary.isNotEmpty)
+            Text(d.summary,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 13, height: 1.4)),
+          section(
+              'SCHLÜSSELAKTEURE',
+              d.actors
+                  .map((a) => bullet(
+                      '${a.name}${a.role.isNotEmpty ? " — ${a.role}" : ""}'))
+                  .toList()),
+          section('GELD & MACHT', d.money.map(bullet).toList()),
+          section('WIDERSPRÜCHE', d.contradictions.map(bullet).toList()),
+          section('OFFENE FRAGEN', d.openQuestions.map(bullet).toList()),
         ],
       ),
     );
@@ -1302,6 +1445,14 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   _stag(940, AnnotationsCard(topic: s.topic)),
                   _gap(),
                   _stag(950, SherlockCard(topic: s.topic)),
+                  _gap(),
+                  _stag(
+                      955,
+                      RabbitHolePathsCard(
+                        paths: s.rabbitPaths,
+                        loading: s.rabbitLoading,
+                        onTap: _openThread,
+                      )),
                   _gap(),
                   _stag(
                       960,
@@ -1926,6 +2077,14 @@ class _ThreadState {
 
   List<String> relatedTopics = const [];
   bool relatedLoading = true;
+
+  // A1: KI-Kaninchenbau-Pfade
+  List<RabbitPath> rabbitPaths = const [];
+  bool rabbitLoading = true;
+
+  // A2: KI-Dossier
+  Dossier? aiDossier;
+  bool dossierGenerating = false;
 
   String? aiInsight;
   bool aiLoading = true;

@@ -1343,6 +1343,142 @@ async function dispatchPushQueue(env, pushAuth) {
   return { drained: list.length, sent, failed, fcmEnabled: true };
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// SHARED AI CORE (2026-06-07) -- 5-Quellen-Kette fuer ALLE Endpunkte.
+// Groq -> Gemini 2.0 Flash -> OpenRouter -> Workers-AI 70b -> 8b.
+// Top-Level damit /recherche, /api/virgil/chat, Modul-Werkstatt, Video-KI,
+// Moderation etc. dieselbe robuste Pipeline teilen.
+// ══════════════════════════════════════════════════════════════════════════
+
+// Robuste JSON-Extraktion: schneidet das erste balancierte {} oder [] aus
+// einem KI-Text heraus (auch wenn Prosa/Markdown drumherum steht).
+function extractJson(text) {
+  if (!text) return null;
+  let t = String(text).trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (fence) t = fence[1].trim();
+  const start = t.search(/[\{\[]/);
+  if (start < 0) return null;
+  const open = t[start];
+  const close = open === '{' ? '}' : ']';
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < t.length; i++) {
+    const c = t[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === open) depth++;
+    else if (c === close) {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(t.slice(start, i + 1)); } catch (_) { return null; }
+      }
+    }
+  }
+  return null;
+}
+
+// Interner Multi-Quellen-Call. jsonMode=true -> Gemini responseMimeType JSON
+// + extractJson; jsonMode=false -> roher Text-Output. Gibt bei JSON-Mode das
+// geparste Objekt zurueck, sonst den String. null/'' bei Totalausfall.
+async function _aiCall(env, systemMsg, userMsg, maxTokens, jsonMode) {
+  const sys = jsonMode
+    ? systemMsg + '\n\nWICHTIG: Antworte AUSSCHLIESSLICH mit gueltigem JSON. ' +
+        'Kein Markdown, keine Code-Fences, keine Erklaerung, kein Text davor oder danach.'
+    : systemMsg;
+  const pick = (content) => jsonMode ? extractJson(content) : (content || '').trim() || null;
+
+  const tryOpenAi = async (apiUrl, apiKey, model, extraHeaders = {}) => {
+    try {
+      const r = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...extraHeaders },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'system', content: sys }, { role: 'user', content: userMsg }],
+          temperature: 0.6,
+          max_tokens: maxTokens,
+        }),
+        signal: AbortSignal.timeout(28000),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        return pick(data?.choices?.[0]?.message?.content || '');
+      }
+    } catch (_) { /* fall through */ }
+    return null;
+  };
+
+  // 1) Groq
+  if (env.GROQ_API_KEY) {
+    const out = await tryOpenAi('https://api.groq.com/openai/v1/chat/completions',
+      env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
+    if (out) return out;
+  }
+  // 2) Gemini 2.0 Flash
+  if (env.GEMINI_API_KEY) {
+    try {
+      const genConfig = { temperature: 0.6, maxOutputTokens: maxTokens };
+      if (jsonMode) genConfig.responseMimeType = 'application/json';
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: sys }] },
+            contents: [{ role: 'user', parts: [{ text: userMsg }] }],
+            generationConfig: genConfig,
+          }),
+          signal: AbortSignal.timeout(28000),
+        },
+      );
+      if (r.ok) {
+        const data = await r.json();
+        const out = pick(data?.candidates?.[0]?.content?.parts?.[0]?.text || '');
+        if (out) return out;
+      }
+    } catch (_) { /* fall through */ }
+  }
+  // 3) OpenRouter (free)
+  if (env.OPENROUTER_API_KEY) {
+    const out = await tryOpenAi('https://openrouter.ai/api/v1/chat/completions',
+      env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct:free',
+      { 'HTTP-Referer': 'https://weltenbibliothek-api.brandy13062.workers.dev', 'X-Title': 'Weltenbibliothek' });
+    if (out) return out;
+  }
+  // 4+5) Workers-AI
+  if (env.AI) {
+    const models = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
+    for (const model of models) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await env.AI.run(model, {
+            messages: [{ role: 'system', content: sys }, { role: 'user', content: userMsg }],
+            max_tokens: maxTokens,
+          });
+          const out = pick(res?.response || '');
+          if (out) return out;
+        } catch (_) { /* naechster Versuch */ }
+      }
+    }
+  }
+  return null;
+}
+
+// Oeffentliche Helfer: aiJson (JSON-Objekt/Array) + aiText (Freitext).
+async function aiJson(env, systemMsg, userMsg, maxTokens = 1200) {
+  const out = await _aiCall(env, systemMsg, userMsg, maxTokens, true);
+  if (out == null) throw new Error('KI lieferte kein gueltiges JSON (alle Quellen versucht)');
+  return out;
+}
+async function aiText(env, systemMsg, userMsg, maxTokens = 800) {
+  const out = await _aiCall(env, systemMsg, userMsg, maxTokens, false);
+  if (out == null) throw new Error('KI lieferte keinen Text (alle Quellen versucht)');
+  return out;
+}
+
 export default {
   // ⏰ Cron-Trigger — ruft den Dispatcher einmal pro Minute auf.
   async scheduled(event, env, ctx) {
@@ -1771,21 +1907,21 @@ export default {
 
         const allResults = [...dbResults, ...ddgResults, ...wikiResults];
 
-        // ── PHASE 2: KI-Zusammenfassung (Cloudflare Workers AI – kostenlos) ──
+        // ── PHASE 2: KI-Zusammenfassung (5-Quellen-Kette: Groq->Gemini->...) ──
+        // A3 (2026-06-07): nutzt jetzt aiText statt nur llama-3.1-8b -> deutlich
+        // bessere, sachlichere deutsche Zusammenfassungen.
         let aiSummary = null;
-        if (env.AI && allResults.length > 0) {
+        if (allResults.length > 0) {
           try {
-            const context = allResults.slice(0, 5).map(r => `${r.title}: ${r.snippet}`).join('\n');
-            const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-              messages: [
-                { role: 'system', content: 'Du bist ein Recherche-Assistent. Fasse die folgenden Suchergebnisse in 3-5 Sätzen auf Deutsch zusammen. Sei sachlich und informativ.' },
-                { role: 'user', content: `Suchanfrage: "${query}"\n\nErgebnisse:\n${context}` },
-              ],
-              max_tokens: 500,
-            });
-            aiSummary = aiRes?.response || null;
+            const context = allResults.slice(0, 6).map(r => `${r.title}: ${r.snippet}`).join('\n');
+            aiSummary = await aiText(
+              env,
+              'Du bist ein sachlicher Recherche-Assistent. Fasse die Suchergebnisse in 3-5 Saetzen auf Deutsch zusammen. Nur belegbare Aussagen, keine Spekulation, keine Floskeln.',
+              `Suchanfrage: "${query}"\n\nErgebnisse:\n${context}`,
+              500,
+            );
           } catch (aiErr) {
-            // AI ist optional – kein Error
+            // AI ist optional - kein Error
           }
         }
 
@@ -1801,35 +1937,98 @@ export default {
       }
     }
 
-    // ── Rabbit-Hole Recherche ──────────────────────────────────
+    // ── Rabbit-Hole: KI-generierte Kaninchenbau-Pfade (A1, 2026-06-07) ──
+    // Vorher nur Stub (leere connections). Jetzt: die KI schlaegt 6 konkrete
+    // weiterfuehrende Verbindungen vor, jede mit Typ, Aufhaenger und einem
+    // fertigen Suchbegriff zum Tiefer-Graben.
     if (path.startsWith('/api/rabbit-hole')) {
       try {
-        const topic = path.replace('/api/rabbit-hole/', '').replace('/api/rabbit-hole', '');
-        const gatewayUrl = env.OPENCLAW_GATEWAY_URL || 'http://72.62.154.95:50074';
-
+        let topic = '';
         if (method === 'POST') {
-          const body = await request.json();
-          const res = await fetch(`${gatewayUrl}/rabbit-hole`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          }).catch(() => null);
-          if (!res || !res.ok) {
-            return jsonResponse({ connections: [], topic: body.topic || topic });
-          }
-          const data = await res.json();
-          return jsonResponse(data);
+          const body = await request.json().catch(() => ({}));
+          topic = (body.topic || body.query || '').toString().trim();
+        } else {
+          topic = decodeURIComponent(
+            path.replace('/api/rabbit-hole/', '').replace('/api/rabbit-hole', '')
+          ).trim();
         }
+        if (!topic) return jsonResponse({ topic: '', paths: [], connections: [] });
 
-        // GET: Rabbit-Hole für Topic
-        return jsonResponse({
-          topic: decodeURIComponent(topic),
-          connections: [],
-          depth: 0,
-          message: 'Rabbit-Hole-Daten werden geladen...',
-        });
+        const system = [
+          'Du bist VIRGIL, ein investigativer Recherche-Begleiter.',
+          'Zu einem Ausgangsthema schlaegst du weiterfuehrende Recherche-Pfade vor --',
+          'das, was einen Menschen "tiefer in den Kaninchenbau" zieht.',
+          'Antworte als JSON-Objekt mit dem Feld "paths": Array von genau 6 Objekten.',
+          'Jedes Objekt: {',
+          '  "label": kurzer Titel der Verbindung (2-5 Worte),',
+          '  "type": einer aus "person"|"organisation"|"ereignis"|"ort"|"konzept"|"geldfluss"|"dokument",',
+          '  "hook": EIN Satz warum das spannend/relevant ist (sachlich, kein Clickbait),',
+          '  "query": ein praeziser Suchbegriff zum Weitergraben (Eigennamen bevorzugt)',
+          '}.',
+          'Vielfalt: verschiedene Typen mischen. Sachlich bleiben, keine erfundenen Fakten.',
+          'Alles auf Deutsch.',
+        ].join('\n');
+        const user = `Ausgangsthema: "${topic}"\nSchlage 6 weiterfuehrende Recherche-Pfade vor.`;
+
+        let paths = [];
+        try {
+          const parsed = await aiJson(env, system, user, 1000);
+          const raw = Array.isArray(parsed) ? parsed : (parsed.paths || parsed.connections || []);
+          paths = (Array.isArray(raw) ? raw : []).slice(0, 6).map((p) => ({
+            label: (p.label || p.title || '').toString().slice(0, 80),
+            type: (p.type || 'konzept').toString().toLowerCase(),
+            hook: (p.hook || p.why || p.reason || '').toString().slice(0, 240),
+            query: (p.query || p.next_query || p.label || '').toString().slice(0, 120),
+          })).filter((p) => p.label && p.query);
+        } catch (_) { paths = []; }
+
+        return jsonResponse({ topic, paths, connections: paths, depth: 1 });
       } catch (e) {
         return errorResponse(`Rabbit-Hole-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── KI-Dossier: strukturierter Recherche-Report (A2, 2026-06-07) ──
+    // POST /api/kaninchenbau/dossier  Body: { topic, context }
+    //   context = aggregierte Kurzfassung der geladenen Karten (Client baut es).
+    // Liefert ein strukturiertes Dossier (Markdown) + Abschnitte als JSON.
+    if (path === '/api/kaninchenbau/dossier' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const topic = (body.topic || '').toString().trim();
+        const context = (body.context || '').toString().slice(0, 12000);
+        if (!topic) return errorResponse('topic fehlt', 400);
+
+        const system = [
+          'Du bist ein investigativer Analyst. Erstelle aus den vorliegenden',
+          'Recherche-Daten ein strukturiertes Dossier. Streng sachlich, nur was die',
+          'Daten hergeben; markiere Unsicheres als solches. Kein Clickbait.',
+          'Antworte als JSON-Objekt:',
+          '{',
+          '  "summary": 3-4 Saetze Gesamtbild,',
+          '  "actors": [ { "name", "role" } ]  (Schluesselakteure, max 8),',
+          '  "money": [ String ]  (Geld-/Macht-Verbindungen, max 6),',
+          '  "contradictions": [ String ]  (Widersprueche/Ungereimtheiten, max 6),',
+          '  "open_questions": [ String ]  (offene Fragen zum Weitergraben, max 6),',
+          '  "markdown": vollstaendiges Dossier als Markdown (## Abschnitte)',
+          '}.',
+          'Alles auf Deutsch.',
+        ].join('\n');
+        const user = `Thema: "${topic}"\n\nRecherche-Daten:\n${context || '(keine zusaetzlichen Daten -- nutze Allgemeinwissen, kennzeichne das)'}`;
+
+        const d = await aiJson(env, system, user, 2200);
+        return jsonResponse({
+          success: true,
+          topic,
+          summary: (d.summary || '').toString(),
+          actors: Array.isArray(d.actors) ? d.actors.slice(0, 8) : [],
+          money: Array.isArray(d.money) ? d.money.slice(0, 6) : [],
+          contradictions: Array.isArray(d.contradictions) ? d.contradictions.slice(0, 6) : [],
+          open_questions: Array.isArray(d.open_questions) ? d.open_questions.slice(0, 6) : [],
+          markdown: (d.markdown || '').toString(),
+        });
+      } catch (e) {
+        return errorResponse(`Dossier-Fehler: ${e.message}`);
       }
     }
 
@@ -7851,132 +8050,11 @@ export default {
       // Robuste JSON-Extraktion: schneidet das erste balancierte {} oder []
       // aus einem KI-Text heraus (auch wenn Prosa drumherum steht). Beachtet
       // Strings + Escapes, damit Klammern in Texten nicht mitzaehlen.
-      const extractJson = (text) => {
-        if (!text) return null;
-        let t = String(text).trim();
-        const fence = t.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (fence) t = fence[1].trim();
-        const start = t.search(/[\{\[]/);
-        if (start < 0) return null;
-        const open = t[start];
-        const close = open === '{' ? '}' : ']';
-        let depth = 0, inStr = false, esc = false;
-        for (let i = start; i < t.length; i++) {
-          const c = t[i];
-          if (esc) { esc = false; continue; }
-          if (c === '\\') { esc = true; continue; }
-          if (c === '"') { inStr = !inStr; continue; }
-          if (inStr) continue;
-          if (c === open) depth++;
-          else if (c === close) {
-            depth--;
-            if (depth === 0) {
-              try { return JSON.parse(t.slice(start, i + 1)); } catch (_) { return null; }
-            }
-          }
-        }
-        return null;
-      };
-
-      // Hilfs-Funktion: KI-Call mit zuverlaessigem JSON-Output.
-      // Strategie (von zuverlaessig nach Fallback):
-      //   1) Groq llama-3.3-70b (wenn GROQ_API_KEY) -- folgt JSON-Anweisungen am besten
-      //   2) Google Gemini 2.0 Flash (wenn GEMINI_API_KEY) -- bestes Deutsch
-      //   3) OpenRouter (wenn OPENROUTER_API_KEY) -- viele Free-Modelle
-      //   4) Workers-AI llama-3.3-70b-fp8-fast -- deutlich besser als 3.1-8b
-      //   5) Workers-AI llama-3.1-8b -- letzter Fallback
-      // Jeweils mit robuster Extraktion + Retry. Jede zusaetzliche Quelle
-      // erhoeht die Wahrscheinlichkeit auf gueltiges JSON -> keine "0 Ergebnisse".
-      async function workshopAiJson(systemMsg, userMsg, maxTokens = 1200) {
-        const strictSystem = systemMsg +
-          '\n\nWICHTIG: Antworte AUSSCHLIESSLICH mit gueltigem JSON. ' +
-          'Kein Markdown, keine Code-Fences, keine Erklaerung, kein Text davor oder danach.';
-
-        // Helper: OpenAI-kompatibler Chat-Endpunkt (Groq + OpenRouter teilen das Format)
-        const tryOpenAiCompatible = async (url, apiKey, model, extraHeaders = {}) => {
-          try {
-            const r = await fetch(url, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-                ...extraHeaders,
-              },
-              body: JSON.stringify({
-                model,
-                messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userMsg }],
-                temperature: 0.6,
-                max_tokens: maxTokens,
-              }),
-              signal: AbortSignal.timeout(28000),
-            });
-            if (r.ok) {
-              const data = await r.json();
-              return extractJson(data?.choices?.[0]?.message?.content || '');
-            }
-          } catch (_) { /* fall through */ }
-          return null;
-        };
-
-        // 1) Groq
-        if (env.GROQ_API_KEY) {
-          const parsed = await tryOpenAiCompatible(
-            'https://api.groq.com/openai/v1/chat/completions',
-            env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
-          if (parsed) return parsed;
-        }
-
-        // 2) Google Gemini 2.0 Flash (eigenes Request-Format)
-        if (env.GEMINI_API_KEY) {
-          try {
-            const r = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  systemInstruction: { parts: [{ text: strictSystem }] },
-                  contents: [{ role: 'user', parts: [{ text: userMsg }] }],
-                  generationConfig: { temperature: 0.6, maxOutputTokens: maxTokens, responseMimeType: 'application/json' },
-                }),
-                signal: AbortSignal.timeout(28000),
-              },
-            );
-            if (r.ok) {
-              const data = await r.json();
-              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-              const parsed = extractJson(txt);
-              if (parsed) return parsed;
-            }
-          } catch (_) { /* fall through */ }
-        }
-
-        // 3) OpenRouter (kostenlose Modelle)
-        if (env.OPENROUTER_API_KEY) {
-          const parsed = await tryOpenAiCompatible(
-            'https://openrouter.ai/api/v1/chat/completions',
-            env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct:free',
-            { 'HTTP-Referer': 'https://weltenbibliothek-api.brandy13062.workers.dev', 'X-Title': 'Weltenbibliothek' });
-          if (parsed) return parsed;
-        }
-
-        // 4+5) Workers-AI mit staerkerem Modell + Fallback + Retry
-        if (!env.AI) throw new Error('Keine KI verfuegbar (keine API-Keys + kein Workers-AI)');
-        const models = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
-        for (const model of models) {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              const res = await env.AI.run(model, {
-                messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userMsg }],
-                max_tokens: maxTokens,
-              });
-              const parsed = extractJson(res?.response || '');
-              if (parsed) return parsed;
-            } catch (_) { /* naechster Versuch */ }
-          }
-        }
-        throw new Error('KI lieferte kein gueltiges JSON (alle Quellen versucht)');
-      }
+      // workshopAiJson -> nutzt jetzt den globalen aiJson-Helper (5-Quellen-Kette).
+      // Bleibt als duenner Alias erhalten damit die bestehenden Call-Sites
+      // unveraendert weiterlaufen.
+      const workshopAiJson = (systemMsg, userMsg, maxTokens = 1200) =>
+        aiJson(env, systemMsg, userMsg, maxTokens);
 
       // ── POST /api/admin/module-workshop/topics ─────────────────────
       // Body: { hint: 'Freitext (kurz)', world: 'vorhang'|'ursprung' }
@@ -9831,43 +9909,35 @@ export default {
       try {
         const body = await request.json();
         const messages = Array.isArray(body.messages) ? body.messages : [];
-        const system = body.system || 'Du bist VIRGIL, ein investigativer KI-Begleiter. Antworte auf Deutsch, knapp, präzise.';
-        const maxTokens = Math.min(body.max_tokens || 600, 1500);
+        const maxTokens = Math.min(body.max_tokens || 700, 1500);
 
-        // Bevorzugt Groq (700+ tok/s, Llama 3 70B), Fallback Workers AI Llama 8B
-        if (env.GROQ_API_KEY) {
-          const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${env.GROQ_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'llama-3.3-70b-versatile',
-              messages: [{ role: 'system', content: system }, ...messages],
-              max_tokens: maxTokens,
-              temperature: 0.6,
-            }),
-          });
-          if (r.ok) {
-            const data = await r.json();
-            return jsonResponse({
-              answer: data?.choices?.[0]?.message?.content || '',
-              model: 'groq-llama-3.3-70b',
-            });
-          }
+        // A4 (2026-06-07): RAG-Kontext. Der Client kann `context` (Zusammen-
+        // fassung der geladenen Recherche-Karten) + `topic` mitschicken.
+        // Virgil beantwortet Fragen dann AUF BASIS dieser Daten statt generisch.
+        const topic = (body.topic || '').toString().trim();
+        const context = (body.context || '').toString().slice(0, 8000);
+
+        let system = body.system || 'Du bist VIRGIL, ein investigativer KI-Begleiter der Weltenbibliothek. Antworte auf Deutsch, knapp, praezise und sachlich.';
+        if (context) {
+          system += `\n\nDir liegen aktuelle Recherche-Daten${topic ? ` zum Thema "${topic}"` : ''} vor. ` +
+            'Beziehe deine Antwort primaer auf diese Daten. Wenn etwas nicht in den Daten steht, sage das offen statt zu spekulieren. ' +
+            'Nenne bei konkreten Aussagen die jeweilige Quelle/Karte.\n\n--- RECHERCHE-DATEN ---\n' + context + '\n--- ENDE DATEN ---';
         }
 
-        // Fallback: Workers AI
-        if (!env.AI) return errorResponse('Kein AI-Backend verfügbar', 503);
-        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-          messages: [{ role: 'system', content: system }, ...messages],
-          max_tokens: maxTokens,
-        });
-        return jsonResponse({
-          answer: res?.response || '',
-          model: 'workers-ai-llama-3.1-8b',
-        });
+        // Konversation zu einem User-Prompt verflachen (aiText nimmt 1 User-Msg).
+        let userMsg;
+        if (messages.length <= 1) {
+          userMsg = (messages[0]?.content || '').toString();
+        } else {
+          userMsg = messages
+            .map((m) => `${m.role === 'assistant' ? 'VIRGIL' : 'NUTZER'}: ${m.content}`)
+            .join('\n') + '\n\nVIRGIL:';
+        }
+        if (!userMsg.trim()) return errorResponse('Keine Nachricht', 400);
+
+        // 5-Quellen-Kette (Groq -> Gemini -> OpenRouter -> Workers-AI).
+        const answer = await aiText(env, system, userMsg, maxTokens);
+        return jsonResponse({ answer, model: 'multi-source-chain' });
       } catch (e) {
         return errorResponse(`Virgil-Chat-Fehler: ${e.message}`);
       }
