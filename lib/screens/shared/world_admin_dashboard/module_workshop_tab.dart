@@ -22,9 +22,11 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   // Tab 1 -- Neu erstellen
   final _topicCtrl = TextEditingController();
   final _hintCtrl = TextEditingController();
+  final _themeCtrl = TextEditingController(); // Thema/Bereich (branch)
   List<String> _suggestions = const [];
   bool _topicsLoading = false;
   bool _generating = false;
+  bool _newTheme = false; // komplett neues Thema?
   Map<String, dynamic>? _draftModule;
   String? _draftBranchHint;
 
@@ -82,8 +84,19 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   void dispose() {
     _topicCtrl.dispose();
     _hintCtrl.dispose();
+    _themeCtrl.dispose();
     _tabs.dispose();
     super.dispose();
+  }
+
+  // Bestehende Themen (Branches) der aktuellen Welt -- fuer Auswahl-Chips.
+  List<String> get _existingBranches {
+    final set = <String>{};
+    for (final m in _existingModules) {
+      final b = (m['branch'] as String?)?.trim();
+      if (b != null && b.isNotEmpty) set.add(b);
+    }
+    return set.toList();
   }
 
   // ── Daten-Laden ──────────────────────────────────────────────────────
@@ -200,10 +213,12 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
       return;
     }
     setState(() => _generating = true);
+    final theme = _themeCtrl.text.trim();
     final mod = await WorldAdminServiceV162.generateModule(
       world: _world,
       topic: topic,
-      branch: _draftBranchHint,
+      branch: theme.isNotEmpty ? theme : _draftBranchHint,
+      newTheme: _newTheme,
     );
     if (!mounted) return;
     setState(() {
@@ -621,7 +636,50 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
           ),
         ],
         const SizedBox(height: 20),
-        _sectionHeader('2. Modul generieren'),
+        _sectionHeader('2. Thema / Bereich'),
+        const SizedBox(height: 6),
+        Row(children: [
+          Switch(
+            value: _newTheme,
+            onChanged: (v) => setState(() {
+              _newTheme = v;
+              if (v) _themeCtrl.clear();
+            }),
+            activeColor: widget.accentBright,
+          ),
+          const Expanded(
+            child: Text('Komplett neues Thema erstellen',
+                style: TextStyle(color: Colors.white70, fontSize: 12)),
+          ),
+        ]),
+        TextField(
+          controller: _themeCtrl,
+          style: const TextStyle(color: Colors.white),
+          decoration: _inputDeco(_newTheme
+              ? 'Name des neuen Themas (leer = KI schlaegt vor)'
+              : 'Bestehendes Thema waehlen oder leer = KI waehlt'),
+        ),
+        if (!_newTheme && _existingBranches.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _existingBranches
+                .map((b) => ActionChip(
+                      label: Text(b,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11)),
+                      backgroundColor: widget.accent.withValues(alpha: 0.18),
+                      side: BorderSide(
+                          color: widget.accentBright.withValues(alpha: 0.3)),
+                      onPressed: () =>
+                          setState(() => _themeCtrl.text = b),
+                    ))
+                .toList(),
+          ),
+        ],
+        const SizedBox(height: 20),
+        _sectionHeader('3. Modul generieren'),
         const SizedBox(height: 8),
         ElevatedButton.icon(
           onPressed: _generating ? null : _generateDraft,
@@ -641,7 +699,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
         ),
         if (_draftModule != null) ...[
           const SizedBox(height: 20),
-          _sectionHeader('3. Vorschau & Speichern'),
+          _sectionHeader('4. Vorschau & Speichern'),
           const SizedBox(height: 8),
           _buildDraftPreview(),
         ],
@@ -1378,9 +1436,38 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
                 color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
           ),
           if (s['branch'] != null) ...[
-            const SizedBox(height: 2),
-            Text('Branch: ${s['branch']}',
-                style: const TextStyle(color: Colors.white38, fontSize: 11)),
+            const SizedBox(height: 4),
+            Builder(builder: (_) {
+              final branch = s['branch'].toString();
+              final rationale = (s['rationale'] as String?) ?? '';
+              final isNewTheme = rationale.contains('NEUES THEMA') ||
+                  (_existingBranches.isNotEmpty &&
+                      !_existingBranches.contains(branch));
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (isNewTheme ? Colors.purpleAccent : Colors.white24)
+                      .withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: (isNewTheme
+                              ? Colors.purpleAccent
+                              : Colors.white38)
+                          .withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  isNewTheme ? '🆕 Neues Thema: $branch' : 'Thema: $branch',
+                  style: TextStyle(
+                      color: isNewTheme
+                          ? Colors.purpleAccent
+                          : Colors.white60,
+                      fontSize: 11,
+                      fontWeight:
+                          isNewTheme ? FontWeight.bold : FontWeight.normal),
+                ),
+              );
+            }),
           ],
           if ((s['rationale'] as String?)?.isNotEmpty ?? false) ...[
             const SizedBox(height: 6),
