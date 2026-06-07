@@ -9,6 +9,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../widgets/cinematic/cinematic_post_process.dart';
+import '../../widgets/cinematic/cinematic_settings.dart';
 import '../../widgets/restriction_gate.dart';
 
 /// One research entry, normalized across worlds. Plain Dart class (no records).
@@ -108,6 +110,7 @@ class _ResearchModuleState extends State<ResearchModule> {
   @override
   void initState() {
     super.initState();
+    KbCinemaSettings.instance.load(); // Cinema-Qualitaet (geteilt mit Kaninchenbau)
     _load();
   }
 
@@ -165,27 +168,43 @@ class _ResearchModuleState extends State<ResearchModule> {
     return RestrictionGate(
       scope: widget.restrictionScope,
       toolLabel: widget.restrictionLabel,
-      child: Container(
-        color: widget.background,
-        child: RefreshIndicator(
-          color: widget.accent,
-          backgroundColor: widget.surface,
-          onRefresh: _load,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(child: _buildHeader()),
-              if (widget.enableSearch)
-                SliverToBoxAdapter(child: _buildSearchBar()),
-              if (widget.enableCategoryFilter && _categories.isNotEmpty)
-                SliverToBoxAdapter(child: _buildCategoryChips()),
-              _buildList(),
-              if (widget.footerBuilder != null)
-                SliverToBoxAdapter(child: widget.footerBuilder!(context)),
-              const SliverToBoxAdapter(child: SizedBox(height: 90)),
-            ],
+      child: Stack(
+        children: [
+          // Cinema-Postprocessing ueber dem gesamten Recherche-Inhalt.
+          CinematicPostProcess(
+            child: Container(
+              color: widget.background,
+              child: RefreshIndicator(
+                color: widget.accent,
+                backgroundColor: widget.surface,
+                onRefresh: _load,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(child: _buildHeader()),
+                    if (widget.enableSearch)
+                      SliverToBoxAdapter(child: _buildSearchBar()),
+                    if (widget.enableCategoryFilter && _categories.isNotEmpty)
+                      SliverToBoxAdapter(child: _buildCategoryChips()),
+                    _buildList(),
+                    if (widget.footerBuilder != null)
+                      SliverToBoxAdapter(child: widget.footerBuilder!(context)),
+                    const SliverToBoxAdapter(child: SizedBox(height: 90)),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          // Qualitaets-Schalter oben rechts.
+          Positioned(
+            top: 8,
+            right: 10,
+            child: CinemaQualityChip(
+              accent: widget.accent,
+              accentBright: widget.accent,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/thread.dart';
+import '../../../../widgets/cinematic/cinematic_settings.dart';
 import 'kb_design.dart';
 
 class Network3DView extends StatefulWidget {
@@ -151,6 +152,9 @@ class _Network3DViewState extends State<Network3DView>
                       rotY: autoY,
                       zoom: _zoom,
                       imageCache: _imageCache,
+                      // DoF nach gewaehlter Cinema-Qualitaet (live).
+                      dofStrength:
+                          KbCinemaSettings.instance.quality.value.baseMaster,
                     ),
                     size: Size.infinite,
                   ),
@@ -349,6 +353,7 @@ class _Graph3DPainter extends CustomPainter {
   final double rotY;
   final double zoom;
   final Map<String, ui.Image?> imageCache;
+  final double dofStrength; // 0 = aus, 1 = volle Tiefenschaerfe
 
   _Graph3DPainter({
     required this.nodes,
@@ -357,6 +362,7 @@ class _Graph3DPainter extends CustomPainter {
     required this.rotY,
     required this.zoom,
     required this.imageCache,
+    this.dofStrength = 0.0,
   });
 
   @override
@@ -444,6 +450,25 @@ class _Graph3DPainter extends CustomPainter {
           ((1.0 - (pos.depth / (size.shortestSide * 0.5))) * 0.7 + 0.3)
               .clamp(0.2, 1.0);
 
+      // ── DoF: Knoten nach Distanz zur Fokus-Ebene (depth=0, Zentrum)
+      //    unscharf. Nur der Knoten-Visual wird geblurrt, das Label bleibt
+      //    scharf (Lesbarkeit). saveLayer pro Knoten (<=17) ist vertretbar.
+      final dofSigma = dofStrength <= 0.0
+          ? 0.0
+          : (dofStrength *
+                  (pos.depth.abs() / (size.shortestSide * 0.5)).clamp(0.0, 1.0) *
+                  6.0);
+      final useDof = dofSigma > 0.4;
+      if (useDof) {
+        canvas.saveLayer(
+          Rect.fromCircle(
+              center: Offset(pos.x, pos.y), radius: pos.radius + 12),
+          Paint()
+            ..imageFilter =
+                ui.ImageFilter.blur(sigmaX: dofSigma, sigmaY: dofSigma),
+        );
+      }
+
       // Glow (immer, außerhalb jedes clipPath)
       canvas.drawCircle(
         Offset(pos.x, pos.y),
@@ -497,6 +522,8 @@ class _Graph3DPainter extends CustomPainter {
               .withValues(alpha: (isCenter ? 0.85 : 0.45) * depthFactor),
       );
 
+      if (useDof) canvas.restore(); // DoF-Layer schliessen -> Label bleibt scharf
+
       // Label (immer, unter dem Knoten)
       final tp = TextPainter(
         text: TextSpan(
@@ -544,5 +571,6 @@ class _Graph3DPainter extends CustomPainter {
       old.zoom != zoom ||
       old.nodes != nodes ||
       old.edges != edges ||
+      old.dofStrength != dofStrength ||
       old.imageCache != imageCache;
 }
