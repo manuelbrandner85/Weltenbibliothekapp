@@ -2030,8 +2030,10 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }
 
   /// Sendet eine Push-Benachrichtigung direkt an einen einzelnen Nutzer.
-  /// Entweder [userId] oder [username] muss angegeben werden.
-  static Future<bool> sendDirectPush({
+  /// [recipient] kann ein Benutzername ODER ein Klarname sein -- der Worker
+  /// loest beides auf. Returnt (ok, fehlermeldung?) -- bei Mehrdeutigkeit
+  /// enthaelt die Meldung die Kandidaten.
+  static Future<(bool, String?)> sendDirectPush({
     String? userId,
     String? username,
     required String title,
@@ -2049,13 +2051,38 @@ extension WorldAdminServiceV162 on WorldAdminService {
           'type': type,
         },
       );
-      return data['success'] as bool? ?? false;
+      return ((data['success'] as bool? ?? false), null);
     } on AdminApiException catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('❌ sendDirectPush: ${e.statusCode} ${e.bodySnippet}');
-      return false;
+      }
+      // Server-Fehlermeldung extrahieren (z.B. Mehrdeutigkeit/nicht gefunden).
+      String? msg;
+      try {
+        final m = jsonDecode(e.bodySnippet) as Map<String, dynamic>;
+        msg = m['error']?.toString();
+      } catch (_) {}
+      return (false, msg);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ sendDirectPush: $e');
+      return (false, null);
+    }
+  }
+
+  /// Loescht fehlgeschlagene Push-Eintraege (raeumt den "Push-Fehler"-Zaehler).
+  /// [scope] = 'failed' (default) | 'all' (sent+failed) | 'broadcast'.
+  static Future<bool> clearPushQueue({String scope = 'failed'}) async {
+    try {
+      await AdminApiClient.instance
+          .deleteJson('/api/admin/push/history?scope=$scope');
+      return true;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ clearPushQueue: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ clearPushQueue: $e');
       return false;
     }
   }
