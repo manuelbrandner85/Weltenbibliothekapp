@@ -464,6 +464,30 @@ jobs:
           run_sql "v126 edge_confidence_aggregate View (Aggregat fuer Knowledge-Graph)" \
             supabase/migrations/20260607_v126_edge_confidence_aggregate_view.sql
 
+          # ── Modul-Werkstatt + Tool-Werkstatt (Juni 2026, v127-v137) ──────────
+          run_sql "v127 admin_module_access legacy->uuid" \
+            supabase/migrations/20260607_v127_module_access_legacy_to_uuid.sql
+          run_sql "v128 module_suggestions + tool_requests" \
+            supabase/migrations/20260607_v128_module_suggestions.sql
+          run_sql "v129 notification legacy columns" \
+            supabase/migrations/20260607_v129_notification_legacy_columns.sql
+          run_sql "v130 materie/energie modules + progress" \
+            supabase/migrations/20260607_v130_materie_energie_modules.sql
+          run_sql "v131 archive_videos module link" \
+            supabase/migrations/20260607_v131_archive_videos_module_link.sql
+          run_sql "v132 module test_questions default" \
+            supabase/migrations/20260607_v132_module_test_questions_default.sql
+          run_sql "v133 module sources column" \
+            supabase/migrations/20260607_v133_module_sources_column.sql
+          run_sql "v134 module_scan_config" \
+            supabase/migrations/20260607_v134_module_scan_config.sql
+          run_sql "v135 module cover + versions" \
+            supabase/migrations/20260607_v135_module_cover_and_versions.sql
+          run_sql "v136 fix branch_order resequence" \
+            supabase/migrations/20260607_v136_fix_branch_order_resequence.sql
+          run_sql "v137 app_tools registry + tool_suggestions" \
+            supabase/migrations/20260607_v137_app_tools_registry.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
