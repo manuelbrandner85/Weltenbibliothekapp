@@ -509,7 +509,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         return _ContentInsightsTab(
             accent: _accent, accentBright: _accentBright, videosOnly: true);
       case 'module_workshop':
-        return _ModuleWorkshopTab(accent: _accent, accentBright: _accentBright);
+        return _ModuleWorkshopTab(
+            accent: _accent,
+            accentBright: _accentBright,
+            isRootAdmin: admin.isRootAdmin);
       case 'push':
         return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
       case 'audit':
@@ -559,7 +562,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         return _ContentInsightsTab(
             accent: _accent, accentBright: _accentBright, videosOnly: true);
       case 'module_workshop':
-        return _ModuleWorkshopTab(accent: _accent, accentBright: _accentBright);
+        return _ModuleWorkshopTab(
+            accent: _accent,
+            accentBright: _accentBright,
+            isRootAdmin: admin.isRootAdmin);
       case 'push':
         return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
       case 'audit':

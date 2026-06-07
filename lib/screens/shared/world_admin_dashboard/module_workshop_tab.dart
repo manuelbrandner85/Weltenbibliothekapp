@@ -5,9 +5,11 @@ part of '../world_admin_dashboard.dart';
 class _ModuleWorkshopTab extends StatefulWidget {
   final Color accent;
   final Color accentBright;
+  final bool isRootAdmin;
   const _ModuleWorkshopTab({
     required this.accent,
     required this.accentBright,
+    this.isRootAdmin = false,
   });
 
   @override
@@ -475,6 +477,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
               world: _world,
               accent: widget.accent,
               accentBright: widget.accentBright,
+              isRootAdmin: widget.isRootAdmin,
             ),
           ),
         ],
@@ -495,6 +498,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
               world: _world,
               accent: widget.accent,
               accentBright: widget.accentBright,
+              isRootAdmin: widget.isRootAdmin,
             ),
           ),
         ],
@@ -1774,7 +1778,10 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
     descCtrl.dispose();
     if (!mounted) return;
     if (res['success'] == true) {
-      if (res['auto_created'] == true && res['issue_url'] != null) {
+      if (res['pending_approval'] == true) {
+        _snack(res['message']?.toString() ??
+            'Zur Freigabe an den Root-Admin gesendet.');
+      } else if (res['auto_created'] == true && res['issue_url'] != null) {
         _snack('GitHub-Issue erstellt: ${res['issue_url']}');
       } else if (res['prefill_url'] != null) {
         await _showInfoDialog(
@@ -2023,11 +2030,13 @@ class _FunctionWorkshop extends StatefulWidget {
   final String world;
   final Color accent;
   final Color accentBright;
+  final bool isRootAdmin;
   const _FunctionWorkshop({
     super.key,
     required this.world,
     required this.accent,
     required this.accentBright,
+    this.isRootAdmin = false,
   });
 
   @override
@@ -2065,6 +2074,10 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
   bool _scanningTools = false;
   final Set<String> _toolSugBusy = {};
 
+  // Freigaben: offene Admin-Anfragen, die der Root-Admin freigeben/ablehnen kann.
+  List<Map<String, dynamic>> _toolApprovals = const [];
+  final Set<String> _approvalBusy = {};
+
   @override
   void initState() {
     super.initState();
@@ -2073,6 +2086,32 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
     _loadContentTables();
     _loadToolSuggestions();
     _loadToolRequests();
+    if (widget.isRootAdmin) _loadToolApprovals();
+  }
+
+  Future<void> _loadToolApprovals() async {
+    final a = await WorldAdminServiceV162.getToolApprovals(widget.world);
+    if (!mounted) return;
+    setState(() => _toolApprovals = a);
+  }
+
+  Future<void> _decideApproval(String id, bool approve) async {
+    setState(() => _approvalBusy.add(id));
+    final res = approve
+        ? await WorldAdminServiceV162.approveToolRequest(id)
+        : await WorldAdminServiceV162.rejectToolRequest(id);
+    if (!mounted) return;
+    setState(() => _approvalBusy.remove(id));
+    if (res['success'] == true) {
+      _snack(approve
+          ? 'Freigegeben — Claude Code baut das Tool und oeffnet einen PR.'
+          : 'Anfrage abgelehnt.');
+      await _loadToolApprovals();
+      await _loadToolRequests();
+    } else {
+      _snack('Aktion fehlgeschlagen: ${res['error'] ?? ''}',
+          c: Colors.redAccent);
+    }
   }
 
   Future<void> _loadToolSuggestions() async {
@@ -2199,9 +2238,12 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
     if (res['success'] == true) {
       setState(() {
         _resultUrl = (res['issue_url'] ?? res['prefill_url'])?.toString();
-        _resultMsg = res['auto_created'] == true
-            ? 'Anfrage erstellt — Claude Code baut die Funktion und oeffnet einen PR.'
-            : 'Anfrage vorbereitet — oeffne den Link und klicke "Submit".';
+        _resultMsg = res['pending_approval'] == true
+            ? (res['message']?.toString() ??
+                'Zur Freigabe an den Root-Admin gesendet. Das Tool wird nach Freigabe gebaut.')
+            : res['auto_created'] == true
+                ? 'Anfrage erstellt — Claude Code baut die Funktion und oeffnet einen PR.'
+                : 'Anfrage vorbereitet — oeffne den Link und klicke "Submit".';
       });
       _fnTitle.clear();
       _fnDesc.clear();
@@ -2612,6 +2654,31 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Root-Admin: offene Admin-Anfragen freigeben/ablehnen.
+        if (widget.isRootAdmin && _toolApprovals.isNotEmpty) ...[
+          Row(children: [
+            const Icon(Icons.verified_user, size: 16, color: Colors.amber),
+            const SizedBox(width: 6),
+            Text('FREIGABEN (${_toolApprovals.length})',
+                style: const TextStyle(
+                    color: Colors.amber,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8)),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 16, color: Colors.white38),
+              onPressed: _loadToolApprovals,
+            ),
+          ]),
+          const Text(
+            'Ein Admin moechte ein Tool bauen/erweitern. Pruefe und gib frei.',
+            style: TextStyle(color: Colors.white38, fontSize: 11),
+          ),
+          const SizedBox(height: 8),
+          for (final a in _toolApprovals) _buildApprovalCard(a),
+          const Divider(color: Colors.white12, height: 28),
+        ],
         ElevatedButton.icon(
           onPressed: _scanningTools ? null : _scanTools,
           icon: _scanningTools
@@ -2650,6 +2717,95 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         else
           for (final r in _toolRequests) _buildRequestStatusTile(r),
       ],
+    );
+  }
+
+  Widget _buildApprovalCard(Map<String, dynamic> a) {
+    final id = a['id']?.toString() ?? '';
+    final busy = _approvalBusy.contains(id);
+    final mode = (a['mode'] as String?) == 'extend' ? 'Erweiterung' : 'Neu';
+    final target = (a['target'] as String?) ?? '';
+    final by = (a['requested_by'] as String?) ?? '?';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(mode,
+                style: const TextStyle(
+                    color: Colors.amber,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text((a['title'] as String?) ?? '',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ]),
+        if (target.isNotEmpty) ...[
+          const SizedBox(height: 3),
+          Text('Tool: $target',
+              style: const TextStyle(color: Colors.white54, fontSize: 11)),
+        ],
+        const SizedBox(height: 4),
+        Text((a['description'] as String?) ?? '',
+            style: const TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(height: 4),
+        Text('von @$by',
+            style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+        const SizedBox(height: 8),
+        if (busy)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(4),
+              child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+          )
+        else
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _decideApproval(id, true),
+                icon: const Icon(Icons.check, size: 16),
+                label: const Text('Freigeben & bauen'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.withValues(alpha: 0.85),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: () => _decideApproval(id, false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.redAccent,
+                side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              ),
+              child: const Text('Ablehnen'),
+            ),
+          ]),
+      ]),
     );
   }
 
@@ -2716,6 +2872,12 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
     } else if (ghState == 'closed') {
       label = 'Erledigt';
       color = Colors.green;
+    } else if (status == 'pending_approval') {
+      label = 'Wartet auf Freigabe';
+      color = Colors.amberAccent;
+    } else if (status == 'rejected') {
+      label = 'Abgelehnt';
+      color = Colors.redAccent;
     } else if (ghState == 'open' || status == 'issue_created') {
       label = 'Wird gebaut';
       color = Colors.amber;

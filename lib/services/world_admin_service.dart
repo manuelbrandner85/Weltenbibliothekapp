@@ -2126,6 +2126,50 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  // ── Tool-Freigaben (Root-Admin gibt Admin-Anfragen frei) ──────────────
+  /// Offene Tool-Bau-/Erweiterungs-Anfragen einfacher Admins (pending_approval).
+  /// Nur fuer Root-Admin sinnvoll.
+  static Future<List<Map<String, dynamic>>> getToolApprovals(
+      String world) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/tools/approvals?world=$world');
+      return ((data['approvals'] as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('getToolApprovals: $e');
+      return const [];
+    }
+  }
+
+  /// Root-Admin gibt eine Admin-Anfrage frei -> Issue + Auto-Build.
+  static Future<Map<String, dynamic>> approveToolRequest(String id) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/tools/approvals/$id/approve',
+        body: {},
+        timeout: const Duration(seconds: 30),
+      );
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      if (kDebugMode) debugPrint('approveToolRequest: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// Root-Admin lehnt eine Admin-Anfrage ab.
+  static Future<Map<String, dynamic>> rejectToolRequest(String id) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/tools/approvals/$id/reject', body: {});
+      return Map<String, dynamic>.from(data);
+    } catch (e) {
+      if (kDebugMode) debugPrint('rejectToolRequest: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   // ── Inhalte-Verwaltung (Materie/Energie Tool-Inhalte) ─────────────────
   static Future<List<Map<String, dynamic>>> getContentTables(String world) async {
     try {

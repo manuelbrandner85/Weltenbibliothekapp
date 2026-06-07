@@ -9482,8 +9482,11 @@ export default {
       // Wenn env.GITHUB_TOKEN gesetzt: Issue automatisch erstellen.
       // Sonst: vorbefuellte GitHub-Issue-URL zurueckgeben (Admin klickt selbst).
       if (method === 'POST' && path === '/api/admin/module-workshop/tool-request') {
-        if (!caller.isRootAdmin) {
-          return errorResponse('Nur Root-Admin darf Tool-Anfragen stellen', 403);
+        // Admin UND Root-Admin duerfen Tools bauen/erweitern lassen. Bei einem
+        // einfachen Admin geht die Anfrage aber zuerst zur Root-Admin-Freigabe
+        // (pending_approval) -- erst nach Freigabe wird das Issue erstellt/gebaut.
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Nur Admin oder Root-Admin', 403);
         }
         try {
           const body = await request.clone().json().catch(() => ({}));
@@ -9523,6 +9526,35 @@ export default {
                 new Promise((resolve) => setTimeout(() => resolve(''), 9000)),
               ]);
             } catch (_) { refinedSpec = ''; }
+          }
+
+          // Einfacher Admin: NICHT sofort bauen, sondern zur Root-Admin-Freigabe
+          // parken. Spec/mode/target werden gespeichert, damit der Root-Admin bei
+          // Freigabe genau dieses Tool bauen lassen kann.
+          if (!caller.isRootAdmin) {
+            await fetch(`${SUPABASE_URL}/rest/v1/tool_requests`, {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                world, title, description, mode, target: target || null,
+                spec: refinedSpec || null,
+                status: 'pending_approval',
+                requested_by: caller.username,
+              }),
+            }).catch(() => {});
+            logAudit(svcHeaders, {
+              admin_username: caller.username,
+              action: 'tool_request_pending',
+              target_id: title,
+              details: { world, mode, target },
+            });
+            return jsonResponse({
+              success: true,
+              pending_approval: true,
+              refined_spec: refinedSpec || null,
+              message: 'Zur Freigabe an den Root-Admin gesendet. '
+                + 'Das Tool wird nach Freigabe automatisch gebaut.',
+            });
           }
 
           const repo = 'manuelbrandner85/Weltenbibliothekapp';
@@ -9610,6 +9642,65 @@ export default {
         } catch (e) {
           return errorResponse(`tool-request Fehler: ${e.message}`);
         }
+      }
+
+      // ── GET /api/admin/tools/approvals  (Root-Admin: offene Admin-Anfragen) ──
+      // Listet Tool-Bau-/Erweiterungs-Anfragen einfacher Admins, die auf
+      // Root-Admin-Freigabe warten.
+      if (method === 'GET' && path === '/api/admin/tools/approvals') {
+        if (!caller.isRootAdmin) return errorResponse('Nur Root-Admin', 403);
+        try {
+          const world = String(url.searchParams.get('world') || '').toLowerCase();
+          const filter = world ? `&world=eq.${encodeURIComponent(world)}` : '';
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/tool_requests?select=*&status=eq.pending_approval${filter}&order=created_at.desc`, { headers: svcHeaders });
+          const rows = r.ok ? await r.json().catch(() => []) : [];
+          return jsonResponse({ success: true, approvals: Array.isArray(rows) ? rows : [] });
+        } catch (e) { return errorResponse(`tool-approvals Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/tools/approvals/:id/(approve|reject) ──
+      // Root-Admin gibt eine Admin-Anfrage frei (-> Issue + Auto-Build) oder lehnt ab.
+      if (method === 'POST' && path.startsWith('/api/admin/tools/approvals/') &&
+          (path.endsWith('/approve') || path.endsWith('/reject'))) {
+        if (!caller.isRootAdmin) return errorResponse('Nur Root-Admin', 403);
+        try {
+          const parts = path.split('/');
+          const id = parts[5];
+          const action = parts[6];
+          const sr = await fetch(`${SUPABASE_URL}/rest/v1/tool_requests?id=eq.${encodeURIComponent(id)}&limit=1`, { headers: svcHeaders });
+          const arr = sr.ok ? await sr.json().catch(() => []) : [];
+          const req = Array.isArray(arr) && arr[0];
+          if (!req) return errorResponse('Anfrage nicht gefunden', 404);
+          if (req.status !== 'pending_approval') {
+            return errorResponse('Anfrage ist nicht mehr offen', 409);
+          }
+          if (action === 'reject') {
+            await fetch(`${SUPABASE_URL}/rest/v1/tool_requests?id=eq.${encodeURIComponent(id)}`,
+              { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify({ status: 'rejected' }) });
+            logAudit(svcHeaders, {
+              admin_username: caller.username, action: 'tool_request_rejected', target_id: req.title,
+              details: { world: req.world, requested_by: req.requested_by },
+            });
+            return jsonResponse({ success: true, action: 'rejected' });
+          }
+          // approve -> Issue erstellen (-> Auto-Build + Auto-Merge greifen).
+          const issue = await createToolIssue(env, {
+            title: req.title, world: req.world, mode: req.mode || 'new',
+            target: req.target, description: req.description, spec: req.spec,
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/tool_requests?id=eq.${encodeURIComponent(id)}`, {
+            method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              status: issue ? 'issue_created' : 'open',
+              github_issue_url: issue?.url || null,
+            }),
+          }).catch(() => {});
+          logAudit(svcHeaders, {
+            admin_username: caller.username, action: 'tool_request_approved', target_id: req.title,
+            details: { world: req.world, requested_by: req.requested_by, issue: issue?.url || null },
+          });
+          return jsonResponse({ success: true, action: 'approved', issue_url: issue?.url || null });
+        } catch (e) { return errorResponse(`tool-approval Fehler: ${e.message}`); }
       }
 
       // ════════════════════════════════════════════════════════════════
