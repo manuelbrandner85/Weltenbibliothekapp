@@ -35,37 +35,64 @@ class UrsprungService {
   ///   }
   static Future<Map<String, dynamic>> fetchModules({String? userId}) async {
     final supa = Supabase.instance.client;
+    final hasUser = userId != null && userId.isNotEmpty;
 
     // U2: nur Metadaten laden (kein theory_content/case_study/
     // exercise_description/test_questions). Voller Inhalt wird bei Tap auf
     // ein Modul via fetchModule(code) lazy nachgeladen.
-    final modulesRaw = await supa
-        .from('ursprung_modules')
-        .select(
-          'id,module_code,branch,branch_order,title,subtitle,'
-          'is_boss_module,xp_reward,prerequisites',
-        )
-        .order('branch_order', ascending: true)
-        .order('module_code', ascending: true);
-    final modules = (modulesRaw as List).cast<Map<String, dynamic>>();
-
-    final progressMap = <String, Map<String, dynamic>>{};
-    if (userId != null && userId.isNotEmpty) {
-      try {
-        final progressRaw = await supa
+    // Batch-fetch: modules + user-specific queries all run in parallel.
+    final futs = <Future<List<dynamic>>>[
+      supa
+          .from('ursprung_modules')
+          .select(
+            'id,module_code,branch,branch_order,title,subtitle,'
+            'is_boss_module,xp_reward,prerequisites',
+          )
+          .order('branch_order', ascending: true)
+          .order('module_code', ascending: true)
+          .then<List<dynamic>>((r) => r as List),
+    ];
+    if (hasUser) {
+      futs.add(
+        supa
             .from('user_ursprung_progress')
             .select()
-            .eq('user_id', userId);
-        for (final entry
-            in (progressRaw as List).cast<Map<String, dynamic>>()) {
-          final code = entry['module_code'] as String?;
-          if (code != null) progressMap[code] = entry;
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint(
-              '[UrsprungService] progress fetch failed (continuing without): $e');
-        }
+            .eq('user_id', userId!)
+            .then<List<dynamic>>((r) => r as List)
+            .catchError((Object e) {
+          if (kDebugMode) {
+            debugPrint(
+                '[UrsprungService] progress fetch failed (continuing without): $e');
+          }
+          return <dynamic>[];
+        }),
+      );
+      futs.add(
+        supa
+            .from('admin_module_access')
+            .select('module_code,is_granted')
+            .eq('user_id', userId!)
+            .eq('module_type', 'ursprung')
+            .then<List<dynamic>>((r) => r as List)
+            .catchError((Object _) => <dynamic>[]),
+      );
+    }
+
+    final results = await Future.wait(futs);
+    final modules = results[0].cast<Map<String, dynamic>>();
+
+    final progressMap = <String, Map<String, dynamic>>{};
+    final adminOverrides = <String, bool>{};
+
+    if (hasUser) {
+      for (final entry in results[1].cast<Map<String, dynamic>>()) {
+        final code = entry['module_code'] as String?;
+        if (code != null) progressMap[code] = entry;
+      }
+      for (final o in results[2].cast<Map<String, dynamic>>()) {
+        final code = o['module_code'] as String?;
+        final granted = o['is_granted'] as bool?;
+        if (code != null && granted != null) adminOverrides[code] = granted;
       }
     }
 
@@ -87,23 +114,6 @@ class UrsprungService {
         .where((p) => p['completed_at'] != null)
         .map((p) => p['module_code'] as String)
         .toSet();
-
-    // Admin-Overrides laden (best-effort)
-    final adminOverrides = <String, bool>{};
-    if (userId != null && userId.isNotEmpty) {
-      try {
-        final overrideRaw = await supa
-            .from('admin_module_access')
-            .select('module_code,is_granted')
-            .eq('user_id', userId)
-            .eq('module_type', 'ursprung');
-        for (final o in (overrideRaw as List).cast<Map<String, dynamic>>()) {
-          final code = o['module_code'] as String?;
-          final granted = o['is_granted'] as bool?;
-          if (code != null && granted != null) adminOverrides[code] = granted;
-        }
-      } catch (_) {}
-    }
 
     var completedCount = 0;
     for (final list in branches.values) {

@@ -548,25 +548,52 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
     );
   }
 
-  static const _historyKey = 'advanced_search_history';
+  // History format: "term\x01epoch_ms" — allows age-based eviction.
+  // Key changed from v1 (plain strings) to v2 to avoid format collision.
+  static const _historyKey = 'advanced_search_history_v2';
   static const _historyMax = 20;
+  static const _historyMaxAgeDays = 7;
 
   Future<List<String>> _loadSearchHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getStringList(_historyKey) ?? <String>[];
+    final raw = prefs.getStringList(_historyKey) ?? <String>[];
+    final cutoff = DateTime.now()
+        .subtract(const Duration(days: _historyMaxAgeDays))
+        .millisecondsSinceEpoch;
+    final valid = <String>[];
+    for (final entry in raw) {
+      final sep = entry.indexOf('\x01');
+      if (sep < 0) continue;
+      final ts = int.tryParse(entry.substring(sep + 1));
+      if (ts == null || ts < cutoff) continue;
+      valid.add(entry.substring(0, sep));
+    }
+    return valid;
   }
 
   Future<void> _saveSearchHistory(String term) async {
     final t = term.trim();
     if (t.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList(_historyKey) ?? <String>[];
-    list.removeWhere((e) => e.toLowerCase() == t.toLowerCase());
-    list.insert(0, t);
-    if (list.length > _historyMax) {
-      list.removeRange(_historyMax, list.length);
+    final raw = prefs.getStringList(_historyKey) ?? <String>[];
+    final cutoff = DateTime.now()
+        .subtract(const Duration(days: _historyMaxAgeDays))
+        .millisecondsSinceEpoch;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final filtered = raw.where((entry) {
+      final sep = entry.indexOf('\x01');
+      if (sep < 0) return false;
+      if (entry.substring(0, sep).toLowerCase() == t.toLowerCase()) {
+        return false; // dedupe
+      }
+      final ts = int.tryParse(entry.substring(sep + 1));
+      return ts != null && ts >= cutoff;
+    }).toList();
+    filtered.insert(0, '$t\x01$now');
+    if (filtered.length > _historyMax) {
+      filtered.removeRange(_historyMax, filtered.length);
     }
-    await prefs.setStringList(_historyKey, list);
+    await prefs.setStringList(_historyKey, filtered);
   }
 
   String _getCategoryLabel(String category) {

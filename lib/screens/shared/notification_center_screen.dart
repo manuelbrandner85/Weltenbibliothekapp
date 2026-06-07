@@ -98,8 +98,11 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   }
 
   void _subscribeRealtime() {
+    if (!mounted) return;
     final uid = _supabase.auth.currentUser?.id;
     if (uid == null) return;
+    // Prevent duplicate channels if called more than once
+    _channel?.unsubscribe();
 
     _channel = _supabase.channel('notif_center_${widget.world}')
       ..onPostgresChanges(

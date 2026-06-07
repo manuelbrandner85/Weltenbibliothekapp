@@ -62,7 +62,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   MaterieProfile? _materieProfile;
   EnergieProfile? _energieProfile;
 
-  /// Triggert nach 400ms Tipppause einen Server-Check.
+  /// Triggert nach 250ms Tipppause einen Server-Check.
   /// Bricht laufende Debounce-Timer ab.
   void _scheduleUsernameCheck(String value) {
     _usernameDebounce?.cancel();
@@ -86,7 +86,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       });
       return;
     }
-    _usernameDebounce = Timer(const Duration(milliseconds: 450), () async {
+    _usernameDebounce = Timer(const Duration(milliseconds: 250), () async {
       if (!mounted) return;
       setState(() => _usernameChecking = true);
       // currentUsername mitschicken: eigener Name kollidiert nie mit sich selbst.
