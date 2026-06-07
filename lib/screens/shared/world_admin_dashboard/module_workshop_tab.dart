@@ -1953,12 +1953,68 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
   List<Map<String, dynamic>> _tools = const [];
   bool _toolsLoading = false;
 
+  // KI & Status-Tab (T2/T3)
+  List<Map<String, dynamic>> _toolSuggestions = const [];
+  List<Map<String, dynamic>> _toolRequests = const [];
+  bool _scanningTools = false;
+  final Set<String> _toolSugBusy = {};
+
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 4, vsync: this);
     _loadTools();
     _loadContentTables();
+    _loadToolSuggestions();
+    _loadToolRequests();
+  }
+
+  Future<void> _loadToolSuggestions() async {
+    final s = await WorldAdminServiceV162.getToolSuggestions(widget.world);
+    if (!mounted) return;
+    setState(() => _toolSuggestions = s);
+  }
+
+  Future<void> _loadToolRequests() async {
+    final r = await WorldAdminServiceV162.getToolRequests(widget.world);
+    if (!mounted) return;
+    setState(() => _toolRequests = r);
+  }
+
+  Future<void> _scanTools() async {
+    setState(() => _scanningTools = true);
+    final n = await WorldAdminServiceV162.scanTools(widget.world);
+    if (!mounted) return;
+    setState(() => _scanningTools = false);
+    _snack(n > 0 ? '$n neue Tool-Vorschlaege' : 'Keine neuen Vorschlaege');
+    await _loadToolSuggestions();
+  }
+
+  Future<void> _acceptToolSuggestion(Map<String, dynamic> s) async {
+    final id = s['id']?.toString() ?? '';
+    setState(() => _toolSugBusy.add(id));
+    final res = await WorldAdminServiceV162.acceptToolSuggestion(id);
+    if (!mounted) return;
+    setState(() => _toolSugBusy.remove(id));
+    if (res['success'] == true) {
+      _snack(res['auto_created'] == true
+          ? 'Angenommen — Claude baut "${s['name']}".'
+          : 'Angenommen (Issue manuell erstellen).');
+      await _loadToolSuggestions();
+      await _loadToolRequests();
+      await _loadTools();
+    } else {
+      _snack('Annehmen fehlgeschlagen', c: Colors.redAccent);
+    }
+  }
+
+  Future<void> _rejectToolSuggestion(Map<String, dynamic> s) async {
+    final id = s['id']?.toString() ?? '';
+    setState(() => _toolSugBusy.add(id));
+    final ok = await WorldAdminServiceV162.rejectToolSuggestion(id);
+    if (!mounted) return;
+    setState(() => _toolSugBusy.remove(id));
+    if (ok) _loadToolSuggestions();
   }
 
   Future<void> _loadTools() async {
@@ -2060,6 +2116,12 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
               text: _tools.isEmpty ? 'Tools' : 'Tools (${_tools.length})',
             ),
             const Tab(icon: Icon(Icons.build_circle_outlined, size: 16), text: 'Funktion (KI baut)'),
+            Tab(
+              icon: const Icon(Icons.lightbulb_outline, size: 16),
+              text: _toolSuggestions.isEmpty
+                  ? 'KI & Status'
+                  : 'KI & Status (${_toolSuggestions.length})',
+            ),
             const Tab(icon: Icon(Icons.dataset_outlined, size: 16), text: 'Inhalte'),
           ],
         ),
@@ -2067,7 +2129,12 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         Expanded(
           child: TabBarView(
             controller: _tabs,
-            children: [_buildToolsTab(), _buildFunctionTab(), _buildContentTab()],
+            children: [
+              _buildToolsTab(),
+              _buildFunctionTab(),
+              _buildKiStatusTab(),
+              _buildContentTab(),
+            ],
           ),
         ),
       ],
@@ -2344,6 +2411,146 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
           ),
         ],
       ],
+    );
+  }
+
+  // ── Tab: KI-Vorschlaege (T2) + Status der Anfragen (T3) ──
+  Widget _buildKiStatusTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        ElevatedButton.icon(
+          onPressed: _scanningTools ? null : _scanTools,
+          icon: _scanningTools
+              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.auto_awesome, size: 16),
+          label: Text(_scanningTools ? 'KI denkt nach …' : 'KI-Tool-Vorschlaege holen'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: widget.accentBright.withValues(alpha: 0.8),
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(44),
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (_toolSuggestions.isNotEmpty) ...[
+          Text('VORSCHLAEGE (${_toolSuggestions.length})',
+              style: TextStyle(color: widget.accentBright, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+          const SizedBox(height: 6),
+          for (final s in _toolSuggestions) _buildToolSuggestionCard(s),
+          const SizedBox(height: 16),
+        ],
+        Row(children: [
+          Text('ANFRAGEN-STATUS',
+              style: TextStyle(color: widget.accentBright, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 16, color: Colors.white38),
+            onPressed: _loadToolRequests,
+          ),
+        ]),
+        const SizedBox(height: 6),
+        if (_toolRequests.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text('Noch keine Anfragen.', style: TextStyle(color: Colors.white38)),
+          )
+        else
+          for (final r in _toolRequests) _buildRequestStatusTile(r),
+      ],
+    );
+  }
+
+  Widget _buildToolSuggestionCard(Map<String, dynamic> s) {
+    final id = s['id']?.toString() ?? '';
+    final busy = _toolSugBusy.contains(id);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.25)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(
+            child: Text((s['name'] as String?) ?? '',
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
+          if ((s['category'] as String?)?.isNotEmpty ?? false)
+            Text(s['category'].toString(), style: const TextStyle(color: Colors.white38, fontSize: 10)),
+        ]),
+        if ((s['description'] as String?)?.isNotEmpty ?? false) ...[
+          const SizedBox(height: 3),
+          Text(s['description'].toString(), style: const TextStyle(color: Colors.white60, fontSize: 11)),
+        ],
+        if ((s['rationale'] as String?)?.isNotEmpty ?? false) ...[
+          const SizedBox(height: 3),
+          Text(s['rationale'].toString(), style: const TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic)),
+        ],
+        const SizedBox(height: 6),
+        Row(children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: busy ? null : () => _acceptToolSuggestion(s),
+              icon: busy
+                  ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.check, size: 14),
+              label: const Text('Annehmen & bauen', style: TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, foregroundColor: Colors.white),
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            onPressed: busy ? null : () => _rejectToolSuggestion(s),
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.white54, side: const BorderSide(color: Colors.white24)),
+            child: const Text('Ablehnen', style: TextStyle(fontSize: 11)),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildRequestStatusTile(Map<String, dynamic> r) {
+    final ghState = r['gh_state'] as String?;
+    final prUrl = r['pr_url'] as String?;
+    final status = r['status'] as String?;
+    String label;
+    Color color;
+    if (prUrl != null) {
+      label = 'PR bereit';
+      color = Colors.lightBlueAccent;
+    } else if (ghState == 'closed') {
+      label = 'Erledigt';
+      color = Colors.green;
+    } else if (ghState == 'open' || status == 'issue_created') {
+      label = 'Wird gebaut';
+      color = Colors.amber;
+    } else {
+      label = 'Angefragt';
+      color = Colors.white54;
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text((r['title'] as String?) ?? '', style: const TextStyle(color: Colors.white, fontSize: 12)),
+            if (prUrl != null)
+              SelectableText(prUrl, style: TextStyle(color: widget.accentBright, fontSize: 10)),
+          ]),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+          child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+        ),
+      ]),
     );
   }
 
