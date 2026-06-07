@@ -2043,6 +2043,33 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         SnackBar(content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A30)));
   }
 
+  bool _ideaBusy = false;
+
+  // KI-Vorschlag holen und in die Felder einsetzen (neu ODER Verbesserung).
+  Future<void> _suggestFunctionIdea() async {
+    setState(() => _ideaBusy = true);
+    final res = await WorldAdminServiceV162.getToolIdea(
+      world: widget.world,
+      mode: _extend ? 'extend' : 'new',
+      target: _extend ? _fnTarget.text.trim() : null,
+    );
+    if (!mounted) return;
+    setState(() => _ideaBusy = false);
+    if (res != null) {
+      setState(() {
+        if ((res['title'] as String?)?.isNotEmpty ?? false) {
+          _fnTitle.text = res['title'] as String;
+        }
+        if ((res['description'] as String?)?.isNotEmpty ?? false) {
+          _fnDesc.text = res['description'] as String;
+        }
+      });
+      _snack('KI-Vorschlag eingesetzt — du kannst ihn anpassen.');
+    } else {
+      _snack('Kein Vorschlag erhalten (KI evtl. ausgelastet)', c: Colors.orange);
+    }
+  }
+
   Future<void> _requestFunction() async {
     final title = _fnTitle.text.trim();
     final desc = _fnDesc.text.trim();
@@ -2412,6 +2439,21 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
           ),
           const SizedBox(height: 10),
         ],
+        // KI-Vorschlag: fuellt Titel + Beschreibung (neu ODER Verbesserung).
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _ideaBusy ? null : _suggestFunctionIdea,
+            icon: _ideaBusy
+                ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.auto_awesome, size: 14),
+            label: Text(
+              _extend ? 'KI-Verbesserungsvorschlag' : 'KI-Idee vorschlagen',
+              style: const TextStyle(fontSize: 11),
+            ),
+            style: TextButton.styleFrom(foregroundColor: widget.accentBright),
+          ),
+        ),
         TextField(
           controller: _fnTitle,
           style: const TextStyle(color: Colors.white),

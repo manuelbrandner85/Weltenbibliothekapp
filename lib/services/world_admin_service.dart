@@ -2008,6 +2008,25 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// KI-Vorschlag im Erstellen/Aendern-Formular: {title, description}.
+  static Future<Map<String, dynamic>?> getToolIdea({
+    required String world,
+    required String mode, // 'new' | 'extend'
+    String? target,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/tools/idea',
+        body: {'world': world, 'mode': mode, if (target != null) 'target': target},
+      );
+      if (data['success'] == true) return data;
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('getToolIdea: $e');
+      return null;
+    }
+  }
+
   static Future<int> scanTools(String world) async {
     try {
       final data = await AdminApiClient.instance
