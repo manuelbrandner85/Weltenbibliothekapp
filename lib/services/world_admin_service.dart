@@ -1655,6 +1655,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
           if (branch != null && branch.isNotEmpty) 'branch': branch,
           if (newTheme) 'new_theme': true,
         },
+        timeout: const Duration(seconds: 45),
       );
       return (data['module'] as Map?)?.cast<String, dynamic>();
     } on AdminApiException catch (e) {
@@ -1677,6 +1678,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/module-workshop/expand',
         body: {'world': world, 'current': current},
+        timeout: const Duration(seconds: 45),
       );
       return (data['module'] as Map?)?.cast<String, dynamic>();
     } on AdminApiException catch (e) {
@@ -1798,6 +1800,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/module-workshop/cover',
         body: {'world': world, 'title': title, if (hint != null) 'hint': hint},
+        timeout: const Duration(seconds: 45),
       );
       if (data['success'] == true) return data['cover_image_url'] as String?;
       return null;
@@ -1850,6 +1853,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/module-workshop/translate',
         body: {'module': module, 'target_lang': targetLang},
+        timeout: const Duration(seconds: 45),
       );
       if (data['success'] == true && data['module'] != null) {
         return Map<String, dynamic>.from(data['module'] as Map);
@@ -1907,6 +1911,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/module-workshop/scan',
         body: {'world': world, 'modes': modes},
+        timeout: const Duration(seconds: 90),
       );
       return Map<String, dynamic>.from(data);
     } on AdminApiException catch (e) {
@@ -2018,6 +2023,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/tools/idea',
         body: {'world': world, 'mode': mode, if (target != null) 'target': target},
+        timeout: const Duration(seconds: 30),
       );
       if (data['success'] == true) return data;
       return null;
@@ -2029,8 +2035,10 @@ extension WorldAdminServiceV162 on WorldAdminService {
 
   static Future<int> scanTools(String world) async {
     try {
-      final data = await AdminApiClient.instance
-          .postJson('/api/admin/tools/scan', body: {'world': world});
+      final data = await AdminApiClient.instance.postJson(
+          '/api/admin/tools/scan',
+          body: {'world': world},
+          timeout: const Duration(seconds: 60));
       return (data['created'] as num?)?.toInt() ?? 0;
     } catch (e) {
       if (kDebugMode) debugPrint('scanTools: $e');
@@ -2103,6 +2111,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
           'mode': mode,
           if (target != null && target.isNotEmpty) 'target': target,
         },
+        // KI-Spec + Issue-Erstellung dauert laenger als die Standard-12s.
+        timeout: const Duration(seconds: 35),
       );
       return Map<String, dynamic>.from(data);
     } on AdminApiException catch (e) {
@@ -2557,8 +2567,10 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<Map<String, dynamic>?> _articleWorkshop(
       String action, Map<String, dynamic> body) async {
     try {
-      final data = await AdminApiClient.instance
-          .postJson('/api/admin/article-workshop/$action', body: body);
+      final data = await AdminApiClient.instance.postJson(
+          '/api/admin/article-workshop/$action',
+          body: body,
+          timeout: const Duration(seconds: 50));
       if (data['success'] == true) return data;
       return null;
     } on AdminApiException catch (e) {
