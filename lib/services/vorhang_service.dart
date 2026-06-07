@@ -13,6 +13,8 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'invisible_auth_service.dart';
+
 class VorhangService {
   static const List<String> _branchOrder = [
     'Machtpsychologie',
@@ -89,21 +91,46 @@ class VorhangService {
         .map((p) => p['module_code'] as String)
         .toSet();
 
-    // Admin-Overrides laden (best-effort, kein Fehler bei Fehlen der Tabelle)
+    // Admin-Overrides laden.
+    // 2026-06-07 BUGFIX: Worker schreibt admin_module_access.user_id mit
+    // widget.user.userId aus dem Admin-Sheet. Das ist entweder die
+    // profiles.id (UUID) ODER die legacy_user_id ('user_<ts>_<rand>'),
+    // je nachdem was die Worker-User-Liste fuer diesen User auspackte.
+    // Der Client kennt aber nur EINEN davon (Supabase-UUID wenn
+    // eingeloggt, sonst legacy). Wer mit der "falschen" ID liest,
+    // findet den Override nicht und das Modul bleibt gesperrt.
+    // Fix: gegen ALLE bekannten Identifier des aktuellen Users prueffen.
+    final candidateIds = <String>{};
+    if (userId != null && userId.isNotEmpty) candidateIds.add(userId);
+    final legacy = InvisibleAuthService().legacyUserId;
+    if (legacy != null && legacy.isNotEmpty) candidateIds.add(legacy);
+    final supaId = supa.auth.currentUser?.id;
+    if (supaId != null && supaId.isNotEmpty) candidateIds.add(supaId);
+
     final adminOverrides = <String, bool>{};
-    if (userId != null && userId.isNotEmpty) {
+    if (candidateIds.isNotEmpty) {
       try {
         final overrideRaw = await supa
             .from('admin_module_access')
             .select('module_code,is_granted')
-            .eq('user_id', userId)
+            .inFilter('user_id', candidateIds.toList())
             .eq('module_type', 'vorhang');
         for (final o in (overrideRaw as List).cast<Map<String, dynamic>>()) {
           final code = o['module_code'] as String?;
           final granted = o['is_granted'] as bool?;
           if (code != null && granted != null) adminOverrides[code] = granted;
         }
-      } catch (_) {}
+        if (kDebugMode) {
+          debugPrint(
+              '[VorhangService] module-overrides loaded for ids=$candidateIds -> ${adminOverrides.length} entries');
+        }
+      } catch (e) {
+        // 2026-06-07: vorher silent catch -- macht Schema/RLS-Probleme
+        // unsichtbar. Jetzt im Debug-Build laut.
+        if (kDebugMode) {
+          debugPrint('[VorhangService] module-override load failed: $e');
+        }
+      }
     }
 
     var completedCount = 0;
