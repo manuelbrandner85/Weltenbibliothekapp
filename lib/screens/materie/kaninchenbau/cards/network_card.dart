@@ -284,6 +284,7 @@ class _NetworkCardState extends State<NetworkCard>
               child: _NodeBadge(
                 label: center.label,
                 type: center.type,
+                imageUrl: center.imageUrl,
                 isCenter: true,
                 onTap: () {
                   HapticFeedback.mediumImpact();
@@ -300,6 +301,7 @@ class _NetworkCardState extends State<NetworkCard>
                   child: _NodeBadge(
                     label: n.label,
                     type: n.type,
+                    imageUrl: n.imageUrl,
                     isCenter: false,
                     onTap: () {
                       HapticFeedback.mediumImpact();
@@ -384,6 +386,9 @@ class _NetworkCardState extends State<NetworkCard>
 class _NodeBadge extends StatelessWidget {
   final String label;
   final String type;
+  // 2026-06-07: optional Wikidata-P18-Bild (Commons-Thumb). Wenn null,
+  // wird ein Twemoji-Type-Icon vom jsdelivr-CDN gezogen.
+  final String? imageUrl;
   final bool isCenter;
   final VoidCallback onTap;
 
@@ -392,59 +397,130 @@ class _NodeBadge extends StatelessWidget {
     required this.type,
     required this.isCenter,
     required this.onTap,
+    this.imageUrl,
   });
+
+  // Twemoji-CDN fuer Typ-Icons (free, github.com/twitter/twemoji via jsdelivr).
+  // Codepoints sind Unicode-Hex ohne "U+".
+  String _twemojiForType(String type) {
+    String cp;
+    switch (type) {
+      case 'person':
+        cp = '1f464'; // 👤
+        break;
+      case 'company':
+        cp = '1f3e2'; // 🏢
+        break;
+      case 'org':
+        cp = '1f3db'; // 🏛
+        break;
+      case 'place':
+        cp = '1f5fa'; // 🗺
+        break;
+      default:
+        cp = '1f4ad'; // 💭
+    }
+    return 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/$cp.png';
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = isCenter ? 76.0 : 64.0;
     final color = _typeColor(type);
+    // Foto bevorzugen, sonst Twemoji-Typ-Icon.
+    final pictureUrl = imageUrl ?? _twemojiForType(type);
+    final isPhoto = imageUrl != null;
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              color.withValues(alpha: 0.9),
-              color.withValues(alpha: 0.4),
-            ],
-          ),
-          border: Border.all(
-            color: isCenter
-                ? Colors.white.withValues(alpha: 0.85)
-                : color.withValues(alpha: 0.7),
-            width: isCenter ? 2.5 : 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.5),
-              blurRadius: isCenter ? 24 : 14,
-              spreadRadius: isCenter ? 2 : 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  color.withValues(alpha: 0.9),
+                  color.withValues(alpha: 0.4),
+                ],
+              ),
+              border: Border.all(
+                color: isCenter
+                    ? Colors.white.withValues(alpha: 0.85)
+                    : color.withValues(alpha: 0.7),
+                width: isCenter ? 2.5 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: isCenter ? 24 : 14,
+                  spreadRadius: isCenter ? 2 : 0,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Center(
+            child: ClipOval(
+              child: Padding(
+                // Foto fuellt den Kreis; Twemoji bleibt mit Inset zentriert.
+                padding: EdgeInsets.all(isPhoto ? 0 : (isCenter ? 14 : 12)),
+                child: Image.network(
+                  pictureUrl,
+                  fit: isPhoto ? BoxFit.cover : BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Center(
+                    child: Text(
+                      label.isEmpty ? '?' : label.characters.first,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  loadingBuilder: (_, child, p) {
+                    if (p == null) return child;
+                    return Center(
+                      child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: Colors.white.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Label als Pille unter dem Kreis -- vorher war es im Kreis ueber
+          // dem Bild und wurde unleserlich, sobald wir Fotos zeigen.
+          Container(
+            constraints: BoxConstraints(maxWidth: size + 14),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                  color: color.withValues(alpha: 0.5), width: 0.8),
+            ),
             child: Text(
               label,
               textAlign: TextAlign.center,
-              maxLines: 3,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: isCenter ? 10 : 9,
                 fontWeight: FontWeight.w700,
-                shadows: const [
-                  Shadow(color: Colors.black54, blurRadius: 4),
-                ],
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

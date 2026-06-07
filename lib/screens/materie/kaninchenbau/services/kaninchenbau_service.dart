@@ -256,9 +256,13 @@ class KaninchenbauService {
         weight: 1.0,
       );
 
-      // 2. SPARQL-Abfrage für outgoing-Beziehungen
+      // 2026-06-07: Zusaetzlich P18 (image) des CENTER-Knotens und
+      // der Targets mitziehen. Damit zeigen wir Personen-Fotos /
+      // Firmen-Logos im Netz statt nur Emoji.
+      // 2. SPARQL-Abfrage für outgoing-Beziehungen + Bilder
       final sparql = '''
-SELECT ?prop ?propLabel ?target ?targetLabel ?targetType ?targetTypeLabel WHERE {
+SELECT ?prop ?propLabel ?target ?targetLabel ?targetType ?targetTypeLabel
+       ?centerImg ?targetImg WHERE {
   VALUES ?prop {
     wdt:P108 wdt:P102 wdt:P463 wdt:P39 wdt:P26 wdt:P40 wdt:P22 wdt:P25
     wdt:P3373 wdt:P184 wdt:P800 wdt:P749 wdt:P127 wdt:P488 wdt:P169
@@ -266,6 +270,8 @@ SELECT ?prop ?propLabel ?target ?targetLabel ?targetType ?targetTypeLabel WHERE 
   }
   wd:$entityId ?prop ?target.
   OPTIONAL { ?target wdt:P31 ?targetType. }
+  OPTIONAL { wd:$entityId wdt:P18 ?centerImg. }
+  OPTIONAL { ?target wdt:P18 ?targetImg. }
   SERVICE wikibase:label {
     bd:serviceParam wikibase:language "de,en".
     ?prop rdfs:label ?propLabel.
@@ -273,7 +279,7 @@ SELECT ?prop ?propLabel ?target ?targetLabel ?targetType ?targetTypeLabel WHERE 
     ?targetType rdfs:label ?targetTypeLabel.
   }
 }
-LIMIT 30
+LIMIT 60
 ''';
 
       final url = Uri.parse(
@@ -292,9 +298,16 @@ LIMIT 30
       final bindings =
           ((data['results'] as Map?)?['bindings'] as List?) ?? const [];
 
-      // Dedupe + zähle je relation-type für intelligente Auswahl
-      final nodeMap = <String, NetworkNode>{}; // targetId → Node
+      // 2026-06-07 Dedup-Regel ("locker -- max 1 Kante pro Relation-Typ"):
+      //  - Pro targetId genau 1 Knoten (egal wie oft sie vorkommt).
+      //  - Pro (targetId, propLabel) genau 1 Kante. Falls Wikidata derselben
+      //    Relation mehrmals zurueckliefert -> nur die erste zaehlt.
+      //  - Selbstschleifen (targetId == entityId) werden ueberprungen.
+      //  - Spiegelkanten (B -> A, wenn A -> B schon existiert) ebenfalls.
+      final nodeMap = <String, NetworkNode>{}; // Wikidata-Qid -> Node
+      final edgeKeys = <String>{}; // "<fromId>-<toId>-<rel>" set
       final edges = <NetworkEdge>[];
+      String? centerImageUrl; // P18 fuer den Center-Knoten
       var idx = 0;
 
       for (final raw in bindings) {
@@ -304,6 +317,13 @@ LIMIT 30
         final propLabel = (m['propLabel']?['value'] ?? '').toString();
         final targetTypeLabel =
             (m['targetTypeLabel']?['value'] ?? '').toString();
+        // Commons-File-URLs ("http://commons.wikimedia.org/wiki/Special:FilePath/...")
+        final centerImgUri = (m['centerImg']?['value'] ?? '').toString();
+        final targetImgUri = (m['targetImg']?['value'] ?? '').toString();
+
+        if (centerImageUrl == null && centerImgUri.isNotEmpty) {
+          centerImageUrl = _commonsThumb(centerImgUri, 160);
+        }
 
         if (targetUri.isEmpty || targetLabel.isEmpty) continue;
         // Skip Treffer wo Label nur die Q-ID ist (= kein DE/EN Label vorhanden)
@@ -311,48 +331,61 @@ LIMIT 30
 
         // Eindeutige Node-ID aus URI
         final targetId = targetUri.split('/').last;
+        // Selbstschleife ausschliessen.
+        if (targetId == entityId) continue;
 
         if (!nodeMap.containsKey(targetId)) {
+          if (nodeMap.length >= 16) continue; // Cap fuer Lesbarkeit
           nodeMap[targetId] = NetworkNode(
             id: 'n$idx',
             label: targetLabel,
             type: _typeFromTargetType(targetTypeLabel),
             weight: 0.65 - (idx * 0.015).clamp(0.0, 0.4),
+            imageUrl: targetImgUri.isNotEmpty
+                ? _commonsThumb(targetImgUri, 96)
+                : null,
           );
           idx++;
+        } else if (nodeMap[targetId]!.imageUrl == null &&
+            targetImgUri.isNotEmpty) {
+          // Spaeteres Binding bringt das Bild nach -- nachtragen.
+          final existing = nodeMap[targetId]!;
+          nodeMap[targetId] = NetworkNode(
+            id: existing.id,
+            label: existing.label,
+            type: existing.type,
+            weight: existing.weight,
+            imageUrl: _commonsThumb(targetImgUri, 96),
+          );
         }
+
+        // Dedup pro (target, relation). Selbe Relation 2x kommt nicht durch.
+        final rel = _germanizeRelation(propLabel);
+        final key = '${nodeMap[targetId]!.id}-$rel';
+        if (edgeKeys.contains(key)) continue;
+        edgeKeys.add(key);
 
         edges.add(NetworkEdge(
           fromId: 'center',
           toId: nodeMap[targetId]!.id,
-          label: _germanizeRelation(propLabel),
+          label: rel,
           strength: 0.7,
         ));
-
-        if (nodeMap.length >= 16) break; // Cap für Lesbarkeit
       }
 
-      final nodes = <NetworkNode>[realCenter, ...nodeMap.values];
+      // Center-Knoten mit Bild aktualisieren (falls vorhanden).
+      final centerWithImg = NetworkNode(
+        id: realCenter.id,
+        label: realCenter.label,
+        type: realCenter.type,
+        weight: realCenter.weight,
+        imageUrl: centerImageUrl,
+      );
 
-      if (nodes.length == 1) {
-        // Fallback 1: Wikidata-Suche für verwandte Einträge
-        final searchResults = await _free.fetchWikidataEntries(
-            normalized.isNotEmpty ? normalized : topic,
-            limit: 6);
-        for (var i = 1; i < searchResults.length; i++) {
-          final r = searchResults[i];
-          nodes.add(NetworkNode(
-            id: 'n$i',
-            label: r.label,
-            type: _typeFromDescription(r.description ?? ''),
-            weight: 0.6 - (i * 0.05),
-          ));
-          edges.add(NetworkEdge(
-              fromId: 'center', toId: 'n$i', label: 'verwandt', strength: 0.4));
-        }
-      }
+      final nodes = <NetworkNode>[centerWithImg, ...nodeMap.values];
 
-      // Fallback 2: Wikipedia-Netzwerk wenn immer noch leer
+      // Fallback NUR wenn KEIN einziger Knoten gefunden wurde -- vermeidet
+      // doppeltes Auflisten verwandter Treffer (vorher Quelle 1 der Dopplungen).
       if (nodes.length <= 1) {
         return fetchWikipediaNetwork(topic);
       }
@@ -362,6 +395,17 @@ LIMIT 30
       debugPrint('Network-Graph-Error: $e');
       return NetworkGraph(nodes: [centerNode], edges: const []);
     }
+  }
+
+  /// Baut aus einer Wikimedia-Commons-File-URL einen Thumbnail-Link.
+  /// Beispiel-Input: http://commons.wikimedia.org/wiki/Special:FilePath/Foo.jpg
+  /// Output: dieselbe URL + ?width=160 (Commons skaliert serverseitig).
+  /// Wird vom Verflechtungs-Netz fuer Knoten-Avatare verwendet (P18-Bilder).
+  String _commonsThumb(String filePathUrl, int width) {
+    if (filePathUrl.isEmpty) return filePathUrl;
+    // Special:FilePath-URLs duerfen einfach um ?width=N erweitert werden.
+    final sep = filePathUrl.contains('?') ? '&' : '?';
+    return '$filePathUrl${sep}width=$width';
   }
 
   /// Mappt Wikidata-Property-Labels (englisch/gemischt) auf knappe deutsche Labels.
