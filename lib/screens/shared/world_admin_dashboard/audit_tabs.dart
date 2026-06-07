@@ -958,6 +958,9 @@ class _AuditLogTabState extends State<_AuditLogTab> {
   String _filterAction = 'all';
   // v103 Phase 4f: zusaetzlicher Zeitraum-Filter.
   String _filterRange = 'all'; // 'today' | '7d' | '30d' | 'all'
+  // v123: Actor filter + undo
+  String _filterActor = ''; // empty = all actors
+  Map<String, dynamic>? _lastUndoableEntry; // latest reversible action
 
   @override
   void initState() {
@@ -1017,9 +1020,21 @@ class _AuditLogTabState extends State<_AuditLogTab> {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final list = (data['logs'] as List?) ?? const [];
         if (mounted) {
+          // Find last reversible entry (has undo_payload or is a role/ban action).
+          Map<String, dynamic>? undoable;
+          for (final item in list.cast<Map<String, dynamic>>()) {
+            final action = item['action']?.toString() ?? '';
+            final hasPayload = item['undo_payload'] != null;
+            final isReversible = hasPayload ||
+                action.contains('role') ||
+                action.contains('ban') ||
+                action.contains('suspend');
+            if (isReversible) { undoable = item; break; }
+          }
           setState(() {
             _logs = list.cast<Map<String, dynamic>>();
             _loading = false;
+            _lastUndoableEntry = undoable;
           });
         }
       } else {
@@ -1037,8 +1052,72 @@ class _AuditLogTabState extends State<_AuditLogTab> {
         return false;
       }
       if (!_matchesRange(_parseLogTs(l))) return false;
+      if (_filterActor.isNotEmpty) {
+        final actor = (l['actor_id'] ?? l['actor'] ?? '').toString().toLowerCase();
+        if (!actor.contains(_filterActor.toLowerCase())) return false;
+      }
       return true;
     }).toList();
+  }
+
+  // v123: CSV-Export des gefilterten Audit-Logs (clipboard, kein File-IO).
+  Future<void> _exportCsv() async {
+    final rows = _filtered;
+    if (rows.isEmpty) return;
+    final buf = StringBuffer();
+    buf.writeln('timestamp,action,actor,target,details');
+    for (final l in rows) {
+      final ts = (l['created_at'] ?? l['timestamp'] ?? '').toString();
+      final action = (l['action'] ?? '').toString().replaceAll(',', ';');
+      final actor = (l['actor_id'] ?? l['actor'] ?? '').toString().replaceAll(',', ';');
+      final target = (l['target_identity'] ?? l['target_id'] ?? '').toString().replaceAll(',', ';');
+      final details = (l['details'] ?? l['reason'] ?? '').toString().replaceAll(',', ';').replaceAll('\n', ' ');
+      buf.writeln('"$ts","$action","$actor","$target","$details"');
+    }
+    await Clipboard.setData(ClipboardData(text: buf.toString()));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('📋 ${rows.length} Eintraege als CSV kopiert'),
+        backgroundColor: const Color(0xFF1A1A2E),
+      ));
+    }
+  }
+
+  // v123: Undo last reversible action (root_admin only).
+  Future<void> _undo() async {
+    final entry = _lastUndoableEntry;
+    if (entry == null) return;
+    final entryId = (entry['log_id'] ?? entry['id'] ?? '').toString();
+    if (entryId.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Aktion rueckgaengig?', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Letzte Aktion: ${entry['action'] ?? '?'}\nZiel: ${entry['target_identity'] ?? entry['target_id'] ?? '?'}',
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Rueckgaengig'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final ok = await WorldAdminServiceV162.undoAuditEntry(entryId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ok ? '↩️ Aktion rueckgaengig gemacht' : '❌ Undo fehlgeschlagen'),
+        backgroundColor: ok ? Colors.green : Colors.red,
+      ));
+      if (ok) _load();
+    }
   }
 
   void _toast(String m, {Color? color}) {
@@ -1115,23 +1194,67 @@ class _AuditLogTabState extends State<_AuditLogTab> {
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
           child: Row(children: [
-            Text('${_filtered.length}/${_logs.length} EINTRÄGE',
+            Text('${_filtered.length}/${_logs.length} EINTRAEGE',
                 style: TextStyle(
                     color: widget.accentBright,
                     fontSize: 11,
                     letterSpacing: 2,
                     fontWeight: FontWeight.bold)),
             const Spacer(),
+            // v123: CSV Export
+            if (_filtered.isNotEmpty)
+              IconButton(
+                tooltip: 'Als CSV kopieren',
+                icon: const Icon(Icons.download_rounded, color: Colors.greenAccent),
+                onPressed: _exportCsv,
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
+            // v123: Undo last action (root_admin only)
+            if (widget.isRootAdmin && _lastUndoableEntry != null)
+              IconButton(
+                tooltip: 'Letzte Aktion rueckgaengig',
+                icon: const Icon(Icons.undo_rounded, color: Colors.orangeAccent),
+                onPressed: _undo,
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
             if (widget.isRootAdmin && _logs.isNotEmpty)
               IconButton(
                   tooltip: 'Audit-Log leeren',
                   icon: const Icon(Icons.delete_sweep_rounded,
                       color: Colors.redAccent),
-                  onPressed: _clearAll),
+                  onPressed: _clearAll,
+                  iconSize: 20,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36)),
             IconButton(
                 icon: Icon(Icons.refresh, color: widget.accent),
-                onPressed: _load),
+                onPressed: _load,
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36)),
           ]),
+        ),
+        // v123: Actor filter field
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+          child: TextField(
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            onChanged: (v) => setState(() => _filterActor = v.trim()),
+            decoration: InputDecoration(
+              hintText: 'Nach Admin-ID filtern...',
+              hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+              prefixIcon: const Icon(Icons.person_search_rounded, color: Colors.white38, size: 16),
+              isDense: true,
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            ),
+          ),
         ),
         // v103 Phase 4f: Mini-Balkendiagramm letzte 7 Tage.
         Container(

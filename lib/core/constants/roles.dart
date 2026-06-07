@@ -101,6 +101,20 @@ class AppRoles {
   /// Wer darf Announcements / Broadcasts erstellen? Admin+
   static bool canCreateAnnouncements(String? role) => _isAdminLike(role);
 
+  /// Liste der Rollen die ein bestimmter Actor vergeben darf (fuer Bulk-Role-Dialog).
+  static List<String> rolesForPromotion(String? actorRole) {
+    if (_isRoot(actorRole)) {
+      return [user, moderator, contentEditor, admin, rootAdmin];
+    }
+    if (actorRole == admin) {
+      return [user, moderator, contentEditor];
+    }
+    return [user];
+  }
+
+  /// Wer darf Feature-Flags aendern? Root-Admin only.
+  static bool canManageKillSwitch(String? role) => _isRoot(role);
+
   // ============================================================================
   // BADGES + LABELS (ersetzt AdminPermissions.getAdminBadge etc.)
   // ============================================================================

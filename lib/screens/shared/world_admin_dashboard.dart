@@ -48,6 +48,8 @@ part 'world_admin_dashboard/user_detail_sheet.dart';
 part 'world_admin_dashboard/restriction_sheet.dart';
 part 'world_admin_dashboard/account_requests_sheet.dart';
 part 'world_admin_dashboard/admin_hub.dart';
+part 'world_admin_dashboard/insights_tab.dart';
+part 'world_admin_dashboard/control_tab.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -470,6 +472,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             accent: _accent,
             accentBright: _accentBright,
             isRootAdmin: admin.isRootAdmin);
+      case 'insights':
+        return _InsightsTab(accent: _accent, accentBright: _accentBright, admin: admin);
+      case 'control':
+        return _ControlTab(accent: _accent, accentBright: _accentBright, admin: admin);
       case 'system':
         return _SystemTab(
             accent: _accent, accentBright: _accentBright, admin: admin);

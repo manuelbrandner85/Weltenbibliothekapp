@@ -355,6 +355,9 @@ class _UserTile extends StatelessWidget {
   final VoidCallback? onViewDetail;
   // v117: Granulare Bereichs-Sperren.
   final VoidCallback? onRestrict;
+  // v123: Shadow-ban (root_admin only) + Temp-Mute (admin+).
+  final VoidCallback? onShadowBan;
+  final VoidCallback? onTempMute;
   const _UserTile({
     required this.user,
     required this.isRootAdmin,
@@ -373,6 +376,8 @@ class _UserTile extends StatelessWidget {
     this.onChangeRole,
     this.onViewDetail,
     this.onRestrict,
+    this.onShadowBan,
+    this.onTempMute,
   });
 
   Color get _roleColor => switch (user.role) {
@@ -492,6 +497,27 @@ class _UserTile extends StatelessWidget {
                   label: '🚫 Gesperrt',
                   color: Colors.redAccent,
                   tooltip: 'Dieser Nutzer ist aktuell gesperrt',
+                ),
+              // v123: Shadow-ban Badge
+              if (user.isShadowBanned)
+                const _MiniPill(
+                  label: '👻 Shadow',
+                  color: Color(0xFF9C27B0),
+                  tooltip: 'Shadow-gesperrt: Nutzer sieht eigene Posts, andere nicht',
+                ),
+              // v123: Mute Badge
+              if (user.isMuted)
+                _MiniPill(
+                  label: '🔇 Stumm',
+                  color: Colors.blueGrey,
+                  tooltip: 'Stumm bis ${user.mutedUntil?.toLocal().toString().substring(0, 16) ?? '?'}',
+                ),
+              // v123: Bot-Verdacht Badge
+              if (user.isBotSuspect)
+                const _MiniPill(
+                  label: '🤖 Bot?',
+                  color: Color(0xFFFF6F00),
+                  tooltip: 'Konto < 24h alt mit hoher Post-Frequenz',
                 ),
               // v115 (Feature B): Verwarnungs-Badge mit Count
               if (user.warningCount > 0)
@@ -633,6 +659,22 @@ class _UserTile extends StatelessWidget {
                     if (onViewDetail != null)
                       _ActionBtn(Icons.person_search_rounded, 'Detail',
                           const Color(0xFF42A5F5), onViewDetail!),
+                    // v123: Shadow-ban (root_admin only)
+                    if (onShadowBan != null)
+                      _ActionBtn(
+                        Icons.visibility_off_rounded,
+                        user.isShadowBanned ? 'Shadow auf' : 'Shadow-Ban',
+                        const Color(0xFF9C27B0),
+                        onShadowBan!,
+                      ),
+                    // v123: Temp-Mute (admin+)
+                    if (onTempMute != null)
+                      _ActionBtn(
+                        Icons.volume_off_rounded,
+                        user.isMuted ? 'Entmuten' : 'Stumm',
+                        Colors.blueGrey,
+                        onTempMute!,
+                      ),
                     if (onDelete != null)
                       _ActionBtn(Icons.delete_forever_rounded, 'Loeschen',
                           Colors.redAccent, onDelete!),
@@ -721,6 +763,8 @@ class _BulkActionBar extends StatelessWidget {
   final VoidCallback onClear;
   final VoidCallback? onSelectAll;
   final VoidCallback? onDelete;
+  final VoidCallback? onWarn;
+  final VoidCallback? onRoleChange;
   const _BulkActionBar({
     required this.count,
     required this.accent,
@@ -732,6 +776,8 @@ class _BulkActionBar extends StatelessWidget {
     required this.onClear,
     this.onSelectAll,
     this.onDelete,
+    this.onWarn,
+    this.onRoleChange,
   });
 
   @override
@@ -793,6 +839,16 @@ class _BulkActionBar extends StatelessWidget {
             _ActionBtn(Icons.block, 'Bannen', Colors.red, onBan),
             const SizedBox(width: 6),
             _ActionBtn(Icons.lock_open, 'Entbannen', Colors.teal, onUnban),
+            if (onWarn != null) ...[
+              const SizedBox(width: 6),
+              _ActionBtn(Icons.warning_amber_rounded, 'Verwarnen',
+                  Colors.orangeAccent, onWarn!),
+            ],
+            if (onRoleChange != null) ...[
+              const SizedBox(width: 6),
+              _ActionBtn(Icons.manage_accounts_rounded, 'Rolle aendern',
+                  Colors.blueAccent, onRoleChange!),
+            ],
             if (onDelete != null) ...[
               const SizedBox(width: 6),
               _ActionBtn(

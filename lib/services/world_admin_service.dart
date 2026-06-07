@@ -666,6 +666,14 @@ class WorldUser {
   final String? sourceFromServer;
   // v117: Web-Zugangs-Antrag ohne echtes Profil -- User-Aktionen greifen nicht.
   final bool isWebOnly;
+  // v123: Shadow-ban (root_admin only). Content visible to sender, hidden to others.
+  final bool isShadowBanned;
+  // v123: Chat-Mute until this timestamp. null = not muted.
+  final DateTime? mutedUntil;
+  // v123: Account created < 24h AND post count above threshold -> bot suspect.
+  final bool isBotSuspect;
+  // v123: Post count (filled by Worker if available).
+  final int postCount;
 
   WorldUser({
     required this.profileId,
@@ -684,6 +692,10 @@ class WorldUser {
     this.warningCount = 0,
     this.sourceFromServer,
     this.isWebOnly = false,
+    this.isShadowBanned = false,
+    this.mutedUntil,
+    this.isBotSuspect = false,
+    this.postCount = 0,
   });
 
   factory WorldUser.fromJson(Map<String, dynamic> json) {
@@ -691,6 +703,8 @@ class WorldUser {
         json['profile_id'] as String? ?? json['profileId'] as String? ?? '';
     final legacy =
         json['legacy_user_id'] as String? ?? json['legacyUserId'] as String?;
+    final mutedStr =
+        json['muted_until'] as String? ?? json['mutedUntil'] as String?;
     return WorldUser(
       profileId: id,
       // userId fuer Aktionen: wenn UUID vorhanden, nimm die. Sonst InvisibleAuth-ID.
@@ -717,11 +731,19 @@ class WorldUser {
       warningCount: (json['warning_count'] as num?)?.toInt() ?? 0,
       sourceFromServer: json['source'] as String?,
       isWebOnly: json['is_web_only'] as bool? ?? false,
+      isShadowBanned:
+          json['shadow_banned'] as bool? ?? json['isShadowBanned'] as bool? ?? false,
+      mutedUntil: mutedStr != null ? DateTime.tryParse(mutedStr) : null,
+      isBotSuspect:
+          json['is_bot_suspect'] as bool? ?? json['isBotSuspect'] as bool? ?? false,
+      postCount: (json['post_count'] as num?)?.toInt() ?? 0,
     );
   }
 
   bool get isAdmin => role == 'admin' || role == 'root_admin';
   bool get isRootAdmin => role == 'root_admin';
+  bool get isMuted =>
+      mutedUntil != null && mutedUntil!.isAfter(DateTime.now().toUtc());
 
   /// True for auto-generated InvisibleAuth accounts that never set a real
   /// username (pattern: 'user_' followed only by digits).
@@ -2158,6 +2180,272 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return data['success'] as bool? ?? false;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ removeDeletedIdentity: $e');
+      return false;
+    }
+  }
+
+  // ── v123: Shadow-Ban (root_admin only) ────────────────────────────────────
+
+  static Future<bool> shadowBanUser({
+    required String userId,
+    required bool enable,
+    String? adminUsername,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/shadow-ban',
+        body: {'enable': enable},
+      );
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ shadowBanUser: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ shadowBanUser: $e');
+      return false;
+    }
+  }
+
+  // ── v123: Temp-Mute (muted_until on profile) ──────────────────────────────
+
+  static Future<bool> tempMuteUser({
+    required String userId,
+    required int durationMinutes, // 0 = unmute
+    String? reason,
+    String? adminUsername,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/temp-mute',
+        body: {
+          'duration_minutes': durationMinutes,
+          if (reason != null) 'reason': reason,
+        },
+      );
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ tempMuteUser: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ tempMuteUser: $e');
+      return false;
+    }
+  }
+
+  // ── v123: Feature Flags ────────────────────────────────────────────────────
+
+  static Future<List<Map<String, dynamic>>> getFeatureFlags() async {
+    try {
+      final data = await AdminApiClient.instance.getJson('/api/admin/feature-flags');
+      final list = data['flags'] as List? ?? [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getFeatureFlags: $e');
+      return [];
+    }
+  }
+
+  static Future<bool> setFeatureFlag({
+    required String key,
+    required bool enabled,
+    String? world,
+    String? value,
+    String? adminUsername,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/feature-flags/$key',
+        body: {
+          'enabled': enabled,
+          if (world != null) 'world': world,
+          if (value != null) 'value': value,
+        },
+      );
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ setFeatureFlag: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ setFeatureFlag: $e');
+      return false;
+    }
+  }
+
+  // ── v123: Scheduled Announcements ─────────────────────────────────────────
+
+  static Future<List<Map<String, dynamic>>> getAnnouncements() async {
+    try {
+      final data = await AdminApiClient.instance.getJson('/api/admin/announcements');
+      final list = data['announcements'] as List? ?? [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getAnnouncements: $e');
+      return [];
+    }
+  }
+
+  static Future<bool> createAnnouncement({
+    required String title,
+    required String body,
+    required DateTime runAt,
+    String? world,
+    bool push = false,
+    String? adminUsername,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/announcements',
+        body: {
+          'title': title,
+          'body': body,
+          'run_at': runAt.toUtc().toIso8601String(),
+          if (world != null) 'world': world,
+          'push': push,
+        },
+      );
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ createAnnouncement: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ createAnnouncement: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> deleteAnnouncement(String announcementId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .deleteJson('/api/admin/announcements/$announcementId');
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ deleteAnnouncement: $e');
+      return false;
+    }
+  }
+
+  // ── v123: Content Approval Queue ──────────────────────────────────────────
+
+  static Future<List<Map<String, dynamic>>> getPendingVideos() async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/videos?status=pending');
+      final list = data['videos'] as List? ?? [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getPendingVideos: $e');
+      return [];
+    }
+  }
+
+  // ── v123: Insights / Analytics ────────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> getInsights() async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/insights');
+      return data;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getInsights: $e');
+      return {};
+    }
+  }
+
+  // ── v123: Health check (enriched) ─────────────────────────────────────────
+
+  static Future<Map<String, dynamic>> getHealthStatus() async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/health');
+      return data;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getHealthStatus: $e');
+      return {};
+    }
+  }
+
+  // ── v123: Audit log with filter ───────────────────────────────────────────
+
+  static Future<List<Map<String, dynamic>>> getAuditLogFiltered({
+    String? actorId,
+    String? action,
+    DateTime? from,
+    DateTime? to,
+    int limit = 100,
+  }) async {
+    try {
+      final params = <String, String>{
+        'limit': '$limit',
+        if (actorId != null && actorId.isNotEmpty) 'actor': actorId,
+        if (action != null && action.isNotEmpty) 'action': action,
+        if (from != null) 'from': from.toUtc().toIso8601String(),
+        if (to != null) 'to': to.toUtc().toIso8601String(),
+      };
+      final qs = params.entries.map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}').join('&');
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/audit-log?$qs');
+      final list = data['entries'] as List? ?? data['log'] as List? ?? [];
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getAuditLogFiltered: $e');
+      return [];
+    }
+  }
+
+  // ── v123: Undo last action ────────────────────────────────────────────────
+
+  static Future<bool> undoAuditEntry(String entryId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/audit-log/$entryId/undo', body: {});
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ undoAuditEntry: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ undoAuditEntry: $e');
+      return false;
+    }
+  }
+
+  // ── v123: Bulk-Warn ───────────────────────────────────────────────────────
+
+  static Future<bool> bulkWarnUsers({
+    required List<String> userIds,
+    required String reason,
+    String? adminUsername,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/bulk-warn',
+        body: {'user_ids': userIds, 'reason': reason},
+      );
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ bulkWarnUsers: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ bulkWarnUsers: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> bulkChangeRole({
+    required List<String> userIds,
+    required String newRole,
+    String? adminUsername,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/bulk-role',
+        body: {'user_ids': userIds, 'role': newRole},
+      );
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) debugPrint('❌ bulkChangeRole: ${e.statusCode} ${e.bodySnippet}');
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ bulkChangeRole: $e');
       return false;
     }
   }

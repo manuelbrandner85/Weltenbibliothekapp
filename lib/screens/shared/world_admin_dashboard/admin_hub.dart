@@ -107,6 +107,22 @@ class _AdminHubState extends State<_AdminHub> {
     }
     if (AppRoles.isAdmin(role)) {
       areas.add(const _AdminAreaDef(
+        icon: Icons.insights_rounded,
+        title: 'Insights',
+        subtitle: 'Live-Nutzer, Wachstum, Heatmap',
+        section: 'insights',
+      ));
+    }
+    if (AppRoles.canCreateAnnouncements(role)) {
+      areas.add(const _AdminAreaDef(
+        icon: Icons.tune_rounded,
+        title: 'Steuerung',
+        subtitle: 'Feature-Flags, Ankuendigungen, Freigaben',
+        section: 'control',
+      ));
+    }
+    if (AppRoles.isAdmin(role)) {
+      areas.add(const _AdminAreaDef(
         icon: Icons.monitor_heart_rounded,
         title: 'System',
         subtitle: 'Health, Sync, Diagnose',
