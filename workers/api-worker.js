@@ -9789,6 +9789,42 @@ export default {
         } catch (e) { return errorResponse(`tools DELETE Fehler: ${e.message}`); }
       }
 
+      // ── POST /api/admin/tools/idea  (KI-Vorschlag im Erstellen/Aendern-Formular) ──
+      // Body: { world, mode: 'new'|'extend', target? }
+      // -> { title, description }  (neuer Tool-Vorschlag ODER Verbesserungs-Idee).
+      if (method === 'POST' && path === '/api/admin/tools/idea') {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Keine Berechtigung', 403);
+        }
+        try {
+          const b = await request.clone().json().catch(() => ({}));
+          const world = String(b?.world || '').toLowerCase();
+          const mode = b?.mode === 'extend' ? 'extend' : 'new';
+          const target = String(b?.target || '').trim();
+          // Bestehende Tools als Kontext (Duplikate vermeiden / passend bleiben).
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/app_tools?select=name,description&world=eq.${encodeURIComponent(world)}`, { headers: svcHeaders });
+          const existing = r.ok ? await r.json().catch(() => []) : [];
+          const names = existing.map((t) => t.name).join(', ');
+          let sys, user;
+          if (mode === 'extend' && target) {
+            const cur = existing.find((t) => String(t.name).toLowerCase() === target.toLowerCase());
+            sys = 'Du schlaegst eine konkrete, umsetzbare Verbesserung fuer ein bestehendes App-Tool vor. ' +
+              'Antworte als JSON-Objekt: { "title": "kurzer Titel der Verbesserung", "description": "2-4 Saetze was konkret verbessert/ergaenzt wird" }. Deutsch.';
+            user = `Welt: ${world}\nTool: ${target}\nAktuelle Beschreibung: ${cur?.description || '(unbekannt)'}\n\nSchlage EINE sinnvolle Verbesserung vor.`;
+          } else {
+            sys = `Du schlaegst EIN neues, passendes interaktives Tool fuer die "${world}"-Welt vor (kein Duplikat). ` +
+              'Antworte als JSON-Objekt: { "title": "kurzer Tool-Name", "description": "2-4 Saetze was es tut, Eingaben/Ausgaben" }. Deutsch.';
+            user = `Bestehende Tools: ${names || '(keine)'}\n\nSchlage ein neues Tool vor das gut passt und noch fehlt.`;
+          }
+          const idea = await aiJson(env, sys, user, 600);
+          return jsonResponse({
+            success: true,
+            title: String(idea.title || '').slice(0, 120),
+            description: String(idea.description || '').slice(0, 1500),
+          });
+        } catch (e) { return errorResponse(`tools idea Fehler: ${e.message}`); }
+      }
+
       // ── POST /api/admin/tools/scan  (T2: KI schlaegt neue Tools vor) ──
       if (method === 'POST' && path === '/api/admin/tools/scan') {
         if (!['admin', 'root_admin'].includes(caller.role)) return errorResponse('Admin-Rolle erforderlich', 403);
