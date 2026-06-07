@@ -268,18 +268,80 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
     }
   }
 
+  // Zeigt eine Klartext-Warnung wenn FCM nicht korrekt konfiguriert ist
+  // (haeufigste Ursache fuer "Push kommt nicht an").
+  Widget _buildFcmStatusBanner(String status, String? error, int devices) {
+    final isInvalid = status == 'invalid';
+    final color = isInvalid ? Colors.red : Colors.orange;
+    final title = isInvalid
+        ? 'FCM falsch konfiguriert - es gehen KEINE Push-Nachrichten raus'
+        : 'FCM nicht eingerichtet - nur In-App-Benachrichtigungen';
+    final detail = isInvalid
+        ? 'Das Secret FCM_SERVICE_ACCOUNT ist gesetzt, aber ungueltig '
+            '(kein valides Firebase-Service-Account-JSON). Bitte in den '
+            'GitHub-Repo-Secrets FCM_SERVICE_ACCOUNT_JSON durch das korrekte '
+            'JSON ersetzen und den Worker neu deployen.'
+        : 'Kein FCM_SERVICE_ACCOUNT-Secret hinterlegt. Setze es in den '
+            'GitHub-Repo-Secrets (FCM_SERVICE_ACCOUNT_JSON), damit echte '
+            'Push-Nachrichten zugestellt werden koennen.';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.warning_amber_rounded, color: color, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(title,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold)),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          Text(detail,
+              style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          const SizedBox(height: 6),
+          Text('Registrierte Geraete mit Token: $devices',
+              style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          if (error != null) ...[
+            const SizedBox(height: 4),
+            Text('Fehler: $error',
+                style: TextStyle(
+                    color: color.withValues(alpha: 0.8), fontSize: 10)),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final stats = _pushStats;
     final totalSent = stats?['total_sent'] as int? ?? 0;
     final totalFailed = stats?['total_failed'] as int? ?? 0;
     final totalPending = stats?['total_pending'] as int? ?? 0;
+    final fcmStatus = stats?['fcm_status'] as String?;
+    final fcmError = stats?['fcm_error'] as String?;
+    final devices = stats?['registered_devices'] as int? ?? 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── FCM-Konfigurationsstatus ──────────────────────────────
+          if (fcmStatus != null && fcmStatus != 'ok')
+            _buildFcmStatusBanner(fcmStatus, fcmError, devices),
+          if (fcmStatus != null && fcmStatus != 'ok')
+            const SizedBox(height: 12),
           // ── Push-Zustellstatistik ─────────────────────────────────
           Row(children: [
             Expanded(
