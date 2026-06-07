@@ -72,3 +72,11 @@ jobs:
             reviewt und merged.
           # Branch-Praefix fuer den entstehenden PR.
           branch_prefix: "claude/tool-"
+          # WICHTIG: Ohne diese Berechtigungen verweigert die Action jeden Schreib-,
+          # git- und PR-Schritt (permission_denials_count > 0) und der Lauf endet
+          # "erfolgreich" OHNE PR. In dieser vertrauenswuerdigen internen Automation
+          # alle Tools freigeben, damit Claude Dateien schreiben, committen und einen
+          # PR oeffnen kann. --max-turns hoch genug fuer einen kompletten Tool-Build.
+          claude_args: |
+            --max-turns 60
+            --permission-mode bypassPermissions
