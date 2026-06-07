@@ -120,6 +120,40 @@ async function _hmacSha256Hex(secret, message) {
     .map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// v124: Pseudonymer Geraete/IP-Fingerprint fuer Multi-Account-Erkennung.
+// Schreibt KEINE Klartext-IP -- nur HMAC-Hash mit ADMIN_AUTH_SECRET.
+// Fire-and-forget: Fehler werden geschluckt, damit die eigentliche Aktion
+// (Activity-Log etc.) nie blockiert. Retention 90 Tage via Cron.
+async function recordProfileSession(profileId, request, env, svcHeaders) {
+  if (!profileId) return;
+  try {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const ua = request.headers.get('User-Agent') || 'unknown';
+    const secret = env.ADMIN_AUTH_SECRET ||
+        env.SUPABASE_SERVICE_ROLE_KEY || 'fallback-do-not-use';
+    const ipHash = await _hmacSha256Hex(secret, `ip:${ip}`);
+    const uaHash = await _hmacSha256Hex(secret, `ua:${ua}`);
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/profile_sessions?on_conflict=profile_id,ip_hash,ua_hash`,
+      {
+        method: 'POST',
+        headers: {
+          ...svcHeaders,
+          'Prefer': 'resolution=merge-duplicates,return=minimal',
+        },
+        body: JSON.stringify({
+          profile_id: String(profileId),
+          ip_hash: ipHash,
+          ua_hash: uaHash,
+          last_seen: new Date().toISOString(),
+        }),
+      },
+    );
+  } catch (_) {
+    /* fire-and-forget -- session tracking ist best-effort */
+  }
+}
+
 // base64url -> Uint8Array (JWT segments use URL-safe base64 without padding).
 function _b64urlToBytes(s) {
   s = s.replace(/-/g, '+').replace(/_/g, '/');
@@ -1319,6 +1353,25 @@ export default {
       }
     } catch (e) {
       console.error('cron ban-expiry failed:', e.message);
+    }
+
+    // 🔒 v124: profile_sessions 90-Tage-Retention. Loescht alles wo
+    // last_seen aelter als 90 Tage ist. Laeuft 1x pro Stunde (UTC :00).
+    try {
+      const nowUTC = new Date();
+      if (nowUTC.getUTCMinutes() < 5) {
+        const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+            .toISOString();
+        const delRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profile_sessions?last_seen=lt.${encodeURIComponent(cutoff)}`,
+          { method: 'DELETE', headers: { ...pushAuth, 'Prefer': 'return=minimal' } },
+        );
+        if (delRes.ok) {
+          console.log('cron profile-sessions-retention: ok');
+        }
+      }
+    } catch (e) {
+      console.error('cron profile-sessions-retention failed:', e.message);
     }
 
     // 💡 v103 (1.5) Daily Wisdom -- 08:00 UTC each day. Picks one of 30
@@ -7706,6 +7759,208 @@ export default {
         } catch (e) { return errorResponse(`Health Fehler: ${e.message}`); }
       }
 
+      // ════════════════════════════════════════════════════════════════
+      // v124: SENSITIVE ADMIN -- Impersonation (read-only) + IP/Device-Linking
+      // ════════════════════════════════════════════════════════════════
+
+      // ── POST /api/admin/impersonation/start ──────────────────────
+      // Body: { target_user_id }
+      // Schreibt Audit-Eintrag (action='impersonation_view') und gibt OK
+      // zurueck. Der Client zeigt danach einen read-only Snapshot des Users
+      // an -- KEIN echter Login-Wechsel, keine Schreibrechte.
+      if (method === 'POST' && path === '/api/admin/impersonation/start') {
+        if (!caller.isRootAdmin) {
+          return errorResponse('Root-Admin erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const targetId = String(body.target_user_id || '').trim();
+          if (!targetId) return errorResponse('target_user_id fehlt', 400);
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'impersonation_view',
+            target_id: targetId,
+            details: {
+              reason: String(body.reason || '').slice(0, 240) || null,
+              read_only: true,
+            },
+          });
+          return jsonResponse({
+            success: true,
+            target_user_id: targetId,
+            read_only: true,
+          });
+        } catch (e) {
+          return errorResponse(`Impersonation-Start Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/admin/users/:userId/linked-accounts ─────────────
+      // Findet andere Profile die SHA256-gleiche ip_hash oder ua_hash
+      // teilen. Liefert pseudonyme Treffer (nur Profil-ID/Username/Avatar,
+      // KEINE Klartext-IPs). Root-Admin only. 90-Tage-Fenster.
+      if (method === 'GET' && path.startsWith('/api/admin/users/') &&
+          path.endsWith('/linked-accounts')) {
+        if (!caller.isRootAdmin) {
+          return errorResponse('Root-Admin erforderlich', 403);
+        }
+        try {
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+
+          // Audit log fuer DSGVO-Nachweis: jede Abfrage protokollieren.
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'linked_accounts_query',
+            target_id: userId,
+            details: {},
+          });
+
+          // 1) Alle Sessions des Ziel-Users holen (max 200, last 90d).
+          const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+              .toISOString();
+          const ownRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profile_sessions?profile_id=eq.${encodeURIComponent(userId)}&last_seen=gte.${encodeURIComponent(cutoff)}&select=ip_hash,ua_hash,first_seen,last_seen&order=last_seen.desc&limit=200`,
+            { headers: svcHeaders },
+          );
+          const ownSessions = ownRes.ok ? await ownRes.json().catch(() => []) : [];
+          if (!Array.isArray(ownSessions) || ownSessions.length === 0) {
+            return jsonResponse({
+              success: true,
+              linked: [],
+              own_sessions: 0,
+              note: 'Keine Sessions in den letzten 90 Tagen.',
+            });
+          }
+          const ipHashes = [...new Set(ownSessions.map(s => s.ip_hash))];
+
+          // 2) Andere Profile mit gleicher ip_hash finden.
+          const ipList = ipHashes
+              .slice(0, 50)
+              .map(h => `"${h}"`)
+              .join(',');
+          const matchRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profile_sessions?ip_hash=in.(${ipList})&profile_id=neq.${encodeURIComponent(userId)}&last_seen=gte.${encodeURIComponent(cutoff)}&select=profile_id,ip_hash,ua_hash,first_seen,last_seen&order=last_seen.desc&limit=500`,
+            { headers: svcHeaders },
+          );
+          const matches = matchRes.ok ? await matchRes.json().catch(() => []) : [];
+
+          // 3) Aggregieren pro profile_id.
+          const byProfile = new Map();
+          for (const m of matches) {
+            const pid = m.profile_id;
+            if (!byProfile.has(pid)) {
+              byProfile.set(pid, {
+                profile_id: pid,
+                shared_ips: new Set(),
+                shared_uas: new Set(),
+                first_seen: m.first_seen,
+                last_seen: m.last_seen,
+                hit_count: 0,
+              });
+            }
+            const agg = byProfile.get(pid);
+            agg.shared_ips.add(m.ip_hash);
+            agg.shared_uas.add(m.ua_hash);
+            agg.hit_count += 1;
+            if (m.last_seen > agg.last_seen) agg.last_seen = m.last_seen;
+            if (m.first_seen < agg.first_seen) agg.first_seen = m.first_seen;
+          }
+          const linkedIds = [...byProfile.keys()].slice(0, 50);
+
+          // 4) Anreichern: username/role/avatar fuer Anzeige (kein PII darueber hinaus).
+          let profilesById = {};
+          if (linkedIds.length > 0) {
+            const idList = linkedIds.map(i => encodeURIComponent(i)).join(',');
+            const profRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=in.(${idList})&select=id,username,display_name,role,avatar_emoji,created_at`,
+              { headers: svcHeaders },
+            );
+            const profRows = profRes.ok ? await profRes.json().catch(() => []) : [];
+            for (const p of profRows) {
+              profilesById[p.id] = p;
+            }
+          }
+          const linked = linkedIds.map(pid => {
+            const agg = byProfile.get(pid);
+            const profile = profilesById[pid] || {};
+            return {
+              profile_id: pid,
+              username: profile.username || null,
+              display_name: profile.display_name || null,
+              role: profile.role || null,
+              avatar_emoji: profile.avatar_emoji || null,
+              created_at: profile.created_at || null,
+              shared_ip_count: agg.shared_ips.size,
+              shared_ua_count: agg.shared_uas.size,
+              hit_count: agg.hit_count,
+              first_seen: agg.first_seen,
+              last_seen: agg.last_seen,
+            };
+          });
+
+          return jsonResponse({
+            success: true,
+            own_sessions: ownSessions.length,
+            linked,
+            window_days: 90,
+          });
+        } catch (e) {
+          return errorResponse(`Linked-Accounts Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/admin/users/:userId/impersonation-snapshot ──────
+      // Read-only Snapshot fuer "View as User" -- nur Daten die der User
+      // selber sehen wuerde: Aktivitaet, Notification-Prefs, Module-Progress.
+      if (method === 'GET' && path.startsWith('/api/admin/users/') &&
+          path.endsWith('/impersonation-snapshot')) {
+        if (!caller.isRootAdmin) {
+          return errorResponse('Root-Admin erforderlich', 403);
+        }
+        try {
+          const userId = path.split('/')[4];
+          if (!userId) return errorResponse('userId fehlt', 400);
+
+          const [actRes, prefRes, progRes] = await Promise.allSettled([
+            fetch(
+              `${SUPABASE_URL}/rest/v1/user_activity_log?user_id=eq.${encodeURIComponent(userId)}&select=kind,world,label,created_at&order=created_at.desc&limit=30`,
+              { headers: svcHeaders },
+            ),
+            // Profile selection: stick to fields that are guaranteed to exist
+            // post-v128. notification_preferences / locale may not exist on
+            // every schema -- the snapshot is best-effort.
+            fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=xp,world,created_at,last_seen_at`,
+              { headers: svcHeaders },
+            ),
+            fetch(
+              `${SUPABASE_URL}/rest/v1/user_module_progress?user_id=eq.${encodeURIComponent(userId)}&select=module_code,status,progress_percent,updated_at&order=updated_at.desc&limit=20`,
+              { headers: svcHeaders },
+            ),
+          ]);
+
+          const activity = actRes.status === 'fulfilled' && actRes.value.ok
+              ? await actRes.value.json().catch(() => []) : [];
+          const prefRows = prefRes.status === 'fulfilled' && prefRes.value.ok
+              ? await prefRes.value.json().catch(() => []) : [];
+          const modules = progRes.status === 'fulfilled' && progRes.value.ok
+              ? await progRes.value.json().catch(() => []) : [];
+
+          return jsonResponse({
+            success: true,
+            user_id: userId,
+            read_only: true,
+            activity: Array.isArray(activity) ? activity : [],
+            prefs: Array.isArray(prefRows) && prefRows.length > 0
+                ? prefRows[0] : {},
+            modules: Array.isArray(modules) ? modules : [],
+          });
+        } catch (e) {
+          return errorResponse(`Snapshot Fehler: ${e.message}`);
+        }
+      }
+
       // ── POST /api/activity/log  (v95 Echtzeit Activity Tracking) ──
       // Body: { user_id?, username?, kind, world, label, metadata?, xp, ts }
       // Schreibt in user_activity_log + addiert xp via fn_add_xp (RPC).
@@ -7761,6 +8016,13 @@ export default {
               });
               xpAdded = rpcRes.ok;
             } catch (_) { /* RPC fehlt eventuell -- okay */ }
+          }
+          // v124: pseudonymer Device-Fingerprint fuer Multi-Account-Erkennung.
+          // Best-effort -- blockiert nie das Activity-Log.
+          if (userId) {
+            // Awaited NICHT -- fire-and-forget damit die App-Antwort nicht
+            // auf das Upsert wartet. Crypto+REST kann 20-30ms kosten.
+            ctx.waitUntil?.(recordProfileSession(userId, request, env, auth));
           }
           return jsonResponse({
             success: inserted,

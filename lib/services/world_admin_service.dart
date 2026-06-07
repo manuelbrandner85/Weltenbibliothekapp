@@ -2449,4 +2449,64 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return false;
     }
   }
+
+  // ── v124: Impersonation (read-only) ───────────────────────────────────────
+
+  /// Schreibt einen Audit-Eintrag (action='impersonation_view'), KEIN echter
+  /// Login-Wechsel. Pflicht-Schritt bevor [getImpersonationSnapshot] aufgerufen
+  /// wird, damit jeder View-as-User-Vorgang nachvollziehbar ist.
+  /// Nur root_admin (Worker prueft 403).
+  static Future<bool> startImpersonation({
+    required String targetUserId,
+    String? reason,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/impersonation/start',
+        body: {
+          'target_user_id': targetUserId,
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+        },
+      );
+      return data['success'] as bool? ?? false;
+    } on AdminApiException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ startImpersonation: ${e.statusCode} ${e.bodySnippet}');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ startImpersonation: $e');
+      return false;
+    }
+  }
+
+  /// Read-only Snapshot eines Users -- nur Daten die der User selber sieht:
+  /// recent activity, notification prefs, module progress. Root-Admin only.
+  static Future<Map<String, dynamic>?> getImpersonationSnapshot(
+      String userId) async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+          '/api/admin/users/$userId/impersonation-snapshot');
+      return data;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getImpersonationSnapshot: $e');
+      return null;
+    }
+  }
+
+  // ── v124: Linked Accounts (IP/Device) ─────────────────────────────────────
+
+  /// Findet andere Profile, die in den letzten 90 Tagen denselben pseudonymen
+  /// IP/Geraete-Hash verwendet haben. Liefert Treffer mit Profil-Metadaten
+  /// (kein Klartext-IP). Root-Admin only.
+  static Future<Map<String, dynamic>?> getLinkedAccounts(String userId) async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/users/$userId/linked-accounts');
+      return data;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getLinkedAccounts: $e');
+      return null;
+    }
+  }
 }
