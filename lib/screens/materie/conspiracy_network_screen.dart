@@ -49,6 +49,9 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
   final Map<String, int> _idToNodeId = {}; // wikidata-id -> graph-int-id
   final Map<int, String> _nodeIdToWikidataId =
       {}; // graph-int-id -> wikidata-id
+  // P31-basierte Klassifizierung pro Q-ID. Wird beim Laden via
+  // FreeApiService.fetchWikidataClassification() befuellt.
+  final Map<String, String> _typeMap = {};
   int _nextNodeId = 0;
 
   static const _seeds = [
@@ -61,6 +64,22 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     'Gladio',
     'Bohemian Grove',
   ];
+
+  /// Handgepflegte Wikidata-Q-IDs fuer die Standard-Chips.
+  /// Verhindert "Bilderberg 10x"-Problem: statt einer wbsearchentities-Suche
+  /// (die alle homonymen Treffer liefert) wird direkt die korrekte Entity
+  /// geladen. Fuer freie Suchanfragen wird weiterhin der Top-1-Treffer
+  /// genommen.
+  static const _chipQIds = <String, String>{
+    'Illuminati': 'Q173453', // Bavarian Illuminati
+    'Bilderberg': 'Q189485', // Bilderberg Group
+    'Freimaurer': 'Q41726', // Freemasonry
+    'Rothschild': 'Q156646', // Rothschild family
+    'Geheimbund': 'Q864108', // Geheimgesellschaft
+    'MK Ultra': 'Q319009', // Project MKULTRA
+    'Gladio': 'Q695073', // Operation Gladio
+    'Bohemian Grove': 'Q864801', // Bohemian Club
+  };
 
   final Graph _graph = Graph()..isTree = false;
   final _algorithm = FruchtermanReingoldAlgorithm(iterations: 250);
@@ -82,37 +101,186 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     if (!mounted) return;
     setState(() => _loading = true);
     try {
-      final results = await _api.fetchWikidataEntries(query, limit: 8);
-      // Reset graph for a new seed.
+      // Reset graph fuer neuen Seed.
       _entries.clear();
       _relations.clear();
       _idToNodeId.clear();
       _nodeIdToWikidataId.clear();
+      _typeMap.clear();
       _nextNodeId = 0;
       _graph.nodes.clear();
       _graph.edges.clear();
 
-      for (final e in results) {
+      // --- A) Seed bestimmen: Curated Q-ID (chip) ODER Top-1-Suche ---
+      final curatedQid = _chipQIds[query];
+      final List<WikidataEntry> seeds;
+      if (curatedQid != null) {
+        // Genaues Label/Description fuer die kuratierte Q-ID via Batch-Lookup.
+        final results =
+            await _api.fetchWikidataEntries(query, limit: 1).catchError(
+                  (_) => <WikidataEntry>[],
+                );
+        seeds = [
+          WikidataEntry(
+            id: curatedQid,
+            label: results.isNotEmpty ? results.first.label : query,
+            description: results.isNotEmpty ? results.first.description : null,
+            url: 'https://www.wikidata.org/wiki/$curatedQid',
+          ),
+        ];
+      } else {
+        final results = await _api.fetchWikidataEntries(query, limit: 1);
+        if (results.isEmpty) {
+          if (!mounted) return;
+          setState(() => _loading = false);
+          return;
+        }
+        seeds = [results.first];
+      }
+      for (final e in seeds) {
         _addEntryAsNode(e);
       }
-      // Fetch relations for the top-k seeds in parallel.
-      final topSeeds = results.take(5).toList();
-      final relResults = await Future.wait(
-        topSeeds.map((e) => _api
+
+      // --- C) Hop 1: Relations vom Seed laden ---
+      final hop1Rels = await Future.wait(
+        seeds.map((e) => _api
             .fetchWikidataRelations(e.id)
             .catchError((_) => <WikidataRelation>[])),
       );
-      for (final rels in relResults) {
+      final hop1TargetIds = <String>{};
+      for (final rels in hop1Rels) {
         for (final r in rels) {
           _ingestRelation(r);
+          hop1TargetIds.add(r.targetId);
         }
       }
+
+      // --- C) Hop 2: Relations fuer die ersten Nachbarknoten laden ---
+      // Max 8 Nachbarn um Quota zu schonen.
+      final hop2Seeds = hop1TargetIds.take(8).toList();
+      if (hop2Seeds.isNotEmpty && _entries.length < _kMaxNodes) {
+        final hop2Rels = await Future.wait(
+          hop2Seeds.map((id) => _api
+              .fetchWikidataRelations(id)
+              .catchError((_) => <WikidataRelation>[])),
+        );
+        for (final rels in hop2Rels) {
+          for (final r in rels) {
+            // Nur Edges zu bereits bekannten Knoten oder neue, wenn noch Platz.
+            if (_entries.containsKey(r.targetId) ||
+                _entries.length < _kMaxNodes) {
+              _ingestRelation(r);
+            }
+          }
+        }
+      }
+
+      // --- B) Klassifizierung: alle Knoten via P31 typisieren ---
+      try {
+        final classification =
+            await _api.fetchWikidataClassification(_entries.keys.toList());
+        _typeMap.addAll(classification);
+      } catch (e) {
+        if (kDebugMode) debugPrint('classification: $e');
+      }
+
+      // --- D) Anreicherung: LittleSis + DBpedia (best-effort, parallel) ---
+      // Liefert weitere Edges fuer den Seed-Namen. Targets bekommen
+      // synthetische IDs, damit sie als separate Knoten erscheinen.
+      final seedLabel = seeds.first.label;
+      final enrichResults = await Future.wait([
+        _api
+            .fetchLittleSisRelations(seedLabel, limit: 12)
+            .catchError((_) => <LittleSisRelation>[]),
+        _api
+            .fetchDbpediaRelations(seedLabel, limit: 20)
+            .catchError((_) => <DbpediaRelation>[]),
+      ]);
+      final lsRels = enrichResults[0] as List<LittleSisRelation>;
+      final dbRels = enrichResults[1] as List<DbpediaRelation>;
+      _ingestEnrichmentRelations(seeds.first.id, lsRels, dbRels);
+
       if (!mounted) return;
       setState(() => _loading = false);
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) debugPrint('conspiracy_network_screen _load: $e');
       if (!mounted) return;
       setState(() => _loading = false);
     }
+  }
+
+  /// Verarbeitet LittleSis- und DBpedia-Beziehungen als synthetische
+  /// Wikidata-Relations. Quelle wird als Q-ID-Praefix kodiert
+  /// ('ls:'/'db:') damit es nicht mit echten Wikidata-IDs kollidiert.
+  void _ingestEnrichmentRelations(
+    String sourceQid,
+    List<LittleSisRelation> lsRels,
+    List<DbpediaRelation> dbRels,
+  ) {
+    if (_entries.length >= _kMaxNodes) return;
+    var counter = 0;
+    for (final r in lsRels) {
+      if (_entries.length >= _kMaxNodes) break;
+      final synthId = 'ls:${r.targetName.hashCode}_${counter++}';
+      if (_entries.containsKey(synthId)) continue;
+      _addEntryAsNode(WikidataEntry(
+        id: synthId,
+        label: r.targetName,
+        description: r.description,
+        url: r.url,
+      ));
+      _typeMap[synthId] = _ltSisToType(r.category);
+      _relations.add(WikidataRelation(
+        sourceId: sourceQid,
+        targetId: synthId,
+        targetLabel: r.targetName,
+        propertyId: 'LS',
+        propertyLabel: _shortenLs(r.description),
+      ));
+      _addGraphEdge(sourceQid, synthId);
+    }
+    for (final r in dbRels) {
+      if (_entries.length >= _kMaxNodes) break;
+      final synthId = 'db:${r.targetLabel.hashCode}_${counter++}';
+      if (_entries.containsKey(synthId)) continue;
+      _addEntryAsNode(WikidataEntry(
+        id: synthId,
+        label: r.targetLabel,
+        description: null,
+        url: 'https://dbpedia.org/page/${Uri.encodeComponent(r.targetLabel)}',
+      ));
+      _typeMap[synthId] = 'concept'; // DBpedia liefert keine P31
+      _relations.add(WikidataRelation(
+        sourceId: sourceQid,
+        targetId: synthId,
+        targetLabel: r.targetLabel,
+        propertyId: 'DB',
+        propertyLabel: r.propertyLabel,
+      ));
+      _addGraphEdge(sourceQid, synthId);
+    }
+  }
+
+  static String _ltSisToType(String? cat) {
+    if (cat == null) return 'organisation';
+    final c = cat.toLowerCase();
+    if (c.contains('family') || c.contains('member')) return 'person';
+    return 'organisation';
+  }
+
+  static String _shortenLs(String desc) {
+    if (desc.length <= 18) return desc;
+    return '${desc.substring(0, 17)}...';
+  }
+
+  void _addGraphEdge(String fromId, String toId) {
+    final s = _idToNodeId[fromId];
+    final t = _idToNodeId[toId];
+    if (s == null || t == null) return;
+    _graph.addEdge(
+      _graph.nodes.firstWhere((n) => n.key!.value == s),
+      _graph.nodes.firstWhere((n) => n.key!.value == t),
+    );
   }
 
   void _addEntryAsNode(WikidataEntry e) {
@@ -159,10 +327,20 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
     setState(() => _loading = true);
     try {
       final rels = await _api.fetchWikidataRelations(entry.id);
+      final newIds = <String>{};
       for (final r in rels) {
+        final isNew = !_entries.containsKey(r.targetId);
         _ingestRelation(r);
+        if (isNew && _entries.containsKey(r.targetId)) newIds.add(r.targetId);
       }
-    } catch (e) { if (kDebugMode) debugPrint('conspiracy_network_screen: silent catch -> $e'); }
+      // Klassifiziere die neu hinzugekommenen Knoten.
+      if (newIds.isNotEmpty) {
+        final cls = await _api.fetchWikidataClassification(newIds.toList());
+        _typeMap.addAll(cls);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('conspiracy_network_screen expand: $e');
+    }
     if (!mounted) return;
     setState(() => _loading = false);
   }
@@ -175,6 +353,22 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
   }
 
   _EntityType _typeOf(WikidataEntry e) {
+    // Primaer: P31-basierte Klassifizierung aus Wikidata.
+    final cls = _typeMap[e.id];
+    if (cls != null) {
+      switch (cls) {
+        case 'person':
+          return _EntityType.person;
+        case 'organisation':
+          return _EntityType.organisation;
+        case 'location':
+          return _EntityType.location;
+        case 'concept':
+          return _EntityType.concept;
+      }
+    }
+    // Fallback: alte String-Heuristik auf Description (nur falls P31-Call
+    // gescheitert ist oder noch nicht abgeschlossen).
     final d = (e.description ?? '').toLowerCase();
     if (d.contains('person') ||
         d.contains('schauspiel') ||

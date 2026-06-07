@@ -595,7 +595,9 @@ LIMIT 60
           result.add(word);
         }
       }
-    } catch (e) { if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e');
+    }
 
     if (result.length < 6) {
       try {
@@ -607,7 +609,9 @@ LIMIT 60
           }
           if (result.length >= 6) break;
         }
-      } catch (e) { if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e'); }
+      } catch (e) {
+        if (kDebugMode) debugPrint('kaninchenbau_service: silent catch -> $e');
+      }
     }
 
     return result.take(6).toList();
@@ -666,7 +670,8 @@ LIMIT 60
     }
   }
 
-  /// LibreTranslate via Worker.
+  /// Uebersetzt einen Text via Worker. Worker nutzt Workers-AI m2m100
+  /// (kostenlos) als Primary, LibreTranslate als Fallback.
   Future<String?> translate(String text, {String target = 'de'}) async {
     try {
       final resp = await http
@@ -682,6 +687,29 @@ LIMIT 60
     } catch (e) {
       debugPrint('Translate-Error: $e');
       return null;
+    }
+  }
+
+  /// Batch-Uebersetzung mehrerer Strings auf Deutsch (1 Worker-Call statt N).
+  /// Worker waehlt selbst zwischen Groq und Workers-AI. Liefert die Liste in
+  /// derselben Reihenfolge zurueck; bei Fehler die Originaltexte (best-effort).
+  Future<List<String>> translateBatch(List<String> items) async {
+    if (items.isEmpty) return const [];
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/translate/batch'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'items': items}),
+          )
+          .timeout(const Duration(seconds: 25));
+      if (resp.statusCode != 200) return items;
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final raw = data['translated'] as List? ?? items;
+      return raw.map((e) => e.toString()).toList();
+    } catch (e) {
+      debugPrint('TranslateBatch-Error: $e');
+      return items;
     }
   }
 
@@ -1628,8 +1656,8 @@ LIMIT 60
     final threads =
         await SavedThreadsService.instance.findThreadsByTopic(topic);
     if (threads.isEmpty) return const NetworkGraph(nodes: [], edges: []);
-    final center = NetworkNode(
-        id: 'center', label: topic, type: 'concept', weight: 1.0);
+    final center =
+        NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0);
     final nodes = <NetworkNode>[center];
     final edges = <NetworkEdge>[];
     for (var i = 0; i < threads.length && i < 16; i++) {
