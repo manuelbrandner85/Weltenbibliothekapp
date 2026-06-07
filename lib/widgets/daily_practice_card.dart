@@ -32,6 +32,24 @@ class DailyPracticeCard extends StatefulWidget {
     'Erkenne einen eigenen Schatten-Anteil, der heute getriggert wurde.',
   ];
 
+  /// Ursprung-Set: Mikro-Uebungen aus Bewusstsein, Atem & Wahrnehmung.
+  static const List<String> ursprungPractices = [
+    'Nimm dir 3 Minuten fuer bewusste Resonanz-Atmung: 6 Sekunden ein, '
+        '6 Sekunden aus.',
+    'Schliesse die Augen und spuere bewusst deine Energie -- wo ist sie '
+        'heute am staerksten?',
+    'Stelle dir ein Ziel so lebendig vor, als waere es bereits Realitaet '
+        '(Patterning).',
+    'Beobachte heute einen Moment voellig ohne Gedanken -- nur Wahrnehmung.',
+    'Uebe Remote-Wahrnehmung: Beschreibe einen Ort, an dem du nicht bist, '
+        'in Eindruecken statt Worten.',
+    'Halte kurz inne und frage dich: Bin ich gerade Beobachter oder '
+        'Reagierender?',
+    'Spuere beim Ausatmen, wie Anspannung den Koerper verlaesst (Click-Out).',
+    'Richte deine Aufmerksamkeit fuer eine Minute auf die Stille hinter '
+        'allen Geraeuschen.',
+  ];
+
   @override
   State<DailyPracticeCard> createState() => _DailyPracticeCardState();
 }
