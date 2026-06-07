@@ -1479,6 +1479,102 @@ async function aiText(env, systemMsg, userMsg, maxTokens = 800) {
   return out;
 }
 
+// ── Modul-Werkstatt: Welt-Schema (Top-Level, von Endpunkten + Cron geteilt) ──
+const WORKSHOP_BRANCHES = {
+  materie: ['Recherche-Grundlagen', 'Netzwerk-Analyse', 'Quellenkritik', 'Geopolitik & Macht', 'Wirtschaft & Finanzen', 'Desinformation erkennen'],
+  energie: ['Energiearbeit', 'Meditation & Stille', 'Chakren & Aura', 'Manifestation', 'Intuition & Wahrnehmung', 'Heilung & Balance'],
+  vorhang: ['Machtpsychologie', 'Manipulationserkennung', 'Verhandlung & Überzeugung', 'Körpersprache & Nonverbales', 'Strategisches Denken', 'Schattenarbeit'],
+  ursprung: ['gateway_foundation', 'focus_levels', 'energy_tools', 'patterning_manifestation', 'remote_viewing'],
+};
+const WORKSHOP_WORLDS = ['materie', 'energie', 'vorhang', 'ursprung'];
+function normWorld(w) { return WORKSHOP_WORLDS.includes(w) ? w : 'vorhang'; }
+function tableForWorld(w) { return `${normWorld(w)}_modules`; }
+
+// ══════════════════════════════════════════════════════════════════════════
+// B1: KI-AUTO-SCAN (Cron, 2026-06-07)
+// Periodischer Hintergrund-Scan, der pro Tag EINE Welt prueft und Modul-
+// Vorschlaege in module_suggestions schreibt (Status pending) -- erscheinen
+// dann automatisch im Admin-Dashboard zur Bestaetigung. Quota-schonend:
+// nur 1 Welt/Tag, Quality-Check (gratis) + 1 KI-Vorschlag.
+// ══════════════════════════════════════════════════════════════════════════
+async function runAutoScanCron(env, svcHeaders) {
+  // Welt rotiert nach Tag-im-Jahr -> jede Welt ~alle 4 Tage.
+  const dayOfYear = Math.floor((Date.now() - Date.UTC(new Date().getUTCFullYear(), 0, 0)) / 86400000);
+  const world = WORKSHOP_WORLDS[dayOfYear % WORKSHOP_WORLDS.length];
+  const tbl = tableForWorld(world);
+  const branches = WORKSHOP_BRANCHES[world];
+
+  const listR = await fetch(
+    `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,title,subtitle,xp_reward,theory_content,case_study,exercise_description&order=branch.asc`,
+    { headers: svcHeaders },
+  );
+  const existing = listR.ok ? (await listR.json().catch(() => [])) : [];
+  const rowsToInsert = [];
+
+  // Quality-Check (gratis, keine KI).
+  const placeholderRe = /(\[einfuegen\]|\[bitte ergaenzen\]|\.\.\.tbd|TODO|XXX|Lorem ipsum)/i;
+  for (const m of existing) {
+    const findings = [];
+    if (!m.theory_content || m.theory_content.trim().length < 200) findings.push(`Theorie zu kurz (${(m.theory_content || '').length} Zeichen)`);
+    if (!m.case_study || m.case_study.trim().length < 80) findings.push('Fallstudie fehlt/zu kurz');
+    if (!m.exercise_description || m.exercise_description.trim().length < 50) findings.push('Uebung fehlt/zu kurz');
+    for (const f of ['title', 'theory_content', 'case_study', 'exercise_description']) {
+      if (m[f] && placeholderRe.test(String(m[f]))) findings.push(`${f} enthaelt Platzhalter`);
+    }
+    if (findings.length > 0) {
+      rowsToInsert.push({
+        world, kind: 'quality', status: 'pending', target_module_code: m.module_code,
+        title: m.title || m.module_code, branch: m.branch, quality_findings: findings,
+        rationale: `${findings.length} Qualitaets-Problem(e) in ${m.module_code}`, created_by: 'cron:auto-scan',
+      });
+    }
+  }
+
+  // 1 neues Modul fuer den schwaechsten Branch (KI).
+  try {
+    const perBranch = {};
+    for (const b of branches) perBranch[b] = 0;
+    for (const m of existing) if (perBranch[m.branch] !== undefined) perBranch[m.branch]++;
+    const weakest = Object.entries(perBranch).sort((a, b) => a[1] - b[1])[0]?.[0] || branches[0];
+    const titles = existing.map(m => m.title).filter(Boolean).join('; ');
+    const idea = await aiJson(env,
+      `Du planst ein neues Lern-Modul fuer die Weltenbibliothek (Welt: ${world}, Branch: ${weakest}). ` +
+      'Antworte als JSON-Objekt: { "topic": "...", "rationale": "kurze Begruendung auf Deutsch" }.',
+      `Bereits vorhanden: ${titles || '(keine)'}\n\nWelches Modul fehlt im Branch "${weakest}"?`, 400);
+    const topic = String(idea.topic || '').trim();
+    if (topic.length >= 3) {
+      const mod = await aiJson(env,
+        'Du bist Lehrredaktion der Weltenbibliothek. Erstelle ein vollstaendiges Lern-Modul. ' +
+        'Antworte als JSON: title, subtitle, theory_content (300-600 Worte, Markdown), case_study (150-300 Worte), exercise_description (100-250 Worte), xp_reward (50-200). Deutsch.',
+        `Thema: ${topic}\nBranch: ${weakest}`, 1800);
+      rowsToInsert.push({
+        world, kind: 'new', status: 'pending', branch: weakest,
+        title: String(mod.title || topic).slice(0, 120),
+        subtitle: String(mod.subtitle || '').slice(0, 240),
+        theory_content: String(mod.theory_content || ''),
+        case_study: String(mod.case_study || ''),
+        exercise_description: String(mod.exercise_description || ''),
+        xp_reward: Math.max(50, Math.min(200, Math.round(Number(mod.xp_reward) || 100))),
+        rationale: String(idea.rationale || `Fuellt Luecke im Branch "${weakest}"`).slice(0, 500),
+        created_by: 'cron:auto-scan',
+      });
+    }
+  } catch (e) { console.warn(`[auto-scan/new] ${e.message}`); }
+
+  if (rowsToInsert.length > 0) {
+    // Alte cron-Vorschlaege dieser Welt verwerfen (idempotent).
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/module_suggestions?world=eq.${world}&status=eq.pending&created_by=eq.cron:auto-scan`,
+      { method: 'DELETE', headers: svcHeaders },
+    ).catch(() => {});
+    await fetch(`${SUPABASE_URL}/rest/v1/module_suggestions`, {
+      method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(rowsToInsert),
+    });
+  }
+  return { world, created: rowsToInsert.length };
+}
+
 export default {
   // ⏰ Cron-Trigger — ruft den Dispatcher einmal pro Minute auf.
   async scheduled(event, env, ctx) {
@@ -1508,6 +1604,17 @@ export default {
     } catch (e) {
       console.error('cron numerology-daily failed:', e.message);
     }
+    // 🤖 B1: KI-Auto-Scan -- einmal pro UTC-Tag um ~07:30 (eine Welt/Tag).
+    try {
+      const nowUTC = new Date();
+      if (nowUTC.getUTCHours() === 7 && nowUTC.getUTCMinutes() >= 30 && nowUTC.getUTCMinutes() < 35) {
+        const res = await runAutoScanCron(env, pushAuth);
+        console.log('cron auto-scan:', JSON.stringify(res));
+      }
+    } catch (e) {
+      console.error('cron auto-scan failed:', e.message);
+    }
+
     // 🧹 6h Chat-Reset: ALLE Nachrichten aus allen Räumen löschen.
     // Läuft ca. einmal pro 6h (random 1/360 per Minute-Cron).
     try {
@@ -5233,6 +5340,122 @@ export default {
         } catch (e) { return errorResponse(`article-PATCH-Fehler: ${e.message}`); }
       }
 
+      // ════════════════════════════════════════════════════════════════
+      // B3: KI-ARTIKEL-WERKSTATT (2026-06-07)
+      //   POST /api/admin/article-workshop/generate { topic, world }
+      //   POST /api/admin/article-workshop/expand   { title, content, world }
+      //   POST /api/admin/article-workshop/save     { title, content, world, ... }
+      // ════════════════════════════════════════════════════════════════
+      if (method === 'POST' && path.startsWith('/api/admin/article-workshop/')) {
+        if (!['admin', 'root_admin', 'content_editor'].includes(caller.role)) {
+          return errorResponse('Content-Editor-Rolle erforderlich', 403);
+        }
+        const action = path.split('/').pop();
+        const worldList = ['materie', 'energie', 'vorhang', 'ursprung'];
+        const worldContextMap = {
+          materie: 'Recherche, Geopolitik, Wirtschaft, Aufklaerung, kritisches Denken',
+          energie: 'Spiritualitaet, Energiearbeit, Meditation, Bewusstsein, Heilung',
+          vorhang: 'Machtpsychologie, Manipulation, Strategie, Menschenkenntnis',
+          ursprung: 'Bewusstsein, Gateway-Erfahrungen, Manifestation, Remote Viewing',
+        };
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = worldList.includes(body?.world) ? body.world : 'materie';
+
+          if (action === 'generate') {
+            const topic = String(body?.topic || '').trim();
+            if (topic.length < 3) return errorResponse('topic fehlt', 400);
+            const system = [
+              'Du bist Redakteur der Weltenbibliothek-App.',
+              `Thema-Welt: ${world} (${worldContextMap[world]}).`,
+              'Schreibe einen fundierten, sachlichen Artikel. Kein Clickbait, keine Floskeln.',
+              'Antworte als JSON-Objekt:',
+              '{ "title" (max 90 Zeichen), "excerpt" (1-2 Saetze Teaser),',
+              '  "content" (600-1200 Worte, Markdown: ## Ueberschriften, **fett**, Listen),',
+              '  "category" (1 Wort), "tags" (Array aus 3-6 Schlagworten) }.',
+              'Alles auf Deutsch.',
+            ].join('\n');
+            const a = await aiJson(env, system, `Thema: ${topic}`, 2400);
+            return jsonResponse({
+              success: true,
+              article: {
+                title: String(a.title || topic).slice(0, 200),
+                excerpt: String(a.excerpt || '').slice(0, 400),
+                content: String(a.content || ''),
+                category: String(a.category || '').slice(0, 60),
+                tags: Array.isArray(a.tags) ? a.tags.map(String).slice(0, 6) : [],
+                world,
+              },
+            });
+          }
+
+          if (action === 'expand') {
+            const title = String(body?.title || '').trim();
+            const content = String(body?.content || '').trim();
+            if (!title && !content) return errorResponse('title/content noetig', 400);
+            const system = [
+              'Du baust einen bestehenden Artikel der Weltenbibliothek substantiell aus.',
+              'Vertiefe Argumente, ergaenze Beispiele/Quellenhinweise, behalte Thema + Stil bei.',
+              'Antworte als JSON-Objekt: { "title", "excerpt", "content" (Markdown), "category", "tags" (Array) }. Deutsch.',
+            ].join('\n');
+            const a = await aiJson(env, system, `Titel: ${title}\n\nInhalt:\n${content}`, 2600);
+            return jsonResponse({
+              success: true,
+              article: {
+                title: String(a.title || title).slice(0, 200),
+                excerpt: String(a.excerpt || '').slice(0, 400),
+                content: String(a.content || content),
+                category: String(a.category || '').slice(0, 60),
+                tags: Array.isArray(a.tags) ? a.tags.map(String).slice(0, 6) : [],
+                world,
+              },
+            });
+          }
+
+          if (action === 'save') {
+            const title = String(body?.title || '').trim();
+            const content = String(body?.content || '').trim();
+            if (!title) return errorResponse('title pflicht', 400);
+            const editId = body?.edit_id ? String(body.edit_id) : null;
+            const isPublished = body?.is_published !== false;
+            const category = body?.category ? String(body.category).slice(0, 60) : null;
+            const tags = Array.isArray(body?.tags) ? body.tags.map(String).slice(0, 8) : [];
+            const excerpt = body?.excerpt ? String(body.excerpt).slice(0, 400) : null;
+
+            if (editId) {
+              const patch = { title, content, world, category, tags, updated_at: new Date().toISOString() };
+              if (excerpt) patch.excerpt = excerpt;
+              const r = await fetch(`${SUPABASE_URL}/rest/v1/articles?id=eq.${encodeURIComponent(editId)}`,
+                { method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=minimal' }, body: JSON.stringify(patch) });
+              if (!r.ok) return errorResponse(`Artikel-Update ${r.status}`, r.status);
+              logAudit(svcHeaders, { admin_username: caller.username, action: 'article_ai_update', target_id: editId, details: { world } });
+              return jsonResponse({ success: true, action: 'updated', id: editId });
+            }
+
+            // Slug aus Titel + kurzer Zufallssuffix (Eindeutigkeit).
+            const slug = title.toLowerCase()
+              .replace(/[äöüß]/g, (c) => ({ 'ä': 'ae', 'ö': 'oe', 'ü': 'ue', 'ß': 'ss' }[c]))
+              .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
+              + '-' + Math.random().toString(36).slice(2, 7);
+            const row = {
+              title, slug, content, world,
+              username: caller.username || 'Redaktion',
+              category, tags,
+              is_published: isPublished,
+              published_at: isPublished ? new Date().toISOString() : null,
+            };
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/articles`,
+              { method: 'POST', headers: { ...svcHeaders, 'Prefer': 'return=representation' }, body: JSON.stringify(row) });
+            if (!r.ok) { const t = await r.text().catch(() => ''); return errorResponse(`Artikel-Insert ${r.status}: ${t.slice(0, 200)}`, r.status); }
+            const created = await r.json().catch(() => []);
+            logAudit(svcHeaders, { admin_username: caller.username, action: 'article_ai_create', target_id: created?.[0]?.id, details: { world, slug } });
+            return jsonResponse({ success: true, action: 'created', id: created?.[0]?.id, slug });
+          }
+
+          return errorResponse('Unbekannte Aktion', 404);
+        } catch (e) { return errorResponse(`article-workshop ${action} Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/push/stats  (Zustellstatistiken notification_queue) ──
       if (method === 'GET' && path === '/api/admin/push/stats') {
         try {
@@ -5892,6 +6115,44 @@ export default {
           }
           return jsonResponse({ success: true, reports: rows, counts, by_type: byType });
         } catch (e) { return errorResponse(`Reports-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/reports/triage  (B2: KI-Moderation, 2026-06-07) ──
+      // Body: { title, body?, type? }  -> klassifiziert eine Meldung.
+      // Returns: { severity, action, summary }.
+      if (method === 'POST' && path === '/api/admin/reports/triage') {
+        try {
+          if (!['admin', 'root_admin', 'moderator'].includes(caller.role)) {
+            return errorResponse('Keine Berechtigung', 403);
+          }
+          const body = await request.json().catch(() => ({}));
+          const title = String(body.title || '').slice(0, 300);
+          const text = String(body.body || '').slice(0, 3000);
+          const type = String(body.type || 'content');
+          if (!title && !text) return errorResponse('title oder body noetig', 400);
+
+          const system = [
+            'Du bist Moderations-Assistent einer Community-App. Klassifiziere eine Nutzer-Meldung.',
+            'Antworte als JSON-Objekt:',
+            '{',
+            '  "severity": einer aus "niedrig"|"mittel"|"hoch"|"kritisch",',
+            '  "action": kurzer konkreter Handlungsvorschlag fuer den Moderator (1 Satz, Deutsch),',
+            '  "summary": 1-Satz-Zusammenfassung der Meldung (Deutsch)',
+            '}.',
+            'kritisch = Gewaltandrohung/illegale Inhalte/akute Gefahr. hoch = Hassrede/Belaestigung.',
+            'mittel = Spam/Regelverstoss. niedrig = Feedback/Bagatelle.',
+          ].join('\n');
+          const user = `Meldungstyp: ${type}\nTitel: ${title}\nInhalt: ${text || '(kein Text)'}`;
+          const c = await aiJson(env, system, user, 300);
+          const sev = ['niedrig', 'mittel', 'hoch', 'kritisch'].includes((c.severity || '').toLowerCase())
+            ? c.severity.toLowerCase() : 'mittel';
+          return jsonResponse({
+            success: true,
+            severity: sev,
+            action: String(c.action || '').slice(0, 300),
+            summary: String(c.summary || '').slice(0, 300),
+          });
+        } catch (e) { return errorResponse(`Triage-Fehler: ${e.message}`); }
       }
 
       // ── PATCH /api/admin/reports/:id  (Status setzen + reviewer) ──
@@ -8008,48 +8269,9 @@ export default {
       //   GET  /api/admin/module-workshop/list      -> Vollst. Liste fuer Edit
       // Welt-Param: 'vorhang' oder 'ursprung' -> bestimmt die Tabelle.
 
-      // Hilfs-Schema: bekannte Branches pro Welt (Auto-Wahl + Validierung).
-      // 2026-06-07: alle 4 Welten (materie, energie, vorhang, ursprung).
-      const WORKSHOP_BRANCHES = {
-        materie: [
-          'Recherche-Grundlagen',
-          'Netzwerk-Analyse',
-          'Quellenkritik',
-          'Geopolitik & Macht',
-          'Wirtschaft & Finanzen',
-          'Desinformation erkennen',
-        ],
-        energie: [
-          'Energiearbeit',
-          'Meditation & Stille',
-          'Chakren & Aura',
-          'Manifestation',
-          'Intuition & Wahrnehmung',
-          'Heilung & Balance',
-        ],
-        vorhang: [
-          'Machtpsychologie',
-          'Manipulationserkennung',
-          'Verhandlung & Überzeugung',
-          'Körpersprache & Nonverbales',
-          'Strategisches Denken',
-          'Schattenarbeit',
-        ],
-        ursprung: [
-          'gateway_foundation',
-          'focus_levels',
-          'energy_tools',
-          'patterning_manifestation',
-          'remote_viewing',
-        ],
-      };
-      const WORKSHOP_WORLDS = ['materie', 'energie', 'vorhang', 'ursprung'];
-      const normWorld = (w) => WORKSHOP_WORLDS.includes(w) ? w : 'vorhang';
-      const tableForWorld = (w) => `${normWorld(w)}_modules`;
+      // WORKSHOP_BRANCHES / WORKSHOP_WORLDS / normWorld / tableForWorld sind
+      // jetzt Top-Level (s.o.) damit auch der Cron-Auto-Scan sie nutzen kann.
 
-      // Robuste JSON-Extraktion: schneidet das erste balancierte {} oder []
-      // aus einem KI-Text heraus (auch wenn Prosa drumherum steht). Beachtet
-      // Strings + Escapes, damit Klammern in Texten nicht mitzaehlen.
       // workshopAiJson -> nutzt jetzt den globalen aiJson-Helper (5-Quellen-Kette).
       // Bleibt als duenner Alias erhalten damit die bestehenden Call-Sites
       // unveraendert weiterlaufen.

@@ -256,10 +256,47 @@ class _ArticleManagerTabState extends State<_ArticleManagerTab> {
     if (ok) _load();
   }
 
+  // B3: KI-Artikel-Werkstatt — Thema -> KI-Entwurf -> editierbar -> speichern.
+  Future<void> _openArticleWorkshop() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _ArticleWorkshopSheet(
+        accent: widget.accent,
+        accentBright: widget.accentBright,
+        initialWorld: _worldFilter == 'all' ? 'materie' : _worldFilter,
+        onSaved: () {
+          Navigator.of(context).pop();
+          _load();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final articles = _articles ?? [];
     return Column(children: [
+      // B3: KI-Artikel-Werkstatt Button
+      Container(
+        color: const Color(0xFF0D0D1A),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _openArticleWorkshop,
+            icon: const Icon(Icons.auto_awesome, size: 16),
+            label: const Text('KI-Artikel erstellen'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.accentBright.withValues(alpha: 0.85),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+      ),
       // Filter-Leiste
       Container(
         color: const Color(0xFF0D0D1A),
@@ -2182,6 +2219,305 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
             ]),
           ),
         ]),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// B3: KI-Artikel-Werkstatt Sheet — Thema -> KI-Entwurf -> editieren -> speichern
+// ═══════════════════════════════════════════════════════════════════════════
+class _ArticleWorkshopSheet extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  final String initialWorld;
+  final VoidCallback onSaved;
+  const _ArticleWorkshopSheet({
+    required this.accent,
+    required this.accentBright,
+    required this.initialWorld,
+    required this.onSaved,
+  });
+
+  @override
+  State<_ArticleWorkshopSheet> createState() => _ArticleWorkshopSheetState();
+}
+
+class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
+  final _topicCtrl = TextEditingController();
+  final _titleCtrl = TextEditingController();
+  final _excerptCtrl = TextEditingController();
+  final _contentCtrl = TextEditingController();
+  String _world = 'materie';
+  bool _generating = false;
+  bool _expanding = false;
+  bool _saving = false;
+  bool _publish = true;
+  bool _hasDraft = false;
+  String _category = '';
+  List<String> _tags = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _world = widget.initialWorld;
+  }
+
+  @override
+  void dispose() {
+    _topicCtrl.dispose();
+    _titleCtrl.dispose();
+    _excerptCtrl.dispose();
+    _contentCtrl.dispose();
+    super.dispose();
+  }
+
+  void _snack(String m, {Color? c}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A2E)));
+  }
+
+  void _applyArticle(Map<String, dynamic> a) {
+    _titleCtrl.text = (a['title'] ?? '').toString();
+    _excerptCtrl.text = (a['excerpt'] ?? '').toString();
+    _contentCtrl.text = (a['content'] ?? '').toString();
+    _category = (a['category'] ?? '').toString();
+    _tags = ((a['tags'] as List?) ?? const []).map((e) => e.toString()).toList();
+  }
+
+  Future<void> _generate() async {
+    final topic = _topicCtrl.text.trim();
+    if (topic.length < 3) {
+      _snack('Bitte ein Thema eingeben');
+      return;
+    }
+    setState(() => _generating = true);
+    final res =
+        await WorldAdminServiceV162.generateArticle(topic: topic, world: _world);
+    if (!mounted) return;
+    setState(() => _generating = false);
+    if (res == null || res['article'] == null) {
+      _snack('KI-Generierung fehlgeschlagen', c: Colors.redAccent);
+      return;
+    }
+    setState(() {
+      _applyArticle(Map<String, dynamic>.from(res['article'] as Map));
+      _hasDraft = true;
+    });
+  }
+
+  Future<void> _expand() async {
+    if (_titleCtrl.text.trim().isEmpty && _contentCtrl.text.trim().isEmpty) {
+      return;
+    }
+    setState(() => _expanding = true);
+    final res = await WorldAdminServiceV162.expandArticle(
+      title: _titleCtrl.text.trim(),
+      content: _contentCtrl.text.trim(),
+      world: _world,
+    );
+    if (!mounted) return;
+    setState(() => _expanding = false);
+    if (res == null || res['article'] == null) {
+      _snack('Ausarbeiten fehlgeschlagen', c: Colors.redAccent);
+      return;
+    }
+    setState(() => _applyArticle(Map<String, dynamic>.from(res['article'] as Map)));
+  }
+
+  Future<void> _save() async {
+    if (_titleCtrl.text.trim().isEmpty || _contentCtrl.text.trim().isEmpty) {
+      _snack('Titel und Inhalt sind Pflicht');
+      return;
+    }
+    setState(() => _saving = true);
+    final res = await WorldAdminServiceV162.saveArticle(
+      title: _titleCtrl.text.trim(),
+      content: _contentCtrl.text.trim(),
+      world: _world,
+      excerpt: _excerptCtrl.text.trim().isEmpty ? null : _excerptCtrl.text.trim(),
+      category: _category.isEmpty ? null : _category,
+      tags: _tags.isEmpty ? null : _tags,
+      isPublished: _publish,
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (res != null) {
+      _snack('Artikel ${_publish ? "veröffentlicht" : "als Entwurf gespeichert"}',
+          c: Colors.green);
+      widget.onSaved();
+    } else {
+      _snack('Speichern fehlgeschlagen', c: Colors.redAccent);
+    }
+  }
+
+  InputDecoration _deco(String label) => InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none),
+        isDense: true,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (_, scroll) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.all(20),
+          children: [
+            Row(children: [
+              Icon(Icons.auto_awesome, color: widget.accentBright, size: 18),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('KI-Artikel-Werkstatt',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white54),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ]),
+            const SizedBox(height: 12),
+            // Welt-Auswahl
+            Wrap(spacing: 6, children: [
+              for (final w in const [
+                ['materie', 'Materie'],
+                ['energie', 'Energie'],
+                ['vorhang', 'Vorhang'],
+                ['ursprung', 'Ursprung'],
+              ])
+                ChoiceChip(
+                  label: Text(w[1], style: const TextStyle(fontSize: 11)),
+                  selected: _world == w[0],
+                  onSelected: (_) => setState(() => _world = w[0]),
+                  selectedColor: widget.accent,
+                ),
+            ]),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _topicCtrl,
+              style: const TextStyle(color: Colors.white),
+              decoration: _deco('Thema des Artikels'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _generating ? null : _generate,
+              icon: _generating
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.auto_awesome_motion, size: 16),
+              label: Text(_generating ? 'KI schreibt …' : 'Artikel generieren'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.accentBright.withValues(alpha: 0.8),
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(44),
+              ),
+            ),
+            if (_hasDraft) ...[
+              const Divider(color: Colors.white12, height: 28),
+              TextField(
+                controller: _titleCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: _deco('Titel'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _excerptCtrl,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                maxLines: 2,
+                decoration: _deco('Teaser / Excerpt'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _contentCtrl,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                maxLines: 14,
+                minLines: 8,
+                decoration: _deco('Inhalt (Markdown)'),
+              ),
+              if (_tags.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _tags
+                      .map((t) => Chip(
+                            label: Text(t,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 10)),
+                            backgroundColor: Colors.white.withValues(alpha: 0.06),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ))
+                      .toList(),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _expanding ? null : _expand,
+                    icon: _expanding
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.psychology, size: 16),
+                    label: const Text('KI ausbauen'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: widget.accentBright,
+                      side: BorderSide(color: widget.accent),
+                    ),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                value: _publish,
+                onChanged: (v) => setState(() => _publish = v),
+                title: const Text('Sofort veröffentlichen',
+                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                activeColor: widget.accentBright,
+                contentPadding: EdgeInsets.zero,
+              ),
+              ElevatedButton.icon(
+                onPressed: _saving ? null : _save,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save, size: 16),
+                label: Text(_publish ? 'Veröffentlichen' : 'Als Entwurf speichern'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(46),
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }

@@ -2159,6 +2159,95 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  // ── B2: KI-MODERATION ─────────────────────────────────────────────────────
+
+  /// Klassifiziert eine Meldung per KI. Liefert {severity, action, summary}.
+  static Future<Map<String, dynamic>?> triageReport({
+    required String title,
+    String? body,
+    String? type,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/reports/triage',
+        body: {
+          'title': title,
+          if (body != null && body.isNotEmpty) 'body': body,
+          if (type != null) 'type': type,
+        },
+      );
+      if (data['success'] == true) return data;
+      return null;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ triageReport: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ triageReport: $e');
+      return null;
+    }
+  }
+
+  // ── B3: KI-ARTIKEL-WERKSTATT ──────────────────────────────────────────────
+
+  /// Generiert einen kompletten Artikel-Entwurf aus einem Thema.
+  static Future<Map<String, dynamic>?> generateArticle({
+    required String topic,
+    required String world,
+  }) async {
+    return _articleWorkshop('generate', {'topic': topic, 'world': world});
+  }
+
+  /// Baut einen bestehenden Artikel-Entwurf per KI aus.
+  static Future<Map<String, dynamic>?> expandArticle({
+    required String title,
+    required String content,
+    required String world,
+  }) async {
+    return _articleWorkshop(
+        'expand', {'title': title, 'content': content, 'world': world});
+  }
+
+  /// Speichert/veroeffentlicht einen Artikel (neu oder Update via editId).
+  static Future<Map<String, dynamic>?> saveArticle({
+    required String title,
+    required String content,
+    required String world,
+    String? excerpt,
+    String? category,
+    List<String>? tags,
+    bool isPublished = true,
+    String? editId,
+  }) async {
+    return _articleWorkshop('save', {
+      'title': title,
+      'content': content,
+      'world': world,
+      if (excerpt != null) 'excerpt': excerpt,
+      if (category != null) 'category': category,
+      if (tags != null) 'tags': tags,
+      'is_published': isPublished,
+      if (editId != null) 'edit_id': editId,
+    });
+  }
+
+  static Future<Map<String, dynamic>?> _articleWorkshop(
+      String action, Map<String, dynamic> body) async {
+    try {
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/article-workshop/$action', body: body);
+      if (data['success'] == true) return data;
+      return null;
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ articleWorkshop/$action: ${e.statusCode} ${e.bodySnippet}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ articleWorkshop/$action: $e');
+      return null;
+    }
+  }
+
   // ── VIDEO-ARCHIV (Mediathek) ──────────────────────────────────────────────
 
   /// Laedt Videos fuer das Admin-Review (alle Status oder gefiltert).

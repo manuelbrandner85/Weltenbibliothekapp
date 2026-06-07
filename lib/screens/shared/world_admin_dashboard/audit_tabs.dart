@@ -160,10 +160,89 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
   String _filterType = 'all';
   String? _error;
 
+  // B2: KI-Moderation -- pro Report-ID das Triage-Ergebnis + laufende Calls.
+  final Map<String, Map<String, dynamic>> _triage = {};
+  final Set<String> _triaging = {};
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  Future<void> _runTriage(Map<String, dynamic> r) async {
+    final id = r['id'] as String?;
+    if (id == null) return;
+    setState(() => _triaging.add(id));
+    final res = await WorldAdminServiceV162.triageReport(
+      title: r['title']?.toString() ?? '',
+      body: r['body']?.toString(),
+      type: r['type']?.toString(),
+    );
+    if (!mounted) return;
+    setState(() {
+      _triaging.remove(id);
+      if (res != null) _triage[id] = res;
+    });
+    if (res == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('KI-Analyse fehlgeschlagen'),
+        backgroundColor: Colors.redAccent,
+      ));
+    }
+  }
+
+  Color _sevColor(String sev) {
+    switch (sev) {
+      case 'kritisch':
+        return Colors.red;
+      case 'hoch':
+        return Colors.orangeAccent;
+      case 'mittel':
+        return Colors.amber;
+      default:
+        return Colors.greenAccent;
+    }
+  }
+
+  Widget _buildTriageResult(Map<String, dynamic> t) {
+    final sev = (t['severity'] as String?) ?? 'mittel';
+    final action = (t['action'] as String?) ?? '';
+    final summary = (t['summary'] as String?) ?? '';
+    final c = _sevColor(sev);
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: c.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.auto_awesome, size: 12, color: c),
+            const SizedBox(width: 4),
+            Text('KI: ${sev.toUpperCase()}',
+                style: TextStyle(
+                    color: c, fontSize: 10, fontWeight: FontWeight.bold)),
+          ]),
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(summary,
+                style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          ],
+          if (action.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text('→ $action',
+                style: TextStyle(
+                    color: c.withValues(alpha: 0.9),
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic)),
+          ],
+        ],
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -856,11 +935,48 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                                               overflow: TextOverflow.ellipsis),
                                         ],
                                         const SizedBox(height: 6),
-                                        Text(
-                                            '@${r['username'] ?? 'anonym'} · ${_fmt(r['created_at'] as String? ?? '')}',
-                                            style: const TextStyle(
-                                                color: Colors.white38,
-                                                fontSize: 10)),
+                                        Row(children: [
+                                          Expanded(
+                                            child: Text(
+                                                '@${r['username'] ?? 'anonym'} · ${_fmt(r['created_at'] as String? ?? '')}',
+                                                style: const TextStyle(
+                                                    color: Colors.white38,
+                                                    fontSize: 10)),
+                                          ),
+                                          if (_triage[r['id']] == null)
+                                            TextButton.icon(
+                                              onPressed: _triaging
+                                                      .contains(r['id'])
+                                                  ? null
+                                                  : () => _runTriage(r),
+                                              icon: _triaging.contains(r['id'])
+                                                  ? const SizedBox(
+                                                      width: 12,
+                                                      height: 12,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                              strokeWidth: 2))
+                                                  : const Icon(
+                                                      Icons.auto_awesome,
+                                                      size: 13),
+                                              label: const Text('KI-Analyse',
+                                                  style:
+                                                      TextStyle(fontSize: 11)),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor:
+                                                    widget.accentBright,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8),
+                                                minimumSize: const Size(0, 28),
+                                              ),
+                                            ),
+                                        ]),
+                                        if (_triage[r['id']] != null) ...[
+                                          const SizedBox(height: 6),
+                                          _buildTriageResult(
+                                              _triage[r['id']]!),
+                                        ],
                                       ],
                                     ),
                                   ),
