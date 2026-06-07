@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';

@@ -5,6 +5,7 @@
 // Pull-to-Refresh + Skeleton-Loading + freundlicher Leer-/Fehler-Zustand.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';

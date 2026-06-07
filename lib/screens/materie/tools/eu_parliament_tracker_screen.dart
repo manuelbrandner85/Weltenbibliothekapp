@@ -6,6 +6,7 @@
 // 👍/👎 → App berechnet welche Fraktionen am häufigsten so abgestimmt haben).
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';

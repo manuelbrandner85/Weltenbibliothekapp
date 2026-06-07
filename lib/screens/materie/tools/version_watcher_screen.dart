@@ -6,6 +6,7 @@
 // ob neue Version vorliegt.
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:math' as math;
 import 'dart:ui';
 

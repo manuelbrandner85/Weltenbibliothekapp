@@ -1,5 +1,6 @@
 // 📖 Book Detail Screen — Geheime Bibliothek
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 
 class BookDetailScreen extends StatelessWidget {

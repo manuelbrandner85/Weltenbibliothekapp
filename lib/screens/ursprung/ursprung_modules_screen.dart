@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../services/branch_boss_test_service.dart'; // 👑 I3 Boss-Test

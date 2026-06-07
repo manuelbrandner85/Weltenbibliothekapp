@@ -11,6 +11,7 @@
 //   WBToast.info(context, 'Synchronisiert');
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 class WBToast {
   static OverlayEntry? _current;

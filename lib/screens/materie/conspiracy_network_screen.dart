@@ -9,6 +9,7 @@
 // Hard cap: 50 Nodes.
 
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import 'package:flutter/material.dart';
 import 'package:graphview/GraphView.dart';

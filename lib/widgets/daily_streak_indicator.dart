@@ -4,6 +4,7 @@
 // 🔥-Icon pulsiert wenn Streak ≥ 3 Tage. Tap → Stats-Dashboard.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 import '../services/gamification_service.dart';
 import '../screens/shared/stats_dashboard_screen.dart';

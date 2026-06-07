@@ -15,6 +15,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants/roles.dart';
