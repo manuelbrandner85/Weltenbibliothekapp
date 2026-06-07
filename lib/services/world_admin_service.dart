@@ -1564,6 +1564,29 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// Setzt is_granted fuer ALLE Module beider Welten (vorhang + ursprung).
+  /// v130: "Beide Welten" Bulk-Aktion.
+  static Future<(bool, int)> batchGrantModuleAccess({
+    required String userId,
+    required bool isGranted,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/users/$userId/module-access/batch-all',
+        body: {'is_granted': isGranted},
+      );
+      final count = (data['count'] as num?)?.toInt() ?? 0;
+      return (true, count);
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('❌ batchGrantModuleAccess: ${e.statusCode} ${e.bodySnippet}');
+      return (false, 0);
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ batchGrantModuleAccess: $e');
+      return (false, 0);
+    }
+  }
+
   /// Entfernt einen Modul-Override; der User faellt zurueck auf die normale
   /// Prerequisite-Logik.
   static Future<bool> removeModuleAccess({

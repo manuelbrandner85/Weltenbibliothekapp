@@ -7710,6 +7710,84 @@ export default {
         } catch (e) { return errorResponse(`module-access POST Fehler: ${e.message}`); }
       }
 
+      // ── POST /api/admin/users/:userId/module-access/batch-all ────────────
+      // Setzt is_granted fuer ALLE Module in BEIDEN Welten (vorhang + ursprung)
+      // auf einmal. Body: { is_granted: bool }
+      // v130: "Beide Welten" Bulk-Aktion.
+      if (method === 'POST' && path.includes('/users/') && path.endsWith('/module-access/batch-all')) {
+        try {
+          const rawUserId = path.split('/')[4];
+          if (!rawUserId) return errorResponse('userId fehlt', 400);
+          if (!['admin', 'root_admin'].includes(caller.role)) {
+            return errorResponse('Admin-Rolle erforderlich', 403);
+          }
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          if (typeof body?.is_granted !== 'boolean') {
+            return errorResponse('is_granted (boolean) fehlt', 400);
+          }
+          const isGranted = body.is_granted;
+          const canonicalUuid = await resolveProfileUuid(rawUserId, svcHeaders);
+          const writeUserId = canonicalUuid || rawUserId;
+
+          // Alle Module beider Welten laden
+          const [vhRaw, urRaw] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/vorhang_modules?select=module_code`, { headers: svcHeaders })
+              .then(r => r.ok ? r.json().catch(() => []) : []),
+            fetch(`${SUPABASE_URL}/rest/v1/ursprung_modules?select=module_code`, { headers: svcHeaders })
+              .then(r => r.ok ? r.json().catch(() => []) : []),
+          ]);
+
+          const rows = [
+            ...((Array.isArray(vhRaw) ? vhRaw : []).map(m => ({
+              user_id: writeUserId,
+              module_code: m.module_code,
+              module_type: 'vorhang',
+              is_granted: isGranted,
+              granted_by: caller.username,
+              created_at: new Date().toISOString(),
+            }))),
+            ...((Array.isArray(urRaw) ? urRaw : []).map(m => ({
+              user_id: writeUserId,
+              module_code: m.module_code,
+              module_type: 'ursprung',
+              is_granted: isGranted,
+              granted_by: caller.username,
+              created_at: new Date().toISOString(),
+            }))),
+          ];
+
+          if (rows.length === 0) return jsonResponse({ success: true, count: 0 });
+
+          const upsRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/admin_module_access?on_conflict=user_id,module_code`,
+            {
+              method: 'POST',
+              headers: { ...svcHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+              body: JSON.stringify(rows),
+            },
+          );
+          if (!upsRes.ok) {
+            const t = await upsRes.text().catch(() => '');
+            return errorResponse(`batch-all UPSERT Fehler: ${upsRes.status} ${t.slice(0, 200)}`);
+          }
+
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: isGranted ? 'module_access_batch_grant' : 'module_access_batch_block',
+            target_id: writeUserId,
+            details: { count: rows.length, worlds: ['vorhang', 'ursprung'] },
+          });
+
+          return jsonResponse({
+            success: true,
+            count: rows.length,
+            action: isGranted ? 'granted' : 'blocked',
+            worlds: ['vorhang', 'ursprung'],
+          });
+        } catch (e) { return errorResponse(`batch-all Fehler: ${e.message}`); }
+      }
+
       // ════════════════════════════════════════════════════════════════
       // v128 (2026-06-07): MODUL-WERKSTATT (Task 3)
       // KI-gestuetzte Modul-Erstellung & -Editierung im Admin-Dashboard.
@@ -7723,7 +7801,24 @@ export default {
       // Welt-Param: 'vorhang' oder 'ursprung' -> bestimmt die Tabelle.
 
       // Hilfs-Schema: bekannte Branches pro Welt (Auto-Wahl + Validierung).
+      // 2026-06-07: alle 4 Welten (materie, energie, vorhang, ursprung).
       const WORKSHOP_BRANCHES = {
+        materie: [
+          'Recherche-Grundlagen',
+          'Netzwerk-Analyse',
+          'Quellenkritik',
+          'Geopolitik & Macht',
+          'Wirtschaft & Finanzen',
+          'Desinformation erkennen',
+        ],
+        energie: [
+          'Energiearbeit',
+          'Meditation & Stille',
+          'Chakren & Aura',
+          'Manifestation',
+          'Intuition & Wahrnehmung',
+          'Heilung & Balance',
+        ],
         vorhang: [
           'Machtpsychologie',
           'Manipulationserkennung',
@@ -7740,30 +7835,91 @@ export default {
           'remote_viewing',
         ],
       };
-      const tableForWorld = (w) => w === 'ursprung' ? 'ursprung_modules' : 'vorhang_modules';
+      const WORKSHOP_WORLDS = ['materie', 'energie', 'vorhang', 'ursprung'];
+      const normWorld = (w) => WORKSHOP_WORLDS.includes(w) ? w : 'vorhang';
+      const tableForWorld = (w) => `${normWorld(w)}_modules`;
 
-      // Hilfs-Funktion: KI-Call mit JSON-Output-Parsing (faengt Markdown-Codeblocks ab).
-      async function workshopAiJson(systemMsg, userMsg, maxTokens = 1200) {
-        if (!env.AI) throw new Error('Workers-AI nicht verfuegbar');
-        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-          messages: [
-            { role: 'system', content: systemMsg },
-            { role: 'user', content: userMsg },
-          ],
-          max_tokens: maxTokens,
-        });
-        let text = (res?.response || '').trim();
-        // Strip ```json ... ``` falls vorhanden
-        const codeFence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (codeFence) text = codeFence[1].trim();
-        // Erstes valides JSON-Objekt extrahieren
-        const jsonStart = text.search(/[\{\[]/);
-        if (jsonStart >= 0) text = text.slice(jsonStart);
-        try {
-          return JSON.parse(text);
-        } catch (e) {
-          throw new Error(`KI-Antwort nicht parsebar: ${text.slice(0, 200)}`);
+      // Robuste JSON-Extraktion: schneidet das erste balancierte {} oder []
+      // aus einem KI-Text heraus (auch wenn Prosa drumherum steht). Beachtet
+      // Strings + Escapes, damit Klammern in Texten nicht mitzaehlen.
+      const extractJson = (text) => {
+        if (!text) return null;
+        let t = String(text).trim();
+        const fence = t.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (fence) t = fence[1].trim();
+        const start = t.search(/[\{\[]/);
+        if (start < 0) return null;
+        const open = t[start];
+        const close = open === '{' ? '}' : ']';
+        let depth = 0, inStr = false, esc = false;
+        for (let i = start; i < t.length; i++) {
+          const c = t[i];
+          if (esc) { esc = false; continue; }
+          if (c === '\\') { esc = true; continue; }
+          if (c === '"') { inStr = !inStr; continue; }
+          if (inStr) continue;
+          if (c === open) depth++;
+          else if (c === close) {
+            depth--;
+            if (depth === 0) {
+              try { return JSON.parse(t.slice(start, i + 1)); } catch (_) { return null; }
+            }
+          }
         }
+        return null;
+      };
+
+      // Hilfs-Funktion: KI-Call mit zuverlaessigem JSON-Output.
+      // Strategie (von zuverlaessig nach Fallback):
+      //   1) Groq llama-3.3-70b (wenn GROQ_API_KEY) -- folgt JSON-Anweisungen am besten
+      //   2) Workers-AI llama-3.3-70b-fp8-fast -- deutlich besser als 3.1-8b
+      //   3) Workers-AI llama-3.1-8b -- letzter Fallback
+      // Jeweils mit robuster Extraktion + 1 Retry. llama-3.1-8b (vorher einzige
+      // Quelle) gab haeufig kaputtes JSON zurueck -> "0 Ergebnisse"/"Ausarbeitung
+      // fehlgeschlagen".
+      async function workshopAiJson(systemMsg, userMsg, maxTokens = 1200) {
+        const strictSystem = systemMsg +
+          '\n\nWICHTIG: Antworte AUSSCHLIESSLICH mit gueltigem JSON. ' +
+          'Kein Markdown, keine Code-Fences, keine Erklaerung, kein Text davor oder danach.';
+
+        // 1) Groq
+        if (env.GROQ_API_KEY) {
+          try {
+            const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userMsg }],
+                temperature: 0.6,
+                max_tokens: maxTokens,
+              }),
+              signal: AbortSignal.timeout(28000),
+            });
+            if (r.ok) {
+              const data = await r.json();
+              const parsed = extractJson(data?.choices?.[0]?.message?.content || '');
+              if (parsed) return parsed;
+            }
+          } catch (_) { /* fall through */ }
+        }
+
+        // 2+3) Workers-AI mit staerkerem Modell + Fallback + Retry
+        if (!env.AI) throw new Error('Keine KI verfuegbar (weder Groq noch Workers-AI)');
+        const models = ['@cf/meta/llama-3.3-70b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct'];
+        for (const model of models) {
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const res = await env.AI.run(model, {
+                messages: [{ role: 'system', content: strictSystem }, { role: 'user', content: userMsg }],
+                max_tokens: maxTokens,
+              });
+              const parsed = extractJson(res?.response || '');
+              if (parsed) return parsed;
+            } catch (_) { /* naechster Versuch */ }
+          }
+        }
+        throw new Error('KI lieferte kein gueltiges JSON (Groq + Workers-AI versucht)');
       }
 
       // ── POST /api/admin/module-workshop/topics ─────────────────────
@@ -7776,10 +7932,14 @@ export default {
         try {
           const body = await request.clone().json().catch(() => ({}));
           const hint = String(body?.hint || '').trim().slice(0, 200);
-          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
-          const worldContext = world === 'vorhang'
-            ? 'die "Vorhang"-Welt der Weltenbibliothek-App: Themen zu Machtpsychologie, Manipulationserkennung, Verhandlung, Koerpersprache, strategischem Denken und Schattenarbeit.'
-            : 'die "Ursprung"-Welt: Themen zu Bewusstsein, Gateway-Erfahrungen, Focus-Levels, Energie-Tools, Manifestation und Remote Viewing.';
+          const world = normWorld(body?.world);
+          const worldContextMap = {
+            vorhang: 'die "Vorhang"-Welt: Machtpsychologie, Manipulationserkennung, Verhandlung, Koerpersprache, strategisches Denken, Schattenarbeit.',
+            ursprung: 'die "Ursprung"-Welt: Bewusstsein, Gateway-Erfahrungen, Focus-Levels, Energie-Tools, Manifestation, Remote Viewing.',
+            materie: 'die "Materie"-Welt: Recherche-Techniken, Netzwerk-Analyse, Quellenkritik, Geopolitik & Macht, Wirtschaft & Finanzen, Desinformation erkennen.',
+            energie: 'die "Energie"-Welt: Energiearbeit, Meditation & Stille, Chakren & Aura, Manifestation, Intuition & Wahrnehmung, Heilung & Balance.',
+          };
+          const worldContext = worldContextMap[world] || worldContextMap.vorhang;
           const system = `Du hilfst beim Erstellen von Lern-Modulen fuer ${worldContext} Antworte AUSSCHLIESSLICH als JSON-Array von 5 Strings, je 3-8 Worte, auf Deutsch.`;
           const user = hint
             ? `Schlage 5 konkrete Modul-Themen vor, die zu folgendem Ausgangspunkt passen: "${hint}"`
@@ -7803,7 +7963,7 @@ export default {
           const body = await request.clone().json().catch(() => ({}));
           const topic = String(body?.topic || '').trim();
           if (topic.length < 3) return errorResponse('topic fehlt', 400);
-          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const world = normWorld(body?.world);
           const branches = WORKSHOP_BRANCHES[world];
           const branchHint = body?.branch && branches.includes(body.branch)
             ? body.branch
@@ -7856,7 +8016,7 @@ export default {
         }
         try {
           const body = await request.clone().json().catch(() => ({}));
-          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const world = normWorld(body?.world);
           const branches = WORKSHOP_BRANCHES[world];
           const current = body?.current || {};
           if (!current.title || !current.theory_content) {
@@ -7903,7 +8063,7 @@ export default {
           return errorResponse('Admin-Rolle erforderlich', 403);
         }
         try {
-          const world = url.searchParams.get('world') === 'ursprung' ? 'ursprung' : 'vorhang';
+          const world = normWorld(url.searchParams.get('world'));
           const tbl = tableForWorld(world);
           const r = await fetch(
             `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,branch_order,title,subtitle,is_boss_module,xp_reward,prerequisites,theory_content,case_study,exercise_description&order=branch_order.asc,module_code.asc`,
@@ -7930,7 +8090,7 @@ export default {
         }
         try {
           const body = await request.clone().json().catch(() => ({}));
-          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const world = normWorld(body?.world);
           const tbl = tableForWorld(world);
           const mod = body?.module || {};
           const editCode = body?.edit_code ? String(body.edit_code).trim().toUpperCase() : null;
@@ -8038,7 +8198,7 @@ export default {
         }
         try {
           const body = await request.clone().json().catch(() => ({}));
-          const world = body?.world === 'ursprung' ? 'ursprung' : 'vorhang';
+          const world = normWorld(body?.world);
           const modes = Array.isArray(body?.modes) ? body.modes : ['new', 'improve', 'quality'];
           const tbl = tableForWorld(world);
           const branches = WORKSHOP_BRANCHES[world];
@@ -8208,7 +8368,7 @@ export default {
           return errorResponse('Admin-Rolle erforderlich', 403);
         }
         try {
-          const world = url.searchParams.get('world') === 'ursprung' ? 'ursprung' : 'vorhang';
+          const world = normWorld(url.searchParams.get('world'));
           const status = url.searchParams.get('status') || 'pending';
           const r = await fetch(
             `${SUPABASE_URL}/rest/v1/module_suggestions?world=eq.${world}&status=eq.${encodeURIComponent(status)}&order=created_at.desc`,

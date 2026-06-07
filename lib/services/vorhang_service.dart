@@ -107,6 +107,30 @@ class VorhangService {
     final supaId = supa.auth.currentUser?.id;
     if (supaId != null && supaId.isNotEmpty) candidateIds.add(supaId);
 
+    // If no Supabase UUID is known (InvisibleAuth), lookup the UUID from
+    // profiles so admin overrides stored under UUID are found.
+    final hasUuid = candidateIds.any((id) => RegExp(
+            r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+            caseSensitive: false)
+        .hasMatch(id));
+    if (!hasUuid && legacy != null && legacy.isNotEmpty) {
+      try {
+        final row = await supa
+            .from('profiles')
+            .select('id')
+            .eq('legacy_user_id', legacy)
+            .maybeSingle();
+        final profileId = row?['id'] as String?;
+        if (profileId != null && profileId.isNotEmpty) {
+          candidateIds.add(profileId);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[VorhangService] UUID-Lookup fehlgeschlagen: $e');
+        }
+      }
+    }
+
     final adminOverrides = <String, bool>{};
     if (candidateIds.isNotEmpty) {
       try {
