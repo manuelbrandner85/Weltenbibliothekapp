@@ -75,6 +75,8 @@ import 'models/thread.dart';
 import 'services/kaninchenbau_service.dart';
 import 'widgets/breadcrumb_bar.dart';
 import 'widgets/cinematic_intro.dart';
+import '../../../widgets/cinematic/cinematic_post_process.dart';
+import '../../../widgets/cinematic/cinematic_settings.dart';
 import 'widgets/kb_design.dart';
 import 'widgets/rote_faden_line.dart';
 import 'widgets/virgil_orb.dart';
@@ -118,6 +120,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
   @override
   void initState() {
     super.initState();
+    KbCinemaSettings.instance.load(); // Cinema-Qualitaet laden (persistent)
     if (widget.initialTopic != null && widget.initialTopic!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openThread(widget.initialTopic!);
@@ -769,11 +772,21 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                         loadedCount: s.loadedApiCount,
                         totalCount: 47,
                       )
-                    : _buildScrollContent(s),
+                    : CinematicPostProcess(
+                        key: const ValueKey('content'),
+                        child: _buildScrollContent(s),
+                      ),
               ),
             ),
           ],
         ),
+        // Cinema-Qualitaets-Schalter oben rechts (nur wenn Inhalt sichtbar)
+        if (!s.showLoadingOverlay)
+          Positioned(
+            right: 10,
+            top: 6,
+            child: _buildCinemaQualityButton(),
+          ),
         // Virgil-Orb unten rechts — öffnet Full-Panel beim Tap
         Positioned(
           right: 18,
@@ -821,6 +834,66 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
   }
 
   /// Aggregiert den Inhalt aller geladenen Karten als Kontext für Virgil.
+  Widget _buildCinemaQualityButton() {
+    return ValueListenableBuilder<CinematicQuality>(
+      valueListenable: KbCinemaSettings.instance.quality,
+      builder: (context, q, _) {
+        return PopupMenuButton<CinematicQuality>(
+          tooltip: 'Cinema-Effekte',
+          color: const Color(0xFF14141F),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+          initialValue: q,
+          onSelected: (val) => KbCinemaSettings.instance.set(val),
+          itemBuilder: (_) => [
+            for (final opt in CinematicQuality.values)
+              PopupMenuItem<CinematicQuality>(
+                value: opt,
+                height: 38,
+                child: Row(children: [
+                  Icon(
+                    opt == q
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    size: 16,
+                    color: opt == q ? KbDesign.neonRedSoft : Colors.white38,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(opt.label,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 13)),
+                ]),
+              ),
+          ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: KbDesign.neonRed.withValues(alpha: 0.3)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(
+                q == CinematicQuality.off
+                    ? Icons.movie_filter_outlined
+                    : Icons.movie_filter,
+                size: 14,
+                color: q == CinematicQuality.off
+                    ? Colors.white38
+                    : KbDesign.neonRedSoft,
+              ),
+              const SizedBox(width: 5),
+              Text(q.label,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 11)),
+            ]),
+          ),
+        );
+      },
+    );
+  }
+
   String _buildCardContext(_ThreadState s) {
     final parts = <String>[];
     if (s.identityData != null) {

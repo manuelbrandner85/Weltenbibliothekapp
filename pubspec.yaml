@@ -54,6 +54,9 @@ dependencies:
   qr_flutter: ^4.1.0  # QR Code generation
   pdf: ^3.11.1  # PDF generation for export
   
+  # Cinema post-processing (Kaninchenbau fragment shader)
+  flutter_shaders: ^0.1.3
+
   # HTTP & Networking
   http: 1.5.0
   xml: ^6.5.0  # RSS Feed parsing
@@ -164,6 +167,10 @@ flutter:
     - assets/videos/weltenbibliothek_intro.mp4
     - assets/videos/transition_materie_to_energie.mp4
     - assets/videos/transition_energie_to_materie.mp4
+
+  # Fragment-Shader fuer Kaninchenbau Cinema-Postprocessing
+  shaders:
+    - shaders/cinematic_post.frag
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
