@@ -113,6 +113,14 @@ class _AdminHubState extends State<_AdminHub> {
         subtitle: 'Module, Artikel, Videos',
         section: 'content',
       ));
+      // v128: KI-gestuetzte Modul-Werkstatt -- Module erstellen, erweitern,
+      // KI-Vorschlaege annehmen. Eigene Hub-Karte damit sie auffindbar ist.
+      areas.add(const _AdminAreaDef(
+        icon: Icons.auto_awesome,
+        title: 'Modul-Werkstatt',
+        subtitle: 'Module per KI erstellen, erweitern & Vorschlaege',
+        section: 'module_workshop',
+      ));
     }
     if (AppRoles.isAdmin(role)) {
       areas.add(const _AdminAreaDef(
