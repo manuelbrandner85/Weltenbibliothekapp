@@ -50,6 +50,7 @@ part 'world_admin_dashboard/account_requests_sheet.dart';
 part 'world_admin_dashboard/admin_hub.dart';
 part 'world_admin_dashboard/insights_tab.dart';
 part 'world_admin_dashboard/control_tab.dart';
+part 'world_admin_dashboard/search_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -80,6 +81,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   int _badgeOpenReports = 0;
   int _badgePendingUsernameRequests = 0;
   int _badgeFailedPushes = 0;
+  // v123: pending content (videos waiting for confirm) + maintenance-flag.
+  int _badgePendingVideos = 0;
+  bool _badgeMaintenanceActive = false;
 
   // v103: Dashboard ist ein globales Tool fuer ALLE Welten gleichzeitig.
   // Kein Welt-Filter, kein Welt-Switcher, keine welt-spezifischen Farben.
@@ -137,6 +141,21 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       final stats = await WorldAdminServiceV162.getPushStats();
       final failed = (stats?['total_failed'] as num?)?.toInt() ?? 0;
       if (mounted) setState(() => _badgeFailedPushes = failed);
+    } catch (_) {/* degrade gracefully */}
+
+    // v123: pending content videos awaiting approval.
+    try {
+      final pending = await WorldAdminServiceV162.getPendingVideos();
+      if (mounted) setState(() => _badgePendingVideos = pending.length);
+    } catch (_) {/* degrade gracefully */}
+
+    // v123: maintenance flag active -> show warning chip.
+    try {
+      final flags = await WorldAdminServiceV162.getFeatureFlags();
+      final maint = flags.any((f) =>
+          (f['key'] as String?) == 'maintenance' &&
+          (f['enabled'] as bool? ?? false));
+      if (mounted) setState(() => _badgeMaintenanceActive = maint);
     } catch (_) {/* degrade gracefully */}
   }
 
@@ -424,12 +443,25 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
               openReports: _badgeOpenReports,
               pendingUsernameRequests: _badgePendingUsernameRequests,
               failedPushes: _badgeFailedPushes,
+              pendingVideos: _badgePendingVideos,
+              maintenanceActive: _badgeMaintenanceActive,
               onOpen: (section) =>
                   setState(() => _activeSection = section),
               onSearch: (query) => setState(() {
                 _pendingUserSearch = query;
                 _activeSection = 'users';
               }),
+              onOpenGlobalSearch: () => showGlobalAdminSearch(
+                context,
+                accent: _accent,
+                accentBright: _accentBright,
+                onJump: (section, {String? query}) {
+                  setState(() {
+                    if (query != null) _pendingUserSearch = query;
+                    _activeSection = section;
+                  });
+                },
+              ),
             )
           : _sectionBody(_activeSection!, admin),
     );
@@ -448,10 +480,12 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             accentBright: _accentBright);
       case 'users':
         return _UsersTab(
+            key: ValueKey('users-${_pendingUserSearch.isEmpty ? '_' : _pendingUserSearch}'),
             world: 'all',
             admin: admin,
             accent: _accent,
-            accentBright: _accentBright);
+            accentBright: _accentBright,
+            initialQuery: _pendingUserSearch);
       case 'moderation':
         return _ModerationHub(
             world: 'all',

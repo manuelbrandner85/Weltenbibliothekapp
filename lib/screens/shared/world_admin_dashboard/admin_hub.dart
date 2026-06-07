@@ -37,10 +37,16 @@ class _AdminHub extends StatefulWidget {
   /// Run a global user search -> opens Users section with the query.
   final void Function(String query) onSearch;
 
+  /// Open the global search bottom sheet (users + content + audit).
+  final VoidCallback onOpenGlobalSearch;
+
   // Best-effort badge counts (0 = hide number).
   final int openReports;
   final int pendingUsernameRequests;
   final int failedPushes;
+  // v123: pending content + maintenance-mode flag.
+  final int pendingVideos;
+  final bool maintenanceActive;
 
   const _AdminHub({
     required this.role,
@@ -48,9 +54,12 @@ class _AdminHub extends StatefulWidget {
     required this.accentBright,
     required this.onOpen,
     required this.onSearch,
+    required this.onOpenGlobalSearch,
     this.openReports = 0,
     this.pendingUsernameRequests = 0,
     this.failedPushes = 0,
+    this.pendingVideos = 0,
+    this.maintenanceActive = false,
   });
 
   @override
@@ -177,36 +186,71 @@ class _AdminHubState extends State<_AdminHub> {
   }
 
   Widget _buildSearchField() {
-    return TextField(
-      controller: _searchCtrl,
-      style: const TextStyle(color: Colors.white, fontSize: 14),
-      textInputAction: TextInputAction.search,
-      onSubmitted: (v) {
-        final q = v.trim();
-        widget.onSearch(q);
-      },
-      decoration: InputDecoration(
-        hintText: 'Nutzer suchen (@name)…',
-        hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
-        prefixIcon: Icon(Icons.search_rounded, color: widget.accentBright),
-        filled: true,
-        fillColor: const Color(0xFF14141F),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: widget.accent.withValues(alpha: 0.3)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: widget.accent.withValues(alpha: 0.2)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: widget.accentBright, width: 1.5),
+    return Row(children: [
+      Expanded(
+        child: TextField(
+          controller: _searchCtrl,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+          textInputAction: TextInputAction.search,
+          onSubmitted: (v) {
+            final q = v.trim();
+            widget.onSearch(q);
+          },
+          decoration: InputDecoration(
+            hintText: 'Nutzer suchen (@name)…',
+            hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
+            prefixIcon: Icon(Icons.search_rounded, color: widget.accentBright),
+            filled: true,
+            fillColor: const Color(0xFF14141F),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:
+                  BorderSide(color: widget.accent.withValues(alpha: 0.3)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:
+                  BorderSide(color: widget.accent.withValues(alpha: 0.2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:
+                  BorderSide(color: widget.accentBright, width: 1.5),
+            ),
+          ),
         ),
       ),
-    );
+      const SizedBox(width: 8),
+      Material(
+        color: const Color(0xFF14141F),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: widget.onOpenGlobalSearch,
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: widget.accentBright.withValues(alpha: 0.5)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.travel_explore_rounded,
+                  size: 18, color: widget.accentBright),
+              const SizedBox(width: 6),
+              Text('Global',
+                  style: TextStyle(
+                      color: widget.accentBright,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ]),
+          ),
+        ),
+      ),
+    ]);
   }
 
   Widget _buildBadgeRow() {
@@ -240,6 +284,25 @@ class _AdminHubState extends State<_AdminHub> {
         onTap: () => widget.onOpen('push'),
       ));
     }
+    // v123: pending content videos -> jump to Steuerung (content-queue panel).
+    if (AppRoles.canCreateAnnouncements(role) && widget.pendingVideos > 0) {
+      chips.add(_buildBadgeChip(
+        icon: Icons.play_circle_outline_rounded,
+        label: 'Videos pruefen',
+        count: widget.pendingVideos,
+        onTap: () => widget.onOpen('control'),
+      ));
+    }
+    // v123: maintenance flag active -> red warning chip.
+    if (AppRoles.canCreateAnnouncements(role) && widget.maintenanceActive) {
+      chips.add(_buildBadgeChip(
+        icon: Icons.warning_amber_rounded,
+        label: 'Wartung aktiv',
+        count: 1,
+        warning: true,
+        onTap: () => widget.onOpen('control'),
+      ));
+    }
 
     if (chips.isEmpty) return const SizedBox.shrink();
 
@@ -262,7 +325,10 @@ class _AdminHubState extends State<_AdminHub> {
     required String label,
     required int count,
     required VoidCallback onTap,
+    bool warning = false,
   }) {
+    final base = warning ? Colors.redAccent : widget.accent;
+    final bright = warning ? Colors.redAccent.shade100 : widget.accentBright;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -271,17 +337,16 @@ class _AdminHubState extends State<_AdminHub> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: widget.accent.withValues(alpha: 0.12),
+            color: base.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(20),
-            border:
-                Border.all(color: widget.accent.withValues(alpha: 0.4)),
+            border: Border.all(color: base.withValues(alpha: 0.4)),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 14, color: widget.accentBright),
+            Icon(icon, size: 14, color: bright),
             const SizedBox(width: 6),
-            Text('$label ($count)',
+            Text(warning ? label : '$label ($count)',
                 style: TextStyle(
-                    color: widget.accentBright,
+                    color: bright,
                     fontSize: 12,
                     fontWeight: FontWeight.w600)),
           ]),

@@ -9,11 +9,14 @@ class _UsersTab extends StatefulWidget {
   final String world;
   final AdminState admin;
   final Color accent, accentBright;
+  // v123 Priority 5: prefilled search query when hub forwards a global search.
+  final String? initialQuery;
   const _UsersTab(
       {required this.world,
       required this.admin,
       required this.accent,
-      required this.accentBright});
+      required this.accentBright,
+      this.initialQuery});
   @override
   State<_UsersTab> createState() => _UsersTabState();
 }
@@ -45,6 +48,12 @@ class _UsersTabState extends State<_UsersTab> {
   @override
   void initState() {
     super.initState();
+    // Priority 5: apply forwarded global search query (if any).
+    final q = widget.initialQuery?.trim() ?? '';
+    if (q.isNotEmpty) {
+      _search = q;
+      _searchCtrl.text = q;
+    }
     _load();
     _subscribeRealtime();
   }
