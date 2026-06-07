@@ -12,7 +12,8 @@ class _UsersTab extends StatefulWidget {
   // v123 Priority 5: prefilled search query when hub forwards a global search.
   final String? initialQuery;
   const _UsersTab(
-      {required this.world,
+      {super.key,
+      required this.world,
       required this.admin,
       required this.accent,
       required this.accentBright,
