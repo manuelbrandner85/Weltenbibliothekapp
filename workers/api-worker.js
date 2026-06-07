@@ -1601,7 +1601,7 @@ async function runAutoScanCron(env, svcHeaders) {
       const mod = await aiJson(env,
         'Du bist Lehrredaktion der Weltenbibliothek. Erstelle ein vollstaendiges Lern-Modul. ' +
         'Antworte als JSON: title, subtitle, theory_content (300-600 Worte, Markdown), case_study (150-300 Worte), exercise_description (100-250 Worte), xp_reward (50-200). Deutsch.',
-        `Thema: ${topic}\nBranch: ${weakest}`, 1800);
+        `Thema: ${topic}\nBranch: ${weakest}`, 3000);
       rowsToInsert.push({
         world, kind: 'new', status: 'pending', branch: weakest,
         title: String(mod.title || topic).slice(0, 120),
@@ -5082,9 +5082,9 @@ export default {
               .map((v) => v.youtube_video_id));
 
           const pipedHosts = ['https://pipedapi.kavin.rocks', 'https://pipedapi.adminforge.de', 'https://api-piped.mha.fi'];
-          const candidates = [];
-          for (const q of queries) {
-            let found = null;
+          // Findet 1 noch nicht vorhandenes Video fuer eine Suche.
+          // 1) Piped (kostenlos), 2) YouTube Data API (Fallback wenn Key gesetzt).
+          const searchOne = async (q) => {
             for (const host of pipedHosts) {
               try {
                 const pr = await fetch(`${host}/search?q=${encodeURIComponent(q)}&filter=videos`,
@@ -5095,23 +5095,46 @@ export default {
                 for (const i of items) {
                   const vid = i.url.replace('/watch?v=', '').split('&')[0];
                   if (vid && !existIds.has(vid)) {
-                    found = {
-                      video_id: vid,
-                      title: i.title || '',
+                    return { video_id: vid, title: i.title || '',
                       thumbnail_url: i.thumbnail || `https://img.youtube.com/vi/${vid}/mqdefault.jpg`,
-                      channel_title: i.uploaderName || null,
-                      query: q,
-                    };
-                    existIds.add(vid);
-                    break;
+                      channel_title: i.uploaderName || null, query: q };
                   }
                 }
-                if (found) break;
               } catch (_) { /* naechster Spiegel */ }
             }
-            if (found) candidates.push(found);
+            // YouTube Data API Fallback
+            if (env.YOUTUBE_API_KEY) {
+              try {
+                const yr = await fetch(
+                  'https://www.googleapis.com/youtube/v3/search' +
+                  `?part=snippet&type=video&q=${encodeURIComponent(q)}&maxResults=5&key=${env.YOUTUBE_API_KEY}`,
+                  { signal: AbortSignal.timeout(8000) });
+                if (yr.ok) {
+                  const yd = await yr.json();
+                  for (const it of (yd.items || [])) {
+                    const vid = it.id?.videoId;
+                    if (vid && !existIds.has(vid)) {
+                      return { video_id: vid, title: it.snippet?.title || '',
+                        thumbnail_url: it.snippet?.thumbnails?.medium?.url || `https://img.youtube.com/vi/${vid}/mqdefault.jpg`,
+                        channel_title: it.snippet?.channelTitle || null, query: q };
+                    }
+                  }
+                }
+              } catch (_) { /* leer */ }
+            }
+            return null;
+          };
+
+          const candidates = [];
+          for (const q of queries) {
+            const found = await searchOne(q);
+            if (found) { existIds.add(found.video_id); candidates.push(found); }
           }
-          return jsonResponse({ success: true, world, candidates });
+          // Diagnose-Hinweis wenn gar nichts gefunden (Piped down + kein YT-Key).
+          const note = candidates.length === 0
+            ? (env.YOUTUBE_API_KEY ? 'Keine neuen Treffer' : 'Piped nicht erreichbar und kein YOUTUBE_API_KEY gesetzt')
+            : null;
+          return jsonResponse({ success: true, world, candidates, note });
         } catch (e) { return errorResponse(`Video-KI-Vorschlag-Fehler: ${e.message}`); }
       }
 
@@ -8543,7 +8566,9 @@ export default {
             : (wantNewTheme
               ? `Thema-Inhalt: ${topic}\nErfinde dafuer ein passendes NEUES Thema/Bereich (branch) und erstelle das vollstaendige Modul.`
               : `Thema-Inhalt: ${topic}\nWaehle das passende Thema (branch) selbst und erstelle das vollstaendige Modul.`);
-          const moduleData = await workshopAiJson(system, user, 2200);
+          // 4096 statt 2200: Theorie+Fallstudie+Uebung+Quiz+Quellen sprengen sonst
+          // das Token-Budget -> abgeschnittenes JSON -> "Generierung fehlgeschlagen".
+          const moduleData = await workshopAiJson(system, user, 4096);
           // branch: KI-Vorschlag (auch neues Thema) > Hint > erster bestehender.
           const branch = (String(moduleData.branch || '').trim())
             || branchHint || branches[0];
@@ -8596,7 +8621,7 @@ export default {
             `Branches: ${branches.join(' | ')}`,
           ].join('\n');
           const user = `Bestehender Inhalt:\n\nTitel: ${current.title}\nSubtitle: ${current.subtitle || ''}\nBranch: ${current.branch || ''}\n\nTheorie:\n${current.theory_content}\n\nFallstudie:\n${current.case_study || ''}\n\nUebung:\n${current.exercise_description || ''}\n\nBitte ausbauen.`;
-          const moduleData = await workshopAiJson(system, user, 2400);
+          const moduleData = await workshopAiJson(system, user, 4096);
           const branch = branches.includes(moduleData.branch)
             ? moduleData.branch
             : (current.branch && branches.includes(current.branch) ? current.branch : branches[0]);
@@ -9108,7 +9133,7 @@ export default {
                   'Du bist Lehrredaktion der Weltenbibliothek. Erstelle ein vollstaendiges Lern-Modul.',
                   'Antworte AUSSCHLIESSLICH als JSON-Objekt mit: title, subtitle, theory_content (300-600 Worte, Markdown), case_study (150-300 Worte), exercise_description (100-250 Worte), xp_reward (50-200). Deutsch.',
                 ].join('\n');
-                const mod = await workshopAiJson(genSystem, `Thema: ${topic}\nBranch/Bereich: ${branch}`, 1800);
+                const mod = await workshopAiJson(genSystem, `Thema: ${topic}\nBranch/Bereich: ${branch}`, 3000);
                 rowsToInsert.push({
                   world, kind: 'new', status: 'pending',
                   title: String(mod.title || topic).slice(0, 120),
@@ -9143,7 +9168,7 @@ export default {
                   'Antworte AUSSCHLIESSLICH als JSON-Objekt mit: title, subtitle, theory_content (300-600 Worte), case_study (150-300 Worte), exercise_description (100-250 Worte), xp_reward (50-200). Deutsch.',
                 ].join('\n');
                 const user = `Bestehend:\nTitel: ${m.title}\nTheorie: ${m.theory_content || '(leer)'}\nFallstudie: ${m.case_study || '(leer)'}\nUebung: ${m.exercise_description || '(leer)'}\n\nBaue aus.`;
-                const mod = await workshopAiJson(system, user, 1800);
+                const mod = await workshopAiJson(system, user, 3000);
                 rowsToInsert.push({
                   world, kind: 'improve', status: 'pending',
                   target_module_code: m.module_code,
