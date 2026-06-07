@@ -33,11 +33,19 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   bool _existingLoading = false;
   String? _existingError;
 
+  // Tab 3 -- KI-Vorschlaege (A/B/C)
+  List<Map<String, dynamic>> _kiSuggestions = const [];
+  bool _suggestionsLoading = false;
+  bool _scanning = false;
+  String? _suggestionsError;
+  final Set<String> _suggestionBusy = {};
+
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
+    _tabs = TabController(length: 3, vsync: this);
     _loadExisting();
+    _loadSuggestions();
   }
 
   @override
@@ -69,6 +77,73 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
         _existingError = 'Fehler: $e';
         _existingLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadSuggestions() async {
+    setState(() {
+      _suggestionsLoading = true;
+      _suggestionsError = null;
+    });
+    try {
+      final list =
+          await WorldAdminServiceV162.getModuleSuggestions(world: _world);
+      if (!mounted) return;
+      setState(() {
+        _kiSuggestions = list;
+        _suggestionsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _suggestionsError = 'Fehler: $e';
+        _suggestionsLoading = false;
+      });
+    }
+  }
+
+  Future<void> _runScan(List<String> modes) async {
+    setState(() => _scanning = true);
+    final res = await WorldAdminServiceV162.scanModuleSuggestions(
+      world: _world,
+      modes: modes,
+    );
+    if (!mounted) return;
+    setState(() => _scanning = false);
+    if (res == null || res['success'] != true) {
+      _snack('Scan fehlgeschlagen (KI evtl. nicht erreichbar)');
+      return;
+    }
+    final c = (res['created'] as Map?) ?? const {};
+    _snack(
+        'Scan fertig: ${c['new'] ?? 0} neu, ${c['improve'] ?? 0} Verbesserung(en), ${c['quality'] ?? 0} Qualitaets-Hinweis(e)');
+    await _loadSuggestions();
+  }
+
+  Future<void> _acceptSuggestion(String id) async {
+    setState(() => _suggestionBusy.add(id));
+    final res = await WorldAdminServiceV162.acceptModuleSuggestion(id);
+    if (!mounted) return;
+    setState(() => _suggestionBusy.remove(id));
+    if (res['success'] == true) {
+      _snack(
+          'Uebernommen: ${res['module_code'] ?? res['action'] ?? 'erledigt'}');
+      await _loadSuggestions();
+      await _loadExisting();
+    } else {
+      _snack('Annehmen fehlgeschlagen: ${res['error'] ?? ''}');
+    }
+  }
+
+  Future<void> _rejectSuggestion(String id) async {
+    setState(() => _suggestionBusy.add(id));
+    final ok = await WorldAdminServiceV162.rejectModuleSuggestion(id);
+    if (!mounted) return;
+    setState(() => _suggestionBusy.remove(id));
+    if (ok) {
+      await _loadSuggestions();
+    } else {
+      _snack('Ablehnen fehlgeschlagen');
     }
   }
 
@@ -191,14 +266,23 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
         _buildLogicHint(),
         TabBar(
           controller: _tabs,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           indicatorColor: widget.accentBright,
           labelColor: widget.accentBright,
           unselectedLabelColor: Colors.white38,
-          tabs: const [
-            Tab(
+          tabs: [
+            const Tab(
                 icon: Icon(Icons.auto_awesome, size: 16),
                 text: 'Neu erstellen'),
-            Tab(icon: Icon(Icons.edit_note, size: 16), text: 'Bestehende'),
+            const Tab(
+                icon: Icon(Icons.edit_note, size: 16), text: 'Bestehende'),
+            Tab(
+              icon: const Icon(Icons.lightbulb_outline, size: 16),
+              text: _kiSuggestions.isEmpty
+                  ? 'Vorschlaege'
+                  : 'Vorschlaege (${_kiSuggestions.length})',
+            ),
           ],
         ),
         const Divider(color: Colors.white10, height: 1),
@@ -208,6 +292,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
             children: [
               _buildCreateTab(),
               _buildExistingTab(),
+              _buildSuggestionsTab(),
             ],
           ),
         ),
@@ -239,8 +324,10 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
           _draftModule = null;
           _draftBranchHint = null;
           _suggestions = const [];
+          _activeEditCode = null;
         });
         _loadExisting();
+        _loadSuggestions();
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
@@ -577,6 +664,386 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   }
 
   String? _activeEditCode;
+
+  // ── Tab: KI-Vorschlaege (A/B/C + D) ─────────────────────────────────
+
+  Widget _buildSuggestionsTab() {
+    return Column(
+      children: [
+        // Scan-Buttons (manueller Trigger statt Cron)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Icon(Icons.search, size: 14, color: widget.accentBright),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    'KI prueft den Modul-Bestand und macht Vorschlaege. Du bestaetigst, was umgesetzt wird.',
+                    style: TextStyle(color: Colors.white60, fontSize: 11),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Wrap(spacing: 6, runSpacing: 6, children: [
+                _scanChip('Neue Module', ['new'], Icons.add_circle_outline),
+                _scanChip('Verbesserungen', ['improve'], Icons.upgrade),
+                _scanChip('Qualitaets-Check', ['quality'], Icons.fact_check),
+                _scanChip(
+                    'Alles pruefen', ['new', 'improve', 'quality'], Icons.bolt),
+              ]),
+              const SizedBox(height: 8),
+              // Vorschlag D: Tool anfragen (LOGIK-Modul)
+              OutlinedButton.icon(
+                onPressed: _scanning ? null : _showToolRequestDialog,
+                icon: const Icon(Icons.build_circle_outlined, size: 16),
+                label: const Text('Neues interaktives Tool anfragen'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.amber,
+                  side: BorderSide(color: Colors.amber.withValues(alpha: 0.5)),
+                  minimumSize: const Size.fromHeight(40),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_scanning)
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: widget.accentBright),
+              ),
+              const SizedBox(width: 8),
+              const Text('KI arbeitet ... (kann 10-30s dauern)',
+                  style: TextStyle(color: Colors.white54, fontSize: 12)),
+            ]),
+          ),
+        const Divider(color: Colors.white10, height: 1),
+        Expanded(child: _buildSuggestionsList()),
+      ],
+    );
+  }
+
+  Widget _scanChip(String label, List<String> modes, IconData icon) {
+    return ActionChip(
+      avatar: Icon(icon, size: 14, color: widget.accentBright),
+      label: Text(label, style: const TextStyle(color: Colors.white)),
+      backgroundColor: widget.accent.withValues(alpha: 0.18),
+      side: BorderSide(color: widget.accentBright.withValues(alpha: 0.4)),
+      onPressed: _scanning ? null : () => _runScan(modes),
+    );
+  }
+
+  Widget _buildSuggestionsList() {
+    if (_suggestionsLoading) {
+      return Center(
+          child: CircularProgressIndicator(color: widget.accentBright));
+    }
+    if (_suggestionsError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text(_suggestionsError!,
+              style: const TextStyle(color: Colors.redAccent)),
+        ),
+      );
+    }
+    if (_kiSuggestions.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Noch keine Vorschlaege.\nTippe oben auf einen Scan-Button.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white38),
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: _kiSuggestions.length,
+      itemBuilder: (_, i) => _buildSuggestionCard(_kiSuggestions[i]),
+    );
+  }
+
+  Widget _buildSuggestionCard(Map<String, dynamic> s) {
+    final id = s['id']?.toString() ?? '';
+    final kind = s['kind']?.toString() ?? 'new';
+    final busy = _suggestionBusy.contains(id);
+    final findings =
+        (s['quality_findings'] as List?)?.map((e) => e.toString()).toList() ??
+            const [];
+
+    // Kopfzeile je nach Art
+    late final String badge;
+    late final Color badgeColor;
+    late final IconData badgeIcon;
+    switch (kind) {
+      case 'improve':
+        badge = 'VERBESSERUNG';
+        badgeColor = Colors.lightBlueAccent;
+        badgeIcon = Icons.upgrade;
+        break;
+      case 'quality':
+        badge = 'QUALITAET';
+        badgeColor = Colors.orangeAccent;
+        badgeIcon = Icons.fact_check;
+        break;
+      default:
+        badge = 'NEUES MODUL';
+        badgeColor = Colors.greenAccent;
+        badgeIcon = Icons.add_circle_outline;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(badgeIcon, size: 13, color: badgeColor),
+            const SizedBox(width: 5),
+            Text(badge,
+                style: TextStyle(
+                    color: badgeColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1)),
+            const Spacer(),
+            if (s['target_module_code'] != null)
+              Text('${s['target_module_code']}',
+                  style: const TextStyle(color: Colors.white38, fontSize: 10)),
+          ]),
+          const SizedBox(height: 6),
+          Text(
+            (s['title'] as String?) ?? '(ohne Titel)',
+            style: const TextStyle(
+                color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+          if (s['branch'] != null) ...[
+            const SizedBox(height: 2),
+            Text('Branch: ${s['branch']}',
+                style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          ],
+          if ((s['rationale'] as String?)?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 6),
+            Text(s['rationale'].toString(),
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic)),
+          ],
+          // Qualitaets-Findings als Liste
+          if (findings.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            ...findings.map((f) => Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ',
+                            style: TextStyle(
+                                color: Colors.orangeAccent, fontSize: 12)),
+                        Expanded(
+                          child: Text(f,
+                              style: const TextStyle(
+                                  color: Colors.orangeAccent, fontSize: 12)),
+                        ),
+                      ]),
+                )),
+          ],
+          // Inhalt-Vorschau (new/improve) ausklappbar
+          if (kind != 'quality' &&
+              ((s['theory_content'] as String?)?.isNotEmpty ?? false)) ...[
+            const SizedBox(height: 8),
+            Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(bottom: 8),
+                title: Text('Inhalt ansehen',
+                    style: TextStyle(color: widget.accentBright, fontSize: 12)),
+                iconColor: widget.accentBright,
+                collapsedIconColor: widget.accentBright,
+                children: [
+                  _previewReadonly('Theorie', s['theory_content']),
+                  _previewReadonly('Fallstudie', s['case_study']),
+                  _previewReadonly('Uebung', s['exercise_description']),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: busy ? null : () => _acceptSuggestion(id),
+                icon: busy
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check, size: 15),
+                label: Text(kind == 'quality' ? 'Erledigt' : 'Uebernehmen'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              onPressed: busy ? null : () => _rejectSuggestion(id),
+              icon: const Icon(Icons.close, size: 15),
+              label: const Text('Ablehnen'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white54,
+                side: const BorderSide(color: Colors.white24),
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _previewReadonly(String label, dynamic value) {
+    final text = value?.toString() ?? '';
+    if (text.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  color: widget.accentBright,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          Text(text,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontSize: 12,
+                  height: 1.35)),
+        ],
+      ),
+    );
+  }
+
+  // Vorschlag D: Tool-Anfrage-Dialog
+  Future<void> _showToolRequestDialog() async {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A30),
+        title: const Text('Neues interaktives Tool anfragen',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Tools/Rechner/Spiele brauchen echten Code + App-Update. '
+                'Diese Anfrage erstellt ein GitHub-Issue fuer den Entwickler/Claude Code.',
+                style: TextStyle(color: Colors.amber, fontSize: 11),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: titleCtrl,
+              style: const TextStyle(color: Colors.white),
+              decoration: _inputDeco('Kurzer Titel (z.B. "Atem-Timer")'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: descCtrl,
+              maxLines: 4,
+              style: const TextStyle(color: Colors.white),
+              decoration: _inputDeco('Was soll das Tool koennen?'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+            child:
+                const Text('Anfragen', style: TextStyle(color: Colors.black87)),
+          ),
+        ],
+      ),
+    );
+    if (submitted != true) {
+      titleCtrl.dispose();
+      descCtrl.dispose();
+      return;
+    }
+    final res = await WorldAdminServiceV162.requestTool(
+      title: titleCtrl.text.trim(),
+      description: descCtrl.text.trim(),
+      world: _world,
+    );
+    titleCtrl.dispose();
+    descCtrl.dispose();
+    if (!mounted) return;
+    if (res['success'] == true) {
+      if (res['auto_created'] == true && res['issue_url'] != null) {
+        _snack('GitHub-Issue erstellt: ${res['issue_url']}');
+      } else if (res['prefill_url'] != null) {
+        await _showInfoDialog(
+          'Issue oeffnen',
+          'Tippe auf den Link, um das vorbefuellte GitHub-Issue zu oeffnen und abzuschicken:\n\n${res['prefill_url']}',
+        );
+      } else {
+        _snack('Tool-Anfrage gespeichert');
+      }
+    } else {
+      _snack('Tool-Anfrage fehlgeschlagen: ${res['error'] ?? ''}');
+    }
+  }
+
+  Future<void> _showInfoDialog(String title, String body) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A30),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        content: SingleChildScrollView(
+          child: SelectableText(body,
+              style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('OK', style: TextStyle(color: widget.accentBright)),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ── Hilfen ──────────────────────────────────────────────────────────
 
