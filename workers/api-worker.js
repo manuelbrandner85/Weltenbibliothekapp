@@ -1491,6 +1491,14 @@ const WORKSHOP_BRANCHES = {
 };
 const WORKSHOP_WORLDS = ['materie', 'energie', 'vorhang', 'ursprung'];
 const WORLD_CODE_PREFIX = { materie: 'M-', energie: 'E-', vorhang: 'V-', ursprung: 'U-' };
+// Thematischer Kontext je Welt -- damit die KI WELT-PASSENDE Tool-Vorschlaege macht
+// (nicht nur generisch nach dem Welt-Namen). Wird in tools/idea + tools/scan genutzt.
+const WORLD_TOOL_CONTEXT = {
+  vorhang: 'die "Vorhang"-Welt: Machtpsychologie, Manipulationserkennung, Verhandlung & Ueberzeugung, Koerpersprache, strategisches Denken, Schattenarbeit. Passende Tools: interaktive Analysen, Selbsttests, Checklisten, Trainer, Detektoren.',
+  ursprung: 'die "Ursprung"-Welt: Bewusstsein, Gateway-Erfahrungen, Focus-Levels, Remote Viewing, Hermetik/Mystik, Manifestation, holografisches Universum/Simulation. Passende Tools: gefuehrte Sessions, Timer, Protokoll-/Journal-Tools, Wahrnehmungs-Trainer, Rechner.',
+  materie: 'die "Materie"-Welt: Recherche/OSINT, Netzwerk-Analyse, Quellenkritik, Geopolitik & Macht, Wirtschaft & Finanzen, Desinformation erkennen. Passende Tools: Recherche-Helfer, Daten-Lookups, Live-Monitore, Verifikations-Tools.',
+  energie: 'die "Energie"-Welt: Energiearbeit, Meditation, Chakren & Aura, Numerologie/Astrologie, Manifestation, Intuition, Heilung & Balance. Passende Tools: Rechner, Orakel, Meditations-/Timer-Tools, Kalender, Selbstreflexion.',
+};
 function normWorld(w) { return WORKSHOP_WORLDS.includes(w) ? w : 'vorhang'; }
 function tableForWorld(w) { return `${normWorld(w)}_modules`; }
 
@@ -9806,6 +9814,7 @@ export default {
           const world = String(b?.world || '').toLowerCase();
           const mode = b?.mode === 'extend' ? 'extend' : 'new';
           const target = String(b?.target || '').trim();
+          const worldCtx = WORLD_TOOL_CONTEXT[world] || `die "${world}"-Welt`;
           // Bestehende Tools als Kontext (Duplikate vermeiden / passend bleiben).
           const r = await fetch(`${SUPABASE_URL}/rest/v1/app_tools?select=name,description&world=eq.${encodeURIComponent(world)}`, { headers: svcHeaders });
           const existing = r.ok ? await r.json().catch(() => []) : [];
@@ -9813,13 +9822,13 @@ export default {
           let sys, user;
           if (mode === 'extend' && target) {
             const cur = existing.find((t) => String(t.name).toLowerCase() === target.toLowerCase());
-            sys = 'Du schlaegst eine konkrete, umsetzbare Verbesserung fuer ein bestehendes App-Tool vor. ' +
+            sys = `Du schlaegst eine konkrete, umsetzbare Verbesserung fuer ein bestehendes App-Tool aus ${worldCtx} vor. ` +
               'Antworte als JSON-Objekt: { "title": "kurzer Titel der Verbesserung", "description": "2-4 Saetze was konkret verbessert/ergaenzt wird" }. Deutsch.';
             user = `Welt: ${world}\nTool: ${target}\nAktuelle Beschreibung: ${cur?.description || '(unbekannt)'}\n\nSchlage EINE sinnvolle Verbesserung vor.`;
           } else {
-            sys = `Du schlaegst EIN neues, passendes interaktives Tool fuer die "${world}"-Welt vor (kein Duplikat). ` +
+            sys = `Du schlaegst EIN neues, passendes interaktives Tool fuer ${worldCtx} vor (kein Duplikat). ` +
               'Antworte als JSON-Objekt: { "title": "kurzer Tool-Name", "description": "2-4 Saetze was es tut, Eingaben/Ausgaben" }. Deutsch.';
-            user = `Bestehende Tools: ${names || '(keine)'}\n\nSchlage ein neues Tool vor das gut passt und noch fehlt.`;
+            user = `Bestehende Tools: ${names || '(keine)'}\n\nSchlage ein neues Tool vor das gut zur Welt passt und noch fehlt.`;
           }
           const idea = await aiJson(env, sys, user, 600);
           return jsonResponse({
@@ -9841,8 +9850,8 @@ export default {
           const existing = r.ok ? await r.json().catch(() => []) : [];
           const names = existing.map((t) => t.name).join(', ');
           const sys = [
-            `Du planst neue interaktive Tools/Features fuer die "${world}"-Welt der Weltenbibliothek-App.`,
-            'Schlage GENAU 3 NEUE, konkrete Tools vor, die den Bestand sinnvoll ergaenzen (keine Duplikate).',
+            `Du planst neue interaktive Tools/Features fuer ${WORLD_TOOL_CONTEXT[world] || `die "${world}"-Welt`} (Weltenbibliothek-App).`,
+            'Schlage GENAU 3 NEUE, konkrete Tools vor, die thematisch zur Welt passen und den Bestand sinnvoll ergaenzen (keine Duplikate).',
             'Antworte als JSON-Array von 3 Objekten:',
             '{ "name": "kurzer Tool-Name", "category": "Kategorie", "description": "1-2 Saetze was es tut", "rationale": "warum es fehlt/passt" }. Deutsch.',
           ].join('\n');

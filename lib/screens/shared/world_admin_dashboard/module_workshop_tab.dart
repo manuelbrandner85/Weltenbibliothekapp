@@ -19,6 +19,11 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   late final TabController _tabs;
   String _world = 'vorhang'; // 'vorhang' | 'ursprung' | 'materie' | 'energie'
 
+  // Vorhang/Ursprung haben Lern-Module/Quiz UND koennen zusaetzlich Tools
+  // bauen lassen. Dieser Schalter waehlt fuer diese Welten zwischen dem
+  // Modul-Editor (false) und der Funktions-Werkstatt/Tools (true).
+  bool _moduleWorldShowTools = false;
+
   // Tab 1 -- Neu erstellen
   final _topicCtrl = TextEditingController();
   final _hintCtrl = TextEditingController();
@@ -458,6 +463,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
 
   @override
   Widget build(BuildContext context) {
+    // Materie/Energie: nur Funktions-Werkstatt (keine Lern-Module).
     if (_isToolWorld) {
       return Column(
         children: [
@@ -474,9 +480,31 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
         ],
       );
     }
+    // Vorhang/Ursprung: Module ODER Tools (Umschalter). Im Tools-Modus die
+    // gleiche Funktions-Werkstatt wie Materie/Energie -- inkl. KI-Tool-Vorschlaege.
+    if (_moduleWorldShowTools) {
+      return Column(
+        children: [
+          _buildWorldSwitcher(),
+          const SizedBox(height: 4),
+          _buildModuleWorldModeToggle(),
+          const SizedBox(height: 4),
+          Expanded(
+            child: _FunctionWorkshop(
+              key: ValueKey('fnws_$_world'),
+              world: _world,
+              accent: widget.accent,
+              accentBright: widget.accentBright,
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       children: [
         _buildWorldSwitcher(),
+        const SizedBox(height: 4),
+        _buildModuleWorldModeToggle(),
         const SizedBox(height: 4),
         _buildLogicHint(),
         TabBar(
@@ -534,6 +562,82 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
     );
   }
 
+  /// Umschalter fuer Vorhang/Ursprung: Lern-Module vs. interaktive Tools.
+  /// Diese Welten haben Quiz-Module UND koennen Tools bauen lassen.
+  Widget _buildModuleWorldModeToggle() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Row(
+        children: [
+          _modeChip(
+            label: 'Module & Quiz',
+            icon: Icons.menu_book_rounded,
+            active: !_moduleWorldShowTools,
+            onTap: () {
+              if (!_moduleWorldShowTools) return;
+              setState(() => _moduleWorldShowTools = false);
+            },
+          ),
+          const SizedBox(width: 8),
+          _modeChip(
+            label: 'Tools (KI baut)',
+            icon: Icons.build_circle_outlined,
+            active: _moduleWorldShowTools,
+            onTap: () {
+              if (_moduleWorldShowTools) return;
+              setState(() => _moduleWorldShowTools = true);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _modeChip({
+    required String label,
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: active
+                ? widget.accentBright.withValues(alpha: 0.16)
+                : Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: active
+                  ? widget.accentBright.withValues(alpha: 0.6)
+                  : Colors.white12,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 15,
+                  color: active ? widget.accentBright : Colors.white54),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: active ? widget.accentBright : Colors.white60,
+                  fontSize: 12.5,
+                  fontWeight: active ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _worldChip(String value, String label) {
     final active = _world == value;
     return InkWell(
@@ -541,6 +645,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
         if (_world == value) return;
         setState(() {
           _world = value;
+          _moduleWorldShowTools = false;
           _draftModule = null;
           _draftBranchHint = null;
           _suggestions = const [];
