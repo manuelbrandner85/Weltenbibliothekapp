@@ -49,6 +49,30 @@ class UrsprungService {
     final supaId = supa.auth.currentUser?.id;
     if (supaId != null && supaId.isNotEmpty) candidateIds.add(supaId);
 
+    // If no Supabase UUID is known (InvisibleAuth), lookup UUID from profiles
+    // so admin overrides stored under UUID are found.
+    final hasUuid = candidateIds.any((id) => RegExp(
+            r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+            caseSensitive: false)
+        .hasMatch(id));
+    if (!hasUuid && legacy != null && legacy.isNotEmpty) {
+      try {
+        final row = await supa
+            .from('profiles')
+            .select('id')
+            .eq('legacy_user_id', legacy)
+            .maybeSingle();
+        final profileId = row?['id'] as String?;
+        if (profileId != null && profileId.isNotEmpty) {
+          candidateIds.add(profileId);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[UrsprungService] UUID-Lookup fehlgeschlagen: $e');
+        }
+      }
+    }
+
     // U2: nur Metadaten laden (kein theory_content/case_study/
     // exercise_description/test_questions). Voller Inhalt wird bei Tap auf
     // ein Modul via fetchModule(code) lazy nachgeladen.

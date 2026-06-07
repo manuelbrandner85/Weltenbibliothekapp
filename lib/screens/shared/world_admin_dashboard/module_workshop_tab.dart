@@ -17,7 +17,7 @@ class _ModuleWorkshopTab extends StatefulWidget {
 class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
-  String _world = 'vorhang'; // 'vorhang' | 'ursprung'
+  String _world = 'vorhang'; // 'vorhang' | 'ursprung' | 'materie' | 'energie'
 
   // Tab 1 -- Neu erstellen
   final _topicCtrl = TextEditingController();
@@ -303,14 +303,19 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   Widget _buildWorldSwitcher() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Row(children: [
-        const Text('Welt:',
-            style: TextStyle(color: Colors.white70, fontSize: 13)),
-        const SizedBox(width: 10),
-        _worldChip('vorhang', 'Vorhang'),
-        const SizedBox(width: 6),
-        _worldChip('ursprung', 'Ursprung'),
-      ]),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          const Text('Welt:',
+              style: TextStyle(color: Colors.white70, fontSize: 13)),
+          _worldChip('vorhang', 'Vorhang'),
+          _worldChip('ursprung', 'Ursprung'),
+          _worldChip('materie', 'Materie'),
+          _worldChip('energie', 'Energie'),
+        ],
+      ),
     );
   }
 

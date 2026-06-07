@@ -23,6 +23,7 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   bool _loading = true;
+  bool _batchBusy = false;
   String? _loadError;
 
   // Alle Module aus DB (map: module_code -> row)
@@ -138,6 +139,59 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
         const SnackBar(content: Text('Aktion fehlgeschlagen')),
       );
       setState(() => _busy.remove(moduleCode));
+    }
+  }
+
+  Future<void> _batchAll(bool isGranted) async {
+    final label = isGranted ? 'freischalten' : 'sperren';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A30),
+        title: Text(
+          'Alle Module ${isGranted ? "freischalten" : "sperren"}?',
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Alle Vorhang- und Ursprung-Module fuer @${widget.user.username} werden $label.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isGranted ? Colors.green.shade700 : Colors.red.shade800,
+            ),
+            child: Text('Ja, alle $label',
+                style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _batchBusy = true);
+    final (ok, count) = await WorldAdminServiceV162.batchGrantModuleAccess(
+      userId: widget.user.userId,
+      isGranted: isGranted,
+    );
+    if (!mounted) return;
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$count Module ${isGranted ? "freigeschaltet" : "gesperrt"} (Vorhang + Ursprung)'),
+          backgroundColor: const Color(0xFF1A1A30),
+        ),
+      );
+      await _load();
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Aktion fehlgeschlagen')));
+      setState(() => _batchBusy = false);
     }
   }
 
@@ -445,6 +499,49 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
                       'Ursprung${_ursprungModules.isNotEmpty ? " (${_ursprungModules.length})" : ""}'),
             ],
           ),
+          // Beide-Welten-Batch-Buttons
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _batchBusy ? null : () => _batchAll(true),
+                  icon: _batchBusy
+                      ? const SizedBox(
+                          width: 12, height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.green))
+                      : const Icon(Icons.lock_open_rounded, size: 14),
+                  label: const Text('Alle entsperren', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.green,
+                    side: const BorderSide(color: Colors.green),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _batchBusy ? null : () => _batchAll(false),
+                  icon: const Icon(Icons.lock_rounded, size: 14),
+                  label: const Text('Alle sperren', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    side: const BorderSide(color: Colors.redAccent),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Gilt fuer Vorhang + Ursprung',
+              style: TextStyle(color: Colors.white30, fontSize: 10),
+            ),
+          ),
+          const SizedBox(height: 4),
           const Divider(color: Colors.white10, height: 1),
           if (_loadError != null)
             Container(
