@@ -68,8 +68,10 @@ jobs:
             (LOGIK-Modul) fuer die Flutter-App. Halte dich an die Projektregeln in
             CLAUDE.md: keine Named Dart 3 Records in lib/, flutter analyze = 0 Errors,
             deutsche UI-Texte, ASCII-only Commit-Messages. Erstelle einen Branch und
-            oeffne einen Draft-Pull-Request. Merge NICHT selbst -- der Root-Admin
-            reviewt und merged.
+            oeffne einen Pull-Request. Schreibe in den PR-Body unbedingt die Zeile
+            "Closes #${{ github.event.issue.number }}", damit der PR dem Issue
+            zugeordnet werden kann. Merge NICHT selbst -- das uebernimmt der
+            nachgelagerte Auto-Merge-Schritt.
           # Branch-Praefix fuer den entstehenden PR.
           branch_prefix: "claude/tool-"
           # WICHTIG: Ohne diese Berechtigungen verweigert die Action jeden Schreib-,
@@ -80,3 +82,41 @@ jobs:
           claude_args: |
             --max-turns 60
             --permission-mode bypassPermissions
+
+      # Sobald das Tool gebaut + der PR geoeffnet ist: automatisch per Squash mergen.
+      # Wir nutzen GH_PAT (nicht den Default-GITHUB_TOKEN), damit der Merge-Push auf
+      # main die nachgelagerten Pipelines (build_web.yml Record-Guard, build_apk.yml /
+      # Shorebird) AUSLOEST -- mit dem Default-Token wuerden sie nicht starten.
+      # Sicherheitsnetz: scheitert der main-Build (z.B. dart2js-Record), wird KEIN
+      # APK/Patch veroeffentlicht -- ein kaputtes Tool erreicht also nie die User.
+      - name: Tool-PR automatisch mergen
+        if: steps.guard.outputs.has_key == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const issue = context.issue.number;
+            // Der claude-code-action-Schritt braucht einen Moment, bis der PR steht.
+            await new Promise(r => setTimeout(r, 8000));
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', per_page: 50, sort: 'created', direction: 'desc',
+            });
+            const pr = prs.find(p =>
+              p.head.ref.startsWith('claude/tool-') &&
+              (p.body || '').includes('#' + issue));
+            if (!pr) {
+              core.warning('Kein Tool-PR fuer Issue #' + issue + ' gefunden -- Bau evtl. fehlgeschlagen, nichts gemergt.');
+              return;
+            }
+            // Draft -> ready, sonst ist kein Merge moeglich.
+            if (pr.draft) {
+              await github.graphql(
+                'mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{number}}}',
+                { id: pr.node_id });
+            }
+            await github.rest.pulls.merge({
+              owner: context.repo.owner, repo: context.repo.repo,
+              pull_number: pr.number, merge_method: 'squash',
+            });
+            core.info('Tool-PR #' + pr.number + ' automatisch gemergt.');
