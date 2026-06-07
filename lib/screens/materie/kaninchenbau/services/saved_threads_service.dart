@@ -92,6 +92,35 @@ class SavedThreadsService {
 
   // ── Saved Threads ──────────────────────────────────────────
 
+  // ── 2026-06-07 Phase D: Saved-Threads als Knoten im Verflechtungs-Netz ──
+  // Liefert Threads, die zum Thema passen (topic ilike). Pro Thread genau
+  // ein NetworkNode (id "st_<uuid>"); Kanten vom Center sind im Caller-Code
+  // gestrickt -- der Service ist quellenrein.
+
+  Future<List<SavedThread>> findThreadsByTopic(String topic) async {
+    if (topic.trim().isEmpty) return const [];
+    try {
+      // Public + eigene private Threads mit topic-Match.
+      final uid = _client.auth.currentUser?.id;
+      var query = _client
+          .from('saved_threads')
+          .select()
+          .ilike('topic', '%${topic.trim()}%');
+      // RLS handhabt die Sichtbarkeit -- public oder eigener -- daher kein
+      // weiterer Filter. Falls Auth fehlt, kommen nur public-Treffer.
+      final data = await query
+          .order('created_at', ascending: false)
+          .limit(20);
+      return (data as List)
+          .map((e) => SavedThread.fromJson(e as Map<String, dynamic>))
+          .where((t) => uid != null || t.isPublic)
+          .toList();
+    } catch (e) {
+      debugPrint('findThreadsByTopic-Error: $e');
+      return const [];
+    }
+  }
+
   Future<List<SavedThread>> listMyThreads() async {
     try {
       final uid = _client.auth.currentUser?.id;

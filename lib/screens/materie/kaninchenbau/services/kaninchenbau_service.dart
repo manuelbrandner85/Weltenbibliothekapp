@@ -5,10 +5,12 @@ library;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/api_config.dart';
 import '../../../../services/free_api_service.dart';
 import '../models/thread.dart';
+import 'saved_threads_service.dart';
 
 class KaninchenbauService {
   static final _instance = KaninchenbauService._();
@@ -1499,6 +1501,228 @@ LIMIT 60
 
   Future<List<CorpWatchArticle>> fetchCorpWatch(String topic) =>
       _fetchMindblow('corpwatch', topic, CorpWatchArticle.fromJson);
+
+  /// 2026-06-07 Phase C: Eigener Knowledge-Graph aus Supabase
+  /// (knowledge_graph_nodes + knowledge_graph_edges). Liefert Knoten,
+  /// deren Label das Thema enthaelt + ihre direkten Edges + die
+  /// Gegen-Knoten. Damit erscheinen eigene Notizen im Verflechtungs-Netz.
+  Future<NetworkGraph> fetchOwnKnowledgeGraph(String topic) async {
+    if (topic.trim().isEmpty) {
+      return const NetworkGraph(nodes: [], edges: []);
+    }
+    try {
+      final sb = Supabase.instance.client;
+      // 1) Treffer-Knoten: label ilike '%topic%'
+      final hitRows = await sb
+          .from('knowledge_graph_nodes')
+          .select('id,label,node_type,icon_emoji,weight')
+          .ilike('label', '%${topic.trim()}%')
+          .order('weight', ascending: false)
+          .limit(8)
+          .timeout(const Duration(seconds: 10));
+      final hits = (hitRows as List).cast<Map<String, dynamic>>();
+      if (hits.isEmpty) return const NetworkGraph(nodes: [], edges: []);
+
+      // 2) Direkte Kanten ein/aus
+      final hitIds = hits.map((r) => r['id'] as String).toList();
+      final edgeRows = await sb
+          .from('knowledge_graph_edges')
+          .select('source_id,target_id,relation,strength')
+          .or('source_id.in.(${hitIds.join(',')}),target_id.in.(${hitIds.join(',')})')
+          .limit(60)
+          .timeout(const Duration(seconds: 10));
+      final rawEdges = (edgeRows as List).cast<Map<String, dynamic>>();
+
+      // 3) Gegen-Knoten nachladen (ids die noch nicht in hits sind)
+      final neededIds = <String>{};
+      for (final e in rawEdges) {
+        neededIds.add(e['source_id'].toString());
+        neededIds.add(e['target_id'].toString());
+      }
+      neededIds.removeAll(hitIds);
+      Map<String, Map<String, dynamic>> companionRows = {};
+      if (neededIds.isNotEmpty) {
+        final compRes = await sb
+            .from('knowledge_graph_nodes')
+            .select('id,label,node_type,icon_emoji,weight')
+            .inFilter('id', neededIds.toList())
+            .limit(60)
+            .timeout(const Duration(seconds: 10));
+        for (final r in (compRes as List).cast<Map<String, dynamic>>()) {
+          companionRows[r['id'].toString()] = r;
+        }
+      }
+
+      // 4) NetworkGraph aufbauen: Center = staerkster Hit; alles andere outer.
+      hits.sort((a, b) =>
+          ((b['weight'] as num?) ?? 0).compareTo((a['weight'] as num?) ?? 0));
+      final centerRow = hits.first;
+      final centerNode = NetworkNode(
+          id: 'center',
+          label: centerRow['label'].toString(),
+          type: _kgNodeType(centerRow['node_type']?.toString()),
+          weight: 1.0);
+      final nodeMap = <String, NetworkNode>{};
+      var idx = 0;
+      void addNode(Map<String, dynamic> row) {
+        final id = row['id'].toString();
+        if (id == centerRow['id']) return;
+        if (nodeMap.containsKey(id)) return;
+        if (nodeMap.length >= 16) return;
+        nodeMap[id] = NetworkNode(
+          id: 'kg$idx',
+          label: row['label'].toString(),
+          type: _kgNodeType(row['node_type']?.toString()),
+          weight: 0.6 - (idx * 0.02).clamp(0.0, 0.4),
+        );
+        idx++;
+      }
+
+      for (final h in hits.skip(1)) {
+        addNode(h);
+      }
+      for (final r in companionRows.values) {
+        addNode(r);
+      }
+
+      final edges = <NetworkEdge>[];
+      final edgeKeys = <String>{};
+      String? mapDbIdToNodeId(String dbId) {
+        if (dbId == centerRow['id']) return 'center';
+        return nodeMap[dbId]?.id;
+      }
+
+      for (final e in rawEdges) {
+        final from = mapDbIdToNodeId(e['source_id'].toString());
+        final to = mapDbIdToNodeId(e['target_id'].toString());
+        if (from == null || to == null || from == to) continue;
+        // Wir zeichnen nur Kanten, die den Center beruehren -- das
+        // Verflechtungs-Netz ist center-zentriert.
+        if (from != 'center' && to != 'center') continue;
+        final fromId = from == 'center' ? 'center' : from;
+        final toId = to == 'center' ? 'center' : to;
+        // Nicht-Center-Endpunkt isolieren:
+        final outerId = fromId == 'center' ? toId : fromId;
+        final rel = (e['relation'] ?? 'verwandt').toString();
+        final key = '$outerId-$rel';
+        if (edgeKeys.contains(key)) continue;
+        edgeKeys.add(key);
+        edges.add(NetworkEdge(
+            fromId: 'center',
+            toId: outerId,
+            label: _germanizeKgRelation(rel),
+            strength: 0.6));
+      }
+
+      return NetworkGraph(nodes: [centerNode, ...nodeMap.values], edges: edges);
+    } catch (e) {
+      debugPrint('fetchOwnKnowledgeGraph-Error: $e');
+      return const NetworkGraph(nodes: [], edges: []);
+    }
+  }
+
+  /// 2026-06-07 Phase D: Saved-Threads, die das Thema erwaehnen, als
+  /// zusaetzliche Knoten anhaengen (Knoten-Typ "concept", Edge-Label
+  /// "Recherche").
+  Future<NetworkGraph> fetchSavedThreadsAsGraph(String topic) async {
+    final threads =
+        await SavedThreadsService.instance.findThreadsByTopic(topic);
+    if (threads.isEmpty) return const NetworkGraph(nodes: [], edges: []);
+    final center = NetworkNode(
+        id: 'center', label: topic, type: 'concept', weight: 1.0);
+    final nodes = <NetworkNode>[center];
+    final edges = <NetworkEdge>[];
+    for (var i = 0; i < threads.length && i < 16; i++) {
+      final t = threads[i];
+      final id = 'st$i';
+      nodes.add(NetworkNode(
+        id: id,
+        label: t.topic.isEmpty ? 'Thread ${i + 1}' : t.topic,
+        type: 'concept',
+        weight: 0.55 - (i * 0.02).clamp(0.0, 0.4),
+      ));
+      edges.add(NetworkEdge(
+          fromId: 'center', toId: id, label: 'Recherche', strength: 0.5));
+    }
+    return NetworkGraph(nodes: nodes, edges: edges);
+  }
+
+  /// Verschmilzt mehrere NetworkGraphs (Wikidata + KG + Threads) zu einem
+  /// einzigen. Center bleibt der erste Graph; weitere Graphen liefern
+  /// nur ihre outer-Knoten und edges. IDs werden mit Prefix neu vergeben
+  /// damit es zu keinen Kollisionen kommt.
+  NetworkGraph mergeGraphs(List<NetworkGraph> graphs) {
+    if (graphs.isEmpty) return const NetworkGraph(nodes: [], edges: []);
+    final first = graphs.first;
+    final outNodes = <NetworkNode>[...first.nodes];
+    final outEdges = <NetworkEdge>[...first.edges];
+    final seenIds = first.nodes.map((n) => n.id).toSet();
+    for (var gi = 1; gi < graphs.length; gi++) {
+      final g = graphs[gi];
+      final prefix = 'g$gi-';
+      for (final n in g.nodes) {
+        if (n.id == 'center') continue; // nur Outer mergen
+        final newId = '$prefix${n.id}';
+        if (seenIds.contains(newId)) continue;
+        seenIds.add(newId);
+        outNodes.add(NetworkNode(
+          id: newId,
+          label: n.label,
+          type: n.type,
+          weight: n.weight,
+          imageUrl: n.imageUrl,
+        ));
+      }
+      for (final e in g.edges) {
+        final newFrom = e.fromId == 'center' ? 'center' : '$prefix${e.fromId}';
+        final newTo = e.toId == 'center' ? 'center' : '$prefix${e.toId}';
+        if (newFrom == newTo) continue;
+        outEdges.add(NetworkEdge(
+            fromId: newFrom,
+            toId: newTo,
+            label: e.label,
+            strength: e.strength));
+      }
+    }
+    return NetworkGraph(nodes: outNodes, edges: outEdges);
+  }
+
+  String _germanizeKgRelation(String rel) {
+    switch (rel.toLowerCase()) {
+      case 'related':
+        return 'verwandt';
+      case 'causes':
+        return 'verursacht';
+      case 'contradicts':
+        return 'widerspricht';
+      case 'supports':
+        return 'stuetzt';
+      case 'part_of':
+        return 'Teil von';
+      case 'influenced_by':
+        return 'beeinflusst von';
+      case 'connected_to':
+        return 'verbunden';
+      default:
+        return rel;
+    }
+  }
+
+  String _kgNodeType(String? nodeType) {
+    switch ((nodeType ?? '').toLowerCase()) {
+      case 'person':
+        return 'person';
+      case 'company':
+      case 'organization':
+      case 'org':
+        return 'org';
+      case 'place':
+      case 'location':
+        return 'place';
+      default:
+        return 'concept';
+    }
+  }
 }
 
 class _Cc {

@@ -9,6 +9,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/thread.dart';
+import '../services/kaninchenbau_service.dart';
 import '../widgets/kb_design.dart';
 import '../widgets/network_3d_view.dart';
 
@@ -17,6 +18,10 @@ class NetworkCard extends StatefulWidget {
   final List<NetworkEdge> edges;
   final bool loading;
   final void Function(String label) onTapNode;
+  // 2026-06-07 Phase C+D: optionales Thema fuer Quellen-Toggle.
+  // Wenn gesetzt, kann der User zwischen Wikidata, eigenen Notizen und
+  // Saved-Threads umschalten. Bleibt der Toggle versteckt.
+  final String? topic;
 
   const NetworkCard({
     super.key,
@@ -24,6 +29,7 @@ class NetworkCard extends StatefulWidget {
     this.edges = const [],
     required this.loading,
     required this.onTapNode,
+    this.topic,
   });
 
   @override
@@ -33,6 +39,65 @@ class NetworkCard extends StatefulWidget {
 class _NetworkCardState extends State<NetworkCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _breath;
+
+  // 2026-06-07: Quellen-Modus. 'wd' (Wikidata, default), 'kg' (eigene
+  // Notizen), 'st' (Saved-Threads), 'all' (zusammengefuehrt).
+  String _sourceMode = 'wd';
+  bool _extraLoading = false;
+  List<NetworkNode>? _extraNodes;
+  List<NetworkEdge>? _extraEdges;
+  final _kbService = KaninchenbauService();
+
+  // Effektive Nodes/Edges fuer Rendering: Original (Wikidata) bzw.
+  // _extra* wenn Modus != 'wd'.
+  List<NetworkNode> get _effectiveNodes =>
+      _sourceMode == 'wd' ? widget.nodes : (_extraNodes ?? widget.nodes);
+  List<NetworkEdge> get _effectiveEdges =>
+      _sourceMode == 'wd' ? widget.edges : (_extraEdges ?? widget.edges);
+
+  Future<void> _loadSource(String mode) async {
+    final topic = widget.topic?.trim() ?? '';
+    if (topic.isEmpty || mode == 'wd') {
+      setState(() {
+        _sourceMode = 'wd';
+        _extraNodes = null;
+        _extraEdges = null;
+      });
+      return;
+    }
+    setState(() {
+      _sourceMode = mode;
+      _extraLoading = true;
+    });
+    NetworkGraph result;
+    try {
+      switch (mode) {
+        case 'kg':
+          result = await _kbService.fetchOwnKnowledgeGraph(topic);
+          break;
+        case 'st':
+          result = await _kbService.fetchSavedThreadsAsGraph(topic);
+          break;
+        case 'all':
+          final wd =
+              NetworkGraph(nodes: widget.nodes, edges: widget.edges);
+          final kg = await _kbService.fetchOwnKnowledgeGraph(topic);
+          final st = await _kbService.fetchSavedThreadsAsGraph(topic);
+          result = _kbService.mergeGraphs([wd, kg, st]);
+          break;
+        default:
+          result = NetworkGraph(nodes: widget.nodes, edges: widget.edges);
+      }
+    } catch (_) {
+      result = const NetworkGraph(nodes: [], edges: []);
+    }
+    if (!mounted) return;
+    setState(() {
+      _extraLoading = false;
+      _extraNodes = result.nodes;
+      _extraEdges = result.edges;
+    });
+  }
 
   @override
   void initState() {
@@ -54,10 +119,10 @@ class _NetworkCardState extends State<NetworkCard>
   Map<String, List<NetworkNode>> _clusterByRelation() {
     final clusters = <String, List<NetworkNode>>{};
     final edgeByTo = <String, NetworkEdge>{};
-    for (final e in widget.edges) {
+    for (final e in _effectiveEdges) {
       edgeByTo[e.toId] = e; // letzte Edge pro Knoten gewinnt
     }
-    for (final n in widget.nodes.where((n) => n.id != 'center')) {
+    for (final n in _effectiveNodes.where((n) => n.id != 'center')) {
       final edge = edgeByTo[n.id];
       final key = edge?.label ?? 'verwandt';
       clusters.putIfAbsent(key, () => []).add(n);
@@ -87,14 +152,14 @@ class _NetworkCardState extends State<NetworkCard>
                 ),
               ),
               const Spacer(),
-              if (widget.nodes.length > 1)
+              if (_effectiveNodes.length > 1)
                 InkWell(
                   onTap: () {
                     HapticFeedback.lightImpact();
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => Network3DView(
-                          nodes: widget.nodes,
+                          nodes: _effectiveNodes,
                           onTapNode: widget.onTapNode,
                         ),
                       ),
@@ -132,7 +197,7 @@ class _NetworkCardState extends State<NetworkCard>
                 ),
               const SizedBox(width: 8),
               Text(
-                '${widget.nodes.length - 1} Verbindungen',
+                '${_effectiveNodes.length - 1} Verbindungen',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 11,
@@ -142,25 +207,30 @@ class _NetworkCardState extends State<NetworkCard>
           ),
           const SizedBox(height: 4),
           Text(
-            'Echte Wikidata-Beziehungen',
+            _sourceCaption(),
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.45),
               fontSize: 11,
             ),
           ),
+          // 2026-06-07: Quellen-Toggle nur wenn topic gesetzt + nicht ladend.
+          if (widget.topic != null && widget.topic!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _sourceToggleRow(),
+          ],
           const SizedBox(height: 14),
           SizedBox(
             height: 320,
-            child: widget.loading
+            child: (widget.loading || _extraLoading)
                 ? _buildLoading()
-                : widget.nodes.length <= 1
+                : _effectiveNodes.length <= 1
                     ? _buildEmpty()
                     : AnimatedBuilder(
                         animation: _breath,
                         builder: (_, __) => _buildGraph(_breath.value),
                       ),
           ),
-          if (!widget.loading && widget.edges.isNotEmpty) ...[
+          if (!widget.loading && !_extraLoading && _effectiveEdges.isNotEmpty) ...[
             const SizedBox(height: 12),
             _buildLegend(),
           ],
@@ -212,6 +282,58 @@ class _NetworkCardState extends State<NetworkCard>
         ),
       );
 
+  String _sourceCaption() {
+    switch (_sourceMode) {
+      case 'kg':
+        return 'Eigener Knowledge-Graph (Notizen)';
+      case 'st':
+        return 'Eigene Recherche-Threads';
+      case 'all':
+        return 'Alles vereint (Wikidata + Notizen + Threads)';
+      default:
+        return 'Echte Wikidata-Beziehungen';
+    }
+  }
+
+  Widget _sourceToggleRow() {
+    Widget chip(String label, String mode) {
+      final active = _sourceMode == mode;
+      return InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _loadSource(mode);
+        },
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: active
+                ? KbDesign.neonRed.withValues(alpha: 0.22)
+                : Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+                color: active
+                    ? KbDesign.neonRed.withValues(alpha: 0.6)
+                    : Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  color: active ? KbDesign.neonRedSoft : Colors.white60,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5)),
+        ),
+      );
+    }
+
+    return Wrap(spacing: 4, runSpacing: 4, children: [
+      chip('Wikidata', 'wd'),
+      chip('Notizen', 'kg'),
+      chip('Threads', 'st'),
+      chip('Alle', 'all'),
+    ]);
+  }
+
   Widget _buildGraph(double t) {
     return LayoutBuilder(
       builder: (_, c) {
@@ -220,9 +342,11 @@ class _NetworkCardState extends State<NetworkCard>
         final centerX = w / 2;
         final centerY = h / 2;
 
-        final center = widget.nodes.firstWhere(
+        final renderNodes = _effectiveNodes;
+        final renderEdges = _effectiveEdges;
+        final center = renderNodes.firstWhere(
           (n) => n.id == 'center',
-          orElse: () => widget.nodes.first,
+          orElse: () => renderNodes.first,
         );
 
         // Cluster nach Beziehungstyp
@@ -235,7 +359,7 @@ class _NetworkCardState extends State<NetworkCard>
         final positions = <String, Offset>{}; // nodeId → pos
         final positionAngles = <String, double>{};
         var nodeCounter = 0;
-        final totalOuter = widget.nodes.length - 1;
+        final totalOuter = renderNodes.length - 1;
 
         for (var ci = 0; ci < clusterKeys.length; ci++) {
           final key = clusterKeys[ci];
@@ -272,7 +396,7 @@ class _NetworkCardState extends State<NetworkCard>
                 centerX: centerX,
                 centerY: centerY,
                 positions: positions,
-                edges: widget.edges,
+                edges: renderEdges,
                 breath: t,
               ),
               size: Size(w, h),
@@ -293,7 +417,7 @@ class _NetworkCardState extends State<NetworkCard>
               ),
             ),
             // Outer nodes
-            for (final n in widget.nodes.where((n) => n.id != 'center'))
+            for (final n in renderNodes.where((n) => n.id != 'center'))
               if (positions[n.id] != null)
                 Positioned(
                   left: positions[n.id]!.dx - 32,

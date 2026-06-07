@@ -1009,6 +1009,10 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                         edges: s.networkEdges,
                         loading: s.networkLoading,
                         onTapNode: _openThread,
+                        // 2026-06-07 Phase C+D: Topic durchreichen, damit
+                        // der Quellen-Toggle (Wikidata / Notizen /
+                        // Saved-Threads / Alle) live nachladen kann.
+                        topic: s.topic,
                       )),
                   _gap(),
                   _stag(
