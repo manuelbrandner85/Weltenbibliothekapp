@@ -26,7 +26,6 @@ class VirgilOrb extends StatefulWidget {
 class _VirgilOrbState extends State<VirgilOrb> with TickerProviderStateMixin {
   late final AnimationController _breathe;
   late final AnimationController _think;
-  bool _showBubble = false;
 
   @override
   void initState() {
@@ -50,16 +49,10 @@ class _VirgilOrbState extends State<VirgilOrb> with TickerProviderStateMixin {
     } else if (!widget.thinking && _think.isAnimating) {
       _think.stop();
     }
-    if (widget.insight != null && old.insight != widget.insight) {
-      _flashBubble();
-    }
-  }
-
-  void _flashBubble() {
-    setState(() => _showBubble = true);
-    Future.delayed(const Duration(seconds: 8), () {
-      if (mounted) setState(() => _showBubble = false);
-    });
+    // 2026-06-07: Auto-Popup-Bubble entfernt (User-Feedback): die
+    // KI-Einsicht wird ohnehin als AiInsightCard in der Recherche
+    // angezeigt -- die Overlay-Bubble war redundant und blockierte
+    // ein paar Sekunden lang die darunter liegenden Karten.
   }
 
   @override
@@ -78,30 +71,15 @@ class _VirgilOrbState extends State<VirgilOrb> with TickerProviderStateMixin {
         final thinkPulse = widget.thinking
             ? 1.0 + 0.15 * math.sin(_think.value * math.pi * 2)
             : 1.0;
-        return Stack(
-          alignment: Alignment.bottomRight,
-          clipBehavior: Clip.none,
-          children: [
-            if (_showBubble && widget.insight != null)
-              Positioned(
-                right: 70,
-                bottom: 0,
-                child: _buildBubble(widget.insight!),
-              ),
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                if (widget.insight != null) {
-                  setState(() => _showBubble = !_showBubble);
-                }
-                widget.onTap?.call();
-              },
-              child: Transform.scale(
-                scale: thinkPulse,
-                child: _buildOrb(pulse),
-              ),
-            ),
-          ],
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onTap?.call();
+          },
+          child: Transform.scale(
+            scale: thinkPulse,
+            child: _buildOrb(pulse),
+          ),
         );
       },
     );
@@ -142,60 +120,6 @@ class _VirgilOrbState extends State<VirgilOrb> with TickerProviderStateMixin {
             fontSize: 26,
             letterSpacing: 0.5,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBubble(String text) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 260),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: KbDesign.cardSurface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: KbDesign.neonRed.withValues(alpha: 0.55),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: KbDesign.neonRed.withValues(alpha: 0.25),
-              blurRadius: 18,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.auto_awesome, size: 14, color: KbDesign.goldAccent),
-                const SizedBox(width: 6),
-                const Text(
-                  'VIRGIL',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-          ],
         ),
       ),
     );
