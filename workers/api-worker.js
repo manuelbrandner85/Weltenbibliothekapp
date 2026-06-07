@@ -1491,6 +1491,26 @@ const WORLD_CODE_PREFIX = { materie: 'M-', energie: 'E-', vorhang: 'V-', ursprun
 function normWorld(w) { return WORKSHOP_WORLDS.includes(w) ? w : 'vorhang'; }
 function tableForWorld(w) { return `${normWorld(w)}_modules`; }
 
+// W1: Quiz-Fragen normalisieren -> [{question, options:[4], answer_index}].
+function normTestQuestions(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 8).map((q) => {
+    const opts = Array.isArray(q?.options) ? q.options.map((o) => String(o)).slice(0, 6) : [];
+    let ai = Number.isInteger(q?.answer_index) ? q.answer_index : 0;
+    if (ai < 0 || ai >= opts.length) ai = 0;
+    return { question: String(q?.question || '').slice(0, 400), options: opts, answer_index: ai };
+  }).filter((q) => q.question && q.options.length >= 2);
+}
+
+// W8: Quellen normalisieren -> [{title, url}].
+function normSources(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 8).map((s) => ({
+    title: String(s?.title || s?.name || '').slice(0, 200),
+    url: String(s?.url || s?.link || '').slice(0, 500),
+  })).filter((s) => s.title);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // B1: KI-AUTO-SCAN (Cron, 2026-06-07)
 // Periodischer Hintergrund-Scan, der pro Tag EINE Welt prueft und Modul-
@@ -8476,13 +8496,15 @@ export default {
             '  theory_content (300-700 Worte, Markdown erlaubt: ## Ueberschriften, **fett**, Listen),',
             '  case_study (eine konkrete Fallgeschichte, 150-350 Worte),',
             '  exercise_description (1-3 praktische Uebungen, 100-300 Worte),',
-            '  xp_reward (Integer zwischen 50 und 200, je nach Schwierigkeit).',
+            '  xp_reward (Integer zwischen 50 und 200, je nach Schwierigkeit),',
+            '  test_questions (Array von 3-5 Quiz-Fragen, je { "question": "...", "options": [4 Antworten], "answer_index": 0-3 }),',
+            '  sources (Array von 2-4 Quellen/Belegen, je { "title": "...", "url": "..." } -- seriose, real existierende Quellen).',
             'Inhalte auf Deutsch.',
           ].join('\n');
           const user = branchHint
             ? `Thema: ${topic}\nGewuenschter Branch: ${branchHint}\nErstelle das vollstaendige Modul.`
             : `Thema: ${topic}\nWaehle den passenden Branch selbst und erstelle das vollstaendige Modul.`;
-          const moduleData = await workshopAiJson(system, user, 1800);
+          const moduleData = await workshopAiJson(system, user, 2200);
           // Sanity-Check + Defaults
           const branch = branches.includes(moduleData.branch) ? moduleData.branch : (branchHint || branches[0]);
           const xpRaw = Number(moduleData.xp_reward) || 100;
@@ -8497,6 +8519,8 @@ export default {
               case_study: String(moduleData.case_study || ''),
               exercise_description: String(moduleData.exercise_description || ''),
               xp_reward: xp,
+              test_questions: normTestQuestions(moduleData.test_questions),
+              sources: normSources(moduleData.sources),
             },
           });
         } catch (e) {
@@ -8526,16 +8550,21 @@ export default {
             '  - Case Study: konkrete Geschichte mit Personen, Daten, Wendung',
             '  - Uebungen: praxisnah, ohne Plattitueden',
             'Schreibst Deutsch, sachlich, ohne Marketing-Sprech.',
-            'Antworte AUSSCHLIESSLICH als JSON-Objekt mit denselben Feldern wie Generate.',
+            'Antworte AUSSCHLIESSLICH als JSON-Objekt mit denselben Feldern wie Generate',
+            '(inkl. test_questions [3-5 Quiz-Fragen je {question, options[4], answer_index}]',
+            ' und sources [2-4 je {title, url}]).',
             `Branches: ${branches.join(' | ')}`,
           ].join('\n');
           const user = `Bestehender Inhalt:\n\nTitel: ${current.title}\nSubtitle: ${current.subtitle || ''}\nBranch: ${current.branch || ''}\n\nTheorie:\n${current.theory_content}\n\nFallstudie:\n${current.case_study || ''}\n\nUebung:\n${current.exercise_description || ''}\n\nBitte ausbauen.`;
-          const moduleData = await workshopAiJson(system, user, 2000);
+          const moduleData = await workshopAiJson(system, user, 2400);
           const branch = branches.includes(moduleData.branch)
             ? moduleData.branch
             : (current.branch && branches.includes(current.branch) ? current.branch : branches[0]);
           const xpRaw = Number(moduleData.xp_reward) || Number(current.xp_reward) || 100;
           const xp = Math.max(50, Math.min(200, Math.round(xpRaw)));
+          // Bestehende test_questions/sources behalten falls die KI keine liefert.
+          const tq = normTestQuestions(moduleData.test_questions);
+          const src = normSources(moduleData.sources);
           return jsonResponse({
             success: true,
             module: {
@@ -8546,6 +8575,12 @@ export default {
               case_study: String(moduleData.case_study || current.case_study || ''),
               exercise_description: String(moduleData.exercise_description || current.exercise_description || ''),
               xp_reward: xp,
+              test_questions: tq.length > 0
+                ? tq
+                : (Array.isArray(current.test_questions) ? current.test_questions : []),
+              sources: src.length > 0
+                ? src
+                : (Array.isArray(current.sources) ? current.sources : []),
             },
           });
         } catch (e) {
@@ -8563,7 +8598,7 @@ export default {
           const world = normWorld(url.searchParams.get('world'));
           const tbl = tableForWorld(world);
           const r = await fetch(
-            `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,branch_order,title,subtitle,is_boss_module,xp_reward,prerequisites,theory_content,case_study,exercise_description&order=branch_order.asc,module_code.asc`,
+            `${SUPABASE_URL}/rest/v1/${tbl}?select=module_code,branch,branch_order,title,subtitle,is_boss_module,xp_reward,prerequisites,theory_content,case_study,exercise_description,test_questions,sources&order=branch_order.asc,module_code.asc`,
             { headers: svcHeaders },
           );
           if (!r.ok) {
@@ -8574,6 +8609,76 @@ export default {
           return jsonResponse({ success: true, modules: Array.isArray(rows) ? rows : [] });
         } catch (e) {
           return errorResponse(`module-workshop list Fehler: ${e.message}`);
+        }
+      }
+
+      // ── DELETE /api/admin/module-workshop/module?world=&code= (W2) ──
+      // Loescht ein Modul endgueltig. Nur Root-Admin.
+      if (method === 'DELETE' && path === '/api/admin/module-workshop/module') {
+        if (!caller.isRootAdmin) {
+          return errorResponse('Nur Root-Admin darf Module loeschen', 403);
+        }
+        try {
+          const world = normWorld(url.searchParams.get('world'));
+          const code = String(url.searchParams.get('code') || '').trim().toUpperCase();
+          if (!code) return errorResponse('code fehlt', 400);
+          const tbl = tableForWorld(world);
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tbl}?module_code=eq.${encodeURIComponent(code)}`,
+            { method: 'DELETE', headers: { ...svcHeaders, 'Prefer': 'return=minimal' } },
+          );
+          if (!r.ok && r.status !== 204) {
+            const t = await r.text().catch(() => '');
+            return errorResponse(`Loeschen fehlgeschlagen: ${r.status} ${t.slice(0, 200)}`);
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'module_workshop_delete',
+            target_id: code,
+            details: { world },
+          });
+          return jsonResponse({ success: true, deleted: code });
+        } catch (e) {
+          return errorResponse(`module-workshop delete Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/module-workshop/reorder (W2) ──
+      // Body: { world, order: [{ module_code, branch_order }, ...] }
+      if (method === 'POST' && path === '/api/admin/module-workshop/reorder') {
+        if (!['admin', 'root_admin'].includes(caller.role)) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
+        }
+        try {
+          const body = await request.clone().json().catch(() => ({}));
+          const world = normWorld(body?.world);
+          const tbl = tableForWorld(world);
+          const order = Array.isArray(body?.order) ? body.order : [];
+          if (order.length === 0) return errorResponse('order leer', 400);
+          let updated = 0;
+          for (const item of order) {
+            const code = String(item?.module_code || '').trim().toUpperCase();
+            const bo = Number(item?.branch_order);
+            if (!code || !Number.isFinite(bo)) continue;
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/${tbl}?module_code=eq.${encodeURIComponent(code)}`,
+              {
+                method: 'PATCH',
+                headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+                body: JSON.stringify({ branch_order: Math.round(bo) }),
+              },
+            );
+            if (r.ok || r.status === 204) updated++;
+          }
+          logAudit(svcHeaders, {
+            admin_username: caller.username,
+            action: 'module_workshop_reorder',
+            target_id: world,
+            details: { count: updated },
+          });
+          return jsonResponse({ success: true, updated });
+        } catch (e) {
+          return errorResponse(`module-workshop reorder Fehler: ${e.message}`);
         }
       }
 
@@ -8648,7 +8753,8 @@ export default {
             case_study: String(mod.case_study),
             exercise_description: String(mod.exercise_description),
             // test_questions ist NOT NULL -> immer ein Array mitschicken.
-            test_questions: Array.isArray(mod.test_questions) ? mod.test_questions : [],
+            test_questions: normTestQuestions(mod.test_questions),
+            sources: normSources(mod.sources),
           };
 
           const saveRes = await fetch(
@@ -8938,7 +9044,8 @@ export default {
             case_study: sug.case_study || '',
             exercise_description: sug.exercise_description || '',
             // test_questions ist NOT NULL -> immer ein Array mitschicken.
-            test_questions: Array.isArray(sug.test_questions) ? sug.test_questions : [],
+            test_questions: normTestQuestions(sug.test_questions),
+            sources: normSources(sug.sources),
           };
           const saveR = await fetch(`${SUPABASE_URL}/rest/v1/${tbl}?on_conflict=module_code`, {
             method: 'POST',

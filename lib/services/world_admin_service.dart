@@ -1753,6 +1753,39 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// W2: Loescht ein Modul endgueltig (nur Root-Admin serverseitig).
+  static Future<bool> deleteWorkshopModule({
+    required String world,
+    required String moduleCode,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.deleteJson(
+        '/api/admin/module-workshop/module?world=$world&code=${Uri.encodeQueryComponent(moduleCode)}',
+      );
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('deleteWorkshopModule: $e');
+      return false;
+    }
+  }
+
+  /// W2: Speichert eine neue Reihenfolge (branch_order) fuer mehrere Module.
+  static Future<bool> reorderWorkshopModules({
+    required String world,
+    required List<Map<String, dynamic>> order, // [{module_code, branch_order}]
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/reorder',
+        body: {'world': world, 'order': order},
+      );
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('reorderWorkshopModules: $e');
+      return false;
+    }
+  }
+
   // ── Modul-Werkstatt-Automatik (Vorschlaege A/B/C/D) ─────────────────
 
   /// Startet einen manuellen Scan: KI analysiert den Modul-Bestand und
