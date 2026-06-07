@@ -32,6 +32,8 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   List<Map<String, dynamic>> _existingModules = const [];
   bool _existingLoading = false;
   String? _existingError;
+  bool _orderDirty = false; // W2: Reihenfolge geaendert?
+  bool _orderSaving = false;
 
   // Tab 3 -- KI-Vorschlaege (A/B/C)
   List<Map<String, dynamic>> _kiSuggestions = const [];
@@ -499,6 +501,10 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
           _previewField('Uebung', m['exercise_description']?.toString() ?? '',
               multiline: true,
               onChanged: (v) => setState(() => m['exercise_description'] = v)),
+          const SizedBox(height: 14),
+          _buildQuizEditor(m), // W1
+          const SizedBox(height: 14),
+          _buildSourcesEditor(m), // W8
           const SizedBox(height: 12),
           Row(children: [
             Expanded(
@@ -540,6 +546,185 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
             label: const Text('Entwurf verwerfen',
                 style: TextStyle(color: Colors.white54, fontSize: 12)),
           ),
+        ],
+      ),
+    );
+  }
+
+  // W1: Quiz-Editor. test_questions = [{question, options:[...], answer_index}]
+  Widget _buildQuizEditor(Map<String, dynamic> m) {
+    final raw = m['test_questions'];
+    final questions = (raw is List)
+        ? raw.map((e) => Map<String, dynamic>.from(e as Map)).toList()
+        : <Map<String, dynamic>>[];
+    m['test_questions'] = questions; // sicherstellen, dass es eine Liste ist
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: widget.accent.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.quiz_outlined, size: 14, color: widget.accentBright),
+            const SizedBox(width: 6),
+            Text('Quiz-Fragen (${questions.length})',
+                style: TextStyle(
+                    color: widget.accentBright,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => setState(() {
+                questions.add({
+                  'question': '',
+                  'options': ['', '', '', ''],
+                  'answer_index': 0,
+                });
+              }),
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('Frage', style: TextStyle(fontSize: 11)),
+              style: TextButton.styleFrom(foregroundColor: widget.accentBright),
+            ),
+          ]),
+          for (int i = 0; i < questions.length; i++)
+            _buildQuestionCard(questions, i),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionCard(List<Map<String, dynamic>> questions, int i) {
+    final q = questions[i];
+    final options = (q['options'] is List)
+        ? (q['options'] as List).map((e) => e.toString()).toList()
+        : <String>['', '', '', ''];
+    q['options'] = options;
+    final answerIdx = (q['answer_index'] is int) ? q['answer_index'] as int : 0;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(
+              child: TextFormField(
+                initialValue: q['question']?.toString() ?? '',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                decoration: _inputDeco('Frage ${i + 1}'),
+                onChanged: (v) => q['question'] = v,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, size: 16, color: Colors.white38),
+              onPressed: () => setState(() => questions.removeAt(i)),
+            ),
+          ]),
+          const SizedBox(height: 4),
+          for (int o = 0; o < options.length; o++)
+            Row(children: [
+              Radio<int>(
+                value: o,
+                groupValue: answerIdx,
+                onChanged: (v) => setState(() => q['answer_index'] = v ?? 0),
+                visualDensity: VisualDensity.compact,
+                activeColor: Colors.green,
+              ),
+              Expanded(
+                child: TextFormField(
+                  initialValue: options[o],
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  decoration: _inputDeco('Antwort ${o + 1}'),
+                  onChanged: (v) => options[o] = v,
+                ),
+              ),
+            ]),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text('Gruener Punkt = richtige Antwort',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.3), fontSize: 9)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // W8: Quellen-Editor. sources = [{title, url}]
+  Widget _buildSourcesEditor(Map<String, dynamic> m) {
+    final raw = m['sources'];
+    final sources = (raw is List)
+        ? raw.map((e) => Map<String, dynamic>.from(e as Map)).toList()
+        : <Map<String, dynamic>>[];
+    m['sources'] = sources;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: widget.accent.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.menu_book_outlined, size: 14, color: widget.accentBright),
+            const SizedBox(width: 6),
+            Text('Quellen (${sources.length})',
+                style: TextStyle(
+                    color: widget.accentBright,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () =>
+                  setState(() => sources.add({'title': '', 'url': ''})),
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('Quelle', style: TextStyle(fontSize: 11)),
+              style: TextButton.styleFrom(foregroundColor: widget.accentBright),
+            ),
+          ]),
+          for (int i = 0; i < sources.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(children: [
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    initialValue: sources[i]['title']?.toString() ?? '',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    decoration: _inputDeco('Titel'),
+                    onChanged: (v) => sources[i]['title'] = v,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  flex: 3,
+                  child: TextFormField(
+                    initialValue: sources[i]['url']?.toString() ?? '',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    decoration: _inputDeco('URL'),
+                    onChanged: (v) => sources[i]['url'] = v,
+                  ),
+                ),
+                IconButton(
+                  icon:
+                      const Icon(Icons.close, size: 16, color: Colors.white38),
+                  onPressed: () => setState(() => sources.removeAt(i)),
+                ),
+              ]),
+            ),
         ],
       ),
     );
@@ -592,27 +777,142 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
             Text('Noch keine Module', style: TextStyle(color: Colors.white38)),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: _existingModules.length,
-      itemBuilder: (_, i) {
-        final m = _existingModules[i];
-        return ListTile(
-          dense: true,
-          title: Text(
-            (m['title'] as String?) ?? (m['module_code'] as String? ?? ''),
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+    final modules = List<Map<String, dynamic>>.from(_existingModules);
+    return Column(
+      children: [
+        if (_orderDirty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _orderSaving ? null : _saveOrder,
+                icon: _orderSaving
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save, size: 16),
+                label: const Text('Neue Reihenfolge speichern'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.accent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
           ),
-          subtitle: Text(
-            '${m['module_code']} - ${m['branch']}',
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+        Expanded(
+          child: ReorderableListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: modules.length,
+            onReorder: (oldIndex, newIndex) {
+              setState(() {
+                if (newIndex > oldIndex) newIndex--;
+                final item = _existingModules.removeAt(oldIndex);
+                (_existingModules as List).insert(newIndex, item);
+                _orderDirty = true;
+              });
+            },
+            itemBuilder: (_, i) {
+              final m = modules[i];
+              final code = (m['module_code'] as String?) ?? '';
+              return Container(
+                key: ValueKey(code.isNotEmpty ? code : 'mod_$i'),
+                margin: const EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(Icons.drag_handle,
+                      color: Colors.white.withValues(alpha: 0.3), size: 18),
+                  title: Text(
+                    (m['title'] as String?) ?? code,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                  subtitle: Text(
+                    '$code - ${m['branch']}',
+                    style:
+                        const TextStyle(color: Colors.white54, fontSize: 11),
+                  ),
+                  trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          size: 18, color: Colors.redAccent),
+                      tooltip: 'Loeschen',
+                      onPressed: () => _deleteExisting(m),
+                    ),
+                    Icon(Icons.chevron_right,
+                        color: widget.accentBright.withValues(alpha: 0.6)),
+                  ]),
+                  onTap: () => _editExisting(m),
+                ),
+              );
+            },
           ),
-          trailing: Icon(Icons.chevron_right,
-              color: widget.accentBright.withValues(alpha: 0.6)),
-          onTap: () => _editExisting(m),
-        );
-      },
+        ),
+      ],
     );
+  }
+
+  Future<void> _saveOrder() async {
+    setState(() => _orderSaving = true);
+    final order = <Map<String, dynamic>>[];
+    for (var i = 0; i < _existingModules.length; i++) {
+      final code = _existingModules[i]['module_code'];
+      if (code != null) {
+        order.add({'module_code': code, 'branch_order': i + 1});
+      }
+    }
+    final ok = await WorldAdminServiceV162.reorderWorkshopModules(
+      world: _world,
+      order: order,
+    );
+    if (!mounted) return;
+    setState(() {
+      _orderSaving = false;
+      if (ok) _orderDirty = false;
+    });
+    _snack(ok ? 'Reihenfolge gespeichert' : 'Speichern fehlgeschlagen');
+    if (ok) await _loadExisting();
+  }
+
+  Future<void> _deleteExisting(Map<String, dynamic> m) async {
+    final code = (m['module_code'] as String?) ?? '';
+    if (code.isEmpty) return;
+    final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A30),
+            title: Text('Modul $code loeschen?',
+                style: const TextStyle(color: Colors.white)),
+            content: const Text(
+                'Das Modul wird endgueltig entfernt. Nutzer-Fortschritt dazu geht verloren.',
+                style: TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Abbrechen',
+                      style: TextStyle(color: Colors.white54))),
+              ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('Loeschen')),
+            ],
+          ),
+        ) ??
+        false;
+    if (!ok) return;
+    final deleted = await WorldAdminServiceV162.deleteWorkshopModule(
+      world: _world,
+      moduleCode: code,
+    );
+    if (!mounted) return;
+    _snack(deleted ? 'Modul geloescht' : 'Loeschen fehlgeschlagen (nur Root-Admin)');
+    if (deleted) await _loadExisting();
   }
 
   void _editExisting(Map<String, dynamic> m) {
