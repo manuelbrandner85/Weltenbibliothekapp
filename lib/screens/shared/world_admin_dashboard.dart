@@ -55,6 +55,7 @@ part 'world_admin_dashboard/insights_tab.dart';
 part 'world_admin_dashboard/control_tab.dart';
 part 'world_admin_dashboard/search_sheet.dart';
 part 'world_admin_dashboard/sensitive_sheets.dart';
+part 'world_admin_dashboard/module_workshop_tab.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -180,6 +181,12 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       // Content-Tab inkl. Module/Editor/Meldungen/Artikel/Videos.
       tabs.add(const _AdminTabDef(
           icon: Icons.analytics_rounded, label: 'Content', kind: 'content'));
+      // v128 (Task 3): KI-gestuetzte Modul-Werkstatt (Admin+ kann Lern-
+      // Module ohne Code erstellen + editieren).
+      tabs.add(const _AdminTabDef(
+          icon: Icons.auto_awesome,
+          label: 'Modul-Werkstatt',
+          kind: 'module_workshop'));
     } else if (AppRoles.canAccessAdminDashboard(role)) {
       // Moderator: nur Video-Verwaltung, keine sonstigen Content-Funktionen.
       tabs.add(const _AdminTabDef(
@@ -500,6 +507,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       case 'videos':
         return _ContentInsightsTab(
             accent: _accent, accentBright: _accentBright, videosOnly: true);
+      case 'module_workshop':
+        return _ModuleWorkshopTab(accent: _accent, accentBright: _accentBright);
       case 'push':
         return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
       case 'audit':
@@ -548,6 +557,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       case 'videos':
         return _ContentInsightsTab(
             accent: _accent, accentBright: _accentBright, videosOnly: true);
+      case 'module_workshop':
+        return _ModuleWorkshopTab(accent: _accent, accentBright: _accentBright);
       case 'push':
         return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
       case 'audit':

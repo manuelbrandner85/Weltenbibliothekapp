@@ -23,13 +23,16 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   bool _loading = true;
+  String? _loadError;
 
   // Alle Module aus DB (map: module_code -> row)
   List<Map<String, dynamic>> _vorhangModules = [];
   List<Map<String, dynamic>> _ursprungModules = [];
 
-  // Admin-Overrides (map: module_code -> is_granted bool)
-  final Map<String, bool> _overrides = {};
+  // Admin-Overrides: pro module_code kann es mehrere Zeilen geben
+  // (z.B. Altlast unter Legacy-ID + neue Zeile unter UUID).
+  // Map: module_code -> List<{ user_id, is_granted }>
+  final Map<String, List<_OverrideEntry>> _overridesByCode = {};
 
   // Laufende Aktionen
   final Set<String> _busy = {};
@@ -48,44 +51,71 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final supa = Supabase.instance.client;
-
-    // Module + aktuelle Overrides parallel laden
-    final vorhangFuture = supa
-        .from('vorhang_modules')
-        .select('module_code,branch,title,is_boss_module,prerequisites')
-        .order('module_code', ascending: true);
-    final ursprungFuture = supa
-        .from('ursprung_modules')
-        .select('module_code,branch,title,is_boss_module,prerequisites')
-        .order('module_code', ascending: true);
-    final overrideFuture =
-        WorldAdminServiceV162.getModuleAccess(widget.user.userId);
-
-    final vorhangRaw =
-        ((await vorhangFuture) as List).cast<Map<String, dynamic>>();
-    final ursprungRaw =
-        ((await ursprungFuture) as List).cast<Map<String, dynamic>>();
-    final overrideList = await overrideFuture;
-
-    if (!mounted) return;
-
-    final overrides = <String, bool>{};
-    for (final o in overrideList) {
-      final code = o['module_code'] as String?;
-      final granted = o['is_granted'] as bool?;
-      if (code != null && granted != null) overrides[code] = granted;
-    }
-
     setState(() {
-      _vorhangModules = vorhangRaw;
-      _ursprungModules = ursprungRaw;
-      _overrides
-        ..clear()
-        ..addAll(overrides);
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+    final supa = Supabase.instance.client;
+    try {
+      // Module + aktuelle Overrides parallel laden
+      final vorhangFuture = supa
+          .from('vorhang_modules')
+          .select('module_code,branch,title,is_boss_module,prerequisites')
+          .order('module_code', ascending: true);
+      final ursprungFuture = supa
+          .from('ursprung_modules')
+          .select('module_code,branch,title,is_boss_module,prerequisites')
+          .order('module_code', ascending: true);
+      final overrideFuture =
+          WorldAdminServiceV162.getModuleAccess(widget.user.userId);
+
+      final vorhangRaw =
+          ((await vorhangFuture) as List).cast<Map<String, dynamic>>();
+      final ursprungRaw =
+          ((await ursprungFuture) as List).cast<Map<String, dynamic>>();
+      final overrideList = await overrideFuture;
+
+      if (!mounted) return;
+
+      // Map: module_code -> Liste aller Override-Zeilen (inkl. evtl.
+      // doppelte Eintraege unter unterschiedlichen IDs).
+      final byCode = <String, List<_OverrideEntry>>{};
+      for (final o in overrideList) {
+        final code = o['module_code'] as String?;
+        final granted = o['is_granted'] as bool?;
+        final uid = o['user_id']?.toString();
+        if (code == null || granted == null || uid == null) continue;
+        byCode.putIfAbsent(code, () => []).add(
+              _OverrideEntry(userId: uid, isGranted: granted),
+            );
+      }
+
+      setState(() {
+        _vorhangModules = vorhangRaw;
+        _ursprungModules = ursprungRaw;
+        _overridesByCode
+          ..clear()
+          ..addAll(byCode);
+        _loading = false;
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('module_access_sheet load: $e');
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadError = 'Fehler beim Laden: $e';
+      });
+    }
+  }
+
+  /// Sichtbarer Override-Status (es kann mehrere Zeilen geben):
+  /// - genau 1 Eintrag → dessen is_granted
+  /// - mehrere → wenn alle gleich: dieser Wert; sonst: erste (neueste) Zeile
+  /// - keiner → null
+  bool? _effectiveGrant(String code) {
+    final list = _overridesByCode[code];
+    if (list == null || list.isEmpty) return null;
+    return list.first.isGranted;
   }
 
   Future<void> _setAccess(
@@ -99,13 +129,16 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
     );
     if (!mounted) return;
     if (ok) {
-      setState(() => _overrides[moduleCode] = isGranted);
+      // Nach erfolgreichem Schreiben: vollstaendig neu laden, damit die
+      // tatsaechlich gespeicherte user_id (jetzt kanonische UUID) +
+      // ggf. bereinigte Duplikate sichtbar werden.
+      await _load();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aktion fehlgeschlagen')),
       );
+      setState(() => _busy.remove(moduleCode));
     }
-    setState(() => _busy.remove(moduleCode));
   }
 
   Future<void> _removeAccess(String moduleCode) async {
@@ -116,13 +149,13 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
     );
     if (!mounted) return;
     if (ok) {
-      setState(() => _overrides.remove(moduleCode));
+      await _load();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aktion fehlgeschlagen')),
       );
+      setState(() => _busy.remove(moduleCode));
     }
-    setState(() => _busy.remove(moduleCode));
   }
 
   Widget _buildModuleList(
@@ -171,7 +204,8 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
     final title = m['title'] as String? ?? code;
     final isBoss = m['is_boss_module'] as bool? ?? false;
     final prereqs = (m['prerequisites'] as List?)?.cast<String>() ?? [];
-    final override = _overrides[code]; // null = kein Override
+    final override = _effectiveGrant(code); // null = kein Override
+    final entries = _overridesByCode[code] ?? const <_OverrideEntry>[];
     final isBusy = _busy.contains(code);
 
     Color statusColor;
@@ -190,6 +224,10 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
       statusLabel = prereqs.isEmpty ? 'Immer offen' : 'Voraussetzungen';
       statusIcon = Icons.hdr_auto_rounded;
     }
+
+    // Speicher-Status-Hinweis (Task 2). Zeigt unter der Statuszeile, ob
+    // der Eintrag unter UUID, Legacy-ID oder mehrfach gespeichert ist.
+    final storageHint = _storageHintFor(entries);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -235,11 +273,25 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
               color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Row(children: [
-          Icon(statusIcon, size: 10, color: statusColor),
-          const SizedBox(width: 4),
-          Text(statusLabel, style: TextStyle(color: statusColor, fontSize: 10)),
-        ]),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(children: [
+              Icon(statusIcon, size: 10, color: statusColor),
+              const SizedBox(width: 4),
+              Text(statusLabel,
+                  style: TextStyle(color: statusColor, fontSize: 10)),
+            ]),
+            if (storageHint != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                storageHint.text,
+                style: TextStyle(color: storageHint.color, fontSize: 9.5),
+              ),
+            ],
+          ],
+        ),
         trailing: isBusy
             ? const SizedBox(
                 width: 20,
@@ -315,7 +367,7 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
 
   @override
   Widget build(BuildContext context) {
-    final overrideCount = _overrides.length;
+    final overrideCount = _overridesByCode.length;
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.75,
@@ -394,6 +446,26 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
             ],
           ),
           const Divider(color: Colors.white10, height: 1),
+          if (_loadError != null)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.error_outline,
+                    size: 14, color: Colors.redAccent),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(_loadError!,
+                      style: const TextStyle(
+                          color: Colors.redAccent, fontSize: 11)),
+                ),
+              ]),
+            ),
           Expanded(
             child: _loading
                 ? const Center(
@@ -410,4 +482,57 @@ class _ModuleAccessSheetState extends State<_ModuleAccessSheet>
       ),
     );
   }
+
+  /// Generiert eine Klartext-Statuszeile pro Override-Eintrag, damit der
+  /// Admin sieht ob die Freischaltung unter der kanonischen UUID oder
+  /// einer veralteten Legacy-ID gespeichert ist (Task 2).
+  _StorageHint? _storageHintFor(List<_OverrideEntry> entries) {
+    if (entries.isEmpty) return null;
+    if (entries.length > 1) {
+      final ids = entries.map((e) => e.userId).toSet();
+      if (ids.length > 1) {
+        return _StorageHint(
+          text:
+              '⚠️ Mehrfacheintraege unter verschiedenen IDs (${ids.length}) -- bitte bereinigen',
+          color: Colors.orangeAccent,
+        );
+      }
+    }
+    final uid = entries.first.userId;
+    if (_isUuid(uid)) {
+      final tail = uid.length >= 4 ? uid.substring(uid.length - 4) : uid;
+      return _StorageHint(
+        text: '✅ Gespeichert unter UUID …$tail',
+        color: Colors.greenAccent.withValues(alpha: 0.8),
+      );
+    }
+    if (uid.startsWith('user_')) {
+      return const _StorageHint(
+        text:
+            '⚠️ Gespeichert unter Legacy-ID -- User liest evtl. mit anderer ID',
+        color: Colors.orangeAccent,
+      );
+    }
+    return _StorageHint(
+      text: 'ℹ️ Gespeichert unter unbekanntem ID-Format ($uid)',
+      color: Colors.white54,
+    );
+  }
+
+  static bool _isUuid(String s) =>
+      RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+              caseSensitive: false)
+          .hasMatch(s);
+}
+
+class _OverrideEntry {
+  final String userId;
+  final bool isGranted;
+  const _OverrideEntry({required this.userId, required this.isGranted});
+}
+
+class _StorageHint {
+  final String text;
+  final Color color;
+  const _StorageHint({required this.text, required this.color});
 }
