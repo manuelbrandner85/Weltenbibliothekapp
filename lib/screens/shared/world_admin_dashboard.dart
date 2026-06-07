@@ -18,6 +18,7 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart'
 
 import '../../config/api_config.dart';
 import '../../core/constants/roles.dart';
+import '../../widgets/chat/chat_markdown_text.dart'; // W6: Modul-Vorschau
 import '../../features/admin/state/admin_state.dart';
 import '../../core/auth/admin_resolver.dart';
 import '../../services/admin_api_client.dart';

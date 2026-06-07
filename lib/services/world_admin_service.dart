@@ -1786,6 +1786,58 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// W4: Uebersetzt ein Modul in eine Zielsprache. Returns uebersetztes Modul.
+  static Future<Map<String, dynamic>?> translateModule({
+    required Map<String, dynamic> module,
+    required String targetLang,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/translate',
+        body: {'module': module, 'target_lang': targetLang},
+      );
+      if (data['success'] == true && data['module'] != null) {
+        return Map<String, dynamic>.from(data['module'] as Map);
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('translateModule: $e');
+      return null;
+    }
+  }
+
+  /// W7: Liest die Auto-Scan-Konfiguration ({enabled, worlds}).
+  static Future<Map<String, dynamic>?> getScanConfig() async {
+    try {
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/module-workshop/scan-config');
+      if (data['config'] != null) {
+        return Map<String, dynamic>.from(data['config'] as Map);
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('getScanConfig: $e');
+      return null;
+    }
+  }
+
+  /// W7: Setzt die Auto-Scan-Konfiguration.
+  static Future<bool> setScanConfig({bool? enabled, List<String>? worlds}) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/scan-config',
+        body: {
+          if (enabled != null) 'enabled': enabled,
+          if (worlds != null) 'worlds': worlds,
+        },
+      );
+      return data['success'] as bool? ?? false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('setScanConfig: $e');
+      return false;
+    }
+  }
+
   // ── Modul-Werkstatt-Automatik (Vorschlaege A/B/C/D) ─────────────────
 
   /// Startet einen manuellen Scan: KI analysiert den Modul-Bestand und

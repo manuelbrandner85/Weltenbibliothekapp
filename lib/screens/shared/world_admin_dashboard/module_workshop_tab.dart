@@ -42,12 +42,36 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
   String? _suggestionsError;
   final Set<String> _suggestionBusy = {};
 
+  // W7: Auto-Scan-Konfiguration
+  bool _autoScanEnabled = true;
+  bool _autoScanLoading = false;
+
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
     _loadExisting();
     _loadSuggestions();
+    _loadScanConfig();
+  }
+
+  Future<void> _loadScanConfig() async {
+    final cfg = await WorldAdminServiceV162.getScanConfig();
+    if (!mounted || cfg == null) return;
+    setState(() => _autoScanEnabled = cfg['enabled'] as bool? ?? true);
+  }
+
+  Future<void> _toggleAutoScan(bool value) async {
+    setState(() => _autoScanLoading = true);
+    final ok = await WorldAdminServiceV162.setScanConfig(enabled: value);
+    if (!mounted) return;
+    setState(() {
+      _autoScanLoading = false;
+      if (ok) _autoScanEnabled = value;
+    });
+    _snack(ok
+        ? (value ? 'Auto-Scan aktiviert' : 'Auto-Scan deaktiviert')
+        : 'Aenderung fehlgeschlagen');
   }
 
   @override
@@ -225,6 +249,66 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
       final errs = (saveRes['errors'] as List?)?.join('\n') ?? 'Unbekannt';
       await _showErrorDialog('Modul konnte nicht gespeichert werden', errs);
     }
+  }
+
+  // W4: Modul uebersetzen -> als NEUES Modul-Entwurf laden (kein editCode).
+  Future<void> _translateDraft(Map<String, dynamic> m) async {
+    const langs = {
+      'en': 'Englisch',
+      'tr': 'Tuerkisch',
+      'fr': 'Franzoesisch',
+      'es': 'Spanisch',
+      'ru': 'Russisch',
+      'ar': 'Arabisch',
+    };
+    final lang = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        backgroundColor: const Color(0xFF1A1A30),
+        title: const Text('In welche Sprache uebersetzen?',
+            style: TextStyle(color: Colors.white, fontSize: 15)),
+        children: [
+          for (final e in langs.entries)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, e.key),
+              child: Text(e.value,
+                  style: const TextStyle(color: Colors.white70)),
+            ),
+        ],
+      ),
+    );
+    if (lang == null || !mounted) return;
+    setState(() => _generating = true);
+    final translated = await WorldAdminServiceV162.translateModule(
+      module: m,
+      targetLang: lang,
+    );
+    if (!mounted) return;
+    setState(() {
+      _generating = false;
+      if (translated != null) {
+        // Als neues Modul behandeln (neuer Code), Titel mit Sprach-Tag.
+        translated['title'] =
+            '${translated['title'] ?? ''} [${lang.toUpperCase()}]';
+        _draftModule = translated;
+        _activeEditCode = null;
+      }
+    });
+    _snack(translated != null
+        ? 'Uebersetzt - als neues Modul speicherbar'
+        : 'Uebersetzung fehlgeschlagen');
+  }
+
+  // W6: Echte Vorschau im Reader-Layout (Markdown gerendert).
+  void _showModulePreview(Map<String, dynamic> m) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0E0E18),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _ModulePreviewSheet(m: m, accent: widget.accentBright),
+    );
   }
 
   void _snack(String text) {
@@ -506,6 +590,33 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
           const SizedBox(height: 14),
           _buildSourcesEditor(m), // W8
           const SizedBox(height: 12),
+          // W6 + W4: Vorschau + Uebersetzen
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _showModulePreview(m),
+                icon: const Icon(Icons.visibility_outlined, size: 16),
+                label: const Text('Vorschau'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white70,
+                  side: const BorderSide(color: Colors.white24),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _generating ? null : () => _translateDraft(m),
+                icon: const Icon(Icons.translate, size: 16),
+                label: const Text('Uebersetzen'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.amber,
+                  side: BorderSide(color: Colors.amber.withValues(alpha: 0.5)),
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 8),
           Row(children: [
             Expanded(
               child: OutlinedButton.icon(
@@ -991,6 +1102,20 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
                   ),
                 ),
               ]),
+              // W7: Auto-Scan (Cron) an/aus
+              Row(children: [
+                Icon(Icons.schedule, size: 14, color: widget.accentBright),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text('Taeglicher Auto-Scan (KI schlaegt automatisch vor)',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ),
+                Switch(
+                  value: _autoScanEnabled,
+                  onChanged: _autoScanLoading ? null : _toggleAutoScan,
+                  activeColor: widget.accentBright,
+                ),
+              ]),
               const SizedBox(height: 8),
               Wrap(spacing: 6, runSpacing: 6, children: [
                 _scanChip('Neue Module', ['new'], Icons.add_circle_outline),
@@ -1375,4 +1500,184 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         isDense: true,
       );
+}
+
+// W6: Modul-Vorschau im Reader-Layout (Markdown gerendert wie im Lern-Screen).
+class _ModulePreviewSheet extends StatelessWidget {
+  final Map<String, dynamic> m;
+  final Color accent;
+  const _ModulePreviewSheet({required this.m, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final tq = (m['test_questions'] is List)
+        ? (m['test_questions'] as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList()
+        : <Map<String, dynamic>>[];
+    final sources = (m['sources'] is List)
+        ? (m['sources'] as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList()
+        : <Map<String, dynamic>>[];
+
+    Widget section(String title, String body) {
+      if (body.trim().isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 18),
+          Text(title.toUpperCase(),
+              style: TextStyle(
+                  color: accent,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5)),
+          const SizedBox(height: 6),
+          ChatMarkdownText(
+            body,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 14, height: 1.5),
+          ),
+        ],
+      );
+    }
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.9,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      builder: (_, scroll) => ListView(
+        controller: scroll,
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(children: [
+            Icon(Icons.menu_book_rounded, color: accent, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                (m['title'] as String?) ?? 'Vorschau',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
+          ]),
+          if ((m['subtitle'] as String?)?.isNotEmpty ?? false) ...[
+            const SizedBox(height: 4),
+            Text(m['subtitle'].toString(),
+                style: const TextStyle(color: Colors.white60, fontSize: 14)),
+          ],
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, children: [
+            if ((m['branch'] as String?)?.isNotEmpty ?? false)
+              _chip(m['branch'].toString(), accent),
+            _chip('${m['xp_reward'] ?? 100} XP', Colors.amber),
+          ]),
+          section('Theorie', m['theory_content']?.toString() ?? ''),
+          section('Fallstudie', m['case_study']?.toString() ?? ''),
+          section('Uebung', m['exercise_description']?.toString() ?? ''),
+          // Quiz
+          if (tq.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text('QUIZ (${tq.length})',
+                style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5)),
+            for (var i = 0; i < tq.length; i++) _quizPreview(tq[i], i),
+          ],
+          // Quellen
+          if (sources.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text('QUELLEN',
+                style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5)),
+            const SizedBox(height: 6),
+            for (final s in sources)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '• ${s['title']}${(s['url']?.toString().isNotEmpty ?? false) ? " — ${s['url']}" : ""}',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String label, Color c) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: c.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: c.withValues(alpha: 0.4)),
+        ),
+        child: Text(label, style: TextStyle(color: c, fontSize: 11)),
+      );
+
+  Widget _quizPreview(Map<String, dynamic> q, int i) {
+    final options = (q['options'] is List)
+        ? (q['options'] as List).map((e) => e.toString()).toList()
+        : <String>[];
+    final ans = (q['answer_index'] is int) ? q['answer_index'] as int : 0;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${i + 1}. ${q['question']}',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          for (var o = 0; o < options.length; o++)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(children: [
+                Icon(
+                  o == ans
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  size: 14,
+                  color: o == ans ? Colors.green : Colors.white24,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(options[o],
+                      style: TextStyle(
+                          color: o == ans ? Colors.green : Colors.white60,
+                          fontSize: 12)),
+                ),
+              ]),
+            ),
+        ],
+      ),
+    );
+  }
 }
