@@ -2090,7 +2090,9 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
   }
 
   Future<void> _loadToolApprovals() async {
-    final a = await WorldAdminServiceV162.getToolApprovals(widget.world);
+    // Welt-uebergreifend laden: der Root-Admin soll JEDE offene Admin-Anfrage
+    // sehen, egal in welcher Welt er gerade steht.
+    final a = await WorldAdminServiceV162.getToolApprovals('');
     if (!mounted) return;
     setState(() => _toolApprovals = a);
   }
@@ -2654,8 +2656,9 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Root-Admin: offene Admin-Anfragen freigeben/ablehnen.
-        if (widget.isRootAdmin && _toolApprovals.isNotEmpty) ...[
+        // Root-Admin: offene Admin-Anfragen freigeben/ablehnen (welt-uebergreifend).
+        // Immer sichtbar, damit der Root-Admin weiss, wo die Freigabe sitzt.
+        if (widget.isRootAdmin) ...[
           Row(children: [
             const Icon(Icons.verified_user, size: 16, color: Colors.amber),
             const SizedBox(width: 6),
@@ -2672,11 +2675,19 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             ),
           ]),
           const Text(
-            'Ein Admin moechte ein Tool bauen/erweitern. Pruefe und gib frei.',
+            'Hier gibst du Tool-Anfragen von Admins frei (oder lehnst ab). '
+            'Erst nach Freigabe wird gebaut.',
             style: TextStyle(color: Colors.white38, fontSize: 11),
           ),
           const SizedBox(height: 8),
-          for (final a in _toolApprovals) _buildApprovalCard(a),
+          if (_toolApprovals.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text('Keine offenen Freigaben.',
+                  style: TextStyle(color: Colors.white30, fontSize: 12)),
+            )
+          else
+            for (final a in _toolApprovals) _buildApprovalCard(a),
           const Divider(color: Colors.white12, height: 28),
         ],
         ElevatedButton.icon(
@@ -2748,6 +2759,20 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.0)),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(((a['world'] as String?) ?? '').toUpperCase(),
+                style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8)),
           ),
           const SizedBox(width: 8),
           Expanded(

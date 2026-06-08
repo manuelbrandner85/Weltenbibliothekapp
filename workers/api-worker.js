@@ -9482,11 +9482,12 @@ export default {
       // Wenn env.GITHUB_TOKEN gesetzt: Issue automatisch erstellen.
       // Sonst: vorbefuellte GitHub-Issue-URL zurueckgeben (Admin klickt selbst).
       if (method === 'POST' && path === '/api/admin/module-workshop/tool-request') {
-        // Admin UND Root-Admin duerfen Tools bauen/erweitern lassen. Bei einem
-        // einfachen Admin geht die Anfrage aber zuerst zur Root-Admin-Freigabe
-        // (pending_approval) -- erst nach Freigabe wird das Issue erstellt/gebaut.
-        if (!['admin', 'root_admin'].includes(caller.role)) {
-          return errorResponse('Nur Admin oder Root-Admin', 403);
+        // Jede Admin-Rolle (admin/moderator/content_editor/root_admin) darf Tools
+        // bauen/erweitern lassen. Bei NICHT-Root geht die Anfrage aber zuerst zur
+        // Root-Admin-Freigabe (pending_approval) -- erst nach Freigabe wird das
+        // Issue erstellt/gebaut. (caller existiert hier nur fuer Admin-Rollen.)
+        if (!caller.isAdmin) {
+          return errorResponse('Admin-Rolle erforderlich', 403);
         }
         try {
           const body = await request.clone().json().catch(() => ({}));
