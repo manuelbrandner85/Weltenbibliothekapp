@@ -13,7 +13,7 @@ import 'calculators/numerology_calculator_screen.dart';
 import 'calculators/everyday_numerology_screen.dart';
 import 'calculators/numerology_quiz_screen.dart';
 import 'calculators/archetype_calculator_screen.dart';
-import 'calculators/chakra_calculator_screen.dart';
+import 'chakra_hub_screen.dart';
 import 'calculators/kabbalah_calculator_screen.dart';
 import 'calculators/hermetic_calculator_screen.dart';
 import 'calculators/gematria_calculator_screen.dart';
@@ -115,16 +115,22 @@ class _SpiritTabModernState extends State<SpiritTabModern>
   @override
   void initState() {
     super.initState();
-    _auraCtrl =
-        AnimationController(vsync: this, duration: const Duration(seconds: 3))
-          ..repeat(reverse: true);
+    _auraCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
     _entryCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900));
-    _orbitCtrl =
-        AnimationController(vsync: this, duration: const Duration(seconds: 12))
-          ..repeat();
-    _entryAnim =
-        CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _orbitCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+    _entryAnim = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: Curves.easeOutCubic,
+    );
     _entryCtrl.forward();
     _initializeTools();
     _loadProfile();
@@ -245,12 +251,12 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       },
       {
         'icon': Icons.spa,
-        'iconEmoji': '🔮',
+        'iconEmoji': '🌈',
         'title': 'Chakren',
-        'subtitle': 'Energiezentren',
+        'subtitle': '7 Energiezentren - Uebersicht',
         'color': const Color(0xFFE91E63),
         'category': 'energie',
-        'screen': const ChakraCalculatorScreen(),
+        'screen': const ChakraHubScreen(),
       },
       {
         'icon': Icons.account_tree,
@@ -987,14 +993,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
                       displacement: 60,
                       child: CustomScrollView(
                         physics: const BouncingScrollPhysics(
-                            parent: AlwaysScrollableScrollPhysics()),
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
                         slivers: [
                           _buildHeroHeader(),
                           _buildCategoryFilterSliver(),
                           _buildDailyInspirationSliver(),
                           _buildToolsGrid(),
                           const SliverPadding(
-                              padding: EdgeInsets.only(bottom: 120)),
+                            padding: EdgeInsets.only(bottom: 120),
+                          ),
                         ],
                       ),
                     ),
@@ -1077,8 +1085,9 @@ class _SpiritTabModernState extends State<SpiritTabModern>
             ],
           ),
           border: Border.all(
-              color: _purpleL.withValues(alpha: 0.4 + _auraCtrl.value * 0.3),
-              width: 1.5),
+            color: _purpleL.withValues(alpha: 0.4 + _auraCtrl.value * 0.3),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: _purple.withValues(alpha: 0.25 + _auraCtrl.value * 0.2),
@@ -1104,40 +1113,52 @@ class _SpiritTabModernState extends State<SpiritTabModern>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('✨ Spirit Tools',
-            style: TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
-                fontWeight: FontWeight.w500)),
+        const Text(
+          '✨ Spirit Tools',
+          style: TextStyle(
+            color: Colors.white54,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(name,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.3),
-            overflow: TextOverflow.ellipsis),
+        Text(
+          name,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.3,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
         const SizedBox(height: 3),
-        Row(children: [
-          AnimatedBuilder(
-            animation: _auraCtrl,
-            builder: (_, __) => Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: _purple.withValues(alpha: 0.5 + _auraCtrl.value * 0.5),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                      color: _purple.withValues(alpha: 0.5), blurRadius: 4)
-                ],
+        Row(
+          children: [
+            AnimatedBuilder(
+              animation: _auraCtrl,
+              builder: (_, __) => Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _purple.withValues(alpha: 0.5 + _auraCtrl.value * 0.5),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: _purple.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 6),
-          const Text('Welt der ENERGIE',
-              style: TextStyle(color: Colors.white38, fontSize: 11)),
-        ]),
+            const SizedBox(width: 6),
+            const Text(
+              'Welt der ENERGIE',
+              style: TextStyle(color: Colors.white38, fontSize: 11),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -1150,16 +1171,27 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('${_allTools.length}',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${_allTools.length}',
             style: const TextStyle(
-                color: _purpleL, fontSize: 18, fontWeight: FontWeight.bold)),
-        const Text('Tools',
+              color: _purpleL,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Text(
+            'Tools',
             style: TextStyle(
-                color: Colors.white38,
-                fontSize: 9,
-                fontWeight: FontWeight.w500)),
-      ]),
+              color: Colors.white38,
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1167,13 +1199,19 @@ class _SpiritTabModernState extends State<SpiritTabModern>
     return Container(
       color: _bg,
       child: const Center(
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(_purple)),
-          SizedBox(height: 20),
-          Text('Lade Spirit-Tools…',
-              style: TextStyle(fontSize: 15, color: Colors.white54)),
-        ]),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(_purple),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Lade Spirit-Tools…',
+              style: TextStyle(fontSize: 15, color: Colors.white54),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1184,30 +1222,45 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.error_outline,
-                size: 56, color: _pink.withValues(alpha: 0.7)),
-            const SizedBox(height: 16),
-            Text(_error!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Colors.white54)),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: _loadProfile,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      colors: [Color(0xFF6A1B9A), _purple]),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Text('Erneut versuchen',
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 56,
+                color: _pink.withValues(alpha: 0.7),
               ),
-            ),
-          ]),
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colors.white54),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _loadProfile,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6A1B9A), _purple],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Text(
+                    'Erneut versuchen',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1216,8 +1269,10 @@ class _SpiritTabModernState extends State<SpiritTabModern>
   Widget _buildCategoryFilterSliver() {
     return SliverToBoxAdapter(
       child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
-            .animate(_entryAnim),
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.3),
+          end: Offset.zero,
+        ).animate(_entryAnim),
         child: FadeTransition(
           opacity: _entryAnim,
           child: Container(
@@ -1225,25 +1280,31 @@ class _SpiritTabModernState extends State<SpiritTabModern>
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
-              child: Row(children: [
-                for (final cat in const [
-                  ['all', '✨ Alle'],
-                  ['recent', '🕐 Zuletzt'],
-                  ['favorites', '⭐ Favoriten'],
-                  ['numerologie', '🔢 Numerologie'],
-                  ['astro', '🪐 Astrologie'],
-                  ['orakel', '🔮 Orakel'],
-                  ['energie', '💎 Energie'],
-                  ['meditation', '🧘 Meditation'],
-                  ['psyche', '🧠 Psyche'],
-                  ['wissen', '📚 Wissen'],
-                ])
-                  if (_getCategoryCount(cat[0]) > 0) ...[
-                    _buildCategoryChip(cat[0], cat[1], _chipColor(cat[0]),
-                        _getCategoryCount(cat[0])),
-                    const SizedBox(width: 10),
-                  ],
-              ]),
+              child: Row(
+                children: [
+                  for (final cat in const [
+                    ['all', '✨ Alle'],
+                    ['recent', '🕐 Zuletzt'],
+                    ['favorites', '⭐ Favoriten'],
+                    ['numerologie', '🔢 Numerologie'],
+                    ['astro', '🪐 Astrologie'],
+                    ['orakel', '🔮 Orakel'],
+                    ['energie', '💎 Energie'],
+                    ['meditation', '🧘 Meditation'],
+                    ['psyche', '🧠 Psyche'],
+                    ['wissen', '📚 Wissen'],
+                  ])
+                    if (_getCategoryCount(cat[0]) > 0) ...[
+                      _buildCategoryChip(
+                        cat[0],
+                        cat[1],
+                        _chipColor(cat[0]),
+                        _getCategoryCount(cat[0]),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1266,7 +1327,11 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       };
 
   Widget _buildCategoryChip(
-      String category, String label, Color color, int count) {
+    String category,
+    String label,
+    Color color,
+    int count,
+  ) {
     final isSelected = _selectedCategory == category;
     return GestureDetector(
       onTap: () => setState(() => _selectedCategory = category),
@@ -1275,10 +1340,12 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? LinearGradient(colors: [
-                  color.withValues(alpha: 0.7),
-                  color.withValues(alpha: 0.3),
-                ])
+              ? LinearGradient(
+                  colors: [
+                    color.withValues(alpha: 0.7),
+                    color.withValues(alpha: 0.3),
+                  ],
+                )
               : null,
           color: isSelected ? null : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(22),
@@ -1289,35 +1356,44 @@ class _SpiritTabModernState extends State<SpiritTabModern>
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                      color: color.withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4))
+                    color: color.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
                 ]
               : null,
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(label,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
               style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal)),
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? Colors.white.withValues(alpha: 0.25)
-                  : Colors.white.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(10),
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
-            child: Text('$count',
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : Colors.white.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
                 style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white54,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ]),
+                  color: isSelected ? Colors.white : Colors.white54,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1351,46 +1427,58 @@ class _SpiritTabModernState extends State<SpiritTabModern>
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color:
-                      _purpleL.withValues(alpha: 0.2 + _auraCtrl.value * 0.1)),
+                color: _purpleL.withValues(alpha: 0.2 + _auraCtrl.value * 0.1),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      _purple.withValues(alpha: 0.12 + _auraCtrl.value * 0.08),
+                  color: _purple.withValues(
+                    alpha: 0.12 + _auraCtrl.value * 0.08,
+                  ),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: Row(children: [
-              AnimatedBuilder(
-                animation: _orbitCtrl,
-                builder: (_, __) => Transform.rotate(
-                  angle: _orbitCtrl.value * math.pi * 2 * 0.08,
-                  child: Text('💫',
-                      style: TextStyle(fontSize: 32 + _auraCtrl.value * 3)),
+            child: Row(
+              children: [
+                AnimatedBuilder(
+                  animation: _orbitCtrl,
+                  builder: (_, __) => Transform.rotate(
+                    angle: _orbitCtrl.value * math.pi * 2 * 0.08,
+                    child: Text(
+                      '💫',
+                      style: TextStyle(fontSize: 32 + _auraCtrl.value * 3),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Tägliche Inspiration',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Tägliche Inspiration',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(quote,
-                          style: TextStyle(
-                              color: _purpleL.withValues(alpha: 0.85),
-                              fontSize: 11,
-                              fontStyle: FontStyle.italic,
-                              height: 1.4)),
-                    ]),
-              ),
-            ]),
+                      Text(
+                        quote,
+                        style: TextStyle(
+                          color: _purpleL.withValues(alpha: 0.85),
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1435,117 +1523,134 @@ class _SpiritTabModernState extends State<SpiritTabModern>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              color.withValues(alpha: 0.18),
-              _card,
-            ],
+            colors: [color.withValues(alpha: 0.18), _card],
           ),
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: color.withValues(alpha: 0.3)),
           boxShadow: [
             BoxShadow(
-                color: color.withValues(alpha: 0.15),
-                blurRadius: 16,
-                offset: const Offset(0, 6)),
+              color: color.withValues(alpha: 0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(22),
-          child: Stack(children: [
-            // Decorative circle (like home action tiles)
-            Positioned(
-              right: -18,
-              bottom: -18,
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withValues(alpha: 0.08),
+          child: Stack(
+            children: [
+              // Decorative circle (like home action tiles)
+              Positioned(
+                right: -18,
+                bottom: -18,
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withValues(alpha: 0.08),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top row: icon orb + favorite
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: RadialGradient(colors: [
-                            color.withValues(alpha: 0.45),
-                            color.withValues(alpha: 0.1),
-                          ]),
-                          border: Border.all(
-                              color: color.withValues(alpha: 0.5), width: 1.5),
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top row: icon orb + favorite
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                color.withValues(alpha: 0.45),
+                                color.withValues(alpha: 0.1),
+                              ],
+                            ),
+                            border: Border.all(
+                              color: color.withValues(alpha: 0.5),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              tool['iconEmoji'] as String,
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                          ),
                         ),
-                        child: Center(
-                          child: Text(tool['iconEmoji'] as String,
-                              style: const TextStyle(fontSize: 24)),
+                        FavoriteButton(
+                          itemId: 'spirit_tool_${tool['title']}',
+                          itemType: FavoriteType.narrative,
+                          itemTitle: tool['title'] as String,
+                          itemDescription: tool['subtitle'] as String?,
+                          size: 20,
+                          // E2: Favoriten-Filter + Counts live aktualisieren
+                          onChanged: (_) {
+                            if (mounted) setState(() {});
+                          },
                         ),
-                      ),
-                      FavoriteButton(
-                        itemId: 'spirit_tool_${tool['title']}',
-                        itemType: FavoriteType.narrative,
-                        itemTitle: tool['title'] as String,
-                        itemDescription: tool['subtitle'] as String?,
-                        size: 20,
-                        // E2: Favoriten-Filter + Counts live aktualisieren
-                        onChanged: (_) {
-                          if (mounted) setState(() {});
-                        },
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // Title
-                  Text(tool['title'] as String,
+                      ],
+                    ),
+                    const Spacer(),
+                    // Title
+                    Text(
+                      tool['title'] as String,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 3),
-                  // Subtitle
-                  Text(tool['subtitle'] as String,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    // Subtitle
+                    Text(
+                      tool['subtitle'] as String,
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          fontSize: 11),
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 11,
+                      ),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 10),
-                  // Open button (matching home tile style)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [
-                        color.withValues(alpha: 0.55),
-                        color.withValues(alpha: 0.25)
-                      ]),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: color.withValues(alpha: 0.5)),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: const Center(
-                      child: Text('Öffnen',
+                    const SizedBox(height: 10),
+                    // Open button (matching home tile style)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            color.withValues(alpha: 0.55),
+                            color.withValues(alpha: 0.25),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: color.withValues(alpha: 0.5)),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Öffnen',
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold)),
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );
