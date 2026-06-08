@@ -4719,7 +4719,9 @@ export default {
           performance: 'Performance', other: 'Sonstiges',
         };
         const ghRepo = env.GODMODE_REPO || 'manuelbrandner85/weltenbibliothekapp';
-        const ghPat  = env.GODMODE_GH_PAT || '';
+        // PAT: bevorzugt dedizierter GODMODE_GH_PAT, sonst der bereits gesetzte
+        // GITHUB_TOKEN (aus GH_PAT) -- so braucht God Mode kein neues Secret.
+        const ghPat  = env.GODMODE_GH_PAT || env.GITHUB_TOKEN || '';
 
         // ── POST /api/admin/godmode/suggest ─────────────────────────────
         // KI generiert konkrete Verbesserungsvorschlaege fuer die App.
@@ -4846,8 +4848,8 @@ export default {
 
           if (!title) return errorResponse('Titel erforderlich', 400, 'title_required');
           if (!ghPat) return errorResponse(
-            'GODMODE_GH_PAT Secret fehlt im Worker. ' +
-            'GitHub PAT (repo + workflow Scope) als GitHub-Secret hinterlegen ' +
+            'Kein GitHub-PAT im Worker. ' +
+            'GH_PAT (oder GODMODE_GH_PAT) als GitHub-Secret hinterlegen ' +
             'und Worker neu deployen.',
             500, 'godmode_pat_missing'
           );
