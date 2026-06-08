@@ -2704,7 +2704,7 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         ),
         const SizedBox(height: 14),
         if (_toolSuggestions.isNotEmpty) ...[
-          Text('VORSCHLAEGE (${_toolSuggestions.length})',
+          Text('KI-VORSCHLAEGE (${_toolSuggestions.length})',
               style: TextStyle(color: widget.accentBright, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
           const SizedBox(height: 6),
           for (final s in _toolSuggestions) _buildToolSuggestionCard(s),
@@ -2746,6 +2746,23 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Quelle eindeutig: diese Anfrage kommt von einem Admin (nicht von der KI).
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text('👤 ADMIN-ANFRAGE - @$by',
+                style: const TextStyle(
+                    color: Colors.amber,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5)),
+          ),
+        ]),
+        const SizedBox(height: 6),
         Row(children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -2791,9 +2808,6 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         const SizedBox(height: 4),
         Text((a['description'] as String?) ?? '',
             style: const TextStyle(color: Colors.white60, fontSize: 12)),
-        const SizedBox(height: 4),
-        Text('von @$by',
-            style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
         const SizedBox(height: 8),
         if (busy)
           const Center(
@@ -2846,14 +2860,30 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.25)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Quelle eindeutig: dieser Vorschlag kommt von der KI (nicht von einem Admin).
         Row(children: [
-          Expanded(
-            child: Text((s['name'] as String?) ?? '',
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.greenAccent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text('🤖 KI-VORSCHLAG',
+                style: TextStyle(
+                    color: Colors.greenAccent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8)),
           ),
+          const Spacer(),
           if ((s['category'] as String?)?.isNotEmpty ?? false)
-            Text(s['category'].toString(), style: const TextStyle(color: Colors.white38, fontSize: 10)),
+            Text(s['category'].toString(),
+                style: const TextStyle(color: Colors.white38, fontSize: 10)),
         ]),
+        const SizedBox(height: 5),
+        Text((s['name'] as String?) ?? '',
+            style: const TextStyle(
+                color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
         if ((s['description'] as String?)?.isNotEmpty ?? false) ...[
           const SizedBox(height: 3),
           Text(s['description'].toString(), style: const TextStyle(color: Colors.white60, fontSize: 11)),
