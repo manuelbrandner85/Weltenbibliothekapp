@@ -101,6 +101,8 @@ jobs:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           ALEPH_API_KEY: ${{ secrets.ALEPH_API_KEY }}
           ADMIN_AUTH_SECRET: ${{ secrets.ADMIN_AUTH_SECRET }}
+          GODMODE_GH_PAT: ${{ secrets.GODMODE_GH_PAT }}
+          GODMODE_REPO: ${{ secrets.GODMODE_REPO }}
           MIGRATION_TOKEN_V13: ${{ secrets.MIGRATION_TOKEN_V13 }}
           MIGRATION_TOKEN_V14: ${{ secrets.MIGRATION_TOKEN_V14 }}
           MIGRATION_TOKEN_V15: ${{ secrets.MIGRATION_TOKEN_V15 }}
@@ -133,6 +135,9 @@ jobs:
           [ -n "${GOOGLE_FACTCHECK_API_KEY:-}" ]  && set_secret "GOOGLE_FACTCHECK_API_KEY" "$GOOGLE_FACTCHECK_API_KEY"  || echo "ℹ️  GOOGLE_FACTCHECK_API_KEY fehlt"
           [ -n "${YOUTUBE_API_KEY:-}" ]           && set_secret "YOUTUBE_API_KEY" "$YOUTUBE_API_KEY"                    || echo "ℹ️  YOUTUBE_API_KEY fehlt"
           [ -n "${ALEPH_API_KEY:-}" ]             && set_secret "ALEPH_API_KEY" "$ALEPH_API_KEY"                        || echo "ℹ️  ALEPH_API_KEY fehlt (Aleph läuft auch ohne Key)"
+          # God Mode: PAT damit Worker GitHub-Issues anlegen kann.
+          [ -n "${GODMODE_GH_PAT:-}" ]            && set_secret "GODMODE_GH_PAT" "$GODMODE_GH_PAT"                      || echo "ℹ️  GODMODE_GH_PAT fehlt -- God Mode kann keine Issues anlegen"
+          [ -n "${GODMODE_REPO:-}" ]              && set_secret "GODMODE_REPO" "$GODMODE_REPO"                          || echo "ℹ️  GODMODE_REPO nicht gesetzt (Default: manuelbrandner85/weltenbibliothekapp)"
           if [ -n "${WB_SECRET:-}" ]; then
             set_secret "LIVEKIT_API_KEY"    "${WB_KEY}"
             set_secret "LIVEKIT_API_SECRET" "${WB_SECRET}"

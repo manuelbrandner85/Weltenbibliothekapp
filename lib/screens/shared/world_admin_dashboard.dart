@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     show RealtimeChannel, PostgresChangeEvent, Supabase;
 import 'package:youtube_player_flutter/youtube_player_flutter.dart'
@@ -29,6 +30,7 @@ import '../../services/health_check_service.dart';
 import '../../services/moderation_queue_service.dart'; // 🚨 M3
 import '../../services/push_notification_helper.dart';
 import '../../services/storage_service.dart';
+import '../../services/godmode_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/world_admin_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
@@ -57,6 +59,7 @@ part 'world_admin_dashboard/control_tab.dart';
 part 'world_admin_dashboard/search_sheet.dart';
 part 'world_admin_dashboard/sensitive_sheets.dart';
 part 'world_admin_dashboard/module_workshop_tab.dart';
+part 'world_admin_dashboard/godmode_tab.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -530,6 +533,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       case 'system':
         return _SystemTab(
             accent: _accent, accentBright: _accentBright, admin: admin);
+      case 'godmode':
+        if (!admin.isRootAdmin) return const SizedBox.shrink();
+        return _GodModeTab(accent: _accent, accentBright: _accentBright);
       default:
         return const SizedBox.shrink();
     }
@@ -577,6 +583,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       case 'system':
         return _SystemTab(
             accent: _accent, accentBright: _accentBright, admin: admin);
+      case 'godmode':
+        if (!admin.isRootAdmin) return const SizedBox.shrink();
+        return _GodModeTab(accent: _accent, accentBright: _accentBright);
       default:
         return const SizedBox.shrink();
     }

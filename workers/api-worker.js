@@ -4700,6 +4700,240 @@ export default {
         'Authorization': `Bearer ${svcKey}`,
       };
 
+      // ═══════════════════════════════════════════════════════════════════
+      // GOD MODE - Root-Admin Entwickler-Konsole (v123)
+      // Nur caller.isRootAdmin. Jeder Auftrag -> GitHub-Issue (Label
+      // "godmode") -> claude_godmode.yml baut autonom -> Auto-Merge -> OTA.
+      // ═══════════════════════════════════════════════════════════════════
+      if (path.startsWith('/api/admin/godmode/')) {
+        if (!caller.isRootAdmin) {
+          return errorResponse('Root-Admin erforderlich', 403, 'root_admin_required');
+        }
+
+        const VALID_CATEGORIES = new Set([
+          'ui_ux', 'feature', 'module', 'bugfix', 'performance', 'other',
+        ]);
+        const CAT_LABELS = {
+          ui_ux: 'UI/UX & Design', feature: 'Feature',
+          module: 'Modul & Inhalt', bugfix: 'Bugfix',
+          performance: 'Performance', other: 'Sonstiges',
+        };
+        const ghRepo = env.GODMODE_REPO || 'manuelbrandner85/weltenbibliothekapp';
+        const ghPat  = env.GODMODE_GH_PAT || '';
+
+        // ── POST /api/admin/godmode/suggest ─────────────────────────────
+        // KI generiert konkrete Verbesserungsvorschlaege fuer die App.
+        // Body: { area? } -- optionaler Fokusbereich.
+        // Kette: GROQ (Llama-3.3-70B) -> Workers-AI -> statischer Fallback.
+        if (method === 'POST' && path === '/api/admin/godmode/suggest') {
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const area = String(body.area || '').trim().slice(0, 80);
+
+          const sysPrompt =
+            'Du bist Senior-Produkt- und Engineering-Berater fuer die Flutter-App ' +
+            '"Weltenbibliothek" -- spirituell-investigative Wissensplattform, 4 Welten: ' +
+            'materie (Recherche/OSINT/Fakten), energie (Meditation/Chakren/Manifestation), ' +
+            'vorhang (Machtpsychologie/Manipulation), ursprung (Bewusstsein/Gateway/Hermetik). ' +
+            'Stack: Flutter (Android + Web), Supabase, Cloudflare Worker, Shorebird OTA, LiveKit.\n\n' +
+            (area ? `Fokus: "${area}".\n\n` : 'Alle Bereiche (gemischt).\n\n') +
+            'Schlage 5 konkrete, sofort umsetzbare Weiterentwicklungen vor -- ' +
+            'UI/UX, Features, Module, Bugfixes oder Performance.\n' +
+            'Antworte AUSSCHLIESSLICH mit kompaktem JSON ohne Markdown:\n' +
+            '{"suggestions":[{"category":"ui_ux|feature|module|bugfix|performance|other",' +
+            '"title":"kurzer titel","description":"2-3 Saetze was gebaut wird und warum"}]}\n' +
+            'Genau 5 Eintraege. Nur erlaubte category-Slugs.';
+
+          const parseAi = (raw) => {
+            if (!raw) return null;
+            try {
+              const m = String(raw).match(/\{[\s\S]*\}/);
+              if (!m) return null;
+              const obj = JSON.parse(m[0]);
+              const arr = Array.isArray(obj.suggestions) ? obj.suggestions : [];
+              const out = arr.map(s => ({
+                category: VALID_CATEGORIES.has(String(s.category || '').trim())
+                  ? String(s.category).trim() : 'other',
+                title: String(s.title || '').trim().slice(0, 120),
+                description: String(s.description || '').trim().slice(0, 600),
+              })).filter(s => s.title);
+              return out.length ? out.slice(0, 6) : null;
+            } catch (_) { return null; }
+          };
+
+          let suggestions = null;
+          let source = 'fallback';
+
+          if (env.GROQ_API_KEY) {
+            try {
+              const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${env.GROQ_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'llama-3.3-70b-versatile',
+                  messages: [
+                    { role: 'system', content: sysPrompt },
+                    { role: 'user', content: 'Generiere 5 Vorschlaege als JSON.' },
+                  ],
+                  max_tokens: 1000, temperature: 0.75,
+                }),
+              });
+              if (r.ok) {
+                const d = await r.json().catch(() => null);
+                const parsed = parseAi(d?.choices?.[0]?.message?.content);
+                if (parsed) { suggestions = parsed; source = 'groq'; }
+              }
+            } catch (_) {}
+          }
+
+          if (!suggestions && env.AI) {
+            try {
+              const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+                messages: [
+                  { role: 'system', content: sysPrompt },
+                  { role: 'user', content: 'Generiere 5 Vorschlaege als JSON.' },
+                ],
+                max_tokens: 1000,
+              });
+              const parsed = parseAi(res?.response);
+              if (parsed) { suggestions = parsed; source = 'workers-ai'; }
+            } catch (_) {}
+          }
+
+          if (!suggestions) {
+            suggestions = [
+              { category: 'ui_ux', title: 'Einheitliche Welt-Startseiten', description: 'Alle vier Welt-Homes auf dasselbe Live-Daten-Layout bringen: Fortschrittsbalken, naechstes Modul, zuletzt abgeschlossen.' },
+              { category: 'feature', title: 'Globale Volltextsuche', description: 'Welt-uebergreifende Suche ueber Module, Lektionen und Mediathek mit direktem Sprung zum Treffer.' },
+              { category: 'performance', title: 'Module-Payload lazy laden', description: 'Markdown-Inhalt erst beim Oeffnen nachladen statt 264 KB beim Start -- spart Mobile-Datenverbrauch.' },
+              { category: 'bugfix', title: 'build_context_synchronously aufraeumen', description: 'Alle use_build_context_synchronously Analyzer-Infos im lib/-Verzeichnis beheben.' },
+              { category: 'module', title: 'Tagesimpuls pro Welt', description: 'Jede Welt bekommt eine deterministische taegliche Mikro-Uebung analog zur bestehenden Vorhang-DailyPracticeCard.' },
+            ];
+            source = 'fallback';
+          }
+
+          return jsonResponse({ success: true, source, suggestions });
+        }
+
+        // ── GET /api/admin/godmode/requests ─────────────────────────────
+        // Liste der letzten 50 Auftraege (Status, Issue/PR-Links).
+        if (method === 'GET' && path === '/api/admin/godmode/requests') {
+          try {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_requests?select=*&order=created_at.desc&limit=50`,
+              { headers: svcHeaders }
+            );
+            const rows = r.ok ? await r.json().catch(() => []) : [];
+            return jsonResponse({ success: true, requests: Array.isArray(rows) ? rows : [] });
+          } catch (e) {
+            return errorResponse(`Fehler: ${e.message}`);
+          }
+        }
+
+        // ── POST /api/admin/godmode/request ─────────────────────────────
+        // Auftrag absetzen. Legt GitHub-Issue (Label "godmode") an.
+        // Body: { category, title, description, source? }
+        if (method === 'POST' && path === '/api/admin/godmode/request') {
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const category = VALID_CATEGORIES.has(String(body.category || '').trim())
+            ? String(body.category).trim() : 'other';
+          const title       = String(body.title || '').trim().slice(0, 160);
+          const description = String(body.description || '').trim().slice(0, 4000);
+          const source      = body.source === 'ai_suggestion' ? 'ai_suggestion' : 'manual';
+
+          if (!title) return errorResponse('Titel erforderlich', 400, 'title_required');
+          if (!ghPat) return errorResponse(
+            'GODMODE_GH_PAT Secret fehlt im Worker. ' +
+            'GitHub PAT (repo + workflow Scope) als GitHub-Secret hinterlegen ' +
+            'und Worker neu deployen.',
+            500, 'godmode_pat_missing'
+          );
+
+          const issueBody = [
+            `**God-Mode-Auftrag von @${caller.username || 'root-admin'}**`,
+            '',
+            `**Bereich:** ${CAT_LABELS[category]}`,
+            `**Quelle:** ${source === 'ai_suggestion' ? 'KI-Vorschlag' : 'Manuell'}`,
+            '',
+            '## Auftrag',
+            description || title,
+            '',
+            '## Hinweise fuer den Build',
+            '- CLAUDE.md Kernregeln einhalten (ASCII-Commits, keine Named Dart-3 Records, deutsche UI-Texte).',
+            '- Skills in .claude/skills/ nutzen (flutter-*, supabase, cloudflare, shorebird-ota, ...).',
+            '- flutter analyze = 0 Errors, dart format . vor Commit.',
+            '- Neue Features in der App verlinken/registrieren -- nicht nur den Code schreiben.',
+            '- PR-Body: "Closes #<issue>", was geaendert, Fundort, Patch-kompatibel.',
+          ].join('\n');
+
+          let issueNumber = null;
+          let issueUrl    = null;
+          try {
+            const ghRes = await fetch(`https://api.github.com/repos/${ghRepo}/issues`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${ghPat}`,
+                Accept: 'application/vnd.github+json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'weltenbibliothek-godmode/1.0',
+                'X-GitHub-Api-Version': '2022-11-28',
+              },
+              body: JSON.stringify({
+                title: `[God Mode] ${title}`,
+                body: issueBody,
+                labels: ['godmode'],
+              }),
+            });
+            if (!ghRes.ok) {
+              const txt = await ghRes.text().catch(() => '');
+              return errorResponse(
+                `GitHub-Issue fehlgeschlagen (HTTP ${ghRes.status}): ${txt.slice(0, 200)}`,
+                502, 'github_issue_failed'
+              );
+            }
+            const issue = await ghRes.json();
+            issueNumber = issue.number;
+            issueUrl    = issue.html_url;
+          } catch (e) {
+            return errorResponse(`GitHub-Fehler: ${e.message}`, 502, 'github_error');
+          }
+
+          // In godmode_requests persistieren (best-effort).
+          let row = null;
+          try {
+            const ins = await fetch(`${SUPABASE_URL}/rest/v1/godmode_requests`, {
+              method: 'POST',
+              headers: { ...svcHeaders, Prefer: 'return=representation' },
+              body: JSON.stringify({
+                requested_by: caller.username || 'root-admin',
+                category, title, description, source,
+                status: 'issue_created',
+                issue_number: issueNumber,
+                issue_url: issueUrl,
+              }),
+            });
+            if (ins.ok) {
+              const arr = await ins.json().catch(() => []);
+              row = Array.isArray(arr) ? arr[0] : arr;
+            }
+          } catch (_) {}
+
+          return jsonResponse({
+            success: true,
+            issue_number: issueNumber,
+            issue_url: issueUrl,
+            status: 'issue_created',
+            request: row,
+            message: `Auftrag #${issueNumber} angelegt -- Claude baut autonom, Auto-Merge nach gruenem CI.`,
+          });
+        }
+
+        return errorResponse('Unbekannter God-Mode-Endpoint', 404, 'not_found');
+      }
+
       // Helper: Notification in beiden Tabellen speichern (In-App + FCM-Queue)
       // v96: InvisibleAuth-tauglich. Wenn userId mit 'user_' beginnt, ist
       // es eine InvisibleAuth-ID -> wir setzen legacy_user_id statt
