@@ -1,0 +1,200 @@
+name: "God Mode -- Claude baut autonom"
+
+# Triggert wenn der Worker ein Issue mit Label "godmode" anlegt.
+# Claude implementiert den Auftrag, oeffnet PR, Verify-Gate prueft,
+# bei gruen Auto-Merge per PAT -> build_web + shorebird_patch (OTA).
+#
+# Benoetigte Secrets (alle bereits im Repo vorhanden -- nichts Neues noetig):
+#   CLAUDE_CODE_OAUTH_TOKEN  -- Claude Code OAuth-Token (Fallback ANTHROPIC_API_KEY)
+#   GH_PAT                   -- GitHub PAT (repo + workflow) fuer Issue-Anlage
+#                              (Worker) und Merge (Workflow)
+#   SUPABASE_SERVICE_ROLE_KEY -- Status-Updates in godmode_requests
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: godmode-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: "Claude implementiert God-Mode-Auftrag"
+    if: >-
+      contains(github.event.issue.labels.*.name, 'godmode') ||
+      github.event.label.name == 'godmode'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      BRANCH_NAME: godmode/issue-${{ github.event.issue.number }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL_FB: https://adtviduaftdquvfjpojb.supabase.co
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: "Flutter Setup"
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.x"
+          channel: "stable"
+          cache: true
+
+      - name: "Status -> building (Supabase)"
+        continue-on-error: true
+        run: |
+          [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] && exit 0
+          curl -s -X PATCH \
+            "${SUPABASE_URL_FB}/rest/v1/godmode_requests?issue_number=eq.${ISSUE_NUMBER}" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{"status":"building"}' || true
+
+      - name: "Claude Code Action"
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GH_PAT }}
+          claude_args: "--max-turns 80 --permission-mode bypassPermissions"
+          prompt: |
+            Du bist Claude Code und baust autonom einen God-Mode-Auftrag fuer die
+            Flutter-App "Weltenbibliothek" (Stack: Flutter/Dart + Supabase +
+            Cloudflare Worker + Shorebird OTA + LiveKit).
+
+            Lies Issue #${{ github.event.issue.number }} vollstaendig, dann:
+
+            1. Lies CLAUDE.md -- halte ALLE Kernregeln ein:
+               - Commits nur ASCII, Format type(scope): beschreibung
+               - KEINE Named Dart-3 Record Types (crashen dart2js)
+               - Deutsche UI-Texte, englische Code-Kommentare
+               - flutter analyze = 0 Errors, dart format . vor Commit
+               - RLS-Pflicht auf neuen Tabellen, Secrets nie im Client
+            2. Nutze die installierten Skills in .claude/skills/ aktiv:
+               flutter-*, supabase, cloudflare, shorebird-ota,
+               systematic-debugging, static-analysis, ...
+            3. Branch: godmode/issue-${{ github.event.issue.number }}
+            4. Implementiere die Aenderung sauber und vollstaendig.
+               Bugfixes: Ursache beheben, nicht Symptom. Neue Features/Module:
+               in der App registrieren und verlinken.
+            5. dart format . && flutter analyze (0 Errors pflicht)
+            6. Committe (ASCII), pushe den Branch.
+            7. Oeffne PR gegen main mit:
+               - "Closes #${{ github.event.issue.number }}" im Body
+               - Abschnitt "Was geaendert"
+               - Abschnitt "Fundort in der App"
+               - "[OK] Patch-kompatibel" oder "[!] Neuer Release noetig"
+            8. Ist der Auftrag unklar/nicht umsetzbar: Kommentiere das Issue.
+
+      - name: "PR ermitteln"
+        id: findpr
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const issue = Number(process.env.ISSUE_NUMBER);
+            const branch = process.env.BRANCH_NAME;
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', per_page: 100,
+            });
+            const re = new RegExp(`(closes|fixes|resolves)\\s+#${issue}\\b`, 'i');
+            const match = prs.find(p =>
+              p.head.ref === branch || re.test(p.body || '')
+            );
+            if (!match) {
+              core.setOutput('found', 'false');
+              return;
+            }
+            core.setOutput('found', 'true');
+            core.setOutput('number', String(match.number));
+            core.setOutput('head', match.head.ref);
+            core.setOutput('url', match.html_url);
+
+      - name: "Verify-Gate (analyze + web build)"
+        id: verify
+        if: steps.findpr.outputs.found == 'true'
+        run: |
+          set +e
+          git fetch origin "${{ steps.findpr.outputs.head }}"
+          git checkout "${{ steps.findpr.outputs.head }}"
+          flutter pub get || { echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          python3 scripts/check_dart_records.py || { echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          flutter analyze --no-fatal-infos --no-fatal-warnings
+          [ "$?" != "0" ] && { echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          flutter build web --release \
+            "--dart-define=SUPABASE_URL=${SUPABASE_URL_FB}" \
+            "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
+            "--dart-define=APP_VERSION=godmode-verify"
+          [ "$?" != "0" ] && { echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: "Auto-Merge + Status merged"
+        if: steps.findpr.outputs.found == 'true' && steps.verify.outputs.ok == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const prNum = Number('${{ steps.findpr.outputs.number }}');
+            const prUrl = '${{ steps.findpr.outputs.url }}';
+            const issue  = Number(process.env.ISSUE_NUMBER);
+            await github.rest.pulls.merge({
+              owner: context.repo.owner, repo: context.repo.repo,
+              pull_number: prNum, merge_method: 'squash',
+            });
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: issue,
+              body: `God Mode: PR #${prNum} gemergt (analyze + web build gruen). OTA-Patch laeuft.`,
+            });
+            const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+            if (key) {
+              await fetch(`${process.env.SUPABASE_URL_FB}/rest/v1/godmode_requests?issue_number=eq.${issue}`, {
+                method: 'PATCH',
+                headers: { apikey: key, Authorization: `Bearer ${key}`,
+                  'Content-Type': 'application/json', Prefer: 'return=minimal' },
+                body: JSON.stringify({ status: 'merged', pr_number: prNum, pr_url: prUrl }),
+              }).catch(() => {});
+            }
+
+      - name: "Verify rot -- Status failed"
+        if: steps.findpr.outputs.found == 'false' || steps.verify.outputs.ok == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const issue = Number(process.env.ISSUE_NUMBER);
+            const found = '${{ steps.findpr.outputs.found }}' === 'true';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: issue,
+              body: found
+                ? 'God Mode: Verify-Gate rot (analyze/build). PR bleibt offen.'
+                : 'God Mode: Kein PR erstellt -- Auftrag praezisieren.',
+            });
+            const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+            if (key) {
+              await fetch(`${process.env.SUPABASE_URL_FB}/rest/v1/godmode_requests?issue_number=eq.${issue}`, {
+                method: 'PATCH',
+                headers: { apikey: key, Authorization: `Bearer ${key}`,
+                  'Content-Type': 'application/json', Prefer: 'return=minimal' },
+                body: JSON.stringify({
+                  status: 'failed',
+                  error: found ? 'verify_gate_red' : 'no_pr_created',
+                }),
+              }).catch(() => {});
+            }

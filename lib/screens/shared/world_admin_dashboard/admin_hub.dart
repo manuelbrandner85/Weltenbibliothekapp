@@ -155,6 +155,15 @@ class _AdminHubState extends State<_AdminHub> {
         badge: widget.pendingUsernameRequests,
       ));
     }
+    // God Mode -- nur Root-Admin. Claude baut autonom jede App-Aenderung.
+    if (AppRoles.isRootAdmin(role)) {
+      areas.add(const _AdminAreaDef(
+        icon: Icons.auto_fix_high_rounded,
+        title: 'God Mode',
+        subtitle: 'App bauen, fixen & erweitern (KI)',
+        section: 'godmode',
+      ));
+    }
     return areas;
   }
 
