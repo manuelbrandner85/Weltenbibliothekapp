@@ -21,6 +21,7 @@ import 'vorhang_live_chat_screen.dart';
 import 'vorhang_modules_screen.dart';
 import 'vorhang_symbol_decoder_screen.dart';
 import 'tools/power_tools.dart';
+import 'tools/koerpersprache_decoder_screen.dart';
 
 /// 🎭 VORHANG Home Tab — Dunkle Psychologie & Elite-Strategien
 ///
@@ -267,6 +268,14 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                 title: 'Symbol-Datenbank',
                 subtitle: 'Historische Symbole & ihre Bedeutung.',
                 builder: (_) => const SymbolDatabaseScreen(),
+              ),
+              const SizedBox(height: 10),
+              _buildToolTile(
+                context,
+                emoji: '🤝',
+                title: 'Koerpersprache-Decoder',
+                subtitle: 'Nonverbale Signale entschluesseln & verstehen.',
+                builder: (_) => const KoerperspracheDecoderScreen(),
               ),
               const SizedBox(height: 28),
 
