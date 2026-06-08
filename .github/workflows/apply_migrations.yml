@@ -489,6 +489,8 @@ jobs:
             supabase/migrations/20260607_v137_app_tools_registry.sql
           run_sql "v138 tool_request approval (admin->root-admin)" \
             supabase/migrations/20260607_v138_tool_request_approval.sql
+          run_sql "v139 app_tools full inventory (vorhang/ursprung/community)" \
+            supabase/migrations/20260607_v139_app_tools_full_inventory.sql
 
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
