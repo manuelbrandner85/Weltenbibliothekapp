@@ -10,6 +10,7 @@ import '../../widgets/mentor_hero_card.dart';
 import '../../services/unified_profile_service.dart';
 import '../../services/ursprung_service.dart';
 import '../shared/mentor_chat_screen.dart';
+import 'mentor_session_screen.dart';
 
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
@@ -159,7 +160,8 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (_) => UrsprungLessonScreen(moduleCode: moduleCode)),
+        builder: (_) => UrsprungLessonScreen(moduleCode: moduleCode),
+      ),
     ).then((_) => _fetch());
   }
 
@@ -185,7 +187,11 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
           // damit der CIA-Footer auf Geraeten mit hoher Navigationsleiste
           // nicht hinter der Nav verschwindet.
           padding: EdgeInsets.fromLTRB(
-              16, 16, 16, 100 + MediaQuery.paddingOf(context).bottom),
+            16,
+            16,
+            16,
+            100 + MediaQuery.paddingOf(context).bottom,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -371,9 +377,13 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: _cyan.withValues(alpha: 0.5)),
+                    side: BorderSide(
+                      color: _cyan.withValues(alpha: 0.5),
+                    ),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ),
@@ -384,11 +394,13 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
             ]
                 .asMap()
                 .entries
-                .map((e) => WBStaggerReveal(
-                      index: e.key,
-                      staggerStep: const Duration(milliseconds: 40),
-                      child: e.value,
-                    ))
+                .map(
+                  (e) => WBStaggerReveal(
+                    index: e.key,
+                    staggerStep: const Duration(milliseconds: 40),
+                    child: e.value,
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -442,11 +454,7 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            _surface,
-            _cyan.withValues(alpha: 0.08),
-            _bgDeep,
-          ],
+          colors: [_surface, _cyan.withValues(alpha: 0.08), _bgDeep],
         ),
         border: Border.all(color: _cyan.withValues(alpha: 0.30)),
         boxShadow: [
@@ -481,12 +489,15 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: _cyan.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
-                          border:
-                              Border.all(color: _cyan.withValues(alpha: 0.5)),
+                          border: Border.all(
+                            color: _cyan.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: const Text(
                           'WELT IV · CIA QUANTEN-CODE',
@@ -574,20 +585,54 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
   }
 
   Widget _buildMentorButton(BuildContext context) {
-    return MentorHeroCard(
-      world: 'ursprung',
-      mentorName: 'Alchemist',
-      tagline: 'Bewusstsein · Quanten · Realität',
-      icon: Icons.all_inclusive_rounded,
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const MentorChatScreen(
-            personality: MentorPersonality.alchemist,
-            world: 'ursprung',
+    return Column(
+      children: [
+        MentorHeroCard(
+          world: 'ursprung',
+          mentorName: 'Alchemist',
+          tagline: 'Bewusstsein - Quanten - Realitaet',
+          icon: Icons.all_inclusive_rounded,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MentorChatScreen(
+                personality: MentorPersonality.alchemist,
+                world: 'ursprung',
+              ),
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        // Avatar-Modus: immersive 3D-Session direkt starten
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const MentorSessionScreen(
+                  personality: MentorPersonality.alchemist,
+                  world: 'ursprung',
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.face_retouching_natural, size: 16),
+            label: const Text('Avatar-Modus'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _cyan,
+              side: BorderSide(color: _cyan.withValues(alpha: 0.5)),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              textStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -599,9 +644,7 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
         borderRadius: BorderRadius.circular(18),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const UrsprungTimelineScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const UrsprungTimelineScreen()),
         ),
         child: Container(
           padding: const EdgeInsets.all(18),
@@ -616,8 +659,10 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                 _surface,
               ],
             ),
-            border:
-                Border.all(color: _cyan.withValues(alpha: 0.45), width: 1.2),
+            border: Border.all(
+              color: _cyan.withValues(alpha: 0.45),
+              width: 1.2,
+            ),
             boxShadow: [
               BoxShadow(
                 color: _cyan.withValues(alpha: 0.15),
@@ -665,8 +710,11 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right,
-                  color: _cyan.withValues(alpha: 0.7), size: 22),
+              Icon(
+                Icons.chevron_right,
+                color: _cyan.withValues(alpha: 0.7),
+                size: 22,
+              ),
             ],
           ),
         ),
@@ -807,7 +855,11 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                       end: Alignment.bottomRight,
                       colors: [
                         _surface.withValues(alpha: 0.95),
-                        Color.lerp(_surface, _cyan, 0.07)!
+                        Color.lerp(
+                          _surface,
+                          _cyan,
+                          0.07,
+                        )!
                             .withValues(alpha: 0.9),
                       ],
                     ),
@@ -842,7 +894,8 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                               shape: BoxShape.circle,
                               color: _cyan.withValues(alpha: 0.15),
                               border: Border.all(
-                                  color: _cyan.withValues(alpha: 0.4)),
+                                color: _cyan.withValues(alpha: 0.4),
+                              ),
                             ),
                             child: Icon(
                               _branchIcons[key] ?? Icons.folder,
@@ -935,8 +988,10 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                   _surface,
                 ],
               ),
-              border:
-                  Border.all(color: _cyan.withValues(alpha: 0.55), width: 1.4),
+              border: Border.all(
+                color: _cyan.withValues(alpha: 0.55),
+                width: 1.4,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: _cyan.withValues(alpha: 0.18),
@@ -952,7 +1007,9 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: _cyan.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
@@ -971,7 +1028,9 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [_cyan, _cyanAccent],
@@ -1027,8 +1086,11 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    Icon(Icons.bolt,
-                        color: _cyan.withValues(alpha: 0.85), size: 16),
+                    Icon(
+                      Icons.bolt,
+                      color: _cyan.withValues(alpha: 0.85),
+                      size: 16,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '+$xp XP',
@@ -1104,10 +1166,14 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                   shape: BoxShape.circle,
                   color: const Color(0xFF1B5E20).withValues(alpha: 0.4),
                   border: Border.all(
-                      color: Colors.greenAccent.withValues(alpha: 0.5)),
+                    color: Colors.greenAccent.withValues(alpha: 0.5),
+                  ),
                 ),
-                child: Icon(icon,
-                    color: Colors.greenAccent.withValues(alpha: 0.9), size: 18),
+                child: Icon(
+                  icon,
+                  color: Colors.greenAccent.withValues(alpha: 0.9),
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1126,8 +1192,11 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.check_circle,
-                            color: Colors.greenAccent, size: 14),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.greenAccent,
+                          size: 14,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -1144,8 +1213,11 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right,
-                  color: _cyan.withValues(alpha: 0.5), size: 18),
+              Icon(
+                Icons.chevron_right,
+                color: _cyan.withValues(alpha: 0.5),
+                size: 18,
+              ),
             ],
           ),
         ),
@@ -1158,9 +1230,7 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [_cyan, _cyanAccent],
-        ),
+        gradient: const LinearGradient(colors: [_cyan, _cyanAccent]),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1240,7 +1310,9 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
             child: Text(
               'Module konnten nicht geladen werden.',
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 12,
+              ),
             ),
           ),
           TextButton(
@@ -1265,8 +1337,11 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
         children: [
           Row(
             children: [
-              Icon(Icons.shield_outlined,
-                  color: _cyan.withValues(alpha: 0.7), size: 16),
+              Icon(
+                Icons.shield_outlined,
+                color: _cyan.withValues(alpha: 0.7),
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

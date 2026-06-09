@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/mentor_service.dart';
 import '../../widgets/wb_cached_image.dart';
+import '../ursprung/mentor_session_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 🧠 MENTOR CHAT SCREEN — KI-Mentor mit 4 Persönlichkeiten
@@ -60,9 +61,13 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       );
       if (!_speechReady) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Mikrofon nicht verfügbar oder Berechtigung fehlt.'),
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Mikrofon nicht verfügbar oder Berechtigung fehlt.',
+              ),
+            ),
+          );
         }
         return;
       }
@@ -187,8 +192,10 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       );
 
       if (!mounted) return;
-      final assistantMsg =
-          MentorChatMessage(role: 'assistant', content: response.reply);
+      final assistantMsg = MentorChatMessage(
+        role: 'assistant',
+        content: response.reply,
+      );
       setState(() {
         _messages.add(assistantMsg);
         _isLoading = false;
@@ -218,9 +225,10 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _bgColor.withValues(alpha: 0.95),
-        title: Text('Faktencheck',
-            style:
-                TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Faktencheck',
+          style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: claimCtrl,
           maxLines: 3,
@@ -229,8 +237,9 @@ class _MentorChatScreenState extends State<MentorChatScreen>
             hintText: 'Behauptung eingeben...',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
             enabledBorder: OutlineInputBorder(
-              borderSide:
-                  BorderSide(color: _primaryColor.withValues(alpha: 0.3)),
+              borderSide: BorderSide(
+                color: _primaryColor.withValues(alpha: 0.3),
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             focusedBorder: OutlineInputBorder(
@@ -242,8 +251,10 @@ class _MentorChatScreenState extends State<MentorChatScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Abbrechen',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+            child: Text(
+              'Abbrechen',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, claimCtrl.text.trim()),
@@ -257,11 +268,13 @@ class _MentorChatScreenState extends State<MentorChatScreen>
     if (claim == null || claim.isEmpty) return;
 
     setState(() {
-      _messages.add(MentorChatMessage(
-        role: 'user',
-        content: '📋 Faktencheck: "$claim"',
-        type: 'factcheck',
-      ));
+      _messages.add(
+        MentorChatMessage(
+          role: 'user',
+          content: '📋 Faktencheck: "$claim"',
+          type: 'factcheck',
+        ),
+      );
       _isLoading = true;
     });
     _scrollToBottom();
@@ -271,30 +284,38 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       if (!mounted) return;
 
       setState(() {
-        _messages.add(MentorChatMessage(
-          role: 'assistant',
-          content: result.explanation,
-          type: 'factcheck',
-          metadata: {
-            'verdict': result.verdict,
-            'sources': result.sources
-                .map((s) => <String, dynamic>{
+        _messages.add(
+          MentorChatMessage(
+            role: 'assistant',
+            content: result.explanation,
+            type: 'factcheck',
+            metadata: {
+              'verdict': result.verdict,
+              'sources': result.sources
+                  .map(
+                    (s) => <String, dynamic>{
                       'claim': s.claim,
                       'source': s.source,
                       'rating': s.rating,
                       'url': s.url,
-                    })
-                .toList(),
-          },
-        ));
+                    },
+                  )
+                  .toList(),
+            },
+          ),
+        );
         _isLoading = false;
       });
       await _service.saveHistory(widget.world, _messages);
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(MentorChatMessage(
-            role: 'assistant', content: '⚠️ Faktencheck fehlgeschlagen: $e'));
+        _messages.add(
+          MentorChatMessage(
+            role: 'assistant',
+            content: '⚠️ Faktencheck fehlgeschlagen: $e',
+          ),
+        );
         _isLoading = false;
       });
     }
@@ -311,9 +332,10 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _bgColor.withValues(alpha: 0.95),
-        title: Text('YouTube-Suche',
-            style:
-                TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+        title: Text(
+          'YouTube-Suche',
+          style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: queryCtrl,
           style: const TextStyle(color: Colors.white),
@@ -321,8 +343,9 @@ class _MentorChatScreenState extends State<MentorChatScreen>
             hintText: 'Suchbegriff...',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
             enabledBorder: OutlineInputBorder(
-              borderSide:
-                  BorderSide(color: _primaryColor.withValues(alpha: 0.3)),
+              borderSide: BorderSide(
+                color: _primaryColor.withValues(alpha: 0.3),
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             focusedBorder: OutlineInputBorder(
@@ -334,8 +357,10 @@ class _MentorChatScreenState extends State<MentorChatScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Abbrechen',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+            child: Text(
+              'Abbrechen',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, queryCtrl.text.trim()),
@@ -349,8 +374,13 @@ class _MentorChatScreenState extends State<MentorChatScreen>
     if (query == null || query.isEmpty) return;
 
     setState(() {
-      _messages.add(MentorChatMessage(
-          role: 'user', content: '📺 YouTube: "$query"', type: 'youtube'));
+      _messages.add(
+        MentorChatMessage(
+          role: 'user',
+          content: '📺 YouTube: "$query"',
+          type: 'youtube',
+        ),
+      );
       _isLoading = true;
     });
     _scrollToBottom();
@@ -361,28 +391,35 @@ class _MentorChatScreenState extends State<MentorChatScreen>
 
       if (videos.isEmpty) {
         setState(() {
-          _messages.add(MentorChatMessage(
+          _messages.add(
+            MentorChatMessage(
               role: 'assistant',
-              content: 'Keine Videos zu "$query" gefunden.'));
+              content: 'Keine Videos zu "$query" gefunden.',
+            ),
+          );
           _isLoading = false;
         });
       } else {
         setState(() {
-          _messages.add(MentorChatMessage(
-            role: 'assistant',
-            content: '📺 ${videos.length} Videos gefunden:',
-            type: 'youtube',
-            metadata: {
-              'videos': videos
-                  .map((v) => <String, dynamic>{
+          _messages.add(
+            MentorChatMessage(
+              role: 'assistant',
+              content: '📺 ${videos.length} Videos gefunden:',
+              type: 'youtube',
+              metadata: {
+                'videos': videos
+                    .map(
+                      (v) => <String, dynamic>{
                         'title': v.title,
                         'videoId': v.videoId,
                         'thumbnail': v.thumbnail,
                         'channel': v.channel,
-                      })
-                  .toList(),
-            },
-          ));
+                      },
+                    )
+                    .toList(),
+              },
+            ),
+          );
           _isLoading = false;
         });
         await _service.saveHistory(widget.world, _messages);
@@ -390,8 +427,12 @@ class _MentorChatScreenState extends State<MentorChatScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(MentorChatMessage(
-            role: 'assistant', content: '⚠️ YouTube-Suche fehlgeschlagen: $e'));
+        _messages.add(
+          MentorChatMessage(
+            role: 'assistant',
+            content: '⚠️ YouTube-Suche fehlgeschlagen: $e',
+          ),
+        );
         _isLoading = false;
       });
     }
@@ -411,9 +452,10 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: _bgColor.withValues(alpha: 0.95),
-          title: Text('Tiefenrecherche',
-              style:
-                  TextStyle(color: _primaryColor, fontWeight: FontWeight.bold)),
+          title: Text(
+            'Tiefenrecherche',
+            style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -422,11 +464,13 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Thema eingeben...',
-                  hintStyle:
-                      TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide:
-                        BorderSide(color: _primaryColor.withValues(alpha: 0.3)),
+                    borderSide: BorderSide(
+                      color: _primaryColor.withValues(alpha: 0.3),
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
@@ -470,15 +514,21 @@ class _MentorChatScreenState extends State<MentorChatScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Abbrechen',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+              child: Text(
+                'Abbrechen',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+              ),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(
-                  ctx, {'topic': topicCtrl.text.trim(), 'depth': depth}),
+              onPressed: () => Navigator.pop(ctx, {
+                'topic': topicCtrl.text.trim(),
+                'depth': depth,
+              }),
               style: FilledButton.styleFrom(backgroundColor: _primaryColor),
-              child: const Text('Recherchieren',
-                  style: TextStyle(color: Colors.black)),
+              child: const Text(
+                'Recherchieren',
+                style: TextStyle(color: Colors.black),
+              ),
             ),
           ],
         ),
@@ -491,12 +541,14 @@ class _MentorChatScreenState extends State<MentorChatScreen>
     final selectedDepth = result['depth'] ?? 'basic';
 
     setState(() {
-      _messages.add(MentorChatMessage(
-        role: 'user',
-        content:
-            '🔍 Recherche: "$topic" (${selectedDepth == 'basic' ? 'Kurz' : selectedDepth == 'deep' ? 'Tief' : 'Experte'})',
-        type: 'investigation',
-      ));
+      _messages.add(
+        MentorChatMessage(
+          role: 'user',
+          content:
+              '🔍 Recherche: "$topic" (${selectedDepth == 'basic' ? 'Kurz' : selectedDepth == 'deep' ? 'Tief' : 'Experte'})',
+          type: 'investigation',
+        ),
+      );
       _isLoading = true;
     });
     _scrollToBottom();
@@ -525,19 +577,25 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       }
 
       setState(() {
-        _messages.add(MentorChatMessage(
-          role: 'assistant',
-          content: sb.toString(),
-          type: 'investigation',
-        ));
+        _messages.add(
+          MentorChatMessage(
+            role: 'assistant',
+            content: sb.toString(),
+            type: 'investigation',
+          ),
+        );
         _isLoading = false;
       });
       await _service.saveHistory(widget.world, _messages);
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _messages.add(MentorChatMessage(
-            role: 'assistant', content: '⚠️ Recherche fehlgeschlagen: $e'));
+        _messages.add(
+          MentorChatMessage(
+            role: 'assistant',
+            content: '⚠️ Recherche fehlgeschlagen: $e',
+          ),
+        );
         _isLoading = false;
       });
     }
@@ -553,16 +611,21 @@ class _MentorChatScreenState extends State<MentorChatScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _bgColor.withValues(alpha: 0.95),
-        title:
-            const Text('Chat löschen?', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Chat löschen?',
+          style: TextStyle(color: Colors.white),
+        ),
         content: const Text(
-            'Der gesamte Verlauf mit diesem Mentor wird gelöscht.',
-            style: TextStyle(color: Colors.white70)),
+          'Der gesamte Verlauf mit diesem Mentor wird gelöscht.',
+          style: TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Abbrechen',
-                style: TextStyle(color: Colors.white60)),
+            child: const Text(
+              'Abbrechen',
+              style: TextStyle(color: Colors.white60),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -611,7 +674,9 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                   ],
                 ),
                 border: Border.all(
-                    color: _primaryColor.withValues(alpha: 0.5), width: 1.5),
+                  color: _primaryColor.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
               ),
               child: Icon(_mentorIcon, color: _primaryColor, size: 22),
             ),
@@ -619,25 +684,50 @@ class _MentorChatScreenState extends State<MentorChatScreen>
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(mentorName,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600)),
-                Text('Online',
-                    style: TextStyle(
-                        color: _primaryColor.withValues(alpha: 0.8),
-                        fontSize: 12)),
+                Text(
+                  mentorName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Online',
+                  style: TextStyle(
+                    color: _primaryColor.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ],
         ),
         actions: [
+          // Avatar-Modus: immersive 3D-Mentor-Session oeffnen
           IconButton(
-            icon: Icon(Icons.delete_outline,
-                color: Colors.white.withValues(alpha: 0.5)),
+            icon: Icon(
+              Icons.face_retouching_natural,
+              color: _primaryColor.withValues(alpha: 0.85),
+            ),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MentorSessionScreen(
+                  personality: widget.personality,
+                  world: widget.world,
+                ),
+              ),
+            ),
+            tooltip: 'Avatar-Modus',
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.delete_outline,
+              color: Colors.white.withValues(alpha: 0.5),
+            ),
             onPressed: _clearChat,
-            tooltip: 'Chat löschen',
+            tooltip: 'Chat loeschen',
           ),
         ],
       ),
@@ -668,13 +758,22 @@ class _MentorChatScreenState extends State<MentorChatScreen>
               child: Row(
                 children: [
                   _buildActionChip(
-                      Icons.checklist, 'Faktencheck', _showFactCheckDialog),
+                    Icons.checklist,
+                    'Faktencheck',
+                    _showFactCheckDialog,
+                  ),
                   const SizedBox(width: 8),
                   _buildActionChip(
-                      Icons.search, 'Recherche', _showInvestigateDialog),
+                    Icons.search,
+                    'Recherche',
+                    _showInvestigateDialog,
+                  ),
                   const SizedBox(width: 8),
                   _buildActionChip(
-                      Icons.play_circle_outline, 'YouTube', _showYouTubeSearch),
+                    Icons.play_circle_outline,
+                    'YouTube',
+                    _showYouTubeSearch,
+                  ),
                 ],
               ),
             ),
@@ -683,12 +782,18 @@ class _MentorChatScreenState extends State<MentorChatScreen>
           // ── Input-Feld ──
           Container(
             padding: EdgeInsets.fromLTRB(
-                12, 8, 12, MediaQuery.of(context).padding.bottom + 8),
+              12,
+              8,
+              12,
+              MediaQuery.of(context).padding.bottom + 8,
+            ),
             decoration: BoxDecoration(
               color: _bgColor,
               border: Border(
                 top: BorderSide(
-                    color: _primaryColor.withValues(alpha: 0.15), width: 0.5),
+                  color: _primaryColor.withValues(alpha: 0.15),
+                  width: 0.5,
+                ),
               ),
             ),
             child: Row(
@@ -703,11 +808,14 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                     decoration: InputDecoration(
                       hintText: 'Nachricht an $mentorName...',
                       hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.35)),
+                        color: Colors.white.withValues(alpha: 0.35),
+                      ),
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: 0.06),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
@@ -777,24 +885,30 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                 shape: BoxShape.circle,
                 color: _primaryColor.withValues(alpha: 0.1),
                 border: Border.all(
-                    color: _primaryColor.withValues(alpha: 0.3), width: 2),
+                  color: _primaryColor.withValues(alpha: 0.3),
+                  width: 2,
+                ),
               ),
               child: Icon(_mentorIcon, color: _primaryColor, size: 40),
             ),
             const SizedBox(height: 20),
-            Text(mentorName,
-                style: TextStyle(
-                    color: _primaryColor,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              mentorName,
+              style: TextStyle(
+                color: _primaryColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 12),
             Text(
               _mentorGreeting,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 14,
-                  height: 1.5),
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 14,
+                height: 1.5,
+              ),
             ),
           ],
         ),
@@ -898,47 +1012,62 @@ class _MentorChatScreenState extends State<MentorChatScreen>
             children: [
               const Icon(Icons.fact_check, color: Colors.white70, size: 18),
               const SizedBox(width: 8),
-              const Text('FAKTENCHECK',
-                  style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 11,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w700)),
+              const Text(
+                'FAKTENCHECK',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const Spacer(),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: verdictColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: verdictColor.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: verdictColor.withValues(alpha: 0.5),
+                  ),
                 ),
-                child: Text(verdict,
-                    style: TextStyle(
-                        color: verdictColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
+                child: Text(
+                  verdict,
+                  style: TextStyle(
+                    color: verdictColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
 
           // Explanation
-          SelectableText(msg.content,
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 14,
-                  height: 1.5)),
+          SelectableText(
+            msg.content,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
 
           // Sources
           if (sources.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Quellen:',
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600)),
+            Text(
+              'Quellen:',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 4),
             for (final s in sources)
               Padding(
@@ -946,7 +1075,9 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                 child: Text(
                   '- ${s['source'] ?? ''}: ${s['rating'] ?? ''}',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  ),
                 ),
               ),
           ],
@@ -970,10 +1101,13 @@ class _MentorChatScreenState extends State<MentorChatScreen>
               children: [
                 Icon(Icons.play_circle, color: _primaryColor, size: 18),
                 const SizedBox(width: 6),
-                Text(msg.content,
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 13)),
+                Text(
+                  msg.content,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1010,7 +1144,9 @@ class _MentorChatScreenState extends State<MentorChatScreen>
           color: Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: _primaryColor.withValues(alpha: 0.2), width: 0.5),
+            color: _primaryColor.withValues(alpha: 0.2),
+            width: 0.5,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1022,14 +1158,18 @@ class _MentorChatScreenState extends State<MentorChatScreen>
               height: 85,
               width: 200,
               fit: BoxFit.cover,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               errorWidget: Container(
                 height: 85,
                 width: 200,
                 color: Colors.white.withValues(alpha: 0.05),
-                child: const Icon(Icons.play_circle_outline,
-                    color: Colors.white30, size: 32),
+                child: const Icon(
+                  Icons.play_circle_outline,
+                  color: Colors.white30,
+                  size: 32,
+                ),
               ),
             ),
             // Title
@@ -1101,9 +1241,13 @@ class _MentorChatScreenState extends State<MentorChatScreen>
   Widget _buildActionChip(IconData icon, String label, VoidCallback onPressed) {
     return ActionChip(
       avatar: Icon(icon, size: 16, color: _primaryColor),
-      label: Text(label,
-          style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.8),
+          fontSize: 12,
+        ),
+      ),
       backgroundColor: _primaryColor.withValues(alpha: 0.1),
       side: BorderSide(color: _primaryColor.withValues(alpha: 0.2)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
