@@ -6,6 +6,7 @@
 // pushReplacement auf den entsprechenden Wrapper.
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../animations/world_transition_video.dart';
 import '../screens/energie_world_wrapper.dart';
@@ -51,10 +52,8 @@ class WorldSwitcherPill extends StatelessWidget {
     // damit der Stack nicht wächst beim mehrfachen Hin- und Her-Springen.
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => WorldTransitionVideo(
-          targetScreen: screen,
-          targetWorld: world,
-        ),
+        builder: (_) =>
+            WorldTransitionVideo(targetScreen: screen, targetWorld: world),
       ),
     );
   }
@@ -85,6 +84,14 @@ class WorldSwitcherPill extends StatelessWidget {
   }
 }
 
+// Short display names for the world pill labels.
+const Map<String, String> _worldShortNames = {
+  'materie': 'Mat.',
+  'energie': 'En.',
+  'vorhang': 'Vor.',
+  'ursprung': 'Ur.',
+};
+
 class _WorldDot extends StatelessWidget {
   final String world;
   final Color color;
@@ -102,38 +109,60 @@ class _WorldDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final label = _worldShortNames[world] ?? world;
     return Tooltip(
       message: world[0].toUpperCase() + world.substring(1),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          width: isCurrent ? 26 : 18,
-          height: isCurrent ? 26 : 18,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isCurrent
-                ? color.withValues(alpha: 0.85)
-                : color.withValues(alpha: 0.18),
-            border: Border.all(
-              color: isCurrent ? color : color.withValues(alpha: 0.4),
-              width: isCurrent ? 1.5 : 1,
-            ),
-            boxShadow: isCurrent
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.55),
-                      blurRadius: 8,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Icon(
-            icon,
-            size: isCurrent ? 14 : 0,
-            color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: isCurrent ? 26 : 18,
+                height: isCurrent ? 26 : 18,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isCurrent
+                      ? color.withValues(alpha: 0.85)
+                      : color.withValues(alpha: 0.18),
+                  border: Border.all(
+                    color: isCurrent ? color : color.withValues(alpha: 0.4),
+                    width: isCurrent ? 1.5 : 1,
+                  ),
+                  boxShadow: isCurrent
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.55),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  icon,
+                  size: isCurrent ? 14 : 0,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 2),
+              // World name label below the dot for discoverability.
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 7.5,
+                  fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
+                  color: isCurrent
+                      ? color
+                      : Colors.white.withValues(alpha: 0.38),
+                  letterSpacing: 0.2,
+                  height: 1.0,
+                ),
+              ),
+            ],
           ),
         ),
       ),

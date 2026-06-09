@@ -192,15 +192,16 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
   void _initGyroscope() {
     try {
       _gyroscopeSubscription =
-          gyroscopeEventStream(samplingPeriod: SensorInterval.gameInterval)
-              .listen((GyroscopeEvent event) {
-        if (mounted) {
-          setState(() {
-            _gyroX = (event.y * 8).clamp(-15.0, 15.0);
-            _gyroY = (event.x * 8).clamp(-15.0, 15.0);
+          gyroscopeEventStream(
+            samplingPeriod: SensorInterval.gameInterval,
+          ).listen((GyroscopeEvent event) {
+            if (mounted) {
+              setState(() {
+                _gyroX = (event.y * 8).clamp(-15.0, 15.0);
+                _gyroY = (event.x * 8).clamp(-15.0, 15.0);
+              });
+            }
           });
-        }
-      });
     } catch (_) {
       // Gyroscope not available on this device/emulator - silent fail.
     }
@@ -273,8 +274,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
 
       _showEasterEgg();
       _portalTapCount = 0;
-      _progressRingController.animateTo(0.0,
-          duration: const Duration(milliseconds: 500));
+      _progressRingController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 500),
+      );
 
       // 2.3 - Achievement: Portal Entdecker
       _unlockAchievement('portal_entdecker');
@@ -334,16 +337,36 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildColorSchemeOption('Standard (Blau/Lila)', '🌀',
-                const Color(0xFF2196F3), const Color(0xFF9C27B0)),
-            _buildColorSchemeOption('Feuer (Rot/Orange)', '🔥',
-                const Color(0xFFFF5722), const Color(0xFFFF9800)),
-            _buildColorSchemeOption('Natur (Grün/Türkis)', '🌿',
-                const Color(0xFF4CAF50), const Color(0xFF00BCD4)),
-            _buildColorSchemeOption('Mystisch (Lila/Pink)', '✨',
-                const Color(0xFF9C27B0), const Color(0xFFE91E63)),
-            _buildColorSchemeOption('Cyber (Cyan/Magenta)', '⚡',
-                const Color(0xFF00E5FF), const Color(0xFFFF00FF)),
+            _buildColorSchemeOption(
+              'Standard (Blau/Lila)',
+              '🌀',
+              const Color(0xFF2196F3),
+              const Color(0xFF9C27B0),
+            ),
+            _buildColorSchemeOption(
+              'Feuer (Rot/Orange)',
+              '🔥',
+              const Color(0xFFFF5722),
+              const Color(0xFFFF9800),
+            ),
+            _buildColorSchemeOption(
+              'Natur (Grün/Türkis)',
+              '🌿',
+              const Color(0xFF4CAF50),
+              const Color(0xFF00BCD4),
+            ),
+            _buildColorSchemeOption(
+              'Mystisch (Lila/Pink)',
+              '✨',
+              const Color(0xFF9C27B0),
+              const Color(0xFFE91E63),
+            ),
+            _buildColorSchemeOption(
+              'Cyber (Cyan/Magenta)',
+              '⚡',
+              const Color(0xFF00E5FF),
+              const Color(0xFFFF00FF),
+            ),
           ],
         ),
         actions: [
@@ -353,8 +376,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               Navigator.pop(context);
               _showEasterEgg();
             },
-            child: const Text('← Easter Egg Menü',
-                style: TextStyle(color: Color(0xFFFFD700))),
+            child: const Text(
+              '← Easter Egg Menü',
+              style: TextStyle(color: Color(0xFFFFD700)),
+            ),
           ),
         ],
       ),
@@ -362,7 +387,11 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
   }
 
   Widget _buildColorSchemeOption(
-      String name, String emoji, Color color1, Color color2) {
+    String name,
+    String emoji,
+    Color color1,
+    Color color2,
+  ) {
     final isActive =
         _currentColorScheme == name.split(' ')[0]; // Extract first word
 
@@ -397,7 +426,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
           gradient: LinearGradient(
             colors: [
               color1.withValues(alpha: 0.3),
-              color2.withValues(alpha: 0.3)
+              color2.withValues(alpha: 0.3),
             ],
           ),
           border: Border.all(
@@ -418,7 +447,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   Text(
                     name,
                     style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   if (isActive)
                     const Text(
@@ -433,11 +464,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [color1, color2],
-                ),
-                border:
-                    isActive ? Border.all(color: Colors.white, width: 2) : null,
+                gradient: LinearGradient(colors: [color1, color2]),
+                border: isActive
+                    ? Border.all(color: Colors.white, width: 2)
+                    : null,
               ),
               child: isActive
                   ? const Icon(Icons.check, color: Colors.white, size: 20)
@@ -474,10 +504,14 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               _buildStatItem('Sterne', '100'),
               _buildStatItem('Animationen', '4 Controller'),
               _buildStatItem('Portal-Rotation', '10s / 360°'),
-              _buildStatItem('Gyroscope',
-                  _gyroX != 0.0 || _gyroY != 0.0 ? 'Aktiv' : 'Inaktiv'),
-              _buildStatItem('Touch-Position',
-                  _touchPosition != null ? 'Getrackt' : 'Keine'),
+              _buildStatItem(
+                'Gyroscope',
+                _gyroX != 0.0 || _gyroY != 0.0 ? 'Aktiv' : 'Inaktiv',
+              ),
+              _buildStatItem(
+                'Touch-Position',
+                _touchPosition != null ? 'Getrackt' : 'Keine',
+              ),
               const Divider(color: Colors.white24),
               _buildStatItem('Features', '4 Welten'),
               _buildStatItem('Version', 'Aktuell'),
@@ -491,8 +525,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               Navigator.pop(context);
               _showEasterEgg();
             },
-            child: const Text('← Easter Egg Menü',
-                style: TextStyle(color: Color(0xFFFFD700))),
+            child: const Text(
+              '← Easter Egg Menü',
+              style: TextStyle(color: Color(0xFFFFD700)),
+            ),
           ),
         ],
       ),
@@ -558,8 +594,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               const SizedBox(height: 20),
               const Text(
                 'Das Portal verbindet vier Welten:',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               _buildWorldDescription(
@@ -595,8 +633,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               Navigator.pop(context);
               _showEasterEgg();
             },
-            child: const Text('← Easter Egg Menü',
-                style: TextStyle(color: Color(0xFFFFD700))),
+            child: const Text(
+              '← Easter Egg Menü',
+              style: TextStyle(color: Color(0xFFFFD700)),
+            ),
           ),
         ],
       ),
@@ -617,13 +657,19 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
           Text(
             title,
             style: TextStyle(
-                color: color, fontWeight: FontWeight.bold, fontSize: 14),
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             description,
             style: const TextStyle(
-                color: Colors.white70, fontSize: 12, height: 1.4),
+              color: Colors.white70,
+              fontSize: 12,
+              height: 1.4,
+            ),
           ),
         ],
       ),
@@ -631,7 +677,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
   }
 
   Widget _buildEasterEggOption(
-      String title, String subtitle, VoidCallback onTap) {
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -643,20 +692,27 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle,
-                      style:
-                          const TextStyle(color: Colors.white54, fontSize: 12)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios,
-                color: Color(0xFF64B5F6), size: 16),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Color(0xFF64B5F6),
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -775,8 +831,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                       animation: _starsController,
                       builder: (context, child) {
                         return CustomPaint(
-                          painter:
-                              StarfieldPainter(_starsController.value, _stars),
+                          painter: StarfieldPainter(
+                            _starsController.value,
+                            _stars,
+                          ),
                         );
                       },
                     ),
@@ -840,8 +898,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color:
-                                        particle.color.withValues(alpha: 0.6),
+                                    color: particle.color.withValues(
+                                      alpha: 0.6,
+                                    ),
                                     blurRadius: particleSize * 2,
                                   ),
                                 ],
@@ -859,12 +918,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                       animation: _portalController,
                       builder: (context, child) {
                         // Get positions
-                        final portalBox = _portalKey.currentContext
-                            ?.findRenderObject() as RenderBox?;
-                        final materieBox = _materieButtonKey.currentContext
-                            ?.findRenderObject() as RenderBox?;
-                        final energieBox = _energieButtonKey.currentContext
-                            ?.findRenderObject() as RenderBox?;
+                        final portalBox =
+                            _portalKey.currentContext?.findRenderObject()
+                                as RenderBox?;
+                        final materieBox =
+                            _materieButtonKey.currentContext?.findRenderObject()
+                                as RenderBox?;
+                        final energieBox =
+                            _energieButtonKey.currentContext?.findRenderObject()
+                                as RenderBox?;
 
                         if (portalBox == null ||
                             materieBox == null ||
@@ -873,16 +935,22 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         }
 
                         final portalCenter = portalBox.localToGlobal(
-                          Offset(portalBox.size.width / 2,
-                              portalBox.size.height / 2),
+                          Offset(
+                            portalBox.size.width / 2,
+                            portalBox.size.height / 2,
+                          ),
                         );
                         final materieCenter = materieBox.localToGlobal(
-                          Offset(materieBox.size.width / 2,
-                              materieBox.size.height / 2),
+                          Offset(
+                            materieBox.size.width / 2,
+                            materieBox.size.height / 2,
+                          ),
                         );
                         final energieCenter = energieBox.localToGlobal(
-                          Offset(energieBox.size.width / 2,
-                              energieBox.size.height / 2),
+                          Offset(
+                            energieBox.size.width / 2,
+                            energieBox.size.height / 2,
+                          ),
                         );
 
                         return CustomPaint(
@@ -910,7 +978,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                       builder: (context, constraints) {
                         return SingleChildScrollView(
                           physics: const BouncingScrollPhysics(
-                              parent: AlwaysScrollableScrollPhysics()),
+                            parent: AlwaysScrollableScrollPhysics(),
+                          ),
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
                               minHeight: constraints.maxHeight,
@@ -918,425 +987,559 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                             child: IntrinsicHeight(
                               child: Column(
                                 children: [
-                        // ── Top bar ──
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text('Anno MMXXVI',
-                                          style: TextStyle(
-                                              fontSize: 10,
-                                              letterSpacing: 4.2,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.42),
-                                              fontWeight: FontWeight.w500)),
-                                      Container(
-                                          width: 5,
-                                          height: 5,
-                                          margin: const EdgeInsets.symmetric(
-                                              horizontal: 8),
-                                          decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.5))),
-                                      Text('Vol. V',
-                                          style: TextStyle(
-                                              fontSize: 10,
-                                              letterSpacing: 4.2,
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.42),
-                                              fontWeight: FontWeight.w500)),
-                                    ],
+                                  // ── Top bar ──
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      24,
+                                      16,
+                                      24,
+                                      0,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  'Anno MMXXVI',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    letterSpacing: 4.2,
+                                                    color: Colors.white
+                                                        .withValues(
+                                                          alpha: 0.42,
+                                                        ),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                Container(
+                                                  width: 5,
+                                                  height: 5,
+                                                  margin:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: Colors.white
+                                                        .withValues(alpha: 0.5),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  'Vol. V',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    letterSpacing: 4.2,
+                                                    color: Colors.white
+                                                        .withValues(
+                                                          alpha: 0.42,
+                                                        ),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Willkommen, Reisender',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.78,
+                                                ),
+                                                fontWeight: FontWeight.w300,
+                                                letterSpacing: 0.2,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const DailyStreakIndicator(),
+                                            _buildIconBtn(Icons.settings, () {
+                                              HapticService.lightImpact();
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      const ProfileSettingsScreen(),
+                                                ),
+                                              );
+                                            }),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text('Willkommen, Reisender',
-                                      style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.78),
-                                          fontWeight: FontWeight.w300,
-                                          letterSpacing: 0.2)),
-                                ],
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const DailyStreakIndicator(),
-                                  _buildIconBtn(Icons.settings, () {
-                                    HapticService.lightImpact();
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const ProfileSettingsScreen(),
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
 
-                        const Spacer(),
+                                  const Spacer(),
 
-                        // ── Wordmark ──
-                        AnimatedBuilder(
-                          animation: _wordmarkController,
-                          builder: (context, child) {
-                            return Column(
-                              children: [
-                                _buildWordmarkRow(
-                                    'WELTEN', _wordmarkController.value, 0.0,
-                                    isGradient: false),
-                                const SizedBox(height: 2),
-                                _buildWordmarkRow('BIBLIOTHEK',
-                                    _wordmarkController.value, 0.12,
-                                    isGradient: true),
-                                const SizedBox(height: 18),
-                                Opacity(
-                                  opacity:
-                                      ((_wordmarkController.value - 0.7) / 0.3)
-                                          .clamp(0.0, 1.0),
-                                  child: Text(
-                                    'Wähle deine Welt · vier Pfade, ein Ursprung',
-                                    style: TextStyle(
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 13,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.46),
-                                        letterSpacing: 1.8,
-                                        fontWeight: FontWeight.w300),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-
-                        const Spacer(),
-
-                        // ── Cinematic Dual-World Portal (tap = easter egg) ──
-                        // Long-Press 1.5s = direkter Easter-Egg-Shortcut.
-                        GestureDetector(
-                          onTap: _handlePortalTap,
-                          onLongPress: () {
-                            HapticService.heavyImpact();
-                            SoundService.playUnlockSound();
-                            _showEasterEgg();
-                          },
-                          child: Transform(
-                            transform: Matrix4.identity()
-                              ..setEntry(3, 2, 0.001)
-                              ..rotateX(_gyroY * 0.004)
-                              ..rotateY(_gyroX * 0.004),
-                            alignment: Alignment.center,
-                            child: SizedBox(
-                              key: _portalKey,
-                              width: 260,
-                              height: 280,
-                              child: AnimatedBuilder(
-                                animation: Listenable.merge([
-                                  _portalController,
-                                  _nebulaController,
-                                  _tapPulseController
-                                ]),
-                                builder: (context, child) {
-                                  final tapScale =
-                                      1.0 + _tapPulseController.value * 0.14;
-                                  final neo = _nebulaController.value;
-                                  return Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      // Dual ambient atmosphere
-                                      Transform.scale(
-                                        scale: tapScale,
-                                        child: Container(
-                                          width: 260,
-                                          height: 260,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                  color:
-                                                      _portalColor1.withValues(
-                                                          alpha: 0.22 * neo),
-                                                  blurRadius: 110,
-                                                  spreadRadius: 55),
-                                              BoxShadow(
-                                                  color:
-                                                      _portalColor2.withValues(
-                                                          alpha:
-                                                              0.22 * (1 - neo)),
-                                                  blurRadius: 110,
-                                                  spreadRadius: 55),
-                                            ],
+                                  // ── Wordmark ──
+                                  AnimatedBuilder(
+                                    animation: _wordmarkController,
+                                    builder: (context, child) {
+                                      return Column(
+                                        children: [
+                                          _buildWordmarkRow(
+                                            'WELTEN',
+                                            _wordmarkController.value,
+                                            0.0,
+                                            isGradient: false,
                                           ),
+                                          const SizedBox(height: 2),
+                                          _buildWordmarkRow(
+                                            'BIBLIOTHEK',
+                                            _wordmarkController.value,
+                                            0.12,
+                                            isGradient: true,
+                                          ),
+                                          const SizedBox(height: 18),
+                                          Opacity(
+                                            opacity:
+                                                ((_wordmarkController.value -
+                                                            0.7) /
+                                                        0.3)
+                                                    .clamp(0.0, 1.0),
+                                            child: Text(
+                                              'Wähle deine Welt · vier Pfade, ein Ursprung',
+                                              style: TextStyle(
+                                                fontStyle: FontStyle.italic,
+                                                fontSize: 13,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.46,
+                                                ),
+                                                letterSpacing: 1.8,
+                                                fontWeight: FontWeight.w300,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+
+                                  const Spacer(),
+
+                                  // ── Cinematic Dual-World Portal (tap = easter egg) ──
+                                  // Long-Press 1.5s = direkter Easter-Egg-Shortcut.
+                                  GestureDetector(
+                                    onTap: _handlePortalTap,
+                                    onLongPress: () {
+                                      HapticService.heavyImpact();
+                                      SoundService.playUnlockSound();
+                                      _showEasterEgg();
+                                    },
+                                    child: Transform(
+                                      transform: Matrix4.identity()
+                                        ..setEntry(3, 2, 0.001)
+                                        ..rotateX(_gyroY * 0.004)
+                                        ..rotateY(_gyroX * 0.004),
+                                      alignment: Alignment.center,
+                                      child: SizedBox(
+                                        key: _portalKey,
+                                        width: 260,
+                                        height: 280,
+                                        child: AnimatedBuilder(
+                                          animation: Listenable.merge([
+                                            _portalController,
+                                            _nebulaController,
+                                            _tapPulseController,
+                                          ]),
+                                          builder: (context, child) {
+                                            final tapScale =
+                                                1.0 +
+                                                _tapPulseController.value *
+                                                    0.14;
+                                            final neo = _nebulaController.value;
+                                            return Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                // Dual ambient atmosphere
+                                                Transform.scale(
+                                                  scale: tapScale,
+                                                  child: Container(
+                                                    width: 260,
+                                                    height: 260,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: _portalColor1
+                                                              .withValues(
+                                                                alpha:
+                                                                    0.22 * neo,
+                                                              ),
+                                                          blurRadius: 110,
+                                                          spreadRadius: 55,
+                                                        ),
+                                                        BoxShadow(
+                                                          color: _portalColor2
+                                                              .withValues(
+                                                                alpha:
+                                                                    0.22 *
+                                                                    (1 - neo),
+                                                              ),
+                                                          blurRadius: 110,
+                                                          spreadRadius: 55,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                                // Cinematic dual-world vortex painter
+                                                CustomPaint(
+                                                  size: const Size(240, 240),
+                                                  painter:
+                                                      CinematicPortalPainter(
+                                                        animation:
+                                                            _portalController
+                                                                .value,
+                                                        pulse: neo,
+                                                        materieColor:
+                                                            _portalColor1,
+                                                        energieColor:
+                                                            _portalColor2,
+                                                      ),
+                                                ),
+                                                // Central division crack (world boundary)
+                                                Container(
+                                                  width: 2.5,
+                                                  height: 112,
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      begin:
+                                                          Alignment.topCenter,
+                                                      end: Alignment
+                                                          .bottomCenter,
+                                                      colors: [
+                                                        Colors.transparent,
+                                                        Colors.white.withValues(
+                                                          alpha: 0.82,
+                                                        ),
+                                                        Colors.white,
+                                                        Colors.white,
+                                                        Colors.white.withValues(
+                                                          alpha: 0.82,
+                                                        ),
+                                                        Colors.transparent,
+                                                      ],
+                                                      stops: const [
+                                                        0.0,
+                                                        0.15,
+                                                        0.35,
+                                                        0.65,
+                                                        0.85,
+                                                        1.0,
+                                                      ],
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.65,
+                                                            ),
+                                                        blurRadius: 14,
+                                                      ),
+                                                      BoxShadow(
+                                                        color: _portalColor1
+                                                            .withValues(
+                                                              alpha: 0.45,
+                                                            ),
+                                                        blurRadius: 26,
+                                                        offset: const Offset(
+                                                          -10,
+                                                          0,
+                                                        ),
+                                                      ),
+                                                      BoxShadow(
+                                                        color: _portalColor2
+                                                            .withValues(
+                                                              alpha: 0.45,
+                                                            ),
+                                                        blurRadius: 26,
+                                                        offset: const Offset(
+                                                          10,
+                                                          0,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                // Nexus dot at the boundary
+                                                Opacity(
+                                                  opacity: (0.7 + 0.3 * neo)
+                                                      .clamp(0.0, 1.0),
+                                                  child: Container(
+                                                    width: 12,
+                                                    height: 12,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: Colors.white,
+                                                      boxShadow: [
+                                                        const BoxShadow(
+                                                          color: Colors.white,
+                                                          blurRadius: 30,
+                                                          spreadRadius: 8,
+                                                        ),
+                                                        BoxShadow(
+                                                          color: _portalColor1
+                                                              .withValues(
+                                                                alpha: 0.55,
+                                                              ),
+                                                          blurRadius: 60,
+                                                          spreadRadius: 14,
+                                                          offset: const Offset(
+                                                            -7,
+                                                            0,
+                                                          ),
+                                                        ),
+                                                        BoxShadow(
+                                                          color: _portalColor2
+                                                              .withValues(
+                                                                alpha: 0.55,
+                                                              ),
+                                                          blurRadius: 60,
+                                                          spreadRadius: 14,
+                                                          offset: const Offset(
+                                                            7,
+                                                            0,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                                // Tap progress ring - only visible after 3+ taps.
+                                                if (_portalTapCount >= 3)
+                                                  CustomPaint(
+                                                    size: const Size(256, 256),
+                                                    painter:
+                                                        TapProgressRingPainter(
+                                                          progress:
+                                                              _portalTapCount /
+                                                              10.0,
+                                                          tapCount:
+                                                              _portalTapCount,
+                                                          color1: _portalColor1,
+                                                          color2: _portalColor2,
+                                                        ),
+                                                  ),
+                                                // Tap dots - hidden until 3+ taps to avoid confusion.
+                                                Positioned(
+                                                  bottom: 0,
+                                                  child: Opacity(
+                                                    opacity:
+                                                        _portalTapCount >= 3
+                                                        ? 1.0
+                                                        : 0.0,
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: List.generate(
+                                                        10,
+                                                        (i) => Container(
+                                                          width: 5,
+                                                          height: 5,
+                                                          margin:
+                                                              const EdgeInsets.symmetric(
+                                                                horizontal: 2.5,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            shape:
+                                                                BoxShape.circle,
+                                                            color:
+                                                                i <
+                                                                    _portalTapCount
+                                                                ? const Color(
+                                                                    0xFFFFD479,
+                                                                  )
+                                                                : Colors.white
+                                                                      .withValues(
+                                                                        alpha:
+                                                                            0.15,
+                                                                      ),
+                                                            boxShadow:
+                                                                i < _portalTapCount
+                                                                ? [
+                                                                    const BoxShadow(
+                                                                      color: Color(
+                                                                        0xFFFFD479,
+                                                                      ),
+                                                                      blurRadius:
+                                                                          8,
+                                                                    ),
+                                                                  ]
+                                                                : null,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ), // Row close
+                                                  ), // Opacity close
+                                                ),
+                                              ],
+                                            );
+                                          },
                                         ),
                                       ),
-                                      // Cinematic dual-world vortex painter
-                                      CustomPaint(
-                                        size: const Size(240, 240),
-                                        painter: CinematicPortalPainter(
-                                          animation: _portalController.value,
-                                          pulse: neo,
-                                          materieColor: _portalColor1,
-                                          energieColor: _portalColor2,
-                                        ),
+                                    ), // Transform close
+                                  ),
+
+                                  const Spacer(),
+
+                                  // PWA-Tipp (nur Web, einmal pro User dismissbar).
+                                  const PwaInstallHint(),
+                                  // Profile-Quest-Banner — versteckt sich automatisch wenn
+                                  // bereits ein Profil existiert (Materie/Energie).
+                                  const ProfileQuestBanner(),
+                                  // ⚔️ K2: Tages-Challenges (versteckt sich wenn keine
+                                  // Challenges für heute angelegt).
+                                  const DailyChallengesBanner(),
+
+                                  // CINEMA-MODE v6: Heute entdecken — daily feature card.
+                                  _buildDailyFeatureCard(),
+                                  const SizedBox(height: 12),
+
+                                  // ── World cards (2×2 Quad-Portal Grid) ──
+                                  // Auf PC: max 800px breit damit Kacheln nicht riesig werden.
+                                  // Mobile (Container.maxWidth ≤ 600) bleibt voll-breit.
+                                  Center(
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 800,
                                       ),
-                                      // Central division crack (world boundary)
-                                      Container(
-                                        width: 2.5,
-                                        height: 112,
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.white
-                                                  .withValues(alpha: 0.82),
-                                              Colors.white,
-                                              Colors.white,
-                                              Colors.white
-                                                  .withValues(alpha: 0.82),
-                                              Colors.transparent,
-                                            ],
-                                            stops: const [
-                                              0.0,
-                                              0.15,
-                                              0.35,
-                                              0.65,
-                                              0.85,
-                                              1.0
-                                            ],
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                                color: Colors.white
-                                                    .withValues(alpha: 0.65),
-                                                blurRadius: 14),
-                                            BoxShadow(
-                                                color: _portalColor1.withValues(
-                                                    alpha: 0.45),
-                                                blurRadius: 26,
-                                                offset: const Offset(-10, 0)),
-                                            BoxShadow(
-                                                color: _portalColor2.withValues(
-                                                    alpha: 0.45),
-                                                blurRadius: 26,
-                                                offset: const Offset(10, 0)),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            // Zeile 1: Materie + Energie
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: _buildQuadWorldCard(
+                                                    cardKey: _materieButtonKey,
+                                                    eyebrow: 'WELT I',
+                                                    title: 'MATERIE',
+                                                    subtitle: 'Wissen · Fakten',
+                                                    primaryColor: const Color(
+                                                      0xFF3B82F6,
+                                                    ),
+                                                    deepColor: const Color(
+                                                      0xFF040D1F,
+                                                    ),
+                                                    labelColor: const Color(
+                                                      0xFF7DA7FF,
+                                                    ),
+                                                    icon: Icons.public,
+                                                    onTap: () =>
+                                                        _navigateWithCinematicTransition(
+                                                          const MaterieWorldWrapper(),
+                                                        ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: _buildQuadWorldCard(
+                                                    cardKey: _energieButtonKey,
+                                                    eyebrow: 'WELT II',
+                                                    title: 'ENERGIE',
+                                                    subtitle: 'Spirit · Mystik',
+                                                    primaryColor: const Color(
+                                                      0xFFA855F7,
+                                                    ),
+                                                    deepColor: const Color(
+                                                      0xFF0C0318,
+                                                    ),
+                                                    labelColor: const Color(
+                                                      0xFFC79AFF,
+                                                    ),
+                                                    icon: Icons.auto_awesome,
+                                                    onTap: () =>
+                                                        _navigateWithCinematicTransition(
+                                                          const EnergieWorldWrapper(),
+                                                        ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 10),
+                                            // Zeile 2: Vorhang + Ursprung
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: _buildQuadWorldCard(
+                                                    eyebrow: 'WELT III',
+                                                    title: 'VORHANG',
+                                                    subtitle:
+                                                        'Psychologie · Macht',
+                                                    primaryColor: const Color(
+                                                      0xFFC9A84C,
+                                                    ),
+                                                    deepColor: const Color(
+                                                      0xFF0D0B00,
+                                                    ),
+                                                    labelColor: const Color(
+                                                      0xFFE0C872,
+                                                    ),
+                                                    icon: Icons.psychology,
+                                                    onTap: () =>
+                                                        _navigateWithCinematicTransition(
+                                                          const VorhangWorldWrapper(),
+                                                        ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: _buildQuadWorldCard(
+                                                    eyebrow: 'WELT IV',
+                                                    title: 'URSPRUNG',
+                                                    subtitle:
+                                                        'Bewusstsein · CIA',
+                                                    primaryColor: const Color(
+                                                      0xFF00D4AA,
+                                                    ),
+                                                    deepColor: const Color(
+                                                      0xFF050510,
+                                                    ),
+                                                    labelColor: const Color(
+                                                      0xFF40E8C0,
+                                                    ),
+                                                    icon: Icons.all_inclusive,
+                                                    onTap: () =>
+                                                        _navigateWithCinematicTransition(
+                                                          const UrsprungWorldWrapper(),
+                                                        ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ),
-                                      // Nexus dot at the boundary
-                                      Opacity(
-                                        opacity:
-                                            (0.7 + 0.3 * neo).clamp(0.0, 1.0),
-                                        child: Container(
-                                          width: 12,
-                                          height: 12,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Colors.white,
-                                            boxShadow: [
-                                              const BoxShadow(
-                                                  color: Colors.white,
-                                                  blurRadius: 30,
-                                                  spreadRadius: 8),
-                                              BoxShadow(
-                                                  color: _portalColor1
-                                                      .withValues(alpha: 0.55),
-                                                  blurRadius: 60,
-                                                  spreadRadius: 14,
-                                                  offset: const Offset(-7, 0)),
-                                              BoxShadow(
-                                                  color: _portalColor2
-                                                      .withValues(alpha: 0.55),
-                                                  blurRadius: 60,
-                                                  spreadRadius: 14,
-                                                  offset: const Offset(7, 0)),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      // Tap progress ring - only visible after 3+ taps.
-                                      if (_portalTapCount >= 3)
-                                        CustomPaint(
-                                          size: const Size(256, 256),
-                                          painter: TapProgressRingPainter(
-                                            progress: _portalTapCount / 10.0,
-                                            tapCount: _portalTapCount,
-                                            color1: _portalColor1,
-                                            color2: _portalColor2,
-                                          ),
-                                        ),
-                                      // Tap dots - hidden until 3+ taps to avoid confusion.
-                                      Positioned(
-                                        bottom: 0,
-                                        child: Opacity(
-                                          opacity:
-                                              _portalTapCount >= 3 ? 1.0 : 0.0,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: List.generate(
-                                                10,
-                                                (i) => Container(
-                                                      width: 5,
-                                                      height: 5,
-                                                      margin: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 2.5),
-                                                      decoration: BoxDecoration(
-                                                        shape: BoxShape.circle,
-                                                        color: i <
-                                                                _portalTapCount
-                                                            ? const Color(
-                                                                0xFFFFD479)
-                                                            : Colors.white
-                                                                .withValues(
-                                                                    alpha:
-                                                                        0.15),
-                                                        boxShadow:
-                                                            i < _portalTapCount
-                                                                ? [
-                                                                    const BoxShadow(
-                                                                        color: Color(
-                                                                            0xFFFFD479),
-                                                                        blurRadius:
-                                                                            8)
-                                                                  ]
-                                                                : null,
-                                                      ),
-                                                    )),
-                                          ), // Row close
-                                        ), // Opacity close
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ), // Transform close
-                        ),
+                                    ), // ConstrainedBox close
+                                  ), // Center close
 
-                        const Spacer(),
+                                  const SizedBox(height: 16),
 
-                        // PWA-Tipp (nur Web, einmal pro User dismissbar).
-                        const PwaInstallHint(),
-                        // Profile-Quest-Banner — versteckt sich automatisch wenn
-                        // bereits ein Profil existiert (Materie/Energie).
-                        const ProfileQuestBanner(),
-                        // ⚔️ K2: Tages-Challenges (versteckt sich wenn keine
-                        // Challenges für heute angelegt).
-                        const DailyChallengesBanner(),
+                                  // ── Schnellzugriff (Quick-Access Bar) ──
+                                  _buildQuickAccessBar(),
 
-                        // CINEMA-MODE v6: Heute entdecken — daily feature card.
-                        _buildDailyFeatureCard(),
-                        const SizedBox(height: 12),
-
-                        // ── World cards (2×2 Quad-Portal Grid) ──
-                        // Auf PC: max 800px breit damit Kacheln nicht riesig werden.
-                        // Mobile (Container.maxWidth ≤ 600) bleibt voll-breit.
-                        Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 800),
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Column(
-                                children: [
-                                  // Zeile 1: Materie + Energie
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildQuadWorldCard(
-                                          cardKey: _materieButtonKey,
-                                          eyebrow: 'WELT I',
-                                          title: 'MATERIE',
-                                          subtitle: 'Wissen · Fakten',
-                                          primaryColor: const Color(0xFF3B82F6),
-                                          deepColor: const Color(0xFF040D1F),
-                                          labelColor: const Color(0xFF7DA7FF),
-                                          icon: Icons.public,
-                                          onTap: () =>
-                                              _navigateWithCinematicTransition(
-                                                  const MaterieWorldWrapper()),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: _buildQuadWorldCard(
-                                          cardKey: _energieButtonKey,
-                                          eyebrow: 'WELT II',
-                                          title: 'ENERGIE',
-                                          subtitle: 'Spirit · Mystik',
-                                          primaryColor: const Color(0xFFA855F7),
-                                          deepColor: const Color(0xFF0C0318),
-                                          labelColor: const Color(0xFFC79AFF),
-                                          icon: Icons.auto_awesome,
-                                          onTap: () =>
-                                              _navigateWithCinematicTransition(
-                                                  const EnergieWorldWrapper()),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  // Zeile 2: Vorhang + Ursprung
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: _buildQuadWorldCard(
-                                          eyebrow: 'WELT III',
-                                          title: 'VORHANG',
-                                          subtitle: 'Psychologie · Macht',
-                                          primaryColor: const Color(0xFFC9A84C),
-                                          deepColor: const Color(0xFF0D0B00),
-                                          labelColor: const Color(0xFFE0C872),
-                                          icon: Icons.psychology,
-                                          onTap: () =>
-                                              _navigateWithCinematicTransition(
-                                                  const VorhangWorldWrapper()),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: _buildQuadWorldCard(
-                                          eyebrow: 'WELT IV',
-                                          title: 'URSPRUNG',
-                                          subtitle: 'Bewusstsein · CIA',
-                                          primaryColor: const Color(0xFF00D4AA),
-                                          deepColor: const Color(0xFF050510),
-                                          labelColor: const Color(0xFF40E8C0),
-                                          icon: Icons.all_inclusive,
-                                          onTap: () =>
-                                              _navigateWithCinematicTransition(
-                                                  const UrsprungWorldWrapper()),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  const SizedBox(height: 24),
                                 ],
                               ),
                             ),
-                          ), // ConstrainedBox close
-                        ), // Center close
-
-                        const SizedBox(height: 36),
-                              ],
-                            ),
                           ),
-                        ),
-                      );
+                        );
                       },
                     ),
                   ),
@@ -1345,7 +1548,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
             ),
           ), // GestureDetector closing
         ), // Scaffold closing
-
         // TUTORIAL OVERLAY (v5.37 - Improvement 5.5)
         if (_showTutorial)
           TutorialOverlay(
@@ -1363,20 +1565,119 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
 
         // 👑 WEB ADMIN FAB (nur auf Web für Admins sichtbar)
         if (kIsWeb)
-          const Positioned(
-            bottom: 20,
-            right: 20,
-            child: WebAdminFab(),
-          ),
+          const Positioned(bottom: 20, right: 20, child: WebAdminFab()),
 
         // 🚪 WEB LOGOUT (nur auf Web sichtbar)
         if (kIsWeb)
-          const Positioned(
-            top: 40,
-            right: 16,
-            child: WebLogoutButton(),
-          ),
+          const Positioned(top: 40, right: 16, child: WebLogoutButton()),
       ],
+    );
+  }
+
+  // ── Schnellzugriff-Bar: 5 Icon-Buttons fuer haeufig genutzte Features ──
+  Widget _buildQuickAccessBar() {
+    final items = [
+      _QuickAccessItem(
+        icon: Icons.search_rounded,
+        label: 'Suche',
+        color: const Color(0xFF7DA7FF),
+        onTap: () =>
+            _navigateWithCinematicTransition(const MaterieWorldWrapper()),
+      ),
+      _QuickAccessItem(
+        icon: Icons.emoji_events_rounded,
+        label: 'Erfolge',
+        color: const Color(0xFFFFD700),
+        onTap: () => Navigator.pushNamed(context, '/achievements'),
+      ),
+      _QuickAccessItem(
+        icon: Icons.leaderboard_rounded,
+        label: 'Rangliste',
+        color: const Color(0xFFC79AFF),
+        onTap: () => Navigator.pushNamed(context, '/leaderboard'),
+      ),
+      _QuickAccessItem(
+        icon: Icons.notifications_none_rounded,
+        label: 'Benachrichtigungen',
+        color: const Color(0xFF40E8C0),
+        onTap: () => Navigator.pushNamed(context, '/notifications'),
+      ),
+      _QuickAccessItem(
+        icon: Icons.person_outline_rounded,
+        label: 'Profil',
+        color: const Color(0xFFFF9AB2),
+        onTap: () => Navigator.pushNamed(context, '/profile_settings'),
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 10),
+            child: Text(
+              'SCHNELLZUGRIFF',
+              style: TextStyle(
+                fontSize: 10,
+                letterSpacing: 3.0,
+                color: Colors.white.withValues(alpha: 0.4),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: items
+                .map((item) => _buildQuickAccessButton(item))
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickAccessButton(_QuickAccessItem item) {
+    return GestureDetector(
+      onTap: () {
+        HapticService.selectionClick();
+        item.onTap();
+      },
+      child: SizedBox(
+        width: 58,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: item.color.withValues(alpha: 0.10),
+                border: Border.all(
+                  color: item.color.withValues(alpha: 0.25),
+                  width: 1,
+                ),
+              ),
+              child: Icon(item.icon, color: item.color, size: 22),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              item.label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 9,
+                color: Colors.white.withValues(alpha: 0.55),
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1445,8 +1746,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   color: color.withValues(alpha: 0.15),
                 ),
                 child: Center(
-                  child: Text(featureEmojis[idx],
-                      style: const TextStyle(fontSize: 20)),
+                  child: Text(
+                    featureEmojis[idx],
+                    style: const TextStyle(fontSize: 20),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1467,20 +1770,26 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                     Text(
                       featureTitles[idx],
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       featureSubtitles[idx],
-                      style:
-                          const TextStyle(color: Colors.white54, fontSize: 11),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios,
-                  color: color.withValues(alpha: 0.7), size: 14),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: color.withValues(alpha: 0.7),
+                size: 14,
+              ),
             ],
           ),
         ),
@@ -1501,8 +1810,11 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
           color: Colors.white.withValues(alpha: 0.06),
           border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
-        child:
-            Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.85)),
+        child: Icon(
+          icon,
+          size: 16,
+          color: Colors.white.withValues(alpha: 0.85),
+        ),
       ),
     );
   }
@@ -1514,19 +1826,26 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-            color: Colors.white.withValues(alpha: opacity), width: 1),
+          color: Colors.white.withValues(alpha: opacity),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-              color: const Color(0xFF7878FF).withValues(alpha: 0.12),
-              blurRadius: 80,
-              spreadRadius: 6)
+            color: const Color(0xFF7878FF).withValues(alpha: 0.12),
+            blurRadius: 80,
+            spreadRadius: 6,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildWordmarkRow(String text, double anim, double delayFrac,
-      {required bool isGradient}) {
+  Widget _buildWordmarkRow(
+    String text,
+    double anim,
+    double delayFrac, {
+    required bool isGradient,
+  }) {
     final letters = text.split('');
     final total = letters.length;
     // FittedBox: das Wordmark (fontSize 38 + letterSpacing 10) ist auf schmalen
@@ -1537,36 +1856,39 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(total, (i) {
-        final start = delayFrac + i * (0.55 / total);
-        final end = (start + 0.18).clamp(0.0, 1.0);
-        final t = ((anim - start) / (end - start)).clamp(0.0, 1.0);
-        final child = Transform.translate(
-          offset: Offset(0, 40 * (1 - t)),
-          child: Opacity(
-            opacity: t,
-            child: isGradient
-                ? ShaderMask(
-                    shaderCallback: (b) => const LinearGradient(
-                      colors: [
-                        Color(0xFF5B8DEF),
-                        Color(0xFFA78BFA),
-                        Color(0xFFE879F9)
-                      ],
-                    ).createShader(
-                        Rect.fromLTWH(0, 0, b.width * total, b.height)),
-                    child: Text(
-                      letters[i] == ' ' ? ' ' : letters[i],
-                      style: GoogleFonts.inter(
+          final start = delayFrac + i * (0.55 / total);
+          final end = (start + 0.18).clamp(0.0, 1.0);
+          final t = ((anim - start) / (end - start)).clamp(0.0, 1.0);
+          final child = Transform.translate(
+            offset: Offset(0, 40 * (1 - t)),
+            child: Opacity(
+              opacity: t,
+              child: isGradient
+                  ? ShaderMask(
+                      shaderCallback: (b) =>
+                          const LinearGradient(
+                            colors: [
+                              Color(0xFF5B8DEF),
+                              Color(0xFFA78BFA),
+                              Color(0xFFE879F9),
+                            ],
+                          ).createShader(
+                            Rect.fromLTWH(0, 0, b.width * total, b.height),
+                          ),
+                      child: Text(
+                        letters[i] == ' ' ? ' ' : letters[i],
+                        style: GoogleFonts.inter(
                           fontWeight: FontWeight.w300,
                           fontSize: 38,
                           letterSpacing: 10,
                           color: Colors.white,
-                          height: 1),
-                    ),
-                  )
-                : Text(
-                    letters[i] == ' ' ? ' ' : letters[i],
-                    style: GoogleFonts.inter(
+                          height: 1,
+                        ),
+                      ),
+                    )
+                  : Text(
+                      letters[i] == ' ' ? ' ' : letters[i],
+                      style: GoogleFonts.inter(
                         fontWeight: FontWeight.w200,
                         fontSize: 38,
                         letterSpacing: 10,
@@ -1574,13 +1896,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         height: 1,
                         shadows: [
                           Shadow(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              blurRadius: 40)
-                        ]),
-                  ),
-          ),
-        );
-        return child;
+                            color: Colors.white.withValues(alpha: 0.18),
+                            blurRadius: 40,
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          );
+          return child;
         }),
       ),
     );
@@ -1615,22 +1939,23 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  deepColor,
-                  Color.lerp(deepColor, primaryColor, 0.18)!,
-                ],
+                colors: [deepColor, Color.lerp(deepColor, primaryColor, 0.18)!],
               ),
               border: Border.all(
-                  color: primaryColor.withValues(alpha: 0.28), width: 1.2),
+                color: primaryColor.withValues(alpha: 0.28),
+                width: 1.2,
+              ),
               boxShadow: [
                 BoxShadow(
-                    color: primaryColor.withValues(alpha: 0.26),
-                    blurRadius: 38,
-                    offset: const Offset(0, 12)),
+                  color: primaryColor.withValues(alpha: 0.26),
+                  blurRadius: 38,
+                  offset: const Offset(0, 12),
+                ),
                 BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    blurRadius: 18,
-                    offset: const Offset(0, 5)),
+                  color: Colors.black.withValues(alpha: 0.55),
+                  blurRadius: 18,
+                  offset: const Offset(0, 5),
+                ),
               ],
             ),
             child: Stack(
@@ -1661,8 +1986,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(22),
                     child: CustomPaint(
-                        painter: _GridLinePainter(
-                            primaryColor.withValues(alpha: 0.055))),
+                      painter: _GridLinePainter(
+                        primaryColor.withValues(alpha: 0.055),
+                      ),
+                    ),
                   ),
                 ),
                 // Content
@@ -1676,20 +2003,26 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 3),
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: primaryColor.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                  color: primaryColor.withValues(alpha: 0.45),
-                                  width: 0.8),
+                                color: primaryColor.withValues(alpha: 0.45),
+                                width: 0.8,
+                              ),
                             ),
-                            child: Text(eyebrow,
-                                style: TextStyle(
-                                    fontSize: 9,
-                                    letterSpacing: 3.0,
-                                    color: labelColor,
-                                    fontWeight: FontWeight.w700)),
+                            child: Text(
+                              eyebrow,
+                              style: TextStyle(
+                                fontSize: 9,
+                                letterSpacing: 3.0,
+                                color: labelColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                           const Spacer(),
                           Container(
@@ -1699,11 +2032,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                               shape: BoxShape.circle,
                               color: primaryColor.withValues(alpha: 0.15),
                               border: Border.all(
-                                  color: primaryColor.withValues(alpha: 0.35),
-                                  width: 0.8),
+                                color: primaryColor.withValues(alpha: 0.35),
+                                width: 0.8,
+                              ),
                             ),
-                            child: Icon(Icons.arrow_forward,
-                                color: primaryColor, size: 14),
+                            child: Icon(
+                              Icons.arrow_forward,
+                              color: primaryColor,
+                              size: 14,
+                            ),
                           ),
                         ],
                       ),
@@ -1725,23 +2062,29 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         spacing: 5,
                         runSpacing: 4,
                         children: tags
-                            .map((tag) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.06),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.11)),
+                            .map(
+                              (tag) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.11),
                                   ),
-                                  child: Text(tag,
-                                      style: TextStyle(
-                                          fontSize: 8.5,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.52),
-                                          letterSpacing: 0.3)),
-                                ))
+                                ),
+                                child: Text(
+                                  tag,
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    color: Colors.white.withValues(alpha: 0.52),
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            )
                             .toList(),
                       ),
                     ],
@@ -1779,8 +2122,11 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               color: Colors.white.withValues(alpha: 0.04),
               border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
             ),
-            child: Icon(Icons.compare_arrows,
-                size: 13, color: Colors.white.withValues(alpha: 0.30)),
+            child: Icon(
+              Icons.compare_arrows,
+              size: 13,
+              color: Colors.white.withValues(alpha: 0.30),
+            ),
           ),
           Expanded(
             child: Container(
@@ -1838,16 +2184,20 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   ],
                 ),
                 border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.24), width: 1),
+                  color: primaryColor.withValues(alpha: 0.24),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.20),
-                      blurRadius: 28,
-                      offset: const Offset(0, 8)),
+                    color: primaryColor.withValues(alpha: 0.20),
+                    blurRadius: 28,
+                    offset: const Offset(0, 8),
+                  ),
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.50),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4)),
+                    color: Colors.black.withValues(alpha: 0.50),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
               child: Stack(
@@ -1877,8 +2227,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(18),
                       child: CustomPaint(
-                          painter: _GridLinePainter(
-                              primaryColor.withValues(alpha: 0.04))),
+                        painter: _GridLinePainter(
+                          primaryColor.withValues(alpha: 0.04),
+                        ),
+                      ),
                     ),
                   ),
                   // Content
@@ -1890,20 +2242,26 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         // Eyebrow chip
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: primaryColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                                color: primaryColor.withValues(alpha: 0.40),
-                                width: 0.8),
+                              color: primaryColor.withValues(alpha: 0.40),
+                              width: 0.8,
+                            ),
                           ),
-                          child: Text(eyebrow,
-                              style: TextStyle(
-                                  fontSize: 8,
-                                  letterSpacing: 2.5,
-                                  color: labelColor,
-                                  fontWeight: FontWeight.w700)),
+                          child: Text(
+                            eyebrow,
+                            style: TextStyle(
+                              fontSize: 8,
+                              letterSpacing: 2.5,
+                              color: labelColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 10),
                         // Icon + Title
@@ -1954,11 +2312,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                                 shape: BoxShape.circle,
                                 color: primaryColor.withValues(alpha: 0.12),
                                 border: Border.all(
-                                    color: primaryColor.withValues(alpha: 0.30),
-                                    width: 0.8),
+                                  color: primaryColor.withValues(alpha: 0.30),
+                                  width: 0.8,
+                                ),
                               ),
-                              child: Icon(Icons.arrow_forward,
-                                  color: primaryColor, size: 12),
+                              child: Icon(
+                                Icons.arrow_forward,
+                                color: primaryColor,
+                                size: 12,
+                              ),
                             ),
                           ],
                         ),
@@ -2021,13 +2383,19 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                 splashColor: glowColor.withValues(alpha: 0.2),
                 child: Padding(
                   padding: EdgeInsets.all(
-                      context.responsive(mobile: 16, tablet: 24, desktop: 16)),
+                    context.responsive(mobile: 16, tablet: 24, desktop: 16),
+                  ),
                   child: Row(
                     children: [
                       // Icon with premium glow (Mobile-Optimiert)
                       Container(
-                        padding: EdgeInsets.all(context.responsive(
-                            mobile: 12.0, tablet: 16.0, desktop: 16.0)),
+                        padding: EdgeInsets.all(
+                          context.responsive(
+                            mobile: 12.0,
+                            tablet: 16.0,
+                            desktop: 16.0,
+                          ),
+                        ),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: gradient,
@@ -2043,13 +2411,20 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                           icon,
                           color: Colors.white,
                           size: context.responsive(
-                              mobile: 28, tablet: 28 * 1.3, desktop: 28 * 1.5),
+                            mobile: 28,
+                            tablet: 28 * 1.3,
+                            desktop: 28 * 1.5,
+                          ),
                         ),
                       ),
 
                       SizedBox(
-                          width: context.responsive(
-                              mobile: 8.0, tablet: 12.0, desktop: 16.0)),
+                        width: context.responsive(
+                          mobile: 8.0,
+                          tablet: 12.0,
+                          desktop: 16.0,
+                        ),
+                      ),
 
                       // Text (Mobile-Optimiert)
                       Expanded(
@@ -2067,9 +2442,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                                   title,
                                   style: TextStyle(
                                     fontSize: context.responsive(
-                                        mobile: 24,
-                                        tablet: 24 * 1.2,
-                                        desktop: 24 * 1.4),
+                                      mobile: 24,
+                                      tablet: 24 * 1.2,
+                                      desktop: 24 * 1.4,
+                                    ),
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
                                     letterSpacing: context.responsive(
@@ -2079,25 +2455,31 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                                     ),
                                     shadows: const [
                                       Shadow(
-                                          color: Colors.black, blurRadius: 15),
+                                        color: Colors.black,
+                                        blurRadius: 15,
+                                      ),
                                     ],
                                   ),
                                 ),
                               ),
                             ),
                             SizedBox(
-                                height: context.responsive(
-                                        mobile: 12.0,
-                                        tablet: 16.0,
-                                        desktop: 20.0) /
-                                    2),
+                              height:
+                                  context.responsive(
+                                    mobile: 12.0,
+                                    tablet: 16.0,
+                                    desktop: 20.0,
+                                  ) /
+                                  2,
+                            ),
                             Text(
                               subtitle,
                               style: TextStyle(
                                 fontSize: context.responsive(
-                                    mobile: 9,
-                                    tablet: 9 * 1.2,
-                                    desktop: 9 * 1.4),
+                                  mobile: 9,
+                                  tablet: 9 * 1.2,
+                                  desktop: 9 * 1.4,
+                                ),
                                 color: Colors.white.withValues(alpha: 0.85),
                                 letterSpacing: 1.0,
                                 fontWeight: FontWeight.w400,
@@ -2133,8 +2515,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
     );
   }
 
-  Future<void> _navigateWithCinematicTransition(Widget screen,
-      {String targetWorld = ''}) async {
+  Future<void> _navigateWithCinematicTransition(
+    Widget screen, {
+    String targetWorld = '',
+  }) async {
     // Bestimme Welt-Typ automatisch wenn nicht explizit übergeben
     if (targetWorld.isEmpty) {
       if (screen is MaterieWorldWrapper) {
@@ -2193,14 +2577,17 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
           final fact = facts[currentFactIndex];
           return AlertDialog(
             backgroundColor: Colors.black.withValues(alpha: 0.95),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Row(
               children: [
                 const Icon(Icons.auto_stories, color: Color(0xFFFFD700)),
                 const SizedBox(width: 10),
-                Text('${fact['title']}',
-                    style: const TextStyle(color: Colors.white, fontSize: 18)),
+                Text(
+                  '${fact['title']}',
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                ),
               ],
             ),
             content: SingleChildScrollView(
@@ -2209,8 +2596,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF2196F3).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -2218,16 +2607,20 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                     child: Text(
                       fact['category']!,
                       style: const TextStyle(
-                          color: Color(0xFF64B5F6),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold),
+                        color: Color(0xFF64B5F6),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     fact['fact']!,
                     style: const TextStyle(
-                        color: Colors.white, fontSize: 14, height: 1.5),
+                      color: Colors.white,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -2251,8 +2644,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   Center(
                     child: Text(
                       'Fact ${currentFactIndex + 1} von ${facts.length}',
-                      style:
-                          const TextStyle(color: Colors.white38, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -2265,8 +2660,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   Navigator.pop(context);
                   _showEasterEgg();
                 },
-                child: const Text('← Easter Egg Menü',
-                    style: TextStyle(color: Color(0xFFFFD700))),
+                child: const Text(
+                  '← Easter Egg Menü',
+                  style: TextStyle(color: Color(0xFFFFD700)),
+                ),
               ),
               if (currentFactIndex > 0)
                 TextButton(
@@ -2275,8 +2672,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                       currentFactIndex--;
                     });
                   },
-                  child: const Text('← Zurück',
-                      style: TextStyle(color: Color(0xFF64B5F6))),
+                  child: const Text(
+                    '← Zurück',
+                    style: TextStyle(color: Color(0xFF64B5F6)),
+                  ),
                 ),
               if (currentFactIndex < facts.length - 1)
                 TextButton(
@@ -2288,8 +2687,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                       _unlockAchievement('hidden_facts_scholar');
                     }
                   },
-                  child: const Text('Weiter →',
-                      style: TextStyle(color: Color(0xFF64B5F6))),
+                  child: const Text(
+                    'Weiter →',
+                    style: TextStyle(color: Color(0xFF64B5F6)),
+                  ),
                 ),
             ],
           );
@@ -2308,8 +2709,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           backgroundColor: Colors.black.withValues(alpha: 0.95),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Row(
             children: [
               Icon(Icons.vpn_key, color: Color(0xFFFFD700)),
@@ -2324,7 +2726,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                 TextField(
                   controller: codeController,
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 16, letterSpacing: 2),
+                    color: Colors.white,
+                    fontSize: 16,
+                    letterSpacing: 2,
+                  ),
                   textAlign: TextAlign.center,
                   textCapitalization: TextCapitalization.characters,
                   decoration: InputDecoration(
@@ -2342,8 +2747,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: Color(0xFFFFD700), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFFFD700),
+                        width: 2,
+                      ),
                     ),
                   ),
                   onSubmitted: (code) {
@@ -2382,29 +2789,41 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                   const Text(
                     'Freigeschaltete Codes:',
                     style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  ...unlockedCodes.map((code) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.check_circle,
-                                color: Color(0xFF4CAF50), size: 20),
-                            const SizedBox(width: 8),
-                            Text(code,
-                                style: const TextStyle(
-                                    color: Color(0xFF4CAF50), fontSize: 14)),
-                          ],
-                        ),
-                      )),
+                  ...unlockedCodes.map(
+                    (code) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF4CAF50),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            code,
+                            style: const TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ] else ...[
                   const Text(
                     'Tipp: Versuche ILLUMINATI, MATRIX oder NOLAN',
                     style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic),
+                      color: Colors.white38,
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -2418,8 +2837,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                 Navigator.pop(context);
                 _showEasterEgg();
               },
-              child: const Text('← Easter Egg Menü',
-                  style: TextStyle(color: Color(0xFFFFD700))),
+              child: const Text(
+                '← Easter Egg Menü',
+                style: TextStyle(color: Color(0xFFFFD700)),
+              ),
             ),
           ],
         ),
@@ -2479,10 +2900,12 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                 const SizedBox(height: 20),
                 // Achievement List
                 ...AchievementData.getAllAchievements().map((achievement) {
-                  final isUnlocked =
-                      _unlockedAchievements.contains(achievement['id']);
-                  final rarityColor =
-                      AchievementData.getRarityColor(achievement['rarity']);
+                  final isUnlocked = _unlockedAchievements.contains(
+                    achievement['id'],
+                  );
+                  final rarityColor = AchievementData.getRarityColor(
+                    achievement['rarity'],
+                  );
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -2503,9 +2926,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                           opacity: isUnlocked ? 1.0 : 0.3,
                           child: Text(
                             achievement['icon'],
-                            style: const TextStyle(
-                              fontSize: 32,
-                            ),
+                            style: const TextStyle(fontSize: 32),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -2516,8 +2937,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                               Text(
                                 achievement['title'],
                                 style: TextStyle(
-                                  color:
-                                      isUnlocked ? rarityColor : Colors.white38,
+                                  color: isUnlocked
+                                      ? rarityColor
+                                      : Colors.white38,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -2538,7 +2960,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         if (isUnlocked)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: rarityColor.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(8),
@@ -2567,8 +2991,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               Navigator.pop(context);
               _showEasterEgg();
             },
-            child: const Text('← Easter Egg Menü',
-                style: TextStyle(color: Color(0xFFFFD700))),
+            child: const Text(
+              '← Easter Egg Menü',
+              style: TextStyle(color: Color(0xFFFFD700)),
+            ),
           ),
         ],
       ),
@@ -2610,8 +3036,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
           children: [
             Icon(Icons.stars, color: Color(0xFFFFD700)),
             SizedBox(width: 10),
-            Text('👑 GOLDENES PORTAL FREIGESCHALTET!',
-                style: TextStyle(color: Color(0xFFFFD700), fontSize: 18)),
+            Text(
+              '👑 GOLDENES PORTAL FREIGESCHALTET!',
+              style: TextStyle(color: Color(0xFFFFD700), fontSize: 18),
+            ),
           ],
         ),
         content: Column(
@@ -2637,26 +3065,27 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                 ],
               ),
               child: const Center(
-                child: Text(
-                  '👑',
-                  style: TextStyle(fontSize: 48),
-                ),
+                child: Text('👑', style: TextStyle(fontSize: 48)),
               ),
             ),
             const SizedBox(height: 20),
             const Text(
               'Du hast das Portal 50x getappt!',
               style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             const Text(
               'Das goldene Portal ist nun freigeschaltet. Es erscheint mit goldenen Partikeln und Effekten!',
-              style:
-                  TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.4,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -2664,11 +3093,14 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Fantastisch!',
-                style: TextStyle(
-                    color: Color(0xFFFFD700),
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Fantastisch!',
+              style: TextStyle(
+                color: Color(0xFFFFD700),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -2677,7 +3109,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
 
   // v5.40 - 4.1: Share Portal Stats
   void _sharePortalStats() {
-    final statsText = '''
+    final statsText =
+        '''
 🌀 WELTENBIBLIOTHEK - Meine Portal-Stats
 
 📊 Statistiken:
@@ -2716,7 +3149,10 @@ ${_goldenPortalUnlocked ? '• 👑 Goldenes Portal FREIGESCHALTET!' : ''}
               child: SelectableText(
                 statsText,
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 14, height: 1.5),
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -2734,8 +3170,10 @@ ${_goldenPortalUnlocked ? '• 👑 Goldenes Portal FREIGESCHALTET!' : ''}
               Navigator.pop(context);
               _showEasterEgg();
             },
-            child: const Text('← Easter Egg Menü',
-                style: TextStyle(color: Color(0xFFFFD700))),
+            child: const Text(
+              '← Easter Egg Menü',
+              style: TextStyle(color: Color(0xFFFFD700)),
+            ),
           ),
         ],
       ),
@@ -2773,7 +3211,9 @@ ${_goldenPortalUnlocked ? '• 👑 Goldenes Portal FREIGESCHALTET!' : ''}
                       const Text(
                         'Achievement freigeschaltet!',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 12),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                       Text(
                         achievement['title'],
@@ -2792,9 +3232,9 @@ ${_goldenPortalUnlocked ? '• 👑 Goldenes Portal FREIGESCHALTET!' : ''}
                 ),
               ],
             ),
-            backgroundColor:
-                AchievementData.getRarityColor(achievement['rarity'])
-                    .withValues(alpha: 0.9),
+            backgroundColor: AchievementData.getRarityColor(
+              achievement['rarity'],
+            ).withValues(alpha: 0.9),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -2864,10 +3304,10 @@ class Particle {
     color = colorType == 0
         ? const Color(0xFF2196F3) // Blue
         : colorType == 1
-            ? const Color(0xFF9C27B0) // Purple
-            : colorType == 2
-                ? const Color(0xFFFFD700) // Gold
-                : const Color(0xFF64B5F6); // Light Blue
+        ? const Color(0xFF9C27B0) // Purple
+        : colorType == 2
+        ? const Color(0xFFFFD700) // Gold
+        : const Color(0xFF64B5F6); // Light Blue
 
     orbitRadius = 100 + random.nextDouble() * 200;
     angleOffset = random.nextDouble() * 2 * math.pi;
@@ -3003,9 +3443,15 @@ class CinematicPortalPainter extends CustomPainter {
     }
   }
 
-  void _drawArm(Canvas canvas, double cx, double cy, double maxR,
-      double startAngle, Color color,
-      {required bool clockwise}) {
+  void _drawArm(
+    Canvas canvas,
+    double cx,
+    double cy,
+    double maxR,
+    double startAngle,
+    Color color, {
+    required bool clockwise,
+  }) {
     final path = Path();
     const steps = 22;
     bool started = false;
@@ -3071,11 +3517,7 @@ class TapProgressRingPainter extends CustomPainter {
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round
       ..shader = SweepGradient(
-        colors: [
-          color1,
-          color2,
-          const Color(0xFFFFD700),
-        ],
+        colors: [color1, color2, const Color(0xFFFFD700)],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
@@ -3098,10 +3540,7 @@ class TapProgressRingPainter extends CustomPainter {
             fontSize: 16,
             fontWeight: FontWeight.bold,
             shadows: [
-              Shadow(
-                color: color1.withValues(alpha: 0.8),
-                blurRadius: 10,
-              ),
+              Shadow(color: color1.withValues(alpha: 0.8), blurRadius: 10),
             ],
           ),
         ),
@@ -3111,10 +3550,7 @@ class TapProgressRingPainter extends CustomPainter {
       textPainter.layout();
       textPainter.paint(
         canvas,
-        Offset(
-          center.dx - textPainter.width / 2,
-          center.dy - radius - 30,
-        ),
+        Offset(center.dx - textPainter.width / 2, center.dy - radius - 30),
       );
     }
   }
@@ -3146,4 +3582,19 @@ class _GridLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GridLinePainter old) => old.color != color;
+}
+
+// Data holder for quick-access bar items.
+class _QuickAccessItem {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAccessItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 }

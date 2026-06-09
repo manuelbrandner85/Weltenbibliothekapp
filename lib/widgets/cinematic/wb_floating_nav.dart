@@ -47,8 +47,10 @@ class WBFloatingNav extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(WBRadius.xl),
           child: BackdropFilter(
-            filter:
-                ImageFilter.blur(sigmaX: wb.blurMedium, sigmaY: wb.blurMedium),
+            filter: ImageFilter.blur(
+              sigmaX: wb.blurMedium,
+              sigmaY: wb.blurMedium,
+            ),
             child: Container(
               // Responsive Hoehe: kleine Phones / grosse System-Fonts wuerden
               // Icon + Label sonst clippen. Clamp haelt es kompakt.
@@ -116,10 +118,7 @@ class _NavTab extends StatelessWidget {
         duration: const Duration(milliseconds: 240),
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        padding: EdgeInsets.symmetric(
-          horizontal: active ? 10 : 6,
-          vertical: 6,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: active ? 10 : 6, vertical: 6),
         decoration: BoxDecoration(
           color: active
               ? palette.primary.withValues(alpha: 0.18)
@@ -148,33 +147,27 @@ class _NavTab extends StatelessWidget {
                     : Colors.white.withValues(alpha: 0.45),
               ),
             ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              child: active
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 3),
-                      // FittedBox + scaleDown: das Label (z.B. "Community")
-                      // passt so auch auf schmale Phones in die schmale Tab-
-                      // Spalte, ohne abzuschneiden. ellipsis bleibt als
-                      // Notfall-Fallback fuer extrem lange Labels.
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          item.label,
-                          style: GoogleFonts.inter(
-                            fontSize: context.rf(9),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: palette.label,
-                            height: 1.0,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+            // Label always visible: active = bold+accent, inactive = small+dim.
+            // Helps users discover what each tab does without tapping.
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  item.label,
+                  style: GoogleFonts.inter(
+                    fontSize: active ? context.rf(9) : context.rf(8),
+                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                    letterSpacing: active ? 0.5 : 0.3,
+                    color: active
+                        ? palette.label
+                        : Colors.white.withValues(alpha: 0.35),
+                    height: 1.0,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ),
           ],
         ),
