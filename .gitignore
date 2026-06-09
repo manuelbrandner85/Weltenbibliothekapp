@@ -115,3 +115,7 @@ supabase/.temp/linked-project.json
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 lib/firebase_options.dart
+
+# God Mode verify-gate Artefakte (nie committen)
+.godmode_verify_ok
+.godmode_verify_errors.log
