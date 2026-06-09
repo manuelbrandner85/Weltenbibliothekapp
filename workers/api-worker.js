@@ -4736,26 +4736,69 @@ export default {
           try { body = await request.clone().json(); } catch (_) {}
           const area = String(body.area || '').trim().slice(0, 80);
 
+          // Bereits gebaute/laufende Auftraege laden -- Duplikat-Schutz
+          let builtTitles = [];
+          try {
+            const br = await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_requests?select=title&order=created_at.desc&limit=50`,
+              { headers: svcHeaders }
+            );
+            if (br.ok) {
+              const rows = await br.json().catch(() => []);
+              builtTitles = Array.isArray(rows)
+                ? rows.map(r => String(r.title || '').trim()).filter(Boolean)
+                : [];
+            }
+          } catch (_) {}
+
           const sysPrompt =
             'Du bist Senior-Produkt- und Engineering-Berater fuer die Flutter-App ' +
-            '"Weltenbibliothek" -- spirituell-investigative Wissensplattform.\n' +
-            '4 Welten: materie (Recherche/OSINT/Fakten), energie (Meditation/Chakren/Manifestation), ' +
-            'vorhang (Machtpsychologie/Manipulation), ursprung (Bewusstsein/Gateway/Hermetik).\n' +
-            'Stack: Flutter (Android + Web), Supabase, Cloudflare Worker, Shorebird OTA, LiveKit.\n\n' +
-            (area ? `Fokus: "${area}".\n\n` : 'Alle Bereiche (gemischt).\n\n') +
-            'Schlage 5 konkrete, sofort umsetzbare Massnahmen vor. Mische bewusst verschiedene Typen: ' +
-            'Bugs beheben, bestehende Features verbessern, bestehende Features erweitern UND komplett neue Features/Module vorschlagen.\n' +
-            'Typ-Bedeutung: bug = Fehler beheben, neuerung = etwas komplett Neues, ' +
-            'erweiterung = bestehendes Feature ausbauen, verbesserung = bestehendes optimieren, ' +
-            'performance = schneller/leichter, ux = Bedienung/Design.\n' +
-            'Jeder Vorschlag MUSS enthalten: type (genau einer: bug|neuerung|erweiterung|verbesserung|performance|ux), ' +
-            'category (ui_ux|feature|module|bugfix|performance|other), ' +
-            'title (max 100 Zeichen), description (2-3 Saetze WAS gemacht wird), ' +
-            'reason (1-2 Saetze WARUM -- konkreter Nutzen/Problem).\n' +
-            'Erkenne auch neue Bereiche die der App fehlen und liste sie in learnedTopics (max 3 Strings).\n' +
-            'Antworte AUSSCHLIESSLICH mit kompaktem JSON ohne Markdown:\n' +
+            '"Weltenbibliothek" -- spirituell-investigative Wissensplattform.\n\n' +
+            'VORHANDENE FEATURES (immer darauf aufbauen -- keine Vorschlaege fuer bereits Existierendes):\n' +
+            '4 Welten:\n' +
+            '- materie: OSINT/Recherche, Quellen-Filter, Fakten-Check, Beweise\n' +
+            '  -> Screens: lib/screens/materie/recherche_screen.dart\n' +
+            '- energie: Chakren-Hub (7 Chakren interaktiv), Meditation, Manifestation-Ziele, ' +
+            'Biometrie-Tracking (Apple Watch HR/HRV), Atemübungen\n' +
+            '  -> Screens: lib/screens/energie/chakra_hub_screen.dart, biometrie_screen.dart\n' +
+            '- vorhang: Machtpsychologie, Manipulations-Erkennung, Lernmodule+Lektionen, ' +
+            'DailyPracticeCard, Vorhang-Notizen\n' +
+            '  -> Screens: lib/screens/vorhang/vorhang_modul_screen.dart, lektion_screen.dart\n' +
+            '- ursprung: Bewusstsein, Hermetik, Gateway, Quantenphysik\n' +
+            '  -> Screens: lib/screens/ursprung/\n' +
+            'Services: lib/services/ spirit_reading_service, biometric_data_cache_service, ' +
+            'mentor_service (KI-Chat+LiveKit-Voice), gamification_service (Punkte+Badges+Streak), ' +
+            'bookmark_service (Collections+Annotationen), manifestation_service, ' +
+            'godmode_service, admin_api_client.\n' +
+            'Admin: world_admin_dashboard.dart (Welten/Nutzer/Inhalte/God-Mode Tabs).\n' +
+            'Stack: Flutter/Dart (Android+Web), Supabase, Cloudflare Worker, Shorebird OTA, LiveKit.\n\n' +
+            'BEKANNTE LUECKEN MIT HOHEM MEHRWERT:\n' +
+            '- Vorhang-Module-Payload 264 KB: lazy loading fehlt\n' +
+            '- Tagesimpuls/DailyPractice: nur in vorhang, fehlt in energie/materie/ursprung\n' +
+            '- LiveKit 3D-Avatar fuer Mentor-Sessions fehlt\n' +
+            '- build_context_synchronously Warnungen im gesamten Code\n' +
+            '- Globale Volltext-Suche ueber alle Welten fehlt\n\n' +
+            (area ? `Fokus-Bereich: "${area}".\n\n` : 'Alle Bereiche (gemischt).\n\n') +
+            (builtTitles.length
+              ? 'BEREITS GEBAUT ODER IN ARBEIT -- NIEMALS vorschlagen (weder Duplikat noch Variante):\n' +
+                builtTitles.map(t => `- ${t}`).join('\n') + '\n\n'
+              : '') +
+            'Schlage GENAU 5 highend-Massnahmen vor. JEDER Vorschlag MUSS:\n' +
+            '1. Auf einem KONKRETEN vorhandenen Feature aufbauen ODER eine der genannten Luecken schliessen.\n' +
+            '   -- Kein Feature doppelt vorschlagen. Kein bereits gebautes Feature nochmal vorschlagen.\n' +
+            '2. In "description" (4 Saetze, keine Floskeln):\n' +
+            '   Satz 1: Was genau wird gemacht (z.B. "Fuege einen Atem-Timer als BottomSheet hinzu" -- NICHT "verbessere").\n' +
+            '   Satz 2: In welcher Datei (exakter Pfad: lib/screens/energie/chakra_hub_screen.dart).\n' +
+            '   Satz 3: Wie technisch umgesetzt (Widget, Methode, Tabelle, API-Endpoint -- konkret).\n' +
+            '   Satz 4: Was der Nutzer danach sehen/tun kann.\n' +
+            '3. In "reason" (2 Saetze): Welches konkrete Problem wird geloest oder welcher Mehrwert entsteht.\n' +
+            'VERBOTEN: vage Formulierungen wie "verbessern", "optimieren", "erhoehen" ohne Substanz.\n' +
+            'Typ-Bedeutung: bug=Fehler beheben, neuerung=komplett neues Feature, ' +
+            'erweiterung=bestehendes Feature ausbauen, verbesserung=bestehendes optimieren, ' +
+            'performance=schneller/leichter/weniger Daten, ux=Bedienung/Design verbessern.\n' +
+            'Antworte AUSSCHLIESSLICH kompaktes JSON ohne Markdown:\n' +
             '{"suggestions":[{"type":"...","category":"...","title":"...","description":"...","reason":"..."}],' +
-            '"learnedTopics":["Bereich1","Bereich2"]}\n' +
+            '"learnedTopics":["Bereich1"]}\n' +
             'Genau 5 suggestions. Nur erlaubte type/category-Werte.';
 
           const parseAi = (raw) => {
@@ -5065,23 +5108,99 @@ export default {
           const srcLabel = source === 'ai_suggestion'
             ? 'KI-Vorschlag'
             : (source === 'chat' ? 'Chat-Dialog' : 'Manuell');
-          const issueBody = [
+
+          // KI expandiert die Beschreibung zu praezisen Implementierungsdetails
+          // damit Claude Code den Auftrag ohne Rueckfragen umsetzen kann.
+          let implDetails = null;
+          try {
+            const implPrompt =
+              'Analysiere diesen God-Mode-Auftrag fuer die Flutter-App "Weltenbibliothek" und ' +
+              'generiere praezise Implementierungsdetails damit Claude Code autonom umsetzen kann.\n\n' +
+              `Titel: ${title}\nTyp: ${TYPE_LABELS[wbType] || 'Verbesserung'}\n` +
+              `Bereich: ${CAT_LABELS[category]}\nBeschreibung:\n${(description || title).slice(0, 800)}\n\n` +
+              'Vorhandene Screens (lib/screens/): energie/chakra_hub_screen.dart, ' +
+              'energie/biometrie_screen.dart, vorhang/vorhang_modul_screen.dart, ' +
+              'vorhang/lektion_screen.dart, materie/recherche_screen.dart, ' +
+              'ursprung/ (mehrere), shared/world_admin_dashboard.dart.\n' +
+              'Vorhandene Services (lib/services/): spirit_reading_service.dart, ' +
+              'biometric_data_cache_service.dart, mentor_service.dart, gamification_service.dart, ' +
+              'bookmark_service.dart, manifestation_service.dart, godmode_service.dart, ' +
+              'admin_api_client.dart.\n\n' +
+              'Antworte NUR als JSON ohne Markdown, keine Erklaerungen:\n' +
+              '{"affected_files":["lib/pfad/datei.dart","lib/pfad/datei2.dart"],' +
+              '"acceptance_criteria":["[ ] Konkretes Kriterium 1 (testbar)",' +
+              '"[ ] Konkretes Kriterium 2","[ ] Konkretes Kriterium 3"],' +
+              '"implementation_notes":"2-3 Saetze wichtige Hinweise zur Umsetzung",' +
+              '"out_of_scope":"Was explizit NICHT geaendert werden soll"}';
+            let implRaw = null;
+            if (env.GROQ_API_KEY) {
+              const gr = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'llama-3.3-70b-versatile',
+                  messages: [{ role: 'user', content: implPrompt }],
+                  max_tokens: 700, temperature: 0.2,
+                }),
+              });
+              if (gr.ok) {
+                const gd = await gr.json().catch(() => null);
+                implRaw = gd?.choices?.[0]?.message?.content;
+              }
+            }
+            if (!implRaw && env.AI) {
+              const ar = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+                messages: [{ role: 'user', content: implPrompt }],
+                max_tokens: 700,
+              });
+              implRaw = ar?.response;
+            }
+            if (implRaw) {
+              const m = String(implRaw).match(/\{[\s\S]*?\}(?=\s*$|\s*\n)/);
+              if (m) implDetails = JSON.parse(m[0]);
+            }
+          } catch (_) {}
+
+          const bodyParts = [
             `**God-Mode-Auftrag von @${caller.username || 'root-admin'}**`,
             '',
-            wbType ? `**Typ:** ${TYPE_LABELS[wbType]}` : '',
+            wbType ? `**Typ:** ${TYPE_LABELS[wbType]}` : null,
             `**Bereich:** ${CAT_LABELS[category]}`,
             `**Quelle:** ${srcLabel}`,
             '',
             '## Auftrag',
             description || title,
             '',
-            '## Hinweise fuer den Build',
-            '- CLAUDE.md Kernregeln einhalten (ASCII-Commits, keine Named Dart-3 Records, deutsche UI-Texte).',
-            '- Skills in .claude/skills/ nutzen (flutter-*, supabase, cloudflare, shorebird-ota, ...).',
+          ];
+          if (Array.isArray(implDetails?.affected_files) && implDetails.affected_files.length) {
+            bodyParts.push('## Betroffene Dateien');
+            for (const f of implDetails.affected_files) bodyParts.push(`- \`${f}\``);
+            bodyParts.push('');
+          }
+          if (Array.isArray(implDetails?.acceptance_criteria) && implDetails.acceptance_criteria.length) {
+            bodyParts.push('## Abnahmekriterien');
+            for (const c of implDetails.acceptance_criteria) bodyParts.push(String(c));
+            bodyParts.push('');
+          }
+          if (implDetails?.implementation_notes) {
+            bodyParts.push('## Implementierungshinweise');
+            bodyParts.push(String(implDetails.implementation_notes));
+            bodyParts.push('');
+          }
+          if (implDetails?.out_of_scope) {
+            bodyParts.push('## Nicht aendern (Out of Scope)');
+            bodyParts.push(String(implDetails.out_of_scope));
+            bodyParts.push('');
+          }
+          bodyParts.push(
+            '## Build-Hinweise',
+            '- CLAUDE.md Kernregeln: ASCII-Commits, keine Named Dart-3 Records, deutsche UI-Texte.',
+            '- Skills in .claude/skills/ nutzen (flutter-*, supabase, cloudflare, shorebird-ota).',
             '- flutter analyze = 0 Errors, dart format . vor Commit.',
-            '- Neue Features in der App verlinken/registrieren -- nicht nur den Code schreiben.',
+            '- Neue Features in der App registrieren/verlinken -- nicht nur den Code schreiben.',
             '- PR-Body: "Closes #<issue>", was geaendert, Fundort, Patch-kompatibel.',
-          ].join('\n');
+          );
+          const issueBody = bodyParts.filter(Boolean).join('\n');
 
           let issueNumber = null;
           let issueUrl    = null;
@@ -5143,6 +5262,125 @@ export default {
             status: 'issue_created',
             request: row,
             message: `Auftrag #${issueNumber} angelegt -- Claude baut autonom, Auto-Merge nach gruenem CI.`,
+          });
+        }
+
+        // ── DELETE /api/admin/godmode/request/:id ────────────────────────
+        // Auftrag aus der Datenbank loeschen (z.B. fehlgeschlagene bereinigen).
+        if (method === 'DELETE' && path.startsWith('/api/admin/godmode/request/') &&
+            !path.endsWith('/retry')) {
+          const id = path.split('/').pop();
+          if (!id || id.length < 4) return errorResponse('Ungueltige ID', 400, 'invalid_id');
+          try {
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_requests?id=eq.${encodeURIComponent(id)}`,
+              { method: 'DELETE', headers: { ...svcHeaders, Prefer: 'return=minimal' } }
+            );
+            return jsonResponse({ success: true, id });
+          } catch (e) {
+            return errorResponse(`Fehler: ${e.message}`);
+          }
+        }
+
+        // ── POST /api/admin/godmode/request/:id/retry ────────────────────
+        // Fehlgeschlagenen Auftrag erneut als GitHub-Issue absetzen.
+        if (method === 'POST' && path.startsWith('/api/admin/godmode/request/') &&
+            path.endsWith('/retry')) {
+          const parts = path.split('/');
+          const id = parts[parts.length - 2];
+          if (!id || id.length < 4) return errorResponse('Ungueltige ID', 400, 'invalid_id');
+          if (!ghPat) return errorResponse('Kein GitHub-PAT', 500, 'godmode_pat_missing');
+
+          const origR = await fetch(
+            `${SUPABASE_URL}/rest/v1/godmode_requests?id=eq.${encodeURIComponent(id)}&select=*`,
+            { headers: svcHeaders }
+          );
+          const rows = origR.ok ? await origR.json().catch(() => []) : [];
+          if (!Array.isArray(rows) || !rows.length) {
+            return errorResponse('Auftrag nicht gefunden', 404, 'not_found');
+          }
+          const orig = rows[0];
+          const origType = String(orig.wb_type || '');
+          const TYPE_LABELS_RETRY = {
+            bug: 'Fehler/Bug', neuerung: 'Neuerung', erweiterung: 'Erweiterung',
+            verbesserung: 'Verbesserung', performance: 'Performance', ux: 'UX/Design',
+          };
+          const origSrcLabel = orig.source === 'ai_suggestion' ? 'KI-Vorschlag'
+            : (orig.source === 'chat' ? 'Chat-Dialog' : 'Manuell');
+
+          const retryBody = [
+            `**God-Mode-Wiederholung von @${caller.username || 'root-admin'}**`,
+            orig.issue_number ? `*(urspruenglich Issue #${orig.issue_number})*` : null,
+            '',
+            origType ? `**Typ:** ${TYPE_LABELS_RETRY[origType] || origType}` : null,
+            `**Bereich:** ${CAT_LABELS[orig.category] || orig.category}`,
+            `**Quelle:** ${origSrcLabel}`,
+            '',
+            '## Auftrag',
+            orig.description || orig.title,
+            '',
+            '## Build-Hinweise',
+            '- CLAUDE.md Kernregeln: ASCII-Commits, keine Named Dart-3 Records, deutsche UI-Texte.',
+            '- Skills in .claude/skills/ nutzen (flutter-*, supabase, cloudflare, shorebird-ota).',
+            '- flutter analyze = 0 Errors, dart format . vor Commit.',
+            '- Neue Features registrieren/verlinken -- nicht nur den Code schreiben.',
+            '- PR-Body: "Closes #<issue>", was geaendert, Fundort, Patch-kompatibel.',
+          ].filter(Boolean).join('\n');
+
+          let newIssueNumber = null, newIssueUrl = null;
+          try {
+            const ghRes = await fetch(`https://api.github.com/repos/${ghRepo}/issues`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${ghPat}`,
+                Accept: 'application/vnd.github+json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'weltenbibliothek-godmode/1.0',
+                'X-GitHub-Api-Version': '2022-11-28',
+              },
+              body: JSON.stringify({
+                title: `[God Mode] ${orig.title}`,
+                body: retryBody,
+                labels: ['godmode'],
+              }),
+            });
+            if (!ghRes.ok) {
+              const txt = await ghRes.text().catch(() => '');
+              return errorResponse(
+                `GitHub-Issue fehlgeschlagen (HTTP ${ghRes.status}): ${txt.slice(0, 200)}`,
+                502, 'github_issue_failed'
+              );
+            }
+            const issue = await ghRes.json();
+            newIssueNumber = issue.number;
+            newIssueUrl = issue.html_url;
+          } catch (e) {
+            return errorResponse(`GitHub-Fehler: ${e.message}`, 502, 'github_error');
+          }
+
+          try {
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_requests?id=eq.${encodeURIComponent(id)}`,
+              {
+                method: 'PATCH',
+                headers: { ...svcHeaders, Prefer: 'return=minimal' },
+                body: JSON.stringify({
+                  status: 'issue_created',
+                  issue_number: newIssueNumber,
+                  issue_url: newIssueUrl,
+                  error: null,
+                  pr_number: null,
+                  pr_url: null,
+                }),
+              }
+            );
+          } catch (_) {}
+
+          return jsonResponse({
+            success: true,
+            issue_number: newIssueNumber,
+            issue_url: newIssueUrl,
+            message: `Auftrag erneut angelegt -- Issue #${newIssueNumber}.`,
           });
         }
 

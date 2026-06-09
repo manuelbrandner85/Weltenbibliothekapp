@@ -210,7 +210,8 @@ class GodModeRequest {
       );
 
   String get categoryLabel => GodModeCategory.labelFor(category);
-  GodModeType? get typeInfo => wbType == null ? null : GodModeType.forSlug(wbType);
+  GodModeType? get typeInfo =>
+      wbType == null ? null : GodModeType.forSlug(wbType);
   bool get isAi => source == 'ai_suggestion';
   bool get isChat => source == 'chat';
 }
@@ -257,7 +258,8 @@ class GodModeService {
           : <String>[];
       return GodModeSuggestResult(suggestions, learned);
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('godmode.suggest: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('godmode.suggest: ${e.statusCode} ${e.bodySnippet}');
       return GodModeSuggestResult.empty;
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.suggest: $e');
@@ -284,9 +286,11 @@ class GodModeService {
             : null,
       );
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('godmode.chat: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('godmode.chat: ${e.statusCode} ${e.bodySnippet}');
       return const GodModeChatReply(
-        success: false, message: 'Assistent nicht erreichbar -- spaeter erneut.');
+          success: false,
+          message: 'Assistent nicht erreichbar -- spaeter erneut.');
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.chat: $e');
       return const GodModeChatReply(success: false, message: 'Netzwerkfehler.');
@@ -321,14 +325,16 @@ class GodModeService {
         issueUrl: data['issue_url'] as String?,
       );
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('godmode.submit: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('godmode.submit: ${e.statusCode} ${e.bodySnippet}');
       final msg = e.bodySnippet.contains('godmode_pat_missing')
           ? 'GitHub-PAT fehlt im Worker -- bitte GH_PAT setzen + Worker deployen.'
           : 'Auftrag fehlgeschlagen (${e.statusCode}).';
       return GodModeSubmitResult(success: false, message: msg);
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.submit: $e');
-      return const GodModeSubmitResult(success: false, message: 'Netzwerkfehler.');
+      return const GodModeSubmitResult(
+          success: false, message: 'Netzwerkfehler.');
     }
   }
 
@@ -348,7 +354,8 @@ class GodModeService {
       }
       return const [];
     } on AdminApiException catch (e) {
-      if (kDebugMode) debugPrint('godmode.list: ${e.statusCode} ${e.bodySnippet}');
+      if (kDebugMode)
+        debugPrint('godmode.list: ${e.statusCode} ${e.bodySnippet}');
       return const [];
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.list: $e');
@@ -393,7 +400,8 @@ class GodModeService {
   }
 
   /// Bereich archivieren (oder reaktivieren).
-  static Future<bool> setTopicStatus(String slug, {required bool archived}) async {
+  static Future<bool> setTopicStatus(String slug,
+      {required bool archived}) async {
     try {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/godmode/topics',
@@ -404,6 +412,47 @@ class GodModeService {
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.setTopicStatus: $e');
       return false;
+    }
+  }
+
+  /// Auftrag aus der Datenbank loeschen.
+  static Future<bool> deleteRequest(String id) async {
+    try {
+      await AdminApiClient.instance.deleteJson(
+        '/api/admin/godmode/request/$id',
+        role: _role,
+      );
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.deleteRequest: $e');
+      return false;
+    }
+  }
+
+  /// Fehlgeschlagenen Auftrag erneut als GitHub-Issue absetzen.
+  static Future<GodModeSubmitResult> retryRequest(String id) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/godmode/request/$id/retry',
+        role: _role,
+        body: {},
+        timeout: const Duration(seconds: 30),
+      );
+      return GodModeSubmitResult(
+        success: data['success'] == true,
+        message: (data['message'] as String?) ?? 'Auftrag erneut angelegt.',
+        issueNumber: data['issue_number'] as int?,
+        issueUrl: data['issue_url'] as String?,
+      );
+    } on AdminApiException catch (e) {
+      if (kDebugMode)
+        debugPrint('godmode.retryRequest: ${e.statusCode} ${e.bodySnippet}');
+      return GodModeSubmitResult(
+          success: false, message: 'Fehler (${e.statusCode}).');
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.retryRequest: $e');
+      return const GodModeSubmitResult(
+          success: false, message: 'Netzwerkfehler.');
     }
   }
 }

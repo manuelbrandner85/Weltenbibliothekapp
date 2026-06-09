@@ -52,6 +52,9 @@ class _GodModeTabState extends State<_GodModeTab>
   bool _loadingReqs = true;
   bool _submitting = false;
 
+  // Locally dismissed suggestions (not persisted -- reappear after fresh generate)
+  final Set<int> _dismissedSuggestionIndexes = {};
+
   @override
   void initState() {
     super.initState();
@@ -107,6 +110,7 @@ class _GodModeTabState extends State<_GodModeTab>
     setState(() {
       _suggesting = true;
       _suggestions = const [];
+      _dismissedSuggestionIndexes.clear();
     });
     final res = await GodModeService.suggest(area: _suggestArea);
     if (!mounted) return;
@@ -116,7 +120,8 @@ class _GodModeTabState extends State<_GodModeTab>
       _suggesting = false;
     });
     if (res.suggestions.isEmpty) {
-      _snack('Keine Vorschlaege -- spaeter erneut versuchen', color: Colors.orange);
+      _snack('Keine Vorschlaege -- spaeter erneut versuchen',
+          color: Colors.orange);
     }
     if (res.learnedTopics.isNotEmpty) _loadTopics();
   }
@@ -173,13 +178,15 @@ class _GodModeTabState extends State<_GodModeTab>
       _submitting = false;
       if (res.success) {
         _pendingOrder = null;
-        _chat.add(GodModeChatMessage('assistant',
+        _chat.add(GodModeChatMessage(
+            'assistant',
             'Auftrag #${res.issueNumber ?? '?'} abgesetzt. Claude baut jetzt autonom -- '
-            'du siehst den Fortschritt im Status-Tab.'));
+                'du siehst den Fortschritt im Status-Tab.'));
       }
     });
     if (res.success) {
-      _snack('Auftrag #${res.issueNumber} angelegt.', color: Colors.green.shade700);
+      _snack('Auftrag #${res.issueNumber} angelegt.',
+          color: Colors.green.shade700);
       _loadRequests();
       _scrollChatDown();
     } else {
@@ -253,7 +260,9 @@ class _GodModeTabState extends State<_GodModeTab>
         indicatorSize: TabBarIndicatorSize.label,
         tabs: const [
           Tab(icon: Icon(Icons.forum_rounded, size: 18), text: 'Chat'),
-          Tab(icon: Icon(Icons.auto_awesome_rounded, size: 18), text: 'KI-Ideen'),
+          Tab(
+              icon: Icon(Icons.auto_awesome_rounded, size: 18),
+              text: 'KI-Ideen'),
           Tab(icon: Icon(Icons.category_rounded, size: 18), text: 'Bereiche'),
           Tab(icon: Icon(Icons.list_alt_rounded, size: 18), text: 'Status'),
         ],
@@ -287,7 +296,8 @@ class _GodModeTabState extends State<_GodModeTab>
         Icon(Icons.auto_fix_high_rounded, color: _ab, size: 22),
         const SizedBox(width: 10),
         const Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
               'GOD MODE',
               style: TextStyle(
@@ -312,7 +322,9 @@ class _GodModeTabState extends State<_GodModeTab>
           child: Text(
             'ROOT ONLY',
             style: TextStyle(
-                color: _ab, fontSize: 9.5, fontWeight: FontWeight.bold,
+                color: _ab,
+                fontSize: 9.5,
+                fontWeight: FontWeight.bold,
                 letterSpacing: 1.2),
           ),
         ),
@@ -352,7 +364,8 @@ class _GodModeTabState extends State<_GodModeTab>
         ),
         const SizedBox(height: 18),
         Center(
-          child: Icon(Icons.forum_rounded, size: 54, color: _a.withValues(alpha: 0.3)),
+          child: Icon(Icons.forum_rounded,
+              size: 54, color: _a.withValues(alpha: 0.3)),
         ),
         const SizedBox(height: 10),
         const Center(
@@ -360,7 +373,8 @@ class _GodModeTabState extends State<_GodModeTab>
             'z.B. "Die Energie-Welt braucht einen Atem-Timer"\n'
             'oder "Der Login haengt manchmal -- bitte pruefen"',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white38, fontSize: 12.5, height: 1.5),
+            style:
+                TextStyle(color: Colors.white38, fontSize: 12.5, height: 1.5),
           ),
         ),
       ],
@@ -374,8 +388,8 @@ class _GodModeTabState extends State<_GodModeTab>
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 5),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-        constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.78),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
         decoration: BoxDecoration(
           color: isUser ? _a.withValues(alpha: 0.30) : const Color(0xFF15151F),
           borderRadius: BorderRadius.only(
@@ -396,12 +410,16 @@ class _GodModeTabState extends State<_GodModeTab>
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.auto_fix_high_rounded, size: 12, color: _ab),
                   const SizedBox(width: 5),
-                  Text('Assistent', style: TextStyle(
-                      color: _ab, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Text('Assistent',
+                      style: TextStyle(
+                          color: _ab,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold)),
                 ]),
               ),
-            Text(m.content, style: const TextStyle(
-                color: Colors.white, fontSize: 13.5, height: 1.4)),
+            Text(m.content,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 13.5, height: 1.4)),
           ],
         ),
       ),
@@ -421,7 +439,8 @@ class _GodModeTabState extends State<_GodModeTab>
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           SizedBox(
-              width: 14, height: 14,
+              width: 14,
+              height: 14,
               child: CircularProgressIndicator(strokeWidth: 2, color: _ab)),
           const SizedBox(width: 10),
           const Text('denkt nach ...',
@@ -448,12 +467,16 @@ class _GodModeTabState extends State<_GodModeTab>
           _miniBadge(GodModeCategory.labelFor(o.category), Colors.white24),
         ]),
         const SizedBox(height: 8),
-        Text(o.title, style: const TextStyle(
-            color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+        Text(o.title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700)),
         if (o.description.isNotEmpty) ...[
           const SizedBox(height: 4),
-          Text(o.description, style: const TextStyle(
-              color: Colors.white60, fontSize: 12.5, height: 1.4)),
+          Text(o.description,
+              style: const TextStyle(
+                  color: Colors.white60, fontSize: 12.5, height: 1.4)),
         ],
         const SizedBox(height: 12),
         Row(children: [
@@ -474,7 +497,9 @@ class _GodModeTabState extends State<_GodModeTab>
             child: ElevatedButton.icon(
               onPressed: _submitting ? null : _confirmPendingOrder,
               icon: _submitting
-                  ? const SizedBox(width: 15, height: 15,
+                  ? const SizedBox(
+                      width: 15,
+                      height: 15,
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.rocket_launch_rounded, size: 16),
@@ -524,14 +549,16 @@ class _GodModeTabState extends State<_GodModeTab>
         GestureDetector(
           onTap: _chatBusy ? null : _sendChat,
           child: Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: _chatBusy ? Colors.white12 : _a,
               shape: BoxShape.circle,
             ),
             child: Icon(
                 _chatBusy ? Icons.hourglass_empty_rounded : Icons.send_rounded,
-                color: Colors.white, size: 20),
+                color: Colors.white,
+                size: 20),
           ),
         ),
       ]),
@@ -556,7 +583,9 @@ class _GodModeTabState extends State<_GodModeTab>
           child: OutlinedButton.icon(
             onPressed: _suggesting ? null : _generateSuggestions,
             icon: _suggesting
-                ? const SizedBox(width: 16, height: 16,
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : Icon(Icons.auto_awesome_rounded, size: 18, color: _ab),
             label: Text(
@@ -585,7 +614,11 @@ class _GodModeTabState extends State<_GodModeTab>
               ),
             ),
           ),
-        ..._suggestions.map(_buildSuggestionCard),
+        ...List.generate(_suggestions.length, (i) {
+          if (_dismissedSuggestionIndexes.contains(i))
+            return const SizedBox.shrink();
+          return _buildSuggestionCard(_suggestions[i], i);
+        }),
       ],
     );
   }
@@ -602,22 +635,29 @@ class _GodModeTabState extends State<_GodModeTab>
         Row(children: [
           const Icon(Icons.school_rounded, size: 14, color: Colors.tealAccent),
           const SizedBox(width: 6),
-          const Text('NEU GELERNTE BEREICHE', style: TextStyle(
-              color: Colors.tealAccent, fontSize: 10,
-              fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+          const Text('NEU GELERNTE BEREICHE',
+              style: TextStyle(
+                  color: Colors.tealAccent,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2)),
         ]),
         const SizedBox(height: 8),
-        Wrap(spacing: 6, runSpacing: 6, children: _learnedFromLast.map((t) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.tealAccent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(t, style: const TextStyle(
-                color: Colors.tealAccent, fontSize: 11)),
-          );
-        }).toList()),
+        Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _learnedFromLast.map((t) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.tealAccent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(t,
+                    style: const TextStyle(
+                        color: Colors.tealAccent, fontSize: 11)),
+              );
+            }).toList()),
       ]),
     );
   }
@@ -642,12 +682,15 @@ class _GodModeTabState extends State<_GodModeTab>
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: sel ? _ab.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.04),
+                  color: sel
+                      ? _ab.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: sel ? _ab : Colors.white12),
                 ),
-                child: Text(e.$2, style: TextStyle(
-                    color: sel ? _ab : Colors.white54, fontSize: 11.5)),
+                child: Text(e.$2,
+                    style: TextStyle(
+                        color: sel ? _ab : Colors.white54, fontSize: 11.5)),
               ),
             ),
           );
@@ -656,7 +699,7 @@ class _GodModeTabState extends State<_GodModeTab>
     );
   }
 
-  Widget _buildSuggestionCard(GodModeSuggestion s) {
+  Widget _buildSuggestionCard(GodModeSuggestion s, int index) {
     final t = s.typeInfo;
     return Container(
       margin: const EdgeInsets.only(top: 12),
@@ -672,15 +715,22 @@ class _GodModeTabState extends State<_GodModeTab>
           const SizedBox(width: 6),
           _miniBadge(s.categoryLabel, Colors.white24),
           const Spacer(),
-          const Text('🤖 KI', style: TextStyle(
-              color: Colors.white30, fontSize: 10, fontWeight: FontWeight.bold)),
+          const Text('🤖 KI',
+              style: TextStyle(
+                  color: Colors.white30,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(height: 9),
-        Text(s.title, style: const TextStyle(
-            color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(s.title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600)),
         const SizedBox(height: 5),
-        Text(s.description, style: const TextStyle(
-            color: Colors.white60, fontSize: 12.5, height: 1.45)),
+        Text(s.description,
+            style: const TextStyle(
+                color: Colors.white60, fontSize: 12.5, height: 1.45)),
         if (s.reason.isNotEmpty) ...[
           const SizedBox(height: 8),
           Container(
@@ -688,40 +738,64 @@ class _GodModeTabState extends State<_GodModeTab>
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.03),
               borderRadius: BorderRadius.circular(9),
-              border: Border(left: BorderSide(color: Color(t.colorValue), width: 2.5)),
+              border: Border(
+                  left: BorderSide(color: Color(t.colorValue), width: 2.5)),
             ),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Icon(Icons.lightbulb_outline_rounded,
                   size: 13, color: Colors.amberAccent),
               const SizedBox(width: 7),
               Expanded(
-                child: RichText(text: TextSpan(children: [
-                  const TextSpan(text: 'Warum: ', style: TextStyle(
-                      color: Colors.amberAccent, fontSize: 11.5,
-                      fontWeight: FontWeight.bold)),
-                  TextSpan(text: s.reason, style: const TextStyle(
-                      color: Colors.white54, fontSize: 11.5, height: 1.4)),
+                child: RichText(
+                    text: TextSpan(children: [
+                  const TextSpan(
+                      text: 'Warum: ',
+                      style: TextStyle(
+                          color: Colors.amberAccent,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold)),
+                  TextSpan(
+                      text: s.reason,
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 11.5, height: 1.4)),
                 ])),
               ),
             ]),
           ),
         ],
         const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton.tonalIcon(
-            onPressed: _submitting ? null : () => _submitSuggestion(s),
-            icon: const Icon(Icons.rocket_launch_rounded, size: 15),
-            label: const Text('Bauen lassen', style: TextStyle(fontSize: 12)),
-            style: FilledButton.styleFrom(
-              backgroundColor: _a.withValues(alpha: 0.25),
-              foregroundColor: _ab,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+        Row(children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () =>
+                  setState(() => _dismissedSuggestionIndexes.add(index)),
+              icon: const Icon(Icons.close_rounded, size: 15),
+              label: const Text('Ablehnen', style: TextStyle(fontSize: 12)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white38,
+                side: const BorderSide(color: Colors.white12),
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
             ),
           ),
-        ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: FilledButton.tonalIcon(
+              onPressed: _submitting ? null : () => _submitSuggestion(s),
+              icon: const Icon(Icons.rocket_launch_rounded, size: 15),
+              label: const Text('Bauen lassen', style: TextStyle(fontSize: 12)),
+              style: FilledButton.styleFrom(
+                backgroundColor: _a.withValues(alpha: 0.25),
+                foregroundColor: _ab,
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+        ]),
       ]),
     );
   }
@@ -741,17 +815,20 @@ class _GodModeTabState extends State<_GodModeTab>
             '(im KI-Ideen-Tab als Filter). Du kannst auch eigene Bereiche anlegen.',
           ),
           const SizedBox(height: 14),
-          _card(child: Column(
+          _card(
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sectionLabel(Icons.add_circle_outline_rounded, 'EIGENEN BEREICH ANLEGEN'),
+              _sectionLabel(
+                  Icons.add_circle_outline_rounded, 'EIGENEN BEREICH ANLEGEN'),
               const SizedBox(height: 10),
               Row(children: [
                 Expanded(
                   child: TextField(
                     controller: _topicCtrl,
                     style: const TextStyle(color: Colors.white, fontSize: 13.5),
-                    decoration: _inputDeco('Bereichsname', 'z.B. Audio-Meditationen'),
+                    decoration:
+                        _inputDeco('Bereichsname', 'z.B. Audio-Meditationen'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -760,7 +837,8 @@ class _GodModeTabState extends State<_GodModeTab>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _a,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                   ),
                   child: const Icon(Icons.add_rounded, size: 20),
                 ),
@@ -782,7 +860,8 @@ class _GodModeTabState extends State<_GodModeTab>
                 child: Text(
                   'Noch keine Bereiche -- generiere KI-Ideen,\ndann lernt die KI automatisch dazu.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white38, fontSize: 12.5, height: 1.5),
+                  style: TextStyle(
+                      color: Colors.white38, fontSize: 12.5, height: 1.5),
                 ),
               ),
             )
@@ -806,12 +885,18 @@ class _GodModeTabState extends State<_GodModeTab>
         Text(t.isAi ? '🧠' : '👤', style: const TextStyle(fontSize: 15)),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(t.label, style: const TextStyle(
-                color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(t.label,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600)),
             const SizedBox(height: 2),
             Text(
-              t.isAi ? 'Selbst gelernt  ·  ${t.hitCount}x vorgeschlagen' : 'Manuell angelegt',
+              t.isAi
+                  ? 'Selbst gelernt  ·  ${t.hitCount}x vorgeschlagen'
+                  : 'Manuell angelegt',
               style: const TextStyle(color: Colors.white38, fontSize: 10.5),
             ),
           ]),
@@ -827,7 +912,8 @@ class _GodModeTabState extends State<_GodModeTab>
         ),
         IconButton(
           tooltip: 'Archivieren',
-          icon: const Icon(Icons.archive_outlined, size: 17, color: Colors.white30),
+          icon: const Icon(Icons.archive_outlined,
+              size: 17, color: Colors.white30),
           onPressed: () => _archiveTopic(t),
         ),
       ]),
@@ -872,17 +958,130 @@ class _GodModeTabState extends State<_GodModeTab>
                     style: TextStyle(color: Colors.white38, fontSize: 13),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: _requests.length,
-                  itemBuilder: (_, i) => _buildRequestTile(_requests[i]),
-                ),
+              : Column(children: [
+                  _buildStatusListHeader(),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                      itemCount: _requests.length,
+                      itemBuilder: (_, i) => _buildRequestTile(_requests[i]),
+                    ),
+                  ),
+                ]),
     );
+  }
+
+  Widget _buildStatusListHeader() {
+    final hasDeletable = _requests.any((r) =>
+        r.status == 'merged' || r.status == 'failed' || r.status == 'rejected');
+    if (!hasDeletable) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
+      child: Row(children: [
+        Text(
+          '${_requests.length} Auftraege',
+          style: const TextStyle(color: Colors.white38, fontSize: 11.5),
+        ),
+        const Spacer(),
+        TextButton.icon(
+          onPressed: _confirmClearDone,
+          icon: const Icon(Icons.delete_sweep_outlined, size: 15),
+          label: const Text('Erledigte loeschen',
+              style: TextStyle(fontSize: 11.5)),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white38,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _confirmClearDone() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Erledigte loeschen?',
+            style: TextStyle(color: Colors.white, fontSize: 15)),
+        content: const Text(
+          'Alle gemergten, fehlgeschlagenen und abgelehnten Eintraege werden geloescht.',
+          style: TextStyle(color: Colors.white60, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Loeschen',
+                  style: TextStyle(color: Colors.redAccent))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final toDelete = _requests
+        .where((r) =>
+            r.status == 'merged' ||
+            r.status == 'failed' ||
+            r.status == 'rejected')
+        .toList();
+    for (final r in toDelete) {
+      await GodModeService.deleteRequest(r.id);
+    }
+    _snack('${toDelete.length} Eintraege geloescht.');
+    _loadRequests();
+  }
+
+  Future<void> _deleteRequest(GodModeRequest r) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Eintrag loeschen?',
+            style: TextStyle(color: Colors.white, fontSize: 15)),
+        content: Text(r.title,
+            style: const TextStyle(color: Colors.white60, fontSize: 13)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Loeschen',
+                  style: TextStyle(color: Colors.redAccent))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final deleted = await GodModeService.deleteRequest(r.id);
+    if (!mounted) return;
+    if (deleted) {
+      setState(() => _requests = _requests.where((x) => x.id != r.id).toList());
+      _snack('Eintrag geloescht.');
+    } else {
+      _snack('Loeschen fehlgeschlagen.', color: Colors.red.shade700);
+    }
+  }
+
+  Future<void> _retryRequest(GodModeRequest r) async {
+    setState(() => _submitting = true);
+    final res = await GodModeService.retryRequest(r.id);
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    if (res.success) {
+      _snack('Auftrag #${res.issueNumber} erneut angelegt.',
+          color: Colors.green.shade700);
+      _loadRequests();
+    } else {
+      _snack(res.message, color: Colors.red.shade700);
+    }
   }
 
   Widget _buildRequestTile(GodModeRequest r) {
     final st = _statusStyle(r.status);
     final t = r.typeInfo;
+    final isFailed = r.status == 'failed' || r.status == 'rejected';
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(13),
@@ -898,7 +1097,9 @@ class _GodModeTabState extends State<_GodModeTab>
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600)),
+                    color: Colors.white,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600)),
           ),
           const SizedBox(width: 8),
           Container(
@@ -907,8 +1108,11 @@ class _GodModeTabState extends State<_GodModeTab>
               color: st.color.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(st.label, style: TextStyle(
-                color: st.color, fontSize: 10, fontWeight: FontWeight.bold)),
+            child: Text(st.label,
+                style: TextStyle(
+                    color: st.color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold)),
           ),
         ]),
         const SizedBox(height: 8),
@@ -922,7 +1126,8 @@ class _GodModeTabState extends State<_GodModeTab>
             ),
           ),
           const Spacer(),
-          if (r.issueUrl != null) _linkChip('Issue #${r.issueNumber ?? '?'}', r.issueUrl),
+          if (r.issueUrl != null)
+            _linkChip('Issue #${r.issueNumber ?? '?'}', r.issueUrl),
           if (r.prUrl != null) ...[
             const SizedBox(width: 6),
             _linkChip('PR #${r.prNumber ?? '?'}', r.prUrl),
@@ -936,8 +1141,9 @@ class _GodModeTabState extends State<_GodModeTab>
               color: Colors.red.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Row(children: [
-              Icon(Icons.error_outline_rounded, size: 13, color: Colors.red.shade300),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.error_outline_rounded,
+                  size: 13, color: Colors.red.shade300),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(_humanError(r.error!),
@@ -946,6 +1152,37 @@ class _GodModeTabState extends State<_GodModeTab>
             ]),
           ),
         ],
+        const SizedBox(height: 8),
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          if (isFailed)
+            TextButton.icon(
+              onPressed: _submitting ? null : () => _retryRequest(r),
+              icon: _submitting
+                  ? const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.refresh_rounded, size: 14),
+              label: const Text('Nochmal', style: TextStyle(fontSize: 11.5)),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.amberAccent,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          if (isFailed) const SizedBox(width: 6),
+          IconButton(
+            tooltip: 'Loeschen',
+            icon: const Icon(Icons.delete_outline_rounded, size: 17),
+            color: Colors.white24,
+            onPressed: () => _deleteRequest(r),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            visualDensity: VisualDensity.compact,
+          ),
+        ]),
       ]),
     );
   }
@@ -971,8 +1208,9 @@ class _GodModeTabState extends State<_GodModeTab>
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: c.withValues(alpha: 0.4)),
       ),
-      child: Text('${t.emoji} ${t.label}', style: TextStyle(
-          color: c, fontSize: 10, fontWeight: FontWeight.bold)),
+      child: Text('${t.emoji} ${t.label}',
+          style:
+              TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -983,8 +1221,11 @@ class _GodModeTabState extends State<_GodModeTab>
           borderRadius: BorderRadius.circular(7),
           border: Border.all(color: border),
         ),
-        child: Text(label, style: const TextStyle(
-            color: Colors.white54, fontSize: 9.5, fontWeight: FontWeight.w600)),
+        child: Text(label,
+            style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w600)),
       );
 
   Widget _linkChip(String label, String? url) => InkWell(
@@ -1008,7 +1249,8 @@ class _GodModeTabState extends State<_GodModeTab>
         'merged' => _GodModeStatusStyle('Gemergt', Colors.greenAccent),
         'building' => _GodModeStatusStyle('Baut ...', Colors.orangeAccent),
         'pr_open' => _GodModeStatusStyle('PR offen', Colors.lightBlueAccent),
-        'issue_created' => _GodModeStatusStyle('Beauftragt', Colors.amberAccent),
+        'issue_created' =>
+          _GodModeStatusStyle('Beauftragt', Colors.amberAccent),
         'failed' => _GodModeStatusStyle('Fehlgeschlagen', Colors.redAccent),
         'rejected' => _GodModeStatusStyle('Abgelehnt', Colors.redAccent),
         _ => _GodModeStatusStyle('Wartend', Colors.white54),
@@ -1034,17 +1276,22 @@ class _GodModeTabState extends State<_GodModeTab>
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Icon(Icons.info_outline_rounded, color: _ab, size: 16),
           const SizedBox(width: 8),
-          Expanded(child: Text(text, style: const TextStyle(
-              color: Colors.white60, fontSize: 12.5, height: 1.45))),
+          Expanded(
+              child: Text(text,
+                  style: const TextStyle(
+                      color: Colors.white60, fontSize: 12.5, height: 1.45))),
         ]),
       );
 
   Widget _sectionLabel(IconData icon, String text) => Row(children: [
         Icon(icon, color: _ab, size: 15),
         const SizedBox(width: 7),
-        Text(text, style: TextStyle(
-            color: _ab, fontSize: 11, fontWeight: FontWeight.bold,
-            letterSpacing: 1.4)),
+        Text(text,
+            style: TextStyle(
+                color: _ab,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.4)),
       ]);
 
   InputDecoration _inputDeco(String label, String hint) => InputDecoration(
