@@ -93,10 +93,15 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0606),
       extendBodyBehindAppBar: true,
-      appBar: const WBGlassAppBar(title: 'Cross-Referenz', world: WBWorld.materie),
+      appBar: const WBGlassAppBar(
+        title: 'Cross-Referenz',
+        world: WBWorld.materie,
+      ),
       body: Stack(
         children: [
-          const IgnorePointer(child: WBAmbientParticles(world: WBWorld.materie, count: 22)),
+          const IgnorePointer(
+            child: WBAmbientParticles(world: WBWorld.materie, count: 22),
+          ),
           const WBVignette(),
           SafeArea(
             child: Padding(
@@ -104,7 +109,8 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
               child: Column(
                 children: [
                   _searchField(),
-                  if (_history.isNotEmpty && _result == null && !_loading) _historyChips(),
+                  if (_history.isNotEmpty && _result == null && !_loading)
+                    _historyChips(),
                   if (_result != null) _filtersRow(),
                   const SizedBox(height: 8),
                   Expanded(child: _body()),
@@ -161,9 +167,16 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.history_rounded, color: Colors.white38, size: 13),
+                  const Icon(
+                    Icons.history_rounded,
+                    color: Colors.white38,
+                    size: 13,
+                  ),
                   const SizedBox(width: 5),
-                  Text(q, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text(
+                    q,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -181,11 +194,19 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
       (
         'study',
         'Studien',
-        r.openAlexWorks.length + r.pubmedStudies.length + r.crossRefWorks.length,
+        r.openAlexWorks.length +
+            r.pubmedStudies.length +
+            r.crossRefWorks.length +
+            r.semanticScholarPapers.length,
       ),
       ('preprint', 'Preprints', r.arxivPapers.length),
-      ('news', 'Nachrichten', r.gdeltArticles.length + r.guardianArticles.length),
+      (
+        'news',
+        'Nachrichten',
+        r.gdeltArticles.length + r.guardianArticles.length,
+      ),
       ('archive', 'Archiv', r.timelineEvents.length + r.archiveDocs.length),
+      ('books', 'Buecher', r.openLibraryBooks.length),
     ];
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -200,14 +221,19 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
                 onTap: () => setState(() => _filter = f.$1),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: sel
                         ? _accent.withValues(alpha: 0.25)
                         : Colors.white.withValues(alpha: 0.04),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: sel ? _accent : Colors.white.withValues(alpha: 0.12),
+                      color: sel
+                          ? _accent
+                          : Colors.white.withValues(alpha: 0.12),
                       width: sel ? 1.4 : 1,
                     ),
                   ),
@@ -236,7 +262,10 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
           children: [
             CircularProgressIndicator(color: _accent),
             SizedBox(height: 14),
-            Text('Suche in 10 Quellen...', style: TextStyle(color: Colors.white60, fontSize: 13)),
+            Text(
+              'Suche in 12 Quellen...',
+              style: TextStyle(color: Colors.white60, fontSize: 13),
+            ),
           ],
         ),
       );
@@ -256,9 +285,13 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
               const SizedBox(height: 16),
               const Text(
                 'Cross-Referenz-Suche\nueber Wikidata, Wikipedia, Studien,\n'
-                'arXiv, Nachrichten, Archiv -- 10 Quellen parallel.',
+                'arXiv, Nachrichten, Archiv, Buecher -- 12 Quellen parallel.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white60, fontSize: 13.5, height: 1.55),
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 13.5,
+                  height: 1.55,
+                ),
               ),
             ],
           ),
@@ -276,7 +309,7 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Text(
-            '${r.totalCount} Treffer in ${r.searchDuration.inMilliseconds} ms aus 10 Quellen',
+            '${r.totalCount} Treffer in ${r.searchDuration.inMilliseconds} ms aus 12 Quellen',
             style: const TextStyle(color: Colors.white60, fontSize: 12),
           ),
         ),
@@ -360,6 +393,22 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
             'internet-archive',
             () => r.archiveDocs.map(_archiveDocTile).toList(),
           ),
+        if (_includesSection('study') && r.semanticScholarPapers.isNotEmpty)
+          _section(
+            'Semantic Scholar',
+            '🎓',
+            r.semanticScholarPapers.length,
+            'semantic-scholar',
+            () => r.semanticScholarPapers.map(_semanticScholarTile).toList(),
+          ),
+        if (_includesSection('books') && r.openLibraryBooks.isNotEmpty)
+          _section(
+            'Open Library (Buecher)',
+            '📕',
+            r.openLibraryBooks.length,
+            'open-library',
+            () => r.openLibraryBooks.map(_openLibraryTile).toList(),
+          ),
         const SizedBox(height: 30),
       ],
     );
@@ -373,12 +422,17 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
     if (_filter == 'archive') {
       return type == 'archive' || type == 'internet-archive';
     }
-    // 'study' filter shows openalex, pubmed, crossref.
+    // 'study' filter shows openalex, pubmed, crossref, semantic-scholar.
     if (_filter == 'study') {
-      return type == 'openalex' || type == 'pubmed' || type == 'crossref';
+      return type == 'openalex' ||
+          type == 'pubmed' ||
+          type == 'crossref' ||
+          type == 'semantic-scholar';
     }
     // 'news' filter shows guardian and gdelt.
     if (_filter == 'news') return type == 'guardian' || type == 'gdelt';
+    // 'books' filter shows open-library.
+    if (_filter == 'books') return type == 'open-library';
     return _filter == type;
   }
 
@@ -415,7 +469,10 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: _accent.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(10),
@@ -430,7 +487,10 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Icon(collapsed ? Icons.expand_more : Icons.expand_less, color: Colors.white60),
+                  Icon(
+                    collapsed ? Icons.expand_more : Icons.expand_less,
+                    color: Colors.white60,
+                  ),
                 ],
               ),
               onTap: () => setState(() {
@@ -488,7 +548,10 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: _accent.withValues(alpha: 0.9), fontSize: 11),
+                  style: TextStyle(
+                    color: _accent.withValues(alpha: 0.9),
+                    fontSize: 11,
+                  ),
                 ),
               ],
               if (body.isNotEmpty) ...[
@@ -497,7 +560,11 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
                   body,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ],
@@ -507,8 +574,12 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
     );
   }
 
-  Widget _wikidataTile(WikidataEntry e) =>
-      _baseResultTile(title: e.label, subtitle: e.id, body: e.description ?? '', url: e.url);
+  Widget _wikidataTile(WikidataEntry e) => _baseResultTile(
+    title: e.label,
+    subtitle: e.id,
+    body: e.description ?? '',
+    url: e.url,
+  );
 
   Widget _timelineTile(TimelineEventV2 e) => _baseResultTile(
     title: e.title,
@@ -571,5 +642,21 @@ class _CrossReferenceScreenState extends State<CrossReferenceScreen> {
     subtitle: '${d.mediatypeLabel}${d.date != null ? " · ${d.date}" : ""}',
     body: d.description ?? '',
     url: d.url,
+  );
+
+  Widget _semanticScholarTile(SemanticScholarPaper p) => _baseResultTile(
+    title: p.title,
+    subtitle:
+        '${p.year != null ? "${p.year} · " : ""}${p.authorsDisplay}  |  ${p.citationCount}x zitiert',
+    body: p.abstract,
+    url: p.pdfUrl ?? p.url,
+  );
+
+  Widget _openLibraryTile(OpenLibraryBook b) => _baseResultTile(
+    title: b.title,
+    subtitle:
+        '${b.authors.take(2).join(", ")}${b.firstPublishYear != null ? " · ${b.firstPublishYear}" : ""}',
+    body: b.pageCount != null ? '${b.pageCount} Seiten' : '',
+    url: b.url,
   );
 }

@@ -1022,6 +1022,75 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // 22. Semantic Scholar — 200M+ akademische Arbeiten (kein API-Key)
+  // API-Doku: https://api.semanticscholar.org/graph/v1
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht Semantic-Scholar-Paper zu [query]. Kein API-Key noetig.
+  Future<List<SemanticScholarPaper>> fetchSemanticScholarPapers(
+    String query, {
+    int limit = 8,
+  }) async {
+    final url = Uri.parse(
+      'https://api.semanticscholar.org/graph/v1/paper/search'
+      '?query=${Uri.encodeComponent(query)}'
+      '&limit=$limit'
+      '&fields=title,abstract,authors,year,citationCount,externalIds,openAccessPdf',
+    );
+    try {
+      final res = await http
+          .get(
+            url,
+            headers: {
+              'User-Agent': 'Weltenbibliothek/1.0 (app@weltenbibliothek.de)',
+            },
+          )
+          .timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final papers = (data['data'] as List? ?? []);
+      return papers
+          .map((p) => SemanticScholarPaper.fromJson(p as Map<String, dynamic>))
+          .where((p) => p.title.isNotEmpty)
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('SemanticScholar: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 23. Open Library — Buecher-Datenbank (Internet Archive, kein API-Key)
+  // API-Doku: https://openlibrary.org/developers/api
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht Buecher in der Open Library zu [query]. Kein API-Key noetig.
+  Future<List<OpenLibraryBook>> fetchOpenLibraryBooks(
+    String query, {
+    int limit = 8,
+  }) async {
+    final url = Uri.parse(
+      'https://openlibrary.org/search.json'
+      '?q=${Uri.encodeComponent(query)}'
+      '&limit=$limit'
+      '&fields=key,title,author_name,first_publish_year,number_of_pages_median,isbn',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final docs = (data['docs'] as List? ?? []);
+      return docs
+          .map((d) => OpenLibraryBook.fromJson(d as Map<String, dynamic>))
+          .where((b) => b.title.isNotEmpty)
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('OpenLibrary: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // 12. Mondphase — Mathematische Berechnung (kein API nötig)
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -1717,6 +1786,94 @@ class WikiSearchEntry {
   }
 
   String get url => 'https://$lang.wikipedia.org/?curid=$pageId';
+}
+
+// ─── Semantic Scholar Paper ───────────────────────────────────────────────────
+
+class SemanticScholarPaper {
+  final String paperId;
+  final String title;
+  final String abstract;
+  final List<String> authors;
+  final int? year;
+  final int citationCount;
+  final String? doi;
+  final String? pdfUrl;
+
+  const SemanticScholarPaper({
+    required this.paperId,
+    required this.title,
+    required this.abstract,
+    required this.authors,
+    this.year,
+    required this.citationCount,
+    this.doi,
+    this.pdfUrl,
+  });
+
+  factory SemanticScholarPaper.fromJson(Map<String, dynamic> j) {
+    final authorList = (j['authors'] as List? ?? [])
+        .take(3)
+        .map((a) => ((a as Map)['name'] ?? '') as String)
+        .where((s) => s.isNotEmpty)
+        .toList();
+    final extIds = j['externalIds'] as Map<String, dynamic>? ?? {};
+    final ab = j['abstract'] as String? ?? '';
+    return SemanticScholarPaper(
+      paperId: j['paperId'] as String? ?? '',
+      title: (j['title'] as String? ?? '').trim(),
+      abstract: ab.length > 280 ? '${ab.substring(0, 280)}...' : ab,
+      authors: authorList,
+      year: j['year'] as int?,
+      citationCount: j['citationCount'] as int? ?? 0,
+      doi: extIds['DOI'] as String?,
+      pdfUrl: (j['openAccessPdf'] as Map?)?['url'] as String?,
+    );
+  }
+
+  String get url => 'https://www.semanticscholar.org/paper/$paperId';
+  String get authorsDisplay =>
+      authors.take(2).join(', ') + (authors.length > 2 ? ' et al.' : '');
+}
+
+// ─── Open Library Book ────────────────────────────────────────────────────────
+
+class OpenLibraryBook {
+  final String key;
+  final String title;
+  final List<String> authors;
+  final int? firstPublishYear;
+  final int? pageCount;
+  final String? isbn;
+
+  const OpenLibraryBook({
+    required this.key,
+    required this.title,
+    required this.authors,
+    this.firstPublishYear,
+    this.pageCount,
+    this.isbn,
+  });
+
+  factory OpenLibraryBook.fromJson(Map<String, dynamic> j) {
+    final authorList = (j['author_name'] as List? ?? [])
+        .take(3)
+        .map((a) => a.toString())
+        .toList();
+    String? isbn;
+    final isbns = j['isbn'] as List?;
+    if (isbns != null && isbns.isNotEmpty) isbn = isbns.first as String?;
+    return OpenLibraryBook(
+      key: (j['key'] as String? ?? '').replaceFirst('/works/', ''),
+      title: j['title'] as String? ?? '',
+      authors: authorList,
+      firstPublishYear: j['first_publish_year'] as int?,
+      pageCount: j['number_of_pages_median'] as int?,
+      isbn: isbn,
+    );
+  }
+
+  String get url => 'https://openlibrary.org/works/$key';
 }
 
 // ─── Internet Archive Document ────────────────────────────────────────────────

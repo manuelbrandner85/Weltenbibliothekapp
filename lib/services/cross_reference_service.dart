@@ -1,6 +1,7 @@
 // Cross-Reference-Service (R7).
-// Parallel-Suche ueber 10 Quellen: Wikidata, Wikipedia, OpenAlex, PubMed,
-// GDELT, Guardian, CrossRef, arXiv, Internet Archive + research_timeline.
+// Parallel-Suche ueber 12 Quellen: Wikidata, Wikipedia, OpenAlex, PubMed,
+// GDELT, Guardian, CrossRef, arXiv, Internet Archive, Research-Timeline,
+// Semantic Scholar + Open Library.
 
 import 'dart:async';
 
@@ -21,6 +22,8 @@ class CrossReferenceResult {
   final List<CrossRefWork> crossRefWorks;
   final List<ArxivEntry> arxivPapers;
   final List<InternetArchiveDoc> archiveDocs;
+  final List<SemanticScholarPaper> semanticScholarPapers;
+  final List<OpenLibraryBook> openLibraryBooks;
   final int totalCount;
   final Duration searchDuration;
 
@@ -35,6 +38,8 @@ class CrossReferenceResult {
     required this.crossRefWorks,
     required this.arxivPapers,
     required this.archiveDocs,
+    required this.semanticScholarPapers,
+    required this.openLibraryBooks,
     required this.totalCount,
     required this.searchDuration,
   });
@@ -50,7 +55,7 @@ class CrossReferenceService {
     final sw = Stopwatch()..start();
     final api = FreeApiService.instance;
 
-    // Alle 10 Quellen parallel anstossen.
+    // Alle 12 Quellen parallel anstossen.
     final results = await Future.wait<dynamic>([
       api
           .fetchWikidataEntries(query, limit: 8)
@@ -78,6 +83,12 @@ class CrossReferenceService {
           .fetchInternetArchiveDocs(query, limit: 6)
           .catchError((_) => <InternetArchiveDoc>[]),
       _searchTimeline(query),
+      api
+          .fetchSemanticScholarPapers(query, limit: 6)
+          .catchError((_) => <SemanticScholarPaper>[]),
+      api
+          .fetchOpenLibraryBooks(query, limit: 6)
+          .catchError((_) => <OpenLibraryBook>[]),
     ]);
 
     sw.stop();
@@ -92,6 +103,8 @@ class CrossReferenceService {
     final arxiv = (results[7] as List).cast<ArxivEntry>();
     final archive = (results[8] as List).cast<InternetArchiveDoc>();
     final timeline = (results[9] as List).cast<TimelineEventV2>();
+    final semanticScholar = (results[10] as List).cast<SemanticScholarPaper>();
+    final openLibrary = (results[11] as List).cast<OpenLibraryBook>();
 
     final total =
         wikidata.length +
@@ -103,7 +116,9 @@ class CrossReferenceService {
         crossRef.length +
         arxiv.length +
         archive.length +
-        timeline.length;
+        timeline.length +
+        semanticScholar.length +
+        openLibrary.length;
 
     return CrossReferenceResult(
       wikidataEntries: wikidata,
@@ -116,6 +131,8 @@ class CrossReferenceService {
       crossRefWorks: crossRef,
       arxivPapers: arxiv,
       archiveDocs: archive,
+      semanticScholarPapers: semanticScholar,
+      openLibraryBooks: openLibrary,
       totalCount: total,
       searchDuration: sw.elapsed,
     );
