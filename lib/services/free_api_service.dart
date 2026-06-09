@@ -117,8 +117,10 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sucht PubMed-Studien zu [query] und gibt bis zu [limit] Ergebnisse zurück.
-  Future<List<PubMedStudy>> fetchPubMedStudies(String query,
-      {int limit = 8}) async {
+  Future<List<PubMedStudy>> fetchPubMedStudies(
+    String query, {
+    int limit = 8,
+  }) async {
     try {
       // Schritt 1: IDs suchen
       final searchUrl = Uri.parse(
@@ -146,8 +148,10 @@ class FreeApiService {
 
       return ids
           .where((id) => result.containsKey(id))
-          .map((id) =>
-              PubMedStudy.fromJson(id, result[id] as Map<String, dynamic>))
+          .map(
+            (id) =>
+                PubMedStudy.fromJson(id, result[id] as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ PubMed: $e');
@@ -160,8 +164,10 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sucht Guardian-Artikel zu [query]. Nutzt den kostenlosen 'test'-Key.
-  Future<List<GuardianArticle>> fetchGuardianNews(String query,
-      {int limit = 10}) async {
+  Future<List<GuardianArticle>> fetchGuardianNews(
+    String query, {
+    int limit = 10,
+  }) async {
     final url = Uri.parse(
       'https://content.guardianapis.com/search'
       '?q=${Uri.encodeComponent(query)}'
@@ -189,8 +195,10 @@ class FreeApiService {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sucht Wikidata-Entitäten zu [query] (Ereignisse, Personen, Orte).
-  Future<List<WikidataEntry>> fetchWikidataEntries(String query,
-      {int limit = 10}) async {
+  Future<List<WikidataEntry>> fetchWikidataEntries(
+    String query, {
+    int limit = 10,
+  }) async {
     final url = Uri.parse(
       'https://www.wikidata.org/w/api.php'
       '?action=wbsearchentities'
@@ -256,7 +264,8 @@ class FreeApiService {
   /// Description (die fuer 95 % der Wikidata-Entries 'concept' liefert,
   /// weil de/en-Descriptions oft nicht die Schluesselworte enthalten).
   Future<Map<String, String>> fetchWikidataClassification(
-      List<String> ids) async {
+    List<String> ids,
+  ) async {
     if (ids.isEmpty) return {};
     // Wikidata wbgetentities erlaubt max 50 IDs pro Call.
     final out = <String, String>{};
@@ -291,7 +300,9 @@ class FreeApiService {
               if (value is Map && value['id'] is String) {
                 classIds.add(value['id'] as String);
               }
-            } catch (_) {/* skip malformed */}
+            } catch (_) {
+              /* skip malformed */
+            }
           }
           out[id] = _classifyByP31(classIds);
         });
@@ -383,7 +394,9 @@ class FreeApiService {
               targetIds.add(tid);
               pairs.add((propId, propLabel, tid));
             }
-          } catch (_) {/* skip malformed */}
+          } catch (_) {
+            /* skip malformed */
+          }
         }
       });
 
@@ -393,13 +406,15 @@ class FreeApiService {
       final labels = await _fetchWikidataLabels(targetIds.toList());
 
       return pairs
-          .map((p) => WikidataRelation(
-                sourceId: entityId,
-                targetId: p.$3,
-                targetLabel: labels[p.$3] ?? p.$3,
-                propertyId: p.$1,
-                propertyLabel: p.$2,
-              ))
+          .map(
+            (p) => WikidataRelation(
+              sourceId: entityId,
+              targetId: p.$3,
+              targetLabel: labels[p.$3] ?? p.$3,
+              propertyId: p.$1,
+              propertyLabel: p.$2,
+            ),
+          )
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Wikidata-Relations: $e');
@@ -446,8 +461,10 @@ class FreeApiService {
   /// Sucht LittleSis-Entities (Personen + Organisationen aus US-Eliten-DB).
   /// Liefert Edges, die das Wikidata-Netz erweitern (z.B. Board-Memberships,
   /// Spenden, Familienbeziehungen).
-  Future<List<LittleSisRelation>> fetchLittleSisRelations(String name,
-      {int limit = 10}) async {
+  Future<List<LittleSisRelation>> fetchLittleSisRelations(
+    String name, {
+    int limit = 10,
+  }) async {
     if (name.trim().isEmpty) return [];
     // Step 1: search → entity-ID.
     final searchUrl = Uri.parse(
@@ -476,8 +493,12 @@ class FreeApiService {
       final relData = jsonDecode(relRes.body) as Map<String, dynamic>;
       final rels = relData['data'] as List? ?? [];
       return rels
-          .map((r) =>
-              LittleSisRelation.fromJson(r as Map<String, dynamic>, entityName))
+          .map(
+            (r) => LittleSisRelation.fromJson(
+              r as Map<String, dynamic>,
+              entityName,
+            ),
+          )
           .where((r) => r.targetName.isNotEmpty)
           .toList();
     } catch (e) {
@@ -493,8 +514,10 @@ class FreeApiService {
 
   /// Sucht Firmen ueber den Namen. Liefert Land, Status, Jurisdiktion +
   /// (best-effort) Officers/Direktoren. Free-Tier: ~200 Calls/Tag ohne Key.
-  Future<List<OpenCorpCompany>> fetchOpenCorpCompanies(String name,
-      {int limit = 5}) async {
+  Future<List<OpenCorpCompany>> fetchOpenCorpCompanies(
+    String name, {
+    int limit = 5,
+  }) async {
     if (name.trim().isEmpty) return [];
     final url = Uri.parse(
       'https://api.opencorporates.com/v0.4.5/companies/search'
@@ -507,8 +530,11 @@ class FreeApiService {
       final companies =
           ((data['results'] as Map?)?['companies'] as List?) ?? const [];
       return companies
-          .map((c) => OpenCorpCompany.fromJson(
-              (c as Map<String, dynamic>)['company'] as Map<String, dynamic>))
+          .map(
+            (c) => OpenCorpCompany.fromJson(
+              (c as Map<String, dynamic>)['company'] as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('OpenCorporates: $e');
@@ -524,12 +550,15 @@ class FreeApiService {
   /// Holt fuer einen DBpedia-Resource-Namen alle Predikate, die mit anderen
   /// DBpedia-Resources verlinken (z.B. dbo:foundedBy, dbo:owner, dbo:member).
   /// Liefert deutsche Labels wenn vorhanden, sonst englische.
-  Future<List<DbpediaRelation>> fetchDbpediaRelations(String resourceLabel,
-      {int limit = 30}) async {
+  Future<List<DbpediaRelation>> fetchDbpediaRelations(
+    String resourceLabel, {
+    int limit = 30,
+  }) async {
     if (resourceLabel.trim().isEmpty) return [];
     // SPARQL: erst Resource ueber rdfs:label oder Redirect aufloesen,
     // dann alle Object-Properties (mit deutschem Label).
-    final sparql = '''
+    final sparql =
+        '''
 PREFIX dbo: <http://dbpedia.org/ontology/>
 PREFIX dbr: <http://dbpedia.org/resource/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -571,11 +600,13 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
         final key = '$propLabel|$targetLabel';
         if (seen.contains(key)) continue;
         seen.add(key);
-        out.add(DbpediaRelation(
-          sourceLabel: resourceLabel,
-          targetLabel: targetLabel,
-          propertyLabel: propLabel,
-        ));
+        out.add(
+          DbpediaRelation(
+            sourceLabel: resourceLabel,
+            targetLabel: targetLabel,
+            propertyLabel: propLabel,
+          ),
+        );
       }
       return out;
     } catch (e) {
@@ -617,8 +648,9 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Liefert ein zufälliges Zitat (optional gefiltert nach [tags]).
-  Future<DailyQuote?> fetchDailyQuote(
-      {String tags = 'wisdom,inspirational'}) async {
+  Future<DailyQuote?> fetchDailyQuote({
+    String tags = 'wisdom,inspirational',
+  }) async {
     final url = Uri.parse('https://api.quotable.io/random?tags=$tags');
     try {
       final res = await http.get(url).timeout(_timeout);
@@ -678,8 +710,10 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
   // 11. Cloudflare Workers AI — Llama 3.1 8B (via eigenem Worker)
   // ─────────────────────────────────────────────────────────────────────────
 
-  static const _workerBase = String.fromEnvironment('CLOUDFLARE_WORKER_URL',
-      defaultValue: 'https://weltenbibliothek-api.brandy13062.workers.dev');
+  static const _workerBase = String.fromEnvironment(
+    'CLOUDFLARE_WORKER_URL',
+    defaultValue: 'https://weltenbibliothek-api.brandy13062.workers.dev',
+  );
 
   /// Stellt eine Frage an Llama 3.1 8B via Cloudflare Workers AI.
   /// [systemPrompt] optional; Antwort immer auf Deutsch.
@@ -715,8 +749,10 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sucht 250M+ akademische Arbeiten über OpenAlex. Kein API-Key nötig.
-  Future<List<OpenAlexWork>> fetchOpenAlexWorks(String query,
-      {int limit = 15}) async {
+  Future<List<OpenAlexWork>> fetchOpenAlexWorks(
+    String query, {
+    int limit = 15,
+  }) async {
     final url = Uri.parse(
       'https://api.openalex.org/works'
       '?search=${Uri.encodeComponent(query)}'
@@ -726,8 +762,9 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
       '&mailto=app@weltenbibliothek.de',
     );
     try {
-      final res = await http.get(url,
-          headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
+      final res = await http
+          .get(url, headers: {'User-Agent': 'Weltenbibliothek/1.0'})
+          .timeout(_timeout);
       if (res.statusCode != 200) return [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final results = (data['results'] as List? ?? []);
@@ -753,7 +790,8 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
     final url = Uri.parse('https://history.muffinlabs.com/date/$mm/$dd');
     try {
       final res = await http
-          .get(url, headers: {'Accept': 'application/json'}).timeout(_timeout);
+          .get(url, headers: {'Accept': 'application/json'})
+          .timeout(_timeout);
       if (res.statusCode != 200) return [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final events = (data['data']?['Events'] as List? ?? []);
@@ -772,8 +810,10 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Liefert semantisch verwandte Begriffe zu [word] (kein API-Key).
-  Future<List<String>> fetchWordAssociations(String word,
-      {int limit = 8}) async {
+  Future<List<String>> fetchWordAssociations(
+    String word, {
+    int limit = 8,
+  }) async {
     final url = Uri.parse(
       'https://api.datamuse.com/words?ml=${Uri.encodeComponent(word)}&max=$limit',
     );
@@ -814,16 +854,19 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
   // 17. CrossRef — 165M+ DOIs, kein API-Key
   // ─────────────────────────────────────────────────────────────────────────
 
-  Future<List<CrossRefWork>> fetchCrossRefWorks(String query,
-      {int limit = 15}) async {
+  Future<List<CrossRefWork>> fetchCrossRefWorks(
+    String query, {
+    int limit = 15,
+  }) async {
     final url = Uri.parse(
       'https://api.crossref.org/works?query=${Uri.encodeComponent(query)}'
       '&rows=$limit&mailto=app@weltenbibliothek.de'
       '&select=title,author,published-print,DOI,publisher,is-referenced-by-count',
     );
     try {
-      final res = await http.get(url,
-          headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
+      final res = await http
+          .get(url, headers: {'User-Agent': 'Weltenbibliothek/1.0'})
+          .timeout(_timeout);
       if (res.statusCode != 200) return [];
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final items = (data['message']?['items'] as List? ?? []);
@@ -842,7 +885,8 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
 
   Future<String?> fetchUnpaywallPdf(String doi) async {
     final url = Uri.parse(
-        'https://api.unpaywall.org/v2/${Uri.encodeComponent(doi)}?email=app@weltenbibliothek.de');
+      'https://api.unpaywall.org/v2/${Uri.encodeComponent(doi)}?email=app@weltenbibliothek.de',
+    );
     try {
       final res = await http.get(url).timeout(_timeout);
       if (res.statusCode != 200) return null;
@@ -850,6 +894,130 @@ SELECT DISTINCT ?propLabel ?targetLabel WHERE {
       return data['best_oa_location']?['url_for_pdf'] as String?;
     } catch (e) {
       return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 19. arXiv — Preprint-Suche (Physik, Mathe, CS, Bio, Wirtschaft)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht arXiv-Preprints zu [query]. Kein API-Key noetig.
+  Future<List<ArxivEntry>> fetchArxivPapers(
+    String query, {
+    int limit = 8,
+  }) async {
+    final url = Uri.parse(
+      'https://export.arxiv.org/api/query'
+      '?search_query=all:${Uri.encodeComponent(query)}'
+      '&max_results=$limit'
+      '&sortBy=relevance'
+      '&sortOrder=descending',
+    );
+    try {
+      final res = await http
+          .get(url, headers: {'User-Agent': 'Weltenbibliothek/1.0'})
+          .timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      return _parseArxivXml(res.body);
+    } catch (e) {
+      if (kDebugMode) debugPrint('arXiv: $e');
+      return [];
+    }
+  }
+
+  List<ArxivEntry> _parseArxivXml(String xml) {
+    final entries = <ArxivEntry>[];
+    final entryRx = RegExp(r'<entry>(.*?)</entry>', dotAll: true);
+    for (final m in entryRx.allMatches(xml)) {
+      final entry = m.group(1) ?? '';
+      final id =
+          _xmlTag(entry, 'id')?.replaceAll('http://arxiv.org/abs/', '') ?? '';
+      final title = _xmlTag(entry, 'title')?.trim() ?? '';
+      final summary = _xmlTag(entry, 'summary')?.trim() ?? '';
+      final published = _xmlTag(entry, 'published') ?? '';
+      final authors = RegExp(
+        r'<name>(.*?)</name>',
+      ).allMatches(entry).map((a) => a.group(1) ?? '').take(3).toList();
+      if (id.isNotEmpty && title.isNotEmpty) {
+        entries.add(
+          ArxivEntry(
+            id: id,
+            title: title,
+            summary: summary.length > 280
+                ? '${summary.substring(0, 280)}...'
+                : summary,
+            authors: authors,
+            published: published.length >= 4
+                ? published.substring(0, 4)
+                : published,
+            url: 'https://arxiv.org/abs/$id',
+          ),
+        );
+      }
+    }
+    return entries;
+  }
+
+  String? _xmlTag(String xml, String tag) => RegExp(
+    '<$tag[^>]*>(.*?)</$tag>',
+    dotAll: true,
+  ).firstMatch(xml)?.group(1)?.trim();
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 20. Wikipedia-Volltextsuche — Artikel und Snippets (kein API-Key)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht Wikipedia-Artikel zu [query] (Deutsch bevorzugt, dann Englisch).
+  Future<List<WikiSearchEntry>> fetchWikipediaArticles(
+    String query, {
+    int limit = 8,
+    String lang = 'de',
+  }) async {
+    final url = Uri.parse(
+      'https://$lang.wikipedia.org/w/api.php'
+      '?action=query&list=search&srsearch=${Uri.encodeComponent(query)}'
+      '&srlimit=$limit&format=json&srprop=snippet|titlesnippet&origin=*',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final hits = (data['query']?['search'] as List? ?? []);
+      return hits
+          .map((h) => WikiSearchEntry.fromJson(h as Map<String, dynamic>, lang))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('Wikipedia: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 21. Internet Archive — Dokumenten- und Webseiten-Suche
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht im Internet Archive nach Dokumenten, Buechern und archivierten Seiten.
+  Future<List<InternetArchiveDoc>> fetchInternetArchiveDocs(
+    String query, {
+    int limit = 8,
+  }) async {
+    final url = Uri.parse(
+      'https://archive.org/advancedsearch.php'
+      '?q=${Uri.encodeComponent(query)}'
+      '&fl=identifier,title,description,date,mediatype,creator'
+      '&rows=$limit&page=1&output=json&sort%5B%5D=downloads+desc',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final docs = (data['response']?['docs'] as List? ?? []);
+      return docs
+          .map((d) => InternetArchiveDoc.fromJson(d as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('Internet Archive: $e');
+      return [];
     }
   }
 
@@ -891,13 +1059,13 @@ class GdeltArticle {
   });
 
   factory GdeltArticle.fromJson(Map<String, dynamic> j) => GdeltArticle(
-        title: j['title'] as String? ?? 'Kein Titel',
-        url: j['url'] as String? ?? '',
-        domain: j['domain'] as String? ?? '',
-        seendate: j['seendate'] as String? ?? '',
-        language: j['language'] as String? ?? '',
-        sourcecountry: j['sourcecountry'] as String?,
-      );
+    title: j['title'] as String? ?? 'Kein Titel',
+    url: j['url'] as String? ?? '',
+    domain: j['domain'] as String? ?? '',
+    seendate: j['seendate'] as String? ?? '',
+    language: j['language'] as String? ?? '',
+    sourcecountry: j['sourcecountry'] as String?,
+  );
 
   /// Datum aus GDELT-Format "20260427T123456Z" parsen
   DateTime? get parsedDate {
@@ -1090,11 +1258,11 @@ class WikidataEntry {
   });
 
   factory WikidataEntry.fromJson(Map<String, dynamic> j) => WikidataEntry(
-        id: j['id'] as String? ?? '',
-        label: j['label'] as String? ?? '',
-        description: j['description'] as String?,
-        url: j['url'] as String? ?? 'https://www.wikidata.org/wiki/${j['id']}',
-      );
+    id: j['id'] as String? ?? '',
+    label: j['label'] as String? ?? '',
+    description: j['description'] as String?,
+    url: j['url'] as String? ?? 'https://www.wikidata.org/wiki/${j['id']}',
+  );
 }
 
 /// Echte Wikidata-Property-Relation zwischen zwei Entities.
@@ -1178,10 +1346,10 @@ class DailyQuote {
   });
 
   factory DailyQuote.fromJson(Map<String, dynamic> j) => DailyQuote(
-        content: j['content'] as String? ?? '',
-        author: j['author'] as String? ?? 'Unbekannt',
-        tags: List<String>.from(j['tags'] as List? ?? []),
-      );
+    content: j['content'] as String? ?? '',
+    author: j['author'] as String? ?? 'Unbekannt',
+    tags: List<String>.from(j['tags'] as List? ?? []),
+  );
 }
 
 class SunData {
@@ -1364,10 +1532,10 @@ class PubChemResult {
   });
 
   factory PubChemResult.fromJson(Map<String, dynamic> j) => PubChemResult(
-        cid: j['CID'] as int? ?? 0,
-        formula: j['MolecularFormula'] as String? ?? '',
-        iupacName: j['IUPACName'] as String? ?? '',
-      );
+    cid: j['CID'] as int? ?? 0,
+    formula: j['MolecularFormula'] as String? ?? '',
+    iupacName: j['IUPACName'] as String? ?? '',
+  );
 }
 
 // ─── CrossRef Work ────────────────────────────────────────────────────────────
@@ -1440,15 +1608,18 @@ class LittleSisRelation {
   });
 
   factory LittleSisRelation.fromJson(
-      Map<String, dynamic> j, String sourceName) {
+    Map<String, dynamic> j,
+    String sourceName,
+  ) {
     final attrs = j['attributes'] as Map<String, dynamic>? ?? {};
     return LittleSisRelation(
       sourceName: sourceName,
-      targetName:
-          (attrs['entity2_name'] ?? attrs['entity1_name'] ?? '').toString(),
+      targetName: (attrs['entity2_name'] ?? attrs['entity1_name'] ?? '')
+          .toString(),
       description: (attrs['description'] ?? attrs['category'] ?? '').toString(),
       category: attrs['category']?.toString(),
-      url: (j['links'] as Map?)?['self']?.toString() ??
+      url:
+          (j['links'] as Map?)?['self']?.toString() ??
           'https://littlesis.org/relationships/${j['id']}',
     );
   }
@@ -1474,14 +1645,14 @@ class OpenCorpCompany {
   });
 
   factory OpenCorpCompany.fromJson(Map<String, dynamic> j) => OpenCorpCompany(
-        name: (j['name'] ?? '').toString(),
-        jurisdiction: (j['jurisdiction_code'] ?? '').toString(),
-        companyNumber: j['company_number']?.toString(),
-        status: j['current_status']?.toString(),
-        incorporationDate: j['incorporation_date']?.toString(),
-        companyType: j['company_type']?.toString(),
-        url: (j['opencorporates_url'] ?? '').toString(),
-      );
+    name: (j['name'] ?? '').toString(),
+    jurisdiction: (j['jurisdiction_code'] ?? '').toString(),
+    companyNumber: j['company_number']?.toString(),
+    status: j['current_status']?.toString(),
+    incorporationDate: j['incorporation_date']?.toString(),
+    companyType: j['company_type']?.toString(),
+    url: (j['opencorporates_url'] ?? '').toString(),
+  );
 }
 
 /// DBpedia-Beziehung (Subject → Property → Target).
@@ -1494,4 +1665,107 @@ class DbpediaRelation {
     required this.targetLabel,
     required this.propertyLabel,
   });
+}
+
+// ─── arXiv Entry ──────────────────────────────────────────────────────────────
+
+class ArxivEntry {
+  final String id;
+  final String title;
+  final String summary;
+  final List<String> authors;
+  final String published;
+  final String url;
+
+  const ArxivEntry({
+    required this.id,
+    required this.title,
+    required this.summary,
+    required this.authors,
+    required this.published,
+    required this.url,
+  });
+
+  String get authorsDisplay =>
+      authors.take(2).join(', ') + (authors.length > 2 ? ' et al.' : '');
+}
+
+// ─── Wikipedia Search Entry ───────────────────────────────────────────────────
+
+class WikiSearchEntry {
+  final int pageId;
+  final String title;
+  final String snippet;
+  final String lang;
+
+  const WikiSearchEntry({
+    required this.pageId,
+    required this.title,
+    required this.snippet,
+    required this.lang,
+  });
+
+  factory WikiSearchEntry.fromJson(Map<String, dynamic> j, String lang) {
+    final raw = j['snippet'] as String? ?? '';
+    final clean = raw.replaceAll(RegExp(r'<[^>]*>'), '');
+    return WikiSearchEntry(
+      pageId: j['pageid'] as int? ?? 0,
+      title: j['title'] as String? ?? '',
+      snippet: clean,
+      lang: lang,
+    );
+  }
+
+  String get url => 'https://$lang.wikipedia.org/?curid=$pageId';
+}
+
+// ─── Internet Archive Document ────────────────────────────────────────────────
+
+class InternetArchiveDoc {
+  final String identifier;
+  final String title;
+  final String? description;
+  final String? date;
+  final String mediatype;
+  final String? creator;
+
+  const InternetArchiveDoc({
+    required this.identifier,
+    required this.title,
+    this.description,
+    this.date,
+    required this.mediatype,
+    this.creator,
+  });
+
+  factory InternetArchiveDoc.fromJson(Map<String, dynamic> j) {
+    String? desc = j['description'] as String?;
+    if (desc != null && desc.length > 200)
+      desc = '${desc.substring(0, 200)}...';
+    return InternetArchiveDoc(
+      identifier: j['identifier'] as String? ?? '',
+      title: j['title'] as String? ?? '',
+      description: desc,
+      date: j['date'] as String?,
+      mediatype: j['mediatype'] as String? ?? 'texts',
+      creator: j['creator'] as String?,
+    );
+  }
+
+  String get url => 'https://archive.org/details/$identifier';
+
+  String get mediatypeLabel {
+    switch (mediatype) {
+      case 'texts':
+        return 'Dokument';
+      case 'movies':
+        return 'Video';
+      case 'audio':
+        return 'Audio';
+      case 'software':
+        return 'Software';
+      default:
+        return 'Datei';
+    }
+  }
 }

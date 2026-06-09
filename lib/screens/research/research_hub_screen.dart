@@ -22,12 +22,15 @@ class ResearchHubScreen extends StatelessWidget {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _surface,
-        title: const Text('RECHERCHE-TOOLS',
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2)),
+        title: const Text(
+          'RECHERCHE-TOOLS',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+          ),
+        ),
         iconTheme: const IconThemeData(color: _accent),
       ),
       // v119: Recherche-Tools koennen vom Admin komplett gesperrt werden.
@@ -53,7 +56,7 @@ class ResearchHubScreen extends StatelessWidget {
               context,
               icon: Icons.hub_outlined,
               title: 'Cross-Reference',
-              subtitle: '7 Quellen parallel durchsuchen',
+              subtitle: '10 Quellen parallel durchsuchen',
               color: const Color(0xFFAB47BC),
               screen: const CrossReferenceScreen(),
             ),
@@ -141,17 +144,23 @@ class ResearchHubScreen extends StatelessWidget {
               child: Icon(icon, color: color, size: 22),
             ),
             const Spacer(),
-            Text(title,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(subtitle,
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 11,
-                    height: 1.3)),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 11,
+                height: 1.3,
+              ),
+            ),
           ],
         ),
       ),

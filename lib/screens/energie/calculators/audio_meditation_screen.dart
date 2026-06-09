@@ -11,6 +11,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+class _Meditation {
+  final String emoji;
+  final String title;
+  final String duration;
+  final int stepDurationSec;
+  final List<String> script;
+  const _Meditation({
+    required this.emoji,
+    required this.title,
+    required this.duration,
+    required this.stepDurationSec,
+    required this.script,
+  });
+}
+
 class AudioMeditationScreen extends StatefulWidget {
   const AudioMeditationScreen({super.key});
 
@@ -22,15 +37,8 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
   static const _bg = Color(0xFF06040F);
   static const _accent = Color(0xFF4527A0);
 
-  static final List<
-      ({
-        String emoji,
-        String title,
-        String duration,
-        int stepDurationSec,
-        List<String> script
-      })> _meditations = [
-    (
+  static final List<_Meditation> _meditations = [
+    _Meditation(
       emoji: '🌬️',
       title: 'Atem-Bewusstheit',
       duration: '7 Min',
@@ -45,7 +53,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
         'Komme zurück. Bewege Finger und Zehen. Öffne wenn bereit die Augen.',
       ],
     ),
-    (
+    _Meditation(
       emoji: '💞',
       title: 'Loving-Kindness (Metta)',
       duration: '8 Min',
@@ -59,7 +67,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
         'Komme zurück zu dir. Spüre deinen Herzraum. Ruhe darin.',
       ],
     ),
-    (
+    _Meditation(
       emoji: '⛰️',
       title: 'Berg-Meditation',
       duration: '6 Min',
@@ -72,7 +80,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
         'Komme zurück zur natürlichen Sitzhaltung. Trage diese Stabilität in den Tag.',
       ],
     ),
-    (
+    _Meditation(
       emoji: '🕊️',
       title: 'Vergebung',
       duration: '10 Min',
@@ -87,7 +95,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
         'Komme zurück. Bewege dich. Trinke Wasser. Die Arbeit ist getan.',
       ],
     ),
-    (
+    _Meditation(
       emoji: '🙏',
       title: 'Dankbarkeit',
       duration: '5 Min',
@@ -201,12 +209,16 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _accent,
-        title: const Row(children: [
-          Text('🧘', style: TextStyle(fontSize: 22)),
-          SizedBox(width: 10),
-          Text('Geführte Meditationen',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        ]),
+        title: const Row(
+          children: [
+            Text('🧘', style: TextStyle(fontSize: 22)),
+            SizedBox(width: 10),
+            Text(
+              'Geführte Meditationen',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
@@ -244,27 +256,34 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                 borderRadius: BorderRadius.circular(14),
                 child: Padding(
                   padding: const EdgeInsets.all(14),
-                  child: Row(children: [
-                    Text(m.emoji, style: const TextStyle(fontSize: 36)),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(m.title,
+                  child: Row(
+                    children: [
+                      Text(m.emoji, style: const TextStyle(fontSize: 36)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              m.title,
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold)),
-                          Text('${m.duration} · ${m.script.length} Schritte',
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              '${m.duration} · ${m.script.length} Schritte',
                               style: TextStyle(
                                   color: _accent.withValues(alpha: 0.9),
-                                  fontSize: 12)),
-                        ],
+                                  fontSize: 12),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Icon(Icons.play_circle_fill, color: _accent, size: 36),
-                  ]),
+                      Icon(Icons.play_circle_fill, color: _accent, size: 36),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -281,10 +300,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _accent,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _stop,
-        ),
+        leading: IconButton(icon: const Icon(Icons.close), onPressed: _stop),
         title:
             Text(m.title, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
@@ -301,20 +317,22 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                     children: [
                       Text(m.emoji, style: const TextStyle(fontSize: 80)),
                       const SizedBox(height: 18),
-                      Text('Schritt ${_stepIdx + 1} / ${m.script.length}',
-                          style: TextStyle(
-                              color: _accent,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600)),
+                      Text(
+                        'Schritt ${_stepIdx + 1} / ${m.script.length}',
+                        style: TextStyle(
+                            color: _accent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                      ),
                       const SizedBox(height: 14),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(m.script[_stepIdx],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                height: 1.7)),
+                        child: Text(
+                          m.script[_stepIdx],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 16, height: 1.7),
+                        ),
                       ),
                     ],
                   ),
@@ -365,9 +383,11 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                     child: ElevatedButton.icon(
                       onPressed:
                           _stepIdx < m.script.length - 1 ? _advance : _stop,
-                      icon: Icon(_stepIdx < m.script.length - 1
-                          ? Icons.arrow_forward
-                          : Icons.check),
+                      icon: Icon(
+                        _stepIdx < m.script.length - 1
+                            ? Icons.arrow_forward
+                            : Icons.check,
+                      ),
                       label: Text(
                         _stepIdx < m.script.length - 1
                             ? 'Weiter →'

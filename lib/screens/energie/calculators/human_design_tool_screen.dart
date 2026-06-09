@@ -37,10 +37,9 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 4, vsync: this);
-    _bgCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
+    _bgCtrl =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8))
+          ..repeat(reverse: true);
   }
 
   @override
@@ -65,8 +64,10 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
           ),
         ),
         backgroundColor: Colors.transparent,
-        title: const Text('🌀 Human Design',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          '🌀 Human Design',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
@@ -91,28 +92,23 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
               top: -80 + _bgCtrl.value * 50,
               right: -60,
               child: _CineOrb(
-                color: _kPrimary,
-                size: 280,
-                opacity: 0.10 + _bgCtrl.value * 0.05,
-              ),
+                  color: _kPrimary,
+                  size: 280,
+                  opacity: 0.10 + _bgCtrl.value * 0.05),
             ),
             Positioned(
               bottom: -80,
               left: -60 + _bgCtrl.value * 30,
-              child: const _CineOrb(
-                color: _kSecondary,
-                size: 240,
-                opacity: 0.08,
-              ),
+              child:
+                  const _CineOrb(color: _kSecondary, size: 240, opacity: 0.08),
             ),
             Positioned(
               top: 300 + _bgCtrl.value * 40,
               left: 60,
               child: _CineOrb(
-                color: _kPrimary,
-                size: 160,
-                opacity: 0.04 + _bgCtrl.value * 0.03,
-              ),
+                  color: _kPrimary,
+                  size: 160,
+                  opacity: 0.04 + _bgCtrl.value * 0.03),
             ),
             child!,
           ],
@@ -123,7 +119,7 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
             _NewHdTab(),
             _HdHistoryTab(),
             _HdLexiconTab(),
-            _HdCoachingTab(),
+            _HdCoachingTab()
           ],
         ),
       ),
@@ -195,9 +191,8 @@ class _NewHdTabState extends State<_NewHdTab> {
       firstDate: DateTime(1900),
       lastDate: DateTime(2100),
       builder: (_, c) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _kTeal),
-        ),
+        data: ThemeData.dark()
+            .copyWith(colorScheme: const ColorScheme.dark(primary: _kTeal)),
         child: c!,
       ),
     );
@@ -209,9 +204,8 @@ class _NewHdTabState extends State<_NewHdTab> {
       context: context,
       initialTime: _birthTime ?? const TimeOfDay(hour: 12, minute: 0),
       builder: (_, c) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: _kTeal),
-        ),
+        data: ThemeData.dark()
+            .copyWith(colorScheme: const ColorScheme.dark(primary: _kTeal)),
         child: c!,
       ),
     );
@@ -225,8 +219,13 @@ class _NewHdTabState extends State<_NewHdTab> {
       local =
           DateTime(_birthDate.year, _birthDate.month, _birthDate.day, 12, 0);
     } else {
-      local = DateTime(_birthDate.year, _birthDate.month, _birthDate.day,
-          _birthTime!.hour, _birthTime!.minute);
+      local = DateTime(
+        _birthDate.year,
+        _birthDate.month,
+        _birthDate.day,
+        _birthTime!.hour,
+        _birthTime!.minute,
+      );
     }
     final utc = local.subtract(Duration(minutes: (tz * 60).round())).toUtc();
     final r = HumanDesign.compute(birthDateUtc: utc);
@@ -237,9 +236,10 @@ class _NewHdTabState extends State<_NewHdTab> {
     if (_result == null) return;
     final user = _db.auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Bitte anmelden, um Charts zu speichern.'),
-      ));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(
+          content: Text('Bitte anmelden, um Charts zu speichern.')));
       return;
     }
     setState(() => _saving = true);
@@ -270,16 +270,18 @@ class _NewHdTabState extends State<_NewHdTab> {
       };
       await _db.from('human_design_charts').insert(row);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Chart gespeichert.'),
-        backgroundColor: _kTeal,
-      ));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(
+          content: Text('Chart gespeichert.'), backgroundColor: _kTeal));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
-        backgroundColor: Colors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Etwas ist schiefgelaufen. Bitte erneut versuchen.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -372,11 +374,11 @@ class _NewHdTabState extends State<_NewHdTab> {
 
   Widget _section(String s) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(s,
-            style: const TextStyle(
-                color: _kTeal,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.3)),
+        child: Text(
+          s,
+          style: const TextStyle(
+              color: _kTeal, fontWeight: FontWeight.bold, letterSpacing: 0.3),
+        ),
       );
 
   Widget _textField(TextEditingController c, String hint) {
@@ -400,11 +402,8 @@ class _NewHdTabState extends State<_NewHdTab> {
     );
   }
 
-  Widget _pickerTile({
-    required IconData icon,
-    required String label,
-    VoidCallback? onTap,
-  }) {
+  Widget _pickerTile(
+      {required IconData icon, required String label, VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -420,9 +419,11 @@ class _NewHdTabState extends State<_NewHdTab> {
             Icon(icon, color: _kTeal, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(label,
-                  style: TextStyle(
-                      color: onTap == null ? Colors.white38 : Colors.white)),
+              child: Text(
+                label,
+                style: TextStyle(
+                    color: onTap == null ? Colors.white38 : Colors.white),
+              ),
             ),
             if (onTap != null)
               const Icon(Icons.chevron_right, color: Colors.white54),
@@ -449,7 +450,7 @@ class _HdResultCard extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             _kPrimary.withValues(alpha: 0.15),
-            _kSecondary.withValues(alpha: 0.08),
+            _kSecondary.withValues(alpha: 0.08)
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -467,9 +468,11 @@ class _HdResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Dein Human-Design',
-              style: TextStyle(
-                  color: _kPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
+          const Text(
+            'Dein Human-Design',
+            style: TextStyle(
+                color: _kPrimary, fontWeight: FontWeight.bold, fontSize: 18),
+          ),
           const SizedBox(height: 12),
           _kvRow('Typ', kHdTypeLabels[result.type] ?? result.type),
           _kvRow('Profil', result.profile),
@@ -478,9 +481,10 @@ class _HdResultCard extends StatelessWidget {
           _kvRow('Autorität',
               kHdAuthorityLabels[result.authority] ?? result.authority),
           const SizedBox(height: 16),
-          const Text('Definierte Zentren',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const Text(
+            'Definierte Zentren',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 6),
           Wrap(
             spacing: 6,
@@ -508,33 +512,37 @@ class _HdResultCard extends StatelessWidget {
             }).toList(),
           ),
           const SizedBox(height: 16),
-          const Text('Aktivierte Tore',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const Text(
+            'Aktivierte Tore',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 6),
           Wrap(
             spacing: 5,
             runSpacing: 5,
             children: (result.definedGates.toList()..sort())
-                .map((g) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _kTeal.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                        border:
-                            Border.all(color: _kTeal.withValues(alpha: 0.4)),
-                      ),
-                      child: Text('$g',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 12)),
-                    ))
+                .map(
+                  (g) => Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _kTeal.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _kTeal.withValues(alpha: 0.4)),
+                    ),
+                    child: Text('$g',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12)),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 16),
           ExpansionTile(
-            title: const Text('Aktivierungen (Personality / Design)',
-                style: TextStyle(color: _kTeal, fontWeight: FontWeight.bold)),
+            title: const Text(
+              'Aktivierungen (Personality / Design)',
+              style: TextStyle(color: _kTeal, fontWeight: FontWeight.bold),
+            ),
             iconColor: _kTeal,
             collapsedIconColor: _kTeal,
             tilePadding: EdgeInsets.zero,
@@ -560,11 +568,13 @@ class _HdResultCard extends StatelessWidget {
                   style: const TextStyle(color: Colors.white54, fontSize: 13)),
             ),
             Expanded(
-              child: Text(v,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600)),
+              child: Text(
+                v,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
@@ -574,30 +584,33 @@ class _HdResultCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: const TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w600,
-                fontSize: 13)),
+        Text(
+          title,
+          style: const TextStyle(
+              color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 13),
+        ),
         const SizedBox(height: 4),
-        ...acts.map((a) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 120,
-                    child: Text(kHdBodyLabels[a.body] ?? a.body,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 12)),
+        ...acts.map(
+          (a) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 120,
+                  child: Text(
+                    kHdBodyLabels[a.body] ?? a.body,
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
-                  Text('${a.gate}.${a.line}',
-                      style: const TextStyle(
-                          color: _kTeal,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold)),
-                ],
-              ),
-            )),
+                ),
+                Text(
+                  '${a.gate}.${a.line}',
+                  style: const TextStyle(
+                      color: _kTeal, fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -640,10 +653,12 @@ class _HdHistoryTabState extends State<_HdHistoryTab> {
       await _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Löschen fehlgeschlagen. Bitte erneut versuchen.'),
-        backgroundColor: Colors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Löschen fehlgeschlagen. Bitte erneut versuchen.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -661,37 +676,42 @@ class _HdHistoryTabState extends State<_HdHistoryTab> {
                 child: CircularProgressIndicator(color: _kTeal));
           }
           if (snap.hasError) {
-            return ListView(children: [
-              const SizedBox(height: 120),
-              Center(
-                child: Text('Fehler: ${snap.error}',
-                    style: const TextStyle(color: Colors.white70)),
-              ),
-            ]);
+            return ListView(
+              children: [
+                const SizedBox(height: 120),
+                Center(
+                  child: Text(
+                    'Fehler: ${snap.error}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
+                ),
+              ],
+            );
           }
           final items = snap.data ?? [];
           if (items.isEmpty) {
-            return ListView(children: const [
-              SizedBox(height: 120),
-              Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32),
-                  child: Text(
-                    'Noch keine HD-Charts gespeichert.\nGehe zu "Neu", um dein Design zu berechnen.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white54),
+            return ListView(
+              children: const [
+                SizedBox(height: 120),
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      'Noch keine HD-Charts gespeichert.\nGehe zu "Neu", um dein Design zu berechnen.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white54),
+                    ),
                   ),
                 ),
-              ),
-            ]);
+              ],
+            );
           }
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
             itemBuilder: (_, i) => _HdHistoryCard(
-              data: items[i],
-              onDelete: () => _delete(items[i]['id'] as String),
-            ),
+                data: items[i],
+                onDelete: () => _delete(items[i]['id'] as String)),
           );
         },
       ),
@@ -729,11 +749,14 @@ class _HdHistoryCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(label,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16)),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
                 IconButton(
                   onPressed: () => _confirmDelete(context),
@@ -778,8 +801,10 @@ class _HdHistoryCard extends StatelessWidget {
         backgroundColor: _kCardBg,
         title:
             const Text('Chart löschen?', style: TextStyle(color: Colors.white)),
-        content: Text('Möchtest du "${data['label']}" wirklich entfernen?',
-            style: const TextStyle(color: Colors.white70)),
+        content: Text(
+          'Möchtest du "${data['label']}" wirklich entfernen?',
+          style: const TextStyle(color: Colors.white70),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -870,9 +895,11 @@ class _HdChartDetailView extends StatelessWidget {
           _row('Strategie', kHdStrategyLabels[strategy] ?? strategy),
           _row('Autorität', kHdAuthorityLabels[auth] ?? auth),
           const SizedBox(height: 20),
-          const Text('Zentren',
-              style: TextStyle(
-                  color: _kTeal, fontWeight: FontWeight.bold, fontSize: 14)),
+          const Text(
+            'Zentren',
+            style: TextStyle(
+                color: _kTeal, fontWeight: FontWeight.bold, fontSize: 14),
+          ),
           const SizedBox(height: 6),
           Wrap(
             spacing: 6,
@@ -900,25 +927,29 @@ class _HdChartDetailView extends StatelessWidget {
             }).toList(),
           ),
           const SizedBox(height: 20),
-          const Text('Aktivierte Tore',
-              style: TextStyle(
-                  color: _kTeal, fontWeight: FontWeight.bold, fontSize: 14)),
+          const Text(
+            'Aktivierte Tore',
+            style: TextStyle(
+                color: _kTeal, fontWeight: FontWeight.bold, fontSize: 14),
+          ),
           const SizedBox(height: 6),
           Wrap(
             spacing: 5,
             runSpacing: 5,
             children: (definedGates.toList()..sort())
-                .map((g) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _kTeal.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text('$g',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 12)),
-                    ))
+                .map(
+                  (g) => Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _kTeal.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text('$g',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12)),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 40),
@@ -937,11 +968,13 @@ class _HdChartDetailView extends StatelessWidget {
                   style: const TextStyle(color: Colors.white54, fontSize: 13)),
             ),
             Expanded(
-              child: Text(v,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600)),
+              child: Text(
+                v,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         ),
@@ -1036,8 +1069,10 @@ class _HdLexiconTabState extends State<_HdLexiconTab> {
               }
               if (snap.hasError) {
                 return Center(
-                  child: Text('Fehler: ${snap.error}',
-                      style: const TextStyle(color: Colors.white70)),
+                  child: Text(
+                    'Fehler: ${snap.error}',
+                    style: const TextStyle(color: Colors.white70),
+                  ),
                 );
               }
               final items = snap.data ?? [];
@@ -1093,11 +1128,14 @@ class _HdLexiconCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(short,
                       style:
@@ -1109,17 +1147,21 @@ class _HdLexiconCard extends StatelessWidget {
                       runSpacing: 4,
                       children: keywords
                           .take(4)
-                          .map((k) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: _kTeal.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(k,
-                                    style: const TextStyle(
-                                        color: Colors.white70, fontSize: 11)),
-                              ))
+                          .map(
+                            (k) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _kTeal.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                k,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 11),
+                              ),
+                            ),
+                          )
                           .toList(),
                     ),
                   ],
@@ -1168,41 +1210,55 @@ class _HdLexiconCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 32)),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(data['title'] as String? ?? '',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold)),
+                    child: Text(
+                      data['title'] as String? ?? '',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              Text(data['short_text'] as String? ?? '',
-                  style: const TextStyle(
-                      color: Colors.white, fontSize: 15, height: 1.4)),
+              Text(
+                data['short_text'] as String? ?? '',
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 15, height: 1.4),
+              ),
               if ((data['deep_text'] as String?)?.isNotEmpty == true) ...[
                 const SizedBox(height: 20),
-                const Text('Vertiefung',
-                    style: TextStyle(
-                        color: _kTeal,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3)),
+                const Text(
+                  'Vertiefung',
+                  style: TextStyle(
+                      color: _kTeal,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3),
+                ),
                 const SizedBox(height: 6),
-                Text(data['deep_text'] as String,
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 14, height: 1.5)),
+                Text(
+                  data['deep_text'] as String,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 14, height: 1.5),
+                ),
               ],
               if ((data['shadow_text'] as String?)?.isNotEmpty == true) ...[
                 const SizedBox(height: 20),
-                const Text('Schatten & Übung',
-                    style: TextStyle(
-                        color: Colors.orangeAccent,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3)),
+                const Text(
+                  'Schatten & Übung',
+                  style: TextStyle(
+                    color: Colors.orangeAccent,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.3,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(data['shadow_text'] as String,
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 14, height: 1.5)),
+                Text(
+                  data['shadow_text'] as String,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 14, height: 1.5),
+                ),
               ],
               const SizedBox(height: 40),
             ],
@@ -1221,11 +1277,8 @@ class _CineOrb extends StatelessWidget {
   final Color color;
   final double size;
   final double opacity;
-  const _CineOrb({
-    required this.color,
-    required this.size,
-    required this.opacity,
-  });
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1233,12 +1286,29 @@ class _CineOrb extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [
-            color.withValues(alpha: opacity),
-            color.withValues(alpha: 0),
-          ]),
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: opacity),
+              color.withValues(alpha: 0),
+            ],
+          ),
         ),
       );
+}
+
+class _HdType {
+  final String typ;
+  final String emoji;
+  final String strategie;
+  final String autoritaet;
+  final List<String> uebungen;
+  const _HdType({
+    required this.typ,
+    required this.emoji,
+    required this.strategie,
+    required this.autoritaet,
+    required this.uebungen,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1247,15 +1317,8 @@ class _CineOrb extends StatelessWidget {
 class _HdCoachingTab extends StatelessWidget {
   const _HdCoachingTab();
 
-  static final List<
-      ({
-        String typ,
-        String emoji,
-        String strategie,
-        String autoritaet,
-        List<String> uebungen
-      })> _types = [
-    (
+  static final List<_HdType> _types = [
+    _HdType(
       typ: 'Generator',
       emoji: '⚡',
       strategie: 'Reagieren auf das, was auftaucht',
@@ -1267,7 +1330,7 @@ class _HdCoachingTab extends StatelessWidget {
         'Tu eine Sache nur, weil du Lust hast — ohne Begründung',
       ],
     ),
-    (
+    _HdType(
       typ: 'Manifesting Generator',
       emoji: '🔥',
       strategie: 'Reagieren UND Informieren',
@@ -1279,7 +1342,7 @@ class _HdCoachingTab extends StatelessWidget {
         'Lass eine Sache mitten drin liegen — das ist okay',
       ],
     ),
-    (
+    _HdType(
       typ: 'Manifestor',
       emoji: '🚀',
       strategie: 'Informieren BEVOR du handelst',
@@ -1291,7 +1354,7 @@ class _HdCoachingTab extends StatelessWidget {
         'Schaffe heute 30 Min reine Ruhepausen (Manifestoren brauchen mehr Pause als sie denken)',
       ],
     ),
-    (
+    _HdType(
       typ: 'Projector',
       emoji: '🎯',
       strategie: 'Auf Einladung warten',
@@ -1303,7 +1366,7 @@ class _HdCoachingTab extends StatelessWidget {
         'Frage: "Wem wurde ich heute eingeladen, einen Spiegel zu sein?"',
       ],
     ),
-    (
+    _HdType(
       typ: 'Reflector',
       emoji: '🌙',
       strategie: 'Mondzyklus abwarten (28 Tage) bei großen Entscheidungen',
@@ -1351,22 +1414,27 @@ class _HdCoachingTab extends StatelessWidget {
           iconColor: const Color(0xFF26C6DA),
           collapsedIconColor: const Color(0xFF26C6DA),
           leading: Text(t.emoji, style: const TextStyle(fontSize: 28)),
-          title: Text(t.typ,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold)),
-          subtitle: Text(t.strategie,
-              style: const TextStyle(color: Color(0xFF26C6DA), fontSize: 11)),
+          title: Text(
+            t.typ,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            t.strategie,
+            style: const TextStyle(color: Color(0xFF26C6DA), fontSize: 11),
+          ),
           children: [
             const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text('AUTORITÄT: ${t.autoritaet}',
-                  style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold)),
+              child: Text(
+                'AUTORITÄT: ${t.autoritaet}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 10),
             for (var j = 0; j < t.uebungen.length; j++)
@@ -1385,16 +1453,21 @@ class _HdCoachingTab extends StatelessWidget {
                         color: const Color(0xFF26C6DA).withValues(alpha: 0.2),
                         border: Border.all(color: const Color(0xFF26C6DA)),
                       ),
-                      child: Text('${j + 1}',
-                          style: const TextStyle(
-                              color: Color(0xFF26C6DA),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold)),
+                      child: Text(
+                        '${j + 1}',
+                        style: const TextStyle(
+                          color: Color(0xFF26C6DA),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                     Expanded(
-                      child: Text(t.uebungen[j],
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 13, height: 1.5)),
+                      child: Text(
+                        t.uebungen[j],
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 13, height: 1.5),
+                      ),
                     ),
                   ],
                 ),
