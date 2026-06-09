@@ -497,6 +497,11 @@ jobs:
           run_sql "v140 God-Mode Dev-Requests (Root-Admin Entwickler-Konsole)" \
             supabase/migrations/20260608_v140_godmode_requests.sql
 
+          # v141: God-Mode Typen (Bug/Neuerung/Erweiterung/...) + selbstlernende
+          # Themen (godmode_topics). RLS an, keine Policy -> nur Worker.
+          run_sql "v141 God-Mode Typen + selbstlernende Themen" \
+            supabase/migrations/20260609_v141_godmode_types_topics.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."

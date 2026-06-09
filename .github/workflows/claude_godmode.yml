@@ -132,19 +132,55 @@ jobs:
           set +e
           git fetch origin "${{ steps.findpr.outputs.head }}"
           git checkout "${{ steps.findpr.outputs.head }}"
-          flutter pub get || { echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
-          python3 scripts/check_dart_records.py || { echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
-          flutter analyze --no-fatal-infos --no-fatal-warnings
-          [ "$?" != "0" ] && { echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
-          flutter build web --release \
-            "--dart-define=SUPABASE_URL=${SUPABASE_URL_FB}" \
-            "--dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev" \
-            "--dart-define=APP_VERSION=godmode-verify"
-          [ "$?" != "0" ] && { echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0; }
-          echo "ok=true" >> "$GITHUB_OUTPUT"
+          bash scripts/godmode_verify.sh
+          echo "ok=$( [ -f .godmode_verify_ok ] && cat .godmode_verify_ok || echo false )" >> "$GITHUB_OUTPUT"
+
+      # ── Auto-Fix-Loop ────────────────────────────────────────────────────
+      # Verify rot? Claude bekommt die exakten Fehler und fixt sie autonom,
+      # committet auf denselben Branch. Danach wird erneut verifiziert.
+      - name: "Auto-Fix bei rotem Verify-Gate"
+        id: autofix
+        if: steps.findpr.outputs.found == 'true' && steps.verify.outputs.ok != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GH_PAT }}
+          claude_args: "--max-turns 60 --permission-mode bypassPermissions"
+          prompt: |
+            Das Verify-Gate fuer Issue #${{ github.event.issue.number }} ist ROT.
+            Branch: ${{ steps.findpr.outputs.head }} (bereits ausgecheckt).
+
+            In der Datei `.godmode_verify_errors.log` stehen die exakten Fehler
+            (flutter analyze / dart2js-Record-Guard / flutter build web).
+
+            Deine Aufgabe -- mach das Verify-Gate gruen:
+            1. Lies `.godmode_verify_errors.log` vollstaendig.
+            2. Behebe ALLE Fehler an der Ursache (nicht das Symptom unterdruecken).
+               Beachte CLAUDE.md: KEINE Named Dart-3 Records (crashen dart2js),
+               deutsche UI-Texte, ASCII-Commits.
+            3. Pruefe lokal: `dart format .` dann
+               `flutter analyze --no-fatal-infos --no-fatal-warnings`
+               und `python3 scripts/check_dart_records.py` -- beide muessen sauber sein.
+            4. Committe (ASCII, z.B. "fix(godmode): verify-gate gruen") und pushe
+               auf denselben Branch ${{ steps.findpr.outputs.head }}.
+            Merge NICHT selbst -- das uebernimmt der nachgelagerte Schritt.
+
+      - name: "Re-Verify nach Auto-Fix"
+        id: verify2
+        if: steps.findpr.outputs.found == 'true' && steps.verify.outputs.ok != 'true'
+        run: |
+          set +e
+          git fetch origin "${{ steps.findpr.outputs.head }}"
+          git checkout "${{ steps.findpr.outputs.head }}"
+          git reset --hard "origin/${{ steps.findpr.outputs.head }}"
+          bash scripts/godmode_verify.sh
+          echo "ok=$( [ -f .godmode_verify_ok ] && cat .godmode_verify_ok || echo false )" >> "$GITHUB_OUTPUT"
 
       - name: "Auto-Merge + Status merged"
-        if: steps.findpr.outputs.found == 'true' && steps.verify.outputs.ok == 'true'
+        if: >-
+          steps.findpr.outputs.found == 'true' &&
+          (steps.verify.outputs.ok == 'true' || steps.verify2.outputs.ok == 'true')
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GH_PAT }}
@@ -156,10 +192,13 @@ jobs:
               owner: context.repo.owner, repo: context.repo.repo,
               pull_number: prNum, merge_method: 'squash',
             });
+            const wasFixed = '${{ steps.verify.outputs.ok }}' !== 'true';
             await github.rest.issues.createComment({
               owner: context.repo.owner, repo: context.repo.repo,
               issue_number: issue,
-              body: `God Mode: PR #${prNum} gemergt (analyze + web build gruen). OTA-Patch laeuft.`,
+              body: wasFixed
+                ? `God Mode: Verify-Gate war rot -- Claude hat automatisch gefixt, jetzt gruen. PR #${prNum} gemergt. OTA-Patch laeuft.`
+                : `God Mode: PR #${prNum} gemergt (analyze + web build gruen). OTA-Patch laeuft.`,
             });
             const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
             if (key) {
@@ -171,8 +210,11 @@ jobs:
               }).catch(() => {});
             }
 
-      - name: "Verify rot -- Status failed"
-        if: steps.findpr.outputs.found == 'false' || steps.verify.outputs.ok == 'false'
+      - name: "Verify endgueltig rot -- Status failed"
+        # Nur wenn KEIN PR ODER beide Verify-Durchlaeufe (vor + nach Auto-Fix) rot.
+        if: >-
+          steps.findpr.outputs.found == 'false' ||
+          (steps.verify.outputs.ok != 'true' && steps.verify2.outputs.ok != 'true')
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GH_PAT }}
@@ -183,7 +225,7 @@ jobs:
               owner: context.repo.owner, repo: context.repo.repo,
               issue_number: issue,
               body: found
-                ? 'God Mode: Verify-Gate rot (analyze/build). PR bleibt offen.'
+                ? 'God Mode: Verify-Gate auch nach Auto-Fix rot. PR bleibt offen -- bitte manuell pruefen.'
                 : 'God Mode: Kein PR erstellt -- Auftrag praezisieren.',
             });
             const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
