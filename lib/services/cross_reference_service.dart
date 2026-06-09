@@ -1,6 +1,6 @@
 // Cross-Reference-Service (R7).
-// Parallel-Suche ueber 7 Quellen: Wikidata, OpenAlex, PubMed, GDELT,
-// Guardian, CrossRef + research_timeline (Supabase).
+// Parallel-Suche ueber 10 Quellen: Wikidata, Wikipedia, OpenAlex, PubMed,
+// GDELT, Guardian, CrossRef, arXiv, Internet Archive + research_timeline.
 
 import 'dart:async';
 
@@ -12,23 +12,29 @@ import 'supabase_service.dart';
 
 class CrossReferenceResult {
   final List<WikidataEntry> wikidataEntries;
+  final List<WikiSearchEntry> wikipediaArticles;
   final List<OpenAlexWork> openAlexWorks;
   final List<PubMedStudy> pubmedStudies;
   final List<GdeltArticle> gdeltArticles;
   final List<GuardianArticle> guardianArticles;
   final List<TimelineEventV2> timelineEvents;
   final List<CrossRefWork> crossRefWorks;
+  final List<ArxivEntry> arxivPapers;
+  final List<InternetArchiveDoc> archiveDocs;
   final int totalCount;
   final Duration searchDuration;
 
   const CrossReferenceResult({
     required this.wikidataEntries,
+    required this.wikipediaArticles,
     required this.openAlexWorks,
     required this.pubmedStudies,
     required this.gdeltArticles,
     required this.guardianArticles,
     required this.timelineEvents,
     required this.crossRefWorks,
+    required this.arxivPapers,
+    required this.archiveDocs,
     required this.totalCount,
     required this.searchDuration,
   });
@@ -44,53 +50,72 @@ class CrossReferenceService {
     final sw = Stopwatch()..start();
     final api = FreeApiService.instance;
 
-    // Alle 7 Quellen parallel anstossen.
+    // Alle 10 Quellen parallel anstossen.
     final results = await Future.wait<dynamic>([
       api
-          .fetchWikidataEntries(query, limit: 10)
+          .fetchWikidataEntries(query, limit: 8)
           .catchError((_) => <WikidataEntry>[]),
       api
-          .fetchOpenAlexWorks(query, limit: 10)
+          .fetchWikipediaArticles(query, limit: 8)
+          .catchError((_) => <WikiSearchEntry>[]),
+      api
+          .fetchOpenAlexWorks(query, limit: 8)
           .catchError((_) => <OpenAlexWork>[]),
       api
-          .fetchPubMedStudies(query, limit: 8)
+          .fetchPubMedStudies(query, limit: 6)
           .catchError((_) => <PubMedStudy>[]),
-      api.fetchGdeltEvents(query: query).catchError((_) => <GdeltArticle>[]),
       api
-          .fetchGuardianNews(query, limit: 8)
+          .fetchGdeltEvents(query: query, limit: 8)
+          .catchError((_) => <GdeltArticle>[]),
+      api
+          .fetchGuardianNews(query, limit: 6)
           .catchError((_) => <GuardianArticle>[]),
       api
-          .fetchCrossRefWorks(query, limit: 10)
+          .fetchCrossRefWorks(query, limit: 8)
           .catchError((_) => <CrossRefWork>[]),
+      api.fetchArxivPapers(query, limit: 6).catchError((_) => <ArxivEntry>[]),
+      api
+          .fetchInternetArchiveDocs(query, limit: 6)
+          .catchError((_) => <InternetArchiveDoc>[]),
       _searchTimeline(query),
     ]);
 
     sw.stop();
 
     final wikidata = (results[0] as List).cast<WikidataEntry>();
-    final openAlex = (results[1] as List).cast<OpenAlexWork>();
-    final pubmed = (results[2] as List).cast<PubMedStudy>();
-    final gdelt = (results[3] as List).cast<GdeltArticle>();
-    final guardian = (results[4] as List).cast<GuardianArticle>();
-    final crossRef = (results[5] as List).cast<CrossRefWork>();
-    final timeline = (results[6] as List).cast<TimelineEventV2>();
+    final wikipedia = (results[1] as List).cast<WikiSearchEntry>();
+    final openAlex = (results[2] as List).cast<OpenAlexWork>();
+    final pubmed = (results[3] as List).cast<PubMedStudy>();
+    final gdelt = (results[4] as List).cast<GdeltArticle>();
+    final guardian = (results[5] as List).cast<GuardianArticle>();
+    final crossRef = (results[6] as List).cast<CrossRefWork>();
+    final arxiv = (results[7] as List).cast<ArxivEntry>();
+    final archive = (results[8] as List).cast<InternetArchiveDoc>();
+    final timeline = (results[9] as List).cast<TimelineEventV2>();
 
-    final total = wikidata.length +
+    final total =
+        wikidata.length +
+        wikipedia.length +
         openAlex.length +
         pubmed.length +
         gdelt.length +
         guardian.length +
         crossRef.length +
+        arxiv.length +
+        archive.length +
         timeline.length;
 
     return CrossReferenceResult(
       wikidataEntries: wikidata,
+      wikipediaArticles: wikipedia,
       openAlexWorks: openAlex,
       pubmedStudies: pubmed,
       gdeltArticles: gdelt,
       guardianArticles: guardian,
       timelineEvents: timeline,
       crossRefWorks: crossRef,
+      arxivPapers: arxiv,
+      archiveDocs: archive,
       totalCount: total,
       searchDuration: sw.elapsed,
     );
@@ -108,8 +133,10 @@ class CrossReferenceService {
           .eq('verified', true)
           .limit(10);
       return (res as List)
-          .map((e) =>
-              TimelineEventV2.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) =>
+                TimelineEventV2.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Timeline-Search: $e');
