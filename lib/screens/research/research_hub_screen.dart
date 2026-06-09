@@ -56,7 +56,7 @@ class ResearchHubScreen extends StatelessWidget {
               context,
               icon: Icons.hub_outlined,
               title: 'Cross-Reference',
-              subtitle: '10 Quellen parallel durchsuchen',
+              subtitle: '12 Quellen parallel durchsuchen',
               color: const Color(0xFFAB47BC),
               screen: const CrossReferenceScreen(),
             ),
