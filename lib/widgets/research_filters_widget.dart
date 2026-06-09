@@ -55,7 +55,11 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
                       color: Colors.cyan.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.filter_list, color: Colors.cyan, size: 20),
+                    child: const Icon(
+                      Icons.filter_list,
+                      color: Colors.cyan,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -70,7 +74,10 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
                   ),
                   _buildActiveFilterCount(),
                   const SizedBox(width: 8),
-                  Icon(_isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.cyan),
+                  Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.cyan,
+                  ),
                 ],
               ),
             ),
@@ -92,6 +99,8 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
                   const SizedBox(height: 20),
                   _buildLanguageFilter(),
                   const SizedBox(height: 20),
+                  _buildTrustLevelFilter(),
+                  const SizedBox(height: 20),
                   _buildSortFilter(),
                   const SizedBox(height: 16),
                   _buildActionButtons(),
@@ -110,10 +119,17 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: Colors.cyan, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.cyan,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Text(
         '$count',
-        style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -124,7 +140,11 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
       children: [
         const Text(
           '📰 Quellen-Typ',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -161,6 +181,18 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
               onTap: () => _updateSourceType(SourceType.independent),
               color: Colors.green,
             ),
+            _buildFilterChip(
+              label: 'Wissenschaftlich',
+              isSelected: _filters.sourceType == SourceType.scientific,
+              onTap: () => _updateSourceType(SourceType.scientific),
+              color: Colors.lightBlue,
+            ),
+            _buildFilterChip(
+              label: 'Faktencheck',
+              isSelected: _filters.sourceType == SourceType.factcheck,
+              onTap: () => _updateSourceType(SourceType.factcheck),
+              color: Colors.amber,
+            ),
           ],
         ),
       ],
@@ -173,7 +205,11 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
       children: [
         const Text(
           '📁 Medien-Typ',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -210,6 +246,18 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
               onTap: () => _updateMediaType(MediaType.telegram),
               color: Colors.cyan,
             ),
+            _buildFilterChip(
+              label: 'Audio/Podcast',
+              isSelected: _filters.mediaType == MediaType.audio,
+              onTap: () => _updateMediaType(MediaType.audio),
+              color: Colors.deepPurple,
+            ),
+            _buildFilterChip(
+              label: 'Datensaetze',
+              isSelected: _filters.mediaType == MediaType.datasets,
+              onTap: () => _updateMediaType(MediaType.datasets),
+              color: Colors.teal,
+            ),
           ],
         ),
       ],
@@ -222,7 +270,11 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
       children: [
         const Text(
           '📅 Zeitraum',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -271,7 +323,11 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
       children: [
         const Text(
           '🌍 Sprache',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -295,6 +351,18 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
               isSelected: _filters.language == Language.english,
               onTap: () => _updateLanguage(Language.english),
               color: Colors.blue,
+            ),
+            _buildFilterChip(
+              label: 'Franzoesisch',
+              isSelected: _filters.language == Language.french,
+              onTap: () => _updateLanguage(Language.french),
+              color: Colors.indigo,
+            ),
+            _buildFilterChip(
+              label: 'Spanisch',
+              isSelected: _filters.language == Language.spanish,
+              onTap: () => _updateLanguage(Language.spanish),
+              color: Colors.orange,
             ),
           ],
         ),
@@ -386,13 +454,64 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
     });
   }
 
+  Widget _buildTrustLevelFilter() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Vertrauensniveau',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _buildFilterChip(
+              label: 'Alle',
+              isSelected: _filters.trustLevel == TrustLevel.all,
+              onTap: () => _updateTrustLevel(TrustLevel.all),
+              color: Colors.grey,
+            ),
+            _buildFilterChip(
+              label: 'Hoch',
+              isSelected: _filters.trustLevel == TrustLevel.high,
+              onTap: () => _updateTrustLevel(TrustLevel.high),
+              color: Colors.green,
+            ),
+            _buildFilterChip(
+              label: 'Mittel',
+              isSelected: _filters.trustLevel == TrustLevel.medium,
+              onTap: () => _updateTrustLevel(TrustLevel.medium),
+              color: Colors.orange,
+            ),
+            _buildFilterChip(
+              label: 'Alternativ',
+              isSelected: _filters.trustLevel == TrustLevel.low,
+              onTap: () => _updateTrustLevel(TrustLevel.low),
+              color: Colors.red,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildSortFilter() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           '↕ Sortierung',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -435,6 +554,12 @@ class _ResearchFiltersWidgetState extends State<ResearchFiltersWidget> {
     });
   }
 
+  void _updateTrustLevel(TrustLevel level) {
+    setState(() {
+      _filters = _filters.copyWith(trustLevel: level);
+    });
+  }
+
   void _resetFilters() {
     setState(() {
       _filters = ResearchFilters.defaultFilters();
@@ -457,6 +582,7 @@ class ResearchFilters {
   final DateRange dateRange;
   final Language language;
   final SortOrder sortOrder;
+  final TrustLevel trustLevel;
 
   const ResearchFilters({
     required this.sourceType,
@@ -464,6 +590,7 @@ class ResearchFilters {
     required this.dateRange,
     required this.language,
     required this.sortOrder,
+    required this.trustLevel,
   });
 
   factory ResearchFilters.defaultFilters() {
@@ -473,6 +600,7 @@ class ResearchFilters {
       dateRange: DateRange.all,
       language: Language.all,
       sortOrder: SortOrder.relevance,
+      trustLevel: TrustLevel.all,
     );
   }
 
@@ -482,6 +610,7 @@ class ResearchFilters {
     DateRange? dateRange,
     Language? language,
     SortOrder? sortOrder,
+    TrustLevel? trustLevel,
   }) {
     return ResearchFilters(
       sourceType: sourceType ?? this.sourceType,
@@ -489,6 +618,7 @@ class ResearchFilters {
       dateRange: dateRange ?? this.dateRange,
       language: language ?? this.language,
       sortOrder: sortOrder ?? this.sortOrder,
+      trustLevel: trustLevel ?? this.trustLevel,
     );
   }
 
@@ -499,6 +629,7 @@ class ResearchFilters {
     if (dateRange != DateRange.all) count++;
     if (language != Language.all) count++;
     if (sortOrder != SortOrder.relevance) count++;
+    if (trustLevel != TrustLevel.all) count++;
     return count;
   }
 
@@ -509,17 +640,28 @@ class ResearchFilters {
       'dateRange': dateRange.toString(),
       'language': language.toString(),
       'sortOrder': sortOrder.toString(),
+      'trustLevel': trustLevel.toString(),
     };
   }
 }
 
 // Enums
-enum SourceType { all, mainstream, alternative, leaks, independent }
+enum SourceType {
+  all,
+  mainstream,
+  alternative,
+  leaks,
+  independent,
+  scientific,
+  factcheck,
+}
 
-enum MediaType { all, documents, images, videos, telegram }
+enum MediaType { all, documents, images, videos, telegram, audio, datasets }
 
 enum DateRange { all, lastWeek, lastMonth, lastYear, historical }
 
-enum Language { all, german, english }
+enum Language { all, german, english, french, spanish }
 
 enum SortOrder { relevance, dateDesc, dateAsc, sourceAz }
+
+enum TrustLevel { all, high, medium, low }

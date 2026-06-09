@@ -32,130 +32,323 @@ const _surface = Color(0xFF1A0000);
 const _sources = <_Source>[
   // Whistleblowing & Investigations
   _Source(
-      title: 'WikiLeaks',
-      description: 'Whistleblowing-Plattform mit geheimen Dokumenten',
-      url: 'https://wikileaks.org',
-      icon: Icons.shield_outlined,
-      color: Colors.green,
-      category: 'Whistleblowing'),
+    title: 'WikiLeaks',
+    description: 'Whistleblowing-Plattform mit geheimen Dokumenten',
+    url: 'https://wikileaks.org',
+    icon: Icons.shield_outlined,
+    color: Colors.green,
+    category: 'Whistleblowing',
+  ),
   _Source(
-      title: 'ProPublica',
-      description: 'Investigativer Journalismus',
-      url: 'https://www.propublica.org',
-      icon: Icons.article,
-      color: Colors.cyan,
-      category: 'Whistleblowing'),
+    title: 'ProPublica',
+    description: 'Investigativer Journalismus',
+    url: 'https://www.propublica.org',
+    icon: Icons.article,
+    color: Colors.cyan,
+    category: 'Whistleblowing',
+  ),
   _Source(
-      title: 'ICIJ (Panama Papers)',
-      description: 'International Consortium of Investigative Journalists',
-      url: 'https://www.icij.org',
-      icon: Icons.public,
-      color: Colors.teal,
-      category: 'Whistleblowing'),
+    title: 'ICIJ (Panama Papers)',
+    description: 'International Consortium of Investigative Journalists',
+    url: 'https://www.icij.org',
+    icon: Icons.public,
+    color: Colors.teal,
+    category: 'Whistleblowing',
+  ),
   _Source(
-      title: 'The Black Vault',
-      description: 'FOIA Dokumente & Government Secrets',
-      url: 'https://www.theblackvault.com',
-      icon: Icons.lock_open,
-      color: Colors.grey,
-      category: 'Whistleblowing'),
+    title: 'The Black Vault',
+    description: 'FOIA Dokumente & Government Secrets',
+    url: 'https://www.theblackvault.com',
+    icon: Icons.lock_open,
+    color: Colors.grey,
+    category: 'Whistleblowing',
+  ),
 
   // Government Archives - US
   _Source(
-      title: 'CIA FOIA Reading Room',
-      description: 'Freigegebene CIA-Dokumente',
-      url: 'https://www.cia.gov/readingroom/',
-      icon: Icons.folder_open,
-      color: Colors.orange,
-      category: 'US Government'),
+    title: 'CIA FOIA Reading Room',
+    description: 'Freigegebene CIA-Dokumente',
+    url: 'https://www.cia.gov/readingroom/',
+    icon: Icons.folder_open,
+    color: Colors.orange,
+    category: 'US Government',
+  ),
   _Source(
-      title: 'FBI Vault',
-      description: 'FBI Freedom of Information Act Dokumente',
-      url: 'https://vault.fbi.gov',
-      icon: Icons.account_balance,
-      color: Colors.red,
-      category: 'US Government'),
+    title: 'FBI Vault',
+    description: 'FBI Freedom of Information Act Dokumente',
+    url: 'https://vault.fbi.gov',
+    icon: Icons.account_balance,
+    color: Colors.red,
+    category: 'US Government',
+  ),
   _Source(
-      title: 'National Security Archive',
-      description: 'Declassified US Government Documents',
-      url: 'https://nsarchive.gwu.edu',
-      icon: Icons.security,
-      color: Colors.purple,
-      category: 'US Government'),
+    title: 'National Security Archive',
+    description: 'Declassified US Government Documents',
+    url: 'https://nsarchive.gwu.edu',
+    icon: Icons.security,
+    color: Colors.purple,
+    category: 'US Government',
+  ),
   _Source(
-      title: 'CourtListener',
-      description: 'US Gerichtsentscheidungen, Dockets, RECAP',
-      url: 'https://www.courtlistener.com',
-      icon: Icons.gavel,
-      color: Colors.brown,
-      category: 'US Government'),
+    title: 'CourtListener',
+    description: 'US Gerichtsentscheidungen, Dockets, RECAP',
+    url: 'https://www.courtlistener.com',
+    icon: Icons.gavel,
+    color: Colors.brown,
+    category: 'US Government',
+  ),
   _Source(
-      title: 'PACER',
-      description: 'Public Access to US Court Electronic Records',
-      url: 'https://pacer.uscourts.gov',
-      icon: Icons.balance,
-      color: Colors.deepOrange,
-      category: 'US Government'),
+    title: 'PACER',
+    description: 'Public Access to US Court Electronic Records',
+    url: 'https://pacer.uscourts.gov',
+    icon: Icons.balance,
+    color: Colors.deepOrange,
+    category: 'US Government',
+  ),
   _Source(
-      title: 'Government Attic',
-      description: 'FOIA-Antworten - Original-Dokumente Archiv',
-      url: 'https://www.governmentattic.org',
-      icon: Icons.inventory_2_outlined,
-      color: Colors.amber,
-      category: 'US Government'),
+    title: 'Government Attic',
+    description: 'FOIA-Antworten - Original-Dokumente Archiv',
+    url: 'https://www.governmentattic.org',
+    icon: Icons.inventory_2_outlined,
+    color: Colors.amber,
+    category: 'US Government',
+  ),
 
   // Government Archives - International
   _Source(
-      title: 'UK National Archives',
-      description: 'Britisches Staatsarchiv - declassified records',
-      url: 'https://www.nationalarchives.gov.uk',
-      icon: Icons.account_balance_outlined,
-      color: Colors.indigo,
-      category: 'International'),
+    title: 'UK National Archives',
+    description: 'Britisches Staatsarchiv - declassified records',
+    url: 'https://www.nationalarchives.gov.uk',
+    icon: Icons.account_balance_outlined,
+    color: Colors.indigo,
+    category: 'International',
+  ),
   _Source(
-      title: 'EU Parliament',
-      description: 'Europaeisches Parlament - Dokumente & Anfragen',
-      url: 'https://www.europarl.europa.eu',
-      icon: Icons.flag,
-      color: Colors.blue,
-      category: 'International'),
+    title: 'EU Parliament',
+    description: 'Europaeisches Parlament - Dokumente & Anfragen',
+    url: 'https://www.europarl.europa.eu',
+    icon: Icons.flag,
+    color: Colors.blue,
+    category: 'International',
+  ),
   _Source(
-      title: 'Bundestag - Dokumente',
-      description: 'Drucksachen, Anfragen, Protokolle',
-      url: 'https://dip.bundestag.de',
-      icon: Icons.account_balance,
-      color: Colors.black87,
-      category: 'International'),
+    title: 'Bundestag - Dokumente',
+    description: 'Drucksachen, Anfragen, Protokolle',
+    url: 'https://dip.bundestag.de',
+    icon: Icons.account_balance,
+    color: Colors.black87,
+    category: 'International',
+  ),
   _Source(
-      title: 'Council of Europe',
-      description: 'Europarat - Vertraege, Resolutionen',
-      url: 'https://www.coe.int',
-      icon: Icons.gavel_outlined,
-      color: Colors.deepPurple,
-      category: 'International'),
+    title: 'Council of Europe',
+    description: 'Europarat - Vertraege, Resolutionen',
+    url: 'https://www.coe.int',
+    icon: Icons.gavel_outlined,
+    color: Colors.deepPurple,
+    category: 'International',
+  ),
 
   // Libraries / Open Knowledge
   _Source(
-      title: 'Internet Archive',
-      description: 'Digitale Bibliothek mit historischen Dokumenten',
-      url: 'https://archive.org',
-      icon: Icons.library_books,
-      color: Colors.blue,
-      category: 'Bibliotheken'),
+    title: 'Internet Archive',
+    description: 'Digitale Bibliothek mit historischen Dokumenten',
+    url: 'https://archive.org',
+    icon: Icons.library_books,
+    color: Colors.blue,
+    category: 'Bibliotheken',
+  ),
   _Source(
-      title: 'arXiv',
-      description: 'Preprint-Server fuer Physik, Math, CS',
-      url: 'https://arxiv.org',
-      icon: Icons.science,
-      color: Colors.lightBlue,
-      category: 'Bibliotheken'),
+    title: 'arXiv',
+    description: 'Preprint-Server fuer Physik, Math, CS',
+    url: 'https://arxiv.org',
+    icon: Icons.science,
+    color: Colors.lightBlue,
+    category: 'Bibliotheken',
+  ),
   _Source(
-      title: 'PubMed',
-      description: 'Biomedizinische Literatur-Datenbank',
-      url: 'https://pubmed.ncbi.nlm.nih.gov',
-      icon: Icons.biotech,
-      color: Colors.lightGreen,
-      category: 'Bibliotheken'),
+    title: 'PubMed',
+    description: 'Biomedizinische Literatur-Datenbank',
+    url: 'https://pubmed.ncbi.nlm.nih.gov',
+    icon: Icons.biotech,
+    color: Colors.lightGreen,
+    category: 'Bibliotheken',
+  ),
+  _Source(
+    title: 'OpenLibrary',
+    description: '20 Mio. Buecher frei zugaenglich (Open Library)',
+    url: 'https://openlibrary.org',
+    icon: Icons.menu_book,
+    color: Colors.teal,
+    category: 'Bibliotheken',
+  ),
+  _Source(
+    title: 'BASE',
+    description: 'Bielefelder Akademische Suchmaschine - 300M Dokumente',
+    url: 'https://www.base-search.net',
+    icon: Icons.school,
+    color: Colors.indigo,
+    category: 'Bibliotheken',
+  ),
+
+  // Science & Research
+  _Source(
+    title: 'Semantic Scholar',
+    description: 'KI-gestuetzte Suche in 200M wissenschaftlichen Papers',
+    url: 'https://www.semanticscholar.org',
+    icon: Icons.psychology,
+    color: Colors.blue,
+    category: 'Wissenschaft',
+  ),
+  _Source(
+    title: 'CORE.ac.uk',
+    description: 'Groesste Sammlung von Open-Access-Forschungsergebnissen',
+    url: 'https://core.ac.uk',
+    icon: Icons.hub,
+    color: Colors.cyan,
+    category: 'Wissenschaft',
+  ),
+  _Source(
+    title: 'OpenAlex',
+    description: '250M wissenschaftliche Werke, vollstaendig Open Access',
+    url: 'https://openalex.org',
+    icon: Icons.auto_stories,
+    color: Colors.lightBlue,
+    category: 'Wissenschaft',
+  ),
+  _Source(
+    title: 'PubChem',
+    description: 'Chemische Substanzen, biologische Aktivitaeten (NIH)',
+    url: 'https://pubchem.ncbi.nlm.nih.gov',
+    icon: Icons.biotech,
+    color: Colors.green,
+    category: 'Wissenschaft',
+  ),
+  _Source(
+    title: 'NASA Technical Reports',
+    description: 'Technische Berichte und Forschungsdaten der NASA',
+    url: 'https://ntrs.nasa.gov',
+    icon: Icons.rocket_launch,
+    color: Colors.orange,
+    category: 'Wissenschaft',
+  ),
+
+  // Fact-Checking
+  _Source(
+    title: 'CORRECTIV',
+    description: 'Deutsches gemeinnuetziges Recherchezentrum',
+    url: 'https://correctiv.org',
+    icon: Icons.fact_check,
+    color: Colors.red,
+    category: 'Faktencheck',
+  ),
+  _Source(
+    title: 'ARD Faktenfinder',
+    description: 'Faktencheck des ARD-Nachrichtenportals',
+    url: 'https://www.tagesschau.de/faktenfinder',
+    icon: Icons.verified,
+    color: Colors.deepOrange,
+    category: 'Faktencheck',
+  ),
+  _Source(
+    title: 'Snopes',
+    description: 'Fact-Checking-Plattform fuer Geruechte und Mythen',
+    url: 'https://www.snopes.com',
+    icon: Icons.search_off,
+    color: Colors.amber,
+    category: 'Faktencheck',
+  ),
+  _Source(
+    title: 'PolitiFact',
+    description: 'Unabhaengiger US-Faktencheck fuer politische Aussagen',
+    url: 'https://www.politifact.com',
+    icon: Icons.how_to_vote,
+    color: Colors.yellow,
+    category: 'Faktencheck',
+  ),
+  _Source(
+    title: 'Full Fact (UK)',
+    description: 'Britische gemeinnuetzige Faktencheck-Organisation',
+    url: 'https://fullfact.org',
+    icon: Icons.check_circle_outline,
+    color: Colors.lightGreen,
+    category: 'Faktencheck',
+  ),
+
+  // Open Data
+  _Source(
+    title: 'Eurostat',
+    description: 'Statistisches Amt der EU - offizielle EU-Daten',
+    url: 'https://ec.europa.eu/eurostat',
+    icon: Icons.bar_chart,
+    color: Colors.blue,
+    category: 'Offene Daten',
+  ),
+  _Source(
+    title: 'Destatis',
+    description: 'Statistisches Bundesamt Deutschland',
+    url: 'https://www.destatis.de',
+    icon: Icons.analytics,
+    color: Colors.black87,
+    category: 'Offene Daten',
+  ),
+  _Source(
+    title: 'World Bank Open Data',
+    description: 'Entwicklungsdaten und Wirtschaftsindikatoren weltweit',
+    url: 'https://data.worldbank.org',
+    icon: Icons.public,
+    color: Colors.teal,
+    category: 'Offene Daten',
+  ),
+  _Source(
+    title: 'Our World in Data',
+    description: 'Visualisierungen globaler Entwicklungen und Fakten',
+    url: 'https://ourworldindata.org',
+    icon: Icons.insights,
+    color: Colors.purple,
+    category: 'Offene Daten',
+  ),
+  _Source(
+    title: 'Govdata.de',
+    description: 'Offizielle offene Daten der deutschen Verwaltung',
+    url: 'https://www.govdata.de',
+    icon: Icons.dataset,
+    color: Colors.indigo,
+    category: 'Offene Daten',
+  ),
+
+  // Investigative Media
+  _Source(
+    title: 'Bellingcat',
+    description: 'Open-Source-Intelligence und investigative Recherche',
+    url: 'https://www.bellingcat.com',
+    icon: Icons.search,
+    color: Colors.orange,
+    category: 'Investigativ',
+  ),
+  _Source(
+    title: 'The Intercept',
+    description: 'Investigativer Journalismus zu Macht und Ueberwachung',
+    url: 'https://theintercept.com',
+    icon: Icons.newspaper,
+    color: Colors.red,
+    category: 'Investigativ',
+  ),
+  _Source(
+    title: 'Forbidden Stories',
+    description: 'Internationales Netzwerk fuer gefaehrdete Journalisten',
+    url: 'https://forbiddenstories.org',
+    icon: Icons.crisis_alert,
+    color: Colors.deepPurple,
+    category: 'Investigativ',
+  ),
+  _Source(
+    title: 'Organized Crime & Corruption (OCCRP)',
+    description: 'Investigative Berichte zu Korruption und Kriminalitaet',
+    url: 'https://www.occrp.org',
+    icon: Icons.visibility,
+    color: Colors.brown,
+    category: 'Investigativ',
+  ),
 ];
 
 class AdditionalSourcesScreen extends StatefulWidget {
@@ -185,7 +378,10 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
       final list = prefs.getStringList(_bookmarksKey) ?? [];
       if (!mounted) return;
       setState(() => _bookmarks = list.toSet());
-    } catch (e) { if (kDebugMode) debugPrint('additional_sources_screen: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode)
+        debugPrint('additional_sources_screen: silent catch -> $e');
+    }
   }
 
   Future<void> _toggleBookmark(String url) async {
@@ -200,7 +396,10 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
       await prefs.setStringList(_bookmarksKey, next.toList());
       if (!mounted) return;
       setState(() => _bookmarks = next);
-    } catch (e) { if (kDebugMode) debugPrint('additional_sources_screen: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode)
+        debugPrint('additional_sources_screen: silent catch -> $e');
+    }
   }
 
   List<_Source> get _filtered {
@@ -248,8 +447,9 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
                       child: Text(
                         'Keine Quellen.',
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            fontSize: 14),
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   )
@@ -279,12 +479,16 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
         decoration: InputDecoration(
           hintText: 'Quellen durchsuchen ...',
           hintStyle: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
+            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 13,
+          ),
           prefixIcon: const Icon(Icons.search, color: _accent, size: 20),
           filled: true,
           fillColor: _surface,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 0,
+          ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide(color: _accent.withValues(alpha: 0.3)),
@@ -326,7 +530,8 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
             backgroundColor: _surface,
             selectedColor: _accent,
             side: BorderSide(
-                color: sel ? _accent : _accent.withValues(alpha: 0.3)),
+              color: sel ? _accent : _accent.withValues(alpha: 0.3),
+            ),
           );
         },
       ),
@@ -341,9 +546,7 @@ class _AdditionalSourcesScreenState extends State<AdditionalSourcesScreen> {
     }
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => _SourceWebViewScreen(source: source),
-      ),
+      MaterialPageRoute(builder: (_) => _SourceWebViewScreen(source: source)),
     );
   }
 
@@ -412,7 +615,9 @@ class _SourceCard extends StatelessWidget {
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: source.color.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
@@ -420,10 +625,11 @@ class _SourceCard extends StatelessWidget {
                             child: Text(
                               source.category,
                               style: TextStyle(
-                                  color: source.color,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.8),
+                                color: source.color,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                              ),
                             ),
                           ),
                         ],
@@ -432,8 +638,9 @@ class _SourceCard extends StatelessWidget {
                       Text(
                         source.description,
                         style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 13),
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -514,8 +721,10 @@ class _SourceWebViewScreenState extends State<_SourceWebViewScreen> {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _surface,
-        title: Text(widget.source.title,
-            style: const TextStyle(color: Colors.white, fontSize: 16)),
+        title: Text(
+          widget.source.title,
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+        ),
         iconTheme: const IconThemeData(color: _accent),
         actions: [
           IconButton(
