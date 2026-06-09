@@ -7,6 +7,21 @@
 
 import 'package:flutter/material.dart';
 
+class _HermeticCheck {
+  final String prinzip;
+  final String emoji;
+  final String frage;
+  final List<String> antworten;
+  final String hinweis;
+  const _HermeticCheck({
+    required this.prinzip,
+    required this.emoji,
+    required this.frage,
+    required this.antworten,
+    required this.hinweis,
+  });
+}
+
 class HermeticRealityCheckScreen extends StatefulWidget {
   const HermeticRealityCheckScreen({super.key});
 
@@ -25,15 +40,8 @@ class _HermeticRealityCheckScreenState
   final Map<int, int> _answers = {};
   bool _submitted = false;
 
-  static final List<
-      ({
-        String prinzip,
-        String emoji,
-        String frage,
-        List<String> antworten,
-        String hinweis
-      })> _checks = [
-    (
+  static final List<_HermeticCheck> _checks = [
+    _HermeticCheck(
       prinzip: 'Mentalismus',
       emoji: '🧠',
       frage: 'Wie oft denkst du an diese Situation pro Tag?',
@@ -42,7 +50,7 @@ class _HermeticRealityCheckScreenState
           'Hohe Frequenz = mentale Verfestigung. Das Außen entsteht aus dem Inneren — '
           'was du oft denkst, manifestiert sich. Beobachte deinen Gedankenstrom als wäre er nicht "du".',
     ),
-    (
+    _HermeticCheck(
       prinzip: 'Entsprechung',
       emoji: '🔁',
       frage: 'Hattest du in deinem Leben schon ähnliche Situationen?',
@@ -51,7 +59,7 @@ class _HermeticRealityCheckScreenState
           'Wiederholung = Muster. Wie oben, so unten — die äußere Situation '
           'spiegelt ein inneres Thema. Frage: was lebt in mir, das dieses Außen anzieht?',
     ),
-    (
+    _HermeticCheck(
       prinzip: 'Schwingung',
       emoji: '〰️',
       frage: 'Welche Emotion dominiert wenn du an die Situation denkst?',
@@ -60,7 +68,7 @@ class _HermeticRealityCheckScreenState
           'Emotion = Schwingungsfrequenz. Niedrige Frequenzen (Angst/Wut) ziehen ähnliche '
           'Situationen an. Bewege dich aktiv in höhere Frequenz (Atemarbeit, Bewegung, Musik).',
     ),
-    (
+    _HermeticCheck(
       prinzip: 'Polarität',
       emoji: '⚖️',
       frage: 'Wo siehst du im Aktuellen einen positiven Aspekt?',
@@ -69,7 +77,7 @@ class _HermeticRealityCheckScreenState
           'Wenn du nur eine Seite siehst, fehlt der andere Pol. Heiß und kalt sind '
           'auf gleicher Skala — du kannst dich auf der Skala BEWEGEN, indem du den Gegenpol bewusst denkst.',
     ),
-    (
+    _HermeticCheck(
       prinzip: 'Rhythmus',
       emoji: '🌊',
       frage: 'In welcher Phase fühlst du dich gerade?',
@@ -78,7 +86,7 @@ class _HermeticRealityCheckScreenState
           'Alles fließt. Tiefe ist gefolgt von Aufschwung. Forciere nicht, was Reife '
           'braucht. Surfe die Welle, kämpfe nicht gegen sie.',
     ),
-    (
+    _HermeticCheck(
       prinzip: 'Ursache & Wirkung',
       emoji: '🎯',
       frage:
@@ -93,7 +101,7 @@ class _HermeticRealityCheckScreenState
           'Jede Wirkung hat ihre Ursache. Was du gesät hast (auch Unbewusstes), erntest '
           'du jetzt. Identifiziere die Wurzel — dort liegt der Hebel für Veränderung.',
     ),
-    (
+    _HermeticCheck(
       prinzip: 'Geschlecht',
       emoji: '☯️',
       frage:
@@ -112,11 +120,13 @@ class _HermeticRealityCheckScreenState
 
   void _submit() {
     if (_situation.text.trim().isEmpty || _answers.length < _checks.length) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:
-            Text('Bitte Situation beschreiben und alle 7 Fragen beantworten'),
-        backgroundColor: Colors.redAccent,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Bitte Situation beschreiben und alle 7 Fragen beantworten'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
     setState(() => _submitted = true);
@@ -148,12 +158,14 @@ class _HermeticRealityCheckScreenState
       appBar: AppBar(
         backgroundColor: _accent.withValues(alpha: 0.9),
         foregroundColor: Colors.black,
-        title: const Row(children: [
-          Text('✨', style: TextStyle(fontSize: 22)),
-          SizedBox(width: 10),
-          Text('Reality-Check',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        ]),
+        title: const Row(
+          children: [
+            Text('✨', style: TextStyle(fontSize: 22)),
+            SizedBox(width: 10),
+            Text('Reality-Check',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+          ],
+        ),
       ),
       body: _submitted ? _buildResult() : _buildForm(),
     );
@@ -174,11 +186,13 @@ class _HermeticRealityCheckScreenState
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Hermetische Reality-Check',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                'Hermetische Reality-Check',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold),
+              ),
               SizedBox(height: 6),
               Text(
                 'Beschreibe eine aktuelle Lebenssituation. Beantworte dann die 7 Fragen — '
@@ -191,12 +205,15 @@ class _HermeticRealityCheckScreenState
           ),
         ),
         const SizedBox(height: 18),
-        const Text('AKTUELLE SITUATION',
-            style: TextStyle(
-                color: Colors.white70,
-                fontSize: 11,
-                letterSpacing: 2,
-                fontWeight: FontWeight.bold)),
+        const Text(
+          'AKTUELLE SITUATION',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 11,
+            letterSpacing: 2,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _situation,
@@ -231,9 +248,10 @@ class _HermeticRealityCheckScreenState
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text('AUSWERTEN',
-                style:
-                    TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
+            child: const Text(
+              'AUSWERTEN',
+              style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2),
+            ),
           ),
         ),
       ],
@@ -241,14 +259,9 @@ class _HermeticRealityCheckScreenState
   }
 
   Widget _buildQuestion(
-      int i,
-      ({
-        String prinzip,
-        String emoji,
-        String frage,
-        List<String> antworten,
-        String hinweis
-      }) c) {
+    int i,
+    _HermeticCheck c,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -260,22 +273,27 @@ class _HermeticRealityCheckScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Text(c.emoji, style: const TextStyle(fontSize: 22)),
-            const SizedBox(width: 8),
-            Text(c.prinzip,
+          Row(
+            children: [
+              Text(c.emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+              Text(
+                c.prinzip,
                 style: TextStyle(
-                    color: _accent,
-                    fontSize: 12,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.bold)),
-          ]),
+                  color: _accent,
+                  fontSize: 12,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 6),
-          Text(c.frage,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            c.frage,
+            style: const TextStyle(
+                color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           for (var j = 0; j < c.antworten.length; j++)
             GestureDetector(
@@ -295,24 +313,28 @@ class _HermeticRealityCheckScreenState
                         : Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
-                child: Row(children: [
-                  Icon(
-                    _answers[i] == j
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off,
-                    size: 16,
-                    color: _answers[i] == j ? _accent : Colors.white38,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(c.antworten[j],
+                child: Row(
+                  children: [
+                    Icon(
+                      _answers[i] == j
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
+                      size: 16,
+                      color: _answers[i] == j ? _accent : Colors.white38,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        c.antworten[j],
                         style: TextStyle(
                           color:
                               _answers[i] == j ? Colors.white : Colors.white70,
                           fontSize: 13,
-                        )),
-                  ),
-                ]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
@@ -335,18 +357,23 @@ class _HermeticRealityCheckScreenState
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('DEINE HERMETISCHE ANALYSE',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 11,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                'DEINE HERMETISCHE ANALYSE',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 11,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               SizedBox(height: 4),
-              Text('Die 2 stärksten Prinzipien in deiner Situation',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                'Die 2 stärksten Prinzipien in deiner Situation',
+                style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold),
+              ),
             ],
           ),
         ),
@@ -372,8 +399,10 @@ class _HermeticRealityCheckScreenState
           child: OutlinedButton.icon(
             onPressed: _reset,
             icon: const Icon(Icons.refresh, color: _accent),
-            label: const Text('Neuer Check',
-                style: TextStyle(color: _accent, fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Neuer Check',
+              style: TextStyle(color: _accent, fontWeight: FontWeight.bold),
+            ),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: _accent.withValues(alpha: 0.6)),
               shape: RoundedRectangleBorder(
@@ -386,14 +415,9 @@ class _HermeticRealityCheckScreenState
   }
 
   Widget _buildResultCard(
-      ({
-        String prinzip,
-        String emoji,
-        String frage,
-        List<String> antworten,
-        String hinweis
-      }) c,
-      int answerIdx) {
+    _HermeticCheck c,
+    int answerIdx,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -405,28 +429,36 @@ class _HermeticRealityCheckScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Text(c.emoji, style: const TextStyle(fontSize: 28)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('PRINZIP DES ${c.prinzip.toUpperCase()}',
+          Row(
+            children: [
+              Text(c.emoji, style: const TextStyle(fontSize: 28)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PRINZIP DES ${c.prinzip.toUpperCase()}',
                       style: TextStyle(
-                          color: _accent,
-                          fontSize: 10,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.bold)),
-                  Text('Deine Antwort: ${c.antworten[answerIdx]}',
+                        color: _accent,
+                        fontSize: 10,
+                        letterSpacing: 2,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Deine Antwort: ${c.antworten[answerIdx]}',
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
-                ],
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
           const SizedBox(height: 10),
           Text(c.hinweis,
               style: const TextStyle(

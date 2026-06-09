@@ -6,6 +6,32 @@
 
 import 'package:flutter/material.dart';
 
+class _AuraColor {
+  final String name;
+  final String emoji;
+  final Color color;
+  final String trait;
+  final String description;
+  const _AuraColor({
+    required this.name,
+    required this.emoji,
+    required this.color,
+    required this.trait,
+    required this.description,
+  });
+}
+
+class _AuraQuestion {
+  final String q;
+  final List<String> a;
+  final List<int> p;
+  const _AuraQuestion({
+    required this.q,
+    required this.a,
+    required this.p,
+  });
+}
+
 class AuraQuizScreen extends StatefulWidget {
   const AuraQuizScreen({super.key});
 
@@ -19,8 +45,8 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
 
   // 7 Aura-Farben (entsprechen den 7 Hauptchakren).
   // Jede Antwort gibt Punkte auf 1-3 Farben (Indizes 0..6 für Rot..Violett/Weiß).
-  static final _colors = [
-    (
+  static final List<_AuraColor> _colors = [
+    _AuraColor(
       name: 'Rot',
       emoji: '❤️',
       color: Color(0xFFE53935),
@@ -29,7 +55,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Du bist geerdet, körperlich präsent, leidenschaftlich. Pragmatisch, mutig, in Bewegung. '
           'Schatten: Reizbarkeit, Ungeduld, Aggression bei Stress. Stärken: Resilienz, Mut, Handlungsfähigkeit.',
     ),
-    (
+    _AuraColor(
       name: 'Orange',
       emoji: '🧡',
       color: Color(0xFFFB8C00),
@@ -38,7 +64,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Du lebst sinnlich, kreativ, in Beziehung. Spaß, Erotik, Freude am Schöpfen. '
           'Schatten: Unverbindlichkeit, Süchte. Stärken: Lebensfreude, künstlerische Ader, Spontanität.',
     ),
-    (
+    _AuraColor(
       name: 'Gelb',
       emoji: '💛',
       color: Color(0xFFFDD835),
@@ -47,7 +73,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Strahlende Persönlichkeit, optimistisch, intellektuell scharf. Du strebst nach Wachstum. '
           'Schatten: Ego, Selbst-Wichtigkeit. Stärken: Selbstvertrauen, Sonnigkeit, klarer Verstand.',
     ),
-    (
+    _AuraColor(
       name: 'Grün',
       emoji: '💚',
       color: Color(0xFF43A047),
@@ -56,7 +82,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Du heilst Räume, hörst tief zu, sorgst gern. Verbindung zur Natur stark. '
           'Schatten: Aufopferung, Co-Abhängigkeit. Stärken: Empathie, Heilkraft, Harmonie-Stiften.',
     ),
-    (
+    _AuraColor(
       name: 'Blau',
       emoji: '💙',
       color: Color(0xFF1E88E5),
@@ -65,7 +91,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Du sprichst klar, schreibst gut, suchst Wahrheit. Lehrer-Energie. '
           'Schatten: Kühle Distanz, Über-Rationalisierung. Stärken: Klare Sprache, Vermittlung, Ehrlichkeit.',
     ),
-    (
+    _AuraColor(
       name: 'Indigo',
       emoji: '💜',
       color: Color(0xFF5E35B1),
@@ -74,7 +100,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Tiefer Blick, starke Träume, intuitive Eingebungen. Visionär. '
           'Schatten: Realitätsverlust, Eskapismus. Stärken: Innere Führung, Weisheit, Vorausschau.',
     ),
-    (
+    _AuraColor(
       name: 'Violett',
       emoji: '🤍',
       color: Color(0xFF8E24AA),
@@ -87,38 +113,38 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
 
   // 12 Fragen mit jeweils 4 Antwort-Optionen.
   // Jede Antwort gibt Punkte auf eine Farbe (Index 0..6).
-  static final _questions = [
-    (
+  static final List<_AuraQuestion> _questions = [
+    _AuraQuestion(
       q: 'Bei einer Party bist du eher...',
       a: [
         'Tanzfläche-First',
         'Im tiefen Gespräch',
         'Mit Kreativen am Buffet',
-        'Außen am Rand mit dem Hund'
+        'Außen am Rand mit dem Hund',
       ],
-      p: [0, 4, 1, 5]
+      p: [0, 4, 1, 5],
     ),
-    (
+    _AuraQuestion(
       q: 'Dein Lieblings-Wochenende?',
       a: [
         'Sport, Abenteuer, Action',
         'Buch, Tee, Schreiben',
         'Konzert, Galerie, Performance',
-        'Meditation, Retreat, Stille'
+        'Meditation, Retreat, Stille',
       ],
-      p: [0, 4, 1, 6]
+      p: [0, 4, 1, 6],
     ),
-    (
+    _AuraQuestion(
       q: 'Wie reagierst du auf Stress?',
       a: [
         'Mehr Sport, ausagieren',
         'Analyse, Plan machen',
         'Schöpferisch verarbeiten',
-        'Rückzug, beten/meditieren'
+        'Rückzug, beten/meditieren',
       ],
-      p: [0, 2, 1, 6]
+      p: [0, 2, 1, 6],
     ),
-    (
+    _AuraQuestion(
       q: 'Was zieht dich beim Menschen an?',
       a: [
         'Energie & Leidenschaft',
@@ -126,39 +152,39 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
         'Tiefe & Mysterium',
         'Wärme & Fürsorge'
       ],
-      p: [0, 4, 5, 3]
+      p: [0, 4, 5, 3],
     ),
-    (
+    _AuraQuestion(
       q: 'Welche Farbe trägst du am liebsten?',
       a: ['Rot/Schwarz', 'Blau/Grau', 'Lila/Schwarz', 'Grün/Erdtöne'],
-      p: [0, 4, 5, 3]
+      p: [0, 4, 5, 3],
     ),
-    (
+    _AuraQuestion(
       q: 'Was tust du in einer Krise?',
       a: [
         'Sofort handeln',
         'Analyse & Strategie',
         'Bei Freunden Rat holen',
-        'In mich gehen, fühlen'
+        'In mich gehen, fühlen',
       ],
-      p: [0, 2, 3, 5]
+      p: [0, 2, 3, 5],
     ),
-    (
+    _AuraQuestion(
       q: 'Welcher Beruf reizt dich am meisten?',
       a: [
         'Sportler/Soldat/Chirurg',
         'Wissenschaftler/Autor',
         'Künstler/Designer',
-        'Heiler/Therapeut'
+        'Heiler/Therapeut',
       ],
-      p: [0, 4, 1, 3]
+      p: [0, 4, 1, 3],
     ),
-    (
+    _AuraQuestion(
       q: 'Was magst du am wenigsten?',
       a: ['Stillsitzen', 'Oberflächlichkeit', 'Routine', 'Kalte Logik'],
-      p: [0, 4, 1, 3]
+      p: [0, 4, 1, 3],
     ),
-    (
+    _AuraQuestion(
       q: 'Wie äußerst du Liebe?',
       a: [
         'Körperliche Nähe',
@@ -166,9 +192,9 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
         'Geschenke/Kreatives',
         'Praktische Fürsorge'
       ],
-      p: [0, 4, 1, 3]
+      p: [0, 4, 1, 3],
     ),
-    (
+    _AuraQuestion(
       q: 'Welche Krankheiten plagen dich am ehesten?',
       a: [
         'Verspannung/Verletzung',
@@ -176,22 +202,22 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
         'Hormone/Bauch',
         'Augen/Kopf/Migräne'
       ],
-      p: [0, 4, 1, 5]
+      p: [0, 4, 1, 5],
     ),
-    (
+    _AuraQuestion(
       q: 'Dein größter Lehrer im Leben?',
       a: ['Der Körper', 'Die Sprache', 'Die Kunst', 'Die Stille'],
-      p: [0, 4, 1, 6]
+      p: [0, 4, 1, 6],
     ),
-    (
+    _AuraQuestion(
       q: 'Was bedeutet "Erfolg" für dich?',
       a: [
         'Körperliche Vitalität',
         'Geistige Klarheit',
         'Schöpferische Freiheit',
-        'Innerer Frieden'
+        'Innerer Frieden',
       ],
-      p: [0, 2, 1, 6]
+      p: [0, 2, 1, 6],
     ),
   ];
 
@@ -222,10 +248,12 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
 
   void _submit() {
     if (_answers.length < _questions.length) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Bitte alle 12 Fragen beantworten'),
-        backgroundColor: Colors.redAccent,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bitte alle 12 Fragen beantworten'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
     setState(() => _submitted = true);
@@ -237,12 +265,14 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: const Color(0xFFAD1457),
-        title: const Row(children: [
-          Text('🌈', style: TextStyle(fontSize: 22)),
-          SizedBox(width: 10),
-          Text('Aura-Quiz',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-        ]),
+        title: const Row(
+          children: [
+            Text('🌈', style: TextStyle(fontSize: 22)),
+            SizedBox(width: 10),
+            Text('Aura-Quiz',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+          ],
+        ),
       ),
       body: _submitted ? _buildResult() : _buildQuiz(),
     );
@@ -262,11 +292,13 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('12-Fragen-Quiz',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                '12-Fragen-Quiz',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold),
+              ),
               SizedBox(height: 4),
               Text(
                 'Psychologisches Profil deiner dominanten Aura-Farbe. '
@@ -290,9 +322,10 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text('AURA BERECHNEN',
-                style:
-                    TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2)),
+            child: const Text(
+              'AURA BERECHNEN',
+              style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2),
+            ),
           ),
         ),
       ],
@@ -312,11 +345,11 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('${i + 1}. ${q.q}',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            '${i + 1}. ${q.q}',
+            style: const TextStyle(
+                color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           for (var j = 0; j < q.a.length; j++)
             GestureDetector(
@@ -336,26 +369,30 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
                         : Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
-                child: Row(children: [
-                  Icon(
-                    _answers[i] == j
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off,
-                    size: 16,
-                    color: _answers[i] == j
-                        ? const Color(0xFFAD1457)
-                        : Colors.white38,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(q.a[j],
+                child: Row(
+                  children: [
+                    Icon(
+                      _answers[i] == j
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
+                      size: 16,
+                      color: _answers[i] == j
+                          ? const Color(0xFFAD1457)
+                          : Colors.white38,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        q.a[j],
                         style: TextStyle(
                           color:
                               _answers[i] == j ? Colors.white : Colors.white70,
                           fontSize: 12.5,
-                        )),
-                  ),
-                ]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],
@@ -375,10 +412,9 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: RadialGradient(colors: [
-              dominant.color,
-              dominant.color.withValues(alpha: 0.4)
-            ]),
+            gradient: RadialGradient(
+              colors: [dominant.color, dominant.color.withValues(alpha: 0.4)],
+            ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -392,25 +428,34 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
             children: [
               Text(dominant.emoji, style: const TextStyle(fontSize: 72)),
               const SizedBox(height: 10),
-              const Text('DEINE DOMINANTE AURA-FARBE',
-                  style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      letterSpacing: 2.5,
-                      fontWeight: FontWeight.bold)),
+              const Text(
+                'DEINE DOMINANTE AURA-FARBE',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  letterSpacing: 2.5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 6),
-              Text(dominant.name,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 4)),
+              Text(
+                dominant.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 4,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(dominant.trait,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic)),
+              Text(
+                dominant.trait,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ],
           ),
         ),
@@ -422,17 +467,22 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: dominant.color.withValues(alpha: 0.4)),
           ),
-          child: Text(dominant.description,
-              style: const TextStyle(
-                  color: Colors.white, fontSize: 14, height: 1.6)),
+          child: Text(
+            dominant.description,
+            style:
+                const TextStyle(color: Colors.white, fontSize: 14, height: 1.6),
+          ),
         ),
         const SizedBox(height: 18),
-        const Text('AURA-VERTEILUNG',
-            style: TextStyle(
-                color: Colors.white70,
-                fontSize: 11,
-                letterSpacing: 2,
-                fontWeight: FontWeight.bold)),
+        const Text(
+          'AURA-VERTEILUNG',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 11,
+            letterSpacing: 2,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 8),
         for (var i = 0; i < _colors.length; i++)
           _buildScoreBar(_colors[i], scores[i], maxScore),
@@ -445,9 +495,11 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
               _answers.clear();
             }),
             icon: const Icon(Icons.refresh, color: Colors.white),
-            label: const Text('Quiz nochmal',
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Quiz nochmal',
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
               shape: RoundedRectangleBorder(
@@ -460,44 +512,45 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
   }
 
   Widget _buildScoreBar(
-      ({
-        String name,
-        String emoji,
-        Color color,
-        String trait,
-        String description
-      }) c,
-      int score,
-      int maxScore) {
+    _AuraColor c,
+    int score,
+    int maxScore,
+  ) {
     final percent = maxScore == 0 ? 0.0 : score / maxScore;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(children: [
-        SizedBox(
-          width: 70,
-          child: Text('${c.emoji} ${c.name}',
-              style: const TextStyle(color: Colors.white, fontSize: 12)),
-        ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: percent,
-              minHeight: 8,
-              backgroundColor: Colors.white.withValues(alpha: 0.05),
-              valueColor: AlwaysStoppedAnimation(c.color),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 70,
+            child: Text(
+              '${c.emoji} ${c.name}',
+              style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
           ),
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 22,
-          child: Text('$score',
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: percent,
+                minHeight: 8,
+                backgroundColor: Colors.white.withValues(alpha: 0.05),
+                valueColor: AlwaysStoppedAnimation(c.color),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 22,
+            child: Text(
+              '$score',
               textAlign: TextAlign.right,
               style: TextStyle(
-                  color: c.color, fontSize: 11, fontWeight: FontWeight.bold)),
-        ),
-      ]),
+                  color: c.color, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
