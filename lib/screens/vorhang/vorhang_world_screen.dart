@@ -8,7 +8,7 @@ import 'vorhang_community_tab.dart';
 import 'vorhang_map_tab.dart';
 import '../shared/unified_knowledge_tab.dart';
 import '../shared/mediathek_screen.dart';
-import '../shared/stats_dashboard_screen.dart';
+import '../../widgets/cinematic/wb_more_menu_sheet.dart';
 import '../../widgets/admin_dashboard_button.dart';
 import '../../services/haptic_service.dart';
 import '../../features/admin/state/admin_state.dart';
@@ -18,7 +18,6 @@ import '../../widgets/cinematic/wb_floating_nav.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
 import '../../widgets/cinematic/wb_ambient_particles.dart';
 import '../profile_settings_screen.dart';
-import '../shared/unified_world_map_screen.dart';
 import '../../widgets/global_search_sheet.dart';
 import '../../widgets/notification_center_button.dart';
 import '../../widgets/onboarding/world_coachmarks.dart';
@@ -129,22 +128,20 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
               child: Column(
                 children: [
                   AdminDashboardButton(
-                      adminState: adminState, world: 'vorhang'),
+                    adminState: adminState,
+                    world: 'vorhang',
+                  ),
                   Expanded(child: tabs[_currentIndex]),
                 ],
               ),
             ),
 
             // Vignette als oberster atmosphärischer Layer
-            const Positioned.fill(
-              child: IgnorePointer(child: WBVignette()),
-            ),
+            const Positioned.fill(child: IgnorePointer(child: WBVignette())),
 
             // Day-phase atmospheric scrim
             const Positioned.fill(
-              child: IgnorePointer(
-                child: TimeOfDayOverlay(world: 'vorhang'),
-              ),
+              child: IgnorePointer(child: TimeOfDayOverlay(world: 'vorhang')),
             ),
 
             // Floating Bottom-Nav
@@ -160,7 +157,9 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
                   WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
                   WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
                   WBFloatingNavItem(
-                      icon: Icons.play_circle_outline, label: 'Videos'),
+                    icon: Icons.play_circle_outline,
+                    label: 'Videos',
+                  ),
                 ],
                 onChanged: (i) => setState(() => _currentIndex = i),
               ),
@@ -172,7 +171,9 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
   }
 
   List<Widget> _buildAppBarActions(
-      BuildContext context, AdminState adminState) {
+    BuildContext context,
+    AdminState adminState,
+  ) {
     return [
       IconButton(
         tooltip: 'Suchen',
@@ -186,7 +187,11 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
         tooltip: 'Mehr',
         icon: const Icon(Icons.more_vert, color: Color(0xFFC9A84C)),
         iconSize: 22,
-        onPressed: () => _showMoreMenu(context, adminState),
+        onPressed: () => showWBMoreMenu(
+          context,
+          world: 'vorhang',
+          accent: const Color(0xFFC9A84C),
+        ),
       ),
       // Debug-Indikator (nur Debug-Build)
       if (kDebugMode) _DebugAdminBadge(adminState: adminState),
@@ -210,78 +215,6 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
         tooltip: 'Profil-Einstellungen',
       ),
     ];
-  }
-
-  /// Overflow bottom sheet with the less-frequent navigation actions.
-  void _showMoreMenu(BuildContext context, AdminState adminState) {
-    const accent = Color(0xFFC9A84C);
-    HapticService.selectionClick();
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF0C0C14),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.layers_outlined, color: accent),
-                title: const Text('Vier-Welten-Karte',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const UnifiedWorldMapScreen(world: 'vorhang'),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.analytics_outlined, color: accent),
-                title: const Text('Statistik',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const StatsDashboardScreen(world: 'vorhang'),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.swap_horiz, color: accent),
-                title: const Text('Welt wechseln',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 

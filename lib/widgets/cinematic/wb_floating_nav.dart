@@ -15,11 +15,11 @@ class WBFloatingNavItem {
 
 /// Floating glassmorphic Bottom-Nav mit Welt-Akzent.
 ///
-/// • schwebt 16px über safe area, 20px Margin links/rechts
-/// • aktiver Tab: Pill-Background + Icon + Label-Text
-/// • inaktive Tabs: gedimmter Icon, kein Label (kompakt)
-/// • Hoehe 68 — genug fuer Icon + Label
-/// • Genau ein BackdropFilter — keine zusaetzlichen GPU-Layer
+/// - schwebt 16px ueber safe area, 20px Margin links/rechts
+/// - aktiver Tab: Pill-Background + Icon + Label (Akzentfarbe, groesser)
+/// - inaktive Tabs: gedimmter Icon + Label (kleiner, alpha 0.38)
+/// - Hoehe 74 -- genug fuer Icon + immer sichtbare Labels
+/// - Genau ein BackdropFilter -- keine zusaetzlichen GPU-Layer
 class WBFloatingNav extends StatelessWidget {
   final List<WBFloatingNavItem> items;
   final int activeIndex;
@@ -52,9 +52,8 @@ class WBFloatingNav extends StatelessWidget {
               sigmaY: wb.blurMedium,
             ),
             child: Container(
-              // Responsive Hoehe: kleine Phones / grosse System-Fonts wuerden
-              // Icon + Label sonst clippen. Clamp haelt es kompakt.
-              height: context.isSmallPhone ? 64 : context.rw(68),
+              // Always-visible labels need slightly more vertical room.
+              height: context.isSmallPhone ? 68 : context.rw(74),
               decoration: BoxDecoration(
                 color: wb.glassElevated,
                 borderRadius: BorderRadius.circular(WBRadius.xl),
@@ -147,23 +146,25 @@ class _NavTab extends StatelessWidget {
                     : Colors.white.withValues(alpha: 0.45),
               ),
             ),
-            // Label always visible: active = bold+accent, inactive = small+dim.
-            // Helps users discover what each tab does without tapping.
-            Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+            const SizedBox(height: 3),
+            // Label ist immer sichtbar -- inaktiv kleiner + gedimmt.
+            // FittedBox + scaleDown: Label wie "Community" passt auch auf
+            // schmale Phones in die enge Tab-Spalte.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: GoogleFonts.inter(
+                  fontSize: active ? context.rf(9) : context.rf(7.5),
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                  letterSpacing: active ? 0.5 : 0.2,
+                  color: active
+                      ? palette.label
+                      : Colors.white.withValues(alpha: 0.38),
+                  height: 1.0,
+                ),
                 child: Text(
                   item.label,
-                  style: GoogleFonts.inter(
-                    fontSize: active ? context.rf(9) : context.rf(8),
-                    fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                    letterSpacing: active ? 0.5 : 0.3,
-                    color: active
-                        ? palette.label
-                        : Colors.white.withValues(alpha: 0.35),
-                    height: 1.0,
-                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

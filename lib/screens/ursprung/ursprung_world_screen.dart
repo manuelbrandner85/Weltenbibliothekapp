@@ -8,8 +8,7 @@ import 'ursprung_community_tab.dart';
 import 'ursprung_map_tab.dart';
 import '../shared/unified_knowledge_tab.dart';
 import '../shared/mediathek_screen.dart';
-import '../shared/stats_dashboard_screen.dart';
-import '../shared/unified_world_map_screen.dart';
+import '../../widgets/cinematic/wb_more_menu_sheet.dart';
 import '../../widgets/admin_dashboard_button.dart';
 import '../../services/haptic_service.dart';
 import '../../features/admin/state/admin_state.dart';
@@ -130,22 +129,20 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
               child: Column(
                 children: [
                   AdminDashboardButton(
-                      adminState: adminState, world: 'ursprung'),
+                    adminState: adminState,
+                    world: 'ursprung',
+                  ),
                   Expanded(child: tabs[_currentIndex]),
                 ],
               ),
             ),
 
             // Vignette als oberster atmosphärischer Layer
-            const Positioned.fill(
-              child: IgnorePointer(child: WBVignette()),
-            ),
+            const Positioned.fill(child: IgnorePointer(child: WBVignette())),
 
             // Day-phase atmospheric scrim
             const Positioned.fill(
-              child: IgnorePointer(
-                child: TimeOfDayOverlay(world: 'ursprung'),
-              ),
+              child: IgnorePointer(child: TimeOfDayOverlay(world: 'ursprung')),
             ),
 
             // Floating Bottom-Nav
@@ -157,12 +154,16 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
                 items: const [
                   WBFloatingNavItem(icon: Icons.home, label: 'Home'),
                   WBFloatingNavItem(
-                      icon: Icons.auto_awesome, label: 'Kaninchenbau'),
+                    icon: Icons.auto_awesome,
+                    label: 'Kaninchenbau',
+                  ),
                   WBFloatingNavItem(icon: Icons.people, label: 'Community'),
                   WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
                   WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
                   WBFloatingNavItem(
-                      icon: Icons.play_circle_outline, label: 'Videos'),
+                    icon: Icons.play_circle_outline,
+                    label: 'Videos',
+                  ),
                 ],
                 onChanged: (i) => setState(() => _currentIndex = i),
               ),
@@ -174,7 +175,9 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
   }
 
   List<Widget> _buildAppBarActions(
-      BuildContext context, AdminState adminState) {
+    BuildContext context,
+    AdminState adminState,
+  ) {
     return [
       IconButton(
         tooltip: 'Suchen',
@@ -188,7 +191,11 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
         tooltip: 'Mehr',
         icon: const Icon(Icons.more_vert, color: Color(0xFF00D4AA)),
         iconSize: 22,
-        onPressed: () => _showMoreMenu(context, adminState),
+        onPressed: () => showWBMoreMenu(
+          context,
+          world: 'ursprung',
+          accent: const Color(0xFF00D4AA),
+        ),
       ),
       // Debug-Indikator (nur Debug-Build)
       if (kDebugMode) _DebugAdminBadge(adminState: adminState),
@@ -212,78 +219,6 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
         tooltip: 'Profil-Einstellungen',
       ),
     ];
-  }
-
-  /// Overflow bottom sheet with the less-frequent navigation actions.
-  void _showMoreMenu(BuildContext context, AdminState adminState) {
-    const accent = Color(0xFF00D4AA);
-    HapticService.selectionClick();
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: const Color(0xFF0C0C14),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.layers_outlined, color: accent),
-                title: const Text('Vier-Welten-Karte',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const UnifiedWorldMapScreen(world: 'ursprung'),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.analytics_outlined, color: accent),
-                title: const Text('Statistik',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          const StatsDashboardScreen(world: 'ursprung'),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.swap_horiz, color: accent),
-                title: const Text('Welt wechseln',
-                    style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 
