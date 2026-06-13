@@ -748,7 +748,7 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                                     body: jsonEncode(payload),
                                   )
                                   .timeout(const Duration(seconds: 12));
-                              if (!mounted) return;
+                              if (!mounted || !ctx.mounted) return;
                               if (res.statusCode == 200) {
                                 Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context)
@@ -767,6 +767,7 @@ class _ModuleEditorTabState extends State<_ModuleEditorTab> {
                               }
                             } catch (e) {
                               setSheet(() => saving = false);
+                              if (!ctx.mounted) return;
                               ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
                                 content:
                                     Text('Netzwerk. Bitte erneut versuchen.'),
@@ -1144,8 +1145,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
           ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child:
-                  const Text('Loeschen', style: TextStyle(color: Colors.white))),
+              child: const Text('Loeschen',
+                  style: TextStyle(color: Colors.white))),
         ],
       ),
     );
@@ -1176,15 +1177,15 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
     final id = v['id'] as String? ?? '';
     if (id.isEmpty) return;
     const allWorlds = ['materie', 'energie', 'vorhang', 'ursprung'];
-    final categoryCtrl = TextEditingController(
-        text: (v['category'] as String?) ?? '');
+    final categoryCtrl =
+        TextEditingController(text: (v['category'] as String?) ?? '');
     final rawWorlds = v['worlds'];
     final selectedWorlds = <String>{
       ...(rawWorlds is List ? rawWorlds.map((e) => e.toString()) : <String>[]),
     };
     // C3: Modul-Verknuepfung
-    final moduleCodeCtrl = TextEditingController(
-        text: (v['module_code'] as String?) ?? '');
+    final moduleCodeCtrl =
+        TextEditingController(text: (v['module_code'] as String?) ?? '');
     String moduleWorld = (v['module_world'] as String?) ?? 'vorhang';
 
     final saved = await showDialog<bool>(
@@ -1192,7 +1193,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           backgroundColor: const Color(0xFF12121E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           title: const Text('Video bearbeiten',
               style: TextStyle(color: Colors.white, fontSize: 16)),
           content: SingleChildScrollView(
@@ -1235,15 +1237,12 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                               : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: sel
-                                  ? widget.accent
-                                  : Colors.white24),
+                              color: sel ? widget.accent : Colors.white24),
                         ),
                         child: Text(w,
                             style: TextStyle(
-                                color: sel
-                                    ? widget.accentBright
-                                    : Colors.white70,
+                                color:
+                                    sel ? widget.accentBright : Colors.white70,
                                 fontSize: 12,
                                 fontWeight:
                                     sel ? FontWeight.w700 : FontWeight.normal)),
@@ -1286,8 +1285,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                         value: moduleWorld,
                         isDense: true,
                         dropdownColor: const Color(0xFF1A1A2E),
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 12),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 12),
                         items: const [
                           DropdownMenuItem(
                               value: 'vorhang', child: Text('Vorhang')),
@@ -1307,8 +1306,7 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                   Expanded(
                     child: TextField(
                       controller: moduleCodeCtrl,
-                      style:
-                          const TextStyle(color: Colors.white, fontSize: 13),
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                       decoration: InputDecoration(
                         labelText: 'Modul-Code (z.B. V-03)',
                         labelStyle: const TextStyle(
@@ -1347,8 +1345,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                 Navigator.pop(ctx, true);
               },
               style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
-              child:
-                  const Text('Speichern', style: TextStyle(color: Colors.white)),
+              child: const Text('Speichern',
+                  style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -1357,9 +1355,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
     if (saved != true) return;
     final ok = await WorldAdminServiceV162.updateArchiveVideo(
       videoId: id,
-      category: categoryCtrl.text.trim().isEmpty
-          ? null
-          : categoryCtrl.text.trim(),
+      category:
+          categoryCtrl.text.trim().isEmpty ? null : categoryCtrl.text.trim(),
       worlds: selectedWorlds.toList(),
       moduleCode: moduleCodeCtrl.text.trim(),
       moduleWorld: moduleWorld,
@@ -1368,6 +1365,7 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
         color: ok ? Colors.green : Colors.orange);
     if (ok) _load();
   }
+
   @override
   Widget build(BuildContext context) {
     final videos = _videos ?? [];
@@ -1447,19 +1445,16 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                           itemCount: videos.length,
                           itemBuilder: (ctx, i) {
                             final v = videos[i];
-                            final title = (v['youtube_title'] ??
-                                    v['raw_title'] ??
-                                    '-')
-                                .toString();
-                            final status =
-                                v['status'] as String? ?? 'pending';
+                            final title =
+                                (v['youtube_title'] ?? v['raw_title'] ?? '-')
+                                    .toString();
+                            final status = v['status'] as String? ?? 'pending';
                             final category = v['category'] as String?;
                             final rawWorlds = v['worlds'];
                             final worlds = rawWorlds is List
                                 ? rawWorlds.map((e) => e.toString()).toList()
                                 : <String>[];
-                            final thumb =
-                                v['thumbnail_url'] as String? ?? '';
+                            final thumb = v['thumbnail_url'] as String? ?? '';
                             final statusColor = status == 'confirmed'
                                 ? Colors.green
                                 : status == 'rejected'
@@ -1542,7 +1537,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                                                   style: const TextStyle(
                                                       color: Colors.white38,
                                                       fontSize: 10)),
-                                            Text('· ${_fmtDate(v['created_at'])}',
+                                            Text(
+                                                '· ${_fmtDate(v['created_at'])}',
                                                 style: const TextStyle(
                                                     color: Colors.white24,
                                                     fontSize: 10)),
@@ -1573,8 +1569,7 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                                           if (status == 'confirmed')
                                             IconButton(
                                               icon: const Icon(
-                                                  Icons
-                                                      .visibility_off_rounded,
+                                                  Icons.visibility_off_rounded,
                                                   color: Colors.white38,
                                                   size: 18),
                                               tooltip: 'Ausblenden',
@@ -1586,7 +1581,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                                           IconButton(
                                             icon: Icon(Icons.edit_rounded,
                                                 color: widget.accent, size: 16),
-                                            tooltip: 'Kategorie/Welten bearbeiten',
+                                            tooltip:
+                                                'Kategorie/Welten bearbeiten',
                                             onPressed: () => _editVideo(v),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(
@@ -1636,8 +1632,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
               child: OutlinedButton.icon(
                 onPressed: _batchBusy ? null : () => _batch('reject'),
                 icon: const Icon(Icons.block_rounded, size: 15),
-                label: const Text('Alle ablehnen',
-                    style: TextStyle(fontSize: 12)),
+                label:
+                    const Text('Alle ablehnen', style: TextStyle(fontSize: 12)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.redAccent,
                   side: const BorderSide(color: Colors.redAccent),
@@ -1659,8 +1655,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
                       height: 14,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.auto_awesome, size: 15),
-              label: const Text('KI-Vorschläge',
-                  style: TextStyle(fontSize: 12)),
+              label:
+                  const Text('KI-Vorschläge', style: TextStyle(fontSize: 12)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: widget.accentBright,
                 side: BorderSide(color: widget.accent),
@@ -1672,7 +1668,8 @@ class _VideoManagerTabState extends State<_VideoManagerTab> {
           Expanded(
             child: ElevatedButton.icon(
               onPressed: _addVideo,
-              icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+              icon:
+                  const Icon(Icons.add_rounded, color: Colors.white, size: 18),
               label: const Text('Einpflegen',
                   style: TextStyle(color: Colors.white, fontSize: 12)),
               style: ElevatedButton.styleFrom(
@@ -2015,24 +2012,22 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
           labelText: 'YouTube-URL oder Suchbegriff',
           hintText: 'z.B. "Quantenbewusstsein" oder https://youtu.be/...',
           labelStyle: const TextStyle(color: Colors.white54),
-          hintStyle:
-              const TextStyle(color: Colors.white24, fontSize: 12),
+          hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
           filled: true,
           fillColor: Colors.white.withValues(alpha: 0.05),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: const BorderSide(color: Colors.white12),
           ),
-          suffixIcon: Icon(Icons.search_rounded,
-              color: widget.accentBright, size: 20),
+          suffixIcon:
+              Icon(Icons.search_rounded, color: widget.accentBright, size: 20),
         ),
       ),
       if (_errorMsg != null)
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Text(_errorMsg!,
-              style:
-                  const TextStyle(color: Colors.orange, fontSize: 12)),
+              style: const TextStyle(color: Colors.orange, fontSize: 12)),
         ),
       const SizedBox(height: 8),
       const Text(
@@ -2054,8 +2049,7 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
           result: _results[i],
           accent: widget.accent,
           accentBright: widget.accentBright,
-          onPreview: () =>
-              _showPreview(_results[i].videoId, _results[i].title),
+          onPreview: () => _showPreview(_results[i].videoId, _results[i].title),
           onSelect: () => _selectVideo(_results[i]),
         ),
       ),
@@ -2089,37 +2083,35 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
                 width: 100,
                 height: 56,
                 color: Colors.white12,
-                child: const Icon(Icons.videocam_rounded,
-                    color: Colors.white38),
+                child:
+                    const Icon(Icons.videocam_rounded, color: Colors.white38),
               ),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(displayTitle,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 12),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
-                  if (sel.channelTitle?.isNotEmpty == true)
-                    Text(sel.channelTitle!,
-                        style: const TextStyle(
-                            color: Colors.white38, fontSize: 11)),
-                  GestureDetector(
-                    onTap: () => _showPreview(sel.videoId, displayTitle),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.play_circle_outline_rounded,
-                          color: widget.accentBright, size: 14),
-                      const SizedBox(width: 4),
-                      Text('Vorschau',
-                          style: TextStyle(
-                              color: widget.accentBright, fontSize: 11)),
-                    ]),
-                  ),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(displayTitle,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis),
+              if (sel.channelTitle?.isNotEmpty == true)
+                Text(sel.channelTitle!,
+                    style:
+                        const TextStyle(color: Colors.white38, fontSize: 11)),
+              GestureDetector(
+                onTap: () => _showPreview(sel.videoId, displayTitle),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.play_circle_outline_rounded,
+                      color: widget.accentBright, size: 14),
+                  const SizedBox(width: 4),
+                  Text('Vorschau',
+                      style:
+                          TextStyle(color: widget.accentBright, fontSize: 11)),
                 ]),
+              ),
+            ]),
           ),
         ]),
         const SizedBox(height: 10),
@@ -2141,8 +2133,7 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
               'Vorschlag via '
               '${_suggestSource == 'heuristic' ? 'Keywords' : 'KI'}'
               ' -- bitte pruefen',
-              style:
-                  TextStyle(color: widget.accentBright, fontSize: 11),
+              style: TextStyle(color: widget.accentBright, fontSize: 11),
             ),
           ),
         const SizedBox(height: 10),
@@ -2150,15 +2141,13 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
         const Align(
           alignment: Alignment.centerLeft,
           child: Text('Welten (mind. eine):',
-              style:
-                  TextStyle(color: Colors.white54, fontSize: 12)),
+              style: TextStyle(color: Colors.white54, fontSize: 12)),
         ),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
           runSpacing: 6,
-          children:
-              ['materie', 'energie', 'vorhang', 'ursprung'].map((w) {
+          children: ['materie', 'energie', 'vorhang', 'ursprung'].map((w) {
             final isSelected = _selectedWorlds.contains(w);
             return FilterChip(
               label: Text(w[0].toUpperCase() + w.substring(1)),
@@ -2173,9 +2162,7 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
               backgroundColor: const Color(0xFF1A1A2E),
               selectedColor: widget.accent.withValues(alpha: 0.3),
               labelStyle: TextStyle(
-                color: isSelected
-                    ? widget.accentBright
-                    : Colors.white54,
+                color: isSelected ? widget.accentBright : Colors.white54,
                 fontSize: 12,
               ),
               checkmarkColor: widget.accentBright,
@@ -2204,8 +2191,7 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(_saveError!,
-                style: const TextStyle(
-                    color: Colors.orange, fontSize: 12)),
+                style: const TextStyle(color: Colors.orange, fontSize: 12)),
           ),
       ]),
     );
@@ -2214,8 +2200,7 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
   List<Widget> _buildActions() {
     final cancelBtn = TextButton(
       onPressed: (_saving || _suggesting) ? null : () => Navigator.pop(context),
-      child:
-          const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+      child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
     );
     if (_step == _VStep.input) {
       return [
@@ -2242,8 +2227,7 @@ class _AddVideoDialogState extends State<_AddVideoDialog> {
                   height: 16,
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Colors.white))
-              : const Text('Einpflegen',
-                  style: TextStyle(color: Colors.white)),
+              : const Text('Einpflegen', style: TextStyle(color: Colors.white)),
         ),
       ];
     }
@@ -2309,27 +2293,23 @@ class _YoutubeResultCard extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(result.title,
-                    style:
-                        const TextStyle(color: Colors.white, fontSize: 12),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
-                if (result.channelTitle?.isNotEmpty == true)
-                  Text(result.channelTitle!,
-                      style: const TextStyle(
-                          color: Colors.white38, fontSize: 10)),
-              ]),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(result.title,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis),
+            if (result.channelTitle?.isNotEmpty == true)
+              Text(result.channelTitle!,
+                  style: const TextStyle(color: Colors.white38, fontSize: 10)),
+          ]),
         ),
         const SizedBox(width: 6),
         ElevatedButton(
           onPressed: onSelect,
           style: ElevatedButton.styleFrom(
             backgroundColor: accent,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
@@ -2382,8 +2362,7 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
       ),
       builder: (ctx, player) => Dialog(
         backgroundColor: Colors.black,
-        insetPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 40),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 40),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           player,
           Padding(
@@ -2392,8 +2371,7 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
               Expanded(
                 child: Text(
                   widget.title,
-                  style:
-                      const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2401,8 +2379,7 @@ class _VideoPreviewDialogState extends State<_VideoPreviewDialog> {
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('Schliessen',
-                    style:
-                        TextStyle(color: Colors.white54, fontSize: 12)),
+                    style: TextStyle(color: Colors.white54, fontSize: 12)),
               ),
             ]),
           ),
@@ -2462,8 +2439,8 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
 
   void _snack(String m, {Color? c}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A2E)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A2E)));
   }
 
   void _applyArticle(Map<String, dynamic> a) {
@@ -2471,7 +2448,8 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
     _excerptCtrl.text = (a['excerpt'] ?? '').toString();
     _contentCtrl.text = (a['content'] ?? '').toString();
     _category = (a['category'] ?? '').toString();
-    _tags = ((a['tags'] as List?) ?? const []).map((e) => e.toString()).toList();
+    _tags =
+        ((a['tags'] as List?) ?? const []).map((e) => e.toString()).toList();
   }
 
   Future<void> _generate() async {
@@ -2481,8 +2459,8 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
       return;
     }
     setState(() => _generating = true);
-    final res =
-        await WorldAdminServiceV162.generateArticle(topic: topic, world: _world);
+    final res = await WorldAdminServiceV162.generateArticle(
+        topic: topic, world: _world);
     if (!mounted) return;
     setState(() => _generating = false);
     if (res == null || res['article'] == null) {
@@ -2511,7 +2489,8 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
       _snack('Ausarbeiten fehlgeschlagen', c: Colors.redAccent);
       return;
     }
-    setState(() => _applyArticle(Map<String, dynamic>.from(res['article'] as Map)));
+    setState(
+        () => _applyArticle(Map<String, dynamic>.from(res['article'] as Map)));
   }
 
   Future<void> _save() async {
@@ -2524,7 +2503,8 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
       title: _titleCtrl.text.trim(),
       content: _contentCtrl.text.trim(),
       world: _world,
-      excerpt: _excerptCtrl.text.trim().isEmpty ? null : _excerptCtrl.text.trim(),
+      excerpt:
+          _excerptCtrl.text.trim().isEmpty ? null : _excerptCtrl.text.trim(),
       category: _category.isEmpty ? null : _category,
       tags: _tags.isEmpty ? null : _tags,
       isPublished: _publish,
@@ -2532,7 +2512,8 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
     if (!mounted) return;
     setState(() => _saving = false);
     if (res != null) {
-      _snack('Artikel ${_publish ? "veröffentlicht" : "als Entwurf gespeichert"}',
+      _snack(
+          'Artikel ${_publish ? "veröffentlicht" : "als Entwurf gespeichert"}',
           c: Colors.green);
       widget.onSaved();
     } else {
@@ -2651,7 +2632,8 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
                             label: Text(t,
                                 style: const TextStyle(
                                     color: Colors.white70, fontSize: 10)),
-                            backgroundColor: Colors.white.withValues(alpha: 0.06),
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.06),
                             materialTapTargetSize:
                                 MaterialTapTargetSize.shrinkWrap,
                           ))
@@ -2695,7 +2677,8 @@ class _ArticleWorkshopSheetState extends State<_ArticleWorkshopSheet> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.save, size: 16),
-                label: Text(_publish ? 'Veröffentlichen' : 'Als Entwurf speichern'),
+                label: Text(
+                    _publish ? 'Veröffentlichen' : 'Als Entwurf speichern'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade700,
                   foregroundColor: Colors.white,
@@ -2739,8 +2722,8 @@ class _VideoSuggestionsSheetState extends State<_VideoSuggestionsSheet> {
 
   void _snack(String m, {Color? c}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A2E)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A2E)));
   }
 
   Future<void> _add(Map<String, dynamic> v) async {
@@ -2921,9 +2904,8 @@ class _VideoSuggestionsSheetState extends State<_VideoSuggestionsSheet> {
           Row(children: [
             if (q == null)
               TextButton.icon(
-                onPressed: _busy.contains('q_$vid')
-                    ? null
-                    : () => _qualityCheck(v),
+                onPressed:
+                    _busy.contains('q_$vid') ? null : () => _qualityCheck(v),
                 icon: _busy.contains('q_$vid')
                     ? const SizedBox(
                         width: 12,
@@ -2931,8 +2913,8 @@ class _VideoSuggestionsSheetState extends State<_VideoSuggestionsSheet> {
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.fact_check, size: 14),
                 label: const Text('KI-Check', style: TextStyle(fontSize: 11)),
-                style: TextButton.styleFrom(
-                    foregroundColor: widget.accentBright),
+                style:
+                    TextButton.styleFrom(foregroundColor: widget.accentBright),
               ),
             const Spacer(),
             if (added)

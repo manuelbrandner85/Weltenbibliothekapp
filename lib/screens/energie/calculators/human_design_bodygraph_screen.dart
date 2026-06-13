@@ -106,6 +106,7 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
       ),
     );
     if (d == null) return;
+    if (!mounted) return;
     if (_hasTime) {
       final t = await showTimePicker(
         context: context,

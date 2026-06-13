@@ -443,7 +443,7 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
                       await CoWatchService.instance.loadVideo(url);
                       final vid = CoWatchService.instance.currentVideoId;
                       if (vid == null) {
-                        if (mounted) {
+                        if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
@@ -473,7 +473,7 @@ class _LiveKitGroupCallScreenState extends ConsumerState<LiveKitGroupCallScreen>
                       await CoWatchService.instance.loadVideo(url);
                       final vid = CoWatchService.instance.currentVideoId;
                       if (vid == null) {
-                        if (mounted) {
+                        if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(

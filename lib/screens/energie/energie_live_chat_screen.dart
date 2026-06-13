@@ -3223,6 +3223,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                 title: Text('Nachricht anpinnen $adminBadge',
                     style: const TextStyle(color: Color(0xFF9B51E0))),
                 onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   Navigator.pop(context);
                   final messageId = msg['id']?.toString() ?? '';
                   if (messageId.isEmpty) return;
@@ -3235,7 +3236,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen>
                         (msg['message'] ?? msg['content'] ?? '').toString(),
                   );
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  messenger.showSnackBar(SnackBar(
                     content: Text(ok ? '📌 Angepinnt' : '❌ Pin fehlgeschlagen'),
                     backgroundColor:
                         ok ? const Color(0xFF7C4DFF) : Colors.red.shade700,

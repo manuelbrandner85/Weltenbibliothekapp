@@ -8,13 +8,15 @@ part of '../world_admin_dashboard.dart';
 class _ControlTab extends StatefulWidget {
   final Color accent, accentBright;
   final AdminState admin;
-  const _ControlTab({required this.accent, required this.accentBright, required this.admin});
+  const _ControlTab(
+      {required this.accent, required this.accentBright, required this.admin});
 
   @override
   State<_ControlTab> createState() => _ControlTabState();
 }
 
-class _ControlTabState extends State<_ControlTab> with SingleTickerProviderStateMixin {
+class _ControlTabState extends State<_ControlTab>
+    with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
   static const _tabs = ['Flags', 'Ankuendigungen', 'Inhalte'];
 
@@ -44,9 +46,18 @@ class _ControlTabState extends State<_ControlTab> with SingleTickerProviderState
         child: TabBarView(
           controller: _tabCtrl,
           children: [
-            _FeatureFlagsPanel(accent: widget.accent, accentBright: widget.accentBright, admin: widget.admin),
-            _AnnouncementsPanel(accent: widget.accent, accentBright: widget.accentBright, admin: widget.admin),
-            _ContentQueuePanel(accent: widget.accent, accentBright: widget.accentBright, admin: widget.admin),
+            _FeatureFlagsPanel(
+                accent: widget.accent,
+                accentBright: widget.accentBright,
+                admin: widget.admin),
+            _AnnouncementsPanel(
+                accent: widget.accent,
+                accentBright: widget.accentBright,
+                admin: widget.admin),
+            _ContentQueuePanel(
+                accent: widget.accent,
+                accentBright: widget.accentBright,
+                admin: widget.admin),
           ],
         ),
       ),
@@ -58,7 +69,8 @@ class _ControlTabState extends State<_ControlTab> with SingleTickerProviderState
 class _FeatureFlagsPanel extends StatefulWidget {
   final Color accent, accentBright;
   final AdminState admin;
-  const _FeatureFlagsPanel({required this.accent, required this.accentBright, required this.admin});
+  const _FeatureFlagsPanel(
+      {required this.accent, required this.accentBright, required this.admin});
 
   @override
   State<_FeatureFlagsPanel> createState() => _FeatureFlagsPanelState();
@@ -78,7 +90,11 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
   Future<void> _load() async {
     try {
       final flags = await WorldAdminServiceV162.getFeatureFlags();
-      if (mounted) setState(() { _flags = flags; _loading = false; });
+      if (mounted)
+        setState(() {
+          _flags = flags;
+          _loading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -97,7 +113,9 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
     setState(() => _processing = false);
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(enable ? '✅ ${flag['key']} aktiviert' : '🔴 ${flag['key']} deaktiviert'),
+        content: Text(enable
+            ? '✅ ${flag['key']} aktiviert'
+            : '🔴 ${flag['key']} deaktiviert'),
         backgroundColor: const Color(0xFF1A1A2E),
       ));
       _load();
@@ -118,8 +136,10 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx2, setDs) => AlertDialog(
           backgroundColor: const Color(0xFF12121E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Neues Feature-Flag', style: TextStyle(color: Colors.white)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Neues Feature-Flag',
+              style: TextStyle(color: Colors.white)),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(
               controller: keyCtrl,
@@ -138,17 +158,35 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
               dropdownColor: const Color(0xFF1A1A2E),
               decoration: _inputDeco('Welt (leer = global)'),
               items: const [
-                DropdownMenuItem(value: null, child: Text('Alle Welten', style: TextStyle(color: Colors.white70))),
-                DropdownMenuItem(value: 'materie', child: Text('Materie', style: TextStyle(color: Colors.white70))),
-                DropdownMenuItem(value: 'energie', child: Text('Energie', style: TextStyle(color: Colors.white70))),
-                DropdownMenuItem(value: 'vorhang', child: Text('Vorhang', style: TextStyle(color: Colors.white70))),
-                DropdownMenuItem(value: 'ursprung', child: Text('Ursprung', style: TextStyle(color: Colors.white70))),
+                DropdownMenuItem(
+                    value: null,
+                    child: Text('Alle Welten',
+                        style: TextStyle(color: Colors.white70))),
+                DropdownMenuItem(
+                    value: 'materie',
+                    child: Text('Materie',
+                        style: TextStyle(color: Colors.white70))),
+                DropdownMenuItem(
+                    value: 'energie',
+                    child: Text('Energie',
+                        style: TextStyle(color: Colors.white70))),
+                DropdownMenuItem(
+                    value: 'vorhang',
+                    child: Text('Vorhang',
+                        style: TextStyle(color: Colors.white70))),
+                DropdownMenuItem(
+                    value: 'ursprung',
+                    child: Text('Ursprung',
+                        style: TextStyle(color: Colors.white70))),
               ],
               onChanged: (v) => setDs(() => selectedWorld = v),
             ),
           ]),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white54))),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
@@ -173,16 +211,19 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
   }
 
   InputDecoration _inputDeco(String hint) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: Colors.white30),
-    filled: true,
-    fillColor: Colors.white.withValues(alpha: 0.05),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-  );
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white30),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none),
+      );
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Center(child: CircularProgressIndicator(color: widget.accent));
+    if (_loading)
+      return Center(child: CircularProgressIndicator(color: widget.accent));
     final isRoot = widget.admin.isRootAdmin;
     return Stack(children: [
       ListView(
@@ -192,7 +233,8 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
             const Padding(
               padding: EdgeInsets.all(12),
               child: Text('Nur Root-Admin kann Feature-Flags aendern.',
-                  style: TextStyle(color: Colors.white38, fontSize: 12), textAlign: TextAlign.center),
+                  style: TextStyle(color: Colors.white38, fontSize: 12),
+                  textAlign: TextAlign.center),
             ),
           ..._flags.map((flag) {
             final key = flag['key']?.toString() ?? '';
@@ -206,49 +248,70 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: enabled
-                    ? (isMaintenance ? Colors.red : widget.accent).withValues(alpha: 0.08)
+                    ? (isMaintenance ? Colors.red : widget.accent)
+                        .withValues(alpha: 0.08)
                     : Colors.white.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: enabled
-                      ? (isMaintenance ? Colors.red : widget.accent).withValues(alpha: 0.35)
+                      ? (isMaintenance ? Colors.red : widget.accent)
+                          .withValues(alpha: 0.35)
                       : Colors.white10,
                 ),
               ),
               child: Row(children: [
                 Icon(
-                  isMaintenance ? Icons.construction_rounded
-                      : isBanner ? Icons.announcement_rounded
-                      : Icons.toggle_on_rounded,
+                  isMaintenance
+                      ? Icons.construction_rounded
+                      : isBanner
+                          ? Icons.announcement_rounded
+                          : Icons.toggle_on_rounded,
                   color: enabled
                       ? (isMaintenance ? Colors.redAccent : widget.accentBright)
                       : Colors.white38,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(key, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                  if (world != null)
-                    Text('Welt: $world', style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                  if (value != null && value.isNotEmpty)
-                    Text(value, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                ])),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(key,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13)),
+                      if (world != null)
+                        Text('Welt: $world',
+                            style: const TextStyle(
+                                color: Colors.white38, fontSize: 10)),
+                      if (value != null && value.isNotEmpty)
+                        Text(value,
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 11)),
+                    ])),
                 if (isRoot)
                   Switch(
                     value: enabled,
-                    activeColor: isMaintenance ? Colors.redAccent : widget.accent,
+                    activeColor:
+                        isMaintenance ? Colors.redAccent : widget.accent,
                     onChanged: _processing ? null : (v) => _toggle(flag, v),
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: enabled ? Colors.green.withValues(alpha: 0.15) : Colors.white10,
+                      color: enabled
+                          ? Colors.green.withValues(alpha: 0.15)
+                          : Colors.white10,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(enabled ? 'An' : 'Aus', style: TextStyle(
-                      color: enabled ? Colors.greenAccent : Colors.white38, fontSize: 11,
-                    )),
+                    child: Text(enabled ? 'An' : 'Aus',
+                        style: TextStyle(
+                          color: enabled ? Colors.greenAccent : Colors.white38,
+                          fontSize: 11,
+                        )),
                   ),
               ]),
             );
@@ -257,7 +320,8 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
-                child: Text('Keine Flags konfiguriert', style: TextStyle(color: Colors.white38)),
+                child: Text('Keine Flags konfiguriert',
+                    style: TextStyle(color: Colors.white38)),
               ),
             ),
           const SizedBox(height: 80),
@@ -265,7 +329,8 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
       ),
       if (isRoot)
         Positioned(
-          right: 16, bottom: 16,
+          right: 16,
+          bottom: 16,
           child: FloatingActionButton.extended(
             onPressed: _addFlag,
             backgroundColor: widget.accent,
@@ -281,7 +346,8 @@ class _FeatureFlagsPanelState extends State<_FeatureFlagsPanel> {
 class _AnnouncementsPanel extends StatefulWidget {
   final Color accent, accentBright;
   final AdminState admin;
-  const _AnnouncementsPanel({required this.accent, required this.accentBright, required this.admin});
+  const _AnnouncementsPanel(
+      {required this.accent, required this.accentBright, required this.admin});
 
   @override
   State<_AnnouncementsPanel> createState() => _AnnouncementsPanelState();
@@ -301,7 +367,11 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
   Future<void> _load() async {
     try {
       final items = await WorldAdminServiceV162.getAnnouncements();
-      if (mounted) setState(() { _items = items; _loading = false; });
+      if (mounted)
+        setState(() {
+          _items = items;
+          _loading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -319,8 +389,10 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx2, setDs) => AlertDialog(
           backgroundColor: const Color(0xFF12121E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Neue Ankuendigung', style: TextStyle(color: Colors.white, fontSize: 16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Neue Ankuendigung',
+              style: TextStyle(color: Colors.white, fontSize: 16)),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               TextField(
@@ -343,7 +415,8 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.schedule_rounded, color: Colors.white54),
+                  icon:
+                      const Icon(Icons.schedule_rounded, color: Colors.white54),
                   onPressed: () async {
                     final picked = await showDatePicker(
                       context: ctx2,
@@ -352,12 +425,14 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
                       lastDate: DateTime.now().add(const Duration(days: 365)),
                     );
                     if (picked == null) return;
+                    if (!ctx2.mounted) return;
                     final time = await showTimePicker(
                       context: ctx2,
                       initialTime: TimeOfDay.fromDateTime(runAt),
                     );
                     if (time == null) return;
-                    setDs(() => runAt = DateTime(picked.year, picked.month, picked.day, time.hour, time.minute));
+                    setDs(() => runAt = DateTime(picked.year, picked.month,
+                        picked.day, time.hour, time.minute));
                   },
                 ),
               ),
@@ -367,25 +442,44 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
                   activeColor: widget.accent,
                   onChanged: (v) => setDs(() => push = v ?? false),
                 ),
-                const Text('Push-Notification senden', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const Text('Push-Notification senden',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
               ]),
               DropdownButtonFormField<String?>(
                 value: world,
                 dropdownColor: const Color(0xFF1A1A2E),
                 decoration: _inputDeco('Welt (leer = alle)'),
                 items: const [
-                  DropdownMenuItem(value: null, child: Text('Alle Welten', style: TextStyle(color: Colors.white70))),
-                  DropdownMenuItem(value: 'materie', child: Text('Materie', style: TextStyle(color: Colors.white70))),
-                  DropdownMenuItem(value: 'energie', child: Text('Energie', style: TextStyle(color: Colors.white70))),
-                  DropdownMenuItem(value: 'vorhang', child: Text('Vorhang', style: TextStyle(color: Colors.white70))),
-                  DropdownMenuItem(value: 'ursprung', child: Text('Ursprung', style: TextStyle(color: Colors.white70))),
+                  DropdownMenuItem(
+                      value: null,
+                      child: Text('Alle Welten',
+                          style: TextStyle(color: Colors.white70))),
+                  DropdownMenuItem(
+                      value: 'materie',
+                      child: Text('Materie',
+                          style: TextStyle(color: Colors.white70))),
+                  DropdownMenuItem(
+                      value: 'energie',
+                      child: Text('Energie',
+                          style: TextStyle(color: Colors.white70))),
+                  DropdownMenuItem(
+                      value: 'vorhang',
+                      child: Text('Vorhang',
+                          style: TextStyle(color: Colors.white70))),
+                  DropdownMenuItem(
+                      value: 'ursprung',
+                      child: Text('Ursprung',
+                          style: TextStyle(color: Colors.white70))),
                 ],
                 onChanged: (v) => setDs(() => world = v),
               ),
             ]),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Abbrechen',
+                    style: TextStyle(color: Colors.white54))),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
@@ -410,7 +504,8 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
     setState(() => _processing = false);
     if (created) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Ankuendigung geplant'), backgroundColor: Colors.green,
+        content: Text('Ankuendigung geplant'),
+        backgroundColor: Colors.green,
       ));
       _load();
     }
@@ -422,16 +517,19 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
   }
 
   InputDecoration _inputDeco(String hint) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: Colors.white30),
-    filled: true,
-    fillColor: Colors.white.withValues(alpha: 0.05),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-  );
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white30),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none),
+      );
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Center(child: CircularProgressIndicator(color: widget.accent));
+    if (_loading)
+      return Center(child: CircularProgressIndicator(color: widget.accent));
     return Stack(children: [
       ListView(
         padding: const EdgeInsets.all(12),
@@ -448,51 +546,82 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: sent ? Colors.white.withValues(alpha: 0.03) : widget.accent.withValues(alpha: 0.06),
+                color: sent
+                    ? Colors.white.withValues(alpha: 0.03)
+                    : widget.accent.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: sent ? Colors.white10 : widget.accent.withValues(alpha: 0.25),
+                  color: sent
+                      ? Colors.white10
+                      : widget.accent.withValues(alpha: 0.25),
                 ),
               ),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              child:
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Icon(sent ? Icons.check_circle_rounded : Icons.schedule_rounded,
-                    color: sent ? Colors.white30 : widget.accentBright, size: 18),
+                    color: sent ? Colors.white30 : widget.accentBright,
+                    size: 18),
                 const SizedBox(width: 10),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                  Text(body, style: const TextStyle(color: Colors.white54, fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Wrap(spacing: 8, children: [
-                    if (runAt.isNotEmpty)
-                      Text(_fmtTs(runAt), style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                    if (world != null)
-                      Text('[$world]', style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                    if (push)
-                      const Text('[Push]', style: TextStyle(color: Colors.orangeAccent, fontSize: 10)),
-                    Text(sent ? 'Gesendet' : 'Ausstehend',
-                        style: TextStyle(color: sent ? Colors.white30 : Colors.greenAccent, fontSize: 10)),
-                  ]),
-                ])),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(title,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13)),
+                      Text(body,
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 11),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Wrap(spacing: 8, children: [
+                        if (runAt.isNotEmpty)
+                          Text(_fmtTs(runAt),
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 10)),
+                        if (world != null)
+                          Text('[$world]',
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 10)),
+                        if (push)
+                          const Text('[Push]',
+                              style: TextStyle(
+                                  color: Colors.orangeAccent, fontSize: 10)),
+                        Text(sent ? 'Gesendet' : 'Ausstehend',
+                            style: TextStyle(
+                                color:
+                                    sent ? Colors.white30 : Colors.greenAccent,
+                                fontSize: 10)),
+                      ]),
+                    ])),
                 if (!sent)
                   IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.white30, size: 18),
+                    icon: const Icon(Icons.delete_outline_rounded,
+                        color: Colors.white30, size: 18),
                     onPressed: () => _delete(id),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    constraints:
+                        const BoxConstraints(minWidth: 32, minHeight: 32),
                   ),
               ]),
             );
           }),
           if (_items.isEmpty)
-            const Center(child: Padding(
+            const Center(
+                child: Padding(
               padding: EdgeInsets.all(24),
-              child: Text('Keine Ankuendigungen geplant', style: TextStyle(color: Colors.white38)),
+              child: Text('Keine Ankuendigungen geplant',
+                  style: TextStyle(color: Colors.white38)),
             )),
           const SizedBox(height: 80),
         ],
       ),
       Positioned(
-        right: 16, bottom: 16,
+        right: 16,
+        bottom: 16,
         child: FloatingActionButton.extended(
           onPressed: _processing ? null : _create,
           backgroundColor: widget.accent,
@@ -517,7 +646,8 @@ class _AnnouncementsPanelState extends State<_AnnouncementsPanel> {
 class _ContentQueuePanel extends StatefulWidget {
   final Color accent, accentBright;
   final AdminState admin;
-  const _ContentQueuePanel({required this.accent, required this.accentBright, required this.admin});
+  const _ContentQueuePanel(
+      {required this.accent, required this.accentBright, required this.admin});
 
   @override
   State<_ContentQueuePanel> createState() => _ContentQueuePanelState();
@@ -537,7 +667,11 @@ class _ContentQueuePanelState extends State<_ContentQueuePanel> {
   Future<void> _load() async {
     try {
       final videos = await WorldAdminServiceV162.getPendingVideos();
-      if (mounted) setState(() { _pending = videos; _loading = false; });
+      if (mounted)
+        setState(() {
+          _pending = videos;
+          _loading = false;
+        });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -549,7 +683,8 @@ class _ContentQueuePanelState extends State<_ContentQueuePanel> {
     if (mounted) setState(() => _processing = false);
     if (ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Video freigeschaltet'), backgroundColor: Colors.green,
+        content: Text('Video freigeschaltet'),
+        backgroundColor: Colors.green,
       ));
       _load();
     }
@@ -561,7 +696,8 @@ class _ContentQueuePanelState extends State<_ContentQueuePanel> {
     if (mounted) setState(() => _processing = false);
     if (ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Video abgelehnt'), backgroundColor: Colors.red,
+        content: Text('Video abgelehnt'),
+        backgroundColor: Colors.red,
       ));
       _load();
     }
@@ -569,15 +705,18 @@ class _ContentQueuePanelState extends State<_ContentQueuePanel> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Center(child: CircularProgressIndicator(color: widget.accent));
+    if (_loading)
+      return Center(child: CircularProgressIndicator(color: widget.accent));
     if (_pending.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.check_circle_rounded, color: Colors.greenAccent, size: 40),
+            Icon(Icons.check_circle_rounded,
+                color: Colors.greenAccent, size: 40),
             SizedBox(height: 12),
-            Text('Keine ausstehenden Videos', style: TextStyle(color: Colors.white54, fontSize: 14)),
+            Text('Keine ausstehenden Videos',
+                style: TextStyle(color: Colors.white54, fontSize: 14)),
           ]),
         ),
       );
@@ -588,10 +727,12 @@ class _ContentQueuePanelState extends State<_ContentQueuePanel> {
       itemBuilder: (ctx, i) {
         final v = _pending[i];
         final id = v['id']?.toString() ?? '';
-        final title = v['youtube_title']?.toString() ?? v['raw_title']?.toString() ?? '–';
+        final title =
+            v['youtube_title']?.toString() ?? v['raw_title']?.toString() ?? '–';
         final thumb = v['thumbnail_url']?.toString() ?? '';
         final category = v['category']?.toString();
-        final worlds = (v['worlds'] as List?)?.map((e) => e.toString()).join(', ') ?? '';
+        final worlds =
+            (v['worlds'] as List?)?.map((e) => e.toString()).join(', ') ?? '';
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(12),
@@ -604,51 +745,74 @@ class _ContentQueuePanelState extends State<_ContentQueuePanel> {
             if (thumb.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(thumb, width: 80, height: 56, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(width: 80, height: 56, color: Colors.white10)),
+                child: Image.network(thumb,
+                    width: 80,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                        width: 80, height: 56, color: Colors.white10)),
               )
             else
               Container(
-                width: 80, height: 56,
-                decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.play_circle_outline_rounded, color: Colors.white30),
+                width: 80,
+                height: 56,
+                decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Icon(Icons.play_circle_outline_rounded,
+                    color: Colors.white30),
               ),
             const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-              if (category != null)
-                Text('Kategorie: $category', style: const TextStyle(color: Colors.white38, fontSize: 10)),
-              if (worlds.isNotEmpty)
-                Text('Welten: $worlds', style: const TextStyle(color: Colors.white38, fontSize: 10)),
-              const SizedBox(height: 6),
-              Row(children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _processing ? null : () => _confirm(id),
-                    icon: const Icon(Icons.check_rounded, size: 14),
-                    label: const Text('Freischalten', style: TextStyle(fontSize: 11)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.greenAccent,
-                      side: const BorderSide(color: Colors.green),
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                  if (category != null)
+                    Text('Kategorie: $category',
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 10)),
+                  if (worlds.isNotEmpty)
+                    Text('Welten: $worlds',
+                        style: const TextStyle(
+                            color: Colors.white38, fontSize: 10)),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _processing ? null : () => _confirm(id),
+                        icon: const Icon(Icons.check_rounded, size: 14),
+                        label: const Text('Freischalten',
+                            style: TextStyle(fontSize: 11)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.greenAccent,
+                          side: const BorderSide(color: Colors.green),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _processing ? null : () => _reject(id),
-                    icon: const Icon(Icons.close_rounded, size: 14),
-                    label: const Text('Ablehnen', style: TextStyle(fontSize: 11)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.redAccent,
-                      side: const BorderSide(color: Colors.red),
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _processing ? null : () => _reject(id),
+                        icon: const Icon(Icons.close_rounded, size: 14),
+                        label: const Text('Ablehnen',
+                            style: TextStyle(fontSize: 11)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ]),
-            ])),
+                  ]),
+                ])),
           ]),
         );
       },

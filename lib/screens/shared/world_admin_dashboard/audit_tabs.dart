@@ -310,6 +310,7 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
             }),
           )
           .timeout(const Duration(seconds: 10));
+      if (!mounted) return;
       if (res.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('✅ Status: $status'),
@@ -324,6 +325,7 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
         ));
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Netzwerk. Bitte erneut versuchen.'),
         backgroundColor: Colors.redAccent,
@@ -945,10 +947,10 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                                           ),
                                           if (_triage[r['id']] == null)
                                             TextButton.icon(
-                                              onPressed: _triaging
-                                                      .contains(r['id'])
-                                                  ? null
-                                                  : () => _runTriage(r),
+                                              onPressed:
+                                                  _triaging.contains(r['id'])
+                                                      ? null
+                                                      : () => _runTriage(r),
                                               icon: _triaging.contains(r['id'])
                                                   ? const SizedBox(
                                                       width: 12,
@@ -974,8 +976,7 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                                         ]),
                                         if (_triage[r['id']] != null) ...[
                                           const SizedBox(height: 6),
-                                          _buildTriageResult(
-                                              _triage[r['id']]!),
+                                          _buildTriageResult(_triage[r['id']]!),
                                         ],
                                       ],
                                     ),
