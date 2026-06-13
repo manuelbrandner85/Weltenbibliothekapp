@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 // ✅ FÜR kDebugMode
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart'; // 🖥️ High-Refresh
+import 'core/device/wb_quality.dart'; // 🎚️ Adaptive Qualitaet (Phase 5)
+import 'widgets/cinematic/cinematic_settings.dart'; // 🎚️ Cinema-Settings-Store
 import 'package:app_links/app_links.dart'; // 🔗 Native Deep-Links
 import 'package:provider/provider.dart' as provider; // ✅ Provider aliased
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD für Admin-System
@@ -240,6 +243,20 @@ void main() async {
     ]);
 
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+    // 🖥️ HIGH-REFRESH (Phase 5): request the panel's highest refresh mode so
+    // 90/120 Hz animations run smoothly. Coupled to the adaptive quality
+    // system: skipped on low-tier devices or when the user disabled effects
+    // (CinematicQuality.off) to preserve battery. No-op / caught on devices
+    // without the display-mode API (older Android, iOS, emulators).
+    try {
+      await KbCinemaSettings.instance.load();
+      if (WbQuality.level != WbQualityLevel.minimal) {
+        await FlutterDisplayMode.setHighRefreshRate();
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('ℹ️ High-refresh not applied: $e');
+    }
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -700,7 +717,9 @@ Future<void> _triggerPushTestSuiteOnce() async {
         final body = response.body;
         // Light parse to log -- not strict.
         debugPrint('✅ Push-Test-Suite Response: $body');
-      } catch (e) { if (kDebugMode) debugPrint('main: silent catch -> $e'); }
+      } catch (e) {
+        if (kDebugMode) debugPrint('main: silent catch -> $e');
+      }
       // Flag setzen → passiert nie wieder
       await prefs.setBool('push_test_suite_v1_done', true);
     } else {
