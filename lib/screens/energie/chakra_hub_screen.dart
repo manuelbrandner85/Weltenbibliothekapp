@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../widgets/animations/wb_tap_scale.dart';
+import '../../widgets/animations/wb_animated_entrance.dart';
 import 'calculators/chakra_calculator_screen.dart';
 import 'chakra_scan_screen.dart';
 import 'chakra_history_screen.dart';
@@ -368,6 +369,7 @@ class _ChakraHubScreenState extends State<ChakraHubScreen>
         childAspectRatio: 2.4,
         children: [
           _QuickActionButton(
+            index: 0,
             emoji: '📋',
             label: 'Chakra-Scan',
             subtitle: 'Fragebogen',
@@ -375,6 +377,7 @@ class _ChakraHubScreenState extends State<ChakraHubScreen>
             onTap: () => _openScreen(const ChakraScanScreen()),
           ),
           _QuickActionButton(
+            index: 1,
             emoji: '🔢',
             label: 'Chakra-Analyse',
             subtitle: 'Numerologie',
@@ -382,6 +385,7 @@ class _ChakraHubScreenState extends State<ChakraHubScreen>
             onTap: () => _openScreen(const ChakraCalculatorScreen()),
           ),
           _QuickActionButton(
+            index: 2,
             emoji: '📈',
             label: 'Verlauf',
             subtitle: 'Bisherige Scans',
@@ -389,6 +393,7 @@ class _ChakraHubScreenState extends State<ChakraHubScreen>
             onTap: () => _openScreen(const ChakraHistoryScreen()),
           ),
           _QuickActionButton(
+            index: 3,
             emoji: '🌈',
             label: '7-Tage-Programm',
             subtitle: 'Tagesweise Pfad',
@@ -534,6 +539,7 @@ class _QuickActionButton extends StatelessWidget {
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
+  final int index;
 
   const _QuickActionButton({
     required this.emoji,
@@ -541,52 +547,56 @@ class _QuickActionButton extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.index = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    // WbTapScale: einheitliches Scale-on-Press + Haptik (reduce-motion-bewusst).
-    return WbTapScale(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 22)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+    // WbAnimatedEntrance: gestaffelter Eintritt; WbTapScale: Scale + Haptik.
+    return WbAnimatedEntrance(
+      index: index,
+      child: WbTapScale(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 10,
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 10,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
