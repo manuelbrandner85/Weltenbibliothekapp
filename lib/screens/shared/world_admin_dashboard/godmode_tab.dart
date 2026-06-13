@@ -52,8 +52,15 @@ class _GodModeTabState extends State<_GodModeTab>
   bool _loadingReqs = true;
   bool _submitting = false;
 
-  // Locally dismissed suggestions (not persisted -- reappear after fresh generate)
-  final Set<int> _dismissedSuggestionIndexes = {};
+  // Locally dismissed suggestions by title (robust gegen Re-Sort/Mehr-laden).
+  final Set<String> _dismissedTitles = {};
+  // F4: KI-Quelle des letzten Laufs (groq/openrouter/gemini/workers-ai/fallback).
+  String _lastSource = '';
+  // N4: aktiver Typ-Filter (slug) | 'saved' | null = alle.
+  String? _typeFilter;
+  // N3: lokal gemerkte Vorschlaege (per Titel, nicht persistiert).
+  final Set<String> _savedTitles = {};
+  bool _loadingMore = false;
 
   @override
   void initState() {
@@ -110,13 +117,17 @@ class _GodModeTabState extends State<_GodModeTab>
     setState(() {
       _suggesting = true;
       _suggestions = const [];
-      _dismissedSuggestionIndexes.clear();
+      _dismissedTitles.clear();
     });
     final res = await GodModeService.suggest(area: _suggestArea);
     if (!mounted) return;
+    // N2: Quick-Wins zuerst (hoher Nutzen, niedriger Aufwand).
+    final sorted = [...res.suggestions]
+      ..sort((a, b) => b.score.compareTo(a.score));
     setState(() {
-      _suggestions = res.suggestions;
+      _suggestions = sorted;
       _learnedFromLast = res.learnedTopics;
+      _lastSource = res.source;
       _suggesting = false;
     });
     if (res.suggestions.isEmpty) {
@@ -124,6 +135,25 @@ class _GodModeTabState extends State<_GodModeTab>
           color: Colors.orange);
     }
     if (res.learnedTopics.isNotEmpty) _loadTopics();
+  }
+
+  // N3: weitere Vorschlaege nachladen und (ohne Duplikate) anhaengen.
+  Future<void> _loadMore() async {
+    if (_loadingMore || _suggesting) return;
+    setState(() => _loadingMore = true);
+    final res = await GodModeService.suggest(area: _suggestArea);
+    if (!mounted) return;
+    final existing = _suggestions.map((s) => s.title).toSet();
+    final merged = [
+      ..._suggestions,
+      ...res.suggestions.where((s) => !existing.contains(s.title)),
+    ]..sort((a, b) => b.score.compareTo(a.score));
+    setState(() {
+      _suggestions = merged;
+      if (res.source.isNotEmpty) _lastSource = res.source;
+      if (res.learnedTopics.isNotEmpty) _learnedFromLast = res.learnedTopics;
+      _loadingMore = false;
+    });
   }
 
   // ───────────────────────────────────────────────────── chat
@@ -604,6 +634,12 @@ class _GodModeTabState extends State<_GodModeTab>
           const SizedBox(height: 14),
           _buildLearnedBanner(),
         ],
+        if (_suggestions.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _buildSourceBadge(),
+          const SizedBox(height: 10),
+          _buildTypeFilter(),
+        ],
         if (_suggestions.isEmpty && !_suggesting)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 28),
@@ -614,12 +650,97 @@ class _GodModeTabState extends State<_GodModeTab>
               ),
             ),
           ),
-        ...List.generate(_suggestions.length, (i) {
-          if (_dismissedSuggestionIndexes.contains(i))
-            return const SizedBox.shrink();
-          return _buildSuggestionCard(_suggestions[i], i);
-        }),
+        ..._visibleSuggestions().map(_buildSuggestionCard),
+        if (_suggestions.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _buildLoadMore(),
+        ],
       ],
+    );
+  }
+
+  // Sichtbare Vorschlaege nach Dismiss + Typ/Gemerkt-Filter (N4).
+  List<GodModeSuggestion> _visibleSuggestions() {
+    return _suggestions.where((s) {
+      if (_dismissedTitles.contains(s.title)) return false;
+      if (_typeFilter == 'saved') return _savedTitles.contains(s.title);
+      if (_typeFilter != null) return s.type == _typeFilter;
+      return true;
+    }).toList();
+  }
+
+  // F4: zeigt, ob echte KI geantwortet hat oder der Standard-Fallback griff.
+  Widget _buildSourceBadge() {
+    final ai = _lastSource.isNotEmpty && _lastSource != 'fallback';
+    final color = ai ? Colors.tealAccent : Colors.orangeAccent;
+    final label = ai
+        ? 'KI aktiv ($_lastSource)'
+        : 'Standard-Vorschlaege (KI nicht erreichbar)';
+    return Row(children: [
+      Icon(ai ? Icons.smart_toy_rounded : Icons.warning_amber_rounded,
+          size: 14, color: color),
+      const SizedBox(width: 6),
+      Expanded(
+        child: Text(label,
+            style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.w500)),
+      ),
+    ]);
+  }
+
+  // N4: Filter nach Massnahmen-Typ + "Gemerkt".
+  Widget _buildTypeFilter() {
+    final chips = <(String?, String)>[
+      (null, 'Alle'),
+      ...GodModeType.all.map((t) => (t.slug, '${t.emoji} ${t.label}')),
+      ('saved', '★ Gemerkt'),
+    ];
+    return SizedBox(
+      height: 30,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: chips.map((c) {
+          final sel = c.$1 == _typeFilter;
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: GestureDetector(
+              onTap: () => setState(() => _typeFilter = c.$1),
+              child: Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: sel
+                      ? _ab.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: sel ? _ab : Colors.white12),
+                ),
+                child: Text(c.$2,
+                    style: TextStyle(
+                        color: sel ? _ab : Colors.white54, fontSize: 11)),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // N3: weitere Vorschlaege nachladen.
+  Widget _buildLoadMore() {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: (_loadingMore || _suggesting) ? null : _loadMore,
+        icon: _loadingMore
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : Icon(Icons.add_rounded, size: 16, color: _ab),
+        label: Text(_loadingMore ? 'Laedt ...' : 'Mehr laden',
+            style: TextStyle(color: _ab, fontSize: 12)),
+      ),
     );
   }
 
@@ -677,7 +798,10 @@ class _GodModeTabState extends State<_GodModeTab>
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onTap: () => setState(() => _suggestArea = e.$1),
+              onTap: () {
+                setState(() => _suggestArea = e.$1);
+                _generateSuggestions(); // F3: Filterwechsel -> sofort neu
+              },
               child: Container(
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -699,8 +823,9 @@ class _GodModeTabState extends State<_GodModeTab>
     );
   }
 
-  Widget _buildSuggestionCard(GodModeSuggestion s, int index) {
+  Widget _buildSuggestionCard(GodModeSuggestion s) {
     final t = s.typeInfo;
+    final saved = _savedTitles.contains(s.title);
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(14),
@@ -715,11 +840,29 @@ class _GodModeTabState extends State<_GodModeTab>
           const SizedBox(width: 6),
           _miniBadge(s.categoryLabel, Colors.white24),
           const Spacer(),
-          const Text('🤖 KI',
-              style: TextStyle(
-                  color: Colors.white30,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold)),
+          GestureDetector(
+            onTap: () => setState(() {
+              if (saved) {
+                _savedTitles.remove(s.title);
+              } else {
+                _savedTitles.add(s.title);
+              }
+            }),
+            child: Icon(
+              saved ? Icons.star_rounded : Icons.star_outline_rounded,
+              size: 18,
+              color: saved ? Colors.amber : Colors.white30,
+            ),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        // N2: Nutzen/Aufwand-Bewertung.
+        Row(children: [
+          _miniBadge('Nutzen ${s.impact}/5',
+              Colors.greenAccent.withValues(alpha: 0.45)),
+          const SizedBox(width: 6),
+          _miniBadge('Aufwand ${s.effort}/5',
+              Colors.orangeAccent.withValues(alpha: 0.45)),
         ]),
         const SizedBox(height: 9),
         Text(s.title,
@@ -767,8 +910,7 @@ class _GodModeTabState extends State<_GodModeTab>
         Row(children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () =>
-                  setState(() => _dismissedSuggestionIndexes.add(index)),
+              onPressed: () => setState(() => _dismissedTitles.add(s.title)),
               icon: const Icon(Icons.close_rounded, size: 15),
               label: const Text('Ablehnen', style: TextStyle(fontSize: 12)),
               style: OutlinedButton.styleFrom(

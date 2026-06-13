@@ -4735,19 +4735,59 @@ export default {
           let body = {};
           try { body = await request.clone().json(); } catch (_) {}
           const area = String(body.area || '').trim().slice(0, 80);
+          // F2: Variations-Seed -- erzwingt unterschiedliche Outputs bei
+          // wiederholten Generierungen (sonst liefert das LLM oft dasselbe).
+          const nonce = Math.random().toString(36).slice(2, 10);
 
-          // Bereits gebaute/laufende Auftraege laden -- Duplikat-Schutz
+          // N1 Selbst-Analyse: echten App-Zustand laden, damit Vorschlaege
+          // geerdet sind (Duplikat-Schutz + Kategorie-Verteilung + Fehler).
           let builtTitles = [];
+          let recentSummary = '';
           try {
             const br = await fetch(
-              `${SUPABASE_URL}/rest/v1/godmode_requests?select=title&order=created_at.desc&limit=50`,
+              `${SUPABASE_URL}/rest/v1/godmode_requests?select=title,status,category&order=created_at.desc&limit=50`,
               { headers: svcHeaders }
             );
             if (br.ok) {
               const rows = await br.json().catch(() => []);
-              builtTitles = Array.isArray(rows)
-                ? rows.map(r => String(r.title || '').trim()).filter(Boolean)
-                : [];
+              if (Array.isArray(rows)) {
+                builtTitles = rows.map(r => String(r.title || '').trim()).filter(Boolean);
+                const byCat = {};
+                let failed = 0, open = 0, done = 0;
+                for (const r of rows) {
+                  const c = String(r.category || 'other');
+                  byCat[c] = (byCat[c] || 0) + 1;
+                  const st = String(r.status || '');
+                  if (st === 'failed' || st === 'error') failed++;
+                  else if (st === 'done' || st === 'merged' || st === 'completed') done++;
+                  else open++;
+                }
+                const catLine = Object.entries(byCat).map(([k, v]) => `${k}:${v}`).join(', ');
+                if (rows.length) {
+                  recentSummary =
+                    `SELBST-ANALYSE (letzte ${rows.length} Auftraege):\n` +
+                    `- Kategorie-Verteilung: ${catLine || 'keine'}\n` +
+                    `- offen: ${open}, erledigt: ${done}, fehlgeschlagen: ${failed}\n` +
+                    (failed > 0 ? '- Es gibt fehlgeschlagene Auftraege -> Bugfixes mit beruecksichtigen.\n' : '') +
+                    '- Schlage bevorzugt in unterrepraesentierten Kategorien vor (Balance).\n\n';
+                }
+              }
+            }
+          } catch (_) {}
+
+          // Wiederkehrende, selbstgelernte Themen als zusaetzlicher Kontext.
+          let topicLine = '';
+          try {
+            const tr = await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_topics?status=eq.active&select=label,hit_count&order=hit_count.desc&limit=12`,
+              { headers: svcHeaders }
+            );
+            if (tr.ok) {
+              const trows = await tr.json().catch(() => []);
+              if (Array.isArray(trows) && trows.length) {
+                topicLine = 'WIEDERKEHRENDE THEMEN (aus Verlauf): ' +
+                  trows.map(t => `${t.label}(${t.hit_count || 1})`).join(', ') + '\n\n';
+              }
             }
           } catch (_) {}
 
@@ -4778,7 +4818,11 @@ export default {
             '- LiveKit 3D-Avatar fuer Mentor-Sessions fehlt\n' +
             '- build_context_synchronously Warnungen im gesamten Code\n' +
             '- Globale Volltext-Suche ueber alle Welten fehlt\n\n' +
-            (area ? `Fokus-Bereich: "${area}".\n\n` : 'Alle Bereiche (gemischt).\n\n') +
+            recentSummary +
+            topicLine +
+            (area
+              ? `STRIKTER FOKUS: ALLE 5 Vorschlaege MUESSEN sich konkret auf "${area}" beziehen -- nichts ausserhalb dieses Bereichs.\n\n`
+              : 'Bereich: gemischt -- verschiedene Welten/Aspekte abdecken.\n\n') +
             (builtTitles.length
               ? 'BEREITS GEBAUT ODER IN ARBEIT -- NIEMALS vorschlagen (weder Duplikat noch Variante):\n' +
                 builtTitles.map(t => `- ${t}`).join('\n') + '\n\n'
@@ -4796,10 +4840,11 @@ export default {
             'Typ-Bedeutung: bug=Fehler beheben, neuerung=komplett neues Feature, ' +
             'erweiterung=bestehendes Feature ausbauen, verbesserung=bestehendes optimieren, ' +
             'performance=schneller/leichter/weniger Daten, ux=Bedienung/Design verbessern.\n' +
+            'Bewerte JEDEN Vorschlag mit "impact" (1-5 = Nutzen) und "effort" (1-5 = Aufwand).\n' +
             'Antworte AUSSCHLIESSLICH kompaktes JSON ohne Markdown:\n' +
-            '{"suggestions":[{"type":"...","category":"...","title":"...","description":"...","reason":"..."}],' +
+            '{"suggestions":[{"type":"...","category":"...","title":"...","description":"...","reason":"...","impact":4,"effort":2}],' +
             '"learnedTopics":["Bereich1"]}\n' +
-            'Genau 5 suggestions. Nur erlaubte type/category-Werte.';
+            'Genau 5 suggestions. Nur erlaubte type/category-Werte. Variations-Seed: ' + nonce + '.';
 
           const parseAi = (raw) => {
             if (!raw) return null;
@@ -4808,6 +4853,10 @@ export default {
               if (!m) return null;
               const obj = JSON.parse(m[0]);
               const arr = Array.isArray(obj.suggestions) ? obj.suggestions : [];
+              const clamp15 = (v) => {
+                const n = parseInt(v, 10);
+                return Number.isFinite(n) ? Math.max(1, Math.min(5, n)) : 3;
+              };
               const out = arr.map(s => ({
                 type: VALID_TYPES.has(String(s.type || '').trim())
                   ? String(s.type).trim() : 'verbesserung',
@@ -4816,6 +4865,8 @@ export default {
                 title: String(s.title || '').trim().slice(0, 120),
                 description: String(s.description || '').trim().slice(0, 600),
                 reason: String(s.reason || '').trim().slice(0, 300),
+                impact: clamp15(s.impact),
+                effort: clamp15(s.effort),
               })).filter(s => s.title);
               const learnedTopics = Array.isArray(obj.learnedTopics)
                 ? obj.learnedTopics.map(t => String(t).trim()).filter(Boolean).slice(0, 5)
@@ -4824,21 +4875,57 @@ export default {
             } catch (_) { return null; }
           };
 
+          const userMsg = 'Generiere genau 5 Vorschlaege als JSON. Konkret, ' +
+            'umsetzbar und diesmal bewusst anders als zuvor. Variations-Seed: ' + nonce + '.';
+
+          // F1: bereichs-spezifischer Fallback, falls KEIN Provider antwortet.
+          // Pool mit Kategorien -> bei gesetztem Filter werden passende Items
+          // vorgezogen, sodass der Filter das Ergebnis sichtbar veraendert.
+          const godmodeFallback = (a) => {
+            const pool = [
+              { type: 'verbesserung', category: 'ui_ux', title: 'Einheitliche Welt-Startseiten', description: 'Alle vier Welt-Homes auf dasselbe Live-Daten-Layout bringen: Fortschrittsbalken, naechstes Modul, zuletzt abgeschlossen. Datei: lib/screens/*_world_screen.dart. Gemeinsames Header-Widget. Nutzer sehen ueberall denselben Aufbau.', reason: 'Die Welten-Startseiten sehen unterschiedlich aus, was die Navigation verwirrt.', impact: 4, effort: 2 },
+              { type: 'neuerung', category: 'feature', title: 'Globale Volltextsuche', description: 'Welt-uebergreifende Suche ueber Module, Lektionen und Mediathek mit Sprung zum Treffer. Neuer Such-Index im Worker + Suchscreen. Nutzer finden Inhalte sofort.', reason: 'Inhalte sind nur durch manuelles Durchstoebern auffindbar.', impact: 5, effort: 3 },
+              { type: 'performance', category: 'performance', title: 'Module-Payload lazy laden', description: 'Markdown erst beim Oeffnen nachladen statt 264 KB beim Start. Endpoint /api/vorhang/modules splitten in Liste + Detail. Schnellerer Start, weniger Daten.', reason: 'Der Module-Endpoint liefert 264 KB auf einmal -> langsamer Start auf Mobile.', impact: 4, effort: 3 },
+              { type: 'bug', category: 'bugfix', title: 'use_build_context_synchronously aufraeumen', description: 'Alle async-gap BuildContext-Infos im lib/ beheben (mounted-Checks). Verhindert seltene Crashes nach await.', reason: 'Ungueltiger BuildContext nach async Gap kann crashen.', impact: 3, effort: 2 },
+              { type: 'neuerung', category: 'module', title: 'Tagesimpuls pro Welt', description: 'Jede Welt bekommt eine deterministische taegliche Mikro-Uebung analog zur Vorhang-DailyPracticeCard. Wiederverwendbares Widget + Tages-Seed. Taeglicher Engagement-Hook.', reason: 'Nur Vorhang hat einen Tagesimpuls; Energie/Materie/Ursprung fehlt er.', impact: 4, effort: 2 },
+              { type: 'ux', category: 'ui_ux', title: 'Konsistente Glass-Cards via Tokens', description: 'Alle Karten auf WBElevation + wb_cinematic_tokens umstellen (Radius, Blur, Schatten). Einheitlicher Premium-Look.', reason: 'Karten nutzen uneinheitliche Schatten/Radien.', impact: 3, effort: 2 },
+              { type: 'erweiterung', category: 'feature', title: 'Lesezeichen-Export & Teilen', description: 'bookmark_service um Export (Markdown/PDF) + Teilen erweitern. Button in der Lesezeichen-Sammlung. Nutzer sichern/teilen ihre Sammlung.', reason: 'Lesezeichen sind aktuell nur in-App nutzbar.', impact: 3, effort: 2 },
+              { type: 'performance', category: 'performance', title: 'Bild-Caching vereinheitlichen', description: 'Ueberall cached_network_image statt Image.network; einheitliche Cache-Policy. Weniger Re-Downloads.', reason: 'Bilder werden teils ohne Cache geladen.', impact: 3, effort: 2 },
+            ];
+            const labelToCat = {
+              'ui/ux & design': 'ui_ux', 'feature': 'feature', 'modul & inhalt': 'module',
+              'bugfix': 'bugfix', 'performance': 'performance', 'sonstiges': 'other',
+            };
+            const al = String(a || '').toLowerCase().trim();
+            let items = pool;
+            if (al) {
+              const cat = labelToCat[al];
+              const matched = cat
+                ? pool.filter(s => s.category === cat)
+                : pool.filter(s => (s.title + ' ' + s.description).toLowerCase().includes(al));
+              if (matched.length) items = matched.slice();
+            }
+            const seen = new Set(items.map(s => s.title));
+            for (const s of pool) {
+              if (items.length >= 5) break;
+              if (!seen.has(s.title)) { items.push(s); seen.add(s.title); }
+            }
+            return items.slice(0, 5);
+          };
+
           let result = null;
           let source = 'fallback';
 
-          if (env.GROQ_API_KEY) {
+          // 1) Groq (schnell + stark)
+          if (!result && env.GROQ_API_KEY) {
             try {
               const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   model: 'llama-3.3-70b-versatile',
-                  messages: [
-                    { role: 'system', content: sysPrompt },
-                    { role: 'user', content: 'Generiere 5 Vorschlaege als JSON.' },
-                  ],
-                  max_tokens: 1400, temperature: 0.75,
+                  messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userMsg }],
+                  max_tokens: 1500, temperature: 0.9,
                 }),
               });
               if (r.ok) {
@@ -4849,31 +4936,63 @@ export default {
             } catch (_) {}
           }
 
+          // 2) OpenRouter
+          if (!result && env.OPENROUTER_API_KEY) {
+            try {
+              const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'meta-llama/llama-3.3-70b-instruct',
+                  messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userMsg }],
+                  max_tokens: 1500, temperature: 0.9,
+                }),
+              });
+              if (r.ok) {
+                const d = await r.json().catch(() => null);
+                const parsed = parseAi(d?.choices?.[0]?.message?.content);
+                if (parsed) { result = parsed; source = 'openrouter'; }
+              }
+            } catch (_) {}
+          }
+
+          // 3) Gemini
+          if (!result && env.GEMINI_API_KEY) {
+            try {
+              const r = await fetch(
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + env.GEMINI_API_KEY,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{ parts: [{ text: sysPrompt + '\n\n' + userMsg }] }],
+                    generationConfig: { temperature: 0.9, maxOutputTokens: 1500 },
+                  }),
+                }
+              );
+              if (r.ok) {
+                const d = await r.json().catch(() => null);
+                const parsed = parseAi(d?.candidates?.[0]?.content?.parts?.[0]?.text);
+                if (parsed) { result = parsed; source = 'gemini'; }
+              }
+            } catch (_) {}
+          }
+
+          // 4) Workers-AI (on-platform)
           if (!result && env.AI) {
             try {
               const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-                messages: [
-                  { role: 'system', content: sysPrompt },
-                  { role: 'user', content: 'Generiere 5 Vorschlaege als JSON.' },
-                ],
-                max_tokens: 1400,
+                messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userMsg }],
+                max_tokens: 1500,
               });
               const parsed = parseAi(res?.response);
               if (parsed) { result = parsed; source = 'workers-ai'; }
             } catch (_) {}
           }
 
+          // 5) Bereichs-spezifischer Fallback (kein Provider verfuegbar).
           if (!result) {
-            result = {
-              suggestions: [
-                { type: 'verbesserung', category: 'ui_ux', title: 'Einheitliche Welt-Startseiten', description: 'Alle vier Welt-Homes auf dasselbe Live-Daten-Layout bringen: Fortschrittsbalken, naechstes Modul, zuletzt abgeschlossen.', reason: 'Derzeit sehen die Welten-Startseiten unterschiedlich aus, was die Navigation verwirrt und Inkonsistenz im Look-and-Feel erzeugt.' },
-                { type: 'neuerung', category: 'feature', title: 'Globale Volltextsuche', description: 'Welt-uebergreifende Suche ueber Module, Lektionen und Mediathek mit direktem Sprung zum Treffer.', reason: 'Nutzer finden Inhalte nur durch manuelles Durchstoebern -- eine Suche spart Zeit und erhoht den Content-Wiedereinsatz.' },
-                { type: 'performance', category: 'performance', title: 'Module-Payload lazy laden', description: 'Markdown-Inhalt erst beim Oeffnen nachladen statt 264 KB beim Start -- spart Mobile-Datenverbrauch.', reason: 'Der Vorhang-Module-Endpoint liefert aktuell 264 KB auf einmal, was auf Mobile-Verbindungen zu Ladezeiten und hohem Datenverbrauch fuehrt.' },
-                { type: 'bug', category: 'bugfix', title: 'build_context_synchronously aufraeumen', description: 'Alle use_build_context_synchronously Analyzer-Infos im lib/-Verzeichnis beheben.', reason: 'Diese Warnungen koennen zu Crashes fuehren, wenn async Gaps den Widget-Baum ungueltigen BuildContext hinterlassen.' },
-                { type: 'neuerung', category: 'module', title: 'Tagesimpuls pro Welt', description: 'Jede Welt bekommt eine deterministische taegliche Mikro-Uebung analog zur bestehenden Vorhang-DailyPracticeCard.', reason: 'Nur die Vorhang-Welt hat einen Tagesimpuls. Die Energie- und Materie-Welten fehlen dieser Engagement-Hook voellig.' },
-              ],
-              learnedTopics: ['KI-gestuetzte Inhaltsanalyse', 'Community & Social Features', 'Wellness-Tracking'],
-            };
+            result = { suggestions: godmodeFallback(area), learnedTopics: [] };
             source = 'fallback';
           }
 

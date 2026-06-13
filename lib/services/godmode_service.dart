@@ -61,12 +61,18 @@ class GodModeSuggestion {
   final String description;
   final String reason;
 
+  /// Nutzen (1..5) und Aufwand (1..5) -- fuer Impact-Sortierung (N2).
+  final int impact;
+  final int effort;
+
   const GodModeSuggestion({
     required this.type,
     required this.category,
     required this.title,
     required this.description,
     required this.reason,
+    this.impact = 3,
+    this.effort = 3,
   });
 
   factory GodModeSuggestion.fromJson(Map<String, dynamic> j) =>
@@ -76,7 +82,18 @@ class GodModeSuggestion {
         title: (j['title'] as String?) ?? '',
         description: (j['description'] as String?) ?? '',
         reason: (j['reason'] as String?) ?? '',
+        impact: _clamp15(j['impact']),
+        effort: _clamp15(j['effort']),
       );
+
+  static int _clamp15(dynamic v) {
+    final n = v is int ? v : int.tryParse('${v ?? ''}');
+    if (n == null) return 3;
+    return n < 1 ? 1 : (n > 5 ? 5 : n);
+  }
+
+  /// Quick-Win-Score: hoher Nutzen, niedriger Aufwand zuerst.
+  int get score => impact * 2 - effort;
 
   String get categoryLabel => GodModeCategory.labelFor(category);
   GodModeType get typeInfo => GodModeType.forSlug(type);
@@ -86,7 +103,18 @@ class GodModeSuggestion {
 class GodModeSuggestResult {
   final List<GodModeSuggestion> suggestions;
   final List<String> learnedTopics;
-  const GodModeSuggestResult(this.suggestions, this.learnedTopics);
+
+  /// KI-Quelle: groq | openrouter | gemini | workers-ai | fallback.
+  final String source;
+
+  const GodModeSuggestResult(
+    this.suggestions,
+    this.learnedTopics, {
+    this.source = '',
+  });
+
+  /// true, wenn echte KI geantwortet hat (kein Standard-Fallback).
+  bool get isAi => source.isNotEmpty && source != 'fallback';
 
   static const GodModeSuggestResult empty =
       GodModeSuggestResult(<GodModeSuggestion>[], <String>[]);
@@ -256,7 +284,8 @@ class GodModeService {
       final learned = (topics is List)
           ? topics.map((e) => e.toString()).where((s) => s.isNotEmpty).toList()
           : <String>[];
-      return GodModeSuggestResult(suggestions, learned);
+      final source = (data['source'] as String?) ?? '';
+      return GodModeSuggestResult(suggestions, learned, source: source);
     } on AdminApiException catch (e) {
       if (kDebugMode)
         debugPrint('godmode.suggest: ${e.statusCode} ${e.bodySnippet}');
