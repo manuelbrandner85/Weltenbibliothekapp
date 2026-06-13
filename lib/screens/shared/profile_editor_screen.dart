@@ -1156,7 +1156,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         final shouldPop = await _confirmDiscardChanges();
-        if (shouldPop && mounted) {
+        if (shouldPop && context.mounted) {
           Navigator.of(context).pop();
         }
       },

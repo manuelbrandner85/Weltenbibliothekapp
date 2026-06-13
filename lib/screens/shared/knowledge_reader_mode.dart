@@ -255,6 +255,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                   );
                   if (!ctx.mounted) return;
                   Navigator.pop(ctx);
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(ok != null
                         ? '🖍️ Annotation gespeichert'

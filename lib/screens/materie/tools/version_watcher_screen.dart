@@ -82,7 +82,10 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
       try {
         final m = jsonDecode(raw) as Map<String, dynamic>;
         _watchlist = m.map((k, v) => MapEntry(k, v.toString()));
-      } catch (e) { if (kDebugMode) debugPrint('version_watcher_screen: silent catch -> $e'); }
+      } catch (e) {
+        if (kDebugMode)
+          debugPrint('version_watcher_screen: silent catch -> $e');
+      }
     }
     if (mounted) setState(() {});
   }
@@ -783,6 +786,7 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
                             onPressed: () async {
                               setState(() => _watchlist.remove(e.key));
                               await _persistWatchlist();
+                              if (!ctx.mounted) return;
                               Navigator.pop(ctx);
                               _showWatchlist();
                             },

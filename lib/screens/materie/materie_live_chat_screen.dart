@@ -640,7 +640,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
           'avatar_emoji': profile.avatarEmoji,
           'avatar_url': profile.avatarUrl,
         });
-      } catch (e) { if (kDebugMode) debugPrint('materie_live_chat_screen: silent catch -> $e'); }
+      } catch (e) {
+        if (kDebugMode)
+          debugPrint('materie_live_chat_screen: silent catch -> $e');
+      }
       _notificationService.setCurrentUsername(_username);
       if (kDebugMode) {
         debugPrint(
@@ -3156,6 +3159,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
                 title: Text('Nachricht anpinnen $adminBadge',
                     style: const TextStyle(color: Color(0xFF2979FF))),
                 onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   Navigator.pop(context);
                   final messageId = msg['id']?.toString() ?? '';
                   if (messageId.isEmpty) return;
@@ -3168,7 +3172,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
                         (msg['message'] ?? msg['content'] ?? '').toString(),
                   );
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  messenger.showSnackBar(SnackBar(
                     content: Text(ok ? '📌 Angepinnt' : '❌ Pin fehlgeschlagen'),
                     backgroundColor:
                         ok ? Colors.blue.shade700 : Colors.red.shade700,
@@ -3467,7 +3471,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen>
               ),
             );
           }
-        } catch (e) { if (kDebugMode) debugPrint('materie_live_chat_screen: silent catch -> $e'); }
+        } catch (e) {
+          if (kDebugMode)
+            debugPrint('materie_live_chat_screen: silent catch -> $e');
+        }
         return;
       }
 

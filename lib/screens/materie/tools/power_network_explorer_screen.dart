@@ -722,6 +722,7 @@ class _PowerNetworkExplorerScreenState extends State<PowerNetworkExplorerScreen>
                     onPressed: () async {
                       setState(() => _watchlist.remove(key));
                       await _persistWatchlist();
+                      if (!ctx.mounted) return;
                       Navigator.pop(ctx);
                       _showWatchlist();
                     },

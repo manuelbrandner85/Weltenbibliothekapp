@@ -916,6 +916,7 @@ class _StudyAnalystScreenState extends State<StudyAnalystScreen>
                       onPressed: () async {
                         setState(() => _bibliography.remove(k));
                         await _persistBib();
+                        if (!ctx.mounted) return;
                         Navigator.pop(ctx);
                         _showBibliography();
                       },
