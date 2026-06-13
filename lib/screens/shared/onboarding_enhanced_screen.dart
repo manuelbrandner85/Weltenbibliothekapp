@@ -306,8 +306,7 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
         // Translucent so the shared cosmic mood still shows through while each
         // page keeps its world color identity.
         gradient: LinearGradient(
-          colors:
-              page.gradient.map((c) => c.withValues(alpha: 0.82)).toList(),
+          colors: page.gradient.map((c) => c.withValues(alpha: 0.82)).toList(),
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

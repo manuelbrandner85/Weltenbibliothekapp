@@ -59,7 +59,9 @@ class _UrsprungWorldWrapperState extends State<UrsprungWorldWrapper> {
   Future<void> _trackWorldVisit() async {
     try {
       await AchievementService().incrementProgress('world_traveler');
-    } catch (e) { if (kDebugMode) debugPrint('ursprung_world_wrapper: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('ursprung_world_wrapper: silent catch -> $e');
+    }
   }
 
   @override
