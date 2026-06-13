@@ -819,9 +819,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                         // load error / sustained jank still fall back to the
                         // still inside WbAdaptiveBackdrop.
                         forceVideo: true,
-                        // Scrim so wordmark + world cards stay legible over the
-                        // bright loop.
-                        overlayColor: Colors.black.withValues(alpha: 0.28),
+                        // Light scrim so text stays legible while the loop
+                        // remains clearly visible.
+                        overlayColor: Colors.black.withValues(alpha: 0.10),
                       ),
                     ),
                   ),
@@ -1014,6 +1014,11 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                                       ],
                                     ),
                                   ),
+
+                                  // ── Schnellzugriff (kompakt, oben statt unten
+                                  // -- haelt den unteren Bereich frei fuer den
+                                  // Ambient-Loop). ──
+                                  _buildTopQuickAccess(),
 
                                   const Spacer(),
 
@@ -1274,11 +1279,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                                     ), // ConstrainedBox close
                                   ), // Center close
 
-                                  const SizedBox(height: 16),
-
-                                  // ── Schnellzugriff (Quick-Access Bar) ──
-                                  _buildQuickAccessBar(),
-
                                   const SizedBox(height: 24),
                                 ],
                               ),
@@ -1320,7 +1320,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
   }
 
   // ── Schnellzugriff-Bar: 5 Icon-Buttons fuer haeufig genutzte Features ──
-  Widget _buildQuickAccessBar() {
+  // Compact quick-access row, placed near the top of the home area (icons only)
+  // so the lower part of the screen stays free for the ambient loop.
+  Widget _buildTopQuickAccess() {
     final items = [
       _QuickAccessItem(
         icon: Icons.search_rounded,
@@ -1356,70 +1358,35 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 10),
-            child: Text(
-              'SCHNELLZUGRIFF',
-              style: TextStyle(
-                fontSize: 10,
-                letterSpacing: 3.0,
-                color: Colors.white.withValues(alpha: 0.4),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children:
-                items.map((item) => _buildQuickAccessButton(item)).toList(),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children:
+            items.map((item) => _buildTopQuickAccessButton(item)).toList(),
       ),
     );
   }
 
-  Widget _buildQuickAccessButton(_QuickAccessItem item) {
+  Widget _buildTopQuickAccessButton(_QuickAccessItem item) {
     return GestureDetector(
       onTap: () {
         HapticService.selectionClick();
         item.onTap();
       },
-      child: SizedBox(
-        width: 58,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: item.color.withValues(alpha: 0.10),
-                border: Border.all(
-                  color: item.color.withValues(alpha: 0.25),
-                  width: 1,
-                ),
-              ),
-              child: Icon(item.icon, color: item.color, size: 22),
+      child: Tooltip(
+        message: item.label,
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: item.color.withValues(alpha: 0.12),
+            border: Border.all(
+              color: item.color.withValues(alpha: 0.28),
+              width: 1,
             ),
-            const SizedBox(height: 5),
-            Text(
-              item.label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 9,
-                color: Colors.white.withValues(alpha: 0.55),
-                fontWeight: FontWeight.w400,
-                height: 1.2,
-              ),
-            ),
-          ],
+          ),
+          child: Icon(item.icon, color: item.color, size: 20),
         ),
       ),
     );
@@ -1925,8 +1892,11 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      deepColor,
-                      Color.lerp(deepColor, primaryColor, 0.14)!,
+                      // Translucent glass so the ambient loop shows through the
+                      // BackdropFilter blur above.
+                      deepColor.withValues(alpha: 0.55),
+                      Color.lerp(deepColor, primaryColor, 0.14)!
+                          .withValues(alpha: 0.55),
                     ],
                   ),
                   border: Border.all(
