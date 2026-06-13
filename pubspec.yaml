@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 5.62.0+20260707
+version: 5.62.0+20260708
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -72,6 +72,7 @@ dependencies:
   
   # Video Player (für Intro-Video)
   video_player: ^2.8.2  # Web-kompatibel
+  flutter_displaymode: ^0.6.0  # High-Refresh (90/120 Hz) opt-in on Android
   youtube_player_flutter: ^9.1.1  # Inline YouTube player (no download/rehosting)
   
   # Internationalization – version managed by flutter_localizations SDK (do not pin manually)
@@ -168,6 +169,7 @@ flutter:
     - assets/videos/weltenbibliothek_intro.mp4
     - assets/videos/transition_materie_to_energie.mp4
     - assets/videos/transition_energie_to_materie.mp4
+    - assets/videos/portal_ambient_loop.mp4  # Phase-1 cinematic ambient loop
 
   # Fragment-Shader fuer Kaninchenbau Cinema-Postprocessing
   shaders:
