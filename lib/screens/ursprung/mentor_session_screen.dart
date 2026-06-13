@@ -1,16 +1,17 @@
-/// 🌀 MENTOR SESSION SCREEN — 3D-Avatar-Modus
+/// 🌐 MENTOR SESSION SCREEN — 3D-Avatar + LiveKit-Modus
 ///
 /// Immersive Vollbild-Erfahrung fuer Mentor-Sessions.
-/// Zeigt einen animierten 3D-Avatar (CustomPainter) mit:
-///   - idle: sanftes Pulsieren
-///   - listening: expandierende Ringe (Mikrofon aktiv)
-///   - thinking: rotierende Partikel (KI rechnet)
-///   - speaking: Schallwellen-Bands (TTS liest vor)
+/// Zeigt einen perspektiv-projizierten 3D-Avatar ([MentorAvatar3d]) mit:
+///   - idle: sanftes Pulsieren + langsame Gitter-Rotation
+///   - listening: expandierende Ringe, schnellere Rotation
+///   - thinking: orbitierende 3D-Partikel
+///   - speaking: Schallwellen-Bands im Avatar-Orb
 ///
 /// Technischer Stack:
-///   - flutter_tts  fuer Text-to-Speech (Mentor-Antwort vorlesen)
-///   - speech_to_text fuer Voice-Input
-///   - MentorService  fuer KI-Antworten (identisch zu MentorChatScreen)
+///   - flutter_tts  fuer Text-to-Speech
+///   - speech_to_text fuer Voice-Input (Classic-Modus)
+///   - MentorLiveKitService fuer Audio-Verbindung (LiveKit-Modus)
+///   - MentorService  fuer KI-Antworten + Session-Tracking
 ///   - MentorSessionModel  fuer Avatar-Zustand
 library;
 
@@ -22,7 +23,9 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../models/mentor_session_model.dart';
+import '../../services/mentor_livekit_service.dart';
 import '../../services/mentor_service.dart';
+import '../../widgets/mentor_avatar_3d.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PUBLIC SCREEN WIDGET
@@ -51,6 +54,11 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
   final _mentorService = MentorService();
   final FlutterTts _tts = FlutterTts();
   final stt.SpeechToText _speech = stt.SpeechToText();
+  late final MentorLiveKitService _liveKitService;
+
+  // ── LiveKit / session state ──
+  bool _liveKitModeEnabled = false;
+  String? _sessionId;
 
   // ── UI state ──
   final _textCtrl = TextEditingController();
@@ -80,6 +88,14 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
         _ => const Color(0xFF040D1F),
       };
 
+  // Maps internal avatar state to the 3D widget enum.
+  MentorAvatarState3d get _avatarState3d => switch (_session.avatarState) {
+        MentorAvatarState.idle => MentorAvatarState3d.idle,
+        MentorAvatarState.listening => MentorAvatarState3d.listening,
+        MentorAvatarState.thinking => MentorAvatarState3d.thinking,
+        MentorAvatarState.speaking => MentorAvatarState3d.speaking,
+      };
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +103,8 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
       world: widget.world,
       personality: widget.personality,
     );
+    _liveKitService = MentorLiveKitService();
+    _liveKitService.addListener(_onLiveKitStateChanged);
 
     _messages = _mentorService.loadHistory(widget.world);
 
@@ -292,6 +310,59 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
     });
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // LIVEKIT MODE
+  // ═══════════════════════════════════════════════════════════
+
+  void _onLiveKitStateChanged() {
+    if (!mounted) return;
+    setState(() {});
+    if (_liveKitService.state == MentorLiveKitState.error) {
+      final msg = _liveKitService.errorMessage ?? 'Verbindungsfehler';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('LiveKit: $msg')));
+      setState(() => _liveKitModeEnabled = false);
+    }
+  }
+
+  Future<void> _toggleLiveKitMode() async {
+    if (_liveKitModeEnabled) {
+      await _liveKitService.disconnect();
+      if (_sessionId != null) {
+        await _mentorService.endLiveSession(
+          _sessionId!,
+          messageCount: _messages.length,
+        );
+        _sessionId = null;
+      }
+      setState(() => _liveKitModeEnabled = false);
+      return;
+    }
+    try {
+      await _liveKitService.connect(widget.world);
+      _sessionId = await _mentorService.startLiveSession(
+        world: widget.world,
+        personality: widget.personality,
+        livekitRoom: _liveKitService.currentRoomName,
+      );
+      setState(() => _liveKitModeEnabled = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Live-Verbindung aktiv'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
+
   Future<void> _toggleTts() async {
     if (_session.isTtsEnabled &&
         _session.avatarState == MentorAvatarState.speaking) {
@@ -305,6 +376,14 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
   void dispose() {
     _tts.stop();
     _speech.stop();
+    _liveKitService.removeListener(_onLiveKitStateChanged);
+    _liveKitService.disconnect().ignore();
+    _liveKitService.dispose();
+    if (_sessionId != null) {
+      _mentorService
+          .endLiveSession(_sessionId!, messageCount: _messages.length)
+          .ignore();
+    }
     _pulseCtrl.dispose();
     _ringsCtrl.dispose();
     _thinkCtrl.dispose();
@@ -339,6 +418,14 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
   // ── Top Bar ──────────────────────────────────────────────────────────────
 
   Widget _buildTopBar() {
+    final lkColor =
+        _liveKitModeEnabled ? _accent : Colors.white.withValues(alpha: 0.35);
+    final lkIcon = switch (_liveKitService.state) {
+      MentorLiveKitState.connecting => Icons.sync,
+      MentorLiveKitState.connected => Icons.sensors,
+      MentorLiveKitState.error => Icons.sensors_off,
+      MentorLiveKitState.disconnected => Icons.sensors_off,
+    };
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
@@ -363,6 +450,16 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
               textAlign: TextAlign.center,
             ),
           ),
+          // LiveKit mode toggle
+          IconButton(
+            icon: Icon(lkIcon, color: lkColor, size: 22),
+            onPressed: _liveKitService.state == MentorLiveKitState.connecting
+                ? null
+                : _toggleLiveKitMode,
+            tooltip: _liveKitModeEnabled
+                ? 'Live-Verbindung trennen'
+                : 'Live-Verbindung starten',
+          ),
           // TTS toggle
           IconButton(
             icon: Icon(
@@ -386,7 +483,7 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Animated avatar orb
+        // Animated 3D avatar
         AnimatedBuilder(
           animation: Listenable.merge([
             _pulseCtrl,
@@ -394,19 +491,14 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
             _thinkCtrl,
             _wavesCtrl,
           ]),
-          builder: (ctx, _) => SizedBox(
-            width: 240,
-            height: 240,
-            child: CustomPaint(
-              painter: _MentorAvatarPainter(
-                accentColor: _accent,
-                state: _session.avatarState,
-                pulseValue: _pulseAnim.value,
-                ringsProgress: _ringsCtrl.value,
-                thinkProgress: _thinkCtrl.value,
-                wavesProgress: _wavesCtrl.value,
-              ),
-            ),
+          builder: (ctx, _) => MentorAvatar3d(
+            personality: widget.personality,
+            accentColor: _accent,
+            state: _avatarState3d,
+            pulseValue: _pulseAnim.value,
+            ringsProgress: _ringsCtrl.value,
+            thinkProgress: _thinkCtrl.value,
+            wavesProgress: _wavesCtrl.value,
           ),
         ),
         const SizedBox(height: 16),
@@ -424,6 +516,36 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
             ),
           ),
         ),
+        // LiveKit connection indicator
+        if (_liveKitModeEnabled) ...[
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _liveKitService.state == MentorLiveKitState.connected
+                      ? Colors.greenAccent
+                      : Colors.orangeAccent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                _liveKitService.state == MentorLiveKitState.connected
+                    ? 'Live-Verbindung aktiv'
+                    : 'Verbinde ...',
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 8),
         // Last response preview (max 2 lines)
         if (_lastResponse.isNotEmpty)
@@ -661,185 +783,4 @@ class _CircleButton extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// 3D AVATAR PAINTER
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _MentorAvatarPainter extends CustomPainter {
-  final Color accentColor;
-  final MentorAvatarState state;
-  final double pulseValue; // 0.93..1.07
-  final double ringsProgress; // 0..1 (repeat)
-  final double thinkProgress; // 0..1 (full rotation)
-  final double wavesProgress; // 0..1 (repeat)
-
-  const _MentorAvatarPainter({
-    required this.accentColor,
-    required this.state,
-    required this.pulseValue,
-    required this.ringsProgress,
-    required this.thinkProgress,
-    required this.wavesProgress,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final baseR = size.width * 0.36 * pulseValue;
-
-    // Outer glow halo
-    final haloPaint = Paint()
-      ..color = accentColor.withValues(alpha: 0.08)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 28);
-    canvas.drawCircle(Offset(cx, cy), baseR * 1.55, haloPaint);
-
-    // State-specific underlays
-    switch (state) {
-      case MentorAvatarState.listening:
-        _drawListeningRings(canvas, cx, cy, baseR);
-      case MentorAvatarState.thinking:
-        _drawThinkingParticles(canvas, cx, cy, baseR);
-      case MentorAvatarState.speaking:
-        // waves drawn on top of sphere below
-        break;
-      case MentorAvatarState.idle:
-        break;
-    }
-
-    // Shadow beneath sphere
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.45)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx, cy + baseR * 0.9),
-        width: baseR * 1.6,
-        height: baseR * 0.28,
-      ),
-      shadowPaint,
-    );
-
-    // Main sphere — radial gradient for pseudo-3D effect
-    final spherePaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.35, -0.4),
-        radius: 0.85,
-        colors: [
-          Color.alphaBlend(Colors.white.withValues(alpha: 0.55), accentColor),
-          accentColor,
-          Color.alphaBlend(Colors.black.withValues(alpha: 0.6), accentColor),
-        ],
-        stops: const [0.0, 0.55, 1.0],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: baseR));
-    canvas.drawCircle(Offset(cx, cy), baseR, spherePaint);
-
-    // Specular highlight
-    final highlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.28)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawCircle(
-      Offset(cx - baseR * 0.28, cy - baseR * 0.28),
-      baseR * 0.22,
-      highlightPaint,
-    );
-
-    // Speaking wave overlay
-    if (state == MentorAvatarState.speaking) {
-      _drawSpeakingWaves(canvas, cx, cy, baseR);
-    }
-
-    // Rim light (thin bright ring)
-    final rimPaint = Paint()
-      ..color = accentColor.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-    canvas.drawCircle(Offset(cx, cy), baseR, rimPaint);
-  }
-
-  // ── Listening: expanding concentric rings ──
-
-  void _drawListeningRings(Canvas canvas, double cx, double cy, double baseR) {
-    for (int i = 0; i < 3; i++) {
-      final phase = (ringsProgress + i / 3.0) % 1.0;
-      final r = baseR * (1.1 + phase * 0.9);
-      final alpha = (1.0 - phase) * 0.35;
-      canvas.drawCircle(
-        Offset(cx, cy),
-        r,
-        Paint()
-          ..color = accentColor.withValues(alpha: alpha)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0,
-      );
-    }
-  }
-
-  // ── Thinking: rotating particle dots ──
-
-  void _drawThinkingParticles(
-    Canvas canvas,
-    double cx,
-    double cy,
-    double baseR,
-  ) {
-    const count = 8;
-    final orbitR = baseR * 1.28;
-    for (int i = 0; i < count; i++) {
-      final angle = thinkProgress * math.pi * 2 + (i / count) * math.pi * 2;
-      final px = cx + orbitR * math.cos(angle);
-      final py = cy + orbitR * math.sin(angle);
-      final phase = (i / count + thinkProgress) % 1.0;
-      final dotR = 3.5 + 2.5 * math.sin(phase * math.pi);
-      canvas.drawCircle(
-        Offset(px, py),
-        dotR,
-        Paint()
-          ..color = accentColor.withValues(alpha: 0.55 + 0.3 * (1 - phase)),
-      );
-    }
-  }
-
-  // ── Speaking: horizontal sine-wave bands ──
-
-  void _drawSpeakingWaves(Canvas canvas, double cx, double cy, double baseR) {
-    final clipPath = Path()
-      ..addOval(Rect.fromCircle(center: Offset(cx, cy), radius: baseR - 1));
-    canvas.save();
-    canvas.clipPath(clipPath);
-
-    const bands = 5;
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.18)
-      ..strokeWidth = 2.2
-      ..style = PaintingStyle.stroke;
-
-    for (int b = 0; b < bands; b++) {
-      final yOffset = cy - baseR * 0.5 + b * (baseR * 1.0 / (bands - 1));
-      final path = Path();
-      final phaseShift = wavesProgress * math.pi * 2 + b * math.pi / bands;
-      for (double x = cx - baseR; x <= cx + baseR; x += 2) {
-        final t = (x - (cx - baseR)) / (2 * baseR);
-        final amplitude = baseR * 0.06 * math.sin(t * math.pi);
-        final y = yOffset + amplitude * math.sin(t * math.pi * 5 + phaseShift);
-        if (x == cx - baseR) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-      canvas.drawPath(path, paint);
-    }
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_MentorAvatarPainter old) =>
-      old.state != state ||
-      old.pulseValue != pulseValue ||
-      old.ringsProgress != ringsProgress ||
-      old.thinkProgress != thinkProgress ||
-      old.wavesProgress != wavesProgress ||
-      old.accentColor != accentColor;
-}
+// (Legacy _MentorAvatarPainter removed — replaced by MentorAvatar3d widget)
