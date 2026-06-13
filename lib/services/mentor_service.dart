@@ -168,8 +168,9 @@ class InvestigationResult {
               .toList() ??
           [],
       sources: (json['sources'] as List<dynamic>?)
-              ?.map((s) =>
-                  InvestigationSource.fromJson(s as Map<String, dynamic>))
+              ?.map(
+                (s) => InvestigationSource.fromJson(s as Map<String, dynamic>),
+              )
               .toList() ??
           [],
       relatedTopics: (json['relatedTopics'] as List<dynamic>?)
@@ -346,8 +347,9 @@ class MentorService {
   /// YouTube-Suche zu einem Thema.
   Future<List<YouTubeVideo>> searchYouTube(String query) async {
     try {
-      final uri = Uri.parse('$_baseUrl/api/mentor/youtube-search')
-          .replace(queryParameters: {'q': query, 'maxResults': '5'});
+      final uri = Uri.parse(
+        '$_baseUrl/api/mentor/youtube-search',
+      ).replace(queryParameters: {'q': query, 'maxResults': '5'});
 
       final res = await _client
           .get(uri, headers: _headers)
@@ -367,8 +369,10 @@ class MentorService {
   }
 
   /// Tiefenrecherche zu einem Thema.
-  Future<InvestigationResult> investigate(String topic,
-      {String depth = 'basic'}) async {
+  Future<InvestigationResult> investigate(
+    String topic, {
+    String depth = 'basic',
+  }) async {
     try {
       final res = await _client
           .post(
@@ -399,8 +403,10 @@ class MentorService {
       final raw = SqliteStorageService.instance.getSync(_boxName, world);
       if (raw == null) return [];
       final list = (raw as List<dynamic>)
-          .map((e) =>
-              MentorChatMessage.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) =>
+                MentorChatMessage.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
       return list;
     } catch (e) {
@@ -411,7 +417,9 @@ class MentorService {
 
   /// Speichere Chat-Verlauf für eine Welt.
   Future<void> saveHistory(
-      String world, List<MentorChatMessage> messages) async {
+    String world,
+    List<MentorChatMessage> messages,
+  ) async {
     try {
       // Max 200 Nachrichten lokal speichern (ältere abschneiden)
       final trimmed = messages.length > 200
@@ -433,6 +441,62 @@ class MentorService {
       await SqliteStorageService.instance.delete(_boxName, world);
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ MentorService.clearHistory: $e');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // SESSION TRACKING (Supabase)
+  //
+  // Table: mentor_live_sessions
+  //   id uuid primary key default gen_random_uuid()
+  //   user_id text not null
+  //   world text not null
+  //   personality text not null
+  //   started_at timestamptz not null
+  //   ended_at timestamptz
+  //   message_count integer default 0
+  //   livekit_room text
+  //
+  // RLS: USING (user_id = auth.uid()::text) — enabled on table.
+  // ═══════════════════════════════════════════════════════════
+
+  /// Logs the start of a live mentor session to Supabase.
+  /// Returns the inserted row id or null on failure (non-blocking).
+  Future<String?> startLiveSession({
+    required String world,
+    required MentorPersonality personality,
+    String? livekitRoom,
+  }) async {
+    final uid = _userId;
+    if (uid == null) return null;
+    try {
+      final rows = await Supabase.instance.client
+          .from('mentor_live_sessions')
+          .insert({
+            'user_id': uid,
+            'world': world,
+            'personality': personality.name,
+            'started_at': DateTime.now().toUtc().toIso8601String(),
+            if (livekitRoom != null) 'livekit_room': livekitRoom,
+          })
+          .select('id')
+          .limit(1);
+      return rows.isNotEmpty ? rows.first['id'] as String? : null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ MentorService.startLiveSession: $e');
+      return null;
+    }
+  }
+
+  /// Updates the session record when the user ends the session.
+  Future<void> endLiveSession(String sessionId, {int messageCount = 0}) async {
+    try {
+      await Supabase.instance.client.from('mentor_live_sessions').update({
+        'ended_at': DateTime.now().toUtc().toIso8601String(),
+        'message_count': messageCount,
+      }).eq('id', sessionId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ MentorService.endLiveSession: $e');
     }
   }
 }
