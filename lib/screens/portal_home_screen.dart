@@ -21,6 +21,7 @@ import '../widgets/animations/wb_tap_scale.dart';
 import '../widgets/animations/wb_animated_entrance.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_adaptive_backdrop.dart';
+import '../core/device/wb_quality.dart';
 import '../widgets/profile_quest_banner.dart';
 import '../widgets/pwa_install_hint.dart';
 import 'mentor_tour_screen.dart';
@@ -152,8 +153,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
         vsync: this,
       )..forward();
 
-      // 80 Particles — ausreichend visuell, halbierter GPU-Aufwand
-      _particles = List.generate(80, (i) => Particle(index: i));
+      // Phase 5: adaptive particle budget (device tier x user quality).
+      // full=80, balanced=40, minimal=0 -> weak devices stay light.
+      _particles =
+          List.generate(_adaptiveParticleCount(), (i) => Particle(index: i));
 
       // Check if tutorial should be shown (v5.37 - Improvement 5.5)
       _checkTutorial();
@@ -209,6 +212,23 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
       });
     }
   }
+
+  /// Phase 5: particle budget scaled to the effective quality level
+  /// (device tier x user CinematicQuality). Keeps weak devices light.
+  int _adaptiveParticleCount() {
+    switch (WbQuality.level) {
+      case WbQualityLevel.full:
+        return 80;
+      case WbQualityLevel.balanced:
+        return 40;
+      case WbQualityLevel.minimal:
+        return 0;
+    }
+  }
+
+  /// OS "reduce motion" -- skip the animated particle layer when set.
+  bool get _reduceMotion =>
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
   @override
   void dispose() {
@@ -818,77 +838,81 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                     ),
                   ),
 
-                  // ADVANCED PARTICLE SYSTEM (200 particles)
-                  ...List.generate(_particles.length, (index) {
-                    return AnimatedBuilder(
-                      animation: _particleController,
-                      builder: (context, child) {
-                        final particle = _particles[index];
-                        final progress =
-                            (_particleController.value + particle.offset) % 1.0;
+                  // ADVANCED PARTICLE SYSTEM (Phase 5: adaptive count via
+                  // _adaptiveParticleCount(); whole layer skipped under OS
+                  // reduce-motion).
+                  if (!_reduceMotion)
+                    ...List.generate(_particles.length, (index) {
+                      return AnimatedBuilder(
+                        animation: _particleController,
+                        builder: (context, child) {
+                          final particle = _particles[index];
+                          final progress =
+                              (_particleController.value + particle.offset) %
+                                  1.0;
 
-                        // Orbital movement around portal center
-                        final angle =
-                            progress * 2 * math.pi + particle.angleOffset;
-                        final radius =
-                            particle.orbitRadius * (0.3 + progress * 0.7);
-                        var x = size.width / 2 + math.cos(angle) * radius;
-                        var y = size.height / 2 + math.sin(angle) * radius;
+                          // Orbital movement around portal center
+                          final angle =
+                              progress * 2 * math.pi + particle.angleOffset;
+                          final radius =
+                              particle.orbitRadius * (0.3 + progress * 0.7);
+                          var x = size.width / 2 + math.cos(angle) * radius;
+                          var y = size.height / 2 + math.sin(angle) * radius;
 
-                        // Touch-Interactive Particles (v5.37 - Improvement 1.2)
-                        if (_touchPosition != null) {
-                          final dx = x - _touchPosition!.dx;
-                          final dy = y - _touchPosition!.dy;
-                          final distance = math.sqrt(dx * dx + dy * dy);
-                          const pushRadius =
-                              150.0; // Particles flee within 150px
+                          // Touch-Interactive Particles (v5.37 - Improvement 1.2)
+                          if (_touchPosition != null) {
+                            final dx = x - _touchPosition!.dx;
+                            final dy = y - _touchPosition!.dy;
+                            final distance = math.sqrt(dx * dx + dy * dy);
+                            const pushRadius =
+                                150.0; // Particles flee within 150px
 
-                          if (distance < pushRadius) {
-                            final pushStrength =
-                                (1.0 - distance / pushRadius) * 60.0;
-                            x += (dx / distance) * pushStrength;
-                            y += (dy / distance) * pushStrength;
+                            if (distance < pushRadius) {
+                              final pushStrength =
+                                  (1.0 - distance / pushRadius) * 60.0;
+                              x += (dx / distance) * pushStrength;
+                              y += (dy / distance) * pushStrength;
+                            }
                           }
-                        }
 
-                        // Depth-based opacity and size
-                        final depth = math.sin(progress * math.pi);
-                        final opacity =
-                            (0.2 + depth * 0.8) * particle.brightness;
-                        final particleSize =
-                            particle.size * (0.5 + depth * 1.5);
+                          // Depth-based opacity and size
+                          final depth = math.sin(progress * math.pi);
+                          final opacity =
+                              (0.2 + depth * 0.8) * particle.brightness;
+                          final particleSize =
+                              particle.size * (0.5 + depth * 1.5);
 
-                        return Positioned(
-                          left: x - particleSize / 2,
-                          top: y - particleSize / 2,
-                          child: Opacity(
-                            opacity: opacity.clamp(0.0, 1.0),
-                            child: Container(
-                              width: particleSize,
-                              height: particleSize,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    particle.color.withValues(alpha: 0.9),
-                                    particle.color.withValues(alpha: 0.0),
+                          return Positioned(
+                            left: x - particleSize / 2,
+                            top: y - particleSize / 2,
+                            child: Opacity(
+                              opacity: opacity.clamp(0.0, 1.0),
+                              child: Container(
+                                width: particleSize,
+                                height: particleSize,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: RadialGradient(
+                                    colors: [
+                                      particle.color.withValues(alpha: 0.9),
+                                      particle.color.withValues(alpha: 0.0),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: particle.color.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      blurRadius: particleSize * 2,
+                                    ),
                                   ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: particle.color.withValues(
-                                      alpha: 0.6,
-                                    ),
-                                    blurRadius: particleSize * 2,
-                                  ),
-                                ],
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    );
-                  }),
+                          );
+                        },
+                      );
+                    }),
 
                   // ENERGY BEAMS FROM PORTAL TO BUTTONS (v5.37 - Improvement 2.3)
                   Positioned.fill(
