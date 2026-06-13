@@ -22,7 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../core/device/wb_device_capability.dart';
+import '../../core/device/wb_quality.dart';
 import 'cinematic_settings.dart';
 
 class WbAdaptiveBackdrop extends StatefulWidget {
@@ -110,10 +110,8 @@ class _WbAdaptiveBackdropState extends State<WbAdaptiveBackdrop>
     if (widget.videoAsset == null) return false;
     if (_videoDisabled) return false;
     if (_reduceMotion) return false;
-    if (KbCinemaSettings.instance.quality.value == CinematicQuality.off) {
-      return false;
-    }
-    if (!WbDeviceCapability.allowsAmbientVideo) return false;
+    // Central adaptive decision (device tier x user CinematicQuality).
+    if (!WbQuality.ambientVideo) return false;
     return true;
   }
 

@@ -17,6 +17,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../core/device/wb_quality.dart';
+
 class WbAnimatedEntrance extends StatelessWidget {
   final Widget child;
 
@@ -49,7 +51,9 @@ class WbAnimatedEntrance extends StatelessWidget {
   Widget build(BuildContext context) {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) return child;
+    // Skip on reduce-motion OR when adaptive quality disables entrances
+    // (minimal level: weak device or user set effects to off).
+    if (reduceMotion || !WbQuality.entranceAnimations) return child;
 
     final delay = baseDelay + stagger * index;
     final begin =

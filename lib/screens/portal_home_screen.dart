@@ -19,6 +19,7 @@ import '../widgets/daily_streak_indicator.dart';
 import '../widgets/live_world_badge.dart';
 import '../widgets/animations/wb_tap_scale.dart';
 import '../widgets/animations/wb_animated_entrance.dart';
+import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/profile_quest_banner.dart';
 import '../widgets/pwa_install_hint.dart';
 import 'mentor_tour_screen.dart';
@@ -2183,18 +2184,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
                     color: primaryColor.withValues(alpha: 0.24),
                     width: 1,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.20),
-                      blurRadius: 28,
-                      offset: const Offset(0, 8),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.50),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  // Token-Tiefe: farbiger Welt-Glow + Kontaktschatten (WBElevation).
+                  boxShadow: WBElevation.glow(primaryColor, intensity: 0.9),
                 ),
                 child: Stack(
                   children: [
