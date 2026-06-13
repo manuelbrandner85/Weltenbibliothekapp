@@ -144,11 +144,11 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
     glassStrokeHi: Color(0x33000000), // 0.20 schwarz - prominent
     // Welt-Paletten in Light-Variante (gedämpfte Akzente)
     materie: WBWorldPalette(
-      primary: Color(0xFFD32F2F), // Korallrot
-      deep: Color(0xFFFFEBEE), // Sehr helles Rosé
-      highlight: Color(0xFF8B1A1A), // Dunkles Bordeaux für Kontrast
-      label: Color(0xFFB23030),
-      glow: Color(0x33D32F2F),
+      primary: Color(0xFF1565C0), // Blau (Marken-Identitaet, dunkel fuer Cream)
+      deep: Color(0xFFE3F2FD), // Sehr helles Blau
+      highlight: Color(0xFF0A2452), // Dunkles Navy fuer Kontrast
+      label: Color(0xFF1976D2),
+      glow: Color(0x331565C0),
     ),
     energie: WBWorldPalette(
       primary: Color(0xFF7B1FA2), // Dunkles Lila
