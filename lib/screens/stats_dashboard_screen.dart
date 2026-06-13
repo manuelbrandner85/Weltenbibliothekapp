@@ -41,7 +41,13 @@ class StatsDashboardScreen extends StatelessWidget {
                   const SizedBox(height: WBSpace.lg),
                   _buildStatsGrid(stats),
                   const SizedBox(height: WBSpace.xxl),
-                  Text('Erfolge', style: WBType.title.copyWith(fontSize: 18)),
+                  Text(
+                    'Erfolge',
+                    style: WBType.title.copyWith(
+                      fontSize: 18,
+                      color: context.onBg,
+                    ),
+                  ),
                   const SizedBox(height: WBSpace.sm),
                   ...achievements
                       .map((a) => _buildAchievementCard(context, a, stats)),

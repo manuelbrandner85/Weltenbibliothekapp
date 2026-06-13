@@ -275,6 +275,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           fontSize: 28,
                           letterSpacing: 3.0,
                           height: 1.3,
+                          color: Colors.white,
                         ),
                       ),
                     ),

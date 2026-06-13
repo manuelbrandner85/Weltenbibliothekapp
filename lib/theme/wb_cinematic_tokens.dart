@@ -394,16 +394,17 @@ class WBElevation {
 
 /// Cinematic Text-Hierarchie (Inter via Google Fonts, Cormorant Garamond serif).
 ///
-/// HINWEIS (Design-Audit Phase 3): die Display-Stile (title/hero) sind aktuell
-/// hart auf Weiss gesetzt und damit Dark-Theme-spezifisch. Fuer Light-Theme
-/// `.copyWith(color: context.onBg)` verwenden. Die mittleren Skalenstufen
-/// (subtitle/label/button) wurden ergaenzt, um Spruenge 14 -> 22 zu schliessen.
+/// Design-Audit Phase 3: die strukturellen Stile (title/hero/subtitle/button)
+/// tragen BEWUSST keine Farbe -- Farbe ist kontextabhaengig und kommt vom
+/// aufrufenden Widget (z.B. `.copyWith(color: context.onBg)` fuer theme-aware
+/// Text, oder `color: Colors.white` ueber farbigen Verlaeufen). So sind sie in
+/// Dark- UND Light-Theme korrekt. body/serif/micro behalten ihre gedaempfte
+/// Weiss-Alpha fuer Overlay-Text auf dunklen Backdrops.
 class WBType {
   static TextStyle get title => GoogleFonts.inter(
         fontWeight: FontWeight.w200,
         fontSize: 22,
         letterSpacing: 5.0,
-        color: Colors.white,
         height: 1.0,
       );
 
@@ -411,7 +412,6 @@ class WBType {
         fontWeight: FontWeight.w200,
         fontSize: 38,
         letterSpacing: 10.0,
-        color: Colors.white,
         height: 1.0,
       );
 
@@ -421,7 +421,6 @@ class WBType {
         fontSize: 17,
         letterSpacing: 0.2,
         height: 1.25,
-        color: Colors.white,
       );
 
   /// Button-/Aktions-Label.
@@ -430,7 +429,6 @@ class WBType {
         fontSize: 14,
         letterSpacing: 0.6,
         height: 1.0,
-        color: Colors.white,
       );
 
   static TextStyle get body => GoogleFonts.inter(
