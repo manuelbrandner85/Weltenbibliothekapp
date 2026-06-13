@@ -168,6 +168,7 @@ flutter:
     - assets/videos/weltenbibliothek_intro.mp4
     - assets/videos/transition_materie_to_energie.mp4
     - assets/videos/transition_energie_to_materie.mp4
+    - assets/videos/portal_ambient_loop.mp4  # Phase-1 cinematic ambient loop
 
   # Fragment-Shader fuer Kaninchenbau Cinema-Postprocessing
   shaders:
