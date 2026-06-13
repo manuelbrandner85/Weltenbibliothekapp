@@ -322,7 +322,82 @@ class WBMotion {
   static const Duration reveal = Duration(milliseconds: 1200);
 }
 
+/// Cinematic Tiefen-/Schattensystem.
+///
+/// Premium-Tiefe entsteht durch ZWEI gestapelte Schatten je Stufe: ein weicher,
+/// breiter Ambient-Schatten (Schwarz, gross, niedrige Alpha) + ein engerer
+/// Kontakt-Schatten. Optional ein farbiger Glow je Welt-Akzent. Bewusst
+/// zurueckhaltend - Tiefe, kein "schwerer" Material-Look.
+///
+/// Nutzung: `boxShadow: WBElevation.card` oder `WBElevation.glow(color)`.
+class WBElevation {
+  /// Dezente Erhebung fuer ruhige Flaechen (Chips, Listeneintraege).
+  static const List<BoxShadow> low = [
+    BoxShadow(
+      color: Color(0x40000000), // 0.25 - Ambient
+      blurRadius: 12,
+      offset: Offset(0, 4),
+    ),
+    BoxShadow(
+      color: Color(0x26000000), // 0.15 - Kontakt
+      blurRadius: 4,
+      offset: Offset(0, 1),
+    ),
+  ];
+
+  /// Standard fuer Karten/Panels.
+  static const List<BoxShadow> card = [
+    BoxShadow(
+      color: Color(0x59000000), // 0.35 - Ambient
+      blurRadius: 24,
+      offset: Offset(0, 10),
+    ),
+    BoxShadow(
+      color: Color(0x33000000), // 0.20 - Kontakt
+      blurRadius: 8,
+      offset: Offset(0, 3),
+    ),
+  ];
+
+  /// Schwebende Elemente (Sheets, FAB, aktive Karte).
+  static const List<BoxShadow> high = [
+    BoxShadow(
+      color: Color(0x73000000), // 0.45 - Ambient
+      blurRadius: 40,
+      offset: Offset(0, 18),
+    ),
+    BoxShadow(
+      color: Color(0x40000000), // 0.25 - Kontakt
+      blurRadius: 12,
+      offset: Offset(0, 5),
+    ),
+  ];
+
+  /// Farbiger Welt-Glow + Tiefe - fuer hervorgehobene, interaktive Karten.
+  /// [color] = Welt-Primaerfarbe. [intensity] skaliert den Glow (0..1).
+  static List<BoxShadow> glow(Color color, {double intensity = 1.0}) {
+    final a = (0.22 * intensity).clamp(0.0, 1.0);
+    return [
+      BoxShadow(
+        color: color.withValues(alpha: a),
+        blurRadius: 28,
+        offset: const Offset(0, 8),
+      ),
+      const BoxShadow(
+        color: Color(0x80000000), // 0.50 - Tiefe darunter
+        blurRadius: 14,
+        offset: Offset(0, 4),
+      ),
+    ];
+  }
+}
+
 /// Cinematic Text-Hierarchie (Inter via Google Fonts, Cormorant Garamond serif).
+///
+/// HINWEIS (Design-Audit Phase 3): die Display-Stile (title/hero) sind aktuell
+/// hart auf Weiss gesetzt und damit Dark-Theme-spezifisch. Fuer Light-Theme
+/// `.copyWith(color: context.onBg)` verwenden. Die mittleren Skalenstufen
+/// (subtitle/label/button) wurden ergaenzt, um Spruenge 14 -> 22 zu schliessen.
 class WBType {
   static TextStyle get title => GoogleFonts.inter(
         fontWeight: FontWeight.w200,
@@ -340,10 +415,29 @@ class WBType {
         height: 1.0,
       );
 
+  /// Abschnitts-Ueberschrift (schliesst Luecke zwischen body 14 und title 22).
+  static TextStyle get subtitle => GoogleFonts.inter(
+        fontWeight: FontWeight.w600,
+        fontSize: 17,
+        letterSpacing: 0.2,
+        height: 1.25,
+        color: Colors.white,
+      );
+
+  /// Button-/Aktions-Label.
+  static TextStyle get button => GoogleFonts.inter(
+        fontWeight: FontWeight.w600,
+        fontSize: 14,
+        letterSpacing: 0.6,
+        height: 1.0,
+        color: Colors.white,
+      );
+
   static TextStyle get body => GoogleFonts.inter(
         fontWeight: FontWeight.w400,
         fontSize: 14,
         letterSpacing: 0.2,
+        height: 1.45, // Lesbarkeit: Fliesstext braucht Zeilenhoehe
         color: const Color(0xE6FFFFFF),
       );
 
