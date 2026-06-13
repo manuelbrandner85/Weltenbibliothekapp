@@ -12,6 +12,7 @@
 // =====================================================================
 
 import 'package:flutter/material.dart';
+import '../theme/wb_cinematic_tokens.dart';
 // OpenClaw v2.0
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/achievement_service.dart';
@@ -166,13 +167,8 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.amber.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        // Token-Tiefe (WBElevation): farbiger Glow + Kontaktschatten.
+        boxShadow: WBElevation.glow(Colors.amber.shade700),
       ),
       child: Column(
         children: [
@@ -539,13 +535,8 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.purple.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        // Token-Tiefe (WBElevation): farbiger Glow + Kontaktschatten.
+        boxShadow: WBElevation.glow(Colors.purple.shade700, intensity: 0.8),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
