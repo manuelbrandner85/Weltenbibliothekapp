@@ -49,6 +49,12 @@ class WbAdaptiveBackdrop extends StatefulWidget {
   /// Solid color shown if even the fallback image fails to load.
   final Color voidColor;
 
+  /// Bypass the device-tier / user-quality gate (WbQuality.ambientVideo) and
+  /// always attempt the loop. Reduce-motion, load errors and the jank watchdog
+  /// STILL fall back to the still -- this only lifts the conservative tier gate
+  /// for screens where the video is the centerpiece (e.g. the portal home).
+  final bool forceVideo;
+
   const WbAdaptiveBackdrop({
     super.key,
     required this.fallbackImage,
@@ -58,6 +64,7 @@ class WbAdaptiveBackdrop extends StatefulWidget {
     this.overlayColor,
     this.overlayGradient,
     this.voidColor = const Color(0xFF000004),
+    this.forceVideo = false,
   });
 
   @override
@@ -110,8 +117,10 @@ class _WbAdaptiveBackdropState extends State<WbAdaptiveBackdrop>
     if (widget.videoAsset == null) return false;
     if (_videoDisabled) return false;
     if (_reduceMotion) return false;
-    // Central adaptive decision (device tier x user CinematicQuality).
-    if (!WbQuality.ambientVideo) return false;
+    // Central adaptive decision (device tier x user CinematicQuality). Skipped
+    // when forceVideo is set (screen where the loop is the centerpiece); the
+    // error/jank/reduce-motion fallbacks above still apply.
+    if (!widget.forceVideo && !WbQuality.ambientVideo) return false;
     return true;
   }
 
