@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../widgets/animations/wb_tap_scale.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/openclaw_dashboard_service.dart';
@@ -201,7 +202,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           _shares = streak;
         });
       }
-    } catch (e) { if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e');
+    }
   }
 
   int _calcStreak(List<DateTime> dates) {
@@ -238,7 +241,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           _notifs = (unreadResult as List).length;
         });
       }
-    } catch (e) { if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e');
+    }
   }
 
   void _startLive() {
@@ -329,7 +334,9 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           .eq('user_id', uid)
           .isFilter('read_at', null);
       if (mounted) setState(() => _notifs = (result as List).length);
-    } catch (e) { if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e'); }
+    } catch (e) {
+      if (kDebugMode) debugPrint('home_tab_v5: silent catch -> $e');
+    }
   }
 
   Future<void> _loadWorldSubscription() async {
@@ -1031,7 +1038,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   Widget _buildActionTile(_TileDef t) {
     return Expanded(
-      child: GestureDetector(
+      // WbTapScale: Scale-on-Press + Haptik (reduce-motion-bewusst).
+      child: WbTapScale(
         onTap: t.onTap,
         child: Container(
           // Responsive Hoehe: kleine Phones / grosse System-Fonts brauchen

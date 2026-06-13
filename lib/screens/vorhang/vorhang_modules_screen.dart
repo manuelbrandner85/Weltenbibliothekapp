@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../widgets/animations/wb_tap_scale.dart';
 
 import '../../services/branch_boss_test_service.dart'; // 👑 I3 Boss-Test
 import '../../services/gamification_service.dart';
@@ -578,149 +579,146 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
       statusLabel = 'Gesperrt';
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: isUnlocked || isCompleted ? () => _openLesson(module) : null,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: isCompleted
-                ? _gold.withValues(alpha: 0.06)
-                : Colors.transparent,
-            border: Border.all(
-              color: isBoss
-                  ? _gold.withValues(alpha: 0.6)
-                  : Colors.white.withValues(alpha: 0.05),
-              width: isBoss ? 1.2 : 1,
-            ),
+    // WbTapScale: Scale-on-Press + Haptik; gesperrte Module sind deaktiviert.
+    return WbTapScale(
+      enabled: isUnlocked || isCompleted,
+      onTap: () => _openLesson(module),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color:
+              isCompleted ? _gold.withValues(alpha: 0.06) : Colors.transparent,
+          border: Border.all(
+            color: isBoss
+                ? _gold.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.05),
+            width: isBoss ? 1.2 : 1,
           ),
-          child: Row(
-            children: [
-              Icon(statusIcon, color: statusColor, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
+        ),
+        child: Row(
+          children: [
+            Icon(statusIcon, color: statusColor, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _gold.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          code,
+                          style: const TextStyle(
+                            color: _gold,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ),
+                      if (isBoss) ...[
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _gold.withValues(alpha: 0.15),
+                            gradient: LinearGradient(colors: [
+                              _gold,
+                              _gold.withValues(alpha: 0.7),
+                            ]),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(
-                            code,
-                            style: const TextStyle(
-                              color: _gold,
+                          child: const Text(
+                            'BOSS',
+                            style: TextStyle(
+                              color: Colors.black,
                               fontSize: 9,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w900,
                               letterSpacing: 1.0,
                             ),
                           ),
                         ),
-                        if (isBoss) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [
-                                _gold,
-                                _gold.withValues(alpha: 0.7),
-                              ]),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'BOSS',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
+                      ],
+                      // A3: NEU-Badge fuer frisch freigeschaltete Module
+                      if (_newModuleCodes.contains(code)) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                        ],
-                        // A3: NEU-Badge fuer frisch freigeschaltete Module
-                        if (_newModuleCodes.contains(code)) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4CAF50),
-                              borderRadius: BorderRadius.circular(4),
+                          child: const Text(
+                            '✨ NEU',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
                             ),
-                            child: const Text(
-                              '✨ NEU',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                        const Spacer(),
-                        Text(
-                          '+$xp XP',
-                          style: TextStyle(
-                            color: _gold.withValues(alpha: 0.9),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: isUnlocked || isCompleted
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.4),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                      const Spacer(),
                       Text(
-                        subtitle,
+                        '+$xp XP',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.45),
+                          color: _gold.withValues(alpha: 0.9),
                           fontSize: 11,
+                          fontWeight: FontWeight.w700,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                    const SizedBox(height: 4),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isUnlocked || isCompleted
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.4),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      statusLabel,
+                      subtitle,
                       style: TextStyle(
-                        color: statusColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 11,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    statusLabel,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
               ),
-              if (isUnlocked || isCompleted)
-                Icon(Icons.chevron_right,
-                    color: _gold.withValues(alpha: 0.6), size: 20),
-            ],
-          ),
+            ),
+            if (isUnlocked || isCompleted)
+              Icon(Icons.chevron_right,
+                  color: _gold.withValues(alpha: 0.6), size: 20),
+          ],
         ),
       ),
     );
