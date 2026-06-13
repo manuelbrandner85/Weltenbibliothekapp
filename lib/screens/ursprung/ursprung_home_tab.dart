@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../widgets/animations/wb_tap_scale.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
@@ -729,7 +730,8 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
     required String subtitle,
     required WidgetBuilder builder,
   }) {
-    return GestureDetector(
+    // WbTapScale: Scale-on-Press + Haptik (reduce-motion-bewusst).
+    return WbTapScale(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: builder)),
       child: Container(
         padding: const EdgeInsets.all(14),
