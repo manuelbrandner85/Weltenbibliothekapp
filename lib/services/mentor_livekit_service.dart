@@ -13,6 +13,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -183,7 +184,7 @@ class MentorLiveKitService extends ChangeNotifier {
     var id = prefs.getString(key);
     if (id == null || id.isEmpty) {
       final ts = DateTime.now().millisecondsSinceEpoch;
-      final rnd = (0xFFFF & (ts * 6364136223846793005)).toRadixString(16);
+      final rnd = Random().nextInt(0x10000).toRadixString(16).padLeft(4, '0');
       id = 'mlk-$ts-$rnd';
       await prefs.setString(key, id);
     }
