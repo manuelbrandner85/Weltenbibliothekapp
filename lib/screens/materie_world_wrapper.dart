@@ -6,6 +6,7 @@ import 'materie_world_screen.dart';
 import '../services/achievement_service.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
+import '../widgets/cinematic/wb_adaptive_backdrop.dart';
 
 /// Materie-Welt-Wrapper
 /// Admin-Check direkt über Supabase profiles.role (nicht OpenClaw).
@@ -61,17 +62,10 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                const Color(0xFF0D47A1).withValues(alpha: 0.3),
-                Colors.black,
-              ],
-            ),
-          ),
+        // Phase-1 backdrop: world still as the empty/loading state.
+        body: WbAdaptiveBackdrop(
+          fallbackImage: 'assets/images/world_materie.webp',
+          overlayColor: Colors.black.withValues(alpha: 0.35),
           child: const Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),

@@ -20,11 +20,11 @@ import '../widgets/live_world_badge.dart';
 import '../widgets/animations/wb_tap_scale.dart';
 import '../widgets/animations/wb_animated_entrance.dart';
 import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_adaptive_backdrop.dart';
 import '../widgets/profile_quest_banner.dart';
 import '../widgets/pwa_install_hint.dart';
 import 'mentor_tour_screen.dart';
 import 'profile_settings_screen.dart';
-import '../utils/portal_enhancements.dart';
 // 🎨 NEW: Animation System
 // 🎨 NEW: Enhanced Themes
 import '../painters/energy_effects_painter.dart';
@@ -52,9 +52,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
   late AnimationController _portalController;
   late AnimationController _nebulaController;
   late AnimationController _particleController;
-  late AnimationController _starsController;
   late List<Particle> _particles;
-  late List<Star> _stars;
 
   // Easter Egg: 10x tap counter
   int _portalTapCount = 0;
@@ -136,12 +134,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
         vsync: this,
       )..repeat();
 
-      // Stars Animation (v5.37)
-      _starsController = AnimationController(
-        duration: const Duration(seconds: 30),
-        vsync: this,
-      )..repeat();
-
       // v5.40 - Tap Pulse Animation (1.3)
       _tapPulseController = AnimationController(
         duration: const Duration(milliseconds: 200),
@@ -162,9 +154,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
 
       // 80 Particles — ausreichend visuell, halbierter GPU-Aufwand
       _particles = List.generate(80, (i) => Particle(index: i));
-
-      // Initialize 100 Stars (v5.37)
-      _stars = List.generate(100, (i) => Star(index: i));
 
       // Check if tutorial should be shown (v5.37 - Improvement 5.5)
       _checkTutorial();
@@ -226,7 +215,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
     _portalController.dispose();
     _nebulaController.dispose();
     _particleController.dispose();
-    _starsController.dispose();
     _tapPulseController.dispose();
     _progressRingController.dispose();
     _wordmarkController.dispose();
@@ -814,30 +802,19 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
               ),
               child: Stack(
                 children: [
-                  // NEBULA BACKGROUND
-                  Positioned.fill(
-                    child: AnimatedBuilder(
-                      animation: _nebulaController,
-                      builder: (context, child) {
-                        return CustomPaint(
-                          painter: NebulaPainter(_nebulaController.value),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // DYNAMIC STARFIELD (v5.37 - Improvement 2.1)
-                  Positioned.fill(
-                    child: AnimatedBuilder(
-                      animation: _starsController,
-                      builder: (context, child) {
-                        return CustomPaint(
-                          painter: StarfieldPainter(
-                            _starsController.value,
-                            _stars,
-                          ),
-                        );
-                      },
+                  // CINEMATIC AMBIENT BACKDROP (Phase 1): adaptive, muted,
+                  // seamless video loop with a still fallback. Degrades to the
+                  // still on weak devices / reduce-motion / battery-saver / load
+                  // error (handled inside WbAdaptiveBackdrop). Replaces the
+                  // former Nebula + Starfield procedural painters.
+                  const Positioned.fill(
+                    child: RepaintBoundary(
+                      child: WbAdaptiveBackdrop(
+                        videoAsset: 'assets/videos/portal_ambient_loop.mp4',
+                        fallbackImage:
+                            'assets/images/portal_ambient_fallback.webp',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 // OpenClaw v2.0
 import 'package:shared_preferences/shared_preferences.dart';
 import '../portal_home_screen.dart'; // 🌀 PORTAL
+import '../../widgets/cinematic/wb_adaptive_backdrop.dart';
 
 /// 🎓 ENHANCED ONBOARDING FLOW v8.0
 ///
@@ -60,7 +61,7 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
       features: [
         '👆 Touch: Partikel weichen deinem Finger aus',
         '📱 Neige dein Handy: Portal folgt (Gyroscope)',
-        '⭐ Sterne: 100 twinkelnde Sterne im Hintergrund',
+        '🎬 Cinematischer Ambient-Loop im Portal-Hintergrund',
         '⚡ Energie-Strahlen vom Portal zu den Buttons',
         '🎨 Adaptive Farben: Ändern sich mit der Tageszeit',
       ],
@@ -133,6 +134,15 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
     return Scaffold(
       body: Stack(
         children: [
+          // Phase-1: cosmic mood still as the shared onboarding backdrop.
+          // The per-page gradients are translucent so it shows through subtly.
+          const Positioned.fill(
+            child: WbAdaptiveBackdrop(
+              fallbackImage: 'assets/images/onboarding_mood.webp',
+              fit: BoxFit.cover,
+            ),
+          ),
+
           // PageView
           PageView.builder(
             controller: _pageController,
@@ -293,8 +303,11 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
   Widget _buildPage(OnboardingPageData page, AnimationController controller) {
     return Container(
       decoration: BoxDecoration(
+        // Translucent so the shared cosmic mood still shows through while each
+        // page keeps its world color identity.
         gradient: LinearGradient(
-          colors: page.gradient,
+          colors:
+              page.gradient.map((c) => c.withValues(alpha: 0.82)).toList(),
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
