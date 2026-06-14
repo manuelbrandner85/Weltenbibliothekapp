@@ -93,6 +93,8 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           # GitHub-PAT (GitHub verbietet Secret-Namen die mit GITHUB_ beginnen,
           # daher heisst das Repo-Secret GH_PAT und wird als Worker-Secret
           # GITHUB_TOKEN gesetzt -> Auto-Issue-Erstellung der Tool-Werkstatt).
@@ -132,6 +134,8 @@ jobs:
           [ -n "${GH_PAT:-}" ]                    && set_secret "GITHUB_TOKEN" "$GH_PAT"                                || echo "ℹ️  GH_PAT fehlt -- Tool-Auto-Issue deaktiviert"
           [ -n "${GEMINI_API_KEY:-}" ]            && set_secret "GEMINI_API_KEY" "$GEMINI_API_KEY"                      || echo "ℹ️  GEMINI_API_KEY fehlt"
           [ -n "${OPENROUTER_API_KEY:-}" ]        && set_secret "OPENROUTER_API_KEY" "$OPENROUTER_API_KEY"              || echo "ℹ️  OPENROUTER_API_KEY fehlt"
+          [ -n "${CEREBRAS_API_KEY:-}" ]          && set_secret "CEREBRAS_API_KEY" "$CEREBRAS_API_KEY"                  || echo "ℹ️  CEREBRAS_API_KEY fehlt (optional)"
+          [ -n "${MISTRAL_API_KEY:-}" ]           && set_secret "MISTRAL_API_KEY" "$MISTRAL_API_KEY"                    || echo "ℹ️  MISTRAL_API_KEY fehlt (optional)"
           [ -n "${GOOGLE_FACTCHECK_API_KEY:-}" ]  && set_secret "GOOGLE_FACTCHECK_API_KEY" "$GOOGLE_FACTCHECK_API_KEY"  || echo "ℹ️  GOOGLE_FACTCHECK_API_KEY fehlt"
           [ -n "${YOUTUBE_API_KEY:-}" ]           && set_secret "YOUTUBE_API_KEY" "$YOUTUBE_API_KEY"                    || echo "ℹ️  YOUTUBE_API_KEY fehlt"
           [ -n "${ALEPH_API_KEY:-}" ]             && set_secret "ALEPH_API_KEY" "$ALEPH_API_KEY"                        || echo "ℹ️  ALEPH_API_KEY fehlt (Aleph läuft auch ohne Key)"
