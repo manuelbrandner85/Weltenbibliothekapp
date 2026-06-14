@@ -1012,7 +1012,7 @@ class _Chakra3DScreen extends StatelessWidget {
         title: const Text('Chakren - 3D'),
       ),
       body: WbModelView(
-        src: 'assets/models/wb_chakras.glb',
+        src: 'assets/models/wb_chakras.obj',
         alt: 'Chakren-Saeule',
         forceEnable: true,
         backgroundColor: const Color(0xFF0A0612),

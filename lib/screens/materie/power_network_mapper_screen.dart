@@ -1651,7 +1651,7 @@ class _GlobeScreen extends StatelessWidget {
         title: const Text('Machtnetz - 3D-Globus'),
       ),
       body: WbModelView(
-        src: 'assets/models/wb_globe.glb',
+        src: 'assets/models/wb_globe.obj',
         alt: 'Globus',
         forceEnable: true,
         backgroundColor: const Color(0xFF000004),

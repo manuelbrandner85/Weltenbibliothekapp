@@ -15,22 +15,22 @@ class Wb3DShowcaseScreen extends StatefulWidget {
 class _Wb3DShowcaseScreenState extends State<Wb3DShowcaseScreen> {
   // (Label, Asset, Alt, Akzentfarbe)
   static const _models = <(String, String, String, Color)>[
-    ('Bewusstseins-Orb', 'assets/models/wb_orb.glb', 'Orb', Color(0xFF00D4AA)),
+    ('Bewusstseins-Orb', 'assets/models/wb_orb.obj', 'Orb', Color(0xFF00D4AA)),
     (
       'Merkaba',
-      'assets/models/wb_merkaba.glb',
+      'assets/models/wb_merkaba.obj',
       'Heilige Geometrie',
       Color(0xFF00D4AA)
     ),
     (
       'Globus',
-      'assets/models/wb_globe.glb',
+      'assets/models/wb_globe.obj',
       'Machtnetz-Globus',
       Color(0xFF3B82F6)
     ),
     (
       'Chakren',
-      'assets/models/wb_chakras.glb',
+      'assets/models/wb_chakras.obj',
       'Chakren-Saeule',
       Color(0xFFA855F7)
     ),
