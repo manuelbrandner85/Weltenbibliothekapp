@@ -1757,6 +1757,7 @@ class _GodModeTabState extends State<_GodModeTab>
           : ListView(
               padding: const EdgeInsets.all(14),
               children: [
+                _repoStatsHeader(),
                 _repoSection('🔀 Offene PRs', _repo.pulls, Colors.tealAccent),
                 _repoSection(
                     '❌ Fehlgeschlagene CI', _repo.runs, Colors.redAccent),
@@ -1765,6 +1766,60 @@ class _GodModeTabState extends State<_GodModeTab>
                     '📝 Letzte Commits', _repo.commits, Colors.white54),
               ],
             ),
+    );
+  }
+
+  // C5: Provider-Status + Auftrag-Statistik.
+  Widget _repoStatsHeader() {
+    final s = _repo.stats;
+    final p = _repo.providers;
+    if (s.isEmpty && p.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (s.isNotEmpty)
+          Text(
+            'Auftraege: ${s['total'] ?? 0}  ·  offen ${s['open'] ?? 0}  ·  '
+            'erledigt ${s['done'] ?? 0}  ·  fehlgeschlagen ${s['failed'] ?? 0}',
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        if (p.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          const Text('KI-PROVIDER',
+              style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 9,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: p.entries.map((e) {
+              final on = e.value;
+              final c = on ? Colors.greenAccent : Colors.white24;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: c.withValues(alpha: 0.4)),
+                ),
+                child: Text('${on ? '●' : '○'} ${e.key}',
+                    style: TextStyle(
+                        color: on ? Colors.greenAccent : Colors.white38,
+                        fontSize: 10.5)),
+              );
+            }).toList(),
+          ),
+        ],
+      ]),
     );
   }
 
