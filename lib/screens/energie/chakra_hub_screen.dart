@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../widgets/animations/wb_tap_scale.dart';
+import '../../widgets/cinematic/wb_model_view.dart';
 import '../../widgets/animations/wb_animated_entrance.dart';
 import 'calculators/chakra_calculator_screen.dart';
 import 'chakra_scan_screen.dart';
@@ -237,6 +238,11 @@ class _ChakraHubScreenState extends State<ChakraHubScreen>
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.view_in_ar_rounded, color: Colors.white70),
+            tooltip: '3D-Ansicht',
+            onPressed: () => _openScreen(const _Chakra3DScreen()),
+          ),
           IconButton(
             icon: const Icon(Icons.history, color: Colors.white70),
             tooltip: 'Verlauf',
@@ -988,4 +994,39 @@ class _ChakraInfo {
     required this.balanced,
     required this.blocked,
   });
+}
+
+/// Vollbild-3D der Chakren-Saeule (7 farbige Energiezentren). forceEnable ->
+/// Tier-Gate aus, Reduce-Motion bleibt aktiv; sonst Fallback-Hinweis.
+class _Chakra3DScreen extends StatelessWidget {
+  const _Chakra3DScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0612),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        title: const Text('Chakren - 3D'),
+      ),
+      body: WbModelView(
+        src: 'assets/models/wb_chakras.glb',
+        alt: 'Chakren-Saeule',
+        forceEnable: true,
+        backgroundColor: const Color(0xFF0A0612),
+        fallback: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: Text(
+              '3D ist hier deaktiviert\n(Reduce-Motion aktiv).',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, height: 1.5),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
