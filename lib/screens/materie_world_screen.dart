@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'materie/home_tab_v5.dart';
-import 'materie/kaninchenbau/kaninchenbau_screen.dart';
+import 'materie/recherche_screen.dart';
 import 'materie/community_tab_modern.dart';
 import 'materie/materie_karte_tab_pro.dart';
 import 'shared/unified_knowledge_tab.dart';
@@ -84,9 +84,10 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
 
     final tabs = [
       MaterieHomeTabV5(
-          key: ValueKey('home_${adminState.username}_${adminState.role}'),
-          onSwitchTab: (idx) => setState(() => _currentIndex = idx)),
-      const KaninchenbauScreen(),
+        key: ValueKey('home_${adminState.username}_${adminState.role}'),
+        onSwitchTab: (idx) => setState(() => _currentIndex = idx),
+      ),
+      const RechercheScreen(),
       const MaterieCommunityTabModern(),
       const MaterieKarteTabPro(),
       const UnifiedKnowledgeTab(world: 'materie'),
@@ -116,7 +117,8 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
           children: [
             // Cosmic-Hintergrund + Welt-Ambient
             const Positioned.fill(
-                child: _CosmicBackground(world: WBWorld.materie)),
+              child: _CosmicBackground(world: WBWorld.materie),
+            ),
 
             // Ambient particles (Phase 6)
             const Positioned.fill(
@@ -129,22 +131,20 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
               child: Column(
                 children: [
                   AdminDashboardButton(
-                      adminState: adminState, world: 'materie'),
+                    adminState: adminState,
+                    world: 'materie',
+                  ),
                   Expanded(child: tabs[_currentIndex]),
                 ],
               ),
             ),
 
             // Vignette als oberster atmosphärischer Layer (15%)
-            const Positioned.fill(
-              child: IgnorePointer(child: WBVignette()),
-            ),
+            const Positioned.fill(child: IgnorePointer(child: WBVignette())),
 
             // Day-phase atmospheric scrim
             const Positioned.fill(
-              child: IgnorePointer(
-                child: TimeOfDayOverlay(world: 'materie'),
-              ),
+              child: IgnorePointer(child: TimeOfDayOverlay(world: 'materie')),
             ),
 
             // Floating Bottom-Nav
@@ -160,7 +160,9 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
                   WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
                   WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
                   WBFloatingNavItem(
-                      icon: Icons.play_circle_outline, label: 'Videos'),
+                    icon: Icons.play_circle_outline,
+                    label: 'Videos',
+                  ),
                 ],
                 onChanged: (i) => setState(() => _currentIndex = i),
               ),
@@ -172,7 +174,9 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
   }
 
   List<Widget> _buildAppBarActions(
-      BuildContext context, AdminState adminState) {
+    BuildContext context,
+    AdminState adminState,
+  ) {
     return [
       IconButton(
         tooltip: 'Suchen',
@@ -240,8 +244,10 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.layers_outlined, color: accent),
-                title: const Text('Vier-Welten-Karte',
-                    style: TextStyle(color: Colors.white)),
+                title: const Text(
+                  'Vier-Welten-Karte',
+                  style: TextStyle(color: Colors.white),
+                ),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   Navigator.push(
@@ -255,8 +261,10 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.analytics_outlined, color: accent),
-                title: const Text('Statistik',
-                    style: TextStyle(color: Colors.white)),
+                title: const Text(
+                  'Statistik',
+                  style: TextStyle(color: Colors.white),
+                ),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   Navigator.push(
@@ -270,8 +278,10 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.swap_horiz, color: accent),
-                title: const Text('Welt wechseln',
-                    style: TextStyle(color: Colors.white)),
+                title: const Text(
+                  'Welt wechseln',
+                  style: TextStyle(color: Colors.white),
+                ),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   Navigator.pop(context);
