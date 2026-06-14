@@ -17,6 +17,7 @@ import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/wb_cached_image.dart';
+import 'vorhang_page_route.dart';
 
 /// 🎭 VORHANG Lesson Screen
 ///
@@ -105,27 +106,29 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         moduleCode: widget.moduleCode,
       );
       final curatedMapped = curated
-          .map((v) => <String, dynamic>{
-                'videoId': v.youtubeVideoId,
-                'title': v.title.isNotEmpty ? v.title : v.rawTitle,
-                'thumbnail': v.effectiveThumbnail,
-                'curated': true,
-              })
+          .map(
+            (v) => <String, dynamic>{
+              'videoId': v.youtubeVideoId,
+              'title': v.title.isNotEmpty ? v.title : v.rawTitle,
+              'thumbnail': v.effectiveThumbnail,
+              'curated': true,
+            },
+          )
           .toList();
 
       final uri = Uri.parse(
         '${ApiConfig.workerUrl}/api/vorhang/youtube/${Uri.encodeComponent(widget.moduleCode)}',
       );
-      final res = await http.get(uri, headers: {
-        'Accept': 'application/json'
-      }).timeout(const Duration(seconds: 15));
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 15));
       final fetched = <Map<String, dynamic>>[];
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final list = (data['videos'] as List?) ?? const [];
-        fetched.addAll(list
-            .whereType<Map>()
-            .map((e) => e.cast<String, dynamic>()));
+        fetched.addAll(
+          list.whereType<Map>().map((e) => e.cast<String, dynamic>()),
+        );
       }
       // Kuratierte zuerst, dann Suchergebnisse (ohne Duplikate).
       final seen = curatedMapped
@@ -174,8 +177,10 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
     await _submitProgress(scorePercent: scorePercent, passed: passed);
   }
 
-  Future<void> _submitProgress(
-      {required int scorePercent, required bool passed}) async {
+  Future<void> _submitProgress({
+    required int scorePercent,
+    required bool passed,
+  }) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
     setState(() => _submittingProgress = true);
@@ -255,7 +260,9 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               .map((e) => e.cast<String, dynamic>())
               .toList();
         }
-      } catch (e) { if (kDebugMode) debugPrint('vorhang_lesson_screen: silent catch -> $e'); }
+      } catch (e) {
+        if (kDebugMode) debugPrint('vorhang_lesson_screen: silent catch -> $e');
+      }
     }
     return const [];
   }
@@ -294,16 +301,19 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                 tabs: [
                   Tab(icon: Icon(Icons.menu_book, size: 18), text: 'Theorie'),
                   Tab(
-                      icon: Icon(Icons.cases_outlined, size: 18),
-                      text: 'Fallstudie'),
+                    icon: Icon(Icons.cases_outlined, size: 18),
+                    text: 'Fallstudie',
+                  ),
                   Tab(icon: Icon(Icons.edit_note, size: 18), text: 'Übung'),
                   Tab(icon: Icon(Icons.quiz_outlined, size: 18), text: 'Test'),
                   Tab(
-                      icon: Icon(Icons.play_circle_outline, size: 18),
-                      text: 'Videos'),
+                    icon: Icon(Icons.play_circle_outline, size: 18),
+                    text: 'Videos',
+                  ),
                   Tab(
-                      icon: Icon(Icons.note_add_outlined, size: 18),
-                      text: 'Notizen'),
+                    icon: Icon(Icons.note_add_outlined, size: 18),
+                    text: 'Notizen',
+                  ),
                 ],
               ),
             ),
@@ -312,23 +322,25 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         body: SafeArea(
           child: _loading
               ? const Center(
-                  child:
-                      CircularProgressIndicator(color: _gold, strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    color: _gold,
+                    strokeWidth: 2,
+                  ),
                 )
               : _error != null
-                  ? _buildError()
-                  : _module == null
-                      ? const SizedBox.shrink()
-                      : TabBarView(
-                          children: [
-                            _buildTheoryTab(),
-                            _buildCaseStudyTab(),
-                            _buildExerciseTab(),
-                            _buildTestTab(),
-                            _buildVideosTab(),
-                            _LessonNotesTab(moduleCode: widget.moduleCode),
-                          ],
-                        ),
+              ? _buildError()
+              : _module == null
+              ? const SizedBox.shrink()
+              : TabBarView(
+                  children: [
+                    _buildTheoryTab(),
+                    _buildCaseStudyTab(),
+                    _buildExerciseTab(),
+                    _buildTestTab(),
+                    _buildVideosTab(),
+                    _LessonNotesTab(moduleCode: widget.moduleCode),
+                  ],
+                ),
         ),
       ),
     );
@@ -341,27 +353,37 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline,
-                color: _gold.withValues(alpha: 0.7), size: 48),
+            Icon(
+              Icons.error_outline,
+              color: _gold.withValues(alpha: 0.7),
+              size: 48,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Modul konnte nicht geladen werden',
               style: TextStyle(
-                  color: _gold, fontSize: 16, fontWeight: FontWeight.w600),
+                color: _gold,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               _error ?? '',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: _fetchModule,
               icon: const Icon(Icons.refresh, color: _gold),
-              label: const Text('Erneut versuchen',
-                  style: TextStyle(color: _gold)),
+              label: const Text(
+                'Erneut versuchen',
+                style: TextStyle(color: _gold),
+              ),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: _gold.withValues(alpha: 0.4)),
               ),
@@ -375,8 +397,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   // ── Tab 1: Theory ─────────────────────────────────────────────
   Widget _buildTheoryTab() {
     final text = (_module?['theory_content'] as String?) ?? '';
-    return _buildRichTextScroll(text,
-        padding: const EdgeInsets.fromLTRB(20, 110, 20, 32), showMeta: true);
+    return _buildRichTextScroll(
+      text,
+      padding: const EdgeInsets.fromLTRB(20, 110, 20, 32),
+      showMeta: true,
+    );
   }
 
   /// Estimates reading time in minutes from word count (~200 wpm, min 1).
@@ -411,8 +436,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
           // Reading-time + section count row
           Row(
             children: [
-              Icon(Icons.schedule,
-                  size: 14, color: _gold.withValues(alpha: 0.8)),
+              Icon(
+                Icons.schedule,
+                size: 14,
+                color: _gold.withValues(alpha: 0.8),
+              ),
               const SizedBox(width: 6),
               Text(
                 '$minutes Min Lesezeit',
@@ -424,8 +452,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               ),
               if (headings.isNotEmpty) ...[
                 const SizedBox(width: 14),
-                Icon(Icons.list_alt,
-                    size: 14, color: _gold.withValues(alpha: 0.8)),
+                Icon(
+                  Icons.list_alt,
+                  size: 14,
+                  color: _gold.withValues(alpha: 0.8),
+                ),
                 const SizedBox(width: 6),
                 Text(
                   '${headings.length} Abschnitte',
@@ -455,7 +486,9 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       child: Row(
                         children: [
                           const Icon(Icons.menu_book, color: _gold, size: 16),
@@ -510,8 +543,9 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                                     child: Text(
                                       headings[i].value,
                                       style: TextStyle(
-                                        color:
-                                            Colors.white.withValues(alpha: 0.8),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.8,
+                                        ),
                                         fontSize: 13,
                                         height: 1.4,
                                       ),
@@ -544,8 +578,10 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         ),
       );
     }
-    return _buildRichTextScroll(text,
-        padding: const EdgeInsets.fromLTRB(20, 110, 20, 32));
+    return _buildRichTextScroll(
+      text,
+      padding: const EdgeInsets.fromLTRB(20, 110, 20, 32),
+    );
   }
 
   // ── Tab 3: Exercise ───────────────────────────────────────────
@@ -602,8 +638,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.lightbulb_outline,
-                        color: _gold.withValues(alpha: 0.8), size: 18),
+                    Icon(
+                      Icons.lightbulb_outline,
+                      color: _gold.withValues(alpha: 0.8),
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -657,8 +696,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             children: [
               Row(
                 children: [
-                  Icon(isBoss ? Icons.military_tech : Icons.quiz_outlined,
-                      color: _gold, size: 24),
+                  Icon(
+                    isBoss ? Icons.military_tech : Icons.quiz_outlined,
+                    color: _gold,
+                    size: 24,
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     isBoss ? 'BOSS-PRÜFUNG' : 'WISSENS-TEST',
@@ -698,16 +740,18 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                         : const Color(0xFF8B0000).withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color:
-                          _quizPassed ? Colors.greenAccent : Colors.redAccent,
+                      color: _quizPassed
+                          ? Colors.greenAccent
+                          : Colors.redAccent,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         _quizPassed ? Icons.check_circle : Icons.cancel,
-                        color:
-                            _quizPassed ? Colors.greenAccent : Colors.redAccent,
+                        color: _quizPassed
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
                         size: 24,
                       ),
                       const SizedBox(width: 10),
@@ -735,7 +779,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         // V4: Quick-Review (Karteikarten-Modus) der Test-Fragen
         OutlinedButton.icon(
           onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(
+            VorhangPageRoute(
               builder: (_) => _QuickReviewScreen(
                 questions: questions,
                 accent: _gold,
@@ -744,8 +788,10 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             ),
           ),
           icon: const Icon(Icons.style_outlined, color: _gold, size: 18),
-          label: const Text('Quick-Review (Karteikarten)',
-              style: TextStyle(color: _gold)),
+          label: const Text(
+            'Quick-Review (Karteikarten)',
+            style: TextStyle(color: _gold),
+          ),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 44),
             side: BorderSide(color: _gold.withValues(alpha: 0.4)),
@@ -768,7 +814,9 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.black),
+                      strokeWidth: 2,
+                      color: Colors.black,
+                    ),
                   )
                 : const Icon(Icons.check, color: Colors.black),
             label: const Text(
@@ -797,9 +845,10 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             label: const Text(
               'Erneut versuchen',
               style: TextStyle(
-                  color: _gold,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5),
+                color: _gold,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
+              ),
             ),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: _gold.withValues(alpha: 0.6)),
@@ -869,7 +918,12 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
           const SizedBox(height: 10),
           for (var i = 0; i < options.length; i++)
             _buildOption(
-                index, i, options[i].toString(), selected, correctIndex),
+              index,
+              i,
+              options[i].toString(),
+              selected,
+              correctIndex,
+            ),
           if (_quizSubmitted && explanation.isNotEmpty) ...[
             const SizedBox(height: 8),
             Container(
@@ -882,8 +936,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline,
-                      color: _gold.withValues(alpha: 0.8), size: 16),
+                  Icon(
+                    Icons.info_outline,
+                    color: _gold.withValues(alpha: 0.8),
+                    size: 16,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -941,7 +998,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         onTap: _quizSubmitted
             ? null
             : () =>
-                setState(() => _selectedAnswers[questionIndex] = optionIndex),
+                  setState(() => _selectedAnswers[questionIndex] = optionIndex),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           margin: const EdgeInsets.only(bottom: 6),
@@ -1039,8 +1096,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                Icon(Icons.video_library_outlined,
-                    color: _gold.withValues(alpha: 0.4), size: 48),
+                Icon(
+                  Icons.video_library_outlined,
+                  color: _gold.withValues(alpha: 0.4),
+                  size: 48,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Keine Videos verfügbar.',
@@ -1058,7 +1118,8 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   Widget _buildVideoCard(Map<String, dynamic> v) {
     final title = (v['title'] as String?) ?? 'Video';
     final videoId = (v['videoId'] as String?) ?? '';
-    final thumb = (v['thumbnail'] as String?) ??
+    final thumb =
+        (v['thumbnail'] as String?) ??
         'https://img.youtube.com/vi/$videoId/mqdefault.jpg';
     final channel = (v['channel'] as String?) ?? '';
 
@@ -1082,8 +1143,9 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: Stack(
@@ -1095,8 +1157,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                         fit: BoxFit.cover,
                         errorWidget: Container(
                           color: _surface,
-                          child: Icon(Icons.video_library,
-                              color: _gold.withValues(alpha: 0.4), size: 40),
+                          child: Icon(
+                            Icons.video_library,
+                            color: _gold.withValues(alpha: 0.4),
+                            size: 40,
+                          ),
                         ),
                       ),
                       Container(
@@ -1112,8 +1177,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                         ),
                       ),
                       const Center(
-                        child: Icon(Icons.play_circle_fill,
-                            color: _gold, size: 56),
+                        child: Icon(
+                          Icons.play_circle_fill,
+                          color: _gold,
+                          size: 56,
+                        ),
                       ),
                     ],
                   ),
@@ -1155,8 +1223,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   }
 
   // ── Markdown-ish RichText renderer (NO flutter_markdown) ──────
-  Widget _buildRichTextScroll(String text,
-      {required EdgeInsets padding, bool showMeta = false}) {
+  Widget _buildRichTextScroll(
+    String text, {
+    required EdgeInsets padding,
+    bool showMeta = false,
+  }) {
     final lines = text.split('\n');
     final spans = <Widget>[];
     for (final raw in lines) {
@@ -1166,103 +1237,126 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         continue;
       }
       if (line.startsWith('# ')) {
-        spans.add(Padding(
-          padding: const EdgeInsets.only(top: 16, bottom: 10),
-          child: Text(
-            line.substring(2),
-            style: const TextStyle(
-              color: _gold,
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.5,
+        spans.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 10),
+            child: Text(
+              line.substring(2),
+              style: const TextStyle(
+                color: _gold,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
-        ));
+        );
       } else if (line.startsWith('## ')) {
-        spans.add(Padding(
-          padding: const EdgeInsets.only(top: 14, bottom: 8),
-          child: Text(
-            line.substring(3),
-            style: TextStyle(
-              color: _gold.withValues(alpha: 0.9),
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
+        spans.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 14, bottom: 8),
+            child: Text(
+              line.substring(3),
+              style: TextStyle(
+                color: _gold.withValues(alpha: 0.9),
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
             ),
           ),
-        ));
+        );
       } else if (line.startsWith('### ')) {
-        spans.add(Padding(
-          padding: const EdgeInsets.only(top: 10, bottom: 6),
-          child: Text(
-            line.substring(4),
-            style: TextStyle(
-              color: _gold.withValues(alpha: 0.85),
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+        spans.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 6),
+            child: Text(
+              line.substring(4),
+              style: TextStyle(
+                color: _gold.withValues(alpha: 0.85),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-        ));
+        );
       } else if (line.startsWith('> ')) {
-        spans.add(Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-          decoration: BoxDecoration(
-            border: Border(left: BorderSide(color: _gold, width: 3)),
-            color: _gold.withValues(alpha: 0.05),
+        spans.add(
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: _gold, width: 3)),
+              color: _gold.withValues(alpha: 0.05),
+            ),
+            child: _inlineRichText(
+              line.substring(2),
+              baseColor: Colors.white.withValues(alpha: 0.85),
+              italic: true,
+            ),
           ),
-          child: _inlineRichText(line.substring(2),
-              baseColor: Colors.white.withValues(alpha: 0.85), italic: true),
-        ));
+        );
       } else if (line.startsWith('- ') || line.startsWith('* ')) {
-        spans.add(Padding(
-          padding: const EdgeInsets.only(left: 8, top: 2, bottom: 2),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 6),
-                child: Icon(Icons.circle, size: 6, color: _gold),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _inlineRichText(line.substring(2),
-                    baseColor: Colors.white.withValues(alpha: 0.85)),
-              ),
-            ],
-          ),
-        ));
-      } else if (RegExp(r'^\d+\. ').hasMatch(line)) {
-        final m = RegExp(r'^(\d+)\. (.*)').firstMatch(line);
-        if (m != null) {
-          spans.add(Padding(
+        spans.add(
+          Padding(
             padding: const EdgeInsets.only(left: 8, top: 2, bottom: 2),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${m.group(1)}.',
-                  style: const TextStyle(
-                    color: _gold,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 6),
+                  child: Icon(Icons.circle, size: 6, color: _gold),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: _inlineRichText(m.group(2) ?? '',
-                      baseColor: Colors.white.withValues(alpha: 0.85)),
+                  child: _inlineRichText(
+                    line.substring(2),
+                    baseColor: Colors.white.withValues(alpha: 0.85),
+                  ),
                 ),
               ],
             ),
-          ));
+          ),
+        );
+      } else if (RegExp(r'^\d+\. ').hasMatch(line)) {
+        final m = RegExp(r'^(\d+)\. (.*)').firstMatch(line);
+        if (m != null) {
+          spans.add(
+            Padding(
+              padding: const EdgeInsets.only(left: 8, top: 2, bottom: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${m.group(1)}.',
+                    style: const TextStyle(
+                      color: _gold,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _inlineRichText(
+                      m.group(2) ?? '',
+                      baseColor: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
       } else {
-        spans.add(Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: _inlineRichText(line,
-              baseColor: Colors.white.withValues(alpha: 0.88)),
-        ));
+        spans.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: _inlineRichText(
+              line,
+              baseColor: Colors.white.withValues(alpha: 0.88),
+            ),
+          ),
+        );
       }
     }
 
@@ -1313,8 +1407,11 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   }
 
   /// Inline rich-text mit **bold** / *italic* support.
-  Widget _inlineRichText(String text,
-      {required Color baseColor, bool italic = false}) {
+  Widget _inlineRichText(
+    String text, {
+    required Color baseColor,
+    bool italic = false,
+  }) {
     final parts = <TextSpan>[];
     final regex = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*');
     int last = 0;
@@ -1323,15 +1420,19 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
         parts.add(TextSpan(text: text.substring(last, m.start)));
       }
       if (m.group(1) != null) {
-        parts.add(TextSpan(
-          text: m.group(1),
-          style: TextStyle(color: _gold, fontWeight: FontWeight.w700),
-        ));
+        parts.add(
+          TextSpan(
+            text: m.group(1),
+            style: TextStyle(color: _gold, fontWeight: FontWeight.w700),
+          ),
+        );
       } else if (m.group(2) != null) {
-        parts.add(TextSpan(
-          text: m.group(2),
-          style: const TextStyle(fontStyle: FontStyle.italic),
-        ));
+        parts.add(
+          TextSpan(
+            text: m.group(2),
+            style: const TextStyle(fontStyle: FontStyle.italic),
+          ),
+        );
       }
       last = m.end;
     }
@@ -1382,8 +1483,10 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
   }
 
   Future<void> _load() async {
-    final n = await VorhangLessonNotesService.instance
-        .getFor(_userId(), widget.moduleCode);
+    final n = await VorhangLessonNotesService.instance.getFor(
+      _userId(),
+      widget.moduleCode,
+    );
     if (mounted) {
       setState(() {
         _ctrl.text = n?.body ?? '';
@@ -1405,28 +1508,35 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
       _saving = false;
       _lastSavedAt = saved?.updatedAt ?? DateTime.now();
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(saved != null ? '📝 Gespeichert' : '❌ Fehler'),
-      duration: const Duration(seconds: 2),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(saved != null ? '📝 Gespeichert' : '❌ Fehler'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _exportAll() async {
-    final md =
-        await VorhangLessonNotesService.instance.exportMarkdown(_userId());
+    final md = await VorhangLessonNotesService.instance.exportMarkdown(
+      _userId(),
+    );
     if (!mounted) return;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF0D0B00),
-        title: const Text('Alle Notizen exportiert',
-            style: TextStyle(color: _gold)),
+        title: const Text(
+          'Alle Notizen exportiert',
+          style: TextStyle(color: _gold),
+        ),
         content: SizedBox(
           width: 500,
           height: 400,
           child: SingleChildScrollView(
-            child: SelectableText(md,
-                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            child: SelectableText(
+              md,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
           ),
         ),
         actions: [
@@ -1455,14 +1565,18 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
             children: [
               const Icon(Icons.note_alt_outlined, color: _gold, size: 18),
               const SizedBox(width: 8),
-              const Text('Deine Notizen zu dieser Lektion',
-                  style: TextStyle(color: _gold, fontWeight: FontWeight.w700)),
+              const Text(
+                'Deine Notizen zu dieser Lektion',
+                style: TextStyle(color: _gold, fontWeight: FontWeight.w700),
+              ),
               const Spacer(),
               if (_lastSavedAt != null)
                 Text(
                   'Zuletzt: ${_lastSavedAt!.hour.toString().padLeft(2, '0')}:${_lastSavedAt!.minute.toString().padLeft(2, '0')}',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 10,
+                  ),
                 ),
             ],
           ),
@@ -1474,19 +1588,26 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
               expands: true,
               textAlignVertical: TextAlignVertical.top,
               style: const TextStyle(
-                  color: Colors.white, fontSize: 14, height: 1.5),
+                color: Colors.white,
+                fontSize: 14,
+                height: 1.5,
+              ),
               decoration: InputDecoration(
-                hintText: 'Was nimmst du aus dieser Lektion mit? '
+                hintText:
+                    'Was nimmst du aus dieser Lektion mit? '
                     'Schreibe deine Gedanken, Fragen, Erkenntnisse …',
-                hintStyle:
-                    TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.35),
+                ),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.04),
                 contentPadding: const EdgeInsets.all(14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: _gold.withValues(alpha: 0.2), width: 1),
+                  borderSide: BorderSide(
+                    color: _gold.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1506,8 +1627,9 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(
-                              strokeWidth: 1.8,
-                              valueColor: AlwaysStoppedAnimation(Colors.black)),
+                            strokeWidth: 1.8,
+                            valueColor: AlwaysStoppedAnimation(Colors.black),
+                          ),
                         )
                       : const Icon(Icons.save_outlined),
                   label: const Text('Speichern'),
@@ -1524,8 +1646,10 @@ class _LessonNotesTabState extends State<_LessonNotesTab> {
                 icon: const Icon(Icons.share_outlined, color: _gold, size: 16),
                 label: const Text('Export', style: TextStyle(color: _gold)),
                 style: OutlinedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   side: BorderSide(color: _gold.withValues(alpha: 0.4)),
                 ),
               ),
@@ -1657,14 +1781,18 @@ class _QuickReviewScreenState extends State<_QuickReviewScreen> {
                           const SizedBox(height: 16),
                           Row(
                             children: [
-                              Icon(Icons.check_circle,
-                                  color: Colors.greenAccent, size: 18),
+                              Icon(
+                                Icons.check_circle,
+                                color: Colors.greenAccent,
+                                size: 18,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'ANTWORT',
                                 style: TextStyle(
-                                  color:
-                                      Colors.greenAccent.withValues(alpha: 0.9),
+                                  color: Colors.greenAccent.withValues(
+                                    alpha: 0.9,
+                                  ),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 2.0,
