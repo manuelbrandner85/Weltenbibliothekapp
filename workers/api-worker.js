@@ -5125,13 +5125,13 @@ export default {
             if (name === 'groq' && env.GROQ_API_KEY) return oai('https://api.groq.com/openai/v1/chat/completions', env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
             if (name === 'cerebras' && env.CEREBRAS_API_KEY) return oai('https://api.cerebras.ai/v1/chat/completions', env.CEREBRAS_API_KEY, 'llama-3.3-70b');
             if (name === 'openrouter' && env.OPENROUTER_API_KEY) return oai('https://openrouter.ai/api/v1/chat/completions', env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct');
-            if (name === 'mistral' && env.MISTRAL_API_KEY) return oai('https://api.mistral.ai/v1/chat/completions', env.MISTRAL_API_KEY, 'mistral-large-latest');
+            // Mistral bewusst deaktiviert -- wird nie aufgerufen.
             return null;
           };
 
           if (body && body.vote === true) {
             const sets = [];
-            for (const p of ['groq', 'cerebras', 'openrouter', 'mistral']) {
+            for (const p of ['groq', 'cerebras', 'openrouter']) {
               if (sets.length >= 2) break;
               const s = await callProvider(p);
               if (s && Array.isArray(s.suggestions) && s.suggestions.length) sets.push(s);
@@ -5239,25 +5239,7 @@ export default {
             } catch (_) {}
           }
 
-          // 4) Mistral (kostenloser Tier) -- OpenAI-kompatibel.
-          if (!result && env.MISTRAL_API_KEY) {
-            try {
-              const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${env.MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  model: 'mistral-large-latest',
-                  messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userMsg }],
-                  max_tokens: 1500, temperature: 0.9,
-                }),
-              });
-              if (r.ok) {
-                const d = await r.json().catch(() => null);
-                const parsed = parseAi(d?.choices?.[0]?.message?.content);
-                if (parsed) { result = parsed; source = 'mistral'; }
-              }
-            } catch (_) {}
-          }
+          // 4) Mistral bewusst deaktiviert -- nicht in der Provider-Chain nutzen.
 
           // 5) Gemini
           if (!result && env.GEMINI_API_KEY) {
@@ -5710,7 +5692,7 @@ export default {
             groq: !!env.GROQ_API_KEY,
             cerebras: !!env.CEREBRAS_API_KEY,
             openrouter: !!env.OPENROUTER_API_KEY,
-            mistral: !!env.MISTRAL_API_KEY,
+            mistral: false, // bewusst deaktiviert
             gemini: !!env.GEMINI_API_KEY,
             'workers-ai': !!env.AI,
           };
