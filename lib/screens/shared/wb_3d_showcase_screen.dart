@@ -28,6 +28,12 @@ class _Wb3DShowcaseScreenState extends State<Wb3DShowcaseScreen> {
       'Machtnetz-Globus',
       Color(0xFF3B82F6)
     ),
+    (
+      'Chakren',
+      'assets/models/wb_chakras.glb',
+      'Chakren-Saeule',
+      Color(0xFFA855F7)
+    ),
   ];
 
   int _i = 0;
