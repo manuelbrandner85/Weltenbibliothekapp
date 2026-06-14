@@ -5113,9 +5113,43 @@ export default {
           try { body = await request.clone().json(); } catch (_) {}
           const newLabel = String(body.label || '').trim().slice(0, 120);
           const tgtSlug  = String(body.slug || '').trim();
+          const intoSlug = String(body.into || '').trim();
+          const action   = String(body.action || '').trim();
           const newStatus = body.status === 'archived' ? 'archived' : 'active';
 
           try {
+            // B1: Bereich umbenennen.
+            if (action === 'rename' && tgtSlug && newLabel) {
+              await fetch(`${SUPABASE_URL}/rest/v1/godmode_topics?slug=eq.${encodeURIComponent(tgtSlug)}`, {
+                method: 'PATCH',
+                headers: { ...svcHeaders, Prefer: 'return=minimal' },
+                body: JSON.stringify({ label: newLabel }),
+              });
+              return jsonResponse({ success: true, slug: tgtSlug, label: newLabel });
+            }
+            // B1: Bereich in einen anderen zusammenfuehren (hit_count addieren,
+            // Quelle archivieren).
+            if (action === 'merge' && tgtSlug && intoSlug && tgtSlug !== intoSlug) {
+              const rd = await fetch(
+                `${SUPABASE_URL}/rest/v1/godmode_topics?slug=in.(${encodeURIComponent(tgtSlug)},${encodeURIComponent(intoSlug)})&select=slug,hit_count`,
+                { headers: svcHeaders }
+              );
+              const rows = rd.ok ? await rd.json().catch(() => []) : [];
+              const from = Array.isArray(rows) ? rows.find(r => r.slug === tgtSlug) : null;
+              const into = Array.isArray(rows) ? rows.find(r => r.slug === intoSlug) : null;
+              const sum = ((from && from.hit_count) || 0) + ((into && into.hit_count) || 0);
+              await fetch(`${SUPABASE_URL}/rest/v1/godmode_topics?slug=eq.${encodeURIComponent(intoSlug)}`, {
+                method: 'PATCH',
+                headers: { ...svcHeaders, Prefer: 'return=minimal' },
+                body: JSON.stringify({ hit_count: sum, last_seen_at: new Date().toISOString() }),
+              });
+              await fetch(`${SUPABASE_URL}/rest/v1/godmode_topics?slug=eq.${encodeURIComponent(tgtSlug)}`, {
+                method: 'PATCH',
+                headers: { ...svcHeaders, Prefer: 'return=minimal' },
+                body: JSON.stringify({ status: 'archived' }),
+              });
+              return jsonResponse({ success: true, merged: tgtSlug, into: intoSlug, hit_count: sum });
+            }
             if (tgtSlug) {
               await fetch(`${SUPABASE_URL}/rest/v1/godmode_topics?slug=eq.${encodeURIComponent(tgtSlug)}`, {
                 method: 'PATCH',
@@ -5135,6 +5169,78 @@ export default {
           } catch (e) {
             return errorResponse(`Fehler: ${e.message}`);
           }
+        }
+
+        // ── POST /api/admin/godmode/plan ─────────────────────────────────
+        // G1: kurze Umsetzungs-Plan-Vorschau fuer einen Vorschlag (vor dem Bauen).
+        // Body: { title, description } -> { success, plan }
+        if (method === 'POST' && path === '/api/admin/godmode/plan') {
+          let body = {};
+          try { body = await request.clone().json(); } catch (_) {}
+          const title = String(body.title || '').trim().slice(0, 200);
+          const desc = String(body.description || '').trim().slice(0, 1500);
+          if (!title) return errorResponse('title erforderlich', 400, 'title_required');
+
+          const planSys =
+            'Du bist Senior-Flutter-Engineer der App "Weltenbibliothek" (Flutter/Dart, ' +
+            'Supabase, Cloudflare Worker, Shorebird OTA, LiveKit). Erstelle einen KURZEN, ' +
+            'konkreten Umsetzungsplan fuer den Auftrag -- KEIN Code, nur der Plan, auf Deutsch.\n' +
+            'Format (knappes Markdown):\n' +
+            '**Dateien:** wahrscheinliche Pfade (lib/...).\n' +
+            '**Schritte:** 3-6 nummerierte konkrete Schritte.\n' +
+            '**Risiken:** 1-2 Punkte (Migration noetig? nativ -> neuer Release, sonst OTA-ok).\n' +
+            '**Aufwand:** S / M / L.';
+          const planUser = `Auftrag: ${title}\n\n${desc}`;
+          let plan = '';
+
+          if (env.GROQ_API_KEY) {
+            try {
+              const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'llama-3.3-70b-versatile',
+                  messages: [{ role: 'system', content: planSys }, { role: 'user', content: planUser }],
+                  max_tokens: 800, temperature: 0.4,
+                }),
+              });
+              if (r.ok) {
+                const d = await r.json().catch(() => null);
+                plan = String(d?.choices?.[0]?.message?.content || '').trim();
+              }
+            } catch (_) {}
+          }
+          if (!plan && env.OPENROUTER_API_KEY) {
+            try {
+              const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'meta-llama/llama-3.3-70b-instruct',
+                  messages: [{ role: 'system', content: planSys }, { role: 'user', content: planUser }],
+                  max_tokens: 800, temperature: 0.4,
+                }),
+              });
+              if (r.ok) {
+                const d = await r.json().catch(() => null);
+                plan = String(d?.choices?.[0]?.message?.content || '').trim();
+              }
+            } catch (_) {}
+          }
+          if (!plan && env.AI) {
+            try {
+              const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+                messages: [{ role: 'system', content: planSys }, { role: 'user', content: planUser }],
+                max_tokens: 800,
+              });
+              plan = String(res?.response || '').trim();
+            } catch (_) {}
+          }
+
+          return jsonResponse({
+            success: plan.length > 0,
+            plan: plan || 'Plan konnte gerade nicht erstellt werden -- spaeter erneut.',
+          });
         }
 
         // ── POST /api/admin/godmode/chat ─────────────────────────────────
