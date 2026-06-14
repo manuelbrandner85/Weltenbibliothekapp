@@ -418,6 +418,58 @@ class GodModeService {
     }
   }
 
+  /// G1: kurze Umsetzungs-Plan-Vorschau fuer einen Auftrag (vor dem Bauen).
+  static Future<String> plan({
+    required String title,
+    required String description,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/godmode/plan',
+        role: _role,
+        body: {'title': title, 'description': description},
+        timeout: const Duration(seconds: 35),
+      );
+      return (data['plan'] as String?) ?? '';
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.plan: $e');
+      return '';
+    }
+  }
+
+  /// B1: Bereich umbenennen.
+  static Future<bool> renameTopic(String slug, String label) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/godmode/topics',
+        role: _role,
+        body: {'action': 'rename', 'slug': slug, 'label': label},
+      );
+      return data['success'] == true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.renameTopic: $e');
+      return false;
+    }
+  }
+
+  /// B1: Bereich [from] in [into] zusammenfuehren (from wird archiviert).
+  static Future<bool> mergeTopic({
+    required String from,
+    required String into,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/godmode/topics',
+        role: _role,
+        body: {'action': 'merge', 'slug': from, 'into': into},
+      );
+      return data['success'] == true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.mergeTopic: $e');
+      return false;
+    }
+  }
+
   /// Bereich manuell anlegen.
   static Future<bool> addTopic(String label) async {
     try {

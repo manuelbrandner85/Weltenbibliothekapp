@@ -399,6 +399,69 @@ class _GodModeTabState extends State<_GodModeTab>
     }
   }
 
+  // G1: Umsetzungs-Plan-Vorschau (Dateien/Schritte/Risiken/Aufwand) vor dem Bauen.
+  Future<void> _showPlan(GodModeSuggestion s) async {
+    final desc = s.reason.isEmpty
+        ? s.description
+        : '${s.description}\n\nWarum: ${s.reason}';
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.92,
+        builder: (ctx, scroll) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: FutureBuilder<String>(
+            future: GodModeService.plan(title: s.title, description: desc),
+            builder: (ctx, snap) {
+              return ListView(
+                controller: scroll,
+                children: [
+                  Row(children: [
+                    Icon(Icons.account_tree_rounded, size: 18, color: _ab),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Umsetzungsplan',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text(s.title,
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 12)),
+                  const SizedBox(height: 14),
+                  if (snap.connectionState != ConnectionState.done)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 30),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else
+                    SelectableText(
+                      (snap.data ?? '').isEmpty
+                          ? 'Kein Plan erhalten -- spaeter erneut.'
+                          : snap.data!,
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 13, height: 1.5),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   // E: Bearbeiten-Sheet -- Titel + Prompt (das, was Claude baut) editierbar.
   Future<void> _editAndBuild({
     required String category,
@@ -1261,7 +1324,22 @@ class _GodModeTabState extends State<_GodModeTab>
             ]),
           ),
         ],
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => _showPlan(s),
+            icon: const Icon(Icons.account_tree_outlined, size: 14),
+            label: const Text('Plan ansehen', style: TextStyle(fontSize: 11.5)),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white54,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
         Row(children: [
           Expanded(
             child: OutlinedButton.icon(
@@ -1413,6 +1491,30 @@ class _GodModeTabState extends State<_GodModeTab>
               size: 17, color: Colors.white30),
           onPressed: () => _archiveTopic(t),
         ),
+        // B1: umbenennen / zusammenfuehren.
+        PopupMenuButton<String>(
+          tooltip: 'Mehr',
+          icon: const Icon(Icons.more_vert_rounded,
+              size: 17, color: Colors.white30),
+          color: const Color(0xFF1A1A2E),
+          onSelected: (v) {
+            if (v == 'rename') {
+              _renameTopic(t);
+            } else if (v == 'merge') {
+              _mergeTopic(t);
+            }
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem(
+                value: 'rename',
+                child: Text('Umbenennen',
+                    style: TextStyle(color: Colors.white, fontSize: 13))),
+            PopupMenuItem(
+                value: 'merge',
+                child: Text('Zusammenfuehren',
+                    style: TextStyle(color: Colors.white, fontSize: 13))),
+          ],
+        ),
       ]),
     );
   }
@@ -1438,6 +1540,88 @@ class _GodModeTabState extends State<_GodModeTab>
       _snack('Bereich archiviert.');
       _loadTopics();
     }
+  }
+
+  // B1: Bereich umbenennen.
+  Future<void> _renameTopic(GodModeTopic t) async {
+    final ctrl = TextEditingController(text: t.label);
+    final newLabel = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Bereich umbenennen',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: _editDecoration('Neuer Name'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Abbrechen')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (newLabel == null || newLabel.isEmpty || newLabel == t.label) return;
+    final ok = await GodModeService.renameTopic(t.slug, newLabel);
+    if (!mounted) return;
+    _snack(ok ? 'Umbenannt in "$newLabel".' : 'Umbenennen fehlgeschlagen.',
+        color: ok ? Colors.green.shade700 : Colors.red.shade700);
+    if (ok) _loadTopics();
+  }
+
+  // B1: Bereich in einen anderen zusammenfuehren.
+  Future<void> _mergeTopic(GodModeTopic t) async {
+    final others = _topics.where((x) => x.slug != t.slug).toList();
+    if (others.isEmpty) {
+      _snack('Kein anderer Bereich zum Zusammenfuehren vorhanden.');
+      return;
+    }
+    final target = await showModalBottomSheet<GodModeTopic>(
+      context: context,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Text('"${t.label}" zusammenfuehren in ...',
+                style: const TextStyle(color: Colors.white, fontSize: 14)),
+          ),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: others
+                  .map((o) => ListTile(
+                        title: Text(o.label,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13)),
+                        onTap: () => Navigator.pop(ctx, o),
+                      ))
+                  .toList(),
+            ),
+          ),
+        ]),
+      ),
+    );
+    if (target == null) return;
+    final ok = await GodModeService.mergeTopic(from: t.slug, into: target.slug);
+    if (!mounted) return;
+    _snack(
+        ok
+            ? '"${t.label}" -> "${target.label}" zusammengefuehrt.'
+            : 'Zusammenfuehren fehlgeschlagen.',
+        color: ok ? Colors.green.shade700 : Colors.red.shade700);
+    if (ok) _loadTopics();
   }
 
   // ─────────────── Tab 4: Status ────────────────────────────────────────────
