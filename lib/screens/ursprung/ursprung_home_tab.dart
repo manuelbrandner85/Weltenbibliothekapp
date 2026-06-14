@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_world_orb.dart';
+import '../../widgets/cinematic/wb_model_view.dart';
 import '../../widgets/cinematic/wb_stagger_reveal.dart';
 import '../../services/mentor_service.dart';
 import '../../widgets/mentor_hero_card.dart';
@@ -219,6 +220,10 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                 practices: DailyPracticeCard.ursprungPractices,
               ),
               const SizedBox(height: 20),
+
+              // ── 3D-Gateway (Merkaba) ──
+              _build3DGateway(context),
+              const SizedBox(height: 28),
 
               // ── 🧠 KI-Mentor (Alchemist) ──
               Text(
@@ -446,6 +451,63 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
           ],
         ],
       );
+
+  // 3D-Gateway: oeffnet die Merkaba im Vollbild (interaktiv, drehbar).
+  Widget _build3DGateway(BuildContext context) {
+    return WbTapScale(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const _MerkabaGatewayScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              _cyan.withValues(alpha: 0.16),
+              _cyan.withValues(alpha: 0.04),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _cyan.withValues(alpha: 0.30)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _cyan.withValues(alpha: 0.15),
+            ),
+            child: const Icon(Icons.view_in_ar_rounded, color: _cyan, size: 24),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('3D-GATEWAY',
+                    style: TextStyle(
+                        color: _cyan,
+                        fontSize: 10,
+                        letterSpacing: 2.0,
+                        fontWeight: FontWeight.w700)),
+                SizedBox(height: 3),
+                Text('Merkaba interaktiv erkunden',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600)),
+                Text('Drehen, zoomen - Heilige Geometrie in 3D',
+                    style: TextStyle(color: Colors.white54, fontSize: 11)),
+              ],
+            ),
+          ),
+          Icon(Icons.arrow_forward_ios_rounded,
+              color: _cyan.withValues(alpha: 0.7), size: 14),
+        ]),
+      ),
+    );
+  }
 
   Widget _buildHeroSection() {
     final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
@@ -1380,6 +1442,41 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Vollbild-Merkaba (3D-Gateway). forceEnable -> Tier-Gate aus, Reduce-Motion
+/// bleibt aktiv; sonst Fallback-Hinweis.
+class _MerkabaGatewayScreen extends StatelessWidget {
+  const _MerkabaGatewayScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF000004),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        title: const Text('Merkaba - Gateway'),
+      ),
+      body: WbModelView(
+        src: 'assets/models/wb_merkaba.glb',
+        alt: 'Merkaba',
+        forceEnable: true,
+        backgroundColor: const Color(0xFF000004),
+        fallback: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: Text(
+              '3D ist hier deaktiviert\n(Reduce-Motion aktiv).',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, height: 1.5),
+            ),
+          ),
+        ),
       ),
     );
   }
