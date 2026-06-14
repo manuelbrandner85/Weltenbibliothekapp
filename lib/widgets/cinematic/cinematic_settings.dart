@@ -41,10 +41,14 @@ class KbCinemaSettings {
   KbCinemaSettings._();
   static final KbCinemaSettings instance = KbCinemaSettings._();
 
-  static const _key = 'kb_cinema_quality_v1';
+  // v2: Default auf "off" geaendert + Key-Bump, weil der Fragment-Shader
+  // (AnimatedSampler) auf manchen Android-GPUs den gesamten Inhalt schwarz
+  // rendert. Der Auto-Watchdog faengt nur Ruckler ab, nicht schwarze Ausgabe,
+  // d.h. Auto blieb dauerhaft schwarz. Cinema-Effekt ist jetzt opt-in via Chip.
+  static const _key = 'kb_cinema_quality_v2';
 
   final ValueNotifier<CinematicQuality> quality =
-      ValueNotifier<CinematicQuality>(CinematicQuality.auto);
+      ValueNotifier<CinematicQuality>(CinematicQuality.off);
 
   bool _loaded = false;
 
@@ -57,11 +61,11 @@ class KbCinemaSettings {
       if (v != null) {
         quality.value = CinematicQuality.values.firstWhere(
           (e) => e.name == v,
-          orElse: () => CinematicQuality.auto,
+          orElse: () => CinematicQuality.off,
         );
       }
     } catch (_) {
-      // Default bleibt Auto.
+      // Default bleibt Aus.
     }
   }
 
