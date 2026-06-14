@@ -277,11 +277,18 @@ class GodModeRepoInsights {
   final List<GodModeRepoEntry> runs;
   final List<GodModeRepoEntry> issues;
   final List<GodModeRepoEntry> commits;
+
+  /// C5: konfigurierte KI-Provider (name -> aktiv) + Auftrag-Statistik.
+  final Map<String, bool> providers;
+  final Map<String, int> stats;
+
   const GodModeRepoInsights({
     required this.pulls,
     required this.runs,
     required this.issues,
     required this.commits,
+    this.providers = const {},
+    this.stats = const {},
   });
   static const empty = GodModeRepoInsights(
     pulls: [],
@@ -494,6 +501,14 @@ class GodModeService {
                   url: (j['url'] as String?) ?? '',
                   meta: '',
                 )),
+        providers: (data['providers'] is Map)
+            ? (data['providers'] as Map)
+                .map((k, v) => MapEntry(k.toString(), v == true))
+            : const {},
+        stats: (data['stats'] is Map)
+            ? (data['stats'] as Map)
+                .map((k, v) => MapEntry(k.toString(), (v is int) ? v : 0))
+            : const {},
       );
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.repoInsights: $e');

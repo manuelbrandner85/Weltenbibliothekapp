@@ -5629,7 +5629,37 @@ export default {
             (d) => Array.isArray(d) ? d.map(c => ({
               message: String(c?.commit?.message || '').split('\n')[0], url: c.html_url,
             })).filter(c => !/^Merge /.test(c.message)) : []);
-          return jsonResponse({ success: true, repo, pulls, runs, issues, commits });
+          // C5: konfigurierte KI-Provider + Auftrag-Statistik (Health).
+          const providers = {
+            groq: !!env.GROQ_API_KEY,
+            cerebras: !!env.CEREBRAS_API_KEY,
+            openrouter: !!env.OPENROUTER_API_KEY,
+            mistral: !!env.MISTRAL_API_KEY,
+            gemini: !!env.GEMINI_API_KEY,
+            'workers-ai': !!env.AI,
+          };
+          let stats = { total: 0, open: 0, done: 0, failed: 0 };
+          try {
+            const sr = await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_requests?select=status&limit=500`,
+              { headers: svcHeaders }
+            );
+            if (sr.ok) {
+              const rows = await sr.json().catch(() => []);
+              if (Array.isArray(rows)) {
+                stats.total = rows.length;
+                for (const r of rows) {
+                  const st = String(r.status || '').toLowerCase();
+                  if (['merged', 'done', 'completed'].includes(st)) stats.done++;
+                  else if (['failed', 'error', 'rejected'].includes(st)) stats.failed++;
+                  else stats.open++;
+                }
+              }
+            }
+          } catch (_) {}
+          return jsonResponse({
+            success: true, repo, pulls, runs, issues, commits, providers, stats,
+          });
         }
 
         // ── POST /api/admin/godmode/request ─────────────────────────────
