@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 // OpenClaw v2.0
+import '../../widgets/cinematic/wb_model_view.dart';
 
 class PowerNetworkMapperScreen extends StatefulWidget {
   const PowerNetworkMapperScreen({super.key});
@@ -910,6 +911,15 @@ class _PowerNetworkMapperScreenState extends State<PowerNetworkMapperScreen>
                                 ],
                               ),
                             ),
+                            IconButton(
+                              tooltip: '3D-Globus',
+                              icon: const Icon(Icons.public_rounded,
+                                  color: Color(0xFF3B82F6)),
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => const _GlobeScreen()),
+                              ),
+                            ),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
@@ -1622,5 +1632,40 @@ class NetworkPainter extends CustomPainter {
   bool shouldRepaint(covariant NetworkPainter oldDelegate) {
     return oldDelegate.selectedNodeId != selectedNodeId ||
         oldDelegate.pulseValue != pulseValue;
+  }
+}
+
+/// Vollbild-3D-Globus (Materie/Machtnetz). forceEnable -> Tier-Gate aus,
+/// Reduce-Motion bleibt aktiv; sonst Fallback-Hinweis.
+class _GlobeScreen extends StatelessWidget {
+  const _GlobeScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF000004),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
+        title: const Text('Machtnetz - 3D-Globus'),
+      ),
+      body: WbModelView(
+        src: 'assets/models/wb_globe.glb',
+        alt: 'Globus',
+        forceEnable: true,
+        backgroundColor: const Color(0xFF000004),
+        fallback: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(28),
+            child: Text(
+              '3D ist hier deaktiviert\n(Reduce-Motion aktiv).',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, height: 1.5),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
