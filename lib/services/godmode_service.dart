@@ -263,14 +263,19 @@ class GodModeSubmitResult {
 class GodModeService {
   static const _role = 'root_admin';
 
-  /// KI-Vorschlaege generieren. [area] = optionaler Fokusbereich.
+  /// KI-Vorschlaege generieren. [area] = optionaler Fokusbereich,
+  /// [world] = optionaler Welt-Fokus (materie|energie|vorhang|ursprung).
   /// Liefert Vorschlaege (mit Typ + Warum) + selbstgelernte Bereiche.
-  static Future<GodModeSuggestResult> suggest({String? area}) async {
+  static Future<GodModeSuggestResult> suggest(
+      {String? area, String? world}) async {
     try {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/godmode/suggest',
         role: _role,
-        body: {if (area != null && area.isNotEmpty) 'area': area},
+        body: {
+          if (area != null && area.isNotEmpty) 'area': area,
+          if (world != null && world.isNotEmpty) 'world': world,
+        },
         timeout: const Duration(seconds: 35),
       );
       final list = data['suggestions'];
