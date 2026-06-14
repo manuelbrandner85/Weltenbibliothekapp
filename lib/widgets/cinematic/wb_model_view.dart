@@ -63,6 +63,10 @@ class WbModelView extends StatelessWidget {
       autoRotate: autoRotate,
       cameraControls: cameraControls,
       backgroundColor: backgroundColor,
+      // Without lighting a glTF renders black on a dark background -> use the
+      // built-in neutral image-based lighting and a slightly higher exposure.
+      environmentImage: 'neutral',
+      exposure: 1.2,
     );
   }
 }
