@@ -611,6 +611,57 @@ async function enqueuePush(pushAuth, userId, type, title, body, data = {}) {
   ]);
 }
 
+/**
+ * G2: Woechentlicher Godmode-Report. Generiert die 3 wirkungsvollsten,
+ * konkreten Massnahmen und benachrichtigt alle Admins (In-App + FCM-Queue).
+ * Best-effort -- laeuft aus dem Cron (kein eigener Cron-Trigger noetig).
+ */
+async function runGodmodeWeeklyReport(env, pushAuth) {
+  const sys =
+    'Du bist Senior-Produktberater der Flutter-App "Weltenbibliothek" ' +
+    '(4 Welten: materie/energie/vorhang/ursprung; Supabase, Cloudflare Worker, ' +
+    'Shorebird OTA). Nenne die 3 wirkungsvollsten, KONKRETEN naechsten ' +
+    'Massnahmen mit echtem Bezug (Datei/Feature) -- KEINE generischen Floskeln ' +
+    'wie "Dark Mode" oder "Performance optimieren". Antworte als kurze Liste, ' +
+    'je 1 Zeile im Format: "<Emoji> <Titel> - <1 Satz Nutzen>". Keine Einleitung.';
+  let text = '';
+  const ask = async (url, key, model) => {
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: sys },
+            { role: 'user', content: 'Die 3 wichtigsten Massnahmen diese Woche.' },
+          ],
+          max_tokens: 400, temperature: 0.7,
+        }),
+      });
+      if (r.ok) {
+        const d = await r.json().catch(() => null);
+        return String(d?.choices?.[0]?.message?.content || '').trim();
+      }
+    } catch (_) {}
+    return '';
+  };
+  if (env.GROQ_API_KEY) {
+    text = await ask('https://api.groq.com/openai/v1/chat/completions',
+      env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
+  }
+  if (!text && env.OPENROUTER_API_KEY) {
+    text = await ask('https://openrouter.ai/api/v1/chat/completions',
+      env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct');
+  }
+  if (!text) {
+    text = 'Oeffne God Mode -> KI-Ideen und generiere die Vorschlaege fuer diese Woche.';
+  }
+  await notifyAdmins(pushAuth, '🤖 God Mode Wochen-Report', text.slice(0, 900),
+    { type: 'godmode_report' });
+  return { sent: true, len: text.length };
+}
+
 /** Convenience: 403 wenn nicht-admin, sonst null. */
 async function requireAdmin(request, env, { needHighPrivilege = false, needRootAdmin = false } = {}) {
   const caller = await verifyAdminCaller(request, env);
@@ -1716,6 +1767,20 @@ export default {
       }
     } catch (e) {
       console.error('cron auto-scan failed:', e.message);
+    }
+
+    // 🤖 G2: God-Mode Wochen-Report -- montags ~08:00 UTC (Top-3 Ideen ->
+    // Push + In-App an alle Admins). Reuse des */5-Cron via Zeit-Gate.
+    try {
+      const nowUTC = new Date();
+      if (nowUTC.getUTCDay() === 1 &&
+          nowUTC.getUTCHours() === 8 &&
+          nowUTC.getUTCMinutes() < 5) {
+        const res = await runGodmodeWeeklyReport(env, pushAuth);
+        console.log('cron godmode-weekly:', JSON.stringify(res));
+      }
+    } catch (e) {
+      console.error('cron godmode-weekly failed:', e.message);
     }
 
     // 🧹 6h Chat-Reset: ALLE Nachrichten aus allen Räumen löschen.
