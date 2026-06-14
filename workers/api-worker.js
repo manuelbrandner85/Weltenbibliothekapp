@@ -4808,23 +4808,25 @@ export default {
           // wiederholten Generierungen (sonst liefert das LLM oft dasselbe).
           const nonce = Math.random().toString(36).slice(2, 10);
 
-          // Intelligenz: echten Code-Stand aus den letzten Git-Commits ziehen,
-          // damit Vorschlaege NICHT generisch sind und nichts bereits Gebautes
-          // doppeln. Best-effort -- bei fehlendem PAT einfach ohne.
+          // Intelligenz: echten Code-Stand (Commits) + offene Issues +
+          // fehlgeschlagene CI als Kontext -> Vorschlaege sind nicht generisch
+          // und doppeln nichts. Best-effort.
           let recentCommitsLine = '';
+          let openIssuesLine = '';
+          let ciLine = '';
+          let openIssueTitles = [];
           try {
             const ghToken = env.GODMODE_GH_PAT || env.GITHUB_TOKEN;
             const repo = env.GODMODE_REPO || 'manuelbrandner85/weltenbibliothekapp';
+            const ghHeaders = {
+              Authorization: `Bearer ${ghToken}`,
+              'User-Agent': 'weltenbibliothek-godmode',
+              Accept: 'application/vnd.github+json',
+            };
             if (ghToken) {
               const cr = await fetch(
                 `https://api.github.com/repos/${repo}/commits?per_page=20`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${ghToken}`,
-                    'User-Agent': 'weltenbibliothek-godmode',
-                    Accept: 'application/vnd.github+json',
-                  },
-                }
+                { headers: ghHeaders }
               );
               if (cr.ok) {
                 const commits = await cr.json().catch(() => []);
@@ -4839,6 +4841,44 @@ export default {
                       'ZULETZT GEAENDERT (echte Git-Commits -- NICHT erneut vorschlagen, ' +
                       'darauf aufbauen):\n' + msgs.map(m => `- ${m}`).join('\n') + '\n\n';
                   }
+                }
+              }
+              // A2/A3: offene Issues (Issues-Endpoint liefert auch PRs -> filtern).
+              const ir = await fetch(
+                `https://api.github.com/repos/${repo}/issues?state=open&per_page=30&sort=created&direction=desc`,
+                { headers: ghHeaders }
+              );
+              if (ir.ok) {
+                const issues = await ir.json().catch(() => []);
+                if (Array.isArray(issues)) {
+                  openIssueTitles = issues
+                    .filter(i => i && !i.pull_request)
+                    .map(i => String(i.title || '').trim())
+                    .filter(Boolean)
+                    .slice(0, 20);
+                  if (openIssueTitles.length) {
+                    openIssuesLine =
+                      'OFFENE ISSUES (NICHT doppelt vorschlagen, ggf. darauf beziehen):\n' +
+                      openIssueTitles.map(t => `- ${t}`).join('\n') + '\n\n';
+                  }
+                }
+              }
+              // A2: zuletzt fehlgeschlagene CI-Workflows -> ggf. Bugfix.
+              const wr = await fetch(
+                `https://api.github.com/repos/${repo}/actions/runs?status=failure&per_page=8`,
+                { headers: ghHeaders }
+              );
+              if (wr.ok) {
+                const data = await wr.json().catch(() => null);
+                const runs = data && Array.isArray(data.workflow_runs)
+                  ? data.workflow_runs : [];
+                const names = [...new Set(
+                  runs.map(r => String(r?.name || '').trim()).filter(Boolean)
+                )].slice(0, 6);
+                if (names.length) {
+                  ciLine =
+                    'FEHLGESCHLAGENE CI-WORKFLOWS (ggf. konkreten Bugfix vorschlagen):\n' +
+                    names.map(n => `- ${n}`).join('\n') + '\n\n';
                 }
               }
             }
@@ -4925,6 +4965,8 @@ export default {
             '- Globale Volltext-Suche ueber alle Welten fehlt\n\n' +
             recentSummary +
             recentCommitsLine +
+            openIssuesLine +
+            ciLine +
             topicLine +
             (world
               ? `WELT-FOKUS: ALLE Vorschlaege MUESSEN die Welt "${world}" betreffen (deren Screens/Services).\n\n`
@@ -4932,9 +4974,9 @@ export default {
             (area
               ? `STRIKTER FOKUS: ALLE 5 Vorschlaege MUESSEN sich konkret auf "${area}" beziehen -- nichts ausserhalb dieses Bereichs.\n\n`
               : 'Bereich: gemischt -- verschiedene Welten/Aspekte abdecken.\n\n') +
-            (builtTitles.length
-              ? 'BEREITS GEBAUT ODER IN ARBEIT -- NIEMALS vorschlagen (weder Duplikat noch Variante):\n' +
-                builtTitles.map(t => `- ${t}`).join('\n') + '\n\n'
+            ((builtTitles.length || openIssueTitles.length)
+              ? 'BEREITS GEBAUT, IN ARBEIT ODER OFFENES ISSUE -- NIEMALS vorschlagen (weder Duplikat noch Variante):\n' +
+                [...builtTitles, ...openIssueTitles].map(t => `- ${t}`).join('\n') + '\n\n'
               : '') +
             'Schlage GENAU 5 highend-Massnahmen vor. JEDER Vorschlag MUSS:\n' +
             '1. Auf einem KONKRETEN vorhandenen Feature aufbauen ODER eine der genannten Luecken schliessen.\n' +
@@ -5051,7 +5093,27 @@ export default {
             } catch (_) {}
           }
 
-          // 2) OpenRouter
+          // 2) Cerebras (sehr schnell, kostenloser Tier) -- OpenAI-kompatibel.
+          if (!result && env.CEREBRAS_API_KEY) {
+            try {
+              const r = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${env.CEREBRAS_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'llama-3.3-70b',
+                  messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userMsg }],
+                  max_tokens: 1500, temperature: 0.9,
+                }),
+              });
+              if (r.ok) {
+                const d = await r.json().catch(() => null);
+                const parsed = parseAi(d?.choices?.[0]?.message?.content);
+                if (parsed) { result = parsed; source = 'cerebras'; }
+              }
+            } catch (_) {}
+          }
+
+          // 3) OpenRouter
           if (!result && env.OPENROUTER_API_KEY) {
             try {
               const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -5071,7 +5133,27 @@ export default {
             } catch (_) {}
           }
 
-          // 3) Gemini
+          // 4) Mistral (kostenloser Tier) -- OpenAI-kompatibel.
+          if (!result && env.MISTRAL_API_KEY) {
+            try {
+              const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${env.MISTRAL_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'mistral-large-latest',
+                  messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userMsg }],
+                  max_tokens: 1500, temperature: 0.9,
+                }),
+              });
+              if (r.ok) {
+                const d = await r.json().catch(() => null);
+                const parsed = parseAi(d?.choices?.[0]?.message?.content);
+                if (parsed) { result = parsed; source = 'mistral'; }
+              }
+            } catch (_) {}
+          }
+
+          // 5) Gemini
           if (!result && env.GEMINI_API_KEY) {
             try {
               const r = await fetch(
@@ -5573,6 +5655,31 @@ export default {
           } catch (e) {
             return errorResponse(`GitHub-Fehler: ${e.message}`, 502, 'github_error');
           }
+
+          // C4: Auto-Triage -- Labels (Kategorie/Typ/Prioritaet) best-effort
+          // nachreichen. Schlaegt das fehl, bleibt das Issue trotzdem bestehen.
+          try {
+            const triage = [];
+            if (category && category !== 'other') triage.push(`cat:${category}`);
+            if (wbType) triage.push(`type:${wbType}`);
+            triage.push(wbType === 'bug'
+              ? 'priority:high'
+              : (wbType === 'performance' ? 'priority:medium' : 'priority:normal'));
+            await fetch(
+              `https://api.github.com/repos/${ghRepo}/issues/${issueNumber}/labels`,
+              {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${ghPat}`,
+                  Accept: 'application/vnd.github+json',
+                  'Content-Type': 'application/json',
+                  'User-Agent': 'weltenbibliothek-godmode/1.0',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                },
+                body: JSON.stringify({ labels: triage }),
+              }
+            );
+          } catch (_) {}
 
           // In godmode_requests persistieren (best-effort).
           let row = null;
