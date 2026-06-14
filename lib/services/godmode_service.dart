@@ -306,7 +306,7 @@ class GodModeService {
   /// [world] = optionaler Welt-Fokus (materie|energie|vorhang|ursprung).
   /// Liefert Vorschlaege (mit Typ + Warum) + selbstgelernte Bereiche.
   static Future<GodModeSuggestResult> suggest(
-      {String? area, String? world}) async {
+      {String? area, String? world, bool vote = false}) async {
     try {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/godmode/suggest',
@@ -314,8 +314,9 @@ class GodModeService {
         body: {
           if (area != null && area.isNotEmpty) 'area': area,
           if (world != null && world.isNotEmpty) 'world': world,
+          if (vote) 'vote': true,
         },
-        timeout: const Duration(seconds: 35),
+        timeout: const Duration(seconds: 50),
       );
       final list = data['suggestions'];
       final topics = data['learnedTopics'];

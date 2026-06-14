@@ -5103,6 +5103,82 @@ export default {
           let result = null;
           let source = 'fallback';
 
+          // C6: Multi-Modell-Voting (opt-in via body.vote). Holt Kandidaten von
+          // zwei Providern; ein Judge-LLM waehlt die besten 5.
+          const callProvider = async (name) => {
+            const oai = async (url, key, model) => {
+              try {
+                const r = await fetch(url, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    model,
+                    messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userMsg }],
+                    max_tokens: 1500, temperature: 0.9,
+                  }),
+                });
+                if (!r.ok) return null;
+                const d = await r.json().catch(() => null);
+                return parseAi(d?.choices?.[0]?.message?.content);
+              } catch (_) { return null; }
+            };
+            if (name === 'groq' && env.GROQ_API_KEY) return oai('https://api.groq.com/openai/v1/chat/completions', env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
+            if (name === 'cerebras' && env.CEREBRAS_API_KEY) return oai('https://api.cerebras.ai/v1/chat/completions', env.CEREBRAS_API_KEY, 'llama-3.3-70b');
+            if (name === 'openrouter' && env.OPENROUTER_API_KEY) return oai('https://openrouter.ai/api/v1/chat/completions', env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct');
+            if (name === 'mistral' && env.MISTRAL_API_KEY) return oai('https://api.mistral.ai/v1/chat/completions', env.MISTRAL_API_KEY, 'mistral-large-latest');
+            return null;
+          };
+
+          if (body && body.vote === true) {
+            const sets = [];
+            for (const p of ['groq', 'cerebras', 'openrouter', 'mistral']) {
+              if (sets.length >= 2) break;
+              const s = await callProvider(p);
+              if (s && Array.isArray(s.suggestions) && s.suggestions.length) sets.push(s);
+            }
+            if (sets.length >= 2) {
+              const combined = sets.flatMap(s => s.suggestions);
+              const judgeSys =
+                'Du bist ein strenger Tech-Lead. Waehle aus den folgenden ' +
+                'Vorschlaegen die 5 BESTEN, konkretesten, nicht-redundanten aus. ' +
+                'Antworte AUSSCHLIESSLICH als JSON {"suggestions":[...]} mit den ' +
+                'Feldern type,category,title,description,reason,impact,effort.';
+              const judgeUser = JSON.stringify({ suggestions: combined }).slice(0, 6000);
+              let judged = null;
+              try {
+                if (env.GROQ_API_KEY) {
+                  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      model: 'llama-3.3-70b-versatile',
+                      messages: [{ role: 'system', content: judgeSys }, { role: 'user', content: judgeUser }],
+                      max_tokens: 1500, temperature: 0.3,
+                    }),
+                  });
+                  if (r.ok) {
+                    const d = await r.json().catch(() => null);
+                    judged = parseAi(d?.choices?.[0]?.message?.content);
+                  }
+                }
+              } catch (_) {}
+              if (judged && judged.suggestions.length) {
+                result = { suggestions: judged.suggestions.slice(0, 5), learnedTopics: sets[0].learnedTopics || [] };
+              } else {
+                const seen = new Set();
+                const best = [];
+                for (const s of combined.sort((a, b) => (b.impact * 2 - b.effort) - (a.impact * 2 - a.effort))) {
+                  const k = String(s.title || '').toLowerCase();
+                  if (!k || seen.has(k)) continue;
+                  seen.add(k); best.push(s);
+                  if (best.length >= 5) break;
+                }
+                result = { suggestions: best, learnedTopics: sets[0].learnedTopics || [] };
+              }
+              source = 'voting';
+            }
+          }
+
           // 1) Groq (schnell + stark)
           if (!result && env.GROQ_API_KEY) {
             try {
