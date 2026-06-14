@@ -1463,7 +1463,7 @@ class _MerkabaGatewayScreen extends StatelessWidget {
         title: const Text('Merkaba - Gateway'),
       ),
       body: WbModelView(
-        src: 'assets/models/wb_merkaba.glb',
+        src: 'assets/models/wb_merkaba.obj',
         alt: 'Merkaba',
         forceEnable: true,
         backgroundColor: const Color(0xFF000004),
