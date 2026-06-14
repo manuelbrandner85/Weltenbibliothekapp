@@ -74,6 +74,81 @@ class _GodModeTabState extends State<_GodModeTab>
     _tc = TabController(length: 4, vsync: this);
     _loadRequests();
     _loadTopics();
+    _loadPersisted(); // C1/I2: Chat + Gemerkt aus letztem Mal wiederherstellen
+  }
+
+  // ── C1/I2: lokale Persistenz (SharedPreferences) ──────────────────────────
+  static const _kSavedKey = 'godmode_saved_v1';
+  static const _kChatKey = 'godmode_chat_v1';
+
+  Future<void> _loadPersisted() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final saved = p.getStringList(_kSavedKey) ?? const [];
+      final chatRaw = p.getString(_kChatKey);
+      final restored = <GodModeChatMessage>[];
+      if (chatRaw != null && chatRaw.isNotEmpty) {
+        final list = jsonDecode(chatRaw);
+        if (list is List) {
+          for (final e in list) {
+            if (e is Map && e['role'] is String && e['content'] is String) {
+              restored.add(GodModeChatMessage(
+                  e['role'] as String, e['content'] as String));
+            }
+          }
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        _savedTitles
+          ..clear()
+          ..addAll(saved);
+        if (restored.isNotEmpty) {
+          _chat
+            ..clear()
+            ..addAll(restored);
+        }
+      });
+    } catch (_) {/* ignore */}
+  }
+
+  Future<void> _persistSaved() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setStringList(_kSavedKey, _savedTitles.toList());
+    } catch (_) {}
+  }
+
+  Future<void> _persistChat() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      // Nur die letzten 40 Nachrichten sichern.
+      final tail = _chat.length > 40 ? _chat.sublist(_chat.length - 40) : _chat;
+      await p.setString(
+          _kChatKey, jsonEncode(tail.map((m) => m.toJson()).toList()));
+    } catch (_) {}
+  }
+
+  Future<void> _clearChat() async {
+    setState(() {
+      _chat.clear();
+      _pendingOrder = null;
+    });
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.remove(_kChatKey);
+    } catch (_) {}
+  }
+
+  void _toggleSaved(String title) {
+    setState(() {
+      if (_savedTitles.contains(title)) {
+        _savedTitles.remove(title);
+      } else {
+        _savedTitles.add(title);
+      }
+    });
+    _persistSaved();
   }
 
   @override
@@ -195,6 +270,7 @@ class _GodModeTabState extends State<_GodModeTab>
       }
       _pendingOrder = reply.readyToSubmit;
     });
+    _persistChat(); // C1
     _scrollChatDown();
   }
 
@@ -521,6 +597,17 @@ class _GodModeTabState extends State<_GodModeTab>
   // ─────────────── Tab 1: Chat ──────────────────────────────────────────────
   Widget _buildChatTab() {
     return Column(children: [
+      if (_chat.isNotEmpty)
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _clearChat,
+            icon: const Icon(Icons.delete_outline_rounded, size: 15),
+            label:
+                const Text('Verlauf loeschen', style: TextStyle(fontSize: 11)),
+            style: TextButton.styleFrom(foregroundColor: Colors.white38),
+          ),
+        ),
       Expanded(
         child: _chat.isEmpty
             ? _buildChatEmpty()
@@ -1115,13 +1202,7 @@ class _GodModeTabState extends State<_GodModeTab>
           ),
           const SizedBox(width: 8),
           GestureDetector(
-            onTap: () => setState(() {
-              if (saved) {
-                _savedTitles.remove(s.title);
-              } else {
-                _savedTitles.add(s.title);
-              }
-            }),
+            onTap: () => _toggleSaved(s.title),
             child: Icon(
               saved ? Icons.star_rounded : Icons.star_outline_rounded,
               size: 18,
@@ -1638,6 +1719,29 @@ class _GodModeTabState extends State<_GodModeTab>
         ],
         const SizedBox(height: 8),
         Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          // S3: fehlgeschlagenen Auftrag mit angepasstem Prompt neu absetzen.
+          if (isFailed)
+            TextButton.icon(
+              onPressed: _submitting
+                  ? null
+                  : () => _editAndBuild(
+                        category: r.category,
+                        type: r.wbType ?? 'verbesserung',
+                        title: r.title,
+                        description: r.description,
+                        source: 'manual',
+                      ),
+              icon: const Icon(Icons.edit_rounded, size: 14),
+              label: const Text('Bearbeiten', style: TextStyle(fontSize: 11.5)),
+              style: TextButton.styleFrom(
+                foregroundColor: _ab,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          if (isFailed) const SizedBox(width: 6),
           if (isFailed)
             TextButton.icon(
               onPressed: _submitting ? null : () => _retryRequest(r),
