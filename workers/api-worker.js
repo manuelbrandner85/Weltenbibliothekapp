@@ -4735,9 +4735,49 @@ export default {
           let body = {};
           try { body = await request.clone().json(); } catch (_) {}
           const area = String(body.area || '').trim().slice(0, 80);
+          // I3: optionaler Welt-Fokus (materie|energie|vorhang|ursprung).
+          const WORLDS = ['materie', 'energie', 'vorhang', 'ursprung'];
+          const world = WORLDS.includes(String(body.world || '').trim().toLowerCase())
+            ? String(body.world).trim().toLowerCase() : '';
           // F2: Variations-Seed -- erzwingt unterschiedliche Outputs bei
           // wiederholten Generierungen (sonst liefert das LLM oft dasselbe).
           const nonce = Math.random().toString(36).slice(2, 10);
+
+          // Intelligenz: echten Code-Stand aus den letzten Git-Commits ziehen,
+          // damit Vorschlaege NICHT generisch sind und nichts bereits Gebautes
+          // doppeln. Best-effort -- bei fehlendem PAT einfach ohne.
+          let recentCommitsLine = '';
+          try {
+            const ghToken = env.GODMODE_GH_PAT || env.GITHUB_TOKEN;
+            const repo = env.GODMODE_REPO || 'manuelbrandner85/weltenbibliothekapp';
+            if (ghToken) {
+              const cr = await fetch(
+                `https://api.github.com/repos/${repo}/commits?per_page=20`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${ghToken}`,
+                    'User-Agent': 'weltenbibliothek-godmode',
+                    Accept: 'application/vnd.github+json',
+                  },
+                }
+              );
+              if (cr.ok) {
+                const commits = await cr.json().catch(() => []);
+                if (Array.isArray(commits) && commits.length) {
+                  const msgs = commits
+                    .map(c => String(c?.commit?.message || '').split('\n')[0].trim())
+                    .filter(Boolean)
+                    .filter(m => !/^Merge /.test(m))
+                    .slice(0, 15);
+                  if (msgs.length) {
+                    recentCommitsLine =
+                      'ZULETZT GEAENDERT (echte Git-Commits -- NICHT erneut vorschlagen, ' +
+                      'darauf aufbauen):\n' + msgs.map(m => `- ${m}`).join('\n') + '\n\n';
+                  }
+                }
+              }
+            }
+          } catch (_) {}
 
           // N1 Selbst-Analyse: echten App-Zustand laden, damit Vorschlaege
           // geerdet sind (Duplikat-Schutz + Kategorie-Verteilung + Fehler).
@@ -4819,7 +4859,11 @@ export default {
             '- build_context_synchronously Warnungen im gesamten Code\n' +
             '- Globale Volltext-Suche ueber alle Welten fehlt\n\n' +
             recentSummary +
+            recentCommitsLine +
             topicLine +
+            (world
+              ? `WELT-FOKUS: ALLE Vorschlaege MUESSEN die Welt "${world}" betreffen (deren Screens/Services).\n\n`
+              : '') +
             (area
               ? `STRIKTER FOKUS: ALLE 5 Vorschlaege MUESSEN sich konkret auf "${area}" beziehen -- nichts ausserhalb dieses Bereichs.\n\n`
               : 'Bereich: gemischt -- verschiedene Welten/Aspekte abdecken.\n\n') +
@@ -4836,6 +4880,12 @@ export default {
             '   Satz 3: Wie technisch umgesetzt (Widget, Methode, Tabelle, API-Endpoint -- konkret).\n' +
             '   Satz 4: Was der Nutzer danach sehen/tun kann.\n' +
             '3. In "reason" (2 Saetze): Welches konkrete Problem wird geloest oder welcher Mehrwert entsteht.\n' +
+            'ANTI-GENERIK (hart): JEDER "title" MUSS einen exakten Dateipfad ODER einen ' +
+            'konkreten Widget-/Methoden-/Endpoint-Namen aus der obigen Liste nennen. ' +
+            'VERBOTEN sind generische Allerwelts-Ideen wie "Dark Mode", "Onboarding-Tutorial", ' +
+            '"Push-Benachrichtigungen", "Gamification hinzufuegen", "Suche verbessern", ' +
+            '"Performance optimieren", "UI modernisieren" -- diese existieren bereits oder sind zu vage. ' +
+            'Beziehe dich, wo moeglich, konkret auf die ZULETZT GEAENDERTEN Commits (darauf aufbauen, nicht doppeln).\n' +
             'VERBOTEN: vage Formulierungen wie "verbessern", "optimieren", "erhoehen" ohne Substanz.\n' +
             'Typ-Bedeutung: bug=Fehler beheben, neuerung=komplett neues Feature, ' +
             'erweiterung=bestehendes Feature ausbauen, verbesserung=bestehendes optimieren, ' +

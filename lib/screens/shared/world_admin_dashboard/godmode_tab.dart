@@ -58,6 +58,8 @@ class _GodModeTabState extends State<_GodModeTab>
   String _lastSource = '';
   // N4: aktiver Typ-Filter (slug) | 'saved' | null = alle.
   String? _typeFilter;
+  // I3: optionaler Welt-Fokus (materie|energie|vorhang|ursprung) | null.
+  String? _world;
   // N3: lokal gemerkte Vorschlaege (per Titel, nicht persistiert).
   final Set<String> _savedTitles = {};
   bool _loadingMore = false;
@@ -119,7 +121,7 @@ class _GodModeTabState extends State<_GodModeTab>
       _suggestions = const [];
       _dismissedTitles.clear();
     });
-    final res = await GodModeService.suggest(area: _suggestArea);
+    final res = await GodModeService.suggest(area: _suggestArea, world: _world);
     if (!mounted) return;
     // N2: Quick-Wins zuerst (hoher Nutzen, niedriger Aufwand).
     final sorted = [...res.suggestions]
@@ -141,7 +143,7 @@ class _GodModeTabState extends State<_GodModeTab>
   Future<void> _loadMore() async {
     if (_loadingMore || _suggesting) return;
     setState(() => _loadingMore = true);
-    final res = await GodModeService.suggest(area: _suggestArea);
+    final res = await GodModeService.suggest(area: _suggestArea, world: _world);
     if (!mounted) return;
     final existing = _suggestions.map((s) => s.title).toSet();
     final merged = [
@@ -195,33 +197,15 @@ class _GodModeTabState extends State<_GodModeTab>
   Future<void> _confirmPendingOrder() async {
     final o = _pendingOrder;
     if (o == null) return;
-    setState(() => _submitting = true);
-    final res = await GodModeService.submit(
+    // E: auch der Chat-Auftrag ist vor dem Bauen editierbar.
+    setState(() => _pendingOrder = null);
+    await _editAndBuild(
       category: o.category,
       type: o.type,
       title: o.title,
       description: o.description,
       source: 'chat',
     );
-    if (!mounted) return;
-    setState(() {
-      _submitting = false;
-      if (res.success) {
-        _pendingOrder = null;
-        _chat.add(GodModeChatMessage(
-            'assistant',
-            'Auftrag #${res.issueNumber ?? '?'} abgesetzt. Claude baut jetzt autonom -- '
-                'du siehst den Fortschritt im Status-Tab.'));
-      }
-    });
-    if (res.success) {
-      _snack('Auftrag #${res.issueNumber} angelegt.',
-          color: Colors.green.shade700);
-      _loadRequests();
-      _scrollChatDown();
-    } else {
-      _snack(res.message, color: Colors.red.shade700);
-    }
   }
 
   void _declinePendingOrder() {
@@ -247,16 +231,33 @@ class _GodModeTabState extends State<_GodModeTab>
   }
 
   // ───────────────────────────────────────────────────── submit (KI-Idee)
-  Future<void> _submitSuggestion(GodModeSuggestion s) async {
+  // E: jeder Vorschlag laeuft jetzt durch ein Bearbeiten-Sheet -- Titel +
+  // Prompt sind editierbar, bevor Claude baut.
+  Future<void> _submitSuggestion(GodModeSuggestion s) => _editAndBuild(
+        category: s.category,
+        type: s.type,
+        title: s.title,
+        description: s.reason.isEmpty
+            ? s.description
+            : '${s.description}\n\nWarum: ${s.reason}',
+        source: 'ai_suggestion',
+      );
+
+  // Low-level: Auftrag direkt absetzen (nach Bearbeiten).
+  Future<void> _submitRaw({
+    required String category,
+    required String type,
+    required String title,
+    required String description,
+    required String source,
+  }) async {
     setState(() => _submitting = true);
     final res = await GodModeService.submit(
-      category: s.category,
-      type: s.type,
-      title: s.title,
-      description: s.reason.isEmpty
-          ? s.description
-          : '${s.description}\n\nWarum: ${s.reason}',
-      source: 'ai_suggestion',
+      category: category,
+      type: type,
+      title: title,
+      description: description,
+      source: source,
     );
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -269,6 +270,109 @@ class _GodModeTabState extends State<_GodModeTab>
       _snack(res.message, color: Colors.red.shade700);
     }
   }
+
+  // E: Bearbeiten-Sheet -- Titel + Prompt (das, was Claude baut) editierbar.
+  Future<void> _editAndBuild({
+    required String category,
+    required String type,
+    required String title,
+    required String description,
+    required String source,
+  }) async {
+    final titleCtrl = TextEditingController(text: title);
+    final descCtrl = TextEditingController(text: description);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.edit_rounded, size: 18, color: _ab),
+              const SizedBox(width: 8),
+              const Text('Auftrag bearbeiten',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600)),
+            ]),
+            const SizedBox(height: 4),
+            const Text('Passe den Prompt an -- genau das setzt Claude um.',
+                style: TextStyle(color: Colors.white38, fontSize: 11)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: titleCtrl,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: _editDecoration('Titel'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: descCtrl,
+              minLines: 4,
+              maxLines: 10,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, height: 1.4),
+              decoration: _editDecoration('Prompt / Beschreibung'),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  final t = titleCtrl.text.trim();
+                  final d = descCtrl.text.trim();
+                  if (t.isEmpty || d.isEmpty) return;
+                  Navigator.of(ctx).pop();
+                  _submitRaw(
+                    category: category,
+                    type: type,
+                    title: t,
+                    description: d,
+                    source: source,
+                  );
+                },
+                icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+                label: const Text('Bauen lassen'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _a.withValues(alpha: 0.3),
+                  foregroundColor: _ab,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    titleCtrl.dispose();
+    descCtrl.dispose();
+  }
+
+  InputDecoration _editDecoration(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      );
 
   Future<void> _openUrl(String? url) async {
     if (url == null || url.isEmpty) return;
@@ -607,6 +711,8 @@ class _GodModeTabState extends State<_GodModeTab>
         ),
         const SizedBox(height: 14),
         _buildAreaFilter(),
+        const SizedBox(height: 8),
+        _buildWorldFilter(),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
@@ -780,6 +886,49 @@ class _GodModeTabState extends State<_GodModeTab>
               );
             }).toList()),
       ]),
+    );
+  }
+
+  // I3: Welt-Fokus -- schraenkt die Vorschlaege auf eine Welt ein.
+  Widget _buildWorldFilter() {
+    const worlds = <(String?, String)>[
+      (null, '🌐 Alle Welten'),
+      ('materie', '🔵 Materie'),
+      ('energie', '🟣 Energie'),
+      ('vorhang', '🟡 Vorhang'),
+      ('ursprung', '🟢 Ursprung'),
+    ];
+    return SizedBox(
+      height: 32,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: worlds.map((e) {
+          final sel = e.$1 == _world;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _world = e.$1);
+                _generateSuggestions(); // F3: sofort neu
+              },
+              child: Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: sel
+                      ? _ab.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: sel ? _ab : Colors.white12),
+                ),
+                child: Text(e.$2,
+                    style: TextStyle(
+                        color: sel ? _ab : Colors.white54, fontSize: 11.5)),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
