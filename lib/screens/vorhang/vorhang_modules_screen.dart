@@ -14,6 +14,7 @@ import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/vorhang_branch_path.dart';
 import 'vorhang_lesson_screen.dart';
+import 'vorhang_page_route.dart';
 
 /// 🎭 VORHANG Modules Screen
 ///
@@ -155,7 +156,8 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
   /// A3: Findet freigeschaltete, nicht abgeschlossene Module, die der Nutzer
   /// noch nicht gesehen hat, und markiert sie danach als gesehen.
   Future<void> _detectNewUnlocks(
-      Map<String, List<Map<String, dynamic>>> mapped) async {
+    Map<String, List<Map<String, dynamic>>> mapped,
+  ) async {
     final unlockedCodes = <String>[];
     for (final list in mapped.values) {
       for (final m in list) {
@@ -180,16 +182,19 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         for (final m in list) {
           if (fresh.contains(m['module_code'])) {
             titles.add(
-                (m['title'] as String?) ?? (m['module_code'] as String? ?? ''));
+              (m['title'] as String?) ?? (m['module_code'] as String? ?? ''),
+            );
           }
         }
       }
       if (titles.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('🔓 Neu freigeschaltet: ${titles.join(', ')}'),
-          backgroundColor: const Color(0xFF4CAF50),
-          duration: const Duration(seconds: 4),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🔓 Neu freigeschaltet: ${titles.join(', ')}'),
+            backgroundColor: const Color(0xFF4CAF50),
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     }
   }
@@ -199,7 +204,7 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
     if (code == null) return;
     Navigator.of(context)
         .push(
-          MaterialPageRoute(
+          VorhangPageRoute(
             builder: (_) => VorhangLessonScreen(moduleCode: code),
           ),
         )
@@ -229,14 +234,11 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
       body: SafeArea(
         child: _loading
             ? const Center(
-                child: CircularProgressIndicator(
-                  color: _gold,
-                  strokeWidth: 2,
-                ),
+                child: CircularProgressIndicator(color: _gold, strokeWidth: 2),
               )
             : _error != null
-                ? _buildError()
-                : _buildContent(),
+            ? _buildError()
+            : _buildContent(),
       ),
     );
   }
@@ -248,8 +250,11 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline,
-                color: _gold.withValues(alpha: 0.6), size: 48),
+            Icon(
+              Icons.error_outline,
+              color: _gold.withValues(alpha: 0.6),
+              size: 48,
+            ),
             const SizedBox(height: 16),
             Text(
               'Module konnten nicht geladen werden',
@@ -264,14 +269,18 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
               _error ?? '',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: _fetchModules,
               icon: const Icon(Icons.refresh, color: _gold),
-              label: const Text('Erneut versuchen',
-                  style: TextStyle(color: _gold)),
+              label: const Text(
+                'Erneut versuchen',
+                style: TextStyle(color: _gold),
+              ),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: _gold.withValues(alpha: 0.4)),
               ),
@@ -297,11 +306,7 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                _surface,
-                _gold.withValues(alpha: 0.08),
-                _bgBlack,
-              ],
+              colors: [_surface, _gold.withValues(alpha: 0.08), _bgBlack],
             ),
             border: Border.all(color: _gold.withValues(alpha: 0.3)),
           ),
@@ -390,8 +395,10 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
             prefixIcon: Icon(Icons.search, color: _gold.withValues(alpha: 0.7)),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon:
-                        Icon(Icons.close, color: _gold.withValues(alpha: 0.7)),
+                    icon: Icon(
+                      Icons.close,
+                      color: _gold.withValues(alpha: 0.7),
+                    ),
                     onPressed: () {
                       _searchCtrl.clear();
                       setState(() => _searchQuery = '');
@@ -439,7 +446,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
   }
 
   Widget _buildBranchTile(
-      String branchName, List<Map<String, dynamic>> modules) {
+    String branchName,
+    List<Map<String, dynamic>> modules,
+  ) {
     final icon = _branchIcons[branchName] ?? Icons.folder;
     final completed = modules.where((m) => m['is_completed'] == true).length;
     final total = modules.length;
@@ -588,8 +597,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color:
-              isCompleted ? _gold.withValues(alpha: 0.06) : Colors.transparent,
+          color: isCompleted
+              ? _gold.withValues(alpha: 0.06)
+              : Colors.transparent,
           border: Border.all(
             color: isBoss
                 ? _gold.withValues(alpha: 0.6)
@@ -609,7 +619,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: _gold.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
@@ -628,12 +640,13 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [
-                              _gold,
-                              _gold.withValues(alpha: 0.7),
-                            ]),
+                            gradient: LinearGradient(
+                              colors: [_gold, _gold.withValues(alpha: 0.7)],
+                            ),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
@@ -652,7 +665,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF4CAF50),
                             borderRadius: BorderRadius.circular(4),
@@ -716,8 +731,11 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
               ),
             ),
             if (isUnlocked || isCompleted)
-              Icon(Icons.chevron_right,
-                  color: _gold.withValues(alpha: 0.6), size: 20),
+              Icon(
+                Icons.chevron_right,
+                color: _gold.withValues(alpha: 0.6),
+                size: 20,
+              ),
           ],
         ),
       ),
@@ -730,14 +748,16 @@ extension _BossTestActions on _VorhangModulesScreenState {
     final test = await BranchBossTestService.instance.forBranch(branch);
     if (!mounted) return;
     if (test == null || test.questions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('🔒 Boss-Test für „$branch" noch nicht verfügbar'),
-        backgroundColor: const Color(0xFF8A7531),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🔒 Boss-Test für „$branch" noch nicht verfügbar'),
+          backgroundColor: const Color(0xFF8A7531),
+        ),
+      );
       return;
     }
     Navigator.of(context).push(
-      MaterialPageRoute(
+      VorhangPageRoute(
         builder: (_) => _BossTestScreen(test: test, branch: branch),
       ),
     );
@@ -773,10 +793,7 @@ class _BossTestCard extends StatelessWidget {
             ),
             border: Border.all(color: accent, width: 1.5),
             boxShadow: [
-              BoxShadow(
-                color: accent.withValues(alpha: 0.35),
-                blurRadius: 14,
-              ),
+              BoxShadow(color: accent.withValues(alpha: 0.35), blurRadius: 14),
             ],
           ),
           child: Row(
@@ -831,24 +848,29 @@ class _BossTestScreenState extends State<_BossTestScreen> {
 
   Future<void> _submit() async {
     if (_answers.length < widget.test.questions.length) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Bitte alle Fragen beantworten.'),
-        backgroundColor: Color(0xFF8A7531),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bitte alle Fragen beantworten.'),
+          backgroundColor: Color(0xFF8A7531),
+        ),
+      );
       return;
     }
     final ordered = List<int>.generate(
       widget.test.questions.length,
       (i) => _answers[i] ?? -1,
     );
-    final result =
-        BranchBossTestService.instance.evaluate(widget.test, ordered);
+    final result = BranchBossTestService.instance.evaluate(
+      widget.test,
+      ordered,
+    );
     setState(() {
       _submitted = true;
       _result = result;
     });
     final storage = StorageService();
-    final userId = (storage.getMaterieProfile()?.userId ??
+    final userId =
+        (storage.getMaterieProfile()?.userId ??
         storage.getEnergieProfile()?.userId ??
         'anon');
     await BranchBossTestService.instance.recordAttempt(
@@ -878,7 +900,8 @@ class _BossTestScreenState extends State<_BossTestScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '⚠️ XP-Sync fehlgeschlagen. Werden beim nächsten Login nachgeholt.'),
+                '⚠️ XP-Sync fehlgeschlagen. Werden beim nächsten Login nachgeholt.',
+              ),
               backgroundColor: Colors.orange.shade800,
               duration: const Duration(seconds: 5),
             ),
@@ -894,8 +917,10 @@ class _BossTestScreenState extends State<_BossTestScreen> {
       backgroundColor: const Color(0xFF000000),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text(widget.test.title,
-            style: const TextStyle(color: _gold, fontWeight: FontWeight.w700)),
+        title: Text(
+          widget.test.title,
+          style: const TextStyle(color: _gold, fontWeight: FontWeight.w700),
+        ),
         iconTheme: const IconThemeData(color: _gold),
       ),
       body: _submitted
@@ -908,8 +933,10 @@ class _BossTestScreenState extends State<_BossTestScreen> {
                     padding: const EdgeInsets.only(bottom: 14),
                     child: Text(
                       widget.test.description!,
-                      style:
-                          const TextStyle(color: Colors.white70, fontSize: 13),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 for (var i = 0; i < widget.test.questions.length; i++)
@@ -963,12 +990,14 @@ class _BossTestScreenState extends State<_BossTestScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(q.question,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14.5,
-                fontWeight: FontWeight.w600,
-              )),
+          Text(
+            q.question,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 12),
           for (var j = 0; j < q.options.length; j++)
             _buildOption(i, j, q.options[j]),
@@ -1003,11 +1032,13 @@ class _BossTestScreenState extends State<_BossTestScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(label,
-                  style: TextStyle(
-                    color: selected ? Colors.white : Colors.white70,
-                    fontSize: 13,
-                  )),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: selected ? Colors.white : Colors.white70,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ],
         ),
@@ -1043,8 +1074,10 @@ class _BossTestScreenState extends State<_BossTestScreen> {
             if (passed) ...[
               const SizedBox(height: 16),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: _gold.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -1066,8 +1099,10 @@ class _BossTestScreenState extends State<_BossTestScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: passed ? _gold : Colors.white12,
                 foregroundColor: passed ? Colors.black : Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 14,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
