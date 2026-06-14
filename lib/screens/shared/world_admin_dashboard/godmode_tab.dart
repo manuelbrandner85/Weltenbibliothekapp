@@ -60,6 +60,8 @@ class _GodModeTabState extends State<_GodModeTab>
   String? _typeFilter;
   // I3: optionaler Welt-Fokus (materie|energie|vorhang|ursprung) | null.
   String? _world;
+  // C6: Multi-Modell-Voting beim Generieren.
+  bool _vote = false;
   // I1: mehrfach ausgewaehlte Vorschlaege (per Titel) fuer Sammel-Bauen.
   final Set<String> _selectedTitles = {};
   // S2: Status-Filter im Status-Tab (null=alle | open | done | failed).
@@ -261,7 +263,8 @@ class _GodModeTabState extends State<_GodModeTab>
       _suggestions = const [];
       _dismissedTitles.clear();
     });
-    final res = await GodModeService.suggest(area: _suggestArea, world: _world);
+    final res = await GodModeService.suggest(
+        area: _suggestArea, world: _world, vote: _vote);
     if (!mounted) return;
     // N2: Quick-Wins zuerst (hoher Nutzen, niedriger Aufwand).
     final sorted = [...res.suggestions]
@@ -283,7 +286,8 @@ class _GodModeTabState extends State<_GodModeTab>
   Future<void> _loadMore() async {
     if (_loadingMore || _suggesting) return;
     setState(() => _loadingMore = true);
-    final res = await GodModeService.suggest(area: _suggestArea, world: _world);
+    final res = await GodModeService.suggest(
+        area: _suggestArea, world: _world, vote: _vote);
     if (!mounted) return;
     final existing = _suggestions.map((s) => s.title).toSet();
     final merged = [
@@ -1049,7 +1053,32 @@ class _GodModeTabState extends State<_GodModeTab>
         _buildAreaFilter(),
         const SizedBox(height: 8),
         _buildWorldFilter(),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
+        // C6: Voting-Toggle (2 Modelle + Judge -> beste 5).
+        GestureDetector(
+          onTap: () => setState(() => _vote = !_vote),
+          child: Row(children: [
+            Icon(
+              _vote ? Icons.how_to_vote_rounded : Icons.how_to_vote_outlined,
+              size: 16,
+              color: _vote ? _ab : Colors.white38,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Multi-Modell-Voting (2 KIs + Judge, langsamer, bessere Auswahl)',
+                style: TextStyle(
+                    color: _vote ? _ab : Colors.white54, fontSize: 11.5),
+              ),
+            ),
+            Switch(
+              value: _vote,
+              onChanged: (v) => setState(() => _vote = v),
+              activeColor: _ab,
+            ),
+          ]),
+        ),
+        const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
