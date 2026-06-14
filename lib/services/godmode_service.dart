@@ -259,6 +259,38 @@ class GodModeSubmitResult {
   });
 }
 
+/// Ein Eintrag im Repo-Tab (PR / CI-Run / Issue / Commit).
+class GodModeRepoEntry {
+  final String title;
+  final String url;
+  final String meta;
+  const GodModeRepoEntry({
+    required this.title,
+    required this.url,
+    required this.meta,
+  });
+}
+
+/// Live-Repo-Insights fuer den Repo-Tab (A1).
+class GodModeRepoInsights {
+  final List<GodModeRepoEntry> pulls;
+  final List<GodModeRepoEntry> runs;
+  final List<GodModeRepoEntry> issues;
+  final List<GodModeRepoEntry> commits;
+  const GodModeRepoInsights({
+    required this.pulls,
+    required this.runs,
+    required this.issues,
+    required this.commits,
+  });
+  static const empty = GodModeRepoInsights(
+    pulls: [],
+    runs: [],
+    issues: [],
+    commits: [],
+  );
+}
+
 /// Client-Service fuer `/api/admin/godmode/*` (nur root_admin).
 class GodModeService {
   static const _role = 'root_admin';
@@ -415,6 +447,57 @@ class GodModeService {
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.topics: $e');
       return const [];
+    }
+  }
+
+  /// A1: Live-Repo-Insights (PRs, fehlgeschlagene CI, Issues, Commits).
+  static Future<GodModeRepoInsights> repoInsights() async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+        '/api/admin/godmode/repo',
+        role: _role,
+      );
+      List<GodModeRepoEntry> parse(
+          String key, GodModeRepoEntry Function(Map<String, dynamic>) f) {
+        final l = data[key];
+        return (l is List)
+            ? l.whereType<Map<String, dynamic>>().map(f).toList()
+            : <GodModeRepoEntry>[];
+      }
+
+      return GodModeRepoInsights(
+        pulls: parse(
+            'pulls',
+            (j) => GodModeRepoEntry(
+                  title: '#${j['number']} ${j['title'] ?? ''}',
+                  url: (j['url'] as String?) ?? '',
+                  meta: j['draft'] == true ? 'Draft' : 'offen',
+                )),
+        runs: parse(
+            'runs',
+            (j) => GodModeRepoEntry(
+                  title: (j['name'] as String?) ?? 'CI',
+                  url: (j['url'] as String?) ?? '',
+                  meta: (j['sha'] as String?) ?? '',
+                )),
+        issues: parse(
+            'issues',
+            (j) => GodModeRepoEntry(
+                  title: '#${j['number']} ${j['title'] ?? ''}',
+                  url: (j['url'] as String?) ?? '',
+                  meta: '',
+                )),
+        commits: parse(
+            'commits',
+            (j) => GodModeRepoEntry(
+                  title: (j['message'] as String?) ?? '',
+                  url: (j['url'] as String?) ?? '',
+                  meta: '',
+                )),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.repoInsights: $e');
+      return GodModeRepoInsights.empty;
     }
   }
 

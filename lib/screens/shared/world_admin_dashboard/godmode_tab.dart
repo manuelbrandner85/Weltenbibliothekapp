@@ -71,10 +71,25 @@ class _GodModeTabState extends State<_GodModeTab>
   @override
   void initState() {
     super.initState();
-    _tc = TabController(length: 4, vsync: this);
+    _tc = TabController(length: 5, vsync: this);
     _loadRequests();
     _loadTopics();
+    _loadRepo(); // A1: Live-Repo-Insights
     _loadPersisted(); // C1/I2: Chat + Gemerkt aus letztem Mal wiederherstellen
+  }
+
+  // A1: Repo-Insights laden.
+  GodModeRepoInsights _repo = GodModeRepoInsights.empty;
+  bool _loadingRepo = true;
+
+  Future<void> _loadRepo() async {
+    setState(() => _loadingRepo = true);
+    final r = await GodModeService.repoInsights();
+    if (!mounted) return;
+    setState(() {
+      _repo = r;
+      _loadingRepo = false;
+    });
   }
 
   // ── C1/I2: lokale Persistenz (SharedPreferences) ──────────────────────────
@@ -590,6 +605,7 @@ class _GodModeTabState extends State<_GodModeTab>
               text: 'KI-Ideen'),
           Tab(icon: Icon(Icons.category_rounded, size: 18), text: 'Bereiche'),
           Tab(icon: Icon(Icons.list_alt_rounded, size: 18), text: 'Status'),
+          Tab(icon: Icon(Icons.hub_rounded, size: 18), text: 'Repo'),
         ],
       ),
       Expanded(
@@ -600,6 +616,7 @@ class _GodModeTabState extends State<_GodModeTab>
             _buildSuggestTab(),
             _buildTopicsTab(),
             _buildStatusTab(),
+            _buildRepoTab(),
           ],
         ),
       ),
@@ -1661,6 +1678,85 @@ class _GodModeTabState extends State<_GodModeTab>
                   ),
                 ]),
     );
+  }
+
+  // ─────────────── Tab 5: Repo ──────────────────────────────────────────────
+  Widget _buildRepoTab() {
+    return RefreshIndicator(
+      color: _ab,
+      backgroundColor: const Color(0xFF12121E),
+      onRefresh: _loadRepo,
+      child: _loadingRepo
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(14),
+              children: [
+                _repoSection('🔀 Offene PRs', _repo.pulls, Colors.tealAccent),
+                _repoSection(
+                    '❌ Fehlgeschlagene CI', _repo.runs, Colors.redAccent),
+                _repoSection('🐞 Offene Issues', _repo.issues, Colors.amber),
+                _repoSection(
+                    '📝 Letzte Commits', _repo.commits, Colors.white54),
+              ],
+            ),
+    );
+  }
+
+  Widget _repoSection(
+      String title, List<GodModeRepoEntry> items, Color accent) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 8),
+        child: Text('$title (${items.length})',
+            style: TextStyle(
+                color: accent,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5)),
+      ),
+      if (items.isEmpty)
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child:
+              Text('—', style: TextStyle(color: Colors.white24, fontSize: 12)),
+        )
+      else
+        ...items.map((e) => InkWell(
+              onTap: e.url.isEmpty ? null : () => _openUrl(e.url),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Row(children: [
+                  Expanded(
+                    child: Text(e.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 12.5)),
+                  ),
+                  if (e.meta.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Text(e.meta,
+                        style: TextStyle(
+                            color: accent.withValues(alpha: 0.8),
+                            fontSize: 10)),
+                  ],
+                  if (e.url.isNotEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: Icon(Icons.open_in_new_rounded,
+                          size: 13, color: Colors.white30),
+                    ),
+                ]),
+              ),
+            )),
+      const SizedBox(height: 10),
+    ]);
   }
 
   // S2: Auftraege nach Status-Gruppe filtern.

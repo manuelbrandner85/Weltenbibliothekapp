@@ -4814,6 +4814,7 @@ export default {
           let recentCommitsLine = '';
           let openIssuesLine = '';
           let ciLine = '';
+          let codeLine = '';
           let openIssueTitles = [];
           try {
             const ghToken = env.GODMODE_GH_PAT || env.GITHUB_TOKEN;
@@ -4879,6 +4880,34 @@ export default {
                   ciLine =
                     'FEHLGESCHLAGENE CI-WORKFLOWS (ggf. konkreten Bugfix vorschlagen):\n' +
                     names.map(n => `- ${n}`).join('\n') + '\n\n';
+                }
+              }
+              // A4: code-aware -- bei Welt-Fokus den relevanten Screen als
+              // echten Code-Auszug laden, damit Vorschlaege auf echten Code
+              // (Methoden/Widgets) Bezug nehmen.
+              const worldFile = {
+                materie: 'lib/screens/materie/recherche_screen.dart',
+                energie: 'lib/screens/energie/chakra_hub_screen.dart',
+                vorhang: 'lib/screens/vorhang/vorhang_modul_screen.dart',
+                ursprung: 'lib/screens/ursprung/ursprung_home_tab.dart',
+              }[world];
+              if (worldFile) {
+                const fr = await fetch(
+                  `https://api.github.com/repos/${repo}/contents/${worldFile}`,
+                  { headers: ghHeaders }
+                );
+                if (fr.ok) {
+                  const fj = await fr.json().catch(() => null);
+                  if (fj && fj.content) {
+                    let txt = '';
+                    try { txt = atob(String(fj.content).replace(/\n/g, '')); } catch (_) {}
+                    if (txt) {
+                      const excerpt = txt.split('\n').slice(0, 120).join('\n').slice(0, 4000);
+                      codeLine =
+                        `AKTUELLER CODE (Auszug aus ${worldFile}) -- beziehe dich konkret darauf:\n` +
+                        '```dart\n' + excerpt + '\n```\n\n';
+                    }
+                  }
                 }
               }
             }
@@ -4967,6 +4996,7 @@ export default {
             recentCommitsLine +
             openIssuesLine +
             ciLine +
+            codeLine +
             topicLine +
             (world
               ? `WELT-FOKUS: ALLE Vorschlaege MUESSEN die Welt "${world}" betreffen (deren Screens/Services).\n\n`
@@ -5384,9 +5414,32 @@ export default {
             } catch (_) {}
           }
 
+          // B1: passende pub.dev-Packages vorschlagen (kostenlos, kein Key).
+          let packages = [];
+          try {
+            const q = encodeURIComponent(title.split(/\s+/).slice(0, 4).join(' '));
+            const pr = await fetch(`https://pub.dev/api/search?q=${q}`, {
+              headers: { 'User-Agent': 'weltenbibliothek-godmode' },
+            });
+            if (pr.ok) {
+              const pd = await pr.json().catch(() => null);
+              const names = (pd && Array.isArray(pd.packages))
+                ? pd.packages.map(p => String(p.package || '').trim()).filter(Boolean).slice(0, 5)
+                : [];
+              packages = names.map(n => ({ name: n, url: `https://pub.dev/packages/${n}` }));
+            }
+          } catch (_) {}
+
+          let planOut = plan || 'Plan konnte gerade nicht erstellt werden -- spaeter erneut.';
+          if (packages.length) {
+            planOut += '\n\n**Evtl. passende Packages (pub.dev):** ' +
+              packages.map(p => p.name).join(', ');
+          }
+
           return jsonResponse({
             success: plan.length > 0,
-            plan: plan || 'Plan konnte gerade nicht erstellt werden -- spaeter erneut.',
+            plan: planOut,
+            packages,
           });
         }
 
@@ -5496,6 +5549,55 @@ export default {
           } catch (e) {
             return errorResponse(`Fehler: ${e.message}`);
           }
+        }
+
+        // ── GET /api/admin/godmode/repo ──────────────────────────────────
+        // A1: Live-Repo-Insights (offene PRs, fehlgeschlagene CI, offene
+        // Issues, letzte Commits) fuer den Repo-Tab.
+        if (method === 'GET' && path === '/api/admin/godmode/repo') {
+          const ghToken = env.GODMODE_GH_PAT || env.GITHUB_TOKEN;
+          const repo = env.GODMODE_REPO || 'manuelbrandner85/weltenbibliothekapp';
+          if (!ghToken) {
+            return jsonResponse({
+              success: false, pulls: [], runs: [], issues: [], commits: [],
+              message: 'Kein GitHub-PAT im Worker.',
+            });
+          }
+          const gh = {
+            Authorization: `Bearer ${ghToken}`,
+            'User-Agent': 'weltenbibliothek-godmode',
+            Accept: 'application/vnd.github+json',
+          };
+          const safe = async (url, map) => {
+            try {
+              const r = await fetch(url, { headers: gh });
+              if (!r.ok) return [];
+              const d = await r.json().catch(() => null);
+              return map(d) || [];
+            } catch (_) { return []; }
+          };
+          const pulls = await safe(
+            `https://api.github.com/repos/${repo}/pulls?state=open&per_page=20`,
+            (d) => Array.isArray(d) ? d.map(p => ({
+              number: p.number, title: String(p.title || ''), url: p.html_url,
+              draft: p.draft === true,
+            })) : []);
+          const runs = await safe(
+            `https://api.github.com/repos/${repo}/actions/runs?status=failure&per_page=10`,
+            (d) => (d && Array.isArray(d.workflow_runs)) ? d.workflow_runs.map(r => ({
+              name: String(r.name || ''), url: r.html_url, sha: String(r.head_sha || '').slice(0, 7),
+            })) : []);
+          const issues = await safe(
+            `https://api.github.com/repos/${repo}/issues?state=open&per_page=30&sort=created&direction=desc`,
+            (d) => Array.isArray(d) ? d.filter(i => i && !i.pull_request).map(i => ({
+              number: i.number, title: String(i.title || ''), url: i.html_url,
+            })) : []);
+          const commits = await safe(
+            `https://api.github.com/repos/${repo}/commits?per_page=15`,
+            (d) => Array.isArray(d) ? d.map(c => ({
+              message: String(c?.commit?.message || '').split('\n')[0], url: c.html_url,
+            })).filter(c => !/^Merge /.test(c.message)) : []);
+          return jsonResponse({ success: true, repo, pulls, runs, issues, commits });
         }
 
         // ── POST /api/admin/godmode/request ─────────────────────────────
