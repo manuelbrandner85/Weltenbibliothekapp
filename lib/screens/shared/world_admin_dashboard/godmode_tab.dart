@@ -62,6 +62,8 @@ class _GodModeTabState extends State<_GodModeTab>
   String? _world;
   // C6: Multi-Modell-Voting beim Generieren.
   bool _vote = false;
+  // C1: Typewriter-Timer fuer die Chat-Antwort.
+  Timer? _typeTimer;
   // I1: mehrfach ausgewaehlte Vorschlaege (per Titel) fuer Sammel-Bauen.
   final Set<String> _selectedTitles = {};
   // S2: Status-Filter im Status-Tab (null=alle | open | done | failed).
@@ -216,6 +218,7 @@ class _GodModeTabState extends State<_GodModeTab>
 
   @override
   void dispose() {
+    _typeTimer?.cancel();
     _tc.dispose();
     _chatCtrl.dispose();
     _chatScroll.dispose();
@@ -330,12 +333,54 @@ class _GodModeTabState extends State<_GodModeTab>
     if (!mounted) return;
     setState(() {
       _chatBusy = false;
-      if (reply.message.isNotEmpty) {
-        _chat.add(GodModeChatMessage('assistant', reply.message));
-      }
       _pendingOrder = reply.readyToSubmit;
     });
-    _persistChat(); // C1
+    if (reply.message.isNotEmpty) {
+      _typewriter(reply.message); // C1: pseudo-streaming
+    } else {
+      _persistChat();
+    }
+    _scrollChatDown();
+  }
+
+  // C1: laesst die Assistenten-Antwort live "tippen" (Typewriter). Echtes
+  // Token-Streaming wuerde den geteilten AdminApiClient umbauen; dies gibt den
+  // Live-Effekt ohne Risiko. Reduce-Motion -> sofort vollstaendig.
+  void _typewriter(String full) {
+    _typeTimer?.cancel();
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final idx = _chat.length;
+    _chat.add(const GodModeChatMessage('assistant', ''));
+    if (reduceMotion) {
+      setState(() => _chat[idx] = GodModeChatMessage('assistant', full));
+      _persistChat();
+      _scrollChatDown();
+      return;
+    }
+    setState(() {});
+    var shown = 0;
+    final step = (full.length / 60).ceil().clamp(2, 40);
+    _typeTimer = Timer.periodic(const Duration(milliseconds: 25), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      shown += step;
+      final done = shown >= full.length;
+      if (done) shown = full.length;
+      setState(() {
+        if (idx < _chat.length) {
+          _chat[idx] =
+              GodModeChatMessage('assistant', full.substring(0, shown));
+        }
+      });
+      if (done) {
+        t.cancel();
+        _persistChat();
+        _scrollChatDown();
+      }
+    });
     _scrollChatDown();
   }
 
