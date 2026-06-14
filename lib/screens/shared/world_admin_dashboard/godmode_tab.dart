@@ -60,6 +60,10 @@ class _GodModeTabState extends State<_GodModeTab>
   String? _typeFilter;
   // I3: optionaler Welt-Fokus (materie|energie|vorhang|ursprung) | null.
   String? _world;
+  // I1: mehrfach ausgewaehlte Vorschlaege (per Titel) fuer Sammel-Bauen.
+  final Set<String> _selectedTitles = {};
+  // S2: Status-Filter im Status-Tab (null=alle | open | done | failed).
+  String? _reqFilter;
   // N3: lokal gemerkte Vorschlaege (per Titel, nicht persistiert).
   final Set<String> _savedTitles = {};
   bool _loadingMore = false;
@@ -268,6 +272,54 @@ class _GodModeTabState extends State<_GodModeTab>
       _tc.animateTo(3);
     } else {
       _snack(res.message, color: Colors.red.shade700);
+    }
+  }
+
+  // I1: alle ausgewaehlten Vorschlaege nacheinander absetzen.
+  Widget _buildBatchBuildBar() {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: _submitting ? null : _buildSelected,
+        icon: const Icon(Icons.playlist_add_check_rounded, size: 16),
+        label: Text('${_selectedTitles.length} ausgewaehlte bauen lassen'),
+        style: FilledButton.styleFrom(
+          backgroundColor: _a.withValues(alpha: 0.3),
+          foregroundColor: _ab,
+          padding: const EdgeInsets.symmetric(vertical: 11),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _buildSelected() async {
+    final picked =
+        _suggestions.where((s) => _selectedTitles.contains(s.title)).toList();
+    if (picked.isEmpty) return;
+    setState(() => _submitting = true);
+    var ok = 0;
+    for (final s in picked) {
+      final res = await GodModeService.submit(
+        category: s.category,
+        type: s.type,
+        title: s.title,
+        description: s.reason.isEmpty
+            ? s.description
+            : '${s.description}\n\nWarum: ${s.reason}',
+        source: 'ai_suggestion',
+      );
+      if (res.success) ok++;
+    }
+    if (!mounted) return;
+    setState(() {
+      _submitting = false;
+      _selectedTitles.clear();
+    });
+    _snack('$ok/${picked.length} Auftraege angelegt.',
+        color: ok > 0 ? Colors.green.shade700 : Colors.red.shade700);
+    if (ok > 0) {
+      _loadRequests();
+      _tc.animateTo(3);
     }
   }
 
@@ -657,45 +709,96 @@ class _GodModeTabState extends State<_GodModeTab>
         color: Color(0xFF0E0E16),
         border: Border(top: BorderSide(color: Colors.white10)),
       ),
-      child: Row(children: [
-        Expanded(
-          child: TextField(
-            controller: _chatCtrl,
-            minLines: 1,
-            maxLines: 4,
-            textInputAction: TextInputAction.send,
-            onSubmitted: (_) => _sendChat(),
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: 'Auftrag beschreiben ...',
-              hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.05),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  borderSide: BorderSide.none),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        if (_chat.isEmpty) _buildQuickPrompts(),
+        Row(children: [
+          Expanded(
+            child: TextField(
+              controller: _chatCtrl,
+              minLines: 1,
+              maxLines: 4,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendChat(),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Auftrag beschreiben ...',
+                hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(22),
+                    borderSide: BorderSide.none),
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: _chatBusy ? null : _sendChat,
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: _chatBusy ? Colors.white12 : _a,
-              shape: BoxShape.circle,
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _chatBusy ? null : _sendChat,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _chatBusy ? Colors.white12 : _a,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                  _chatBusy
+                      ? Icons.hourglass_empty_rounded
+                      : Icons.send_rounded,
+                  color: Colors.white,
+                  size: 20),
             ),
-            child: Icon(
-                _chatBusy ? Icons.hourglass_empty_rounded : Icons.send_rounded,
-                color: Colors.white,
-                size: 20),
           ),
-        ),
+        ]),
       ]),
+    );
+  }
+
+  // C2: Quick-Prompts -- fuellen das Eingabefeld vor (nur wenn Chat leer).
+  Widget _buildQuickPrompts() {
+    const prompts = <(String, String)>[
+      ('🐞 Bug melden', 'Es gibt einen Bug: '),
+      ('✨ Feature', 'Neues Feature: '),
+      ('⚡ Performance', 'Performance-Problem: '),
+      ('🎨 UI/UX', 'UI/UX verbessern: '),
+    ];
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SizedBox(
+        height: 30,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(bottom: 8),
+          children: prompts.map((p) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: GestureDetector(
+                onTap: () {
+                  _chatCtrl.text = p.$2;
+                  _chatCtrl.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _chatCtrl.text.length),
+                  );
+                  setState(() {});
+                },
+                child: Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Text(p.$1,
+                      style:
+                          const TextStyle(color: Colors.white60, fontSize: 11)),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 
@@ -745,6 +848,10 @@ class _GodModeTabState extends State<_GodModeTab>
           _buildSourceBadge(),
           const SizedBox(height: 10),
           _buildTypeFilter(),
+          if (_selectedTitles.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _buildBatchBuildBar(),
+          ],
         ],
         if (_suggestions.isEmpty && !_suggesting)
           Padding(
@@ -989,6 +1096,24 @@ class _GodModeTabState extends State<_GodModeTab>
           const SizedBox(width: 6),
           _miniBadge(s.categoryLabel, Colors.white24),
           const Spacer(),
+          // I1: Mehrfachauswahl fuer Sammel-Bauen.
+          GestureDetector(
+            onTap: () => setState(() {
+              if (_selectedTitles.contains(s.title)) {
+                _selectedTitles.remove(s.title);
+              } else {
+                _selectedTitles.add(s.title);
+              }
+            }),
+            child: Icon(
+              _selectedTitles.contains(s.title)
+                  ? Icons.check_box_rounded
+                  : Icons.check_box_outline_blank_rounded,
+              size: 18,
+              color: _selectedTitles.contains(s.title) ? _ab : Colors.white30,
+            ),
+          ),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: () => setState(() {
               if (saved) {
@@ -1251,14 +1376,82 @@ class _GodModeTabState extends State<_GodModeTab>
                 )
               : Column(children: [
                   _buildStatusListHeader(),
+                  _buildReqFilter(),
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                      itemCount: _requests.length,
-                      itemBuilder: (_, i) => _buildRequestTile(_requests[i]),
-                    ),
+                    child: Builder(builder: (_) {
+                      final list = _filteredRequests();
+                      if (list.isEmpty) {
+                        return Center(
+                          child: Text('Kein Auftrag in diesem Filter.',
+                              style: TextStyle(
+                                  color: Colors.white38, fontSize: 13)),
+                        );
+                      }
+                      return ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                        itemCount: list.length,
+                        itemBuilder: (_, i) => _buildRequestTile(list[i]),
+                      );
+                    }),
                   ),
                 ]),
+    );
+  }
+
+  // S2: Auftraege nach Status-Gruppe filtern.
+  List<GodModeRequest> _filteredRequests() {
+    return _requests.where((r) {
+      final st = r.status.toLowerCase();
+      switch (_reqFilter) {
+        case 'open':
+          return !['merged', 'done', 'completed', 'failed', 'error', 'rejected']
+              .contains(st);
+        case 'done':
+          return ['merged', 'done', 'completed'].contains(st);
+        case 'failed':
+          return ['failed', 'error', 'rejected'].contains(st);
+        default:
+          return true;
+      }
+    }).toList();
+  }
+
+  Widget _buildReqFilter() {
+    const chips = <(String?, String)>[
+      (null, 'Alle'),
+      ('open', 'In Arbeit'),
+      ('done', 'Erledigt'),
+      ('failed', 'Fehlgeschlagen'),
+    ];
+    return SizedBox(
+      height: 34,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        children: chips.map((c) {
+          final sel = c.$1 == _reqFilter;
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: GestureDetector(
+              onTap: () => setState(() => _reqFilter = c.$1),
+              child: Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: sel
+                      ? _ab.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: sel ? _ab : Colors.white12),
+                ),
+                child: Text(c.$2,
+                    style: TextStyle(
+                        color: sel ? _ab : Colors.white54, fontSize: 11)),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
