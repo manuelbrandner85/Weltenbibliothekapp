@@ -5430,16 +5430,48 @@ export default {
             }
           } catch (_) {}
 
+          // B2: passende Referenz-Repos via GitHub Repo-Suche (kostenlos).
+          let repos = [];
+          try {
+            const ghToken = env.GODMODE_GH_PAT || env.GITHUB_TOKEN;
+            const q = encodeURIComponent(
+              title.split(/\s+/).slice(0, 4).join(' ') + ' flutter');
+            const rr = await fetch(
+              `https://api.github.com/search/repositories?q=${q}&sort=stars&order=desc&per_page=3`,
+              {
+                headers: {
+                  'User-Agent': 'weltenbibliothek-godmode',
+                  Accept: 'application/vnd.github+json',
+                  ...(ghToken ? { Authorization: `Bearer ${ghToken}` } : {}),
+                },
+              }
+            );
+            if (rr.ok) {
+              const rd = await rr.json().catch(() => null);
+              const items = (rd && Array.isArray(rd.items)) ? rd.items : [];
+              repos = items.map(i => ({
+                name: String(i.full_name || ''),
+                url: String(i.html_url || ''),
+                stars: i.stargazers_count || 0,
+              })).filter(r => r.name);
+            }
+          } catch (_) {}
+
           let planOut = plan || 'Plan konnte gerade nicht erstellt werden -- spaeter erneut.';
           if (packages.length) {
             planOut += '\n\n**Evtl. passende Packages (pub.dev):** ' +
               packages.map(p => p.name).join(', ');
+          }
+          if (repos.length) {
+            planOut += '\n\n**Referenz-Repos (GitHub):** ' +
+              repos.map(r => `${r.name} (${r.stars}*)`).join(', ');
           }
 
           return jsonResponse({
             success: plan.length > 0,
             plan: planOut,
             packages,
+            repos,
           });
         }
 

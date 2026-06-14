@@ -68,6 +68,52 @@ class _GodModeTabState extends State<_GodModeTab>
   final Set<String> _savedTitles = {};
   bool _loadingMore = false;
 
+  // C3: Voice-Input fuer den Chat.
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
+  bool _speechReady = false;
+
+  Future<void> _toggleVoiceInput() async {
+    if (_isListening) {
+      await _speech.stop();
+      if (mounted) setState(() => _isListening = false);
+      return;
+    }
+    if (!_speechReady) {
+      _speechReady = await _speech.initialize(
+        onStatus: (s) {
+          if ((s == 'done' || s == 'notListening') && mounted) {
+            setState(() => _isListening = false);
+          }
+        },
+        onError: (_) {
+          if (mounted) setState(() => _isListening = false);
+        },
+      );
+      if (!_speechReady) {
+        _snack('Mikrofon nicht verfuegbar oder Berechtigung fehlt.',
+            color: Colors.orange);
+        return;
+      }
+    }
+    setState(() => _isListening = true);
+    await _speech.listen(
+      localeId: 'de_DE',
+      onResult: (result) {
+        if (!mounted) return;
+        final base = _chatCtrl.text;
+        final t = result.recognizedWords;
+        _chatCtrl.text =
+            base.isEmpty ? t : (result.finalResult ? '$base $t' : base);
+        _chatCtrl.selection = TextSelection.fromPosition(
+          TextPosition(offset: _chatCtrl.text.length),
+        );
+        if (result.finalResult) setState(() => _isListening = false);
+      },
+      listenFor: const Duration(seconds: 30),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -897,6 +943,26 @@ class _GodModeTabState extends State<_GodModeTab>
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(22),
                     borderSide: BorderSide.none),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // C3: Voice-Input
+          GestureDetector(
+            onTap: _toggleVoiceInput,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _isListening
+                    ? Colors.redAccent.withValues(alpha: 0.85)
+                    : Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isListening ? Icons.mic : Icons.mic_none_rounded,
+                color: _isListening ? Colors.white : Colors.white60,
+                size: 20,
               ),
             ),
           ),
