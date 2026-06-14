@@ -1355,6 +1355,12 @@ class _PortalHomeScreenState extends State<PortalHomeScreen>
         color: const Color(0xFFFF9AB2),
         onTap: () => Navigator.pushNamed(context, '/profile_settings'),
       ),
+      _QuickAccessItem(
+        icon: Icons.view_in_ar_rounded,
+        label: '3D',
+        color: const Color(0xFF40E8C0),
+        onTap: () => Navigator.pushNamed(context, '/showcase3d'),
+      ),
     ];
 
     return Padding(

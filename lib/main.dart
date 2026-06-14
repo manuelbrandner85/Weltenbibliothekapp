@@ -18,6 +18,7 @@ import 'services/sqlite_storage_service.dart'; // 🗄️ SQLITE LOCAL STORAGE (
 // import 'firebase_options.dart';
 import 'core/responsive.dart'; // 📐 Global text-scale clamp
 import 'screens/intro_image_screen.dart';
+import 'screens/shared/wb_3d_showcase_screen.dart'; // 🧊 3D-Schaufenster
 import 'screens/cinematic_splash_screen.dart'; // 🎬 Cinematic Splash (Mobile only)
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
 import 'screens/web/web_auth_gate.dart'; // 🌐 Web Auth Gate
@@ -588,6 +589,8 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
           home: kIsWeb ? const WebAuthGate() : const _MobileEntryGate(),
           routes: {
             '/home': (context) => const IntroImageScreen(),
+            '/showcase3d': (context) => const Wb3DShowcaseScreen(), // 🧊 3D
+
             '/dashboard': (context) => const EnergieWorldScreen(), // ✅ FIXED
             '/achievements': (context) => const AchievementsScreen(),
             '/daily_challenges': (context) =>
