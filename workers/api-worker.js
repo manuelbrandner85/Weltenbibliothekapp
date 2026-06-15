@@ -5755,7 +5755,19 @@ export default {
 
           // KI expandiert die Beschreibung zu praezisen Implementierungsdetails
           // damit Claude Code den Auftrag ohne Rueckfragen umsetzen kann.
+          // Robuste Multi-Provider-Kette (Groq -> Cerebras -> OpenRouter ->
+          // Workers-AI) + garantierter Fallback: der Auftrag MUSS immer praezise
+          // formuliert sein, sonst bricht der Builder mit "Auftrag praezisieren" ab.
           let implDetails = null;
+          // Balanced-brace Extraktion (robuster als Regex bei verschachteltem JSON).
+          const extractJsonObject = (raw) => {
+            if (!raw) return null;
+            const s = String(raw);
+            const a = s.indexOf('{');
+            const b = s.lastIndexOf('}');
+            if (a === -1 || b <= a) return null;
+            try { return JSON.parse(s.slice(a, b + 1)); } catch (_) { return null; }
+          };
           try {
             const implPrompt =
               'Analysiere diesen God-Mode-Auftrag fuer die Flutter-App "Weltenbibliothek" und ' +
@@ -5770,40 +5782,80 @@ export default {
               'biometric_data_cache_service.dart, mentor_service.dart, gamification_service.dart, ' +
               'bookmark_service.dart, manifestation_service.dart, godmode_service.dart, ' +
               'admin_api_client.dart.\n\n' +
+              'Sei konkret und umsetzbar. Wenn der Auftrag vage ist, triff sinnvolle, zum ' +
+              'bestehenden Code passende Annahmen statt Platzhalter. Mindestens 3 testbare ' +
+              'Abnahmekriterien.\n' +
               'Antworte NUR als JSON ohne Markdown, keine Erklaerungen:\n' +
               '{"affected_files":["lib/pfad/datei.dart","lib/pfad/datei2.dart"],' +
               '"acceptance_criteria":["[ ] Konkretes Kriterium 1 (testbar)",' +
               '"[ ] Konkretes Kriterium 2","[ ] Konkretes Kriterium 3"],' +
               '"implementation_notes":"2-3 Saetze wichtige Hinweise zur Umsetzung",' +
               '"out_of_scope":"Was explizit NICHT geaendert werden soll"}';
-            let implRaw = null;
-            if (env.GROQ_API_KEY) {
-              const gr = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  model: 'llama-3.3-70b-versatile',
-                  messages: [{ role: 'user', content: implPrompt }],
-                  max_tokens: 700, temperature: 0.2,
-                }),
-              });
-              if (gr.ok) {
-                const gd = await gr.json().catch(() => null);
-                implRaw = gd?.choices?.[0]?.message?.content;
+
+            // OpenAI-kompatibler Aufruf (Mistral bewusst NICHT in der Kette).
+            const oaiEnrich = async (url, key, model) => {
+              if (!key) return null;
+              try {
+                const r = await fetch(url, {
+                  method: 'POST',
+                  headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    model,
+                    messages: [{ role: 'user', content: implPrompt }],
+                    max_tokens: 800, temperature: 0.2,
+                  }),
+                });
+                if (!r.ok) return null;
+                const d = await r.json().catch(() => null);
+                return d?.choices?.[0]?.message?.content || null;
+              } catch (_) { return null; }
+            };
+
+            const attempts = [
+              () => oaiEnrich('https://api.groq.com/openai/v1/chat/completions', env.GROQ_API_KEY, 'llama-3.3-70b-versatile'),
+              () => oaiEnrich('https://api.cerebras.ai/v1/chat/completions', env.CEREBRAS_API_KEY, 'llama-3.3-70b'),
+              () => oaiEnrich('https://openrouter.ai/api/v1/chat/completions', env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct'),
+              async () => {
+                if (!env.AI) return null;
+                try {
+                  const ar = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+                    messages: [{ role: 'user', content: implPrompt }],
+                    max_tokens: 800,
+                  });
+                  return ar?.response || null;
+                } catch (_) { return null; }
+              },
+            ];
+
+            for (const attempt of attempts) {
+              const parsed = extractJsonObject(await attempt());
+              if (parsed &&
+                  (Array.isArray(parsed.affected_files) ||
+                   Array.isArray(parsed.acceptance_criteria))) {
+                implDetails = parsed;
+                break;
               }
             }
-            if (!implRaw && env.AI) {
-              const ar = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
-                messages: [{ role: 'user', content: implPrompt }],
-                max_tokens: 700,
-              });
-              implRaw = ar?.response;
-            }
-            if (implRaw) {
-              const m = String(implRaw).match(/\{[\s\S]*?\}(?=\s*$|\s*\n)/);
-              if (m) implDetails = JSON.parse(m[0]);
-            }
           } catch (_) {}
+
+          // Garantierter Fallback: auch wenn ALLE LLMs ausfallen, bekommt der
+          // Builder eine praezise, testbare Struktur statt nur den Rohtext --
+          // damit nie "Auftrag praezisieren" zurueckkommt.
+          if (!implDetails || (!Array.isArray(implDetails.acceptance_criteria) &&
+                               !Array.isArray(implDetails.affected_files))) {
+            implDetails = {
+              acceptance_criteria: [
+                '[ ] Auftrag wie im Abschnitt "Auftrag" beschrieben vollstaendig umgesetzt',
+                '[ ] Neue/geaenderte UI in der App registriert und erreichbar (Route/Tab/Button)',
+                '[ ] flutter analyze = 0 Errors, dart format . angewendet',
+                '[ ] Aenderung manuell nachvollziehbar (Fundort im PR-Body genannt)',
+              ],
+              implementation_notes:
+                'Fehlende Details mit sinnvollen, zum bestehenden Code passenden Annahmen ' +
+                'fuellen, diese im PR-Body dokumentieren und TROTZDEM vollstaendig umsetzen. ' +
+                'Keine Rueckfragen, kein Abbruch wegen Unklarheit.',
+            };
+          }
 
           const bodyParts = [
             `**God-Mode-Auftrag von @${caller.username || 'root-admin'}**`,
@@ -5837,6 +5889,14 @@ export default {
             bodyParts.push('');
           }
           bodyParts.push(
+            '## Umsetzungs-Direktive (verbindlich)',
+            '- Diesen Auftrag IMMER umsetzen und einen PR gegen main oeffnen.',
+            '- Fehlende Details mit sinnvollen, zum bestehenden Code passenden Annahmen ' +
+              'fuellen und im PR-Body unter "Annahmen" dokumentieren -- NIEMALS wegen ' +
+              'Unklarheit abbrechen oder nur kommentieren.',
+            '- Nur als allerletzte Option (technisch unmoeglich, z.B. fehlende externe ' +
+              'Credentials) ohne PR das Issue kommentieren.',
+            '',
             '## Build-Hinweise',
             '- CLAUDE.md Kernregeln: ASCII-Commits, keine Named Dart-3 Records, deutsche UI-Texte.',
             '- Skills in .claude/skills/ nutzen (flutter-*, supabase, cloudflare, shorebird-ota).',
