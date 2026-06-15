@@ -494,6 +494,7 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
           builder: (ctx, _) => MentorAvatar3d(
             personality: widget.personality,
             accentColor: _accent,
+            world: widget.world,
             state: _avatarState3d,
             pulseValue: _pulseAnim.value,
             ringsProgress: _ringsCtrl.value,

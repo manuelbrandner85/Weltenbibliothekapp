@@ -15,7 +15,7 @@ import '../../../services/mentor_service.dart';
 import '../../../services/spirit_calculations/all_spirit_tools_engine.dart';
 import '../../../services/storage_service.dart';
 import '../../../widgets/profile_required_widget.dart';
-import '../../shared/mentor_chat_screen.dart';
+import '../../ursprung/mentor_session_screen.dart';
 
 class SpiritProfileScreen extends StatefulWidget {
   const SpiritProfileScreen({super.key});
@@ -86,7 +86,7 @@ class _SpiritProfileScreenState extends State<SpiritProfileScreen> {
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const MentorChatScreen(
+              builder: (_) => const MentorSessionScreen(
                 personality: MentorPersonality.alchemist,
                 world: 'energie',
               ),

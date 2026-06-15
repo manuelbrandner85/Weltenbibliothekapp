@@ -26,7 +26,7 @@ import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
 import '../../config/wb_design.dart';
 import '../../services/mentor_service.dart';
-import '../shared/mentor_chat_screen.dart';
+import '../ursprung/mentor_session_screen.dart';
 import '../../widgets/mentor_hero_card.dart';
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/trending_rooms_section.dart';
@@ -895,7 +895,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const MentorChatScreen(
+              builder: (_) => const MentorSessionScreen(
                 personality: MentorPersonality.forscher,
                 world: 'materie',
               ),
