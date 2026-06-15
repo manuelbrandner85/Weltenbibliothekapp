@@ -12,7 +12,13 @@ name: "God Mode -- Claude baut autonom"
 
 on:
   issues:
-    types: [opened, labeled]
+    # Nur auf "labeled" -- NICHT "opened". Der Worker legt das Issue mit dem
+    # godmode-Label an (feuert opened + labeled) und haengt danach Triage-Labels
+    # (cat:/type:/priority:) an (je ein weiteres labeled). Wuerden wir auf opened
+    # ODER "Issue enthaelt godmode-Label" triggern, liefen mehrere Builds parallel
+    # und oeffneten mehrere PRs fuer dasselbe Issue (Merge-Konflikte). Mit
+    # types:[labeled] + if(label==godmode) laeuft GENAU EIN Build pro Auftrag.
+    types: [labeled]
 
 permissions:
   contents: write
@@ -22,14 +28,12 @@ permissions:
 
 concurrency:
   group: godmode-issue-${{ github.event.issue.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
     name: "Claude implementiert God-Mode-Auftrag"
-    if: >-
-      contains(github.event.issue.labels.*.name, 'godmode') ||
-      github.event.label.name == 'godmode'
+    if: github.event.label.name == 'godmode'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -194,27 +198,53 @@ jobs:
             const prNum = Number('${{ steps.findpr.outputs.number }}');
             const prUrl = '${{ steps.findpr.outputs.url }}';
             const issue  = Number(process.env.ISSUE_NUMBER);
-            await github.rest.pulls.merge({
-              owner: context.repo.owner, repo: context.repo.repo,
-              pull_number: prNum, merge_method: 'squash',
-            });
-            const wasFixed = '${{ steps.verify.outputs.ok }}' !== 'true';
-            await github.rest.issues.createComment({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: issue,
-              body: wasFixed
-                ? `God Mode: Verify-Gate war rot -- Claude hat automatisch gefixt, jetzt gruen. PR #${prNum} gemergt. OTA-Patch laeuft.`
-                : `God Mode: PR #${prNum} gemergt (analyze + web build gruen). OTA-Patch laeuft.`,
-            });
             const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-            if (key) {
+            const setStatus = async (patch) => {
+              if (!key) return;
               await fetch(`${process.env.SUPABASE_URL_FB}/rest/v1/godmode_requests?issue_number=eq.${issue}`, {
                 method: 'PATCH',
                 headers: { apikey: key, Authorization: `Bearer ${key}`,
                   'Content-Type': 'application/json', Prefer: 'return=minimal' },
-                body: JSON.stringify({ status: 'merged', pr_number: prNum, pr_url: prUrl }),
+                body: JSON.stringify(patch),
               }).catch(() => {});
+            };
+            const comment = async (body) => {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue, body,
+              }).catch(() => {});
+            };
+            // Vor dem Merge versuchen, den Branch mit main zu aktualisieren --
+            // loest konfliktfreien Drift automatisch. Best-effort.
+            try {
+              await github.rest.pulls.updateBranch({
+                owner: context.repo.owner, repo: context.repo.repo,
+                pull_number: prNum,
+              });
+              await new Promise((r) => setTimeout(r, 4000));
+            } catch (_) {}
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner, repo: context.repo.repo,
+                pull_number: prNum, merge_method: 'squash',
+              });
+            } catch (e) {
+              // Merge-Konflikt / nicht mergebar: NICHT rot werden lassen. PR bleibt
+              // offen fuer manuellen Merge, Status "pr_open" (nicht "failed").
+              // Haeufige Ursache: ein zweiter Auftrag hat dieselbe Datei geaendert.
+              const msg = (e && e.message) || String(e);
+              await comment(
+                `God Mode: PR #${prNum} ist gruen, aber Auto-Merge nicht moeglich (${msg}). ` +
+                `Branch bleibt offen -- bitte manuell mergen/rebasen. ` +
+                `(Haeufig: ein zweiter Auftrag hat dieselbe Datei bereits geaendert.)`);
+              await setStatus({ status: 'pr_open', pr_number: prNum, pr_url: prUrl });
+              return;
             }
+            const wasFixed = '${{ steps.verify.outputs.ok }}' !== 'true';
+            await comment(wasFixed
+              ? `God Mode: Verify-Gate war rot -- Claude hat automatisch gefixt, jetzt gruen. PR #${prNum} gemergt. OTA-Patch laeuft.`
+              : `God Mode: PR #${prNum} gemergt (analyze + web build gruen). OTA-Patch laeuft.`);
+            await setStatus({ status: 'merged', pr_number: prNum, pr_url: prUrl });
 
       - name: "Verify endgueltig rot -- Status failed"
         # Nur wenn KEIN PR ODER beide Verify-Durchlaeufe (vor + nach Auto-Fix) rot.
