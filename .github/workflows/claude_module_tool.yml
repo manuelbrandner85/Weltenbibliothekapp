@@ -16,7 +16,10 @@ name: Claude Modul-Tool
 
 on:
   issues:
-    types: [opened, labeled]
+    # Nur "opened": Issues werden mit dem Label 'module-tool-request' angelegt,
+    # daher traegt schon das opened-Event das Label. Vermeidet zusaetzliche
+    # (uebersprungene) Runs durch nachgereichte Label-Events.
+    types: [opened]
 
 permissions:
   contents: write
