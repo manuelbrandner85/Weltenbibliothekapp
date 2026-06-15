@@ -383,6 +383,20 @@ class GodModeService {
     }
   }
 
+  /// Batch3: KI-priorisierte Roadmap aus den offenen Auftraegen (Markdown).
+  static Future<String> roadmap() async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+        '/api/admin/godmode/roadmap',
+        role: _role,
+      );
+      return (data['roadmap'] as String?) ?? '';
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.roadmap: $e');
+      return '';
+    }
+  }
+
   /// Screenshot-zu-Auftrag (multimodal): Bild (base64) an die KI, die daraus
   /// einen fertigen Auftrag formuliert. Liefert null wenn nichts erkannt wurde.
   static Future<GodModeReadyOrder?> vision({
