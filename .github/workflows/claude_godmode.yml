@@ -12,13 +12,13 @@ name: "God Mode -- Claude baut autonom"
 
 on:
   issues:
-    # Nur auf "labeled" -- NICHT "opened". Der Worker legt das Issue mit dem
-    # godmode-Label an (feuert opened + labeled) und haengt danach Triage-Labels
-    # (cat:/type:/priority:) an (je ein weiteres labeled). Wuerden wir auf opened
-    # ODER "Issue enthaelt godmode-Label" triggern, liefen mehrere Builds parallel
-    # und oeffneten mehrere PRs fuer dasselbe Issue (Merge-Konflikte). Mit
-    # types:[labeled] + if(label==godmode) laeuft GENAU EIN Build pro Auftrag.
-    types: [labeled]
+    # Nur auf "opened" -- NICHT "labeled". Der Worker legt jedes God-Mode-Issue
+    # (auch beim Retry) MIT dem godmode-Label an, daher traegt schon das
+    # opened-Event das Label. So laeuft GENAU EIN Build pro Auftrag.
+    # Frueher (types:[labeled]) feuerten die nachgereichten Triage-Labels
+    # (cat:/type:/priority:) je ein weiteres labeled-Event -> zusaetzliche Runs,
+    # die mit cancel-in-progress den echten Build abbrachen (-> nie gruen).
+    types: [opened]
 
 permissions:
   contents: write
@@ -27,13 +27,15 @@ permissions:
   id-token: write
 
 concurrency:
+  # cancel-in-progress: false -- ein zweites Event darf den laufenden Build NIE
+  # abbrechen (genau das machte zuvor alle Runs grau statt gruen).
   group: godmode-issue-${{ github.event.issue.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     name: "Claude implementiert God-Mode-Auftrag"
-    if: github.event.label.name == 'godmode'
+    if: contains(github.event.issue.labels.*.name, 'godmode')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
