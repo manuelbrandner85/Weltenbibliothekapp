@@ -14,6 +14,37 @@ const _kAccent = Color(0xFF2979FF);
 const _kBg = Color(0xFF04080F);
 const _kSurface = Color(0xFF0C0C1A);
 
+/// Opens the shared detail bottom-sheet for [entry].
+///
+/// Exposed so both the list [RechercheCard] and the grid
+/// `RechercheResultTile` reuse the exact same detail UI.
+void showRechercheDetailSheet(
+  BuildContext context, {
+  required SearchHistoryEntry entry,
+  required VoidCallback onReplay,
+  required VoidCallback onDelete,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: _kSurface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    isScrollControlled: true,
+    builder: (_) => _DetailSheet(
+      entry: entry,
+      onReplay: () {
+        Navigator.of(context).pop();
+        onReplay();
+      },
+      onDelete: () {
+        Navigator.of(context).pop();
+        onDelete();
+      },
+    ),
+  );
+}
+
 /// A card that represents a [SearchHistoryEntry].
 ///
 /// [onReplay]  is called when the replay button is tapped.
@@ -91,24 +122,11 @@ class RechercheCard extends StatelessWidget {
 
   // Opens a bottom-sheet with the full entry details.
   void _showDetailSheet(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: _kSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      isScrollControlled: true,
-      builder: (_) => _DetailSheet(
-        entry: entry,
-        onReplay: () {
-          Navigator.of(context).pop();
-          onReplay();
-        },
-        onDelete: () {
-          Navigator.of(context).pop();
-          onDelete();
-        },
-      ),
+    showRechercheDetailSheet(
+      context,
+      entry: entry,
+      onReplay: onReplay,
+      onDelete: onDelete,
     );
   }
 }

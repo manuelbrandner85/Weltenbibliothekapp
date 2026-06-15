@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import '../../models/search_history.dart';
 import '../../services/search_history_service.dart';
 import '../../widgets/recherche_card.dart';
+import '../../widgets/recherche_result_widget.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 
 // Materie accent / dark-background
@@ -138,6 +139,9 @@ class _HistoryTab extends StatefulWidget {
 class _HistoryTabState extends State<_HistoryTab> {
   String _filter = '';
   bool _sortAsc = false;
+  // Grid view groups results by category; list view keeps the swipe-to-delete
+  // card layout. Default to grid for the improved overview (issue #393).
+  bool _grid = true;
   final TextEditingController _filterCtrl = TextEditingController();
 
   @override
@@ -254,6 +258,16 @@ class _HistoryTabState extends State<_HistoryTab> {
                   ),
                   style: TextButton.styleFrom(padding: EdgeInsets.zero),
                 ),
+                // List / grid view toggle
+                IconButton(
+                  tooltip: _grid ? 'Listenansicht' : 'Rasteransicht',
+                  icon: Icon(
+                    _grid ? Icons.view_agenda_outlined : Icons.grid_view,
+                    color: _kAccent,
+                    size: 18,
+                  ),
+                  onPressed: () => setState(() => _grid = !_grid),
+                ),
                 if (rows.isNotEmpty)
                   IconButton(
                     tooltip: 'Gesamten Verlauf loeschen',
@@ -268,7 +282,7 @@ class _HistoryTabState extends State<_HistoryTab> {
             ),
           ),
 
-          // Card list
+          // Results -- empty state, grouped grid, or swipe-to-delete list
           Expanded(
             child: rows.isEmpty
                 ? _EmptyState(
@@ -279,25 +293,78 @@ class _HistoryTabState extends State<_HistoryTab> {
                     actionLabel: 'Zur Recherche',
                     onAction: widget.onTabSwitch,
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-                    itemCount: rows.length,
-                    itemBuilder: (context, index) {
-                      final entry = rows[index];
-                      return RechercheCard(
-                        key: ValueKey(entry.id),
-                        entry: entry,
-                        onReplay: () => widget.onReplay(entry.query),
-                        onDelete: () async {
-                          await SearchHistoryService.deleteEntry(entry.id);
-                          if (mounted) setState(() {});
-                        },
-                      );
-                    },
-                  ),
+                : (_grid ? _buildGrid(rows) : _buildList(rows)),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _deleteEntry(String id) async {
+    await SearchHistoryService.deleteEntry(id);
+    if (mounted) setState(() {});
+  }
+
+  // Swipe-to-delete card list.
+  Widget _buildList(List<SearchHistoryEntry> rows) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+      itemCount: rows.length,
+      itemBuilder: (context, index) {
+        final entry = rows[index];
+        return RechercheCard(
+          key: ValueKey(entry.id),
+          entry: entry,
+          onReplay: () => widget.onReplay(entry.query),
+          onDelete: () => _deleteEntry(entry.id),
+        );
+      },
+    );
+  }
+
+  // Category-grouped grid: a sticky-less section header (SliverList) followed by
+  // a SliverGrid of compact result tiles per category.
+  Widget _buildGrid(List<SearchHistoryEntry> rows) {
+    final groups = groupRechercheByCategory(rows);
+    final slivers = <Widget>[];
+
+    for (final group in groups) {
+      slivers.add(
+        SliverToBoxAdapter(
+          child: _CategoryHeader(
+            label: group.category,
+            count: group.entries.length,
+          ),
+        ),
+      );
+      slivers.add(
+        SliverGrid(
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 220,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 0.92,
+          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final entry = group.entries[index];
+            return RechercheResultTile(
+              key: ValueKey(entry.id),
+              entry: entry,
+              onReplay: () => widget.onReplay(entry.query),
+              onDelete: () => _deleteEntry(entry.id),
+            );
+          }, childCount: group.entries.length),
+        ),
+      );
+    }
+
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+          sliver: SliverMainAxisGroup(slivers: slivers),
+        ),
+      ],
     );
   }
 
@@ -720,6 +787,49 @@ class _DayCount {
 // ---------------------------------------------------------------------------
 // Reusable sub-widgets
 // ---------------------------------------------------------------------------
+
+class _CategoryHeader extends StatelessWidget {
+  final String label;
+  final int count;
+
+  const _CategoryHeader({required this.label, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 12, 2, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 14,
+            decoration: BoxDecoration(
+              color: _kAccent,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$count',
+            style: const TextStyle(color: Colors.white38, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _MetricCard extends StatelessWidget {
   final IconData icon;
