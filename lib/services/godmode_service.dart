@@ -383,6 +383,34 @@ class GodModeService {
     }
   }
 
+  /// Screenshot-zu-Auftrag (multimodal): Bild (base64) an die KI, die daraus
+  /// einen fertigen Auftrag formuliert. Liefert null wenn nichts erkannt wurde.
+  static Future<GodModeReadyOrder?> vision({
+    required String imageBase64,
+    required String mime,
+    String? hint,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/godmode/vision',
+        role: _role,
+        body: {
+          'image': imageBase64,
+          'mime': mime,
+          if (hint != null && hint.isNotEmpty) 'hint': hint,
+        },
+        timeout: const Duration(seconds: 50),
+      );
+      final order = data['order'];
+      if (order is Map<String, dynamic>)
+        return GodModeReadyOrder.fromJson(order);
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.vision: $e');
+      return null;
+    }
+  }
+
   /// Auftrag absetzen -> GitHub-Issue -> Claude baut autonom.
   static Future<GodModeSubmitResult> submit({
     required String category,

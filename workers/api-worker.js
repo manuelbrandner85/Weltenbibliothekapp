@@ -5626,6 +5626,90 @@ export default {
           return jsonResponse({ success: true, message: reply, readyToSubmit });
         }
 
+        // ── POST /api/admin/godmode/vision (Screenshot-zu-Auftrag) ──────
+        // Multimodal: Bild (base64) -> fertiger Auftrag. Gemini Vision, Fallback
+        // Workers-AI (llava).
+        if (method === 'POST' && path === '/api/admin/godmode/vision') {
+          let vbody = {};
+          try { vbody = await request.clone().json(); } catch (_) {}
+          const image = String(vbody.image || '');
+          const mime = String(vbody.mime || 'image/png');
+          const hint = String(vbody.hint || '').slice(0, 500);
+          if (!image) return errorResponse('Kein Bild', 400, 'no_image');
+
+          const vPrompt =
+            'Du analysierst einen Screenshot der Flutter-App "Weltenbibliothek". ' +
+            'Der Root-Admin moechte etwas an dem aendern/verbessern/reparieren, was im Bild zu sehen ist. ' +
+            (hint ? `Zusatz-Hinweis des Admins: "${hint}". ` : '') +
+            'Erkenne das Problem oder den Wunsch praezise und formuliere einen umsetzbaren God-Mode-Auftrag. ' +
+            'category MUSS eine von: ui_ux, feature, module, bugfix, performance, other. ' +
+            'type MUSS eine von: bug, neuerung, erweiterung, verbesserung, performance, ux. ' +
+            'Antworte NUR als JSON ohne Markdown: ' +
+            '{"category":"...","type":"...","title":"kurzer Titel",' +
+            '"description":"konkret was zu tun ist, inkl. sichtbarer Hinweise aus dem Bild"}';
+
+          const extractObj = (raw) => {
+            if (!raw) return null;
+            const s = String(raw);
+            const a = s.indexOf('{');
+            const b = s.lastIndexOf('}');
+            if (a === -1 || b <= a) return null;
+            try { return JSON.parse(s.slice(a, b + 1)); } catch (_) { return null; }
+          };
+
+          let parsed = null;
+          if (env.GEMINI_API_KEY) {
+            try {
+              const gr = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{
+                      parts: [
+                        { text: vPrompt },
+                        { inline_data: { mime_type: mime, data: image } },
+                      ],
+                    }],
+                  }),
+                });
+              if (gr.ok) {
+                const gd = await gr.json().catch(() => null);
+                const txt = (gd?.candidates?.[0]?.content?.parts || [])
+                  .map((p) => p.text || '').join('');
+                parsed = extractObj(txt);
+              }
+            } catch (_) {}
+          }
+          if (!parsed && env.AI) {
+            try {
+              const bin = Uint8Array.from(atob(image), (c) => c.charCodeAt(0));
+              const ar = await env.AI.run('@cf/llava-1.5-7b-hf', {
+                image: [...bin], prompt: vPrompt, max_tokens: 512,
+              });
+              parsed = extractObj(ar?.description || ar?.response);
+            } catch (_) {}
+          }
+          if (!parsed || !parsed.title) {
+            return jsonResponse({
+              success: false, order: null,
+              message: 'Kein Auftrag aus dem Bild erkannt.',
+            });
+          }
+          return jsonResponse({
+            success: true,
+            order: {
+              category: VALID_CATEGORIES.has(String(parsed.category))
+                ? parsed.category : 'other',
+              type: VALID_TYPES.has(String(parsed.type || ''))
+                ? parsed.type : 'ux',
+              title: String(parsed.title).slice(0, 160),
+              description: String(parsed.description || '').slice(0, 4000),
+            },
+          });
+        }
+
         // ── GET /api/admin/godmode/requests ─────────────────────────────
         // Liste der letzten 50 Auftraege (Status, Issue/PR-Links).
         if (method === 'GET' && path === '/api/admin/godmode/requests') {
