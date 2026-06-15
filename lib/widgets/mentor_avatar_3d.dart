@@ -245,6 +245,195 @@ class MentorAvatar3d extends StatelessWidget {
 /// Avatar animation state — mirrors [MentorAvatarState] without importing the model.
 enum MentorAvatarState3d { idle, listening, thinking, speaking }
 
+// ─── Pre-rendered light-being avatar (per world) ──────────────────────────────
+
+/// Photoreal-looking, world-themed light-being portrait (KI-pre-rendered asset)
+/// with live FX overlays: breathing scale, accent back-glow, listening rings,
+/// speaking pulse + rim. Falls back to [fallback] (the geometric orb) if the
+/// asset is missing.
+class MentorLightBeing extends StatelessWidget {
+  final String world;
+  final Color accentColor;
+  final MentorAvatarState3d state;
+  final double pulseValue;
+  final double ringsProgress;
+  final double wavesProgress;
+  final double size;
+  final Widget? fallback;
+
+  const MentorLightBeing({
+    super.key,
+    required this.world,
+    required this.accentColor,
+    required this.state,
+    required this.pulseValue,
+    required this.ringsProgress,
+    required this.wavesProgress,
+    this.size = 260,
+    this.fallback,
+  });
+
+  Color get _secondary => switch (world) {
+        'vorhang' => const Color(0xFFFFD27D),
+        'energie' => const Color(0xFFB388FF),
+        'materie' => const Color(0xFF4FC3F7),
+        _ => const Color(0xFF00FFD4),
+      };
+
+  String get _assetWorld =>
+      const {'materie', 'energie', 'vorhang', 'ursprung'}.contains(world)
+          ? world
+          : 'ursprung';
+
+  @override
+  Widget build(BuildContext context) {
+    final glow = switch (state) {
+      MentorAvatarState3d.speaking => 0.42,
+      MentorAvatarState3d.listening => 0.34,
+      MentorAvatarState3d.thinking => 0.28,
+      MentorAvatarState3d.idle => 0.22,
+    };
+    final breathe = 0.93 + 0.05 * pulseValue;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Soft accent back-glow (intensity follows state).
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  accentColor.withValues(alpha: glow),
+                  accentColor.withValues(alpha: 0.0),
+                ],
+                stops: const [0.32, 1.0],
+              ),
+            ),
+          ),
+          // FX behind/around the figure (rings, rim, speaking pulse).
+          CustomPaint(
+            size: Size(size, size),
+            painter: _BeingFxPainter(
+              state: state,
+              accent: accentColor,
+              secondary: _secondary,
+              ringsProgress: ringsProgress,
+              wavesProgress: wavesProgress,
+            ),
+          ),
+          // The light-being portrait -- breathing + edges faded into the dark.
+          Transform.scale(
+            scale: breathe,
+            child: SizedBox(
+              width: size * 0.82,
+              height: size * 0.82,
+              child: ClipOval(
+                child: ShaderMask(
+                  shaderCallback: (rect) => const RadialGradient(
+                    colors: [Colors.white, Colors.white, Colors.transparent],
+                    stops: [0.0, 0.74, 1.0],
+                  ).createShader(rect),
+                  blendMode: BlendMode.dstIn,
+                  child: Image.asset(
+                    'assets/avatars/mentor_$_assetWorld.webp',
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                    errorBuilder: (_, __, ___) =>
+                        fallback ?? const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BeingFxPainter extends CustomPainter {
+  final MentorAvatarState3d state;
+  final Color accent;
+  final Color secondary;
+  final double ringsProgress;
+  final double wavesProgress;
+
+  const _BeingFxPainter({
+    required this.state,
+    required this.accent,
+    required this.secondary,
+    required this.ringsProgress,
+    required this.wavesProgress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = size.width * 0.41; // matches portrait radius (~0.82/2)
+
+    // Listening: expanding concentric rings.
+    if (state == MentorAvatarState3d.listening) {
+      for (int i = 0; i < 3; i++) {
+        final phase = (ringsProgress + i / 3.0) % 1.0;
+        canvas.drawCircle(
+          Offset(cx, cy),
+          r * (1.0 + phase * 0.7),
+          Paint()
+            ..color = accent.withValues(alpha: (1.0 - phase) * 0.35)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.8,
+        );
+      }
+    }
+
+    // Speaking: pulsing glow ring.
+    if (state == MentorAvatarState3d.speaking) {
+      final p = 0.5 + 0.5 * math.sin(wavesProgress * math.pi * 2);
+      canvas.drawCircle(
+        Offset(cx, cy),
+        r * (1.04 + p * 0.06),
+        Paint()
+          ..color = secondary.withValues(alpha: 0.25 + 0.25 * p)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.6
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      );
+    }
+
+    // Constant fresnel-style rim (accent <-> world secondary).
+    canvas.drawCircle(
+      Offset(cx, cy),
+      r * 1.01,
+      Paint()
+        ..shader = SweepGradient(
+          colors: [
+            secondary.withValues(alpha: 0.45),
+            accent.withValues(alpha: 0.15),
+            secondary.withValues(alpha: 0.5),
+            accent.withValues(alpha: 0.15),
+            secondary.withValues(alpha: 0.45),
+          ],
+          stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_BeingFxPainter old) =>
+      old.state != state ||
+      old.ringsProgress != ringsProgress ||
+      old.wavesProgress != wavesProgress ||
+      old.accent != accent;
+}
+
 // ─── Custom painter ───────────────────────────────────────────────────────────
 
 class _Avatar3dPainter extends CustomPainter {
