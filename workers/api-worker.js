@@ -5715,8 +5715,36 @@ export default {
               }
             }
           } catch (_) {}
+          // D: Pipeline-Cockpit -- letztes Release + aktuelle App-Version + Modell.
+          let release = null;
+          try {
+            const rr = await fetch(
+              `https://api.github.com/repos/${repo}/releases/latest`, { headers: gh });
+            if (rr.ok) {
+              const d = await rr.json().catch(() => null);
+              if (d && d.tag_name) {
+                release = {
+                  tag: String(d.tag_name),
+                  name: String(d.name || ''),
+                  url: d.html_url || '',
+                  published_at: d.published_at || '',
+                };
+              }
+            }
+          } catch (_) {}
+          let appVersion = null;
+          try {
+            const ac = await fetch(
+              `${SUPABASE_URL}/rest/v1/app_config?platform=eq.android&select=latest_version,min_version`,
+              { headers: svcHeaders });
+            if (ac.ok) {
+              const rows = await ac.json().catch(() => []);
+              if (Array.isArray(rows) && rows[0]) appVersion = rows[0];
+            }
+          } catch (_) {}
           return jsonResponse({
             success: true, repo, pulls, runs, issues, commits, providers, stats,
+            release, app_version: appVersion, model: 'claude-opus-4-8',
           });
         }
 

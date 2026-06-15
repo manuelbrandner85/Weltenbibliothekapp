@@ -72,6 +72,17 @@ class _GodModeTabState extends State<_GodModeTab>
   final Set<String> _savedTitles = {};
   bool _loadingMore = false;
 
+  // B: Auto-Refresh waehrend Auftraege laufen + Status-Wechsel-Erkennung
+  // (zeigt Snackbar wenn ein Auftrag gemergt/fehlgeschlagen ist).
+  Timer? _statusTimer;
+  Map<String, String> _lastStatuses = {};
+  static const Set<String> _activeStatuses = {
+    'queued',
+    'issue_created',
+    'building',
+    'pr_open'
+  };
+
   // C3: Voice-Input fuer den Chat.
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
@@ -219,6 +230,7 @@ class _GodModeTabState extends State<_GodModeTab>
   @override
   void dispose() {
     _typeTimer?.cancel();
+    _statusTimer?.cancel();
     _tc.dispose();
     _chatCtrl.dispose();
     _chatScroll.dispose();
@@ -244,10 +256,60 @@ class _GodModeTabState extends State<_GodModeTab>
     setState(() => _loadingReqs = true);
     final list = await GodModeService.listRequests();
     if (!mounted) return;
+    _detectStatusChanges(list);
     setState(() {
       _requests = list;
       _loadingReqs = false;
     });
+    _syncAutoRefresh();
+  }
+
+  // B: stilles Nachladen fuer den Auto-Refresh-Timer (kein Spinner).
+  Future<void> _refreshRequestsSilent() async {
+    final list = await GodModeService.listRequests();
+    if (!mounted) return;
+    _detectStatusChanges(list);
+    setState(() => _requests = list);
+    _syncAutoRefresh();
+  }
+
+  // B: Snackbar bei Status-Wechsel (gemergt / fehlgeschlagen / PR offen).
+  void _detectStatusChanges(List<GodModeRequest> fresh) {
+    for (final r in fresh) {
+      final prev = _lastStatuses[r.id];
+      if (prev == null || prev == r.status) continue;
+      final short =
+          r.title.length > 42 ? '${r.title.substring(0, 42)}...' : r.title;
+      switch (r.status) {
+        case 'merged':
+          _snack('[OK] "$short" gemergt -- kommt per OTA-Patch.',
+              color: Colors.green.shade700);
+          break;
+        case 'failed':
+        case 'rejected':
+          _snack('[!] "$short" fehlgeschlagen.', color: Colors.red.shade700);
+          break;
+        case 'pr_open':
+          _snack('"$short": PR offen -- bitte pruefen/mergen.',
+              color: Colors.lightBlue.shade800);
+          break;
+      }
+    }
+    _lastStatuses = {for (final r in fresh) r.id: r.status};
+  }
+
+  // B: Timer nur laufen lassen solange Auftraege aktiv sind (spart Requests).
+  void _syncAutoRefresh() {
+    final active = _requests.any((r) => _activeStatuses.contains(r.status));
+    if (active) {
+      _statusTimer ??= Timer.periodic(
+        const Duration(seconds: 20),
+        (_) => mounted ? _refreshRequestsSilent() : null,
+      );
+    } else {
+      _statusTimer?.cancel();
+      _statusTimer = null;
+    }
   }
 
   Future<void> _loadTopics() async {
@@ -628,31 +690,55 @@ class _GodModeTabState extends State<_GodModeTab>
               decoration: _editDecoration('Prompt / Beschreibung'),
             ),
             const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () {
-                  final t = titleCtrl.text.trim();
-                  final d = descCtrl.text.trim();
-                  if (t.isEmpty || d.isEmpty) return;
-                  Navigator.of(ctx).pop();
-                  _submitRaw(
-                    category: category,
-                    type: type,
-                    title: t,
-                    description: d,
-                    source: source,
-                  );
-                },
-                icon: const Icon(Icons.rocket_launch_rounded, size: 16),
-                label: const Text('Bauen lassen'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: _a.withValues(alpha: 0.3),
-                  foregroundColor: _ab,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+            Row(children: [
+              // C: KI-Plan-Vorschau (betroffene Dateien + Schritte) vor dem Bauen.
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                      _showPlanRaw(titleCtrl.text.trim(), descCtrl.text.trim()),
+                  icon: const Icon(Icons.account_tree_rounded, size: 15),
+                  label: const Text('Vorschau'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _ab,
+                    side: BorderSide(color: _a.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    final t = titleCtrl.text.trim();
+                    final d = descCtrl.text.trim();
+                    if (t.isEmpty || d.isEmpty) return;
+                    // C: Duplikat-Warnung gegen offene/laufende Auftraege.
+                    final dup = _findSimilarOpen(t);
+                    if (dup != null) {
+                      final go = await _confirmDuplicate(ctx, dup);
+                      if (go != true) return;
+                    }
+                    if (!ctx.mounted) return;
+                    Navigator.of(ctx).pop();
+                    _submitRaw(
+                      category: category,
+                      type: type,
+                      title: t,
+                      description: d,
+                      source: source,
+                    );
+                  },
+                  icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+                  label: const Text('Bauen lassen'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _a.withValues(alpha: 0.3),
+                    foregroundColor: _ab,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ]),
             const SizedBox(height: 8),
           ],
         ),
@@ -679,6 +765,123 @@ class _GodModeTabState extends State<_GodModeTab>
     if (url == null || url.isEmpty) return;
     final uri = Uri.tryParse(url);
     if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  // C: KI-Plan-Vorschau fuer beliebigen Titel/Prompt (vor dem Bauen).
+  Future<void> _showPlanRaw(String title, String description) async {
+    if (title.isEmpty) {
+      _snack('Bitte zuerst einen Titel eingeben.', color: Colors.orange);
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.92,
+        builder: (ctx, scroll) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: FutureBuilder<String>(
+            future: GodModeService.plan(
+                title: title,
+                description: description.isEmpty ? title : description),
+            builder: (ctx, snap) {
+              return ListView(
+                controller: scroll,
+                children: [
+                  Row(children: [
+                    Icon(Icons.account_tree_rounded, size: 18, color: _ab),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Umsetzungsplan (Vorschau)',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text(title,
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 12)),
+                  const SizedBox(height: 14),
+                  if (snap.connectionState != ConnectionState.done)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 30),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else
+                    SelectableText(
+                      (snap.data ?? '').isEmpty
+                          ? 'Kein Plan erhalten -- spaeter erneut.'
+                          : snap.data!,
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 13, height: 1.5),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  // C: Titel normalisieren fuer Duplikat-Vergleich.
+  String _normTitle(String s) => s
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+
+  // C: aehnlichen, noch offenen Auftrag finden (Token-Ueberlappung >= 60%).
+  GodModeRequest? _findSimilarOpen(String title) {
+    final a = _normTitle(title);
+    if (a.isEmpty) return null;
+    final aTokens = a.split(' ').where((w) => w.length > 3).toSet();
+    for (final r in _requests) {
+      if (!_activeStatuses.contains(r.status)) continue;
+      final b = _normTitle(r.title);
+      if (b == a) return r;
+      final bTokens = b.split(' ').where((w) => w.length > 3).toSet();
+      if (aTokens.isEmpty || bTokens.isEmpty) continue;
+      final inter = aTokens.intersection(bTokens).length;
+      final union = aTokens.union(bTokens).length;
+      if (union > 0 && inter / union >= 0.6) return r;
+    }
+    return null;
+  }
+
+  Future<bool?> _confirmDuplicate(BuildContext ctx, GodModeRequest dup) {
+    return showDialog<bool>(
+      context: ctx,
+      builder: (dctx) => AlertDialog(
+        backgroundColor: const Color(0xFF14141F),
+        title: const Text('Aehnlicher Auftrag laeuft',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: Text(
+          'Es gibt bereits einen offenen Auftrag:\n\n'
+          '"${dup.title}" (${_statusStyle(dup.status).label})\n\n'
+          'Trotzdem einen neuen anlegen?',
+          style:
+              const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dctx, false),
+              child: const Text('Abbrechen')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dctx, true),
+              child: const Text('Trotzdem bauen')),
+        ],
+      ),
+    );
   }
 
   // ───────────────────────────────────────────────────────── build
@@ -1831,6 +2034,7 @@ class _GodModeTabState extends State<_GodModeTab>
           : ListView(
               padding: const EdgeInsets.all(14),
               children: [
+                _repoPipelineCard(),
                 _repoStatsHeader(),
                 _repoSection('🔀 Offene PRs', _repo.pulls, Colors.tealAccent),
                 _repoSection(
@@ -1842,6 +2046,69 @@ class _GodModeTabState extends State<_GodModeTab>
             ),
     );
   }
+
+  // D: Pipeline-Cockpit -- Builder-Modell, letztes Release, App-Version.
+  Widget _repoPipelineCard() {
+    final modelLabel = _repo.model == 'claude-opus-4-8'
+        ? 'Claude Opus 4.8'
+        : (_repo.model.isEmpty ? 'Claude (Standard)' : _repo.model);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _a.withValues(alpha: 0.16),
+            Colors.white.withValues(alpha: 0.03)
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _a.withValues(alpha: 0.25)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.precision_manufacturing_rounded, size: 16, color: _ab),
+          const SizedBox(width: 7),
+          const Text('PIPELINE',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.4)),
+        ]),
+        const SizedBox(height: 10),
+        _pipeRow(Icons.smart_toy_rounded, 'Builder-Modell', modelLabel),
+        _pipeRow(Icons.new_releases_rounded, 'Letztes Release',
+            _repo.releaseTag.isEmpty ? '--' : _repo.releaseTag),
+        _pipeRow(
+            Icons.phone_android_rounded,
+            'App-Version',
+            _repo.latestVersion.isEmpty
+                ? '--'
+                : 'v${_repo.latestVersion}  (min v${_repo.minVersion})'),
+      ]),
+    );
+  }
+
+  Widget _pipeRow(IconData icon, String label, String value) => Padding(
+        padding: const EdgeInsets.only(bottom: 7),
+        child: Row(children: [
+          Icon(icon, size: 14, color: Colors.white38),
+          const SizedBox(width: 8),
+          Text('$label: ',
+              style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis),
+          ),
+        ]),
+      );
 
   // C5: Provider-Status + Auftrag-Statistik.
   Widget _repoStatsHeader() {
@@ -2122,130 +2389,426 @@ class _GodModeTabState extends State<_GodModeTab>
     final st = _statusStyle(r.status);
     final t = r.typeInfo;
     final isFailed = r.status == 'failed' || r.status == 'rejected';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: const Color(0xFF12121E),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Expanded(
-            child: Text(r.title,
-                maxLines: 2,
+    return GestureDetector(
+      onTap: () => _showRequestDetail(r),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: const Color(0xFF12121E),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(
+              child: Text(r.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: st.color.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(st.label,
+                  style: TextStyle(
+                      color: st.color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold)),
+            ),
+          ]),
+          _buildProgress(r),
+          const SizedBox(height: 8),
+          Row(children: [
+            if (t != null) ...[_typeBadge(t), const SizedBox(width: 6)],
+            Flexible(
+              child: Text(
+                '${r.isAi ? '🤖 KI' : (r.isChat ? '💬 Chat' : '👤 Manuell')}  ·  ${r.categoryLabel}',
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600)),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: st.color.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(8),
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+              ),
             ),
-            child: Text(st.label,
-                style: TextStyle(
-                    color: st.color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold)),
-          ),
-        ]),
-        const SizedBox(height: 8),
-        Row(children: [
-          if (t != null) ...[_typeBadge(t), const SizedBox(width: 6)],
-          Flexible(
-            child: Text(
-              '${r.isAi ? '🤖 KI' : (r.isChat ? '💬 Chat' : '👤 Manuell')}  ·  ${r.categoryLabel}',
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white38, fontSize: 11),
-            ),
-          ),
-          const Spacer(),
-          if (r.issueUrl != null)
-            _linkChip('Issue #${r.issueNumber ?? '?'}', r.issueUrl),
-          if (r.prUrl != null) ...[
-            const SizedBox(width: 6),
-            _linkChip('PR #${r.prNumber ?? '?'}', r.prUrl),
-          ],
-        ]),
-        if (r.error != null && r.error!.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(Icons.error_outline_rounded,
-                  size: 13, color: Colors.red.shade300),
+            const Spacer(),
+            if (r.issueUrl != null)
+              _linkChip('Issue #${r.issueNumber ?? '?'}', r.issueUrl),
+            if (r.prUrl != null) ...[
               const SizedBox(width: 6),
+              _linkChip('PR #${r.prNumber ?? '?'}', r.prUrl),
+            ],
+          ]),
+          if (r.error != null && r.error!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child:
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.error_outline_rounded,
+                    size: 13, color: Colors.red.shade300),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(_humanError(r.error!),
+                      style:
+                          TextStyle(color: Colors.red.shade300, fontSize: 11)),
+                ),
+              ]),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            // S3: fehlgeschlagenen Auftrag mit angepasstem Prompt neu absetzen.
+            if (isFailed)
+              TextButton.icon(
+                onPressed: _submitting
+                    ? null
+                    : () => _editAndBuild(
+                          category: r.category,
+                          type: r.wbType ?? 'verbesserung',
+                          title: r.title,
+                          description: r.description,
+                          source: 'manual',
+                        ),
+                icon: const Icon(Icons.edit_rounded, size: 14),
+                label:
+                    const Text('Bearbeiten', style: TextStyle(fontSize: 11.5)),
+                style: TextButton.styleFrom(
+                  foregroundColor: _ab,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            if (isFailed) const SizedBox(width: 6),
+            if (isFailed)
+              TextButton.icon(
+                onPressed: _submitting ? null : () => _retryRequest(r),
+                icon: _submitting
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.refresh_rounded, size: 14),
+                label: const Text('Nochmal', style: TextStyle(fontSize: 11.5)),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.amberAccent,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            if (isFailed) const SizedBox(width: 6),
+            IconButton(
+              tooltip: 'Loeschen',
+              icon: const Icon(Icons.delete_outline_rounded, size: 17),
+              color: Colors.white24,
+              onPressed: () => _deleteRequest(r),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              visualDensity: VisualDensity.compact,
+            ),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  // B: Fortschritts-Schritt (Beauftragt -> Baut -> PR -> Fertig).
+  Widget _buildProgress(GodModeRequest r) {
+    final step = _statusStep(r.status);
+    if (step.$1 == 0) return const SizedBox(height: 2);
+    final frac = step.$1 / step.$2;
+    final active = _activeStatuses.contains(r.status);
+    final col = _statusStyle(r.status).color;
+    return Padding(
+      padding: const EdgeInsets.only(top: 9),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: frac,
+            minHeight: 4,
+            backgroundColor: Colors.white.withValues(alpha: 0.07),
+            valueColor: AlwaysStoppedAnimation<Color>(col),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${_statusStyle(r.status).label}  -  Schritt ${step.$1}/${step.$2}'
+          '${active ? '  (laeuft ...)' : ''}',
+          style: const TextStyle(color: Colors.white38, fontSize: 9.5),
+        ),
+      ]),
+    );
+  }
+
+  // (Schritt, Gesamt) je Status. 0 = keine Leiste anzeigen.
+  (int, int) _statusStep(String s) => switch (s) {
+        'queued' => (1, 4),
+        'issue_created' => (1, 4),
+        'building' => (2, 4),
+        'pr_open' => (3, 4),
+        'merged' => (4, 4),
+        _ => (0, 4),
+      };
+
+  // A: Detail-Sheet eines Auftrags -- Timeline, Beschreibung, Links, Aktionen.
+  Future<void> _showRequestDetail(GodModeRequest r) async {
+    final st = _statusStyle(r.status);
+    final t = r.typeInfo;
+    final isFailed = r.status == 'failed' || r.status == 'rejected';
+    const repoUrl = 'https://github.com/manuelbrandner85/Weltenbibliothekapp';
+    const actionsUrl = '$repoUrl/actions';
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        builder: (ctx, scroll) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            Row(children: [
               Expanded(
-                child: Text(_humanError(r.error!),
-                    style: TextStyle(color: Colors.red.shade300, fontSize: 11)),
+                child: Text(r.title,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: st.color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(st.label,
+                    style: TextStyle(
+                        color: st.color,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold)),
               ),
             ]),
-          ),
-        ],
-        const SizedBox(height: 8),
-        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-          // S3: fehlgeschlagenen Auftrag mit angepasstem Prompt neu absetzen.
-          if (isFailed)
-            TextButton.icon(
-              onPressed: _submitting
-                  ? null
-                  : () => _editAndBuild(
+            const SizedBox(height: 8),
+            Row(children: [
+              if (t != null) ...[_typeBadge(t), const SizedBox(width: 6)],
+              Flexible(
+                child: Text(
+                  '${r.isAi ? '🤖 KI' : (r.isChat ? '💬 Chat' : '👤 Manuell')}  ·  ${r.categoryLabel}',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 16),
+            _detailTimeline(r),
+            const SizedBox(height: 16),
+            _sectionLabel(Icons.notes_rounded, 'AUFTRAG'),
+            const SizedBox(height: 6),
+            SelectableText(
+              r.description.isEmpty ? r.title : r.description,
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 13, height: 1.5),
+            ),
+            if (isFailed && r.error != null && r.error!.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.error_outline_rounded,
+                          size: 15, color: Colors.red.shade300),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(_humanError(r.error!),
+                            style: TextStyle(
+                                color: Colors.red.shade200,
+                                fontSize: 12,
+                                height: 1.4)),
+                      ),
+                    ]),
+              ),
+            ],
+            const SizedBox(height: 16),
+            _sectionLabel(Icons.link_rounded, 'LINKS'),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              if (r.issueUrl != null)
+                _linkChip('Issue #${r.issueNumber ?? '?'}', r.issueUrl),
+              if (r.prUrl != null)
+                _linkChip('PR #${r.prNumber ?? '?'}', r.prUrl),
+              _linkChip('Actions', actionsUrl),
+            ]),
+            const SizedBox(height: 14),
+            _infoBox(
+              r.status == 'merged'
+                  ? 'Gemergt. Reine Dart/UI-Aenderungen kommen per OTA-Patch beim '
+                      'naechsten App-Start. Native Aenderungen brauchen eine neue APK.'
+                  : 'Nach dem Merge kommen Dart/UI-Aenderungen per OTA-Patch in die '
+                      'App; native Aenderungen erfordern eine neue APK (Release).',
+            ),
+            const SizedBox(height: 16),
+            Row(children: [
+              if (isFailed) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      _editAndBuild(
                         category: r.category,
                         type: r.wbType ?? 'verbesserung',
                         title: r.title,
                         description: r.description,
                         source: 'manual',
-                      ),
-              icon: const Icon(Icons.edit_rounded, size: 14),
-              label: const Text('Bearbeiten', style: TextStyle(fontSize: 11.5)),
-              style: TextButton.styleFrom(
-                foregroundColor: _ab,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          if (isFailed) const SizedBox(width: 6),
-          if (isFailed)
-            TextButton.icon(
-              onPressed: _submitting ? null : () => _retryRequest(r),
-              icon: _submitting
-                  ? const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.refresh_rounded, size: 14),
-              label: const Text('Nochmal', style: TextStyle(fontSize: 11.5)),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.amberAccent,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-            ),
-          if (isFailed) const SizedBox(width: 6),
-          IconButton(
-            tooltip: 'Loeschen',
-            icon: const Icon(Icons.delete_outline_rounded, size: 17),
-            color: Colors.white24,
-            onPressed: () => _deleteRequest(r),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            visualDensity: VisualDensity.compact,
+                      );
+                    },
+                    icon: const Icon(Icons.edit_rounded, size: 15),
+                    label: const Text('Bearbeiten'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _ab,
+                      side: BorderSide(color: _a.withValues(alpha: 0.4)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      _retryRequest(r);
+                    },
+                    icon: const Icon(Icons.refresh_rounded, size: 15),
+                    label: const Text('Nochmal'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.amber.withValues(alpha: 0.25),
+                      foregroundColor: Colors.amberAccent,
+                    ),
+                  ),
+                ),
+              ] else
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () =>
+                        _openUrl(r.prUrl ?? r.issueUrl ?? actionsUrl),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 15),
+                    label: const Text('Auf GitHub oeffnen'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _ab,
+                      side: BorderSide(color: _a.withValues(alpha: 0.4)),
+                    ),
+                  ),
+                ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // A: vertikale Timeline mit aktivem Schritt.
+  Widget _detailTimeline(GodModeRequest r) {
+    final isFailed = r.status == 'failed' || r.status == 'rejected';
+    final current = _statusStep(r.status).$1; // 0..4
+    const steps = ['Beauftragt', 'Baut', 'PR offen', 'Gemergt / OTA'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < steps.length; i++)
+          _timelineRow(
+            label: steps[i],
+            done: current > i + 1 || (current == 4 && i == 3),
+            active: current == i + 1 && !isFailed && r.status != 'merged',
+            failed: isFailed && i + 1 == current,
+            isLast: i == steps.length - 1,
           ),
+        if (isFailed)
+          Padding(
+            padding: const EdgeInsets.only(left: 30, top: 2),
+            child: Text('Fehlgeschlagen in diesem Schritt',
+                style: TextStyle(color: Colors.red.shade300, fontSize: 11)),
+          ),
+      ],
+    );
+  }
+
+  Widget _timelineRow({
+    required String label,
+    required bool done,
+    required bool active,
+    required bool failed,
+    required bool isLast,
+  }) {
+    final Color c = failed
+        ? Colors.redAccent
+        : done
+            ? Colors.greenAccent
+            : active
+                ? _ab
+                : Colors.white24;
+    final IconData icon = failed
+        ? Icons.cancel_rounded
+        : done
+            ? Icons.check_circle_rounded
+            : active
+                ? Icons.radio_button_checked_rounded
+                : Icons.radio_button_unchecked_rounded;
+    return IntrinsicHeight(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Column(children: [
+          Icon(icon, size: 18, color: c),
+          if (!isLast)
+            Expanded(
+              child: Container(
+                width: 2,
+                color: (done ? Colors.greenAccent : Colors.white12)
+                    .withValues(alpha: 0.4),
+              ),
+            ),
         ]),
+        const SizedBox(width: 12),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Text(label,
+              style: TextStyle(
+                  color: active || done ? Colors.white : Colors.white38,
+                  fontSize: 12.5,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w400)),
+        ),
       ]),
     );
   }

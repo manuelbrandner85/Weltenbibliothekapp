@@ -282,6 +282,13 @@ class GodModeRepoInsights {
   final Map<String, bool> providers;
   final Map<String, int> stats;
 
+  /// D: Pipeline-Cockpit -- Builder-Modell, letztes Release, App-Versionen.
+  final String model;
+  final String releaseTag;
+  final String releaseName;
+  final String latestVersion;
+  final String minVersion;
+
   const GodModeRepoInsights({
     required this.pulls,
     required this.runs,
@@ -289,6 +296,11 @@ class GodModeRepoInsights {
     required this.commits,
     this.providers = const {},
     this.stats = const {},
+    this.model = '',
+    this.releaseTag = '',
+    this.releaseName = '',
+    this.latestVersion = '',
+    this.minVersion = '',
   });
   static const empty = GodModeRepoInsights(
     pulls: [],
@@ -510,6 +522,20 @@ class GodModeService {
             ? (data['stats'] as Map)
                 .map((k, v) => MapEntry(k.toString(), (v is int) ? v : 0))
             : const {},
+        model: (data['model'] as String?) ?? '',
+        releaseTag: (data['release'] is Map)
+            ? (((data['release'] as Map)['tag'] as String?) ?? '')
+            : '',
+        releaseName: (data['release'] is Map)
+            ? (((data['release'] as Map)['name'] as String?) ?? '')
+            : '',
+        latestVersion: (data['app_version'] is Map)
+            ? (((data['app_version'] as Map)['latest_version'] as String?) ??
+                '')
+            : '',
+        minVersion: (data['app_version'] is Map)
+            ? (((data['app_version'] as Map)['min_version'] as String?) ?? '')
+            : '',
       );
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.repoInsights: $e');
