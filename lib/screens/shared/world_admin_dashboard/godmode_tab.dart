@@ -88,6 +88,52 @@ class _GodModeTabState extends State<_GodModeTab>
   bool _isListening = false;
   bool _speechReady = false;
 
+  // Batch2: Screenshot-zu-Auftrag (multimodal).
+  final ImagePicker _imagePicker = ImagePicker();
+  bool _visionBusy = false;
+
+  // Batch2: Screenshot waehlen -> KI formuliert Auftrag -> Bearbeiten-Sheet.
+  Future<void> _pickScreenshot() async {
+    if (_visionBusy) return;
+    try {
+      final XFile? file = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        imageQuality: 85,
+      );
+      if (file == null) return;
+      setState(() => _visionBusy = true);
+      final bytes = await file.readAsBytes();
+      final b64 = base64Encode(bytes);
+      final mime = file.mimeType ??
+          (file.path.toLowerCase().endsWith('.png')
+              ? 'image/png'
+              : 'image/jpeg');
+      final hint = _chatCtrl.text.trim();
+      final order =
+          await GodModeService.vision(imageBase64: b64, mime: mime, hint: hint);
+      if (!mounted) return;
+      setState(() => _visionBusy = false);
+      if (order == null) {
+        _snack(
+            'Aus dem Bild liess sich kein Auftrag erkennen -- bitte beschreiben.',
+            color: Colors.orange);
+        return;
+      }
+      _chatCtrl.clear();
+      _editAndBuild(
+        category: order.category,
+        type: order.type,
+        title: order.title,
+        description: order.description,
+        source: 'manual',
+      );
+    } catch (e) {
+      if (mounted) setState(() => _visionBusy = false);
+      _snack('Bild konnte nicht verarbeitet werden.', color: Colors.red);
+    }
+  }
+
   Future<void> _toggleVoiceInput() async {
     if (_isListening) {
       await _speech.stop();
@@ -1196,6 +1242,25 @@ class _GodModeTabState extends State<_GodModeTab>
                     borderRadius: BorderRadius.circular(22),
                     borderSide: BorderSide.none),
               ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Batch2: Screenshot-zu-Auftrag
+          GestureDetector(
+            onTap: _visionBusy ? null : _pickScreenshot,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: _visionBusy
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.image_search_rounded,
+                      color: Colors.white60, size: 20),
             ),
           ),
           const SizedBox(width: 6),
