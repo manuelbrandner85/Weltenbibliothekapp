@@ -115,6 +115,11 @@ jobs:
             Fehlen Details, triff sinnvolle, zum bestehenden Code passende Annahmen und
             dokumentiere sie im PR-Body -- NIE wegen Unklarheit abbrechen.
 
+            Qualitaets-Gate (Pflicht): behandle leere/ungueltige Eingaben sauber (kein
+            Crash), zeige Lade- und Fehlerzustaende, sorge fuer Barrierefreiheit
+            (sprechende Semantics-Labels, Tap-Ziele >= 44px, ausreichender Kontrast)
+            und durchgaengig deutsche, nutzerfreundliche Texte.
+
             Erstelle einen Branch und oeffne einen Pull-Request. Merge NICHT selbst --
             das uebernimmt der nachgelagerte Auto-Merge-Schritt nach gruenem Verify-Gate.
           # Branch-Praefix fuer den entstehenden PR.

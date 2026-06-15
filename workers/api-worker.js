@@ -5725,6 +5725,66 @@ export default {
           }
         }
 
+        // ── GET /api/admin/godmode/roadmap (Batch3) ─────────────────────
+        // KI-priorisierte Roadmap aus den offenen Auftraegen (Epics + Reihenfolge).
+        if (method === 'GET' && path === '/api/admin/godmode/roadmap') {
+          let rows = [];
+          try {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_requests?select=title,category,wb_type,status&order=created_at.desc&limit=80`,
+              { headers: svcHeaders });
+            if (r.ok) rows = await r.json().catch(() => []);
+          } catch (_) {}
+          const done = new Set(['merged', 'done', 'completed', 'failed', 'error', 'rejected']);
+          const open = (Array.isArray(rows) ? rows : [])
+            .filter((x) => !done.has(String(x.status || '').toLowerCase()));
+          if (!open.length) {
+            return jsonResponse({ success: true, roadmap: '', count: 0 });
+          }
+          const list = open
+            .map((x, i) => `${i + 1}. [${x.wb_type || '?'}/${x.category || '?'}] ${String(x.title || '').slice(0, 120)}`)
+            .join('\n');
+          const rp =
+            'Du bist Produkt-Lead der App "Weltenbibliothek". Offene God-Mode-Auftraege:\n\n' +
+            list + '\n\n' +
+            'Erstelle eine priorisierte Roadmap als Markdown: gruppiere verwandte Auftraege ' +
+            'zu Epics (## Ueberschrift), ordne Quick-Wins (hoher Nutzen, niedriger Aufwand) ' +
+            'zuerst, nenne je Eintrag kurz Nutzen + geschaetzten Aufwand (S/M/L). Schliesse mit ' +
+            '"## Naechste Schritte" (3-5 empfohlene Auftraege in Reihenfolge). Deutsch, kompakt.';
+          const oaiRoad = async (url, key, model) => {
+            if (!key) return null;
+            try {
+              const rr = await fetch(url, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model, messages: [{ role: 'user', content: rp }],
+                  max_tokens: 1000, temperature: 0.3,
+                }),
+              });
+              if (!rr.ok) return null;
+              const d = await rr.json().catch(() => null);
+              return d?.choices?.[0]?.message?.content || null;
+            } catch (_) { return null; }
+          };
+          let text = await oaiRoad('https://api.groq.com/openai/v1/chat/completions', env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
+          if (!text) text = await oaiRoad('https://api.cerebras.ai/v1/chat/completions', env.CEREBRAS_API_KEY, 'llama-3.3-70b');
+          if (!text) text = await oaiRoad('https://openrouter.ai/api/v1/chat/completions', env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct');
+          if (!text && env.AI) {
+            try {
+              const ar = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+                messages: [{ role: 'user', content: rp }], max_tokens: 1000,
+              });
+              text = ar?.response || null;
+            } catch (_) {}
+          }
+          return jsonResponse({
+            success: true,
+            roadmap: text ? String(text).trim().slice(0, 6000) : '',
+            count: open.length,
+          });
+        }
+
         // ── GET /api/admin/godmode/repo ──────────────────────────────────
         // A1: Live-Repo-Insights (offene PRs, fehlgeschlagene CI, offene
         // Issues, letzte Commits) fuer den Repo-Tab.

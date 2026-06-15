@@ -2065,6 +2065,7 @@ class _GodModeTabState extends State<_GodModeTab>
                   ),
                 )
               : Column(children: [
+                  _buildRoadmapBar(),
                   _buildStatusListHeader(),
                   _buildReqFilter(),
                   Expanded(
@@ -2339,6 +2340,90 @@ class _GodModeTabState extends State<_GodModeTab>
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  // Batch3: Roadmap-Leiste im Status-Tab.
+  Widget _buildRoadmapBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: TextButton.icon(
+          onPressed: _showRoadmap,
+          icon: const Icon(Icons.timeline_rounded, size: 15),
+          label: const Text('Roadmap & Priorisierung',
+              style: TextStyle(fontSize: 11.5)),
+          style: TextButton.styleFrom(foregroundColor: _ab),
+        ),
+      ),
+    );
+  }
+
+  // Batch3: KI-priorisierte Roadmap der offenen Auftraege als Sheet.
+  Future<void> _showRoadmap() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        builder: (ctx, scroll) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: FutureBuilder<String>(
+            future: GodModeService.roadmap(),
+            builder: (ctx, snap) {
+              return ListView(
+                controller: scroll,
+                children: [
+                  Row(children: [
+                    Icon(Icons.timeline_rounded, size: 18, color: _ab),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Roadmap & Priorisierung',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'KI-Priorisierung der offenen Auftraege (Quick-Wins zuerst, Epics).',
+                    style: TextStyle(color: Colors.white38, fontSize: 11),
+                  ),
+                  const SizedBox(height: 14),
+                  if (snap.connectionState != ConnectionState.done)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if ((snap.data ?? '').isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 30),
+                      child: Text(
+                        'Keine offenen Auftraege fuer eine Roadmap (oder KI ausgelastet).',
+                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                      ),
+                    )
+                  else
+                    SelectableText(
+                      snap.data!,
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 13, height: 1.55),
+                    ),
+                  const SizedBox(height: 10),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
