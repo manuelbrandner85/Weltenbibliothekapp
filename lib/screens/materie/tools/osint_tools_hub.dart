@@ -6,13 +6,10 @@ import '../../../services/osint_history_service.dart'; // 🕰️ D1
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import 'ai_detector_tool.dart';
-import 'air_quality_screen.dart';
 import 'conflict_database_screen.dart';
-import 'cosmos_tools.dart';
 import 'country_compare_tool.dart';
 import 'crypto_tracker_tool.dart';
 import 'cyber_threat_feed_screen.dart';
-import 'data_leak_tool.dart';
 import 'domain_osint_tool.dart';
 import 'economic_indicators_screen.dart';
 import 'email_osint_tool.dart';
@@ -32,7 +29,6 @@ import 'propaganda_compare_screen.dart';
 import 'study_analyst_screen.dart';
 import 'travel_advisories_screen.dart';
 import 'version_watcher_screen.dart';
-import 'wildfire_screen.dart';
 import 'world_event_radar_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -63,7 +59,6 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
     _ToolMeta('image_analysis', '🖼️'),
     _ToolMeta('ai_detector', '🤖'),
     _ToolMeta('geo_analysis', '🗺️'),
-    _ToolMeta('data_leak', '⚠️'),
   ];
 
   @override
@@ -260,17 +255,6 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
       customScreenBuilder: () => const EconomicIndicatorsScreen(),
     ),
     _DbDef(
-      icon: Icons.satellite_alt_rounded,
-      label: 'GPS-Stoerungen',
-      sub: 'Jamming-Karte (gpsjam.org)',
-      color: const Color(0xFFFF7043),
-      url: 'https://gpsjam.org',
-      description:
-          'Weltkarte der GPS-Stoerungen/Jamming - oft ein Frueh-Indikator fuer '
-          'militaerische Aktivitaet in Konfliktgebieten. Interaktive Karte von '
-          'gpsjam.org.',
-    ),
-    _DbDef(
       icon: Icons.cable_rounded,
       label: 'Seekabel-Karte',
       sub: 'Kritische Internet-Infrastruktur',
@@ -292,30 +276,6 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
           'filtern. Daten vom Armed Conflict Location & Event Data Project (ACLED). '
           'Benoetigt ACLED_ACCESS_TOKEN + ACLED_EMAIL als Wrangler-Secrets.',
       customScreenBuilder: () => const ConflictDatabaseScreen(),
-    ),
-    _DbDef(
-      icon: Icons.local_fire_department_rounded,
-      label: 'Waldbrand-Radar',
-      sub: 'NASA FIRMS: Thermische Hotspots live',
-      color: const Color(0xFFFF6F00),
-      url: '',
-      description:
-          'Aktive Brandherde weltweit via NASA FIRMS VIIRS Near Real-Time. '
-          'Zeitraum 24h/48h/7 Tage waehlbar, sortiert nach Fire Radiative Power. '
-          'Benoetigt NASA_FIRMS_API_KEY als Wrangler-Secret.',
-      customScreenBuilder: () => const WildfireScreen(),
-    ),
-    _DbDef(
-      icon: Icons.air_rounded,
-      label: 'Luftqualitaet',
-      sub: 'OpenAQ: PM2.5, NO2, Ozon weltweit',
-      color: const Color(0xFF66BB6A),
-      url: '',
-      description:
-          'Messstationen und Sensorwerte aus der OpenAQ-Plattform nach Stadt '
-          'durchsuchen. Zeigt Feinstaubwerte, Stickoxide und weitere Parameter. '
-          'Benoetigt OPENAQ_API_KEY als Wrangler-Secret.',
-      customScreenBuilder: () => const AirQualityScreen(),
     ),
     _DbDef(
       icon: Icons.wifi_off_rounded,
@@ -398,17 +358,6 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
       customScreenBuilder: () => const ManipulationAnalysisScreen(),
     ),
     _DbDef(
-      icon: Icons.warning_amber_rounded,
-      label: 'Datenleck-Check',
-      sub: 'E-Mail in Datenlecks suchen',
-      color: const Color(0xFFEF5350),
-      url: '',
-      description:
-          'E-Mail-Adresse gegen bekannte Datenlecks pruefen (alternative Quelle). '
-          'Zeigt betroffene Dienste und Lecks. Ergaenzt den E-Mail Leak-Check.',
-      customScreenBuilder: () => const DataLeakTool(),
-    ),
-    _DbDef(
       icon: Icons.currency_bitcoin_rounded,
       label: 'Krypto-Tracker',
       sub: 'Blockchain-Adresse analysieren',
@@ -418,51 +367,6 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
           'Bitcoin-, Ethereum- oder andere Blockchain-Adresse eingeben -> '
           'Transaktionshistorie, Guthaben und bekannte Labels (Boersen, Scams).',
       customScreenBuilder: () => const CryptoTrackerTool(),
-    ),
-    _DbDef(
-      icon: Icons.vibration_rounded,
-      label: 'Erdbeben-Radar',
-      sub: 'Live-Beben weltweit (USGS)',
-      color: const Color(0xFFD32F2F),
-      url: '',
-      description:
-          'Alle Erdbeben ab Magnitude 2.5 der letzten 24h weltweit aus der '
-          'US-Geological-Survey-Seismik. Mit Tiefe, Ort und Tsunami-Warnung.',
-      customScreenBuilder: () => const EarthquakeRadarScreen(),
-    ),
-    _DbDef(
-      icon: Icons.blur_circular_rounded,
-      label: 'Asteroiden-Anflug',
-      sub: 'Erdnahe Objekte (NASA/JPL)',
-      color: const Color(0xFFFF6F00),
-      url: '',
-      description:
-          'Asteroiden, die in den naechsten 60 Tagen nahe an der Erde '
-          'vorbeiziehen - aus der NASA/JPL Close-Approach-Datenbank. '
-          'Mit Distanz in Mond-Distanzen und Geschwindigkeit.',
-      customScreenBuilder: () => const AsteroidApproachScreen(),
-    ),
-    _DbDef(
-      icon: Icons.volcano_rounded,
-      label: 'Vulkan-Aktivitaet',
-      sub: 'Aktive Vulkane (NASA EONET)',
-      color: const Color(0xFFFF7043),
-      url: '',
-      description:
-          'Laufende Vulkan-Eruptionen und -Aktivitaeten weltweit aus dem '
-          'NASA Earth Observatory. Mit Standort und Quelle.',
-      customScreenBuilder: () => const VolcanoActivityScreen(),
-    ),
-    _DbDef(
-      icon: Icons.flare_rounded,
-      label: 'Weltraumwetter',
-      sub: 'Sonnenstuerme & Polarlicht (NOAA)',
-      color: const Color(0xFFFFC107),
-      url: '',
-      description:
-          'Geomagnetischer Kp-Index der NOAA. Ab Kp 5 Sturm mit hoher '
-          'Polarlicht-Chance und moeglichen Funk-/GPS-/Stromnetz-Stoerungen.',
-      customScreenBuilder: () => const SpaceWeatherScreen(),
     ),
   ];
 
@@ -854,12 +758,14 @@ class _OsintHistoryScreenState extends State<_OsintHistoryScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                     child: ChoiceChip(
-                      label: Text(t.emoji, style: const TextStyle(fontSize: 12)),
+                      label:
+                          Text(t.emoji, style: const TextStyle(fontSize: 12)),
                       selected: _selectedTool == t.id,
                       selectedColor: _kAccent.withValues(alpha: 0.25),
                       backgroundColor: Colors.white.withValues(alpha: 0.04),
                       labelStyle: TextStyle(
-                        color: _selectedTool == t.id ? _kAccent : Colors.white70,
+                        color:
+                            _selectedTool == t.id ? _kAccent : Colors.white70,
                       ),
                       onSelected: (_) {
                         setState(() => _selectedTool = t.id);
