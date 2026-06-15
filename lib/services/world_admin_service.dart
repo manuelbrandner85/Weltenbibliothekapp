@@ -1579,7 +1579,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return (true, count);
     } on AdminApiException catch (e) {
       if (kDebugMode)
-        debugPrint('❌ batchGrantModuleAccess: ${e.statusCode} ${e.bodySnippet}');
+        debugPrint(
+            '❌ batchGrantModuleAccess: ${e.statusCode} ${e.bodySnippet}');
       return (false, 0);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ batchGrantModuleAccess: $e');
@@ -1881,7 +1882,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }
 
   /// W7: Setzt die Auto-Scan-Konfiguration.
-  static Future<bool> setScanConfig({bool? enabled, List<String>? worlds}) async {
+  static Future<bool> setScanConfig(
+      {bool? enabled, List<String>? worlds}) async {
     try {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/module-workshop/scan-config',
@@ -1984,9 +1986,11 @@ extension WorldAdminServiceV162 on WorldAdminService {
   // ── Tool-Werkstatt (T1-T4) ─────────────────────────────────────────────
   static Future<List<Map<String, dynamic>>> getTools(String world) async {
     try {
-      final data = await AdminApiClient.instance.getJson('/api/admin/tools?world=$world');
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/tools?world=$world');
       return ((data['tools'] as List?) ?? const [])
-          .map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('getTools: $e');
       return const [];
@@ -1995,7 +1999,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
 
   static Future<bool> saveTool(Map<String, dynamic> tool) async {
     try {
-      final data = await AdminApiClient.instance.postJson('/api/admin/tools', body: tool);
+      final data = await AdminApiClient.instance
+          .postJson('/api/admin/tools', body: tool);
       return data['success'] as bool? ?? false;
     } catch (e) {
       if (kDebugMode) debugPrint('saveTool: $e');
@@ -2005,7 +2010,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
 
   static Future<bool> deleteTool(String id) async {
     try {
-      final data = await AdminApiClient.instance.deleteJson('/api/admin/tools?id=$id');
+      final data =
+          await AdminApiClient.instance.deleteJson('/api/admin/tools?id=$id');
       return data['success'] as bool? ?? false;
     } catch (e) {
       if (kDebugMode) debugPrint('deleteTool: $e');
@@ -2022,13 +2028,42 @@ extension WorldAdminServiceV162 on WorldAdminService {
     try {
       final data = await AdminApiClient.instance.postJson(
         '/api/admin/tools/idea',
-        body: {'world': world, 'mode': mode, if (target != null) 'target': target},
+        body: {
+          'world': world,
+          'mode': mode,
+          if (target != null) 'target': target
+        },
         timeout: const Duration(seconds: 30),
       );
       if (data['success'] == true) return data;
       return null;
     } catch (e) {
       if (kDebugMode) debugPrint('getToolIdea: $e');
+      return null;
+    }
+  }
+
+  /// Batch2b: KI-Komplett-Spezifikation aus einem Stichwort/Titel generieren
+  /// (Zweck, Eingaben, Logik, UI, Beispiel, Edge-Cases). Liefert Markdown.
+  static Future<String?> toolSpec({
+    required String world,
+    required String title,
+    String? template,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/module-workshop/tool-spec',
+        body: {
+          'world': world,
+          'title': title,
+          if (template != null && template.isNotEmpty) 'template': template,
+        },
+        timeout: const Duration(seconds: 45),
+      );
+      final spec = data['spec'];
+      return (spec is String && spec.isNotEmpty) ? spec : null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('toolSpec: $e');
       return null;
     }
   }
@@ -2046,12 +2081,14 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getToolSuggestions(String world) async {
+  static Future<List<Map<String, dynamic>>> getToolSuggestions(
+      String world) async {
     try {
       final data = await AdminApiClient.instance
           .getJson('/api/admin/tools/suggestions?world=$world');
       return ((data['suggestions'] as List?) ?? const [])
-          .map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('getToolSuggestions: $e');
       return const [];
@@ -2080,12 +2117,14 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> getToolRequests(String world) async {
+  static Future<List<Map<String, dynamic>>> getToolRequests(
+      String world) async {
     try {
       final data = await AdminApiClient.instance
           .getJson('/api/admin/tools/requests?world=$world');
       return ((data['requests'] as List?) ?? const [])
-          .map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('getToolRequests: $e');
       return const [];
@@ -2171,7 +2210,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }
 
   // ── Inhalte-Verwaltung (Materie/Energie Tool-Inhalte) ─────────────────
-  static Future<List<Map<String, dynamic>>> getContentTables(String world) async {
+  static Future<List<Map<String, dynamic>>> getContentTables(
+      String world) async {
     try {
       final data = await AdminApiClient.instance
           .getJson('/api/admin/content/tables?world=$world');
@@ -2188,14 +2228,15 @@ extension WorldAdminServiceV162 on WorldAdminService {
     required String table,
   }) async {
     try {
-      final data = await AdminApiClient.instance.getJson(
-          '/api/admin/content/rows?world=$world&table=$table');
+      final data = await AdminApiClient.instance
+          .getJson('/api/admin/content/rows?world=$world&table=$table');
       return {
         'rows': ((data['rows'] as List?) ?? const [])
             .map((e) => Map<String, dynamic>.from(e as Map))
             .toList(),
-        'columns':
-            ((data['columns'] as List?) ?? const []).map((e) => e.toString()).toList(),
+        'columns': ((data['columns'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
       };
     } catch (e) {
       if (kDebugMode) debugPrint('getContentRows: $e');
@@ -2619,7 +2660,8 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return null;
     } on AdminApiException catch (e) {
       if (kDebugMode)
-        debugPrint('❌ articleWorkshop/$action: ${e.statusCode} ${e.bodySnippet}');
+        debugPrint(
+            '❌ articleWorkshop/$action: ${e.statusCode} ${e.bodySnippet}');
       return null;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ articleWorkshop/$action: $e');

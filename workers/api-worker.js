@@ -11040,6 +11040,58 @@ export default {
         }
       }
 
+      // ── POST /api/admin/module-workshop/tool-spec (Batch2b) ────────────
+      // KI-Komplett-Spezifikation aus einem Stichwort/Titel (Markdown-Text).
+      if (method === 'POST' && path === '/api/admin/module-workshop/tool-spec') {
+        if (!caller.isAdmin) return errorResponse('Admin-Rolle erforderlich', 403);
+        let sb = {};
+        try { sb = await request.clone().json(); } catch (_) {}
+        const sbTitle = String(sb.title || '').trim().slice(0, 160);
+        const sbWorld = String(sb.world || '').trim();
+        const sbTemplate = String(sb.template || '').trim();
+        if (sbTitle.length < 2) return errorResponse('Titel/Stichwort noetig', 400);
+        const sp =
+          'Erstelle eine vollstaendige, praezise Spezifikation fuer ein INTERAKTIVES Tool ' +
+          `in der Flutter-App "Weltenbibliothek" (Welt: ${sbWorld || 'allgemein'}). ` +
+          `Stichwort/Titel: "${sbTitle}".` +
+          (sbTemplate ? ` Tool-Typ: ${sbTemplate}.` : '') + '\n\n' +
+          'Gliedere als Markdown mit GENAU diesen Abschnitten:\n' +
+          '## Zweck\n## Eingaben (Feld -> Typ -> Beispiel)\n' +
+          '## Logik / Ablauf (Schritt fuer Schritt)\n## UI-Aufbau\n' +
+          '## Beispiel-Durchlauf\n## Edge-Cases & Validierung\n\n' +
+          'Konkret, umsetzbar, deutsch. Keine Code-Bloecke, nur klare Beschreibung. Max ~400 Woerter.';
+        const oaiSpec = async (url, key, model) => {
+          if (!key) return null;
+          try {
+            const r = await fetch(url, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model,
+                messages: [{ role: 'user', content: sp }],
+                max_tokens: 900, temperature: 0.4,
+              }),
+            });
+            if (!r.ok) return null;
+            const d = await r.json().catch(() => null);
+            return d?.choices?.[0]?.message?.content || null;
+          } catch (_) { return null; }
+        };
+        let spec = await oaiSpec('https://api.groq.com/openai/v1/chat/completions', env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
+        if (!spec) spec = await oaiSpec('https://api.cerebras.ai/v1/chat/completions', env.CEREBRAS_API_KEY, 'llama-3.3-70b');
+        if (!spec) spec = await oaiSpec('https://openrouter.ai/api/v1/chat/completions', env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct');
+        if (!spec && env.AI) {
+          try {
+            const ar = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages: [{ role: 'user', content: sp }], max_tokens: 900,
+            });
+            spec = ar?.response || null;
+          } catch (_) {}
+        }
+        if (!spec) return jsonResponse({ success: false, spec: '', message: 'Keine KI verfuegbar.' });
+        return jsonResponse({ success: true, spec: String(spec).trim().slice(0, 4000) });
+      }
+
       // ── POST /api/admin/module-workshop/tool-request ───────────────
       // Vorschlag D: LOGIK-Modul anfragen -> GitHub-Issue-Bruecke.
       // Body: { world?, title, description }

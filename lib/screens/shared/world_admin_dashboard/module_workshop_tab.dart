@@ -297,8 +297,8 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
           for (final e in langs.entries)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(ctx, e.key),
-              child: Text(e.value,
-                  style: const TextStyle(color: Colors.white70)),
+              child:
+                  Text(e.value, style: const TextStyle(color: Colors.white70)),
             ),
         ],
       ),
@@ -772,7 +772,8 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
               ? 'Es wird ein komplett neuer Bereich angelegt.'
               : 'Das Thema wird automatisch in den passenden bestehenden Bereich '
                   'einsortiert (z.B. Machtpsychologie). Passt es zu keinem, entsteht ein neuer.',
-          style: const TextStyle(color: Colors.white38, fontSize: 11, height: 1.3),
+          style:
+              const TextStyle(color: Colors.white38, fontSize: 11, height: 1.3),
         ),
         const SizedBox(height: 6),
         Row(children: [
@@ -809,8 +810,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
                       backgroundColor: widget.accent.withValues(alpha: 0.18),
                       side: BorderSide(
                           color: widget.accentBright.withValues(alpha: 0.3)),
-                      onPressed: () =>
-                          setState(() => _themeCtrl.text = b),
+                      onPressed: () => setState(() => _themeCtrl.text = b),
                     ))
                 .toList(),
           ),
@@ -951,7 +951,8 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
               label: const Text('Letzte Aenderung rueckgaengig'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.orangeAccent,
-                side: BorderSide(color: Colors.orangeAccent.withValues(alpha: 0.5)),
+                side: BorderSide(
+                    color: Colors.orangeAccent.withValues(alpha: 0.5)),
               ),
             ),
           ],
@@ -1099,7 +1100,8 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.menu_book_outlined, size: 14, color: widget.accentBright),
+            Icon(Icons.menu_book_outlined,
+                size: 14, color: widget.accentBright),
             const SizedBox(width: 6),
             Text('Quellen (${sources.length})',
                 style: TextStyle(
@@ -1254,8 +1256,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
                   ),
                   subtitle: Text(
                     '$code - ${m['branch']}',
-                    style:
-                        const TextStyle(color: Colors.white54, fontSize: 11),
+                    style: const TextStyle(color: Colors.white54, fontSize: 11),
                   ),
                   trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                     IconButton(
@@ -1318,8 +1319,7 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
                       style: TextStyle(color: Colors.white54))),
               ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  style:
-                      ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                   child: const Text('Loeschen')),
             ],
           ),
@@ -1331,7 +1331,9 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
       moduleCode: code,
     );
     if (!mounted) return;
-    _snack(deleted ? 'Modul geloescht' : 'Loeschen fehlgeschlagen (nur Root-Admin)');
+    _snack(deleted
+        ? 'Modul geloescht'
+        : 'Loeschen fehlgeschlagen (nur Root-Admin)');
     if (deleted) await _loadExisting();
   }
 
@@ -1416,7 +1418,8 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
                 Icon(Icons.schedule, size: 14, color: widget.accentBright),
                 const SizedBox(width: 6),
                 const Expanded(
-                  child: Text('Taeglicher Auto-Scan (KI schlaegt automatisch vor)',
+                  child: Text(
+                      'Taeglicher Auto-Scan (KI schlaegt automatisch vor)',
                       style: TextStyle(color: Colors.white70, fontSize: 12)),
                 ),
                 Switch(
@@ -1581,24 +1584,19 @@ class _ModuleWorkshopTabState extends State<_ModuleWorkshopTab>
                   (_existingBranches.isNotEmpty &&
                       !_existingBranches.contains(branch));
               return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: (isNewTheme ? Colors.purpleAccent : Colors.white24)
                       .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: (isNewTheme
-                              ? Colors.purpleAccent
-                              : Colors.white38)
+                      color: (isNewTheme ? Colors.purpleAccent : Colors.white38)
                           .withValues(alpha: 0.4)),
                 ),
                 child: Text(
                   isNewTheme ? '🆕 Neues Thema: $branch' : 'Thema: $branch',
                   style: TextStyle(
-                      color: isNewTheme
-                          ? Colors.purpleAccent
-                          : Colors.white60,
+                      color: isNewTheme ? Colors.purpleAccent : Colors.white60,
                       fontSize: 11,
                       fontWeight:
                           isNewTheme ? FontWeight.bold : FontWeight.normal),
@@ -1877,8 +1875,8 @@ class _ModulePreviewSheet extends StatelessWidget {
           const SizedBox(height: 6),
           ChatMarkdownText(
             body,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 14, height: 1.5),
+            style:
+                const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
           ),
         ],
       );
@@ -2002,9 +2000,7 @@ class _ModulePreviewSheet extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2),
               child: Row(children: [
                 Icon(
-                  o == ans
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
+                  o == ans ? Icons.check_circle : Icons.radio_button_unchecked,
                   size: 14,
                   color: o == ans ? Colors.green : Colors.white24,
                 ),
@@ -2185,11 +2181,64 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
 
   void _snack(String m, {Color? c}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A30)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(m), backgroundColor: c ?? const Color(0xFF1A1A30)));
   }
 
   bool _ideaBusy = false;
+  // Batch2b: Komplett-Spezifikation + gewaehlte Vorlage.
+  bool _specBusy = false;
+  String? _selectedTemplate;
+
+  // Batch2b: Vorlage anwenden -- fuellt Titel-Prefix + strukturierten Starter.
+  void _applyTemplate(String type) {
+    const starters = {
+      'Rechner':
+          'Ein Rechner: der Nutzer gibt Werte ein, das Tool berechnet ein Ergebnis.\n'
+              'Eingaben: ...\nBerechnung/Formel: ...\nAusgabe: ... (mit kurzer Deutung).',
+      'Quiz':
+          'Ein Quiz: mehrere Fragen mit Auswahlantworten, am Ende ein ausgewertetes Ergebnis.\n'
+              'Fragen: ...\nAuswertung: ...',
+      'Tracker':
+          'Ein Tracker: der Nutzer erfasst regelmaessig Eintraege, das Tool zeigt Verlauf/Statistik.\n'
+              'Was wird erfasst: ...\nDarstellung: Liste + einfacher Verlaufsgraph.',
+      'Generator':
+          'Ein Generator: erzeugt auf Knopfdruck ein Ergebnis nach Regeln.\n'
+              'Eingaben/Parameter: ...\nGenerierungs-Regeln: ...',
+      'Orakel':
+          'Ein Orakel/Zieh-Tool: zufaellige Karte/Botschaft aus einem Set, mit Deutung.\n'
+              'Set/Karten: ...\nDeutung pro Ergebnis: ...',
+    };
+    setState(() {
+      _selectedTemplate = type;
+      if (_fnTitle.text.trim().isEmpty) _fnTitle.text = '$type: ';
+      _fnDesc.text = starters[type] ?? '';
+    });
+  }
+
+  // Batch2b: KI-Komplett-Spezifikation aus dem Titel/Stichwort generieren.
+  Future<void> _generateFullSpec() async {
+    final title = _fnTitle.text.trim();
+    if (title.length < 2) {
+      _snack('Bitte zuerst einen Titel/Stichwort eingeben.', c: Colors.orange);
+      return;
+    }
+    setState(() => _specBusy = true);
+    final spec = await WorldAdminServiceV162.toolSpec(
+      world: widget.world,
+      title: title,
+      template: _selectedTemplate,
+    );
+    if (!mounted) return;
+    setState(() => _specBusy = false);
+    if (spec != null && spec.isNotEmpty) {
+      setState(() => _fnDesc.text = spec);
+      _snack('KI-Komplett-Spezifikation eingesetzt -- pruefen & anpassen.');
+    } else {
+      _snack('Keine Spezifikation erhalten (KI evtl. ausgelastet).',
+          c: Colors.orange);
+    }
+  }
 
   // KI-Vorschlag holen und in die Felder einsetzen (neu ODER Verbesserung).
   Future<void> _suggestFunctionIdea() async {
@@ -2212,7 +2261,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
       });
       _snack('KI-Vorschlag eingesetzt — du kannst ihn anpassen.');
     } else {
-      _snack('Kein Vorschlag erhalten (KI evtl. ausgelastet)', c: Colors.orange);
+      _snack('Kein Vorschlag erhalten (KI evtl. ausgelastet)',
+          c: Colors.orange);
     }
   }
 
@@ -2251,7 +2301,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
       _fnDesc.clear();
       _fnTarget.clear();
     } else {
-      _snack('Anfrage fehlgeschlagen: ${res['error'] ?? ''}', c: Colors.redAccent);
+      _snack('Anfrage fehlgeschlagen: ${res['error'] ?? ''}',
+          c: Colors.redAccent);
     }
   }
 
@@ -2292,14 +2343,17 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
               icon: const Icon(Icons.apps_rounded, size: 16),
               text: _tools.isEmpty ? 'Tools' : 'Tools (${_tools.length})',
             ),
-            const Tab(icon: Icon(Icons.build_circle_outlined, size: 16), text: 'Funktion (KI baut)'),
+            const Tab(
+                icon: Icon(Icons.build_circle_outlined, size: 16),
+                text: 'Funktion (KI baut)'),
             Tab(
               icon: const Icon(Icons.lightbulb_outline, size: 16),
               text: _toolSuggestions.isEmpty
                   ? 'KI & Status'
                   : 'KI & Status (${_toolSuggestions.length})',
             ),
-            const Tab(icon: Icon(Icons.dataset_outlined, size: 16), text: 'Inhalte'),
+            const Tab(
+                icon: Icon(Icons.dataset_outlined, size: 16), text: 'Inhalte'),
           ],
         ),
         const Divider(color: Colors.white10, height: 1),
@@ -2321,7 +2375,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
   // ── Tab: Tools-Verzeichnis (T1) + bearbeiten/erweitern (T4) ──
   Widget _buildToolsTab() {
     if (_toolsLoading) {
-      return Center(child: CircularProgressIndicator(color: widget.accentBright));
+      return Center(
+          child: CircularProgressIndicator(color: widget.accentBright));
     }
     // B1: Filter nach Suchbegriff (Name/Kategorie/Beschreibung).
     final q = _toolSearch.trim().toLowerCase();
@@ -2350,7 +2405,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             color: widget.accent.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Icon(Icons.info_outline, size: 13, color: widget.accentBright),
               const SizedBox(width: 6),
@@ -2365,17 +2421,22 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             const SizedBox(height: 6),
             // A3: Status-Legende
             Wrap(spacing: 12, runSpacing: 4, children: const [
-              _StatusLegend(color: Colors.green, label: 'live = aktiv in der App'),
-              _StatusLegend(color: Colors.amber, label: 'im_bau = Claude baut gerade'),
-              _StatusLegend(color: Colors.white38, label: 'geplant = noch nicht gestartet'),
+              _StatusLegend(
+                  color: Colors.green, label: 'live = aktiv in der App'),
+              _StatusLegend(
+                  color: Colors.amber, label: 'im_bau = Claude baut gerade'),
+              _StatusLegend(
+                  color: Colors.white38,
+                  label: 'geplant = noch nicht gestartet'),
             ]),
           ]),
         ),
         // B1: Suchfeld
         TextField(
           style: const TextStyle(color: Colors.white, fontSize: 13),
-          decoration: _deco('Tool suchen …')
-              .copyWith(prefixIcon: const Icon(Icons.search, size: 18, color: Colors.white38)),
+          decoration: _deco('Tool suchen …').copyWith(
+              prefixIcon:
+                  const Icon(Icons.search, size: 18, color: Colors.white38)),
           onChanged: (v) => setState(() => _toolSearch = v),
         ),
         const SizedBox(height: 8),
@@ -2383,7 +2444,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
           const Padding(
             padding: EdgeInsets.all(20),
             child: Center(
-              child: Text('Keine Treffer.', style: TextStyle(color: Colors.white38)),
+              child: Text('Keine Treffer.',
+                  style: TextStyle(color: Colors.white38)),
             ),
           ),
         for (final entry in byCat.entries) ...[
@@ -2456,7 +2518,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             TextButton.icon(
               onPressed: () => _extendTool(t),
               icon: const Icon(Icons.auto_fix_high, size: 14),
-              label: const Text('Ändern lassen', style: TextStyle(fontSize: 11)),
+              label:
+                  const Text('Ändern lassen', style: TextStyle(fontSize: 11)),
               style: TextButton.styleFrom(
                   foregroundColor: widget.accentBright,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -2502,8 +2565,10 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
   // Tool-Metadaten bearbeiten/anlegen (Verzeichnis-Pflege).
   Future<void> _editTool(Map<String, dynamic>? t) async {
     final nameCtrl = TextEditingController(text: t?['name']?.toString() ?? '');
-    final catCtrl = TextEditingController(text: t?['category']?.toString() ?? 'Allgemein');
-    final descCtrl = TextEditingController(text: t?['description']?.toString() ?? '');
+    final catCtrl =
+        TextEditingController(text: t?['category']?.toString() ?? 'Allgemein');
+    final descCtrl =
+        TextEditingController(text: t?['description']?.toString() ?? '');
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2512,15 +2577,28 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             style: const TextStyle(color: Colors.white, fontSize: 15)),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: nameCtrl, style: const TextStyle(color: Colors.white), decoration: _deco('Name')),
+            TextField(
+                controller: nameCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: _deco('Name')),
             const SizedBox(height: 8),
-            TextField(controller: catCtrl, style: const TextStyle(color: Colors.white), decoration: _deco('Kategorie')),
+            TextField(
+                controller: catCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: _deco('Kategorie')),
             const SizedBox(height: 8),
-            TextField(controller: descCtrl, maxLines: 3, style: const TextStyle(color: Colors.white), decoration: _deco('Beschreibung')),
+            TextField(
+                controller: descCtrl,
+                maxLines: 3,
+                style: const TextStyle(color: Colors.white),
+                decoration: _deco('Beschreibung')),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen', style: TextStyle(color: Colors.white54))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
@@ -2558,7 +2636,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             '${widget.world == 'energie' ? 'Energie' : 'Materie'} hat interaktive Funktionen/Tools (kein Quiz). '
             'Beschreibe eine neue Funktion oder eine Erweiterung — die KI verfasst eine Spezifikation, '
             'erstellt ein GitHub-Issue und Claude Code baut sie und oeffnet einen PR (du mergest, dann neues APK).',
-            style: const TextStyle(color: Colors.amber, fontSize: 11, height: 1.4),
+            style:
+                const TextStyle(color: Colors.amber, fontSize: 11, height: 1.4),
           ),
         ),
         const SizedBox(height: 14),
@@ -2578,6 +2657,33 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
           ),
         ]),
         const SizedBox(height: 12),
+        // Batch2b: Template-Bibliothek (nur fuer neue Funktionen).
+        if (!_extend) ...[
+          const Text('Vorlage (optional):',
+              style: TextStyle(color: Colors.white54, fontSize: 11)),
+          const SizedBox(height: 6),
+          Wrap(spacing: 8, runSpacing: 6, children: [
+            for (final tpl in const [
+              'Rechner',
+              'Quiz',
+              'Tracker',
+              'Generator',
+              'Orakel'
+            ])
+              ChoiceChip(
+                label: Text(tpl, style: const TextStyle(fontSize: 11)),
+                selected: _selectedTemplate == tpl,
+                onSelected: (_) => _applyTemplate(tpl),
+                selectedColor: widget.accent,
+                backgroundColor: Colors.white.withValues(alpha: 0.05),
+                labelStyle: TextStyle(
+                    color: _selectedTemplate == tpl
+                        ? Colors.white
+                        : Colors.white70),
+              ),
+          ]),
+          const SizedBox(height: 10),
+        ],
         if (_extend) ...[
           TextField(
             controller: _fnTarget,
@@ -2588,19 +2694,42 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
           ),
           const SizedBox(height: 10),
         ],
-        // KI-Vorschlag: fuellt Titel + Beschreibung (neu ODER Verbesserung).
+        // KI-Vorschlag: fuellt Titel + Beschreibung; Komplett-Spezifikation: voller Spec.
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: _ideaBusy ? null : _suggestFunctionIdea,
-            icon: _ideaBusy
-                ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.auto_awesome, size: 14),
-            label: Text(
-              _extend ? 'KI-Verbesserungsvorschlag' : 'KI-Idee vorschlagen',
-              style: const TextStyle(fontSize: 11),
-            ),
-            style: TextButton.styleFrom(foregroundColor: widget.accentBright),
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 4,
+            children: [
+              TextButton.icon(
+                onPressed: _ideaBusy ? null : _suggestFunctionIdea,
+                icon: _ideaBusy
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.auto_awesome, size: 14),
+                label: Text(
+                  _extend ? 'KI-Verbesserungsvorschlag' : 'KI-Idee',
+                  style: const TextStyle(fontSize: 11),
+                ),
+                style:
+                    TextButton.styleFrom(foregroundColor: widget.accentBright),
+              ),
+              TextButton.icon(
+                onPressed: _specBusy ? null : _generateFullSpec,
+                icon: _specBusy
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.article_rounded, size: 14),
+                label: const Text('KI-Komplett-Spezifikation',
+                    style: TextStyle(fontSize: 11)),
+                style:
+                    TextButton.styleFrom(foregroundColor: widget.accentBright),
+              ),
+            ],
           ),
         ),
         TextField(
@@ -2613,15 +2742,22 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
           controller: _fnDesc,
           style: const TextStyle(color: Colors.white),
           maxLines: 6,
-          decoration: _deco('Was soll die Funktion koennen? Eingaben, Ausgaben, Ablauf …'),
+          decoration: _deco(
+              'Was soll die Funktion koennen? Eingaben, Ausgaben, Ablauf …'),
         ),
         const SizedBox(height: 12),
         ElevatedButton.icon(
           onPressed: _requesting ? null : _requestFunction,
           icon: _requesting
-              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
               : const Icon(Icons.auto_awesome),
-          label: Text(_requesting ? 'KI erstellt Spezifikation …' : 'Anfragen & bauen lassen'),
+          label: Text(_requesting
+              ? 'KI erstellt Spezifikation …'
+              : 'Anfragen & bauen lassen'),
           style: ElevatedButton.styleFrom(
             backgroundColor: widget.accentBright.withValues(alpha: 0.85),
             foregroundColor: Colors.white,
@@ -2637,8 +2773,10 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
             ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(_resultMsg!, style: const TextStyle(color: Colors.white, fontSize: 12)),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_resultMsg!,
+                  style: const TextStyle(color: Colors.white, fontSize: 12)),
               if (_resultUrl != null) ...[
                 const SizedBox(height: 6),
                 SelectableText(_resultUrl!,
@@ -2693,9 +2831,14 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         ElevatedButton.icon(
           onPressed: _scanningTools ? null : _scanTools,
           icon: _scanningTools
-              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
               : const Icon(Icons.auto_awesome, size: 16),
-          label: Text(_scanningTools ? 'KI denkt nach …' : 'KI-Tool-Vorschlaege holen'),
+          label: Text(
+              _scanningTools ? 'KI denkt nach …' : 'KI-Tool-Vorschlaege holen'),
           style: ElevatedButton.styleFrom(
             backgroundColor: widget.accentBright.withValues(alpha: 0.8),
             foregroundColor: Colors.white,
@@ -2705,14 +2848,22 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         const SizedBox(height: 14),
         if (_toolSuggestions.isNotEmpty) ...[
           Text('KI-VORSCHLAEGE (${_toolSuggestions.length})',
-              style: TextStyle(color: widget.accentBright, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+              style: TextStyle(
+                  color: widget.accentBright,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8)),
           const SizedBox(height: 6),
           for (final s in _toolSuggestions) _buildToolSuggestionCard(s),
           const SizedBox(height: 16),
         ],
         Row(children: [
           Text('ANFRAGEN-STATUS',
-              style: TextStyle(color: widget.accentBright, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+              style: TextStyle(
+                  color: widget.accentBright,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8)),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.refresh, size: 16, color: Colors.white38),
@@ -2723,7 +2874,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         if (_toolRequests.isEmpty)
           const Padding(
             padding: EdgeInsets.all(12),
-            child: Text('Noch keine Anfragen.', style: TextStyle(color: Colors.white38)),
+            child: Text('Noch keine Anfragen.',
+                style: TextStyle(color: Colors.white38)),
           )
         else
           for (final r in _toolRequests) _buildRequestStatusTile(r),
@@ -2838,8 +2990,10 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
               onPressed: () => _decideApproval(id, false),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.redAccent,
-                side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                side:
+                    BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               ),
               child: const Text('Ablehnen'),
             ),
@@ -2883,14 +3037,21 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         const SizedBox(height: 5),
         Text((s['name'] as String?) ?? '',
             style: const TextStyle(
-                color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600)),
         if ((s['description'] as String?)?.isNotEmpty ?? false) ...[
           const SizedBox(height: 3),
-          Text(s['description'].toString(), style: const TextStyle(color: Colors.white60, fontSize: 11)),
+          Text(s['description'].toString(),
+              style: const TextStyle(color: Colors.white60, fontSize: 11)),
         ],
         if ((s['rationale'] as String?)?.isNotEmpty ?? false) ...[
           const SizedBox(height: 3),
-          Text(s['rationale'].toString(), style: const TextStyle(color: Colors.white38, fontSize: 11, fontStyle: FontStyle.italic)),
+          Text(s['rationale'].toString(),
+              style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic)),
         ],
         const SizedBox(height: 6),
         Row(children: [
@@ -2898,16 +3059,25 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             child: ElevatedButton.icon(
               onPressed: busy ? null : () => _acceptToolSuggestion(s),
               icon: busy
-                  ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.check, size: 14),
-              label: const Text('Annehmen & bauen', style: TextStyle(fontSize: 11)),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, foregroundColor: Colors.white),
+              label: const Text('Annehmen & bauen',
+                  style: TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700,
+                  foregroundColor: Colors.white),
             ),
           ),
           const SizedBox(width: 8),
           OutlinedButton(
             onPressed: busy ? null : () => _rejectToolSuggestion(s),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.white54, side: const BorderSide(color: Colors.white24)),
+            style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white54,
+                side: const BorderSide(color: Colors.white24)),
             child: const Text('Ablehnen', style: TextStyle(fontSize: 11)),
           ),
         ]),
@@ -2949,16 +3119,23 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
       ),
       child: Row(children: [
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text((r['title'] as String?) ?? '', style: const TextStyle(color: Colors.white, fontSize: 12)),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text((r['title'] as String?) ?? '',
+                style: const TextStyle(color: Colors.white, fontSize: 12)),
             if (prUrl != null)
-              SelectableText(prUrl, style: TextStyle(color: widget.accentBright, fontSize: 10)),
+              SelectableText(prUrl,
+                  style: TextStyle(color: widget.accentBright, fontSize: 10)),
           ]),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-          child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8)),
+          child: Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 10, fontWeight: FontWeight.bold)),
         ),
       ]),
     );
@@ -2984,7 +3161,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Row(children: [
-            const Text('Inhaltstyp:', style: TextStyle(color: Colors.white70, fontSize: 13)),
+            const Text('Inhaltstyp:',
+                style: TextStyle(color: Colors.white70, fontSize: 13)),
             const SizedBox(width: 10),
             Expanded(
               child: DropdownButtonHideUnderline(
@@ -2992,13 +3170,15 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
                   value: _activeTable,
                   isExpanded: true,
                   dropdownColor: const Color(0xFF1A1A2E),
-                  hint: const Text('Auswaehlen …', style: TextStyle(color: Colors.white38)),
+                  hint: const Text('Auswaehlen …',
+                      style: TextStyle(color: Colors.white38)),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   items: [
                     for (final t in _contentTables)
                       DropdownMenuItem(
                         value: t['table'] as String,
-                        child: Text(t['label'] as String? ?? t['table'] as String),
+                        child:
+                            Text(t['label'] as String? ?? t['table'] as String),
                       ),
                   ],
                   onChanged: (v) {
@@ -3018,11 +3198,17 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         const Divider(color: Colors.white10, height: 1),
         Expanded(
           child: _activeTable == null
-              ? const Center(child: Text('Inhaltstyp waehlen', style: TextStyle(color: Colors.white38)))
+              ? const Center(
+                  child: Text('Inhaltstyp waehlen',
+                      style: TextStyle(color: Colors.white38)))
               : _contentLoading
-                  ? Center(child: CircularProgressIndicator(color: widget.accentBright))
+                  ? Center(
+                      child:
+                          CircularProgressIndicator(color: widget.accentBright))
                   : _rows.isEmpty
-                      ? const Center(child: Text('Keine Eintraege', style: TextStyle(color: Colors.white38)))
+                      ? const Center(
+                          child: Text('Keine Eintraege',
+                              style: TextStyle(color: Colors.white38)))
                       : ListView.builder(
                           padding: const EdgeInsets.all(12),
                           itemCount: _rows.length,
@@ -3034,7 +3220,15 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
   }
 
   String _rowTitle(Map<String, dynamic> r) {
-    for (final k in ['name', 'title', 'label', 'symbol', 'keyword', 'animal', 'number']) {
+    for (final k in [
+      'name',
+      'title',
+      'label',
+      'symbol',
+      'keyword',
+      'animal',
+      'number'
+    ]) {
       final v = r[k];
       if (v != null && v.toString().trim().isNotEmpty) return v.toString();
     }
@@ -3058,7 +3252,8 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             onPressed: () => _editRow(r),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+            icon: const Icon(Icons.delete_outline,
+                size: 16, color: Colors.redAccent),
             onPressed: () => _deleteRow(r),
           ),
         ]),
@@ -3077,13 +3272,18 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A30),
-        title: const Text('Eintrag loeschen?', style: TextStyle(color: Colors.white)),
-        content: Text(_rowTitle(r), style: const TextStyle(color: Colors.white70)),
+        title: const Text('Eintrag loeschen?',
+            style: TextStyle(color: Colors.white)),
+        content:
+            Text(_rowTitle(r), style: const TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen')),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Loeschen', style: TextStyle(color: Colors.redAccent))),
+              child: const Text('Loeschen',
+                  style: TextStyle(color: Colors.redAccent))),
         ],
       ),
     );
@@ -3123,10 +3323,17 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
             padding: const EdgeInsets.all(16),
             children: [
               Text(existing == null ? 'Neuer Eintrag' : 'Eintrag bearbeiten',
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               for (final e in ctrls.entries) ...[
-                Text(e.key, style: TextStyle(color: widget.accentBright, fontSize: 11, fontWeight: FontWeight.bold)),
+                Text(e.key,
+                    style: TextStyle(
+                        color: widget.accentBright,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 TextField(
                   controller: e.value,
@@ -3185,9 +3392,11 @@ class _FunctionWorkshopState extends State<_FunctionWorkshop>
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.05),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       );
 }
 
