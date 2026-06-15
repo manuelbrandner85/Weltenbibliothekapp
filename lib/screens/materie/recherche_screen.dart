@@ -154,8 +154,8 @@ class _HistoryTabState extends State<_HistoryTab> {
   }
 
   List<String> get _recentChips => SearchHistoryService.getRecentHistory(
-    limit: 5,
-  ).map((e) => e.query).toList();
+        limit: 5,
+      ).map((e) => e.query).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +235,7 @@ class _HistoryTabState extends State<_HistoryTab> {
             child: Row(
               children: [
                 Text(
-                  '${rows.length} Eintraege',
+                  '${rows.length} Einträge',
                   style: const TextStyle(color: Colors.white54, fontSize: 11),
                 ),
                 const Spacer(),
@@ -248,14 +248,14 @@ class _HistoryTabState extends State<_HistoryTab> {
                     color: _kAccent,
                   ),
                   label: Text(
-                    _sortAsc ? 'Aelteste zuerst' : 'Neueste zuerst',
+                    _sortAsc ? 'Älteste zuerst' : 'Neueste zuerst',
                     style: const TextStyle(color: _kAccent, fontSize: 11),
                   ),
                   style: TextButton.styleFrom(padding: EdgeInsets.zero),
                 ),
                 if (rows.isNotEmpty)
                   IconButton(
-                    tooltip: 'Gesamten Verlauf loeschen',
+                    tooltip: 'Gesamten Verlauf löschen',
                     icon: const Icon(
                       Icons.delete_sweep,
                       color: Colors.redAccent,
@@ -272,27 +272,32 @@ class _HistoryTabState extends State<_HistoryTab> {
             child: rows.isEmpty
                 ? _EmptyState(
                     icon: Icons.history_toggle_off,
-                    message:
-                        'Noch keine Recherchen gespeichert.\n'
+                    message: 'Noch keine Recherchen gespeichert.\n'
                         'Starte eine Suche im Recherche-Tab.',
                     actionLabel: 'Zur Recherche',
                     onAction: widget.onTabSwitch,
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-                    itemCount: rows.length,
-                    itemBuilder: (context, index) {
-                      final entry = rows[index];
-                      return _HistoryCard(
-                        key: ValueKey(entry.id),
-                        entry: entry,
-                        onReplay: () => widget.onReplay(entry.query),
-                        onDelete: () async {
-                          await SearchHistoryService.deleteEntry(entry.id);
-                          if (mounted) setState(() {});
-                        },
-                      );
-                    },
+                : RefreshIndicator(
+                    color: _kAccent,
+                    backgroundColor: _kSurface,
+                    onRefresh: () async => setState(() {}),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                      itemCount: rows.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final entry = rows[index];
+                        return _HistoryCard(
+                          key: ValueKey(entry.id),
+                          entry: entry,
+                          onReplay: () => widget.onReplay(entry.query),
+                          onDelete: () async {
+                            await SearchHistoryService.deleteEntry(entry.id);
+                            if (mounted) setState(() {});
+                          },
+                        );
+                      },
+                    ),
                   ),
           ),
         ],
@@ -306,11 +311,11 @@ class _HistoryTabState extends State<_HistoryTab> {
       builder: (ctx) => AlertDialog(
         backgroundColor: _kSurface,
         title: const Text(
-          'Verlauf loeschen',
+          'Verlauf löschen',
           style: TextStyle(color: Colors.white),
         ),
         content: const Text(
-          'Wirklich den gesamten Recherche-Verlauf loeschen?',
+          'Wirklich den gesamten Recherche-Verlauf löschen?',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -321,7 +326,7 @@ class _HistoryTabState extends State<_HistoryTab> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
-              'Loeschen',
+              'Löschen',
               style: TextStyle(color: Colors.redAccent),
             ),
           ),
@@ -471,7 +476,7 @@ class _HistoryCard extends StatelessWidget {
                     size: 16,
                     color: Colors.white30,
                   ),
-                  tooltip: 'Eintrag loeschen',
+                  tooltip: 'Eintrag löschen',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
                     minWidth: 28,
@@ -573,7 +578,7 @@ class _StatsTabState extends State<_StatsTab> {
                 ),
                 _MetricCard(
                   icon: Icons.find_in_page,
-                  label: 'Oe Treffer / Suche',
+                  label: 'Ø Treffer / Suche',
                   value: '${stats['averageResultCount']}',
                 ),
                 _MetricCard(
@@ -767,7 +772,7 @@ class _StatsTabState extends State<_StatsTab> {
 
             // Top queries list
             const Text(
-              'Haeufigste Suchanfragen',
+              'Häufigste Suchanfragen',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -861,9 +866,8 @@ class _DayToggleBtn extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected
-              ? _kAccent.withValues(alpha: 0.18)
-              : Colors.transparent,
+          color:
+              selected ? _kAccent.withValues(alpha: 0.18) : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
         ),
         child: Text(
