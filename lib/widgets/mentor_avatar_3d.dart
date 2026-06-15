@@ -525,6 +525,38 @@ class _Avatar3dPainter extends CustomPainter {
         ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
     );
 
+    // Subsurface scattering: warm inner core glow that pulses -> the orb looks
+    // lit from within (organic, alive), not like a flat shaded ball.
+    final coreC = Offset(cx + r * 0.05, cy + r * 0.08);
+    canvas.drawCircle(
+      coreC,
+      r * (0.5 + 0.06 * math.sin(pulseValue * math.pi * 2)),
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Color.alphaBlend(Colors.white.withValues(alpha: 0.4), accentColor)
+                .withValues(alpha: 0.5),
+            accentColor.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromCircle(center: coreC, radius: r * 0.55))
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16),
+    );
+
+    // Rembrandt fill light: soft world-secondary bounce on the shadow side
+    // (simulated reflected light -> more dimensional than pure black shadow).
+    canvas.save();
+    canvas.clipPath(
+      Path()..addOval(Rect.fromCircle(center: Offset(cx, cy), radius: r - 1)),
+    );
+    canvas.drawCircle(
+      Offset(cx + r * 0.55, cy + r * 0.5),
+      r * 0.6,
+      Paint()
+        ..color = _worldSecondary.withValues(alpha: 0.16)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 22),
+    );
+    canvas.restore();
+
     // Environment reflection band: a thin bright arc near the top edge in the
     // world's secondary tone -> reads like a reflected horizon (glossy).
     canvas.save();
@@ -542,20 +574,33 @@ class _Avatar3dPainter extends CustomPainter {
     );
     canvas.restore();
 
-    // Primary specular
+    // HDR specular bloom -- 3 layers (wide soft glow -> mid -> hot sharp core)
+    // give a glossy, almost wet highlight that sells the curvature.
+    final specC = Offset(cx - r * 0.3, cy - r * 0.32);
     canvas.drawCircle(
-      Offset(cx - r * 0.3, cy - r * 0.3),
-      r * 0.2,
+      specC,
+      r * 0.28,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.3)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+        ..color = Colors.white.withValues(alpha: 0.22)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
     );
-
-    // Secondary specular (smaller, sharper)
     canvas.drawCircle(
-      Offset(cx - r * 0.22, cy - r * 0.24),
-      r * 0.07,
-      Paint()..color = Colors.white.withValues(alpha: 0.55),
+      specC,
+      r * 0.14,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.4)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawCircle(
+      Offset(cx - r * 0.24, cy - r * 0.26),
+      r * 0.05,
+      Paint()..color = Colors.white.withValues(alpha: 0.92),
+    );
+    // Tiny secondary catch-light (lower-left) -> ambient reflection.
+    canvas.drawCircle(
+      Offset(cx + r * 0.34, cy + r * 0.36),
+      r * 0.045,
+      Paint()..color = _worldSecondary.withValues(alpha: 0.5),
     );
   }
 
