@@ -1,8 +1,9 @@
 /// Recherche-Hub -- tabbed overview screen for the Materie Recherche tab.
 ///
-/// Tab 0: KaninchenbauScreen (deep research engine, unchanged)
-/// Tab 1: Verlauf -- DataTable listing recent search-history entries
-/// Tab 2: Statistiken -- fl_chart BarChart showing searches per day (7 days)
+/// Tab 0: KaninchenbauScreen (deep research engine)
+/// Tab 1: Verlauf -- card list of recent search-history entries (swipe to
+///         delete, tap to replay)
+/// Tab 2: Statistiken -- fl_chart BarChart with 7 / 30-day toggle
 library;
 
 import 'package:fl_chart/fl_chart.dart';
@@ -29,6 +30,11 @@ class _RechercheScreenState extends State<RechercheScreen>
   late final TabController _tabController;
   bool _ready = false;
 
+  // Replay support: key increments force KaninchenbauScreen rebuild so
+  // initState picks up the new initialTopic.
+  int _kaninchenbauKey = 0;
+  String? _replayTopic;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +45,15 @@ class _RechercheScreenState extends State<RechercheScreen>
   Future<void> _init() async {
     await SearchHistoryService.init();
     if (mounted) setState(() => _ready = true);
+  }
+
+  /// Switch to Tab 0 and replay [query] in the research engine.
+  void _replaySearch(String query) {
+    setState(() {
+      _replayTopic = query;
+      _kaninchenbauKey++;
+    });
+    _tabController.animateTo(0);
   }
 
   @override
@@ -57,12 +72,14 @@ class _RechercheScreenState extends State<RechercheScreen>
           child: TabBar(
             controller: _tabController,
             indicatorColor: _kAccent,
+            indicatorWeight: 3,
             labelColor: _kAccent,
             unselectedLabelColor: Colors.white54,
             labelStyle: const TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
+            unselectedLabelStyle: const TextStyle(fontSize: 12),
             tabs: const [
               Tab(
                 icon: Icon(Icons.travel_explore, size: 18),
@@ -84,9 +101,15 @@ class _RechercheScreenState extends State<RechercheScreen>
             // Swipe disabled to prevent gesture conflicts with KaninchenbauScreen.
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              const KaninchenbauScreen(),
+              KaninchenbauScreen(
+                key: ValueKey(_kaninchenbauKey),
+                initialTopic: _replayTopic,
+              ),
               _ready
-                  ? _HistoryTab(onTabSwitch: () => _tabController.animateTo(0))
+                  ? _HistoryTab(
+                      onTabSwitch: () => _tabController.animateTo(0),
+                      onReplay: _replaySearch,
+                    )
                   : const _Loading(),
               _ready ? const _StatsTab() : const _Loading(),
             ],
@@ -98,12 +121,14 @@ class _RechercheScreenState extends State<RechercheScreen>
 }
 
 // ---------------------------------------------------------------------------
-// Tab 1 -- Verlauf (DataTable)
+// Tab 1 -- Verlauf (card list, swipe-to-delete, tap-to-replay)
 // ---------------------------------------------------------------------------
 
 class _HistoryTab extends StatefulWidget {
   final VoidCallback onTabSwitch;
-  const _HistoryTab({required this.onTabSwitch});
+  final void Function(String query) onReplay;
+
+  const _HistoryTab({required this.onTabSwitch, required this.onReplay});
 
   @override
   State<_HistoryTab> createState() => _HistoryTabState();
@@ -112,6 +137,13 @@ class _HistoryTab extends StatefulWidget {
 class _HistoryTabState extends State<_HistoryTab> {
   String _filter = '';
   bool _sortAsc = false;
+  final TextEditingController _filterCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _filterCtrl.dispose();
+    super.dispose();
+  }
 
   List<SearchHistoryEntry> get _rows {
     var list = _filter.isEmpty
@@ -121,18 +153,24 @@ class _HistoryTabState extends State<_HistoryTab> {
     return list;
   }
 
+  List<String> get _recentChips => SearchHistoryService.getRecentHistory(
+    limit: 5,
+  ).map((e) => e.query).toList();
+
   @override
   Widget build(BuildContext context) {
     final rows = _rows;
+    final chips = _recentChips;
 
     return ColoredBox(
       color: _kBg,
       child: Column(
         children: [
-          // Search filter + clear button
+          // Search filter
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
             child: TextField(
+              controller: _filterCtrl,
               style: const TextStyle(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Verlauf durchsuchen ...',
@@ -140,6 +178,19 @@ class _HistoryTabState extends State<_HistoryTab> {
                   color: Colors.white.withValues(alpha: 0.45),
                 ),
                 prefixIcon: const Icon(Icons.search, color: _kAccent, size: 18),
+                suffixIcon: _filter.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.clear,
+                          size: 16,
+                          color: Colors.white54,
+                        ),
+                        onPressed: () {
+                          _filterCtrl.clear();
+                          setState(() => _filter = '');
+                        },
+                      )
+                    : null,
                 filled: true,
                 fillColor: _kSurface,
                 contentPadding: const EdgeInsets.symmetric(
@@ -155,13 +206,36 @@ class _HistoryTabState extends State<_HistoryTab> {
             ),
           ),
 
+          // Recent-query chips (only shown when filter is empty)
+          if (_filter.isEmpty && chips.isNotEmpty)
+            SizedBox(
+              height: 34,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: chips.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (_, i) => ActionChip(
+                  label: Text(
+                    chips[i],
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  backgroundColor: _kSurface,
+                  side: BorderSide(color: _kAccent.withValues(alpha: 0.35)),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  onPressed: () => widget.onReplay(chips[i]),
+                ),
+              ),
+            ),
+
           // Row count + sort toggle + delete-all
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             child: Row(
               children: [
                 Text(
-                  '${rows.length} Einträge',
+                  '${rows.length} Eintraege',
                   style: const TextStyle(color: Colors.white54, fontSize: 11),
                 ),
                 const Spacer(),
@@ -174,14 +248,14 @@ class _HistoryTabState extends State<_HistoryTab> {
                     color: _kAccent,
                   ),
                   label: Text(
-                    _sortAsc ? 'Älteste zuerst' : 'Neueste zuerst',
+                    _sortAsc ? 'Aelteste zuerst' : 'Neueste zuerst',
                     style: const TextStyle(color: _kAccent, fontSize: 11),
                   ),
                   style: TextButton.styleFrom(padding: EdgeInsets.zero),
                 ),
                 if (rows.isNotEmpty)
                   IconButton(
-                    tooltip: 'Gesamten Verlauf löschen',
+                    tooltip: 'Gesamten Verlauf loeschen',
                     icon: const Icon(
                       Icons.delete_sweep,
                       color: Colors.redAccent,
@@ -193,194 +267,36 @@ class _HistoryTabState extends State<_HistoryTab> {
             ),
           ),
 
-          // DataTable
+          // Card list
           Expanded(
             child: rows.isEmpty
                 ? _EmptyState(
                     icon: Icons.history_toggle_off,
-                    message: 'Noch keine Recherchen gespeichert.\n'
+                    message:
+                        'Noch keine Recherchen gespeichert.\n'
                         'Starte eine Suche im Recherche-Tab.',
                     actionLabel: 'Zur Recherche',
                     onAction: widget.onTabSwitch,
                   )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        columnSpacing: 16,
-                        dataRowMinHeight: 40,
-                        dataRowMaxHeight: 52,
-                        headingRowColor: WidgetStateProperty.all(
-                          _kSurface.withValues(alpha: 0.9),
-                        ),
-                        dataRowColor: WidgetStateProperty.resolveWith((states) {
-                          if (states.contains(WidgetState.selected)) {
-                            return _kAccent.withValues(alpha: 0.12);
-                          }
-                          return Colors.transparent;
-                        }),
-                        border: TableBorder(
-                          horizontalInside: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.06),
-                          ),
-                        ),
-                        columns: const [
-                          DataColumn(
-                            label: Text(
-                              'Suchanfrage',
-                              style: TextStyle(
-                                color: _kAccent,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Datum',
-                              style: TextStyle(
-                                color: _kAccent,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          DataColumn(
-                            numeric: true,
-                            label: Text(
-                              'Treffer',
-                              style: TextStyle(
-                                color: _kAccent,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Tags',
-                              style: TextStyle(
-                                color: _kAccent,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Aktion',
-                              style: TextStyle(
-                                color: _kAccent,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                        rows: rows.map((e) => _buildRow(context, e)).toList(),
-                      ),
-                    ),
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                    itemCount: rows.length,
+                    itemBuilder: (context, index) {
+                      final entry = rows[index];
+                      return _HistoryCard(
+                        key: ValueKey(entry.id),
+                        entry: entry,
+                        onReplay: () => widget.onReplay(entry.query),
+                        onDelete: () async {
+                          await SearchHistoryService.deleteEntry(entry.id);
+                          if (mounted) setState(() {});
+                        },
+                      );
+                    },
                   ),
           ),
         ],
       ),
-    );
-  }
-
-  DataRow _buildRow(BuildContext context, SearchHistoryEntry entry) {
-    final tags = entry.tags ?? [];
-    return DataRow(
-      cells: [
-        // Query text -- truncated
-        DataCell(
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 180),
-            child: Text(
-              entry.query,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-        // Formatted date
-        DataCell(
-          Text(
-            entry.formattedDate,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.65),
-              fontSize: 11,
-            ),
-          ),
-        ),
-        // Result count badge
-        DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: entry.resultCount > 0
-                  ? _kAccent.withValues(alpha: 0.18)
-                  : Colors.white12,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '${entry.resultCount}',
-              style: TextStyle(
-                color: entry.resultCount > 0 ? _kAccent : Colors.white54,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        // Tags
-        DataCell(
-          tags.isEmpty
-              ? Text(
-                  '—',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.3),
-                    fontSize: 11,
-                  ),
-                )
-              : Wrap(
-                  spacing: 4,
-                  children: tags
-                      .take(2)
-                      .map(
-                        (t) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white12,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            t,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-        ),
-        // Delete action
-        DataCell(
-          IconButton(
-            icon: const Icon(Icons.close, size: 16, color: Colors.redAccent),
-            tooltip: 'Eintrag löschen',
-            onPressed: () async {
-              await SearchHistoryService.deleteEntry(entry.id);
-              if (mounted) setState(() {});
-            },
-          ),
-        ),
-      ],
     );
   }
 
@@ -390,11 +306,11 @@ class _HistoryTabState extends State<_HistoryTab> {
       builder: (ctx) => AlertDialog(
         backgroundColor: _kSurface,
         title: const Text(
-          'Verlauf löschen',
+          'Verlauf loeschen',
           style: TextStyle(color: Colors.white),
         ),
         content: const Text(
-          'Wirklich den gesamten Recherche-Verlauf löschen?',
+          'Wirklich den gesamten Recherche-Verlauf loeschen?',
           style: TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -405,7 +321,7 @@ class _HistoryTabState extends State<_HistoryTab> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
-              'Löschen',
+              'Loeschen',
               style: TextStyle(color: Colors.redAccent),
             ),
           ),
@@ -420,14 +336,193 @@ class _HistoryTabState extends State<_HistoryTab> {
 }
 
 // ---------------------------------------------------------------------------
-// Tab 2 -- Statistiken (fl_chart BarChart)
+// Single history entry card with swipe-to-delete and replay button
 // ---------------------------------------------------------------------------
 
-class _StatsTab extends StatelessWidget {
+class _HistoryCard extends StatelessWidget {
+  final SearchHistoryEntry entry;
+  final VoidCallback onReplay;
+  final VoidCallback onDelete;
+
+  const _HistoryCard({
+    super.key,
+    required this.entry,
+    required this.onReplay,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tags = entry.tags ?? [];
+
+    return Dismissible(
+      key: ValueKey('dismiss_${entry.id}'),
+      direction: DismissDirection.endToStart,
+      background: _SwipeDeleteBackground(),
+      onDismissed: (_) => onDelete(),
+      child: GestureDetector(
+        onTap: onReplay,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: _kSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Replay icon
+                Padding(
+                  padding: const EdgeInsets.only(top: 1, right: 12),
+                  child: Icon(
+                    Icons.manage_search_rounded,
+                    color: _kAccent.withValues(alpha: 0.7),
+                    size: 20,
+                  ),
+                ),
+
+                // Main content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.query,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          // Date
+                          Text(
+                            entry.formattedDate,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Result count badge
+                          if (entry.resultCount > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _kAccent.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${entry.resultCount} Treffer',
+                                style: TextStyle(
+                                  color: _kAccent.withValues(alpha: 0.9),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      // Tags
+                      if (tags.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: tags.take(3).map((t) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white10,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                t,
+                                style: const TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                // Delete button
+                IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Colors.white30,
+                  ),
+                  tooltip: 'Eintrag loeschen',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
+                  onPressed: onDelete,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeDeleteBackground extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 20),
+      child: const Icon(
+        Icons.delete_outline,
+        color: Colors.redAccent,
+        size: 22,
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tab 2 -- Statistiken (fl_chart BarChart with 7/30-day toggle)
+// ---------------------------------------------------------------------------
+
+class _StatsTab extends StatefulWidget {
   const _StatsTab();
 
+  @override
+  State<_StatsTab> createState() => _StatsTabState();
+}
+
+class _StatsTabState extends State<_StatsTab> {
+  int _days = 7;
+
   /// Counts searches per day for the last [days] days.
-  /// Returns a plain list (plain class used instead of Record type).
   List<_DayCount> _dailyCounts(int days) {
     final now = DateTime.now();
     final history = SearchHistoryService.getAllHistory();
@@ -447,7 +542,7 @@ class _StatsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = SearchHistoryService.getStatistics();
-    final counts = _dailyCounts(7);
+    final counts = _dailyCounts(_days);
     final maxCount = counts.fold<int>(0, (m, d) => d.count > m ? d.count : m);
 
     return ColoredBox(
@@ -478,7 +573,7 @@ class _StatsTab extends StatelessWidget {
                 ),
                 _MetricCard(
                   icon: Icons.find_in_page,
-                  label: 'Ø Treffer / Suche',
+                  label: 'Oe Treffer / Suche',
                   value: '${stats['averageResultCount']}',
                 ),
                 _MetricCard(
@@ -486,7 +581,7 @@ class _StatsTab extends StatelessWidget {
                   label: 'Aktiv seit',
                   value: stats['oldestSearch'] != null
                       ? _formatDate(stats['oldestSearch'] as DateTime)
-                      : '—',
+                      : '--',
                   small: true,
                 ),
               ],
@@ -494,22 +589,58 @@ class _StatsTab extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Section header
-            const Text(
-              'Recherchen der letzten 7 Tage',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Anzahl gestarteter Suchanfragen pro Tag',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 11,
-              ),
+            // Section header + time-range toggle
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Recherchen der letzten $_days Tage',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Anzahl gestarteter Suchanfragen pro Tag',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 7 / 30 toggle
+                Container(
+                  decoration: BoxDecoration(
+                    color: _kSurface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _DayToggleBtn(
+                        label: '7T',
+                        selected: _days == 7,
+                        onTap: () => setState(() => _days = 7),
+                      ),
+                      _DayToggleBtn(
+                        label: '30T',
+                        selected: _days == 30,
+                        onTap: () => setState(() => _days = 30),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -552,6 +683,10 @@ class _StatsTab extends StatelessWidget {
                               getTitlesWidget: (value, meta) {
                                 final idx = value.toInt();
                                 if (idx < 0 || idx >= counts.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                // Show fewer labels for 30-day view to avoid overlap.
+                                if (_days == 30 && idx % 5 != 0) {
                                   return const SizedBox.shrink();
                                 }
                                 final d = counts[idx].day;
@@ -615,9 +750,10 @@ class _StatsTab extends StatelessWidget {
                                     : _kAccent.withValues(
                                         alpha: 0.75 + 0.25 * c / maxCount,
                                       ),
-                                width: 20,
+                                // Thinner bars for 30-day view to fit.
+                                width: _days == 30 ? 8 : 20,
                                 borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(5),
+                                  top: Radius.circular(4),
                                 ),
                               ),
                             ],
@@ -700,6 +836,47 @@ class _StatsTab extends StatelessWidget {
   }
 
   static String _formatDate(DateTime d) => '${d.day}.${d.month}.${d.year}';
+}
+
+// ---------------------------------------------------------------------------
+// Helper: 7T / 30T toggle button
+// ---------------------------------------------------------------------------
+
+class _DayToggleBtn extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _DayToggleBtn({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? _kAccent.withValues(alpha: 0.18)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? _kAccent : Colors.white54,
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
