@@ -76,7 +76,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GH_PAT }}
-          claude_args: "--max-turns 80 --permission-mode bypassPermissions"
+          claude_args: "--model claude-opus-4-8 --max-turns 80 --permission-mode bypassPermissions"
           prompt: |
             Du bist Claude Code und baust autonom einen God-Mode-Auftrag fuer die
             Flutter-App "Weltenbibliothek" (Stack: Flutter/Dart + Supabase +
@@ -158,7 +158,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GH_PAT }}
-          claude_args: "--max-turns 60 --permission-mode bypassPermissions"
+          claude_args: "--model claude-opus-4-8 --max-turns 60 --permission-mode bypassPermissions"
           prompt: |
             Das Verify-Gate fuer Issue #${{ github.event.issue.number }} ist ROT.
             Branch: ${{ steps.findpr.outputs.head }} (bereits ausgecheckt).
