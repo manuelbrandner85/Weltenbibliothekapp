@@ -137,6 +137,38 @@ jobs:
             core.setOutput('head', match.head.ref);
             core.setOutput('url', match.html_url);
 
+      # ── Selbst-Review (Doppel-Opus) ──────────────────────────────────────
+      # Eine ZWEITE Opus-4.8-Instanz reviewt den Diff kritisch (Bugs/Security/
+      # CLAUDE.md/Vollstaendigkeit) und fixt Probleme auf demselben Branch,
+      # BEVOR das Verify-Gate + der Merge laufen. Hebt die Qualitaet deutlich.
+      - name: "Selbst-Review (Doppel-Opus)"
+        if: steps.findpr.outputs.found == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GH_PAT }}
+          claude_args: "--model claude-opus-4-8 --max-turns 40 --permission-mode bypassPermissions"
+          prompt: |
+            Du bist ein strenger Senior-Code-Reviewer (zweite, unabhaengige Instanz)
+            fuer den God-Mode-PR zu Issue #${{ github.event.issue.number }}.
+            Branch: ${{ steps.findpr.outputs.head }}.
+
+            1. Checke den Branch aus:
+               git fetch origin ${{ steps.findpr.outputs.head }} && \
+               git checkout ${{ steps.findpr.outputs.head }}
+            2. Reviewe den Diff gegen origin/main KRITISCH auf:
+               - echte Bugs / Regressionen / fehlende Null-Safety
+               - Security: keine Secrets im Client, RLS beachtet, service_role nur im Worker
+               - CLAUDE.md: KEINE Named Dart-3 Records, deutsche UI-Texte, ASCII-Commits,
+                 Build-Nummer nur bei nativen Aenderungen
+               - Vollstaendigkeit: ist das Feature wirklich in der App registriert + verlinkt
+                 (Route/Tab/Button), nicht nur Code?
+            3. Findest du Probleme: behebe sie an der Ursache, `dart format .`, committe
+               (ASCII, z.B. "fix(review): ...") und pushe auf denselben Branch.
+               Ist alles sauber: aendere nichts.
+            Merge NICHT selbst -- das uebernimmt ein spaeterer Schritt.
+
       - name: "Verify-Gate (analyze + web build)"
         id: verify
         if: steps.findpr.outputs.found == 'true'

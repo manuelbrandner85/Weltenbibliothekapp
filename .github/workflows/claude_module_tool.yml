@@ -4,13 +4,13 @@
 # der Modul-Werkstatt im Admin-Dashboard). Claude Code liest die Spezifikation
 # aus dem Issue, implementiert das Tool und oeffnet einen Pull Request.
 #
-# WICHTIG -- einmalig einzurichten (sonst laeuft der Job nicht):
-#   1. Repo-Secret ANTHROPIC_API_KEY setzen
-#      (Settings -> Secrets and variables -> Actions -> New repository secret)
-#   2. Optional: CLAUDE_CODE_OAUTH_TOKEN statt API-Key (Claude-Abo)
+# VOLL-AUTONOM (wie God Mode): nach dem Build laeuft ein Verify-Gate
+# (analyze + Web-Build). Ist es rot, fixt eine zweite Opus-Instanz die Fehler
+# autonom; erst bei gruenem Gate wird automatisch gemergt. Ein kaputtes Tool
+# erreicht also nie die User.
 #
-# Der entstehende PR wird NICHT automatisch gemergt -- Root-Admin reviewt + merged
-# manuell, danach greift der bestehende Shorebird/APK-Build.
+# Benoetigte Secrets (alle bereits vorhanden):
+#   CLAUDE_CODE_OAUTH_TOKEN (oder ANTHROPIC_API_KEY), GH_PAT
 
 name: Claude Modul-Tool
 
@@ -27,16 +27,22 @@ permissions:
   issues: write
   id-token: write  # noetig: claude-code-action holt einen OIDC-Token (sonst rot)
 
+concurrency:
+  group: module-tool-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 jobs:
   implement-tool:
     # Nur wenn das Label gesetzt ist.
     if: contains(github.event.issue.labels.*.name, 'module-tool-request')
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
 
       - name: Guard -- Secret vorhanden?
         id: guard
@@ -59,12 +65,21 @@ jobs:
               body: 'Claude Code ist noch nicht eingerichtet: bitte das Repo-Secret `ANTHROPIC_API_KEY` (oder `CLAUDE_CODE_OAUTH_TOKEN`) setzen. Danach das Label erneut setzen, um den Lauf zu starten.'
             });
 
+      - name: Flutter Setup
+        if: steps.guard.outputs.has_key == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.x"
+          channel: "stable"
+          cache: true
+
       - name: Claude Code -- Tool implementieren
         if: steps.guard.outputs.has_key == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GH_PAT }}
           # Claude liest das Issue (Titel + Body) als Aufgabe und oeffnet einen PR.
           prompt: |
             Implementiere das in diesem GitHub-Issue beschriebene interaktive Tool
@@ -97,26 +112,22 @@ jobs:
             "_tools" / "_DbDef" in den genannten Dateien -- dort werden alle bestehenden
             Tools registriert; haenge deinen Eintrag analog an.
 
+            Fehlen Details, triff sinnvolle, zum bestehenden Code passende Annahmen und
+            dokumentiere sie im PR-Body -- NIE wegen Unklarheit abbrechen.
+
             Erstelle einen Branch und oeffne einen Pull-Request. Merge NICHT selbst --
-            das uebernimmt der nachgelagerte Auto-Merge-Schritt.
+            das uebernimmt der nachgelagerte Auto-Merge-Schritt nach gruenem Verify-Gate.
           # Branch-Praefix fuer den entstehenden PR.
           branch_prefix: "claude/tool-"
-          # WICHTIG: Ohne diese Berechtigungen verweigert die Action jeden Schreib-,
-          # git- und PR-Schritt (permission_denials_count > 0) und der Lauf endet
-          # "erfolgreich" OHNE PR. In dieser vertrauenswuerdigen internen Automation
-          # alle Tools freigeben, damit Claude Dateien schreiben, committen und einen
-          # PR oeffnen kann. --max-turns hoch genug fuer einen kompletten Tool-Build.
+          # Opus 4.8 + alle Tools freigeben (vertrauenswuerdige interne Automation),
+          # damit Claude Dateien schreiben, committen und einen PR oeffnen kann.
           claude_args: |
+            --model claude-opus-4-8
             --max-turns 60
             --permission-mode bypassPermissions
 
-      # Sobald das Tool gebaut + der PR geoeffnet ist: automatisch per Squash mergen.
-      # Wir nutzen GH_PAT (nicht den Default-GITHUB_TOKEN), damit der Merge-Push auf
-      # main die nachgelagerten Pipelines (build_web.yml Record-Guard, build_apk.yml /
-      # Shorebird) AUSLOEST -- mit dem Default-Token wuerden sie nicht starten.
-      # Sicherheitsnetz: scheitert der main-Build (z.B. dart2js-Record), wird KEIN
-      # APK/Patch veroeffentlicht -- ein kaputtes Tool erreicht also nie die User.
-      - name: Tool-PR automatisch mergen
+      - name: PR ermitteln
+        id: findpr
         if: steps.guard.outputs.has_key == 'true'
         uses: actions/github-script@v7
         with:
@@ -129,31 +140,101 @@ jobs:
               owner: context.repo.owner, repo: context.repo.repo,
               state: 'open', per_page: 50, sort: 'created', direction: 'desc',
             });
-            // PR ueber die Issue-Referenz im Body finden (NICHT ueber den Branch-Namen
-            // -- Claude vergibt den mal als claude/tool-*, mal als feature/issue-*).
             const ref = new RegExp('(closes|fixes|resolves)\\s+#' + issue + '\\b', 'i');
             const pr = prs.find(p => ref.test(p.body || '') ||
               (p.head.ref.includes('-' + issue + '-') || p.head.ref.endsWith('-' + issue)));
             if (!pr) {
-              core.warning('Kein Tool-PR fuer Issue #' + issue + ' gefunden -- Bau evtl. fehlgeschlagen, nichts gemergt.');
+              core.setOutput('found', 'false');
+              core.warning('Kein Tool-PR fuer Issue #' + issue + ' gefunden -- Bau evtl. fehlgeschlagen.');
               return;
             }
-            // Draft -> ready, sonst ist kein Merge moeglich.
-            if (pr.draft) {
+            core.setOutput('found', 'true');
+            core.setOutput('number', String(pr.number));
+            core.setOutput('head', pr.head.ref);
+            core.setOutput('node_id', pr.node_id);
+            core.setOutput('draft', String(pr.draft === true));
+
+      - name: "Verify-Gate (analyze + web build)"
+        id: verify
+        if: steps.findpr.outputs.found == 'true'
+        run: |
+          set +e
+          git fetch origin "${{ steps.findpr.outputs.head }}"
+          git checkout "${{ steps.findpr.outputs.head }}"
+          bash scripts/godmode_verify.sh
+          echo "ok=$( [ -f .godmode_verify_ok ] && cat .godmode_verify_ok || echo false )" >> "$GITHUB_OUTPUT"
+
+      - name: "Auto-Fix bei rotem Verify-Gate"
+        if: steps.findpr.outputs.found == 'true' && steps.verify.outputs.ok != 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GH_PAT }}
+          claude_args: "--model claude-opus-4-8 --max-turns 50 --permission-mode bypassPermissions"
+          prompt: |
+            Das Verify-Gate fuer das Tool aus Issue #${{ github.event.issue.number }}
+            ist ROT. Branch: ${{ steps.findpr.outputs.head }} (bereits ausgecheckt).
+
+            In `.godmode_verify_errors.log` stehen die exakten Fehler
+            (flutter analyze / dart2js-Record-Guard / flutter build web).
+
+            1. Lies `.godmode_verify_errors.log` vollstaendig.
+            2. Behebe ALLE Fehler an der Ursache (KEINE Named Dart-3 Records,
+               deutsche UI-Texte, ASCII-Commits).
+            3. `dart format .`, dann committe (ASCII, z.B. "fix(tool): verify gruen")
+               und pushe auf denselben Branch ${{ steps.findpr.outputs.head }}.
+            Merge NICHT selbst.
+
+      - name: "Re-Verify nach Auto-Fix"
+        id: verify2
+        if: steps.findpr.outputs.found == 'true' && steps.verify.outputs.ok != 'true'
+        run: |
+          set +e
+          git fetch origin "${{ steps.findpr.outputs.head }}"
+          git checkout "${{ steps.findpr.outputs.head }}"
+          git reset --hard "origin/${{ steps.findpr.outputs.head }}"
+          bash scripts/godmode_verify.sh
+          echo "ok=$( [ -f .godmode_verify_ok ] && cat .godmode_verify_ok || echo false )" >> "$GITHUB_OUTPUT"
+
+      # Merge nur bei gruenem Gate. GH_PAT (nicht Default-GITHUB_TOKEN), damit der
+      # main-Push die nachgelagerten Pipelines (build_web Record-Guard, Shorebird)
+      # ausloest.
+      - name: "Tool-PR mergen (nur wenn gruen)"
+        if: >-
+          steps.findpr.outputs.found == 'true' &&
+          (steps.verify.outputs.ok == 'true' || steps.verify2.outputs.ok == 'true')
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const issue = context.issue.number;
+            const prNum = Number('${{ steps.findpr.outputs.number }}');
+            if ('${{ steps.findpr.outputs.draft }}' === 'true') {
               await github.graphql(
                 'mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id}){pullRequest{number}}}',
-                { id: pr.node_id });
+                { id: '${{ steps.findpr.outputs.node_id }}' });
             }
-            await github.rest.pulls.merge({
-              owner: context.repo.owner, repo: context.repo.repo,
-              pull_number: pr.number, merge_method: 'squash',
-            });
-            core.info('Tool-PR #' + pr.number + ' automatisch gemergt.');
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner, repo: context.repo.repo,
+                pull_number: prNum, merge_method: 'squash',
+              });
+            } catch (e) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: issue,
+                body: '[!] Tool-PR #' + prNum + ' ist gruen, aber Auto-Merge nicht moeglich (' +
+                      ((e && e.message) || e) + '). Branch bleibt offen -- bitte manuell mergen.',
+              });
+              return;
+            }
+            core.info('Tool-PR #' + prNum + ' automatisch gemergt.');
 
-            // Fundort fuer den Admin: Welt aus dem Issue-Body lesen und den genauen
-            // Ort in der App nennen, plus den von Claude geschriebenen "Fundort"-Block.
+            // Fundort fuer den Admin.
             const { data: iss } = await github.rest.issues.get({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: issue });
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner, repo: context.repo.repo, pull_number: prNum });
             const body = iss.body || '';
             const world = (body.match(/\*\*Welt:\*\*\s*(\w+)/i) || [])[1] || '';
             let ort;
@@ -168,8 +249,22 @@ jobs:
             const detail = claudeFundort ? '\n\n' + claudeFundort[0].trim() : '';
             await github.rest.issues.createComment({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: issue,
-              body: '[OK] Tool gebaut + automatisch gemergt (PR #' + pr.number + ').\n\n' +
+              body: '[OK] Tool gebaut, Verify-Gate gruen + automatisch gemergt (PR #' + prNum + ').\n\n' +
                     '**Wo finde ich es in der App?**\n' + ort + '\n\n' +
                     'Sichtbar nach dem naechsten Update (OTA-Patch automatisch, sonst neues APK). ' +
                     'Daten/Inhalte aenderst du sofort ueber "Inhalte verwalten".' + detail,
+            });
+
+      - name: "Verify endgueltig rot -- Kommentar"
+        if: >-
+          steps.findpr.outputs.found == 'true' &&
+          steps.verify.outputs.ok != 'true' && steps.verify2.outputs.ok != 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: 'Modul-Werkstatt: Verify-Gate auch nach Auto-Fix rot. PR #${{ steps.findpr.outputs.number }} bleibt offen -- bitte manuell pruefen.',
             });

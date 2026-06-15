@@ -5885,6 +5885,33 @@ export default {
             };
           }
 
+          // Kontext-Anreicherung (RAG-light): relevante Datei-Ausschnitte aus dem
+          // Repo anhaengen, damit Claude zielgenau baut (weniger Fehlversuche).
+          let codeContext = '';
+          try {
+            const files = Array.isArray(implDetails?.affected_files)
+              ? implDetails.affected_files.slice(0, 3)
+              : [];
+            for (const f of files) {
+              if (typeof f !== 'string' || !f.startsWith('lib/')) continue;
+              const cr = await fetch(
+                `https://api.github.com/repos/${ghRepo}/contents/${f.split('/').map(encodeURIComponent).join('/')}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${ghPat}`,
+                    Accept: 'application/vnd.github.raw',
+                    'User-Agent': 'weltenbibliothek-godmode/1.0',
+                  },
+                });
+              if (!cr.ok) continue;
+              let txt = await cr.text().catch(() => '');
+              if (!txt) continue;
+              // Auf die ersten ~120 Zeilen / 4000 Zeichen kuerzen (Issue-Limit schonen).
+              txt = txt.split('\n').slice(0, 120).join('\n').slice(0, 4000);
+              codeContext += `\n### ${f}\n\`\`\`dart\n${txt}\n\`\`\`\n`;
+            }
+          } catch (_) {}
+
           const bodyParts = [
             `**God-Mode-Auftrag von @${caller.username || 'root-admin'}**`,
             '',
@@ -5915,6 +5942,15 @@ export default {
             bodyParts.push('## Nicht aendern (Out of Scope)');
             bodyParts.push(String(implDetails.out_of_scope));
             bodyParts.push('');
+          }
+          if (codeContext) {
+            bodyParts.push(
+              '## Code-Kontext (Auszug, Stand bei Auftragserstellung)',
+              'Nutze diese vorhandenen Dateien als Ausgangspunkt -- passe dich dem ' +
+                'bestehenden Stil an, erfinde keine Strukturen neu:',
+              codeContext,
+              '',
+            );
           }
           bodyParts.push(
             '## Umsetzungs-Direktive (verbindlich)',
