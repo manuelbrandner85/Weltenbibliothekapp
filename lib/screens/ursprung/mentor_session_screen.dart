@@ -472,8 +472,57 @@ class _MentorSessionScreenState extends State<MentorSessionScreen>
             onPressed: _toggleTts,
             tooltip: _session.isTtsEnabled ? 'Stimme aus' : 'Stimme ein',
           ),
+          // Verlauf loeschen
+          IconButton(
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              color: Colors.white.withValues(alpha: 0.55),
+              size: 22,
+            ),
+            onPressed: _messages.isEmpty ? null : _confirmClearHistory,
+            tooltip: 'Verlauf loeschen',
+          ),
         ],
       ),
+    );
+  }
+
+  // Verlauf loeschen (mit Bestaetigung).
+  Future<void> _confirmClearHistory() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF14141F),
+        title: const Text('Verlauf loeschen?',
+            style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: const Text(
+          'Alle Nachrichten dieser Mentor-Session werden geloescht. '
+          'Das kann nicht rueckgaengig gemacht werden.',
+          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            child: const Text('Loeschen'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await _mentorService.clearHistory(widget.world);
+    if (!mounted) return;
+    setState(() {
+      _messages = [];
+      _lastResponse = '';
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Verlauf geloescht.')),
     );
   }
 
