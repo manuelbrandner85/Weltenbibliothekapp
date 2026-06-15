@@ -197,6 +197,10 @@ List<_Edge> _buildHelixEdges({int steps = 32}) {
 class MentorAvatar3d extends StatelessWidget {
   final MentorPersonality personality;
   final Color accentColor;
+
+  /// World key ('materie' | 'energie' | 'vorhang' | 'ursprung') -- drives the
+  /// secondary palette + atmosphere so the avatar fits each world.
+  final String world;
   final MentorAvatarState3d state;
   final double pulseValue;
   final double ringsProgress;
@@ -208,6 +212,7 @@ class MentorAvatar3d extends StatelessWidget {
     super.key,
     required this.personality,
     required this.accentColor,
+    this.world = 'ursprung',
     required this.state,
     required this.pulseValue,
     required this.ringsProgress,
@@ -225,6 +230,7 @@ class MentorAvatar3d extends StatelessWidget {
         painter: _Avatar3dPainter(
           personality: personality,
           accentColor: accentColor,
+          world: world,
           state: state,
           pulseValue: pulseValue,
           ringsProgress: ringsProgress,
@@ -244,6 +250,7 @@ enum MentorAvatarState3d { idle, listening, thinking, speaking }
 class _Avatar3dPainter extends CustomPainter {
   final MentorPersonality personality;
   final Color accentColor;
+  final String world;
   final MentorAvatarState3d state;
   final double pulseValue;
   final double ringsProgress;
@@ -253,12 +260,23 @@ class _Avatar3dPainter extends CustomPainter {
   const _Avatar3dPainter({
     required this.personality,
     required this.accentColor,
+    required this.world,
     required this.state,
     required this.pulseValue,
     required this.ringsProgress,
     required this.thinkProgress,
     required this.wavesProgress,
   });
+
+  /// World secondary tone -- blended into rim light + atmosphere so each world
+  /// reads distinctly (Materie kuehl-blau, Energie violett, Vorhang gold,
+  /// Ursprung tuerkis).
+  Color get _worldSecondary => switch (world) {
+        'vorhang' => const Color(0xFFFFD27D),
+        'energie' => const Color(0xFFB388FF),
+        'materie' => const Color(0xFF4FC3F7),
+        _ => const Color(0xFF00FFD4),
+      };
 
   // ── Projection ──────────────────────────────────────────────────
 
@@ -312,6 +330,7 @@ class _Avatar3dPainter extends CustomPainter {
     final baseR = size.width * 0.34 * pulseValue;
 
     _drawHalo(canvas, cx, cy, baseR);
+    _drawAtmosphere(canvas, cx, cy, baseR);
     _drawStateUnderlays(canvas, cx, cy, baseR);
     _draw3dStructure(canvas, cx, cy, baseR);
     _drawSphere(canvas, cx, cy, baseR);
@@ -319,6 +338,37 @@ class _Avatar3dPainter extends CustomPainter {
       _drawSpeakingWaves(canvas, cx, cy, baseR);
     }
     _drawRimLight(canvas, cx, cy, baseR);
+  }
+
+  // ── Atmosphere ──────────────────────────────────────────────────
+  // World-tinted depth: a soft secondary-coloured glow behind the orb plus a
+  // gentle floating dust field -> richer, more lifelike than a flat circle.
+  void _drawAtmosphere(Canvas canvas, double cx, double cy, double r) {
+    // Secondary-coloured back glow (offset = light direction).
+    canvas.drawCircle(
+      Offset(cx + r * 0.25, cy + r * 0.2),
+      r * 1.45,
+      Paint()
+        ..color = _worldSecondary.withValues(alpha: 0.06)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40),
+    );
+    // Floating dust motes orbiting slowly (always on -> feels alive).
+    const n = 14;
+    for (int i = 0; i < n; i++) {
+      final seed = i * 12.9898;
+      final ang = ringsProgress * math.pi * 2 * (0.3 + (i % 3) * 0.18) + seed;
+      final rad = r * (1.18 + (math.sin(seed) * 0.5 + 0.5) * 0.9);
+      final px = cx + math.cos(ang) * rad;
+      final py = cy + math.sin(ang) * rad * 0.82;
+      final tw = 0.5 + 0.5 * math.sin(pulseValue * math.pi * 2 + seed);
+      canvas.drawCircle(
+        Offset(px, py),
+        0.8 + 1.6 * tw,
+        Paint()
+          ..color = (i.isEven ? accentColor : _worldSecondary)
+              .withValues(alpha: 0.05 + 0.18 * tw),
+      );
+    }
   }
 
   // ── Halo ────────────────────────────────────────────────────────
@@ -439,22 +489,58 @@ class _Avatar3dPainter extends CustomPainter {
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
     );
 
-    // Main sphere — Phong-like radial gradient
+    // Main sphere — richer Phong-like radial gradient (5 stops: key light ->
+    // accent body -> terminator -> shadow) for a more realistic, rounded look.
     canvas.drawCircle(
       Offset(cx, cy),
       r,
       Paint()
         ..shader = RadialGradient(
-          center: const Alignment(-0.3, -0.42),
-          radius: 0.9,
+          center: const Alignment(-0.32, -0.42),
+          radius: 1.05,
           colors: [
-            Color.alphaBlend(Colors.white.withValues(alpha: 0.6), accentColor),
+            Color.alphaBlend(Colors.white.withValues(alpha: 0.75), accentColor),
+            Color.alphaBlend(Colors.white.withValues(alpha: 0.18), accentColor),
             accentColor,
-            Color.alphaBlend(Colors.black.withValues(alpha: 0.55), accentColor),
+            Color.alphaBlend(Colors.black.withValues(alpha: 0.45), accentColor),
+            Color.alphaBlend(Colors.black.withValues(alpha: 0.72), accentColor),
           ],
-          stops: const [0.0, 0.5, 1.0],
+          stops: const [0.0, 0.22, 0.5, 0.8, 1.0],
         ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
     );
+
+    // Ambient occlusion: subtle darkening on the lower-right (shadow side).
+    canvas.drawCircle(
+      Offset(cx, cy),
+      r,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0.45, 0.55),
+          radius: 0.95,
+          colors: [
+            Colors.black.withValues(alpha: 0.28),
+            Colors.black.withValues(alpha: 0.0),
+          ],
+          stops: const [0.0, 0.7],
+        ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)),
+    );
+
+    // Environment reflection band: a thin bright arc near the top edge in the
+    // world's secondary tone -> reads like a reflected horizon (glossy).
+    canvas.save();
+    canvas.clipPath(
+      Path()..addOval(Rect.fromCircle(center: Offset(cx, cy), radius: r - 1)),
+    );
+    canvas.drawCircle(
+      Offset(cx, cy - r * 0.34),
+      r * 0.92,
+      Paint()
+        ..color = _worldSecondary.withValues(alpha: 0.22)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = r * 0.06
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+    canvas.restore();
 
     // Primary specular
     canvas.drawCircle(
@@ -511,13 +597,25 @@ class _Avatar3dPainter extends CustomPainter {
   // ── Rim light ────────────────────────────────────────────────────
 
   void _drawRimLight(Canvas canvas, double cx, double cy, double r) {
+    // Fresnel-style rim: brightest on the shadow side, blended accent ->
+    // world-secondary, so the orb pops off the background like a lit sphere.
+    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: r);
     canvas.drawCircle(
       Offset(cx, cy),
       r,
       Paint()
-        ..color = accentColor.withValues(alpha: 0.38)
+        ..shader = SweepGradient(
+          colors: [
+            _worldSecondary.withValues(alpha: 0.5),
+            accentColor.withValues(alpha: 0.2),
+            _worldSecondary.withValues(alpha: 0.55),
+            accentColor.withValues(alpha: 0.2),
+            _worldSecondary.withValues(alpha: 0.5),
+          ],
+          stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+        ).createShader(rect)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = state == MentorAvatarState3d.speaking ? 3.0 : 2.0,
+        ..strokeWidth = state == MentorAvatarState3d.speaking ? 3.2 : 2.2,
     );
   }
 
@@ -529,5 +627,6 @@ class _Avatar3dPainter extends CustomPainter {
       old.thinkProgress != thinkProgress ||
       old.wavesProgress != wavesProgress ||
       old.accentColor != accentColor ||
-      old.personality != personality;
+      old.personality != personality ||
+      old.world != world;
 }

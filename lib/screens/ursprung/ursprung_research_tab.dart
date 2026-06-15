@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/mentor_service.dart';
 import '../../services/ursprung_topics_service.dart';
-import '../shared/mentor_chat_screen.dart';
+import 'mentor_session_screen.dart';
 import '../shared/research_module.dart';
 import 'ursprung_modules_screen.dart';
 
@@ -73,7 +73,7 @@ class UrsprungResearchTab extends StatelessWidget {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const MentorChatScreen(
+                builder: (_) => const MentorSessionScreen(
                   personality: MentorPersonality.alchemist,
                   world: 'ursprung',
                 ),

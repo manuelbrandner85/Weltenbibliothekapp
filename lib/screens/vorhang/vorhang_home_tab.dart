@@ -10,7 +10,7 @@ import '../../services/mentor_service.dart';
 import '../../widgets/mentor_hero_card.dart';
 import '../../services/unified_profile_service.dart';
 import '../../services/vorhang_service.dart';
-import '../shared/mentor_chat_screen.dart';
+import '../ursprung/mentor_session_screen.dart';
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
@@ -518,7 +518,7 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const MentorChatScreen(
+          builder: (_) => const MentorSessionScreen(
             personality: MentorPersonality.stratege,
             world: 'vorhang',
           ),
