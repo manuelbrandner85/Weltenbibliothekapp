@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/search_history.dart';
 import '../../services/search_history_service.dart';
+import '../../widgets/recherche_card.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 
 // Materie accent / dark-background
@@ -283,7 +284,7 @@ class _HistoryTabState extends State<_HistoryTab> {
                     itemCount: rows.length,
                     itemBuilder: (context, index) {
                       final entry = rows[index];
-                      return _HistoryCard(
+                      return RechercheCard(
                         key: ValueKey(entry.id),
                         entry: entry,
                         onReplay: () => widget.onReplay(entry.query),
@@ -332,179 +333,6 @@ class _HistoryTabState extends State<_HistoryTab> {
       await SearchHistoryService.clearAllHistory();
       setState(() {});
     }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Single history entry card with swipe-to-delete and replay button
-// ---------------------------------------------------------------------------
-
-class _HistoryCard extends StatelessWidget {
-  final SearchHistoryEntry entry;
-  final VoidCallback onReplay;
-  final VoidCallback onDelete;
-
-  const _HistoryCard({
-    super.key,
-    required this.entry,
-    required this.onReplay,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tags = entry.tags ?? [];
-
-    return Dismissible(
-      key: ValueKey('dismiss_${entry.id}'),
-      direction: DismissDirection.endToStart,
-      background: _SwipeDeleteBackground(),
-      onDismissed: (_) => onDelete(),
-      child: GestureDetector(
-        onTap: onReplay,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: _kSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Replay icon
-                Padding(
-                  padding: const EdgeInsets.only(top: 1, right: 12),
-                  child: Icon(
-                    Icons.manage_search_rounded,
-                    color: _kAccent.withValues(alpha: 0.7),
-                    size: 20,
-                  ),
-                ),
-
-                // Main content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.query,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          // Date
-                          Text(
-                            entry.formattedDate,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.45),
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Result count badge
-                          if (entry.resultCount > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _kAccent.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${entry.resultCount} Treffer',
-                                style: TextStyle(
-                                  color: _kAccent.withValues(alpha: 0.9),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      // Tags
-                      if (tags.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: tags.take(3).map((t) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white10,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                t,
-                                style: const TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Delete button
-                IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    size: 16,
-                    color: Colors.white30,
-                  ),
-                  tooltip: 'Eintrag loeschen',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 28,
-                    minHeight: 28,
-                  ),
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SwipeDeleteBackground extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.redAccent.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      alignment: Alignment.centerRight,
-      padding: const EdgeInsets.only(right: 20),
-      child: const Icon(
-        Icons.delete_outline,
-        color: Colors.redAccent,
-        size: 22,
-      ),
-    );
   }
 }
 
