@@ -18,6 +18,7 @@ import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/vorhang_branch_path.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_page_route.dart';
+import '../vorhang_modul_screen.dart';
 
 /// 🎭 VORHANG Modules Screen
 ///
@@ -232,6 +233,13 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.dashboard_outlined, color: _gold),
+            tooltip: 'Lernpfade',
+            onPressed: () => Navigator.of(context).push(
+              VorhangPageRoute(builder: (_) => const VorhangModulScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh, color: _gold),
             tooltip: 'Neu laden',
             onPressed: _fetchModules,
@@ -244,8 +252,8 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                 child: CircularProgressIndicator(color: _gold, strokeWidth: 2),
               )
             : _error != null
-                ? _buildError()
-                : _buildContent(),
+            ? _buildError()
+            : _buildContent(),
       ),
     );
   }
@@ -409,8 +417,10 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
             decoration: InputDecoration(
               hintText: 'Modul suchen (z.B. V-12 oder Stichwort)',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
-              prefixIcon:
-                  Icon(Icons.search, color: _gold.withValues(alpha: 0.7)),
+              prefixIcon: Icon(
+                Icons.search,
+                color: _gold.withValues(alpha: 0.7),
+              ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: Icon(
@@ -450,8 +460,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                 child: Center(
                   child: Text(
                     'Kein Modul gefunden für "$_searchQuery"',
-                    style:
-                        TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
                   ),
                 ),
               )
@@ -618,8 +629,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color:
-              isCompleted ? _gold.withValues(alpha: 0.06) : Colors.transparent,
+          color: isCompleted
+              ? _gold.withValues(alpha: 0.06)
+              : Colors.transparent,
           border: Border.all(
             color: isBoss
                 ? _gold.withValues(alpha: 0.6)
@@ -889,7 +901,8 @@ class _BossTestScreenState extends State<_BossTestScreen> {
       _result = result;
     });
     final storage = StorageService();
-    final userId = (storage.getMaterieProfile()?.userId ??
+    final userId =
+        (storage.getMaterieProfile()?.userId ??
         storage.getEnergieProfile()?.userId ??
         'anon');
     await BranchBossTestService.instance.recordAttempt(
