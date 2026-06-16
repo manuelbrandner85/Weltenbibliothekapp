@@ -264,6 +264,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern>
       ),
     );
   }
+
   List<CommunityPost> get _filteredPosts {
     switch (_selectedView) {
       case 'fotos':
@@ -519,7 +520,8 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern>
     ];
     return WbSegmentedTabs(
       items: items,
-      selectedIndex: _viewKeys.indexOf(_selectedView).clamp(0, items.length - 1),
+      selectedIndex:
+          _viewKeys.indexOf(_selectedView).clamp(0, items.length - 1),
       onChanged: (i) => setState(() => _selectedView = _viewKeys[i]),
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
     );
