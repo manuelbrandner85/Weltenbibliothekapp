@@ -86,9 +86,14 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
               builder: (context, constraints) {
                 // Responsive: one card per ~440px of width, capped at 3 columns.
                 final columns = (constraints.maxWidth / 440).floor().clamp(
-                  1,
-                  3,
-                );
+                      1,
+                      3,
+                    );
+                // Grow the fixed cell height with the user's font scale so the
+                // card content never overflows under larger accessibility text.
+                final cellExtent = MediaQuery.textScalerOf(
+                  context,
+                ).scale(124).clamp(124.0, 220.0);
                 return CustomScrollView(
                   slivers: [
                     SliverPadding(
@@ -100,7 +105,7 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
                       sliver: SliverGrid(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: columns,
-                          mainAxisExtent: 124,
+                          mainAxisExtent: cellExtent,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                         ),
