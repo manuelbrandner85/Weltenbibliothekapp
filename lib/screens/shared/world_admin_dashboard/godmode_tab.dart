@@ -188,13 +188,17 @@ class _GodModeTabState extends State<_GodModeTab>
   // A1: Repo-Insights laden.
   GodModeRepoInsights _repo = GodModeRepoInsights.empty;
   bool _loadingRepo = true;
+  // Batch D: App-Abdeckungs-Karte.
+  List<GodModeArea> _coverage = const [];
 
   Future<void> _loadRepo() async {
     setState(() => _loadingRepo = true);
     final r = await GodModeService.repoInsights();
+    final cov = await GodModeService.coverage();
     if (!mounted) return;
     setState(() {
       _repo = r;
+      _coverage = cov;
       _loadingRepo = false;
     });
   }
@@ -2261,6 +2265,7 @@ class _GodModeTabState extends State<_GodModeTab>
               padding: const EdgeInsets.all(14),
               children: [
                 _repoPipelineCard(),
+                _repoCoverageCard(),
                 _repoStatsHeader(),
                 _repoSection('🔀 Offene PRs', _repo.pulls, Colors.tealAccent),
                 _repoSection(
@@ -2271,6 +2276,87 @@ class _GodModeTabState extends State<_GodModeTab>
               ],
             ),
     );
+  }
+
+  // Batch D: App-Abdeckungs-Karte -- jeder Bereich + wie oft/zuletzt verbessert.
+  Widget _repoCoverageCard() {
+    if (_coverage.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.map_rounded, size: 16, color: _ab),
+          const SizedBox(width: 7),
+          const Text('APP-ABDECKUNG',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.4)),
+        ]),
+        const SizedBox(height: 10),
+        for (final a in _coverage) _coverageRow(a),
+      ]),
+    );
+  }
+
+  Widget _coverageRow(GodModeArea a) {
+    // "Luecke" = viele Screens, aber 0 Auftraege -> hervorheben.
+    final gap = a.requests == 0 && a.screens > 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(children: [
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Text(a.label,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600)),
+              if (gap) ...[
+                const SizedBox(width: 6),
+                _miniBadge('Luecke', Colors.amber.withValues(alpha: 0.5)),
+              ],
+            ]),
+            const SizedBox(height: 2),
+            Text(
+              '${a.screens} Screens  ·  ${a.requests} Auftraege',
+              style: const TextStyle(color: Colors.white38, fontSize: 10.5),
+            ),
+          ]),
+        ),
+        TextButton.icon(
+          onPressed: () => _ideasForArea(a.key),
+          icon: const Icon(Icons.auto_awesome_rounded, size: 13),
+          label: const Text('Ideen', style: TextStyle(fontSize: 11)),
+          style: TextButton.styleFrom(
+            foregroundColor: _ab,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ]),
+    );
+  }
+
+  // Batch D: gezielt Vorschlaege fuer einen Bereich generieren.
+  void _ideasForArea(String key) {
+    setState(() {
+      _world = const {'materie', 'energie', 'vorhang', 'ursprung'}.contains(key)
+          ? key
+          : null;
+    });
+    _tc.animateTo(1); // KI-Ideen-Tab
+    _generateSuggestions();
   }
 
   // D: Pipeline-Cockpit -- Builder-Modell, letztes Release, App-Version.
