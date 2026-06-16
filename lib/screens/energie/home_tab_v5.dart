@@ -2149,37 +2149,31 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           ).animate(_entryAnim),
           child: FadeTransition(
             opacity: _entryAnim,
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    _buildActionTile(tiles[0]),
-                    const SizedBox(width: 10),
-                    _buildActionTile(tiles[1]),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _buildActionTile(tiles[2]),
-                    const SizedBox(width: 10),
-                    _buildActionTile(tiles[3]),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _buildActionTile(tiles[4]),
-                    const SizedBox(width: 10),
-                    const Expanded(child: SizedBox()),
-                  ],
-                ),
-              ],
-            ),
+            // Responsive Modul-Grid: 3 Spalten auf Tablets, sonst 2.
+            child: _buildActionGridRows(tiles, context.isTablet ? 3 : 2),
           ),
         ),
       ),
     );
+  }
+
+  /// Layouts the module tiles into responsive rows of [columns] each.
+  /// The last row is padded with empty slots so all tiles keep equal width.
+  Widget _buildActionGridRows(List<_TileDef> tiles, int columns) {
+    final rows = <Widget>[];
+    for (var i = 0; i < tiles.length; i += columns) {
+      final cells = <Widget>[];
+      for (var c = 0; c < columns; c++) {
+        if (c > 0) cells.add(const SizedBox(width: 10));
+        final idx = i + c;
+        cells.add(idx < tiles.length
+            ? _buildActionTile(tiles[idx])
+            : const Expanded(child: SizedBox()));
+      }
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 10));
+      rows.add(Row(children: cells));
+    }
+    return Column(children: rows);
   }
 
   Widget _buildActionTile(_TileDef t) {
