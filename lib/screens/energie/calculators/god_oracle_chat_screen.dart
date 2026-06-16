@@ -11,6 +11,51 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../config/api_config.dart';
+import '../../../widgets/god_aura_avatar.dart';
+
+/// ASCII-Slug fuer Asset-Dateinamen (assets/avatars/gods/god_<slug>.webp).
+String godAssetSlug(String name) {
+  var s = name.toLowerCase();
+  const repl = {
+    'á': 'a',
+    'à': 'a',
+    'ä': 'a',
+    'â': 'a',
+    'é': 'e',
+    'è': 'e',
+    'ê': 'e',
+    'í': 'i',
+    'ì': 'i',
+    'ó': 'o',
+    'ò': 'o',
+    'ö': 'o',
+    'ô': 'o',
+    'ú': 'u',
+    'ù': 'u',
+    'ü': 'u',
+    'ñ': 'n',
+    'ç': 'c',
+    'ß': 'ss',
+  };
+  repl.forEach((k, v) => s = s.replaceAll(k, v));
+  return s.replaceAll(RegExp(r'[^a-z0-9]'), '');
+}
+
+/// Element-/Themen-Akzentfarbe pro Gottheit (fuer Aura + Rim).
+Color godAccentColor(String name) {
+  switch (_godExtra[name]?.element ?? '') {
+    case 'Feuer':
+      return const Color(0xFFFF7043);
+    case 'Wasser':
+      return const Color(0xFF4FC3F7);
+    case 'Luft':
+      return const Color(0xFF80DEEA);
+    case 'Erde':
+      return const Color(0xFF66BB6A);
+    default:
+      return const Color(0xFFB388FF);
+  }
+}
 
 class GodOracleChatScreen extends StatefulWidget {
   const GodOracleChatScreen({super.key});
@@ -199,16 +244,12 @@ class _GodOracleChatScreenState extends State<GodOracleChatScreen> {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(children: [
-              Container(
-                width: 50,
-                height: 50,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                      colors: [_accent, _accent.withValues(alpha: 0.3)]),
-                ),
-                child: Text(g.emoji, style: const TextStyle(fontSize: 24)),
+              GodAuraAvatar(
+                assetPath:
+                    'assets/avatars/gods/god_${godAssetSlug(g.name)}.webp',
+                accent: godAccentColor(g.name),
+                fallbackEmoji: g.emoji,
+                size: 54,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -272,7 +313,14 @@ class _GodOracleChatScreenState extends State<GodOracleChatScreen> {
               ),
               const SizedBox(height: 18),
               Center(
-                  child: Text(g.emoji, style: const TextStyle(fontSize: 72))),
+                child: GodAuraAvatar(
+                  assetPath:
+                      'assets/avatars/gods/god_${godAssetSlug(g.name)}.webp',
+                  accent: godAccentColor(g.name),
+                  fallbackEmoji: g.emoji,
+                  size: 110,
+                ),
+              ),
               const SizedBox(height: 8),
               Center(
                 child: ShaderMask(
@@ -728,7 +776,13 @@ class _GodChatViewState extends State<_GodChatView> {
           onPressed: widget.onBack,
         ),
         title: Row(children: [
-          Text(widget.god.emoji, style: const TextStyle(fontSize: 22)),
+          GodAuraAvatar(
+            assetPath:
+                'assets/avatars/gods/god_${godAssetSlug(widget.god.name)}.webp',
+            accent: godAccentColor(widget.god.name),
+            fallbackEmoji: widget.god.emoji,
+            size: 38,
+          ),
           const SizedBox(width: 10),
           Text(widget.god.name,
               style:
@@ -766,7 +820,13 @@ class _GodChatViewState extends State<_GodChatView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(widget.god.emoji, style: const TextStyle(fontSize: 72)),
+            GodAuraAvatar(
+              assetPath:
+                  'assets/avatars/gods/god_${godAssetSlug(widget.god.name)}.webp',
+              accent: godAccentColor(widget.god.name),
+              fallbackEmoji: widget.god.emoji,
+              size: 110,
+            ),
             const SizedBox(height: 16),
             Text(widget.god.subtitle,
                 textAlign: TextAlign.center,
