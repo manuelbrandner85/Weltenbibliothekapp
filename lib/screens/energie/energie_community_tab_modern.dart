@@ -12,6 +12,8 @@ import '../../widgets/create_post_dialog_v2.dart'; // ✅ Post-Dialog
 import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
 import 'energie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
+import 'energie_tab.dart';
+import '../shared/unified_knowledge_tab.dart';
 
 /// Moderner Energie-Community-Tab - Spiritueller Feed-Style
 ///
@@ -22,7 +24,16 @@ import 'energie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 class EnergieCommunityTabModern extends StatefulWidget {
   final bool postsOnly;
 
-  const EnergieCommunityTabModern({super.key, this.postsOnly = false});
+  /// Callback zum Umschalten der Bottom-Tab-Navigation des Parents.
+  /// Erlaubt In-Content-Deep-Links (z.B. "Lernmodule" -> Wissen-Tab),
+  /// statt einen neuen Screen zu pushen.
+  final ValueChanged<int>? onSwitchTab;
+
+  const EnergieCommunityTabModern({
+    super.key,
+    this.postsOnly = false,
+    this.onSwitchTab,
+  });
 
   @override
   State<EnergieCommunityTabModern> createState() =>
@@ -284,6 +295,81 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern>
     }
   }
 
+  /// Zum Wissen-Tab (Lernmodule) wechseln: bevorzugt via Parent-Tab-Switch,
+  /// fällt auf Navigator.push zurück, wenn kein Callback vorhanden ist.
+  void _openWissenTab() {
+    final cb = widget.onSwitchTab;
+    if (cb != null) {
+      cb(EnergieTab.wissen.index);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const UnifiedKnowledgeTab(world: 'energie'),
+        ),
+      );
+    }
+  }
+
+  /// Banner, der den Community-Feed mit den Lernmodulen (Wissen-Tab) verbindet.
+  Widget _buildLernmoduleCta() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: GestureDetector(
+        onTap: _openWissenTab,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                _kPurpleD.withValues(alpha: 0.45),
+                _kTeal.withValues(alpha: 0.12),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _kPurpleL.withValues(alpha: 0.30)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _kPurple.withValues(alpha: 0.20),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.menu_book_rounded,
+                    color: _kPurpleL, size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lernmodule entdecken',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Wissen & Weisheit im Wissen-Tab',
+                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.white38),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPostsView() {
     final filtered = _filteredPosts;
     final hero = _posts.isNotEmpty
@@ -308,6 +394,8 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern>
             // Feature 7 — Live-Counter
             SliverToBoxAdapter(child: _buildLiveCounter()),
             SliverToBoxAdapter(child: _buildStatBanner()),
+            // 📚 Deep-Link in die Lernmodule (Wissen-Tab)
+            SliverToBoxAdapter(child: _buildLernmoduleCta()),
             // Feature 5 — Story-Bubbles
             if (_posts.isNotEmpty)
               SliverToBoxAdapter(child: _buildStoryBubbles()),

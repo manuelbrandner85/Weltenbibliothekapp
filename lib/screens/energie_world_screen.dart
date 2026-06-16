@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'energie/energie_tab.dart';
 import 'energie/home_tab_v5.dart';
 import 'energie/spirit_tab_modern.dart';
 import 'energie/energie_community_tab_modern.dart';
@@ -78,18 +79,27 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
     }
   }
 
+  /// Central, bounds-checked tab switch shared by the floating nav bar and
+  /// every in-content deep link (e.g. a tab CTA jumping to the Wissen tab).
+  /// Ignores out-of-range indices so a stale callback can never crash.
+  void _switchTab(int index) {
+    if (!EnergieTab.isValidIndex(index) || index == _currentIndex) return;
+    setState(() => _currentIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
     final adminState = ref.watch(adminStateProvider('energie'));
 
+    // Order MUST match EnergieTab declaration order (index = EnergieTab.index).
     final tabs = [
       EnergieHomeTabV5(
         key: ValueKey('home_${adminState.username}_${adminState.role}'),
-        onSwitchTab: (idx) => setState(() => _currentIndex = idx),
+        onSwitchTab: _switchTab,
       ),
       const SpiritTabModern(),
-      const EnergieCommunityTabModern(),
-      const EnergieKarteTabPro(),
+      EnergieCommunityTabModern(onSwitchTab: _switchTab),
+      EnergieKarteTabPro(onSwitchTab: _switchTab),
       const UnifiedKnowledgeTab(world: 'energie'),
       const MediathekScreen(world: 'energie', embedded: true),
     ];
@@ -154,17 +164,13 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
               child: WBFloatingNav(
                 world: WBWorld.energie,
                 activeIndex: _currentIndex,
-                items: const [
-                  WBFloatingNavItem(icon: Icons.home, label: 'Home'),
-                  WBFloatingNavItem(
-                      icon: Icons.self_improvement, label: 'Spirit'),
-                  WBFloatingNavItem(icon: Icons.people, label: 'Community'),
-                  WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
-                  WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
-                  WBFloatingNavItem(
-                      icon: Icons.play_circle_outline, label: 'Videos'),
+                // Built from EnergieTab so nav items stay in lock-step with
+                // the tab-content list above (same order, same indices).
+                items: [
+                  for (final tab in EnergieTab.values)
+                    WBFloatingNavItem(icon: tab.icon, label: tab.label),
                 ],
-                onChanged: (i) => setState(() => _currentIndex = i),
+                onChanged: _switchTab,
               ),
             ),
           ],

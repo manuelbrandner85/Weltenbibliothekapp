@@ -20,6 +20,8 @@ import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
 import '../../config/wb_design.dart';
 import 'spirit_tab_modern.dart';
+import 'energie_tab.dart';
+import '../shared/unified_knowledge_tab.dart';
 import '../../services/mentor_service.dart';
 import '../ursprung/mentor_session_screen.dart';
 import 'calculators/tarot_lexicon_screen.dart';
@@ -395,9 +397,20 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   void _openSpiritTab() {
     final cb = widget.onSwitchTab;
     if (cb != null) {
-      cb(1); // Spirit = Tab-Index 1 in EnergieWorldScreen
+      cb(EnergieTab.spirit.index);
     } else {
       _go(const SpiritTabModern());
+    }
+  }
+
+  /// Zum Wissen-Tab (Lernmodule) wechseln: bevorzugt via Parent-Tab-Switch,
+  /// fällt auf Navigator.push zurück, wenn kein Callback vorhanden ist.
+  void _openWissenTab() {
+    final cb = widget.onSwitchTab;
+    if (cb != null) {
+      cb(EnergieTab.wissen.index);
+    } else {
+      _go(const UnifiedKnowledgeTab(world: 'energie'));
     }
   }
 
@@ -2137,6 +2150,19 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         badge: 0,
         onTap: () => _go(const EnergiePostsScreen()),
       ),
+      // Lernmodule -> Wissen-Tab (deep link into the bottom-nav tab).
+      _TileDef(
+        icon: Icons.menu_book_rounded,
+        label: 'Lernmodule',
+        sub: 'Wissen & Weisheit entdecken',
+        gradient: [
+          const Color(0xFF1A237E),
+          const Color(0xFF303F9F),
+          const Color(0xFF5C6BC0),
+        ],
+        badge: 0,
+        onTap: _openWissenTab,
+      ),
     ];
 
     return SliverToBoxAdapter(
@@ -2171,7 +2197,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                   children: [
                     _buildActionTile(tiles[4]),
                     const SizedBox(width: 10),
-                    const Expanded(child: SizedBox()),
+                    _buildActionTile(tiles[5]),
                   ],
                 ),
               ],

@@ -12,10 +12,17 @@ import '../../widgets/live_pins_layer.dart'; // 📍 B9: Live-Pins-Marker
 import '../../widgets/youtube_player_inline.dart';
 import '../../widgets/wb_cached_image.dart';
 import '../../data/energie_extra_locations.dart'; // 📍 +25 Marker (Phase 2)
+import 'energie_tab.dart';
+import '../shared/unified_knowledge_tab.dart';
 
 /// ENERGIE-Karte Tab - Spirituelle Kraftorte & Ley-Lines
 class EnergieKarteTabPro extends StatefulWidget {
-  const EnergieKarteTabPro({super.key});
+  /// Callback zum Umschalten der Bottom-Tab-Navigation des Parents.
+  /// Erlaubt In-Content-Deep-Links (z.B. "Lernmodule" -> Wissen-Tab),
+  /// statt einen neuen Screen zu pushen.
+  final ValueChanged<int>? onSwitchTab;
+
+  const EnergieKarteTabPro({super.key, this.onSwitchTab});
 
   @override
   State<EnergieKarteTabPro> createState() => _EnergieKarteTabProState();
@@ -380,9 +387,74 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             child: _buildRadialLayerMenu(),
           ),
 
+          // 📚 LERNMODULE-DEEP-LINK (Bottom Right) -> Wissen-Tab
+          Positioned(
+            bottom: 100,
+            right: 16,
+            child: _buildLernmoduleButton(),
+          ),
+
           // DETAIL PANEL — Feature A: Blur + SlideTransition
           if (_selectedLocation != null) _buildDetailPanel(),
         ],
+      ),
+    );
+  }
+
+  /// Zum Wissen-Tab (Lernmodule) wechseln: bevorzugt via Parent-Tab-Switch,
+  /// fällt auf Navigator.push zurück, wenn kein Callback vorhanden ist.
+  void _openWissenTab() {
+    final cb = widget.onSwitchTab;
+    if (cb != null) {
+      cb(EnergieTab.wissen.index);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const UnifiedKnowledgeTab(world: 'energie'),
+        ),
+      );
+    }
+  }
+
+  /// Glas-Button, der die Karte mit den Lernmodulen (Wissen-Tab) verbindet.
+  Widget _buildLernmoduleButton() {
+    const accent = Color(0xFFA855F7);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Material(
+          color: const Color(0xB31A0F2E),
+          child: InkWell(
+            onTap: _openWissenTab,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.40),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.menu_book_rounded, color: accent, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'Lernmodule',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
