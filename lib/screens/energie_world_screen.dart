@@ -12,6 +12,7 @@ import 'shared/stats_dashboard_screen.dart';
 import 'shared/unified_world_map_screen.dart';
 import '../widgets/admin_dashboard_button.dart';
 import '../services/haptic_service.dart';
+import '../services/tabbar_service.dart';
 import '../features/admin/state/admin_state.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
@@ -39,6 +40,14 @@ class EnergieWorldScreen extends ConsumerStatefulWidget {
 class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
     with WidgetsBindingObserver {
   int _currentIndex = 0;
+
+  /// Switches to [index], clamped into the valid tab range so a stray index
+  /// (e.g. from a Home-shortcut) can never crash navigation.
+  void _switchTab(int index) {
+    final safe = TabBarService.clampIndex(index, TabBarService.energieTabs);
+    if (safe == _currentIndex) return;
+    setState(() => _currentIndex = safe);
+  }
 
   @override
   void initState() {
@@ -85,7 +94,7 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
     final tabs = [
       EnergieHomeTabV5(
         key: ValueKey('home_${adminState.username}_${adminState.role}'),
-        onSwitchTab: (idx) => setState(() => _currentIndex = idx),
+        onSwitchTab: _switchTab,
       ),
       const SpiritTabModern(),
       const EnergieCommunityTabModern(),
@@ -93,6 +102,21 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
       const UnifiedKnowledgeTab(world: 'energie'),
       const MediathekScreen(world: 'energie', embedded: true),
     ];
+
+    // Page list and nav config must stay one-to-one; guard in debug so a
+    // future desync is caught before it can RangeError in release.
+    assert(
+      tabs.length == TabBarService.energieTabs.length,
+      'Tab page count (${tabs.length}) != nav item count '
+      '(${TabBarService.energieTabs.length}) - keep them in sync.',
+    );
+
+    // Clamp defensively: if the lists ever drift apart, navigation stays
+    // usable instead of throwing on tabs[_currentIndex].
+    final activeIndex = TabBarService.clampIndex(
+      _currentIndex,
+      TabBarService.energieTabs,
+    );
 
     return Theme(
       data: WbDesign.themeFor(context, 'energie'),
@@ -117,7 +141,8 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
           children: [
             // Cosmic-Hintergrund + Welt-Ambient
             const Positioned.fill(
-                child: _CosmicBackground(world: WBWorld.energie)),
+              child: _CosmicBackground(world: WBWorld.energie),
+            ),
 
             // Ambient particles (Phase 6)
             const Positioned.fill(
@@ -130,22 +155,20 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
               child: Column(
                 children: [
                   AdminDashboardButton(
-                      adminState: adminState, world: 'energie'),
-                  Expanded(child: tabs[_currentIndex]),
+                    adminState: adminState,
+                    world: 'energie',
+                  ),
+                  Expanded(child: tabs[activeIndex]),
                 ],
               ),
             ),
 
             // Vignette als oberster atmosphärischer Layer
-            const Positioned.fill(
-              child: IgnorePointer(child: WBVignette()),
-            ),
+            const Positioned.fill(child: IgnorePointer(child: WBVignette())),
 
             // Day-phase atmospheric scrim
             const Positioned.fill(
-              child: IgnorePointer(
-                child: TimeOfDayOverlay(world: 'energie'),
-              ),
+              child: IgnorePointer(child: TimeOfDayOverlay(world: 'energie')),
             ),
 
             // Floating Bottom-Nav
@@ -153,18 +176,12 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
               alignment: Alignment.bottomCenter,
               child: WBFloatingNav(
                 world: WBWorld.energie,
-                activeIndex: _currentIndex,
-                items: const [
-                  WBFloatingNavItem(icon: Icons.home, label: 'Home'),
-                  WBFloatingNavItem(
-                      icon: Icons.self_improvement, label: 'Spirit'),
-                  WBFloatingNavItem(icon: Icons.people, label: 'Community'),
-                  WBFloatingNavItem(icon: Icons.map, label: 'Karte'),
-                  WBFloatingNavItem(icon: Icons.menu_book, label: 'Wissen'),
-                  WBFloatingNavItem(
-                      icon: Icons.play_circle_outline, label: 'Videos'),
+                activeIndex: activeIndex,
+                items: [
+                  for (final t in TabBarService.energieTabs)
+                    WBFloatingNavItem(icon: t.icon, label: t.label),
                 ],
-                onChanged: (i) => setState(() => _currentIndex = i),
+                onChanged: _switchTab,
               ),
             ),
           ],
@@ -174,7 +191,9 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
   }
 
   List<Widget> _buildAppBarActions(
-      BuildContext context, AdminState adminState) {
+    BuildContext context,
+    AdminState adminState,
+  ) {
     return [
       IconButton(
         tooltip: 'Suchen',
@@ -239,8 +258,10 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
               const SizedBox(height: 8),
               ListTile(
                 leading: const Icon(Icons.layers_outlined, color: accent),
-                title: const Text('Vier-Welten-Karte',
-                    style: TextStyle(color: Colors.white)),
+                title: const Text(
+                  'Vier-Welten-Karte',
+                  style: TextStyle(color: Colors.white),
+                ),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   Navigator.push(
@@ -254,8 +275,10 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.analytics_outlined, color: accent),
-                title: const Text('Statistik',
-                    style: TextStyle(color: Colors.white)),
+                title: const Text(
+                  'Statistik',
+                  style: TextStyle(color: Colors.white),
+                ),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   Navigator.push(
@@ -269,8 +292,10 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
               ),
               ListTile(
                 leading: const Icon(Icons.swap_horiz, color: accent),
-                title: const Text('Welt wechseln',
-                    style: TextStyle(color: Colors.white)),
+                title: const Text(
+                  'Welt wechseln',
+                  style: TextStyle(color: Colors.white),
+                ),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   Navigator.pop(context);

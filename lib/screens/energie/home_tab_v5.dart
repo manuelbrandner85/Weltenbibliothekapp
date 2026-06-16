@@ -29,6 +29,7 @@ import 'chakra_hub_screen.dart';
 import '../../widgets/daily_mantra_banner.dart'; // 🌙 F1 Tages-Mantra
 import '../../widgets/daily_path_widget.dart';
 import '../../services/spirit_reading_service.dart';
+import '../../services/tabbar_service.dart';
 import '../../core/storage/unified_storage_service.dart';
 import '../../core/responsive.dart';
 
@@ -239,7 +240,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         limit: 6,
       );
       _trending = await _dash.getTrendingTopics(realm: 'energie', limit: 8);
-      final uid = Supabase.instance.client.auth.currentUser?.id ??
+      final uid =
+          Supabase.instance.client.auth.currentUser?.id ??
           await StorageService().getUserId('energie');
       // Unread-Count direkt aus DB (kein Umweg über getNotifications-Normalisierung)
       final unreadResult = await Supabase.instance.client
@@ -365,8 +367,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 : '🔕 Artikel-Benachrichtigungen deaktiviert',
           ),
           duration: const Duration(seconds: 2),
-          backgroundColor:
-              newState ? const Color(0xFF7C4DFF) : Colors.grey[800],
+          backgroundColor: newState
+              ? const Color(0xFF7C4DFF)
+              : Colors.grey[800],
         ),
       );
     }
@@ -395,7 +398,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   void _openSpiritTab() {
     final cb = widget.onSwitchTab;
     if (cb != null) {
-      cb(1); // Spirit = Tab-Index 1 in EnergieWorldScreen
+      // Spirit tab index from the single nav source of truth.
+      cb(TabBarService.energieSpiritIndex);
     } else {
       _go(const SpiritTabModern());
     }
@@ -982,72 +986,71 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         child: _cosmicLoading
             ? _cosmicShimmer(80)
             : _dailyQuote == null
-                ? const SizedBox.shrink()
-                : AnimatedBuilder(
-                    animation: _auraCtrl,
-                    builder: (_, __) => Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            _indigo.withValues(alpha: 0.4),
-                            _purpleD.withValues(
-                                alpha: 0.6 + _auraCtrl.value * 0.1),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: _purpleL.withValues(
-                            alpha: 0.18 + _auraCtrl.value * 0.08,
-                          ),
-                        ),
+            ? const SizedBox.shrink()
+            : AnimatedBuilder(
+                animation: _auraCtrl,
+                builder: (_, __) => Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        _indigo.withValues(alpha: 0.4),
+                        _purpleD.withValues(alpha: 0.6 + _auraCtrl.value * 0.1),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: _purpleL.withValues(
+                        alpha: 0.18 + _auraCtrl.value * 0.08,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Row(
-                            children: [
-                              const Text('✨', style: TextStyle(fontSize: 16)),
-                              const SizedBox(width: 6),
-                              const Text(
-                                'Tägliche Weisheit',
-                                style: TextStyle(
-                                  color: _purpleL,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            '"${_dailyQuote!.content}"',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontStyle: FontStyle.italic,
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              '— ${_dailyQuote!.author}',
-                              style: TextStyle(
-                                color: _gold.withValues(alpha: 0.8),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
+                          const Text('✨', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Tägliche Weisheit',
+                            style: TextStyle(
+                              color: _purpleL,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.8,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '"${_dailyQuote!.content}"',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontStyle: FontStyle.italic,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '— ${_dailyQuote!.author}',
+                          style: TextStyle(
+                            color: _gold.withValues(alpha: 0.8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+              ),
       ),
     );
   }
@@ -1345,8 +1348,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   Widget _buildDonkiCard() {
     final latest = _donkiEvents.first;
     final date = latest.parsedStart;
-    final dateStr =
-        date != null ? '${date.day}.${date.month}.${date.year}' : 'kürzlich';
+    final dateStr = date != null
+        ? '${date.day}.${date.month}.${date.year}'
+        : 'kürzlich';
 
     return AnimatedBuilder(
       animation: _auraCtrl,
@@ -1817,12 +1821,12 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   }
 
   Color _suiteAccent(TarotSuit s) => switch (s) {
-        TarotSuit.major => const Color(0xFFFFD54F),
-        TarotSuit.wands => const Color(0xFFFF6B6B),
-        TarotSuit.cups => const Color(0xFF4FC3F7),
-        TarotSuit.swords => const Color(0xFFB39DDB),
-        TarotSuit.pentacles => const Color(0xFF81C784),
-      };
+    TarotSuit.major => const Color(0xFFFFD54F),
+    TarotSuit.wands => const Color(0xFFFF6B6B),
+    TarotSuit.cups => const Color(0xFF4FC3F7),
+    TarotSuit.swords => const Color(0xFFB39DDB),
+    TarotSuit.pentacles => const Color(0xFF81C784),
+  };
 
   // Reduzierte Major-Arcana Liste fuer Daily-Card-Pool.
   static const List<TarotCard> _tarotMajor22 = [
@@ -2456,9 +2460,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   Widget _buildTrendingChips() {
     final topics = _trending.isNotEmpty
         ? _trending
-            .map((t) => t['topic'] ?? t['title'] ?? '')
-            .whereType<String>()
-            .toList()
+              .map((t) => t['topic'] ?? t['title'] ?? '')
+              .whereType<String>()
+              .toList()
         : [
             'Meditation',
             'Chakra',
@@ -2821,24 +2825,24 @@ class _AdminBadge extends StatelessWidget {
   const _AdminBadge({required this.isRoot});
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isRoot
-                ? [Colors.amber.shade700, Colors.orange.shade500]
-                : [const Color(0xFF9C27B0), const Color(0xFF6A1B9A)],
-          ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          isRoot ? '👑 ROOT' : '✨ ADM',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: isRoot
+            ? [Colors.amber.shade700, Colors.orange.shade500]
+            : [const Color(0xFF9C27B0), const Color(0xFF6A1B9A)],
+      ),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      isRoot ? '👑 ROOT' : '✨ ADM',
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 9,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+  );
 }
 
 class _StatDef {
@@ -2875,13 +2879,13 @@ class _Shimmer extends StatelessWidget {
   const _Shimmer({required this.w, required this.h, required this.r});
   @override
   Widget build(BuildContext context) => Container(
-        width: w,
-        height: h,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(r),
-        ),
-      );
+    width: w,
+    height: h,
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.05),
+      borderRadius: BorderRadius.circular(r),
+    ),
+  );
 }
 
 // Featured card (large)
@@ -2898,10 +2902,10 @@ class _FeaturedArticleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = (article['title'] ?? 'Artikel').toString();
-    final source =
-        (article['source'] ?? article['realm'] ?? 'Energie').toString();
-    final date =
-        (article['created_at'] ?? article['publishedAt'] ?? '').toString();
+    final source = (article['source'] ?? article['realm'] ?? 'Energie')
+        .toString();
+    final date = (article['created_at'] ?? article['publishedAt'] ?? '')
+        .toString();
     final tags = (article['tags'] as List?)?.take(2).toList() ?? [];
 
     return GestureDetector(
@@ -3000,7 +3004,9 @@ class _FeaturedArticleCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                ...tags.take(2).map(
+                ...tags
+                    .take(2)
+                    .map(
                       (t) => Container(
                         margin: const EdgeInsets.only(left: 6),
                         padding: const EdgeInsets.symmetric(
@@ -3069,16 +3075,16 @@ class _ArticleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = (article['title'] ?? 'Artikel').toString();
-    final source =
-        (article['source'] ?? article['realm'] ?? 'Energie').toString();
-    final date =
-        (article['created_at'] ?? article['publishedAt'] ?? '').toString();
+    final source = (article['source'] ?? article['realm'] ?? 'Energie')
+        .toString();
+    final date = (article['created_at'] ?? article['publishedAt'] ?? '')
+        .toString();
     final type = (article['type'] ?? 'article').toString();
     final icon = type == 'video'
         ? Icons.play_circle_outline
         : type == 'meditation'
-            ? Icons.self_improvement
-            : Icons.auto_stories;
+        ? Icons.self_improvement
+        : Icons.auto_stories;
 
     return GestureDetector(
       onTap: onTap,

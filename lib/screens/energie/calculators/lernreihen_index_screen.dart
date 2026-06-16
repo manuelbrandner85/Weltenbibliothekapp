@@ -240,20 +240,30 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
           children: [
             Text('📚', style: TextStyle(fontSize: 22)),
             SizedBox(width: 10),
-            Text('Lernreihen',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+            Text(
+              'Lernreihen',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            ),
           ],
         ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-              children: [
-                _buildIntro(),
-                const SizedBox(height: 16),
-                for (final s in _series) _buildCard(s),
-              ],
+          : RefreshIndicator(
+              color: const Color(0xFF4DB6AC),
+              backgroundColor: _surface,
+              onRefresh: _load,
+              child: ListView(
+                // AlwaysScrollable so pull-to-refresh works even when the
+                // list is short enough to fit on screen.
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+                children: [
+                  _buildIntro(),
+                  const SizedBox(height: 16),
+                  for (final s in _series) _buildCard(s),
+                ],
+              ),
             ),
     );
   }
@@ -264,9 +274,7 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A1530), _surface],
-        ),
+        gradient: const LinearGradient(colors: [Color(0xFF1A1530), _surface]),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
@@ -292,12 +300,14 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          Text('$completed / $totalEntries Lektionen abgeschlossen',
-              style: const TextStyle(
-                color: Color(0xFF4DB6AC),
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              )),
+          Text(
+            '$completed / $totalEntries Lektionen abgeschlossen',
+            style: const TextStyle(
+              color: Color(0xFF4DB6AC),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -329,10 +339,12 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [
-                      s.accent.withValues(alpha: 0.45),
-                      s.accent.withValues(alpha: 0.1),
-                    ]),
+                    gradient: RadialGradient(
+                      colors: [
+                        s.accent.withValues(alpha: 0.45),
+                        s.accent.withValues(alpha: 0.1),
+                      ],
+                    ),
                     border: Border.all(color: s.accent.withValues(alpha: 0.5)),
                   ),
                   child: Text(s.emoji, style: const TextStyle(fontSize: 22)),
@@ -342,21 +354,25 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(s.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          )),
+                      Text(
+                        s.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(s.tradition,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 11,
-                            height: 1.3,
-                          )),
+                      Text(
+                        s.tradition,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 11,
+                          height: 1.3,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -366,26 +382,31 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
                               child: LinearProgressIndicator(
                                 value: percent,
                                 minHeight: 4,
-                                backgroundColor:
-                                    Colors.white.withValues(alpha: 0.08),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.08,
+                                ),
                                 valueColor: AlwaysStoppedAnimation(s.accent),
                               ),
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Text('$done/$total',
-                              style: TextStyle(
-                                color: s.accent,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              )),
+                          Text(
+                            '$done/$total',
+                            style: TextStyle(
+                              color: s.accent,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right,
-                    color: s.accent.withValues(alpha: 0.7)),
+                Icon(
+                  Icons.chevron_right,
+                  color: s.accent.withValues(alpha: 0.7),
+                ),
               ],
             ),
           ),
