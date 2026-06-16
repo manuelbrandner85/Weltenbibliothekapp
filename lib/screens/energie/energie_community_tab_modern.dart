@@ -11,6 +11,7 @@ import '../../services/community_service.dart'; // ✅ Cloudflare API
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ Post-Dialog
 import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
+import '../../widgets/wb_segmented_tabs.dart'; // 🧭 Unified Tab-Bar
 import 'energie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 
 /// Moderner Energie-Community-Tab - Spiritueller Feed-Style
@@ -499,26 +500,28 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern>
     );
   }
 
+  // Reihenfolge der Filter-Tabs (muss zu [_filteredPosts] passen).
+  static const List<String> _viewKeys = [
+    'alle',
+    'trending',
+    'fotos',
+    'diskussion',
+    'gespeichert',
+  ];
+
   Widget _buildFilterRow() {
-    return Padding(
+    const items = [
+      WbTabItem(label: '✨ Alle', accent: _kPurpleL),
+      WbTabItem(label: '🔥 Trending', accent: Colors.orange),
+      WbTabItem(label: '📸 Fotos', accent: _kTeal),
+      WbTabItem(label: '💬 Diskussion', accent: _kPink),
+      WbTabItem(label: '🔖 Gespeichert', accent: _kGold),
+    ];
+    return WbSegmentedTabs(
+      items: items,
+      selectedIndex: _viewKeys.indexOf(_selectedView).clamp(0, items.length - 1),
+      onChanged: (i) => setState(() => _selectedView = _viewKeys[i]),
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: [
-            _buildViewTab('alle', '✨ Alle', _kPurpleL),
-            const SizedBox(width: 8),
-            _buildViewTab('trending', '🔥 Trending', Colors.orange),
-            const SizedBox(width: 8),
-            _buildViewTab('fotos', '📸 Fotos', _kTeal),
-            const SizedBox(width: 8),
-            _buildViewTab('diskussion', '💬 Diskussion', _kPink),
-            const SizedBox(width: 8),
-            _buildViewTab('gespeichert', '🔖 Gespeichert', _kGold),
-          ],
-        ),
-      ),
     );
   }
 
@@ -584,36 +587,6 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern>
             ),
           );
         }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildViewTab(String view, String label, Color color) {
-    final isSelected = _selectedView == view;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedView = view),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? color.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.1),
-          ),
-          boxShadow: isSelected
-              ? [BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 10)]
-              : null,
-        ),
-        child: Text(label,
-            style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white54,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
       ),
     );
   }
