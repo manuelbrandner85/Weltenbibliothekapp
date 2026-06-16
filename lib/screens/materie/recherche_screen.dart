@@ -159,8 +159,8 @@ class _HistoryTabState extends State<_HistoryTab> {
   }
 
   List<String> get _recentChips => SearchHistoryService.getRecentHistory(
-    limit: 5,
-  ).map((e) => e.query).toList();
+        limit: 5,
+      ).map((e) => e.query).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -287,8 +287,7 @@ class _HistoryTabState extends State<_HistoryTab> {
             child: rows.isEmpty
                 ? _EmptyState(
                     icon: Icons.history_toggle_off,
-                    message:
-                        'Noch keine Recherchen gespeichert.\n'
+                    message: 'Noch keine Recherchen gespeichert.\n'
                         'Starte eine Suche im Recherche-Tab.',
                     actionLabel: 'Zur Recherche',
                     onAction: widget.onTabSwitch,
@@ -369,6 +368,9 @@ class _HistoryTabState extends State<_HistoryTab> {
   }
 
   Future<void> _confirmClearAll(BuildContext context) async {
+    // Capture the messenger before the first await so we never read
+    // BuildContext across an async gap (use_build_context_synchronously).
+    final messenger = ScaffoldMessenger.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -396,10 +398,18 @@ class _HistoryTabState extends State<_HistoryTab> {
         ],
       ),
     );
-    if ((ok ?? false) && mounted) {
-      await SearchHistoryService.clearAllHistory();
-      setState(() {});
-    }
+    if (!(ok ?? false) || !mounted) return;
+    await SearchHistoryService.clearAllHistory();
+    if (!mounted) return;
+    setState(() {});
+    // Use the captured messenger -- no BuildContext after the await chain.
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Recherche-Verlauf geloescht.'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: _kSurface,
+      ),
+    );
   }
 }
 
@@ -756,9 +766,8 @@ class _DayToggleBtn extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected
-              ? _kAccent.withValues(alpha: 0.18)
-              : Colors.transparent,
+          color:
+              selected ? _kAccent.withValues(alpha: 0.18) : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
         ),
         child: Text(

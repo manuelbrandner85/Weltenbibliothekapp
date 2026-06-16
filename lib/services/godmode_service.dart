@@ -344,8 +344,9 @@ class GodModeService {
       final source = (data['source'] as String?) ?? '';
       return GodModeSuggestResult(suggestions, learned, source: source);
     } on AdminApiException catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('godmode.suggest: ${e.statusCode} ${e.bodySnippet}');
+      }
       return GodModeSuggestResult.empty;
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.suggest: $e');
@@ -372,8 +373,9 @@ class GodModeService {
             : null,
       );
     } on AdminApiException catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('godmode.chat: ${e.statusCode} ${e.bodySnippet}');
+      }
       return const GodModeChatReply(
           success: false,
           message: 'Assistent nicht erreichbar -- spaeter erneut.');
@@ -416,8 +418,9 @@ class GodModeService {
         timeout: const Duration(seconds: 50),
       );
       final order = data['order'];
-      if (order is Map<String, dynamic>)
+      if (order is Map<String, dynamic>) {
         return GodModeReadyOrder.fromJson(order);
+      }
       return null;
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.vision: $e');
@@ -453,8 +456,9 @@ class GodModeService {
         issueUrl: data['issue_url'] as String?,
       );
     } on AdminApiException catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('godmode.submit: ${e.statusCode} ${e.bodySnippet}');
+      }
       final msg = e.bodySnippet.contains('godmode_pat_missing')
           ? 'GitHub-PAT fehlt im Worker -- bitte GH_PAT setzen + Worker deployen.'
           : 'Auftrag fehlgeschlagen (${e.statusCode}).';
@@ -482,8 +486,9 @@ class GodModeService {
       }
       return const [];
     } on AdminApiException catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('godmode.list: ${e.statusCode} ${e.bodySnippet}');
+      }
       return const [];
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.list: $e');
@@ -698,8 +703,9 @@ class GodModeService {
         issueUrl: data['issue_url'] as String?,
       );
     } on AdminApiException catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('godmode.retryRequest: ${e.statusCode} ${e.bodySnippet}');
+      }
       return GodModeSubmitResult(
           success: false, message: 'Fehler (${e.statusCode}).');
     } catch (e) {
