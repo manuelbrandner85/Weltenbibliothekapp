@@ -109,7 +109,11 @@ jobs:
                WICHTIG: Fehlen Details, triff sinnvolle, zum bestehenden Code
                passende Annahmen, dokumentiere sie im PR-Body unter "Annahmen"
                und setze TROTZDEM vollstaendig um. NIE wegen Unklarheit abbrechen.
-            5. dart format . && flutter analyze (0 Errors pflicht)
+            5. dart format . && flutter analyze (0 Errors pflicht).
+               TESTS (Pflicht): schreibe/aktualisiere mind. einen Widget- oder
+               Unit-Test unter test/ fuer deine Aenderung (Kernlogik/-verhalten).
+               Bestehende Tests duerfen NICHT brechen -- `flutter test` muss gruen
+               sein (das Verify-Gate fuehrt es aus).
             6. Committe (ASCII), pushe den Branch.
             7. Oeffne PR gegen main mit:
                - "Closes #${{ github.event.issue.number }}" im Body

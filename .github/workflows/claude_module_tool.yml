@@ -119,6 +119,8 @@ jobs:
             Crash), zeige Lade- und Fehlerzustaende, sorge fuer Barrierefreiheit
             (sprechende Semantics-Labels, Tap-Ziele >= 44px, ausreichender Kontrast)
             und durchgaengig deutsche, nutzerfreundliche Texte.
+            Schreibe ausserdem mind. einen Widget-/Unit-Test unter test/ fuer das
+            Tool; `flutter test` muss gruen bleiben (das Verify-Gate prueft es).
 
             Erstelle einen Branch und oeffne einen Pull-Request. Merge NICHT selbst --
             das uebernimmt der nachgelagerte Auto-Merge-Schritt nach gruenem Verify-Gate.

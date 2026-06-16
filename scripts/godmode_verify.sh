@@ -32,6 +32,13 @@ if ! flutter analyze --no-fatal-infos --no-fatal-warnings >>"$LOG" 2>&1; then
   fail "flutter analyze"
 fi
 
+echo "[VERIFY] flutter test ..."
+# Regression-Schutz: alle Widget-/Unit-Tests muessen gruen sein. Bei rot liest
+# der Auto-Fix-Schritt die exakten Fehler aus dem Log.
+if ! flutter test --reporter expanded >>"$LOG" 2>&1; then
+  fail "flutter test (Regression / neue Tests rot)"
+fi
+
 echo "[VERIFY] flutter build web ..."
 if ! flutter build web --release \
     "--dart-define=SUPABASE_URL=${SUPABASE_URL_FB:-https://adtviduaftdquvfjpojb.supabase.co}" \
