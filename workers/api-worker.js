@@ -5725,6 +5725,64 @@ export default {
           }
         }
 
+        // ── GET /api/admin/godmode/coverage (Batch D: App-Abdeckung) ────
+        // Bereiche der App (aus Live-Dateibaum) + wie oft/zuletzt per God-Mode
+        // verbessert. Zeigt Luecken (lange nicht angefasste Bereiche).
+        if (method === 'GET' && path === '/api/admin/godmode/coverage') {
+          const ghToken = env.GODMODE_GH_PAT || env.GITHUB_TOKEN;
+          const repo = env.GODMODE_REPO || 'manuelbrandner85/weltenbibliothekapp';
+          const areas = {
+            materie: { label: 'Materie', screens: 0 },
+            energie: { label: 'Energie', screens: 0 },
+            vorhang: { label: 'Vorhang', screens: 0 },
+            ursprung: { label: 'Ursprung', screens: 0 },
+            shared: { label: 'Geteilt/Admin', screens: 0 },
+          };
+          // 1) Screens pro Welt aus dem Live-Dateibaum.
+          if (ghToken) {
+            try {
+              const tr = await fetch(
+                `https://api.github.com/repos/${repo}/git/trees/HEAD?recursive=1`,
+                { headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/vnd.github+json', 'User-Agent': 'weltenbibliothek-godmode' } });
+              if (tr.ok) {
+                const td = await tr.json().catch(() => null);
+                for (const n of (td?.tree || [])) {
+                  const p = n && n.path;
+                  if (typeof p !== 'string' || !p.startsWith('lib/screens/') || !p.endsWith('.dart')) continue;
+                  const seg = p.split('/')[2] || '';
+                  if (areas[seg]) areas[seg].screens++;
+                  else areas.shared.screens++;
+                }
+              }
+            } catch (_) {}
+          }
+          // 2) God-Mode-Auftraege pro Bereich (Anzahl + letzter Zeitpunkt).
+          const reqCount = {};
+          const reqLast = {};
+          try {
+            const sr = await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_requests?select=title,created_at&order=created_at.desc&limit=500`,
+              { headers: svcHeaders });
+            if (sr.ok) {
+              const rows = await sr.json().catch(() => []);
+              for (const r of (Array.isArray(rows) ? rows : [])) {
+                const t = `${r.title || ''}`.toLowerCase();
+                for (const key of Object.keys(areas)) {
+                  if (t.includes(key) || (key === 'shared' && /admin|dashboard|profil|chat/.test(t))) {
+                    reqCount[key] = (reqCount[key] || 0) + 1;
+                    if (!reqLast[key]) reqLast[key] = r.created_at || null;
+                  }
+                }
+              }
+            }
+          } catch (_) {}
+          const out = Object.entries(areas).map(([key, v]) => ({
+            key, label: v.label, screens: v.screens,
+            requests: reqCount[key] || 0, last_touched: reqLast[key] || null,
+          }));
+          return jsonResponse({ success: true, areas: out });
+        }
+
         // ── GET /api/admin/godmode/roadmap (Batch3) ─────────────────────
         // KI-priorisierte Roadmap aus den offenen Auftraegen (Epics + Reihenfolge).
         if (method === 'GET' && path === '/api/admin/godmode/roadmap') {

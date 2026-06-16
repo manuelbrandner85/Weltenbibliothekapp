@@ -317,6 +317,22 @@ class GodModeSubtask {
   const GodModeSubtask(this.title, this.description);
 }
 
+/// Ein App-Bereich in der Abdeckungs-Karte (Batch D).
+class GodModeArea {
+  final String key; // materie|energie|vorhang|ursprung|shared
+  final String label;
+  final int screens;
+  final int requests;
+  final String? lastTouched;
+  const GodModeArea({
+    required this.key,
+    required this.label,
+    required this.screens,
+    required this.requests,
+    this.lastTouched,
+  });
+}
+
 /// Client-Service fuer `/api/admin/godmode/*` (nur root_admin).
 class GodModeService {
   static const _role = 'root_admin';
@@ -418,6 +434,32 @@ class GodModeService {
       return const [];
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.decompose: $e');
+      return const [];
+    }
+  }
+
+  /// Batch D: App-Abdeckungs-Karte (Bereiche + wie oft/zuletzt verbessert).
+  static Future<List<GodModeArea>> coverage() async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+        '/api/admin/godmode/coverage',
+        role: _role,
+      );
+      final list = data['areas'];
+      if (list is List) {
+        return list.whereType<Map<String, dynamic>>().map((m) {
+          return GodModeArea(
+            key: (m['key'] as String?) ?? '',
+            label: (m['label'] as String?) ?? '',
+            screens: (m['screens'] as int?) ?? 0,
+            requests: (m['requests'] as int?) ?? 0,
+            lastTouched: m['last_touched'] as String?,
+          );
+        }).toList();
+      }
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.coverage: $e');
       return const [];
     }
   }
