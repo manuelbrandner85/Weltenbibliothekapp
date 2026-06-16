@@ -234,6 +234,56 @@ jobs:
           bash scripts/godmode_verify.sh
           echo "ok=$( [ -f .godmode_verify_ok ] && cat .godmode_verify_ok || echo false )" >> "$GITHUB_OUTPUT"
 
+      # ── Visuelle End-zu-End-Verifikation (advisory, blockiert NIE) ──────
+      # Rendert den gebauten Web-Build per Headless-Chromium, screenshotet und
+      # prueft per Gemini-Vision auf leeren/schwarzen Screen oder Crash.
+      # continue-on-error -> Ergebnis ist nur ein Kommentar, kein Merge-Blocker.
+      - name: "Visuelle Verifikation (Smoke)"
+        id: visual
+        if: >-
+          steps.findpr.outputs.found == 'true' &&
+          (steps.verify.outputs.ok == 'true' || steps.verify2.outputs.ok == 'true')
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set +e
+          if [ ! -d build/web ]; then echo '{"skipped":true,"reason":"no_build"}' > /tmp/verdict.json; exit 0; fi
+          python3 -m http.server 8787 --directory build/web >/dev/null 2>&1 &
+          SRV=$!
+          sleep 3
+          npm i playwright@1.48 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          node scripts/godmode_visual_check.mjs "http://localhost:8787" /tmp/godmode_shot.png > /tmp/verdict.json 2>/tmp/vc.log
+          kill $SRV 2>/dev/null || true
+          echo "--- verdict ---"; cat /tmp/verdict.json || echo '{}'
+
+      - name: "Visuelle Verifikation -- Kommentar"
+        if: steps.visual.outcome == 'success'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const fs = require('fs');
+            let v = {};
+            try { v = JSON.parse(fs.readFileSync('/tmp/verdict.json', 'utf8')); } catch (_) {}
+            if (v.skipped) return;
+            const vis = v.vision || {};
+            const bad = vis.blank_or_black === true || vis.rendered === false ||
+              (Array.isArray(v.page_errors) && v.page_errors.length > 0);
+            const issue = Number(process.env.ISSUE_NUMBER);
+            const body = bad
+              ? `God Mode -- Visuelle Verifikation: moegliches Problem erkannt. `
+                + `${vis.note ? 'Hinweis: ' + vis.note + '. ' : ''}`
+                + `${(v.page_errors||[]).length ? 'JS-Fehler: ' + v.page_errors.join(' | ') : ''} `
+                + `Bitte den Screen pruefen.`
+              : `God Mode -- Visuelle Verifikation: Screen rendert sichtbar (kein leerer/schwarzer Screen). [OK]`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: issue, body,
+            }).catch(() => {});
+
       - name: "Auto-Merge + Status merged"
         if: >-
           steps.findpr.outputs.found == 'true' &&
