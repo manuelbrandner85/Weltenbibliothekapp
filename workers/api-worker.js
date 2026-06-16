@@ -5892,6 +5892,71 @@ export default {
           });
         }
 
+        // ── POST /api/admin/godmode/decompose (Batch A: Epic-Zerlegung) ──
+        // Grossen Auftrag in geordnete Teilaufgaben zerlegen (Preview, legt
+        // noch keine Issues an). Body: { title, description }.
+        if (method === 'POST' && path === '/api/admin/godmode/decompose') {
+          let db = {};
+          try { db = await request.clone().json(); } catch (_) {}
+          const dTitle = String(db.title || '').trim().slice(0, 200);
+          const dDesc = String(db.description || '').trim().slice(0, 4000);
+          if (dTitle.length < 3) return errorResponse('Titel noetig', 400);
+          const dp =
+            'Zerlege diesen groesseren Auftrag fuer die Flutter-App "Weltenbibliothek" ' +
+            'in 2-6 kleine, unabhaengig baubare Teilaufgaben in sinnvoller Reihenfolge ' +
+            '(jede ein eigener God-Mode-Auftrag, je ~1 PR). Jede Teilaufgabe braucht ' +
+            'einen praezisen Titel + konkrete Beschreibung.\n\n' +
+            `Auftrag: ${dTitle}\n${dDesc}\n\n` +
+            'Antworte NUR als JSON ohne Markdown: ' +
+            '{"subtasks":[{"title":"...","description":"..."}]}';
+          const extractObj = (raw) => {
+            if (!raw) return null;
+            const s = String(raw);
+            const a = s.indexOf('{');
+            const b = s.lastIndexOf('}');
+            if (a === -1 || b <= a) return null;
+            try { return JSON.parse(s.slice(a, b + 1)); } catch (_) { return null; }
+          };
+          const oaiDec = async (url, key, model) => {
+            if (!key) return null;
+            try {
+              const r = await fetch(url, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model, messages: [{ role: 'user', content: dp }],
+                  max_tokens: 1200, temperature: 0.3,
+                }),
+              });
+              if (!r.ok) return null;
+              const d = await r.json().catch(() => null);
+              return d?.choices?.[0]?.message?.content || null;
+            } catch (_) { return null; }
+          };
+          let raw = await oaiDec('https://api.groq.com/openai/v1/chat/completions', env.GROQ_API_KEY, 'llama-3.3-70b-versatile');
+          if (!raw) raw = await oaiDec('https://api.cerebras.ai/v1/chat/completions', env.CEREBRAS_API_KEY, 'llama-3.3-70b');
+          if (!raw) raw = await oaiDec('https://openrouter.ai/api/v1/chat/completions', env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct');
+          if (!raw && env.AI) {
+            try {
+              const ar = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+                messages: [{ role: 'user', content: dp }], max_tokens: 1200,
+              });
+              raw = ar?.response || null;
+            } catch (_) {}
+          }
+          const parsed = extractObj(raw);
+          const subs = Array.isArray(parsed?.subtasks)
+            ? parsed.subtasks
+                .filter((s) => s && String(s.title || '').trim().length > 2)
+                .slice(0, 6)
+                .map((s) => ({
+                  title: String(s.title).trim().slice(0, 160),
+                  description: String(s.description || '').trim().slice(0, 2000),
+                }))
+            : [];
+          return jsonResponse({ success: subs.length > 0, subtasks: subs });
+        }
+
         // ── POST /api/admin/godmode/request ─────────────────────────────
         // Auftrag absetzen. Legt GitHub-Issue (Label "godmode") an.
         // Body: { category, type?, title, description, source? }
@@ -6056,6 +6121,39 @@ export default {
             }
           } catch (_) {}
 
+          // Lernender Feedback-Loop: aus der Historie lernen. Zieht zuletzt
+          // erfolgreich gemergte (Vorbilder) + gescheiterte Auftraege (Fehler
+          // vermeiden) und gibt sie dem Builder als Kontext mit.
+          let historyContext = '';
+          try {
+            const hr = await fetch(
+              `${SUPABASE_URL}/rest/v1/godmode_requests?select=title,status,error&order=created_at.desc&limit=60`,
+              { headers: svcHeaders });
+            if (hr.ok) {
+              const rows = await hr.json().catch(() => []);
+              if (Array.isArray(rows)) {
+                const merged = rows
+                  .filter((r) => String(r.status || '').toLowerCase() === 'merged')
+                  .slice(0, 8).map((r) => `- ${String(r.title || '').slice(0, 90)}`);
+                const failed = rows
+                  .filter((r) => ['failed', 'rejected'].includes(String(r.status || '').toLowerCase()))
+                  .slice(0, 5)
+                  .map((r) => `- ${String(r.title || '').slice(0, 80)}${r.error ? ` (Fehler: ${String(r.error).slice(0, 40)})` : ''}`);
+                if (merged.length || failed.length) {
+                  historyContext = '## Aus der Projekt-Historie (zum Lernen)\n';
+                  if (merged.length) {
+                    historyContext += 'Zuletzt erfolgreich gebaut -- halte denselben Stil/Qualitaet:\n' +
+                      merged.join('\n') + '\n';
+                  }
+                  if (failed.length) {
+                    historyContext += 'Zuletzt gescheitert -- vermeide diese Fehler bewusst:\n' +
+                      failed.join('\n') + '\n';
+                  }
+                }
+              }
+            }
+          } catch (_) {}
+
           const bodyParts = [
             `**God-Mode-Auftrag von @${caller.username || 'root-admin'}**`,
             '',
@@ -6095,6 +6193,9 @@ export default {
               codeContext,
               '',
             );
+          }
+          if (historyContext) {
+            bodyParts.push(historyContext, '');
           }
           bodyParts.push(
             '## Umsetzungs-Direktive (verbindlich)',
