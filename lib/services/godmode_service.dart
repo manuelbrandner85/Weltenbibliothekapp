@@ -317,6 +317,20 @@ class GodModeSubtask {
   const GodModeSubtask(this.title, this.description);
 }
 
+/// Ein haeufiger Client-Laufzeitfehler (Batch E, Crash-getrieben).
+class GodModeCrash {
+  final String error;
+  final String library;
+  final String context;
+  final int count;
+  const GodModeCrash({
+    required this.error,
+    required this.library,
+    required this.context,
+    required this.count,
+  });
+}
+
 /// Ein App-Bereich in der Abdeckungs-Karte (Batch D).
 class GodModeArea {
   final String key; // materie|energie|vorhang|ursprung|shared
@@ -434,6 +448,31 @@ class GodModeService {
       return const [];
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.decompose: $e');
+      return const [];
+    }
+  }
+
+  /// Batch E: haeufigste Client-Laufzeitfehler (Crash-getriebene Fixes).
+  static Future<List<GodModeCrash>> crashInsights() async {
+    try {
+      final data = await AdminApiClient.instance.getJson(
+        '/api/admin/godmode/insights',
+        role: _role,
+      );
+      final list = data['errors'];
+      if (list is List) {
+        return list.whereType<Map<String, dynamic>>().map((m) {
+          return GodModeCrash(
+            error: (m['error'] as String?) ?? '',
+            library: (m['library'] as String?) ?? '',
+            context: (m['context'] as String?) ?? '',
+            count: (m['count'] as int?) ?? 0,
+          );
+        }).toList();
+      }
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.crashInsights: $e');
       return const [];
     }
   }
