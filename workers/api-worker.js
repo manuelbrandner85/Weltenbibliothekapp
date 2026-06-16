@@ -5783,6 +5783,43 @@ export default {
           return jsonResponse({ success: true, areas: out });
         }
 
+        // ── GET /api/admin/godmode/insights (Batch E: Crash-getrieben) ──
+        // Haeufigste Client-Laufzeitfehler aus 'client_errors' aggregiert ->
+        // Basis fuer datengetriebene Fix-Auftraege.
+        if (method === 'GET' && path === '/api/admin/godmode/insights') {
+          let rows = [];
+          try {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/client_errors?select=error,library,context,received_at&order=received_at.desc&limit=500`,
+              { headers: svcHeaders });
+            if (r.ok) rows = await r.json().catch(() => []);
+          } catch (_) {}
+          const groups = {};
+          for (const e of (Array.isArray(rows) ? rows : [])) {
+            // Normalisieren: Zahlen/Hex raus, erste ~90 Zeichen als Schluessel.
+            const norm = String(e.error || '')
+              .replace(/0x[0-9a-fA-F]+/g, '0x')
+              .replace(/\d+/g, '#')
+              .trim()
+              .slice(0, 90);
+            if (!norm) continue;
+            if (!groups[norm]) {
+              groups[norm] = {
+                error: String(e.error || '').slice(0, 200),
+                library: String(e.library || '').slice(0, 120),
+                context: String(e.context || '').slice(0, 200),
+                count: 0,
+                last: e.received_at || null,
+              };
+            }
+            groups[norm].count++;
+          }
+          const top = Object.values(groups)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 8);
+          return jsonResponse({ success: true, errors: top, total: rows.length });
+        }
+
         // ── GET /api/admin/godmode/roadmap (Batch3) ─────────────────────
         // KI-priorisierte Roadmap aus den offenen Auftraegen (Epics + Reihenfolge).
         if (method === 'GET' && path === '/api/admin/godmode/roadmap') {

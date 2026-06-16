@@ -190,15 +190,19 @@ class _GodModeTabState extends State<_GodModeTab>
   bool _loadingRepo = true;
   // Batch D: App-Abdeckungs-Karte.
   List<GodModeArea> _coverage = const [];
+  // Batch E: haeufigste Laufzeitfehler (Crash-getrieben).
+  List<GodModeCrash> _crashes = const [];
 
   Future<void> _loadRepo() async {
     setState(() => _loadingRepo = true);
     final r = await GodModeService.repoInsights();
     final cov = await GodModeService.coverage();
+    final crashes = await GodModeService.crashInsights();
     if (!mounted) return;
     setState(() {
       _repo = r;
       _coverage = cov;
+      _crashes = crashes;
       _loadingRepo = false;
     });
   }
@@ -2266,6 +2270,7 @@ class _GodModeTabState extends State<_GodModeTab>
               children: [
                 _repoPipelineCard(),
                 _repoCoverageCard(),
+                _repoCrashCard(),
                 _repoStatsHeader(),
                 _repoSection('🔀 Offene PRs', _repo.pulls, Colors.tealAccent),
                 _repoSection(
@@ -2275,6 +2280,87 @@ class _GodModeTabState extends State<_GodModeTab>
                     '📝 Letzte Commits', _repo.commits, Colors.white54),
               ],
             ),
+    );
+  }
+
+  // Batch E: Crash-getrieben -- haeufigste Laufzeitfehler + 1-Tap-Fix-Auftrag.
+  Widget _repoCrashCard() {
+    if (_crashes.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.22)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.bug_report_rounded, size: 16, color: Colors.red.shade300),
+          const SizedBox(width: 7),
+          Text('HAEUFIGE FEHLER (CRASH-GETRIEBEN)',
+              style: TextStyle(
+                  color: Colors.red.shade200,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2)),
+        ]),
+        const SizedBox(height: 10),
+        for (final c in _crashes) _crashRow(c),
+      ]),
+    );
+  }
+
+  Widget _crashRow(GodModeCrash c) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${c.count}x  ${c.error}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 12, height: 1.3)),
+            if (c.library.isNotEmpty || c.context.isNotEmpty)
+              Text(
+                [c.library, c.context].where((s) => s.isNotEmpty).join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white38, fontSize: 10.5),
+              ),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        TextButton.icon(
+          onPressed: _submitting ? null : () => _fixCrash(c),
+          icon: const Icon(Icons.build_rounded, size: 13),
+          label: const Text('Fix', style: TextStyle(fontSize: 11)),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.amberAccent,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ]),
+    );
+  }
+
+  void _fixCrash(GodModeCrash c) {
+    _editAndBuild(
+      category: 'bugfix',
+      type: 'bug',
+      title:
+          'Fix: ${c.error.length > 90 ? '${c.error.substring(0, 90)}...' : c.error}',
+      description: 'Wiederkehrender Laufzeitfehler (${c.count}x aufgetreten).\n'
+          '${c.library.isNotEmpty ? 'Library: ${c.library}\n' : ''}'
+          '${c.context.isNotEmpty ? 'Kontext: ${c.context}\n' : ''}'
+          'Fehlertext: ${c.error}\n\n'
+          'Bitte die Ursache finden und robust beheben (Null-Safety, Guard, '
+          'try/catch wo sinnvoll) und einen Test ergaenzen.',
+      source: 'manual',
     );
   }
 
