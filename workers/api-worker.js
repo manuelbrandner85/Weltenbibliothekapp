@@ -6005,20 +6005,47 @@ export default {
             if (a === -1 || b <= a) return null;
             try { return JSON.parse(s.slice(a, b + 1)); } catch (_) { return null; }
           };
+          // Volles Codebase-Verstaendnis: Live-Dateibaum (lib/) vom Repo holen,
+          // damit die KI die betroffenen Dateien praezise + real benennt.
+          let appStructure = '';
+          try {
+            const tr = await fetch(
+              `https://api.github.com/repos/${ghRepo}/git/trees/HEAD?recursive=1`,
+              {
+                headers: {
+                  Authorization: `Bearer ${ghPat}`,
+                  Accept: 'application/vnd.github+json',
+                  'User-Agent': 'weltenbibliothek-godmode/1.0',
+                },
+              });
+            if (tr.ok) {
+              const td = await tr.json().catch(() => null);
+              const paths = (td?.tree || [])
+                .map((n) => n && n.path)
+                .filter((p) => typeof p === 'string' && p.startsWith('lib/') && p.endsWith('.dart'));
+              const screens = paths.filter((p) => p.startsWith('lib/screens/')).slice(0, 140);
+              const services = paths.filter((p) => p.startsWith('lib/services/')).slice(0, 90);
+              if (screens.length || services.length) {
+                appStructure = 'Screens:\n' + screens.join('\n') +
+                  '\nServices:\n' + services.join('\n');
+              }
+            }
+          } catch (_) {}
+
           try {
             const implPrompt =
               'Analysiere diesen God-Mode-Auftrag fuer die Flutter-App "Weltenbibliothek" und ' +
               'generiere praezise Implementierungsdetails damit Claude Code autonom umsetzen kann.\n\n' +
               `Titel: ${title}\nTyp: ${TYPE_LABELS[wbType] || 'Verbesserung'}\n` +
               `Bereich: ${CAT_LABELS[category]}\nBeschreibung:\n${(description || title).slice(0, 800)}\n\n` +
-              'Vorhandene Screens (lib/screens/): energie/chakra_hub_screen.dart, ' +
-              'energie/biometrie_screen.dart, vorhang/vorhang_modul_screen.dart, ' +
-              'vorhang/lektion_screen.dart, materie/recherche_screen.dart, ' +
-              'ursprung/ (mehrere), shared/world_admin_dashboard.dart.\n' +
-              'Vorhandene Services (lib/services/): spirit_reading_service.dart, ' +
-              'biometric_data_cache_service.dart, mentor_service.dart, gamification_service.dart, ' +
-              'bookmark_service.dart, manifestation_service.dart, godmode_service.dart, ' +
-              'admin_api_client.dart.\n\n' +
+              (appStructure
+                ? ('Echte Projektdateien (live, waehle affected_files NUR hieraus):\n' +
+                    appStructure + '\n\n')
+                : ('Vorhandene Screens (lib/screens/): energie/chakra_hub_screen.dart, ' +
+                    'vorhang/vorhang_modul_screen.dart, materie/recherche_screen.dart, ' +
+                    'ursprung/ (mehrere), shared/world_admin_dashboard.dart.\n' +
+                    'Vorhandene Services (lib/services/): mentor_service.dart, ' +
+                    'gamification_service.dart, godmode_service.dart, admin_api_client.dart.\n\n')) +
               'Sei konkret und umsetzbar. Wenn der Auftrag vage ist, triff sinnvolle, zum ' +
               'bestehenden Code passende Annahmen statt Platzhalter. Mindestens 3 testbare ' +
               'Abnahmekriterien.\n' +

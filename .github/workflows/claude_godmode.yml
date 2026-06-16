@@ -94,7 +94,16 @@ jobs:
                flutter-*, supabase, cloudflare, shorebird-ota,
                systematic-debugging, static-analysis, ...
             3. Branch: godmode/issue-${{ github.event.issue.number }}
-            4. Implementiere die Aenderung sauber und vollstaendig.
+            4. Implementiere die Aenderung sauber und vollstaendig -- FULL-STACK
+               ueber die GANZE App, nicht nur Flutter:
+               - Frontend: lib/ (Flutter/Dart)
+               - Backend: workers/api-worker.js (Cloudflare Worker) -- bei neuen
+                 Endpoints `node --check workers/api-worker.js`; Secrets NUR via
+                 env, niemals hardcoden.
+               - Datenbank: supabase/migrations/*.sql -- neue Tabellen IMMER mit
+                 RLS (enable + Policies), service_role nur im Worker.
+               Verschaffe dir zuerst per Suche (grep/Lesen) einen Ueberblick ueber
+               den betroffenen Bereich, bevor du Code aenderst.
                Bugfixes: Ursache beheben, nicht Symptom. Neue Features/Module:
                in der App registrieren und verlinken.
                WICHTIG: Fehlen Details, triff sinnvolle, zum bestehenden Code
