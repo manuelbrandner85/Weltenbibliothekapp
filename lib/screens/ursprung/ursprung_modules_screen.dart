@@ -14,6 +14,7 @@ import '../../services/unified_profile_service.dart';
 import '../../services/ursprung_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/responsive_web_container.dart';
 import 'ursprung_lesson_screen.dart';
 
 /// 🌀 URSPRUNG Modules Screen
@@ -295,9 +296,13 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
     final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
     final next = _nextModule();
     final results = _searchResults();
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
-      children: [
+    // Responsive: bound the reading column on tablet/desktop so module tiles
+    // stay readable instead of stretching edge-to-edge (phones unchanged).
+    return ResponsiveWebContainer(
+      variant: WebContainerVariant.compact,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
+        children: [
         // Overall progress card
         Container(
           padding: const EdgeInsets.all(20),
@@ -447,7 +452,8 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
           // 5 Branches
           for (final branchName in _branchOrder)
             _buildBranchTile(branchName, _branches[branchName] ?? const []),
-      ],
+        ],
+      ),
     );
   }
 

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../widgets/animations/wb_tap_scale.dart';
+import '../../widgets/responsive_web_container.dart';
 
 import '../../services/branch_boss_test_service.dart'; // 👑 I3 Boss-Test
 import '../../services/gamification_service.dart';
@@ -49,6 +52,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
   // V1: Modul-Suche
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  // 200ms Debounce: filter only fires after a short pause -- keeps typing
+  // smooth across 30+ modules (parity with Ursprung modules screen).
+  Timer? _searchDebounce;
 
   // A3: neu freigeschaltete Module (seit letztem Besuch)
   Set<String> _newModuleCodes = {};
@@ -82,6 +88,7 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -295,9 +302,13 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
     final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
     final next = _nextModule();
     final results = _searchResults();
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
-      children: [
+    // Responsive: bound the reading column on tablet/desktop so module tiles
+    // stay readable instead of stretching edge-to-edge (phones unchanged).
+    return ResponsiveWebContainer(
+      variant: WebContainerVariant.compact,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
+        children: [
         // Overall progress card
         Container(
           padding: const EdgeInsets.all(20),
@@ -388,7 +399,13 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         TextField(
           controller: _searchCtrl,
           style: const TextStyle(color: Colors.white),
-          onChanged: (v) => setState(() => _searchQuery = v),
+          onChanged: (v) {
+            // 200ms Debounce: filter applies after the user briefly pauses.
+            _searchDebounce?.cancel();
+            _searchDebounce = Timer(const Duration(milliseconds: 200), () {
+              if (mounted) setState(() => _searchQuery = v);
+            });
+          },
           decoration: InputDecoration(
             hintText: 'Modul suchen (z.B. V-12 oder Stichwort)',
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
@@ -400,6 +417,7 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                       color: _gold.withValues(alpha: 0.7),
                     ),
                     onPressed: () {
+                      _searchDebounce?.cancel();
                       _searchCtrl.clear();
                       setState(() => _searchQuery = '');
                     },
@@ -441,7 +459,8 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
           // 6 Branches
           for (final branchName in _branchOrder)
             _buildBranchTile(branchName, _branches[branchName] ?? const []),
-      ],
+        ],
+      ),
     );
   }
 

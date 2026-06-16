@@ -38,6 +38,7 @@ import '../../services/supabase_service.dart';
 import '../../services/world_admin_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/responsive_web_container.dart';
 
 part 'world_admin_dashboard/overview_tab.dart';
 part 'world_admin_dashboard/users_tab.dart';
@@ -451,7 +452,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         ),
       ),
       // null -> hub landing, otherwise the selected section widget.
-      body: _activeSection == null
+      // Responsive: constrain content width on tablet/desktop so the dashboard
+      // does not stretch edge-to-edge (mobile <= 600 px stays untouched).
+      body: ResponsiveWebContainer(
+        child: _activeSection == null
           ? _AdminHub(
               role: admin.role,
               accent: _accent,
@@ -479,6 +483,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
               ),
             )
           : _sectionBody(_activeSection!, admin),
+      ),
     );
   }
 
