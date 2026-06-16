@@ -252,8 +252,8 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                 child: CircularProgressIndicator(color: _gold, strokeWidth: 2),
               )
             : _error != null
-            ? _buildError()
-            : _buildContent(),
+                ? _buildError()
+                : _buildContent(),
       ),
     );
   }
@@ -629,9 +629,8 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: isCompleted
-              ? _gold.withValues(alpha: 0.06)
-              : Colors.transparent,
+          color:
+              isCompleted ? _gold.withValues(alpha: 0.06) : Colors.transparent,
           border: Border.all(
             color: isBoss
                 ? _gold.withValues(alpha: 0.6)
@@ -901,8 +900,7 @@ class _BossTestScreenState extends State<_BossTestScreen> {
       _result = result;
     });
     final storage = StorageService();
-    final userId =
-        (storage.getMaterieProfile()?.userId ??
+    final userId = (storage.getMaterieProfile()?.userId ??
         storage.getEnergieProfile()?.userId ??
         'anon');
     await BranchBossTestService.instance.recordAttempt(
