@@ -14,6 +14,7 @@ import '../../services/unified_profile_service.dart';
 import '../../services/ursprung_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/responsive_web_container.dart';
 import 'ursprung_lesson_screen.dart';
 
 /// 🌀 URSPRUNG Modules Screen
@@ -295,159 +296,166 @@ class _UrsprungModulesScreenState extends State<UrsprungModulesScreen> {
     final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
     final next = _nextModule();
     final results = _searchResults();
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
-      children: [
-        // Overall progress card
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                _surface,
-                _gold.withValues(alpha: 0.08),
-                _bgBlack,
-              ],
-            ),
-            border: Border.all(color: _gold.withValues(alpha: 0.3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.auto_stories, color: _gold, size: 22),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'GESAMTFORTSCHRITT',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 4.0,
-                      color: _gold,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    '$_completedCount / $_totalCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+    // Responsive: bound the reading column on tablet/desktop so module tiles
+    // stay readable instead of stretching edge-to-edge (phones unchanged).
+    return ResponsiveWebContainer(
+      variant: WebContainerVariant.compact,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
+        children: [
+          // Overall progress card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  _surface,
+                  _gold.withValues(alpha: 0.08),
+                  _bgBlack,
                 ],
               ),
-              const SizedBox(height: 14),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: percent,
-                  minHeight: 8,
-                  backgroundColor: _gold.withValues(alpha: 0.1),
-                  valueColor: const AlwaysStoppedAnimation(_gold),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                '${(percent * 100).round()}% des Gateway-Pfads beschritten',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 12,
-                ),
-              ),
-              if (next != null) ...[
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openLesson(next),
-                    icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                    label: Text(
-                      'Weitermachen: ${next['title'] ?? ''}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              border: Border.all(color: _gold.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.auto_stories, color: _gold, size: 22),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'GESAMTFORTSCHRITT',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 4.0,
+                        color: _gold,
+                      ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _gold,
-                      foregroundColor: _bgBlack,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                    const Spacer(),
+                    Text(
+                      '$_completedCount / $_totalCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: percent,
+                    minHeight: 8,
+                    backgroundColor: _gold.withValues(alpha: 0.1),
+                    valueColor: const AlwaysStoppedAnimation(_gold),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '${(percent * 100).round()}% des Gateway-Pfads beschritten',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontSize: 12,
+                  ),
+                ),
+                if (next != null) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openLesson(next),
+                      icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                      label: Text(
+                        'Weitermachen: ${next['title'] ?? ''}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _gold,
+                        foregroundColor: _bgBlack,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Modul-Suche
-        TextField(
-          controller: _searchCtrl,
-          style: const TextStyle(color: Colors.white),
-          onChanged: (v) {
-            // 200ms Debounce: Filter setzt erst wenn der User kurz pausiert.
-            _searchDebounce?.cancel();
-            _searchDebounce = Timer(const Duration(milliseconds: 200), () {
-              if (mounted) setState(() => _searchQuery = v);
-            });
-          },
-          decoration: InputDecoration(
-            hintText: 'Modul suchen (Code oder Stichwort)',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
-            prefixIcon: Icon(Icons.search, color: _gold.withValues(alpha: 0.7)),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon:
-                        Icon(Icons.close, color: _gold.withValues(alpha: 0.7)),
-                    onPressed: () {
-                      _searchCtrl.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                  )
-                : null,
-            filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.04),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: _gold.withValues(alpha: 0.6)),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-        if (_searchQuery.trim().isNotEmpty) ...[
-          if (results.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: Text(
-                  'Kein Modul gefunden für "$_searchQuery"',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-                ),
+          // Modul-Suche
+          TextField(
+            controller: _searchCtrl,
+            style: const TextStyle(color: Colors.white),
+            onChanged: (v) {
+              // 200ms Debounce: Filter setzt erst wenn der User kurz pausiert.
+              _searchDebounce?.cancel();
+              _searchDebounce = Timer(const Duration(milliseconds: 200), () {
+                if (mounted) setState(() => _searchQuery = v);
+              });
+            },
+            decoration: InputDecoration(
+              hintText: 'Modul suchen (Code oder Stichwort)',
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+              prefixIcon:
+                  Icon(Icons.search, color: _gold.withValues(alpha: 0.7)),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.close,
+                          color: _gold.withValues(alpha: 0.7)),
+                      onPressed: () {
+                        _searchCtrl.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.04),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
               ),
-            )
-          else
-            ...results.map(_buildModuleTile),
-        ] else
-          // 5 Branches
-          for (final branchName in _branchOrder)
-            _buildBranchTile(branchName, _branches[branchName] ?? const []),
-      ],
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: _gold.withValues(alpha: 0.6)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          if (_searchQuery.trim().isNotEmpty) ...[
+            if (results.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: Text(
+                    'Kein Modul gefunden für "$_searchQuery"',
+                    style:
+                        TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                  ),
+                ),
+              )
+            else
+              ...results.map(_buildModuleTile),
+          ] else
+            // 5 Branches
+            for (final branchName in _branchOrder)
+              _buildBranchTile(branchName, _branches[branchName] ?? const []),
+        ],
+      ),
     );
   }
 

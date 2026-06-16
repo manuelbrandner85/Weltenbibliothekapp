@@ -21,6 +21,7 @@ import '../profile_settings_screen.dart';
 import '../shared/unified_world_map_screen.dart';
 import '../../widgets/global_search_sheet.dart';
 import '../../widgets/notification_center_button.dart';
+import '../../widgets/responsive_web_container.dart';
 import '../../widgets/onboarding/world_coachmarks.dart';
 import '../../config/wb_design.dart'; // 🎨 Welt-Theme (Feature B)
 import '../../config/day_phase.dart';
@@ -130,7 +131,11 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
                 children: [
                   AdminDashboardButton(
                       adminState: adminState, world: 'vorhang'),
-                  Expanded(child: tabs[_currentIndex]),
+                  // Responsive: keep tab content centered + width-bounded on
+                  // tablet/desktop; phones (<= 600 px) render unchanged.
+                  Expanded(
+                    child: ResponsiveWebContainer(child: tabs[_currentIndex]),
+                  ),
                 ],
               ),
             ),
