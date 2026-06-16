@@ -456,33 +456,33 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       // does not stretch edge-to-edge (mobile <= 600 px stays untouched).
       body: ResponsiveWebContainer(
         child: _activeSection == null
-          ? _AdminHub(
-              role: admin.role,
-              accent: _accent,
-              accentBright: _accentBright,
-              openReports: _badgeOpenReports,
-              pendingUsernameRequests: _badgePendingUsernameRequests,
-              failedPushes: _badgeFailedPushes,
-              pendingVideos: _badgePendingVideos,
-              maintenanceActive: _badgeMaintenanceActive,
-              onOpen: (section) => setState(() => _activeSection = section),
-              onSearch: (query) => setState(() {
-                _pendingUserSearch = query;
-                _activeSection = 'users';
-              }),
-              onOpenGlobalSearch: () => showGlobalAdminSearch(
-                context,
+            ? _AdminHub(
+                role: admin.role,
                 accent: _accent,
                 accentBright: _accentBright,
-                onJump: (section, {String? query}) {
-                  setState(() {
-                    if (query != null) _pendingUserSearch = query;
-                    _activeSection = section;
-                  });
-                },
-              ),
-            )
-          : _sectionBody(_activeSection!, admin),
+                openReports: _badgeOpenReports,
+                pendingUsernameRequests: _badgePendingUsernameRequests,
+                failedPushes: _badgeFailedPushes,
+                pendingVideos: _badgePendingVideos,
+                maintenanceActive: _badgeMaintenanceActive,
+                onOpen: (section) => setState(() => _activeSection = section),
+                onSearch: (query) => setState(() {
+                  _pendingUserSearch = query;
+                  _activeSection = 'users';
+                }),
+                onOpenGlobalSearch: () => showGlobalAdminSearch(
+                  context,
+                  accent: _accent,
+                  accentBright: _accentBright,
+                  onJump: (section, {String? query}) {
+                    setState(() {
+                      if (query != null) _pendingUserSearch = query;
+                      _activeSection = section;
+                    });
+                  },
+                ),
+              )
+            : _sectionBody(_activeSection!, admin),
       ),
     );
   }
