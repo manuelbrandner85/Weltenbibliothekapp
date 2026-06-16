@@ -310,6 +310,13 @@ class GodModeRepoInsights {
   );
 }
 
+/// Eine Teilaufgabe aus der Epic-Zerlegung (Batch A).
+class GodModeSubtask {
+  final String title;
+  final String description;
+  const GodModeSubtask(this.title, this.description);
+}
+
 /// Client-Service fuer `/api/admin/godmode/*` (nur root_admin).
 class GodModeService {
   static const _role = 'root_admin';
@@ -382,6 +389,36 @@ class GodModeService {
     } catch (e) {
       if (kDebugMode) debugPrint('godmode.chat: $e');
       return const GodModeChatReply(success: false, message: 'Netzwerkfehler.');
+    }
+  }
+
+  /// Batch A: grossen Auftrag in geordnete Teilaufgaben zerlegen (Preview).
+  static Future<List<GodModeSubtask>> decompose({
+    required String title,
+    required String description,
+  }) async {
+    try {
+      final data = await AdminApiClient.instance.postJson(
+        '/api/admin/godmode/decompose',
+        role: _role,
+        body: {'title': title, 'description': description},
+        timeout: const Duration(seconds: 45),
+      );
+      final list = data['subtasks'];
+      if (list is List) {
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map((m) => GodModeSubtask(
+                  (m['title'] as String?) ?? '',
+                  (m['description'] as String?) ?? '',
+                ))
+            .where((s) => s.title.isNotEmpty)
+            .toList();
+      }
+      return const [];
+    } catch (e) {
+      if (kDebugMode) debugPrint('godmode.decompose: $e');
+      return const [];
     }
   }
 

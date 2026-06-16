@@ -785,13 +785,173 @@ class _GodModeTabState extends State<_GodModeTab>
                 ),
               ),
             ]),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
+            // Batch A: grossen Auftrag in Teilaufgaben zerlegen.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => _showEpicDecompose(
+                  category: category,
+                  type: type,
+                  title: titleCtrl.text.trim(),
+                  description: descCtrl.text.trim(),
+                  source: source,
+                ),
+                icon: const Icon(Icons.account_tree_outlined, size: 15),
+                label: const Text('Als Epic zerlegen',
+                    style: TextStyle(fontSize: 11.5)),
+                style: TextButton.styleFrom(foregroundColor: _ab),
+              ),
+            ),
+            const SizedBox(height: 4),
           ],
         ),
       ),
     );
     titleCtrl.dispose();
     descCtrl.dispose();
+  }
+
+  // Batch A: Epic-Zerlegung -- KI splittet den Auftrag in Teilaufgaben, Admin
+  // baut ausgewaehlte als einzelne Auftraege.
+  Future<void> _showEpicDecompose({
+    required String category,
+    required String type,
+    required String title,
+    required String description,
+    required String source,
+  }) async {
+    if (title.length < 3) {
+      _snack('Bitte zuerst einen Titel eingeben.', color: Colors.orange);
+      return;
+    }
+    final selected = <int>{};
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF12121E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        builder: (ctx, scroll) => FutureBuilder<List<GodModeSubtask>>(
+          future: GodModeService.decompose(
+              title: title,
+              description: description.isEmpty ? title : description),
+          builder: (ctx, snap) {
+            final subs = snap.data ?? const <GodModeSubtask>[];
+            return StatefulBuilder(
+              builder: (ctx, setSheet) => ListView(
+                controller: scroll,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Row(children: [
+                    Icon(Icons.account_tree_rounded, size: 18, color: _ab),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Epic-Zerlegung',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text(title,
+                      style:
+                          const TextStyle(color: Colors.white54, fontSize: 12)),
+                  const SizedBox(height: 14),
+                  if (snap.connectionState != ConnectionState.done)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (subs.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 30),
+                      child: Text(
+                          'Keine Teilaufgaben erkannt (KI ausgelastet?).',
+                          style:
+                              TextStyle(color: Colors.white54, fontSize: 13)),
+                    )
+                  else ...[
+                    for (var i = 0; i < subs.length; i++)
+                      CheckboxListTile(
+                        value: selected.contains(i),
+                        onChanged: (v) => setSheet(() =>
+                            v == true ? selected.add(i) : selected.remove(i)),
+                        activeColor: _ab,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('${i + 1}. ${subs[i].title}',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600)),
+                        subtitle: subs[i].description.isEmpty
+                            ? null
+                            : Text(subs[i].description,
+                                style: const TextStyle(
+                                    color: Colors.white54, fontSize: 11.5)),
+                      ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: (_submitting || selected.isEmpty)
+                            ? null
+                            : () async {
+                                final picked =
+                                    selected.map((i) => subs[i]).toList();
+                                Navigator.of(ctx).pop();
+                                await _buildSubtasks(
+                                    picked, category, type, source);
+                              },
+                        icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+                        label: Text(
+                            '${selected.length} Teilaufgaben bauen lassen'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _a.withValues(alpha: 0.3),
+                          foregroundColor: _ab,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _buildSubtasks(List<GodModeSubtask> subs, String category,
+      String type, String source) async {
+    setState(() => _submitting = true);
+    var ok = 0;
+    for (final s in subs) {
+      final res = await GodModeService.submit(
+        category: category,
+        type: type,
+        title: s.title,
+        description: s.description.isEmpty ? s.title : s.description,
+        source: source,
+      );
+      if (res.success) ok++;
+    }
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    _snack('$ok/${subs.length} Teilaufgaben angelegt.',
+        color: ok > 0 ? Colors.green.shade700 : Colors.red.shade700);
+    if (ok > 0) {
+      _loadRequests();
+      _tc.animateTo(3);
+    }
   }
 
   InputDecoration _editDecoration(String hint) => InputDecoration(
