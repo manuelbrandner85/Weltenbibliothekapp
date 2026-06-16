@@ -1,12 +1,9 @@
 import 'dart:math' as math;
 
-/// (x, y) data point for quantum physics visualizations.
-class QuantumPoint {
-  final double x;
-  final double y;
+import '../models/quantenphysik_model.dart';
 
-  const QuantumPoint(this.x, this.y);
-}
+// Re-export QuantumPoint so existing imports of this service keep resolving it.
+export '../models/quantenphysik_model.dart' show QuantumPoint;
 
 /// Stateless computation helpers for quantum physics phenomena.
 /// All units are normalized: hbar = 1, mass = 1, box length L = 1.

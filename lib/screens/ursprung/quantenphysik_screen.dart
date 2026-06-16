@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../models/quantenphysik_model.dart';
 import '../../services/quantenphysik_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -48,7 +49,7 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl = TabController(length: kQuantumPhenomena.length, vsync: this);
     _timeCtrl = AnimationController(
       duration: const Duration(seconds: 4),
       vsync: this,
@@ -89,11 +90,8 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
           unselectedLabelColor: Colors.white38,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: const [
-            Tab(text: 'Doppelspalt'),
-            Tab(text: 'Wellenfunktion'),
-            Tab(text: 'Tunneling'),
-            Tab(text: 'Unschaerfe'),
+          tabs: [
+            for (final phenom in kQuantumPhenomena) Tab(text: phenom.tabLabel),
           ],
         ),
       ),
@@ -113,18 +111,15 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
   // ─── Tab 0: Doppelspalt ───────────────────────────────────────────────────
 
   Widget _buildDoppelspaltTab() {
+    final phenom = kQuantumPhenomena[0];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _phenomTitle('Doppelspalt-Experiment'),
+          _phenomTitle(phenom.title),
           const SizedBox(height: 8),
-          _infoBox(
-            'Licht oder Elektronen treten durch zwei schmale Spalte und erzeugen '
-            'ein Interferenzmuster auf dem Schirm. Die Intensitaet I haengt von '
-            'Wellenlaenge lambda, Spaltbreite a und Spaltabstand d ab.',
-          ),
+          _infoBox(phenom.description),
           const SizedBox(height: 16),
           _buildCanvas(
             _DoppelspaltPainter(
@@ -156,11 +151,7 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
             (v) => setState(() => _slitWidth = v),
           ),
           const SizedBox(height: 12),
-          _formulaBox(
-            'I = I₀ · sinc²(β) · cos²(δ)\n'
-            'β = π a sin(θ) / λ\n'
-            'δ = π d sin(θ) / λ',
-          ),
+          _formulaBox(phenom.formula),
         ],
       ),
     );
@@ -169,18 +160,15 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
   // ─── Tab 1: Wellenfunktion ────────────────────────────────────────────────
 
   Widget _buildWellenfunktionTab() {
+    final phenom = kQuantumPhenomena[1];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _phenomTitle('Teilchen im Kasten'),
+          _phenomTitle(phenom.title),
           const SizedBox(height: 8),
-          _infoBox(
-            'Ein Teilchen ist in einem unendlich tiefen Potenzialtopf eingesperrt. '
-            'Die Wellenfunktion psi_n(x) beschreibt seinen Zustand. '
-            'Die Aufenthaltswahrscheinlichkeit ist durch |psi|^2 gegeben.',
-          ),
+          _infoBox(phenom.description),
           const SizedBox(height: 16),
           // AnimatedBuilder wraps only the canvas to avoid rebuilding sliders each frame
           AnimatedBuilder(
@@ -247,10 +235,7 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
             ],
           ),
           const SizedBox(height: 12),
-          _formulaBox(
-            'ψₙ(x) = √(2/L) · sin(nπx/L)\n'
-            'Eₙ = n²π²ℏ² / (2mL²)',
-          ),
+          _formulaBox(phenom.formula),
         ],
       ),
     );
@@ -259,6 +244,7 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
   // ─── Tab 2: Tunneling ─────────────────────────────────────────────────────
 
   Widget _buildTunnelingTab() {
+    final phenom = kQuantumPhenomena[2];
     final T = QuantenphysikService.tunnelingProbability(
       barrierHeight: _barrierHeight,
       particleEnergy: _particleEnergy,
@@ -270,13 +256,9 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _phenomTitle('Quanten-Tunneling'),
+          _phenomTitle(phenom.title),
           const SizedBox(height: 8),
-          _infoBox(
-            'Ein Teilchen kann eine Potenzialbarriere durchdringen, die es '
-            'klassisch nicht ueberwinden koennte. Die Tunnelwahrscheinlichkeit '
-            'nimmt exponentiell mit der Barrierenbreite ab.',
-          ),
+          _infoBox(phenom.description),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -345,10 +327,7 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
             (v) => setState(() => _barrierWidth = v),
           ),
           const SizedBox(height: 12),
-          _formulaBox(
-            'T ≈ exp(-2κL)\n'
-            'κ = √[2m(V - E)] / ℏ',
-          ),
+          _formulaBox(phenom.formula),
         ],
       ),
     );
@@ -357,6 +336,7 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
   // ─── Tab 3: Heisenberg Unschaerfe ─────────────────────────────────────────
 
   Widget _buildUnschaerfeTab() {
+    final phenom = kQuantumPhenomena[3];
     final sigmaP = 0.5 / _sigmaX;
     final product = _sigmaX * sigmaP;
 
@@ -365,13 +345,9 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _phenomTitle("Heisenberg'sche Unschaerferelation"),
+          _phenomTitle(phenom.title),
           const SizedBox(height: 8),
-          _infoBox(
-            'Ort und Impuls eines Teilchens koennen nicht gleichzeitig beliebig '
-            'genau gemessen werden. Wenn Delta_x kleiner wird, waechst Delta_p '
-            'zwangslaeufig an.',
-          ),
+          _infoBox(phenom.description),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(14),
@@ -417,10 +393,7 @@ class _QuantenphysikScreenState extends State<QuantenphysikScreen>
             (v) => setState(() => _sigmaX = v),
           ),
           const SizedBox(height: 12),
-          _formulaBox(
-            'Δx · Δp ≥ ℏ / 2\n'
-            '(Heisenberg, 1927)',
-          ),
+          _formulaBox(phenom.formula),
         ],
       ),
     );
