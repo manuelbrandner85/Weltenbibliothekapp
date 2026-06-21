@@ -161,7 +161,14 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _bgBlack,
+      decoration: const BoxDecoration(
+        color: _bgBlack,
+        image: DecorationImage(
+          image: AssetImage('assets/backdrops/world_vorhang.webp'),
+          fit: BoxFit.cover,
+          opacity: 0.42,
+        ),
+      ),
       child: RefreshIndicator(
         color: _gold,
         backgroundColor: _surface,
