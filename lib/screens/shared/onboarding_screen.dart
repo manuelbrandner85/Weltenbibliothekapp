@@ -34,6 +34,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       icon: Icons.auto_stories,
       gradient: const [Color(0xFF050310), Color(0xFF0D0A1A)],
       world: WBWorld.neutral,
+      backdrop: 'assets/backdrops/onboarding_hero.webp',
     ),
     OnboardingPage(
       title: 'Materie — Fakten\n& Recherche',
@@ -42,6 +43,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       icon: Icons.search,
       gradient: const [Color(0xFF050310), Color(0xFF0A2452)],
       world: WBWorld.materie,
+      backdrop: 'assets/backdrops/world_materie.webp',
     ),
     OnboardingPage(
       title: 'Energie — Spirit\n& Bewusstsein',
@@ -50,6 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       icon: Icons.self_improvement,
       gradient: const [Color(0xFF050310), Color(0xFF3B0D6E)],
       world: WBWorld.energie,
+      backdrop: 'assets/backdrops/world_energie.webp',
     ),
     OnboardingPage(
       title: 'Community &\nLive-Features',
@@ -58,6 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       icon: Icons.people,
       gradient: const [Color(0xFF050310), Color(0xFF1A1A2E)],
       world: WBWorld.neutral,
+      backdrop: 'assets/backdrops/onboarding_hero.webp',
     ),
   ];
 
@@ -217,6 +221,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           end: Alignment.bottomCenter,
           colors: page.gradient,
         ),
+        image: page.backdrop != null
+            ? DecorationImage(
+                image: AssetImage(page.backdrop!),
+                fit: BoxFit.cover,
+                opacity: 0.45,
+              )
+            : null,
       ),
       child: SafeArea(
         child: Padding(
@@ -335,6 +346,7 @@ class OnboardingPage {
   final IconData icon;
   final List<Color> gradient;
   final WBWorld world;
+  final String? backdrop;
 
   OnboardingPage({
     required this.title,
@@ -342,5 +354,6 @@ class OnboardingPage {
     required this.icon,
     required this.gradient,
     this.world = WBWorld.neutral,
+    this.backdrop,
   });
 }
