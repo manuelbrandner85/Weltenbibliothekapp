@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 5.71.0+20260716
+version: 5.72.0+20260717
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -172,8 +172,6 @@ flutter:
     - assets/backdrops/ # 🌌 Cinematische Welt-Hintergruende (immersive)
     # ✅ WELTEN-ÜBERGANGSVIDEOS AKTIVIERT
     - assets/videos/weltenbibliothek_intro.mp4
-    - assets/videos/transition_materie_to_energie.mp4
-    - assets/videos/transition_energie_to_materie.mp4
     - assets/videos/portal_ambient_loop.mp4  # Phase-1 cinematic ambient loop
     - assets/videos/world_materie_loop.mp4   # 🌌 Welt-Ambient-Loops
     - assets/videos/world_energie_loop.mp4

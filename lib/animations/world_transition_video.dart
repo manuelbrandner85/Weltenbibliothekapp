@@ -60,16 +60,16 @@ class _WorldTransitionVideoState extends State<WorldTransitionVideo>
   }
 
   /// Video-Asset-Pfad ODER null wenn programmatische Animation nötig.
+  /// Alle vier Welten haben echte, aus den Welt-Bildern erzeugte Videos
+  /// (die Ambient-Loops) -- diese dienen als Uebergangs-Clip "Ankunft in der
+  /// Ziel-Welt". Faellt das Video aus, greift die programmatische Animation.
   String? get _videoAssetPath {
+    const worlds = {'materie', 'energie', 'vorhang', 'ursprung'};
     final target = _effectiveTargetWorld;
-    // Nur Materie ↔ Energie haben echte Video-Assets
-    if (target == 'energie') {
-      return 'assets/videos/transition_materie_to_energie.mp4';
+    if (worlds.contains(target)) {
+      return 'assets/videos/world_${target}_loop.mp4';
     }
-    if (target == 'materie') {
-      return 'assets/videos/transition_energie_to_materie.mp4';
-    }
-    return null; // Vorhang, Ursprung → programmatisch
+    return null;
   }
 
   /// Welt-Farb-Palette für die Ziel-Welt.
