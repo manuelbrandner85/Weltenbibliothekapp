@@ -178,7 +178,14 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
   Widget build(BuildContext context) {
     final moduleCount = _totalCount > 0 ? _totalCount : 25;
     return Container(
-      color: _bgDeep,
+      decoration: const BoxDecoration(
+        color: _bgDeep,
+        image: DecorationImage(
+          image: AssetImage('assets/backdrops/world_ursprung.webp'),
+          fit: BoxFit.cover,
+          opacity: 0.42,
+        ),
+      ),
       child: RefreshIndicator(
         color: _cyan,
         backgroundColor: _surface,
