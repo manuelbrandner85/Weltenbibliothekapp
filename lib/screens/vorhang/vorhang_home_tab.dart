@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../widgets/cinematic/wb_adaptive_backdrop.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../theme/wb_cinematic_tokens.dart';
@@ -160,180 +161,182 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _bgBlack,
-        image: DecorationImage(
-          image: AssetImage('assets/backdrops/world_vorhang.webp'),
-          fit: BoxFit.cover,
-          opacity: 0.42,
-        ),
-      ),
-      child: RefreshIndicator(
-        color: _gold,
-        backgroundColor: _surface,
-        onRefresh: _fetch,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          // Bottom-Inset (Gesten-Leiste) zur Floating-Nav-Hoehe addieren,
-          // damit der "ALLE 30 MODULE"-Button auf Geraeten mit hoher
-          // Navigationsleiste nicht hinter der Nav verschwindet.
-          padding: EdgeInsets.fromLTRB(
-              16, 16, 16, 100 + MediaQuery.paddingOf(context).bottom),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Hero Section (PRESERVED, lines 78-165 original) ──
-              _buildHeroSection(),
-              const SizedBox(height: 12),
-
-              // FEATURE (V1): Level + XP + Streak sichtbar.
-              const WorldXpHeader(world: 'vorhang', accent: Color(0xFFC9A84C)),
-              const SizedBox(height: 12),
-
-              // FEATURE (V2): Tägliche Enthüllung -- Macht-Prinzip des Tages.
-              const DailyRevelationCard(accent: Color(0xFFC9A84C)),
-              const SizedBox(height: 12),
-
-              // V5: Tägliche Praxis-Challenge -- konkrete Mikro-Übung.
-              const DailyPracticeCard(
-                accent: Color(0xFFC9A84C),
-                practices: DailyPracticeCard.vorhangPractices,
-              ),
-              const SizedBox(height: 20),
-
-              // ── 🧠 KI-Mentor Button (PRESERVED, lines 167-239 original) ──
-              Text(
-                'MENTOR',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 4.0,
-                  color: _gold.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildMentorButton(context),
-              const SizedBox(height: 28),
-
-              // ── COMMUNITY: Beiträge-Feed (vom Community-Tab ausgelagert) ──
-              _sectionLabel('COMMUNITY'),
-              const SizedBox(height: 12),
-              _buildToolTile(
-                context,
-                emoji: '📝',
-                title: 'Beiträge',
-                subtitle: 'Community-Feed - Erkenntnisse teilen & lesen.',
-                builder: (_) => const VorhangPostsScreen(),
-              ),
-              const SizedBox(height: 28),
-
-              // ── KERN-TOOL: Symbol- & Logo-Decoder (Vorhang-exklusiv) ──
-              _sectionLabel('KERN-TOOL'),
-              const SizedBox(height: 12),
-              _buildSymbolDecoderCard(context),
-              const SizedBox(height: 28),
-
-              // ── INTERAKTIVE WERKZEUGE (key-frei) ──
-              _sectionLabel('WERKZEUGE'),
-              const SizedBox(height: 12),
-              _buildToolTile(
-                context,
-                emoji: '🎙️',
-                title: 'Livestream',
-                subtitle: 'Live-Chat & Sprachräume',
-                builder: (_) => const VorhangLiveChatScreen(),
-              ),
-              const SizedBox(height: 10),
-              _buildToolTile(
-                context,
-                emoji: '🏛️',
-                title: 'Lobby-Radar',
-                subtitle: 'Konzern-Einfluss auf Politik - Live-Medien.',
-                builder: (_) => const LobbyRadarScreen(),
-              ),
-              const SizedBox(height: 10),
-              _buildToolTile(
-                context,
-                emoji: '🔓',
-                title: 'Leaks-Suche',
-                subtitle: 'Enthüllungen & Whistleblower weltweit.',
-                builder: (_) => const LeaksSearchScreen(),
-              ),
-              const SizedBox(height: 10),
-              _buildToolTile(
-                context,
-                emoji: '🕸️',
-                title: 'Macht-Netzwerke',
-                subtitle: 'Einflussreiche Netzwerke - Wissens-Datenbank.',
-                builder: (_) => const PowerNetworksScreen(),
-              ),
-              const SizedBox(height: 10),
-              _buildToolTile(
-                context,
-                emoji: '🔺',
-                title: 'Symbol-Datenbank',
-                subtitle: 'Historische Symbole & ihre Bedeutung.',
-                builder: (_) => const SymbolDatabaseScreen(),
-              ),
-              const SizedBox(height: 10),
-              _buildToolTile(
-                context,
-                emoji: '🤝',
-                title: 'Koerpersprache-Decoder',
-                subtitle: 'Nonverbale Signale entschluesseln & verstehen.',
-                builder: (_) => const KoerperspracheDecoderScreen(),
-              ),
-              const SizedBox(height: 28),
-
-              // ── Ambient Tagespfad ──
-              const DailyPathWidget(),
-              const SizedBox(height: 28),
-
-              // ── NEW: Branch Progress horizontal scroll ──
-              _buildBranchProgressSection(),
-              const SizedBox(height: 28),
-
-              // ── NEW: Next Module prominent card ──
-              _buildNextModuleSection(),
-              const SizedBox(height: 28),
-
-              // ── NEW: Last completed list ──
-              _buildLastCompletedSection(),
-              const SizedBox(height: 16),
-
-              // ── See all modules button ──
-              Center(
-                child: OutlinedButton.icon(
-                  onPressed: _openAllModules,
-                  icon: const Icon(Icons.menu_book, color: _gold),
-                  label: const Text(
-                    'ALLE 30 MODULE',
-                    style: TextStyle(
-                      color: _gold,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: _gold.withValues(alpha: 0.5)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                  ),
-                ),
-              ),
-            ]
-                .asMap()
-                .entries
-                .map((e) => WBStaggerReveal(
-                      index: e.key,
-                      staggerStep: const Duration(milliseconds: 40),
-                      child: e.value,
-                    ))
-                .toList(),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: WbAdaptiveBackdrop(
+            fallbackImage: 'assets/backdrops/world_vorhang.webp',
+            videoAsset: 'assets/videos/world_vorhang_loop.mp4',
+            overlayColor: _bgBlack.withValues(alpha: 0.5),
           ),
         ),
-      ),
+        RefreshIndicator(
+          color: _gold,
+          backgroundColor: _surface,
+          onRefresh: _fetch,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            // Bottom-Inset (Gesten-Leiste) zur Floating-Nav-Hoehe addieren,
+            // damit der "ALLE 30 MODULE"-Button auf Geraeten mit hoher
+            // Navigationsleiste nicht hinter der Nav verschwindet.
+            padding: EdgeInsets.fromLTRB(
+                16, 16, 16, 100 + MediaQuery.paddingOf(context).bottom),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Hero Section (PRESERVED, lines 78-165 original) ──
+                _buildHeroSection(),
+                const SizedBox(height: 12),
+
+                // FEATURE (V1): Level + XP + Streak sichtbar.
+                const WorldXpHeader(
+                    world: 'vorhang', accent: Color(0xFFC9A84C)),
+                const SizedBox(height: 12),
+
+                // FEATURE (V2): Tägliche Enthüllung -- Macht-Prinzip des Tages.
+                const DailyRevelationCard(accent: Color(0xFFC9A84C)),
+                const SizedBox(height: 12),
+
+                // V5: Tägliche Praxis-Challenge -- konkrete Mikro-Übung.
+                const DailyPracticeCard(
+                  accent: Color(0xFFC9A84C),
+                  practices: DailyPracticeCard.vorhangPractices,
+                ),
+                const SizedBox(height: 20),
+
+                // ── 🧠 KI-Mentor Button (PRESERVED, lines 167-239 original) ──
+                Text(
+                  'MENTOR',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 4.0,
+                    color: _gold.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildMentorButton(context),
+                const SizedBox(height: 28),
+
+                // ── COMMUNITY: Beiträge-Feed (vom Community-Tab ausgelagert) ──
+                _sectionLabel('COMMUNITY'),
+                const SizedBox(height: 12),
+                _buildToolTile(
+                  context,
+                  emoji: '📝',
+                  title: 'Beiträge',
+                  subtitle: 'Community-Feed - Erkenntnisse teilen & lesen.',
+                  builder: (_) => const VorhangPostsScreen(),
+                ),
+                const SizedBox(height: 28),
+
+                // ── KERN-TOOL: Symbol- & Logo-Decoder (Vorhang-exklusiv) ──
+                _sectionLabel('KERN-TOOL'),
+                const SizedBox(height: 12),
+                _buildSymbolDecoderCard(context),
+                const SizedBox(height: 28),
+
+                // ── INTERAKTIVE WERKZEUGE (key-frei) ──
+                _sectionLabel('WERKZEUGE'),
+                const SizedBox(height: 12),
+                _buildToolTile(
+                  context,
+                  emoji: '🎙️',
+                  title: 'Livestream',
+                  subtitle: 'Live-Chat & Sprachräume',
+                  builder: (_) => const VorhangLiveChatScreen(),
+                ),
+                const SizedBox(height: 10),
+                _buildToolTile(
+                  context,
+                  emoji: '🏛️',
+                  title: 'Lobby-Radar',
+                  subtitle: 'Konzern-Einfluss auf Politik - Live-Medien.',
+                  builder: (_) => const LobbyRadarScreen(),
+                ),
+                const SizedBox(height: 10),
+                _buildToolTile(
+                  context,
+                  emoji: '🔓',
+                  title: 'Leaks-Suche',
+                  subtitle: 'Enthüllungen & Whistleblower weltweit.',
+                  builder: (_) => const LeaksSearchScreen(),
+                ),
+                const SizedBox(height: 10),
+                _buildToolTile(
+                  context,
+                  emoji: '🕸️',
+                  title: 'Macht-Netzwerke',
+                  subtitle: 'Einflussreiche Netzwerke - Wissens-Datenbank.',
+                  builder: (_) => const PowerNetworksScreen(),
+                ),
+                const SizedBox(height: 10),
+                _buildToolTile(
+                  context,
+                  emoji: '🔺',
+                  title: 'Symbol-Datenbank',
+                  subtitle: 'Historische Symbole & ihre Bedeutung.',
+                  builder: (_) => const SymbolDatabaseScreen(),
+                ),
+                const SizedBox(height: 10),
+                _buildToolTile(
+                  context,
+                  emoji: '🤝',
+                  title: 'Koerpersprache-Decoder',
+                  subtitle: 'Nonverbale Signale entschluesseln & verstehen.',
+                  builder: (_) => const KoerperspracheDecoderScreen(),
+                ),
+                const SizedBox(height: 28),
+
+                // ── Ambient Tagespfad ──
+                const DailyPathWidget(),
+                const SizedBox(height: 28),
+
+                // ── NEW: Branch Progress horizontal scroll ──
+                _buildBranchProgressSection(),
+                const SizedBox(height: 28),
+
+                // ── NEW: Next Module prominent card ──
+                _buildNextModuleSection(),
+                const SizedBox(height: 28),
+
+                // ── NEW: Last completed list ──
+                _buildLastCompletedSection(),
+                const SizedBox(height: 16),
+
+                // ── See all modules button ──
+                Center(
+                  child: OutlinedButton.icon(
+                    onPressed: _openAllModules,
+                    icon: const Icon(Icons.menu_book, color: _gold),
+                    label: const Text(
+                      'ALLE 30 MODULE',
+                      style: TextStyle(
+                        color: _gold,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: _gold.withValues(alpha: 0.5)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                    ),
+                  ),
+                ),
+              ]
+                  .asMap()
+                  .entries
+                  .map((e) => WBStaggerReveal(
+                        index: e.key,
+                        staggerStep: const Duration(milliseconds: 40),
+                        child: e.value,
+                      ))
+                  .toList(),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
