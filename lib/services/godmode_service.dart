@@ -284,6 +284,10 @@ class GodModeRepoInsights {
 
   /// D: Pipeline-Cockpit -- Builder-Modell, letztes Release, App-Versionen.
   final String model;
+
+  /// Klartext-Aufschluesselung Build- vs. Reasoning-Modell (Feature 3a) --
+  /// vorher zeigte [model] faelschlich denselben Claude-String fuer beide.
+  final String modelNote;
   final String releaseTag;
   final String releaseName;
   final String latestVersion;
@@ -297,6 +301,7 @@ class GodModeRepoInsights {
     this.providers = const {},
     this.stats = const {},
     this.model = '',
+    this.modelNote = '',
     this.releaseTag = '',
     this.releaseName = '',
     this.latestVersion = '',
@@ -688,6 +693,7 @@ class GodModeService {
                 .map((k, v) => MapEntry(k.toString(), (v is int) ? v : 0))
             : const {},
         model: (data['model'] as String?) ?? '',
+        modelNote: (data['model_note'] as String?) ?? '',
         releaseTag: (data['release'] is Map)
             ? (((data['release'] as Map)['tag'] as String?) ?? '')
             : '',
