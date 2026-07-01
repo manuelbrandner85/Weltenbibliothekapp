@@ -178,7 +178,10 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_PAT }}
-          claude_args: "--model claude-opus-4-8 --max-turns 50 --permission-mode bypassPermissions"
+          # Auto-Fix behebt mechanische Verify-Fehler (Lint/Format/Record-Guard) --
+          # dafuer reicht Sonnet 5 (schneller/guenstiger). Der initiale Build
+          # bleibt auf Opus 4.8 fuer die tiefere Architektur-Entscheidung.
+          claude_args: "--model claude-sonnet-5 --max-turns 50 --permission-mode bypassPermissions"
           prompt: |
             Das Verify-Gate fuer das Tool aus Issue #${{ github.event.issue.number }}
             ist ROT. Branch: ${{ steps.findpr.outputs.head }} (bereits ausgecheckt).

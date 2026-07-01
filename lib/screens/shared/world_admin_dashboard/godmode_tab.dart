@@ -2478,6 +2478,8 @@ class _GodModeTabState extends State<_GodModeTab>
         ]),
         const SizedBox(height: 10),
         _pipeRow(Icons.smart_toy_rounded, 'Builder-Modell', modelLabel),
+        _pipeRow(Icons.psychology_alt_rounded, 'Reasoning-Modell',
+            'Multi-Provider (s. KI-Provider unten)'),
         _pipeRow(Icons.new_releases_rounded, 'Letztes Release',
             _repo.releaseTag.isEmpty ? '--' : _repo.releaseTag),
         _pipeRow(
@@ -2486,6 +2488,12 @@ class _GodModeTabState extends State<_GodModeTab>
             _repo.latestVersion.isEmpty
                 ? '--'
                 : 'v${_repo.latestVersion}  (min v${_repo.minVersion})'),
+        if (_repo.modelNote.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(_repo.modelNote,
+              style: const TextStyle(
+                  color: Colors.white38, fontSize: 10, height: 1.4)),
+        ],
       ]),
     );
   }

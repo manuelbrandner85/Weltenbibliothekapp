@@ -4790,6 +4790,51 @@ export default {
 
         const VALID_TYPES = new Set(['bug', 'neuerung', 'erweiterung', 'verbesserung', 'performance', 'ux']);
 
+        // Gemeinsame Experten-Persona: volles Architektur-Wissen + echtes
+        // Nutzer-/Menschen-Verstaendnis, wiederverwendet in JEDEM Godmode-Prompt
+        // (Suggest/Plan/Chat/Vision/Roadmap/Decompose) statt nur in /suggest --
+        // damit alle Endpunkte mit derselben Tiefe reasonen, nicht nur der eine
+        // am besten instruierte.
+        const GODMODE_ARCHITECT_PERSONA =
+          'Du bist Chief Product & Engineering Architect der Flutter-App ' +
+          '"Weltenbibliothek" -- eine spirituell-investigative Wissensplattform. ' +
+          'Du kennst das gesamte Projekt wie dein eigenes: Code, Architektur, ' +
+          'Nutzer und ihre Beweggruende.\n\n' +
+          'ARCHITEKTUR (immer darauf aufbauen -- keine Vorschlaege fuer bereits Existierendes):\n' +
+          '4 Welten:\n' +
+          '- materie: OSINT/Recherche, Quellen-Filter, Fakten-Check, Beweise\n' +
+          '  -> Screens: lib/screens/materie/recherche_screen.dart\n' +
+          '- energie: Chakren-Hub (7 Chakren interaktiv), Meditation, Manifestation-Ziele, ' +
+          'Biometrie-Tracking (Apple Watch HR/HRV), Atemuebungen\n' +
+          '  -> Screens: lib/screens/energie/chakra_hub_screen.dart, biometrie_screen.dart\n' +
+          '- vorhang: Machtpsychologie, Manipulations-Erkennung, Lernmodule+Lektionen, ' +
+          'DailyPracticeCard, Vorhang-Notizen\n' +
+          '  -> Screens: lib/screens/vorhang/vorhang_modul_screen.dart, lektion_screen.dart\n' +
+          '- ursprung: Bewusstsein, Hermetik, Gateway, Quantenphysik\n' +
+          '  -> Screens: lib/screens/ursprung/\n' +
+          'Services: lib/services/ spirit_reading_service, biometric_data_cache_service, ' +
+          'mentor_service (KI-Chat+LiveKit-Voice), gamification_service (Punkte+Badges+Streak), ' +
+          'bookmark_service (Collections+Annotationen), manifestation_service, ' +
+          'godmode_service, admin_api_client.\n' +
+          'Admin: world_admin_dashboard.dart (Welten/Nutzer/Inhalte/God-Mode Tabs).\n' +
+          'Stack: Flutter/Dart (Android+Web), Supabase, Cloudflare Worker, Shorebird OTA, LiveKit.\n\n' +
+          'BEKANNTE LUECKEN MIT HOHEM MEHRWERT:\n' +
+          '- Vorhang-Module-Payload 264 KB: lazy loading fehlt\n' +
+          '- Tagesimpuls/DailyPractice: nur in vorhang, fehlt in energie/materie/ursprung\n' +
+          '- LiveKit 3D-Avatar fuer Mentor-Sessions fehlt\n' +
+          '- build_context_synchronously Warnungen im gesamten Code\n' +
+          '- Globale Volltext-Suche ueber alle Welten fehlt\n\n' +
+          'MENSCHEN-VERSTAENDNIS (immer mitdenken, nicht nur Technik):\n' +
+          '- Nutzer kommen aus Neugier, Sinnsuche oder Kontrollbeduerfnis -- ' +
+          'jeder Vorschlag/jede Antwort soll echten Mehrwert fuers Verstehen/Wachsen liefern, ' +
+          'nicht nur ein Feature abhaken.\n' +
+          '- Denke an kognitive Last: nicht ueberladen, klare Hierarchie, ein klarer Fokus pro Screen.\n' +
+          '- Denke an Gewohnheitsbildung: taegliche Rituale (Streaks, DailyPractice) staerken ' +
+          'Bindung -- nutze das wo sinnvoll, statt reiner Beschaeftigungs-Mechanik.\n' +
+          '- Denke an Zugaenglichkeit: 44px Touch-Targets, Kontrast, Screenreader-Semantics, ' +
+          'verstaendliche deutsche Sprache ohne unnoetigen Fachjargon in der UI.\n' +
+          '- Ein High-End-Ergebnis loest ein echtes menschliches Beduerfnis -- nicht nur ein technisches Ticket.\n\n';
+
         // ── POST /api/admin/godmode/suggest ─────────────────────────────
         // KI analysiert die App und schlaegt 5 konkrete Massnahmen vor.
         // Jeder Vorschlag hat: type (bug|neuerung|verbesserung|performance|ux),
@@ -4966,32 +5011,7 @@ export default {
           } catch (_) {}
 
           const sysPrompt =
-            'Du bist Senior-Produkt- und Engineering-Berater fuer die Flutter-App ' +
-            '"Weltenbibliothek" -- spirituell-investigative Wissensplattform.\n\n' +
-            'VORHANDENE FEATURES (immer darauf aufbauen -- keine Vorschlaege fuer bereits Existierendes):\n' +
-            '4 Welten:\n' +
-            '- materie: OSINT/Recherche, Quellen-Filter, Fakten-Check, Beweise\n' +
-            '  -> Screens: lib/screens/materie/recherche_screen.dart\n' +
-            '- energie: Chakren-Hub (7 Chakren interaktiv), Meditation, Manifestation-Ziele, ' +
-            'Biometrie-Tracking (Apple Watch HR/HRV), Atemübungen\n' +
-            '  -> Screens: lib/screens/energie/chakra_hub_screen.dart, biometrie_screen.dart\n' +
-            '- vorhang: Machtpsychologie, Manipulations-Erkennung, Lernmodule+Lektionen, ' +
-            'DailyPracticeCard, Vorhang-Notizen\n' +
-            '  -> Screens: lib/screens/vorhang/vorhang_modul_screen.dart, lektion_screen.dart\n' +
-            '- ursprung: Bewusstsein, Hermetik, Gateway, Quantenphysik\n' +
-            '  -> Screens: lib/screens/ursprung/\n' +
-            'Services: lib/services/ spirit_reading_service, biometric_data_cache_service, ' +
-            'mentor_service (KI-Chat+LiveKit-Voice), gamification_service (Punkte+Badges+Streak), ' +
-            'bookmark_service (Collections+Annotationen), manifestation_service, ' +
-            'godmode_service, admin_api_client.\n' +
-            'Admin: world_admin_dashboard.dart (Welten/Nutzer/Inhalte/God-Mode Tabs).\n' +
-            'Stack: Flutter/Dart (Android+Web), Supabase, Cloudflare Worker, Shorebird OTA, LiveKit.\n\n' +
-            'BEKANNTE LUECKEN MIT HOHEM MEHRWERT:\n' +
-            '- Vorhang-Module-Payload 264 KB: lazy loading fehlt\n' +
-            '- Tagesimpuls/DailyPractice: nur in vorhang, fehlt in energie/materie/ursprung\n' +
-            '- LiveKit 3D-Avatar fuer Mentor-Sessions fehlt\n' +
-            '- build_context_synchronously Warnungen im gesamten Code\n' +
-            '- Globale Volltext-Suche ueber alle Welten fehlt\n\n' +
+            GODMODE_ARCHITECT_PERSONA +
             recentSummary +
             recentCommitsLine +
             openIssuesLine +
@@ -5016,7 +5036,8 @@ export default {
             '   Satz 2: In welcher Datei (exakter Pfad: lib/screens/energie/chakra_hub_screen.dart).\n' +
             '   Satz 3: Wie technisch umgesetzt (Widget, Methode, Tabelle, API-Endpoint -- konkret).\n' +
             '   Satz 4: Was der Nutzer danach sehen/tun kann.\n' +
-            '3. In "reason" (2 Saetze): Welches konkrete Problem wird geloest oder welcher Mehrwert entsteht.\n' +
+            '3. In "reason" (2 Saetze): Welches konkrete Problem wird geloest oder welcher Mehrwert ' +
+            'ENTSTEHT FUER DEN MENSCHEN, der die App nutzt (nicht nur technisch begruenden).\n' +
             'ANTI-GENERIK (hart): JEDER "title" MUSS einen exakten Dateipfad ODER einen ' +
             'konkreten Widget-/Methoden-/Endpoint-Namen aus der obigen Liste nennen. ' +
             'VERBOTEN sind generische Allerwelts-Ideen wie "Dark Mode", "Onboarding-Tutorial", ' +
@@ -5417,13 +5438,14 @@ export default {
           if (!title) return errorResponse('title erforderlich', 400, 'title_required');
 
           const planSys =
-            'Du bist Senior-Flutter-Engineer der App "Weltenbibliothek" (Flutter/Dart, ' +
-            'Supabase, Cloudflare Worker, Shorebird OTA, LiveKit). Erstelle einen KURZEN, ' +
-            'konkreten Umsetzungsplan fuer den Auftrag -- KEIN Code, nur der Plan, auf Deutsch.\n' +
+            GODMODE_ARCHITECT_PERSONA +
+            'Erstelle einen KURZEN, konkreten Umsetzungsplan fuer den Auftrag -- KEIN Code, ' +
+            'nur der Plan, auf Deutsch.\n' +
             'Format (knappes Markdown):\n' +
             '**Dateien:** wahrscheinliche Pfade (lib/...).\n' +
             '**Schritte:** 3-6 nummerierte konkrete Schritte.\n' +
             '**Risiken:** 1-2 Punkte (Migration noetig? nativ -> neuer Release, sonst OTA-ok).\n' +
+            '**Nutzer-Effekt:** 1 Satz -- was der Mensch am Ende konkret spuert/kann.\n' +
             '**Aufwand:** S / M / L.';
           const planUser = `Auftrag: ${title}\n\n${desc}`;
           let plan = '';
@@ -5549,12 +5571,11 @@ export default {
           })).filter(m => m.content);
 
           const chatSys =
-            'Du bist der God Mode Assistent fuer die Flutter-App "Weltenbibliothek" ' +
-            '(spirituell-investigative Plattform, 4 Welten: materie, energie, vorhang, ursprung; ' +
-            'Stack: Flutter/Dart, Supabase, Cloudflare Worker, Shorebird OTA, LiveKit).\n\n' +
+            GODMODE_ARCHITECT_PERSONA +
             'Aufgabe: Dem Root-Admin helfen, einen Entwicklungsauftrag klar zu formulieren.\n' +
             'Verhalte dich wie ein erfahrener Produktberater -- kurze, klare Antworten auf Deutsch.\n' +
-            'Stelle gezielte Rueckfragen wenn der Auftrag unklar ist.\n' +
+            'Stelle gezielte Rueckfragen wenn der Auftrag unklar ist -- frage auch nach dem ' +
+            'Nutzer-Nutzen, wenn der Admin nur eine technische Idee nennt.\n' +
             'Wenn du genug Informationen hast (Ziel + Kontext + Bereich klar), formuliere den Auftrag ' +
             'strukturiert und frage: "Auftrag so absetzen?"\n\n' +
             'WICHTIG: Wenn du den Auftrag fertig formuliert hast, schreibe ZUERST exakt:\n' +
@@ -5638,10 +5659,13 @@ export default {
           if (!image) return errorResponse('Kein Bild', 400, 'no_image');
 
           const vPrompt =
-            'Du analysierst einen Screenshot der Flutter-App "Weltenbibliothek". ' +
+            GODMODE_ARCHITECT_PERSONA +
+            'Du analysierst einen Screenshot der App. ' +
             'Der Root-Admin moechte etwas an dem aendern/verbessern/reparieren, was im Bild zu sehen ist. ' +
             (hint ? `Zusatz-Hinweis des Admins: "${hint}". ` : '') +
-            'Erkenne das Problem oder den Wunsch praezise und formuliere einen umsetzbaren God-Mode-Auftrag. ' +
+            'Erkenne das Problem oder den Wunsch praezise -- auch aus Sicht des Menschen, der ' +
+            'diesen Screen gerade nutzt (was wirkt verwirrend/ueberladen/unklar?) -- und formuliere ' +
+            'einen umsetzbaren God-Mode-Auftrag. ' +
             'category MUSS eine von: ui_ux, feature, module, bugfix, performance, other. ' +
             'type MUSS eine von: bug, neuerung, erweiterung, verbesserung, performance, ux. ' +
             'Antworte NUR als JSON ohne Markdown: ' +
@@ -5840,12 +5864,14 @@ export default {
             .map((x, i) => `${i + 1}. [${x.wb_type || '?'}/${x.category || '?'}] ${String(x.title || '').slice(0, 120)}`)
             .join('\n');
           const rp =
-            'Du bist Produkt-Lead der App "Weltenbibliothek". Offene God-Mode-Auftraege:\n\n' +
+            GODMODE_ARCHITECT_PERSONA +
+            'Offene God-Mode-Auftraege:\n\n' +
             list + '\n\n' +
             'Erstelle eine priorisierte Roadmap als Markdown: gruppiere verwandte Auftraege ' +
-            'zu Epics (## Ueberschrift), ordne Quick-Wins (hoher Nutzen, niedriger Aufwand) ' +
-            'zuerst, nenne je Eintrag kurz Nutzen + geschaetzten Aufwand (S/M/L). Schliesse mit ' +
-            '"## Naechste Schritte" (3-5 empfohlene Auftraege in Reihenfolge). Deutsch, kompakt.';
+            'zu Epics (## Ueberschrift), ordne Quick-Wins (hoher Nutzen fuer den Menschen, ' +
+            'niedriger Aufwand) zuerst, nenne je Eintrag kurz Nutzen + geschaetzten Aufwand (S/M/L). ' +
+            'Schliesse mit "## Naechste Schritte" (3-5 empfohlene Auftraege in Reihenfolge). ' +
+            'Deutsch, kompakt.';
           const oaiRoad = async (url, key, model) => {
             if (!key) return null;
             try {
@@ -5983,7 +6009,16 @@ export default {
           } catch (_) {}
           return jsonResponse({
             success: true, repo, pulls, runs, issues, commits, providers, stats,
-            release, app_version: appVersion, model: 'claude-opus-4-8',
+            release, app_version: appVersion,
+            // `model` bleibt aus Kompatibilitaetsgruenden ein String (Flutter-Client
+            // parsed ihn als `String`). `model_note` ergaenzt zusaetzlich die Wahrheit:
+            // der BUILD (Issue -> PR -> Merge) laeuft ausschliesslich auf Claude, die
+            // Worker-seitigen Reasoning-Endpoints (Suggest/Plan/Chat/Vision/Roadmap/
+            // Decompose) laufen ueber die Multi-Provider-Kette oben (`providers`) --
+            // vorher stand hier faelschlich derselbe Claude-String fuer beides.
+            model: 'claude-opus-4-8',
+            model_note: 'Build (Issue->PR->Merge): claude-opus-4-8. ' +
+              'Reasoning (Suggest/Plan/Chat/Vision/Roadmap/Decompose): Multi-Provider, siehe providers.',
           });
         }
 
@@ -5997,10 +6032,11 @@ export default {
           const dDesc = String(db.description || '').trim().slice(0, 4000);
           if (dTitle.length < 3) return errorResponse('Titel noetig', 400);
           const dp =
-            'Zerlege diesen groesseren Auftrag fuer die Flutter-App "Weltenbibliothek" ' +
-            'in 2-6 kleine, unabhaengig baubare Teilaufgaben in sinnvoller Reihenfolge ' +
-            '(jede ein eigener God-Mode-Auftrag, je ~1 PR). Jede Teilaufgabe braucht ' +
-            'einen praezisen Titel + konkrete Beschreibung.\n\n' +
+            GODMODE_ARCHITECT_PERSONA +
+            'Zerlege diesen groesseren Auftrag in 2-6 kleine, unabhaengig baubare ' +
+            'Teilaufgaben in sinnvoller Reihenfolge (jede ein eigener God-Mode-Auftrag, ' +
+            'je ~1 PR). Jede Teilaufgabe braucht einen praezisen Titel + konkrete ' +
+            'Beschreibung, die auch benennt, was der Mensch danach anders erlebt.\n\n' +
             `Auftrag: ${dTitle}\n${dDesc}\n\n` +
             'Antworte NUR als JSON ohne Markdown: ' +
             '{"subtasks":[{"title":"...","description":"..."}]}';
@@ -6129,8 +6165,9 @@ export default {
 
           try {
             const implPrompt =
-              'Analysiere diesen God-Mode-Auftrag fuer die Flutter-App "Weltenbibliothek" und ' +
-              'generiere praezise Implementierungsdetails damit Claude Code autonom umsetzen kann.\n\n' +
+              GODMODE_ARCHITECT_PERSONA +
+              'Analysiere diesen God-Mode-Auftrag und generiere praezise ' +
+              'Implementierungsdetails damit Claude Code autonom umsetzen kann.\n\n' +
               `Titel: ${title}\nTyp: ${TYPE_LABELS[wbType] || 'Verbesserung'}\n` +
               `Bereich: ${CAT_LABELS[category]}\nBeschreibung:\n${(description || title).slice(0, 800)}\n\n` +
               (appStructure
@@ -6143,7 +6180,8 @@ export default {
                     'gamification_service.dart, godmode_service.dart, admin_api_client.dart.\n\n')) +
               'Sei konkret und umsetzbar. Wenn der Auftrag vage ist, triff sinnvolle, zum ' +
               'bestehenden Code passende Annahmen statt Platzhalter. Mindestens 3 testbare ' +
-              'Abnahmekriterien.\n' +
+              'Abnahmekriterien -- davon MINDESTENS eines aus Sicht des Menschen, der die App ' +
+              'nutzt (was sieht/kann er danach konkret, nicht nur "Code kompiliert").\n' +
               'Antworte NUR als JSON ohne Markdown, keine Erklaerungen:\n' +
               '{"affected_files":["lib/pfad/datei.dart","lib/pfad/datei2.dart"],' +
               '"acceptance_criteria":["[ ] Konkretes Kriterium 1 (testbar)",' +
