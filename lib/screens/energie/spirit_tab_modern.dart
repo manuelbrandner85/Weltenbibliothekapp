@@ -59,6 +59,7 @@ import 'calculators/mantra_guide_screen.dart'; // 🕉️ M-Guide einsteigerfreu
 import 'calculators/iching_oracle_screen.dart'; // ☯ I-Ging cinematic
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
+import 'biometrie_screen.dart'; // ❤️ Biometrie-Analyse (HR/HRV Charts)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
 import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeutung
 import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
@@ -855,6 +856,17 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const BiorhythmCompatibilityScreen(),
       },
 
+      // ❤️ Biometrie-Analyse — HR/HRV Verlauf als Diagramme + Detailwerte
+      {
+        'icon': Icons.monitor_heart,
+        'iconEmoji': '❤️',
+        'title': 'Biometrie-Analyse',
+        'subtitle': 'Herzfrequenz & HRV als Charts · Session-Details',
+        'color': const Color(0xFFE53935),
+        'category': 'gesundheit',
+        'screen': const BiometrieScreen(),
+      },
+
       // ☯ I-Ging Münzwurf-Orakel (cinematic) · Wandlung + AI + Verlauf
       // (Simple I-Ging entfernt v5.43.1 - Muenzwurf ist die bessere Variante)
       {
@@ -985,27 +997,27 @@ class _SpiritTabModernState extends State<SpiritTabModern>
           child: _isLoading
               ? _buildLoadingState()
               : _error != null
-                  ? _buildErrorState()
-                  : RefreshIndicator(
-                      onRefresh: _loadProfile,
-                      color: _purple,
-                      backgroundColor: _cardB,
-                      displacement: 60,
-                      child: CustomScrollView(
-                        physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        slivers: [
-                          _buildHeroHeader(),
-                          _buildCategoryFilterSliver(),
-                          _buildDailyInspirationSliver(),
-                          _buildToolsGrid(),
-                          const SliverPadding(
-                            padding: EdgeInsets.only(bottom: 120),
-                          ),
-                        ],
-                      ),
+              ? _buildErrorState()
+              : RefreshIndicator(
+                  onRefresh: _loadProfile,
+                  color: _purple,
+                  backgroundColor: _cardB,
+                  displacement: 60,
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
+                    slivers: [
+                      _buildHeroHeader(),
+                      _buildCategoryFilterSliver(),
+                      _buildDailyInspirationSliver(),
+                      _buildToolsGrid(),
+                      const SliverPadding(
+                        padding: EdgeInsets.only(bottom: 120),
+                      ),
+                    ],
+                  ),
+                ),
         ),
       ),
     );
@@ -1292,6 +1304,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
                     ['energie', '💎 Energie'],
                     ['meditation', '🧘 Meditation'],
                     ['psyche', '🧠 Psyche'],
+                    ['gesundheit', '❤️ Gesundheit'],
                     ['wissen', '📚 Wissen'],
                   ])
                     if (_getCategoryCount(cat[0]) > 0) ...[
@@ -1313,18 +1326,19 @@ class _SpiritTabModernState extends State<SpiritTabModern>
   }
 
   Color _chipColor(String cat) => switch (cat) {
-        'all' => _purple,
-        'recent' => _teal,
-        'favorites' => _gold,
-        'numerologie' => _purple,
-        'astro' => const Color(0xFF1A237E),
-        'orakel' => _pink,
-        'energie' => _teal,
-        'meditation' => _green,
-        'psyche' => const Color(0xFF673AB7),
-        'wissen' => _gold,
-        _ => _purple,
-      };
+    'all' => _purple,
+    'recent' => _teal,
+    'favorites' => _gold,
+    'numerologie' => _purple,
+    'astro' => const Color(0xFF1A237E),
+    'orakel' => _pink,
+    'energie' => _teal,
+    'meditation' => _green,
+    'psyche' => const Color(0xFF673AB7),
+    'gesundheit' => const Color(0xFFE53935),
+    'wissen' => _gold,
+    _ => _purple,
+  };
 
   Widget _buildCategoryChip(
     String category,
