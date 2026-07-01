@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import '../../widgets/cinematic/wb_adaptive_backdrop.dart';
 import 'package:flutter/material.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -570,106 +571,119 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   // ══════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    return DefaultTextStyle.merge(
-      style: const TextStyle(
-        decoration: TextDecoration.none,
-        decorationColor: Colors.transparent,
-        fontFamily: 'Roboto',
-        letterSpacing: 0.1,
-        height: 1.25,
-      ),
-      child: Scaffold(
-        backgroundColor: _bg,
-        body: Column(
-          children: [
-            if (_errorMessage != null)
-              Material(
-                color: Colors.transparent,
-                child: Container(
-                  width: double.infinity,
-                  color: const Color(0xFF4A148C),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.wifi_off, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.refresh,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                        onPressed: _loadAll,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _loadAll,
-                color: _purple,
-                backgroundColor: _cardB,
-                displacement: 60,
-                child: CustomScrollView(
-                  controller: _scrollCtrl,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  slivers: [
-                    _buildHeroHeader(),
-                    // 🧠 Mentor direkt unter Hero -- Top-Sichtbarkeit
-                    _buildMentorBanner(),
-                    // 🃏 Tageskarte (v95 -- deterministisch pro User+Datum)
-                    _buildDailyTarotCard(),
-                    _buildMysticBanner(),
-                    // 🌙 F1: Tages-Mantra aus daily_mantras-Tabelle (gewichtetes
-                    // Random pro Tag, deterministisch via Datum-Seed).
-                    const SliverToBoxAdapter(child: DailyMantraBanner()),
-                    _buildDailyQuoteSliver(),
-                    // ✨ E6: Tages-Empfehlung basierend auf Mondphase
-                    _buildDailyToolRecommendationSliver(),
-                    _buildCosmicEnergySliver(),
-                    _buildLiveStatBanner(),
-                    const SliverToBoxAdapter(child: DailyPathWidget()),
-                    _buildActionGrid(),
-                    const SliverToBoxAdapter(
-                      child: _RecentSpiritReadingsSection(),
-                    ),
-                    _buildRecentRooms(),
-                    _buildSectionTitle(
-                      '✨ Spirituelle Themen',
-                      subtitle: 'Im Fokus',
-                    ),
-                    _buildTrendingChips(),
-                    _buildSectionTitle(
-                      '📿 Neueste Artikel',
-                      subtitle: 'Wissen & Weisheit',
-                    ),
-                    _buildArticleCards(),
-                    _buildExploreSection(),
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-                  ],
-                ),
-              ),
-            ),
-          ],
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: WbAdaptiveBackdrop(
+            fallbackImage: 'assets/backdrops/world_energie.webp',
+            videoAsset: 'assets/videos/world_energie_loop.mp4',
+            overlayColor: _bg.withValues(alpha: 0.5),
+          ),
         ),
-      ),
+        DefaultTextStyle.merge(
+          style: const TextStyle(
+            decoration: TextDecoration.none,
+            decorationColor: Colors.transparent,
+            fontFamily: 'Roboto',
+            letterSpacing: 0.1,
+            height: 1.25,
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Column(
+              children: [
+                if (_errorMessage != null)
+                  Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      width: double.infinity,
+                      color: const Color(0xFF4A148C),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.wifi_off,
+                              color: Colors.white, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.refresh,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            onPressed: _loadAll,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadAll,
+                    color: _purple,
+                    backgroundColor: _cardB,
+                    displacement: 60,
+                    child: CustomScrollView(
+                      controller: _scrollCtrl,
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      slivers: [
+                        _buildHeroHeader(),
+                        // 🧠 Mentor direkt unter Hero -- Top-Sichtbarkeit
+                        _buildMentorBanner(),
+                        // 🃏 Tageskarte (v95 -- deterministisch pro User+Datum)
+                        _buildDailyTarotCard(),
+                        _buildMysticBanner(),
+                        // 🌙 F1: Tages-Mantra aus daily_mantras-Tabelle (gewichtetes
+                        // Random pro Tag, deterministisch via Datum-Seed).
+                        const SliverToBoxAdapter(child: DailyMantraBanner()),
+                        _buildDailyQuoteSliver(),
+                        // ✨ E6: Tages-Empfehlung basierend auf Mondphase
+                        _buildDailyToolRecommendationSliver(),
+                        _buildCosmicEnergySliver(),
+                        _buildLiveStatBanner(),
+                        const SliverToBoxAdapter(child: DailyPathWidget()),
+                        _buildActionGrid(),
+                        const SliverToBoxAdapter(
+                          child: _RecentSpiritReadingsSection(),
+                        ),
+                        _buildRecentRooms(),
+                        _buildSectionTitle(
+                          '✨ Spirituelle Themen',
+                          subtitle: 'Im Fokus',
+                        ),
+                        _buildTrendingChips(),
+                        _buildSectionTitle(
+                          '📿 Neueste Artikel',
+                          subtitle: 'Wissen & Weisheit',
+                        ),
+                        _buildArticleCards(),
+                        _buildExploreSection(),
+                        const SliverPadding(
+                            padding: EdgeInsets.only(bottom: 120)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -2149,37 +2163,31 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           ).animate(_entryAnim),
           child: FadeTransition(
             opacity: _entryAnim,
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    _buildActionTile(tiles[0]),
-                    const SizedBox(width: 10),
-                    _buildActionTile(tiles[1]),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _buildActionTile(tiles[2]),
-                    const SizedBox(width: 10),
-                    _buildActionTile(tiles[3]),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _buildActionTile(tiles[4]),
-                    const SizedBox(width: 10),
-                    const Expanded(child: SizedBox()),
-                  ],
-                ),
-              ],
-            ),
+            // Responsive Modul-Grid: 3 Spalten auf Tablets, sonst 2.
+            child: _buildActionGridRows(tiles, context.isTablet ? 3 : 2),
           ),
         ),
       ),
     );
+  }
+
+  /// Layouts the module tiles into responsive rows of [columns] each.
+  /// The last row is padded with empty slots so all tiles keep equal width.
+  Widget _buildActionGridRows(List<_TileDef> tiles, int columns) {
+    final rows = <Widget>[];
+    for (var i = 0; i < tiles.length; i += columns) {
+      final cells = <Widget>[];
+      for (var c = 0; c < columns; c++) {
+        if (c > 0) cells.add(const SizedBox(width: 10));
+        final idx = i + c;
+        cells.add(idx < tiles.length
+            ? _buildActionTile(tiles[idx])
+            : const Expanded(child: SizedBox()));
+      }
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: 10));
+      rows.add(Row(children: cells));
+    }
+    return Column(children: rows);
   }
 
   Widget _buildActionTile(_TileDef t) {

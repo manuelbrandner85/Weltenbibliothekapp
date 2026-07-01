@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import '../../widgets/cinematic/wb_adaptive_backdrop.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../widgets/animations/wb_tap_scale.dart';
@@ -409,84 +410,97 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   // ══════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    return DefaultTextStyle.merge(
-      style: const TextStyle(
-        decoration: TextDecoration.none,
-        decorationColor: Colors.transparent,
-        fontFamily: 'Roboto',
-        letterSpacing: 0.1,
-        height: 1.25,
-      ),
-      child: Scaffold(
-        backgroundColor: _bg,
-        body: Column(
-          children: [
-            if (_errorMessage != null)
-              Material(
-                color: Colors.transparent,
-                child: Container(
-                  width: double.infinity,
-                  color: const Color(0xFFB71C1C),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.wifi_off, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                          child: Text(_errorMessage!,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 13))),
-                      IconButton(
-                        icon: const Icon(Icons.refresh,
-                            color: Colors.white, size: 18),
-                        onPressed: _loadAll,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _loadAll,
-                color: _blue,
-                backgroundColor: _cardB,
-                displacement: 60,
-                child: CustomScrollView(
-                  controller: _scrollCtrl,
-                  physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics()),
-                  slivers: [
-                    _buildHeroHeader(),
-                    // 🧠 Mentor direkt unter Hero -- Top-Sichtbarkeit
-                    _buildMentorBanner(),
-                    _buildLiveStatBanner(),
-                    const SliverToBoxAdapter(child: DailyPathWidget()),
-                    _buildActionGrid(),
-                    _buildRecentRooms(),
-                    _buildSectionTitle('🔥 Trending',
-                        subtitle: 'Heiß diskutiert'),
-                    SliverToBoxAdapter(
-                      child: TrendingRoomsSection(
-                        realm: 'materie',
-                        accent: _red,
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: WbAdaptiveBackdrop(
+            fallbackImage: 'assets/backdrops/world_materie.webp',
+            videoAsset: 'assets/videos/world_materie_loop.mp4',
+            overlayColor: _bg.withValues(alpha: 0.5),
+          ),
+        ),
+        DefaultTextStyle.merge(
+          style: const TextStyle(
+            decoration: TextDecoration.none,
+            decorationColor: Colors.transparent,
+            fontFamily: 'Roboto',
+            letterSpacing: 0.1,
+            height: 1.25,
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Column(
+              children: [
+                if (_errorMessage != null)
+                  Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      width: double.infinity,
+                      color: const Color(0xFFB71C1C),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.wifi_off,
+                              color: Colors.white, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(_errorMessage!,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 13))),
+                          IconButton(
+                            icon: const Icon(Icons.refresh,
+                                color: Colors.white, size: 18),
+                            onPressed: _loadAll,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
                       ),
                     ),
-                    _buildTrendingChips(),
-                    _buildSectionTitle('📰 Neueste Artikel',
-                        subtitle: 'Frisch aus der Welt'),
-                    _buildArticleCards(),
-                    _buildExploreSection(),
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-                  ],
+                  ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadAll,
+                    color: _blue,
+                    backgroundColor: _cardB,
+                    displacement: 60,
+                    child: CustomScrollView(
+                      controller: _scrollCtrl,
+                      physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics()),
+                      slivers: [
+                        _buildHeroHeader(),
+                        // 🧠 Mentor direkt unter Hero -- Top-Sichtbarkeit
+                        _buildMentorBanner(),
+                        _buildLiveStatBanner(),
+                        const SliverToBoxAdapter(child: DailyPathWidget()),
+                        _buildActionGrid(),
+                        _buildRecentRooms(),
+                        _buildSectionTitle('🔥 Trending',
+                            subtitle: 'Heiß diskutiert'),
+                        SliverToBoxAdapter(
+                          child: TrendingRoomsSection(
+                            realm: 'materie',
+                            accent: _red,
+                          ),
+                        ),
+                        _buildTrendingChips(),
+                        _buildSectionTitle('📰 Neueste Artikel',
+                            subtitle: 'Frisch aus der Welt'),
+                        _buildArticleCards(),
+                        _buildExploreSection(),
+                        const SliverPadding(
+                            padding: EdgeInsets.only(bottom: 120)),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

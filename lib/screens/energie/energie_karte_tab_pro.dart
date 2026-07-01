@@ -11,6 +11,7 @@ import '../../services/wikimedia_service.dart';
 import '../../widgets/live_pins_layer.dart'; // 📍 B9: Live-Pins-Marker
 import '../../widgets/youtube_player_inline.dart';
 import '../../widgets/wb_cached_image.dart';
+import '../../widgets/wb_segmented_tabs.dart'; // 🧭 Unified Tab-Bar
 import '../../data/energie_extra_locations.dart'; // 📍 +25 Marker (Phase 2)
 
 /// ENERGIE-Karte Tab - Spirituelle Kraftorte & Ley-Lines
@@ -908,11 +909,16 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                   // TABS — immer alle 3 sichtbar
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        _buildTab('Info', 0, Icons.info_outline),
-                        _buildTab('Bilder', 1, Icons.image_outlined),
-                        _buildTab('Videos', 2, Icons.play_circle_outline),
+                    child: WbSegmentedTabs(
+                      style: WbTabsStyle.underline,
+                      accent: Colors.white,
+                      selectedIndex: _detailTabIndex,
+                      onChanged: (i) => setState(() => _detailTabIndex = i),
+                      items: const [
+                        WbTabItem(label: 'Info', icon: Icons.info_outline),
+                        WbTabItem(label: 'Bilder', icon: Icons.image_outlined),
+                        WbTabItem(
+                            label: 'Videos', icon: Icons.play_circle_outline),
                       ],
                     ),
                   ),
@@ -932,50 +938,6 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
         ), // ClipRRect
       ), // SlideTransition
     ); // Positioned
-  }
-
-  // TAB-SYSTEM METHODS
-  Widget _buildTab(String label, int index, IconData icon) {
-    final isSelected = _detailTabIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _detailTabIndex = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: isSelected ? Colors.white : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: isSelected
-                    ? Colors.white
-                    : Colors.white.withValues(alpha: 0.5),
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.5),
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildTabContent(EnergieLocationDetail location) {
