@@ -18,6 +18,7 @@ import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
 import '../../widgets/daily_practice_card.dart';
+import '../../widgets/ursprung/ursprung_quick_nav.dart';
 
 import 'ursprung_community_tab.dart';
 import 'ursprung_lesson_screen.dart';
@@ -89,10 +90,37 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
   int _totalCount = 0;
   int _completedCount = 0;
 
+  // Schnellzugriff: scroll controller + section anchors so the quick-nav bar
+  // can jump straight to a section instead of forcing a long manual scroll.
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _mentorKey = GlobalKey();
+  final GlobalKey _toolsKey = GlobalKey();
+  final GlobalKey _planetKey = GlobalKey();
+  final GlobalKey _modulesKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     _fetch();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Smoothly scrolls a section anchored by [key] into view. No-op if the
+  /// section is not mounted yet (e.g. still in the loading/error state).
+  void _scrollToSection(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeInOutCubic,
+      alignment: 0.05,
+    );
   }
 
   Future<void> _fetch() async {
@@ -192,6 +220,7 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
           backgroundColor: _surface,
           onRefresh: _fetch,
           child: SingleChildScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             // Bottom-Inset (Gesten-Leiste) zur Floating-Nav-Hoehe addieren,
             // damit der CIA-Footer auf Geraeten mit hoher Navigationsleiste
@@ -204,227 +233,264 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── Hero Section (mit Fortschritts-Balken) ──
-                _buildHeroSection(),
-                const SizedBox(height: 12),
+              children:
+                  [
+                        // ── Hero Section (mit Fortschritts-Balken) ──
+                        _buildHeroSection(),
+                        const SizedBox(height: 12),
 
-                // FEATURE (U1): Level + XP + Streak sichtbar.
-                const WorldXpHeader(world: 'ursprung', accent: _cyan),
-                const SizedBox(height: 12),
+                        // ── Schnellzugriff: springt direkt zu den Hauptsektionen ──
+                        UrsprungQuickNav(
+                          accent: _cyan,
+                          items: [
+                            UrsprungQuickNavItem(
+                              icon: Icons.psychology,
+                              label: 'Mentor',
+                              onTap: () => _scrollToSection(_mentorKey),
+                            ),
+                            UrsprungQuickNavItem(
+                              icon: Icons.build_outlined,
+                              label: 'Werkzeuge',
+                              onTap: () => _scrollToSection(_toolsKey),
+                            ),
+                            UrsprungQuickNavItem(
+                              icon: Icons.public,
+                              label: 'Planet',
+                              onTap: () => _scrollToSection(_planetKey),
+                            ),
+                            UrsprungQuickNavItem(
+                              icon: Icons.menu_book,
+                              label: 'Module',
+                              onTap: () => _scrollToSection(_modulesKey),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
 
-                // Täglicher Bewusstseins-Impuls.
-                DailyRevelationCard(
-                  accent: _cyan,
-                  emoji: '🌌',
-                  label: 'IMPULS DES TAGES',
-                  principles: DailyRevelationCard.ursprungInsights,
-                ),
-                const SizedBox(height: 12),
+                        // FEATURE (U1): Level + XP + Streak sichtbar.
+                        const WorldXpHeader(world: 'ursprung', accent: _cyan),
+                        const SizedBox(height: 12),
 
-                // Tägliche Praxis-Challenge -- konkrete Mikro-Übung.
-                const DailyPracticeCard(
-                  accent: _cyan,
-                  practices: DailyPracticeCard.ursprungPractices,
-                ),
-                const SizedBox(height: 20),
+                        // Täglicher Bewusstseins-Impuls.
+                        DailyRevelationCard(
+                          accent: _cyan,
+                          emoji: '🌌',
+                          label: 'IMPULS DES TAGES',
+                          principles: DailyRevelationCard.ursprungInsights,
+                        ),
+                        const SizedBox(height: 12),
 
-                // ── 3D-Gateway (Merkaba) ──
-                _build3DGateway(context),
-                const SizedBox(height: 28),
+                        // Tägliche Praxis-Challenge -- konkrete Mikro-Übung.
+                        const DailyPracticeCard(
+                          accent: _cyan,
+                          practices: DailyPracticeCard.ursprungPractices,
+                        ),
+                        const SizedBox(height: 20),
 
-                // ── 🧠 KI-Mentor (Alchemist) ──
-                Text(
-                  'MENTOR',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 4.0,
-                    color: _cyan.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildMentorButton(context),
-                const SizedBox(height: 28),
+                        // ── 3D-Gateway (Merkaba) ──
+                        _build3DGateway(context),
+                        const SizedBox(height: 28),
 
-                // ── COMMUNITY: Beiträge-Feed ──
-                _sectionLabel('COMMUNITY'),
-                const SizedBox(height: 12),
-                _buildToolCard(
-                  context: context,
-                  emoji: '📝',
-                  title: 'Beiträge',
-                  subtitle: 'Community-Feed - Erfahrungen teilen & lesen.',
-                  builder: (_) => const UrsprungPostsScreen(),
-                ),
-                const SizedBox(height: 28),
+                        // ── 🧠 KI-Mentor (Alchemist) ──
+                        Text(
+                          'MENTOR',
+                          key: _mentorKey,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 4.0,
+                            color: _cyan.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildMentorButton(context),
+                        const SizedBox(height: 28),
 
-                // ── KERN-TOOL: Zeitleiste der Menschheitsursprünge ──
-                _sectionLabel('KERN-TOOL'),
-                const SizedBox(height: 12),
-                _buildTimelineCard(context),
-                const SizedBox(height: 28),
+                        // ── COMMUNITY: Beiträge-Feed ──
+                        _sectionLabel('COMMUNITY'),
+                        const SizedBox(height: 12),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '📝',
+                          title: 'Beiträge',
+                          subtitle:
+                              'Community-Feed - Erfahrungen teilen & lesen.',
+                          builder: (_) => const UrsprungPostsScreen(),
+                        ),
+                        const SizedBox(height: 28),
 
-                // ── INTERAKTIVE WERKZEUGE ──
-                _sectionLabel('WERKZEUGE'),
-                const SizedBox(height: 12),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🚪',
-                  title: 'Gateway-Kammer',
-                  subtitle: 'Hemi-Sync Meditation · F10/F12/F15/F21',
-                  builder: (_) => const GatewayRoomScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🎵',
-                  title: 'Frequenz-Generator',
-                  subtitle: '1–40 Hz Slider · 7 Presets (Schumann 7.83 Hz)',
-                  builder: (_) => const FrequencyGeneratorScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🌬️',
-                  title: 'Atemmeister',
-                  subtitle: 'Resonant Tuning · Coherent · Energy · Click-Out',
-                  builder: (_) => const BreathmasterScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🫁',
-                  title: 'CO2-Toleranz-Timer',
-                  subtitle: 'Atemhalte-Training · Bestzeit · Verlauf',
-                  builder: (_) => const BreathHoldTimerScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🏗️',
-                  title: 'Realitäts-Architekt',
-                  subtitle: '6-Schritt Patterning · CIA McDonnell-Protokoll',
-                  builder: (_) => const RealityArchitectScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '👁️',
-                  title: 'RV Trainer',
-                  subtitle: '50 Targets · CRV 3-Stage · Ingo Swann',
-                  builder: (_) => const RvTrainerScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '⚛️',
-                  title: 'Quantenphysik-Simulator',
-                  subtitle:
-                      'Doppelspalt - Wellenfunktion - Tunneling - Unschaerfe',
-                  builder: (_) => const QuantenphysikScreen(),
-                ),
-                const SizedBox(height: 28),
+                        // ── KERN-TOOL: Zeitleiste der Menschheitsursprünge ──
+                        _sectionLabel('KERN-TOOL'),
+                        const SizedBox(height: 12),
+                        _buildTimelineCard(context),
+                        const SizedBox(height: 28),
 
-                // ── LEBENDIGER PLANET (Ursprung-exklusiv) ──
-                _sectionLabel('LEBENDIGER PLANET'),
-                const SizedBox(height: 12),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🎙️',
-                  title: 'Livestream',
-                  subtitle: 'Live-Chat & Sprachraeume',
-                  builder: (_) => const UrsprungLiveChatScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🐾',
-                  title: 'Artenvielfalt',
-                  subtitle: 'Biodiversität weltweit · GBIF Live-Daten',
-                  builder: (_) => const BiodiversityScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '✨',
-                  title: 'Sternenhimmel heute',
-                  subtitle: 'Sichtbare Planeten · Himmelskalender',
-                  builder: (_) => const NightSkyScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🌍',
-                  title: 'Naturphänomene',
-                  subtitle: 'Stürme, Eis, Dürre weltweit · NASA EONET',
-                  builder: (_) => const NaturePhenomenaScreen(),
-                ),
-                const SizedBox(height: 10),
-                _buildToolCard(
-                  context: context,
-                  emoji: '🗣️',
-                  title: 'Indigene Sprachen',
-                  subtitle: 'Naturvölker & ihr Wissen · Datenbank',
-                  builder: (_) => const IndigenousLanguagesScreen(),
-                ),
-                const SizedBox(height: 28),
+                        // ── INTERAKTIVE WERKZEUGE ──
+                        _sectionLabel('WERKZEUGE', key: _toolsKey),
+                        const SizedBox(height: 12),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🚪',
+                          title: 'Gateway-Kammer',
+                          subtitle: 'Hemi-Sync Meditation · F10/F12/F15/F21',
+                          builder: (_) => const GatewayRoomScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🎵',
+                          title: 'Frequenz-Generator',
+                          subtitle:
+                              '1–40 Hz Slider · 7 Presets (Schumann 7.83 Hz)',
+                          builder: (_) => const FrequencyGeneratorScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🌬️',
+                          title: 'Atemmeister',
+                          subtitle:
+                              'Resonant Tuning · Coherent · Energy · Click-Out',
+                          builder: (_) => const BreathmasterScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🫁',
+                          title: 'CO2-Toleranz-Timer',
+                          subtitle: 'Atemhalte-Training · Bestzeit · Verlauf',
+                          builder: (_) => const BreathHoldTimerScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🏗️',
+                          title: 'Realitäts-Architekt',
+                          subtitle:
+                              '6-Schritt Patterning · CIA McDonnell-Protokoll',
+                          builder: (_) => const RealityArchitectScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '👁️',
+                          title: 'RV Trainer',
+                          subtitle: '50 Targets · CRV 3-Stage · Ingo Swann',
+                          builder: (_) => const RvTrainerScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '⚛️',
+                          title: 'Quantenphysik-Simulator',
+                          subtitle:
+                              'Doppelspalt - Wellenfunktion - Tunneling - Unschaerfe',
+                          builder: (_) => const QuantenphysikScreen(),
+                        ),
+                        const SizedBox(height: 28),
 
-                // ── Ambient Tagespfad ──
-                const DailyPathWidget(),
-                const SizedBox(height: 28),
+                        // ── LEBENDIGER PLANET (Ursprung-exklusiv) ──
+                        _sectionLabel('LEBENDIGER PLANET', key: _planetKey),
+                        const SizedBox(height: 12),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🎙️',
+                          title: 'Livestream',
+                          subtitle: 'Live-Chat & Sprachraeume',
+                          builder: (_) => const UrsprungLiveChatScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🐾',
+                          title: 'Artenvielfalt',
+                          subtitle: 'Biodiversität weltweit · GBIF Live-Daten',
+                          builder: (_) => const BiodiversityScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '✨',
+                          title: 'Sternenhimmel heute',
+                          subtitle: 'Sichtbare Planeten · Himmelskalender',
+                          builder: (_) => const NightSkyScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🌍',
+                          title: 'Naturphänomene',
+                          subtitle: 'Stürme, Eis, Dürre weltweit · NASA EONET',
+                          builder: (_) => const NaturePhenomenaScreen(),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildToolCard(
+                          context: context,
+                          emoji: '🗣️',
+                          title: 'Indigene Sprachen',
+                          subtitle: 'Naturvölker & ihr Wissen · Datenbank',
+                          builder: (_) => const IndigenousLanguagesScreen(),
+                        ),
+                        const SizedBox(height: 28),
 
-                // ── Branch Progress horizontal scroll (dynamisch) ──
-                _buildBranchProgressSection(),
-                const SizedBox(height: 28),
+                        // ── Ambient Tagespfad ──
+                        const DailyPathWidget(),
+                        const SizedBox(height: 28),
 
-                // ── Next Module prominent card ──
-                _buildNextModuleSection(),
-                const SizedBox(height: 28),
+                        // ── Branch Progress horizontal scroll (dynamisch) ──
+                        KeyedSubtree(
+                          key: _modulesKey,
+                          child: _buildBranchProgressSection(),
+                        ),
+                        const SizedBox(height: 28),
 
-                // ── Last completed list ──
-                _buildLastCompletedSection(),
-                const SizedBox(height: 16),
+                        // ── Next Module prominent card ──
+                        _buildNextModuleSection(),
+                        const SizedBox(height: 28),
 
-                // ── See all modules button ──
-                Center(
-                  child: OutlinedButton.icon(
-                    onPressed: _openAllModules,
-                    icon: const Icon(Icons.menu_book, color: _cyan),
-                    label: Text(
-                      'ALLE $moduleCount MODULE',
-                      style: const TextStyle(
-                        color: _cyan,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 2.0,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: _cyan.withValues(alpha: 0.5),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 28),
+                        // ── Last completed list ──
+                        _buildLastCompletedSection(),
+                        const SizedBox(height: 16),
 
-                // ── CIA-Footer (Ursprung-exklusiv) ──
-                _buildCiaFooter(),
-              ]
-                  .asMap()
-                  .entries
-                  .map(
-                    (e) => WBStaggerReveal(
-                      index: e.key,
-                      staggerStep: const Duration(milliseconds: 40),
-                      child: e.value,
-                    ),
-                  )
-                  .toList(),
+                        // ── See all modules button ──
+                        Center(
+                          child: OutlinedButton.icon(
+                            onPressed: _openAllModules,
+                            icon: const Icon(Icons.menu_book, color: _cyan),
+                            label: Text(
+                              'ALLE $moduleCount MODULE',
+                              style: const TextStyle(
+                                color: _cyan,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: _cyan.withValues(alpha: 0.5),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+
+                        // ── CIA-Footer (Ursprung-exklusiv) ──
+                        _buildCiaFooter(),
+                      ]
+                      .asMap()
+                      .entries
+                      .map(
+                        (e) => WBStaggerReveal(
+                          index: e.key,
+                          staggerStep: const Duration(milliseconds: 40),
+                          child: e.value,
+                        ),
+                      )
+                      .toList(),
             ),
           ),
         ),
@@ -433,42 +499,43 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
   }
 
   // ── Section-Label mit Cyan-Accent-Bar ──
-  Widget _sectionLabel(String s, {String? trailing}) => Row(
-        children: [
-          Container(
-            width: 3,
-            height: 13,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [_cyanAccent, Color(0x3300D4AA)],
-              ),
-              borderRadius: BorderRadius.circular(2),
-            ),
+  Widget _sectionLabel(String s, {String? trailing, Key? key}) => Row(
+    key: key,
+    children: [
+      Container(
+        width: 3,
+        height: 13,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_cyanAccent, Color(0x3300D4AA)],
           ),
-          const SizedBox(width: 10),
-          Text(
-            s,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 4.0,
-              color: _cyan.withValues(alpha: 0.9),
-            ),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+      const SizedBox(width: 10),
+      Text(
+        s,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 4.0,
+          color: _cyan.withValues(alpha: 0.9),
+        ),
+      ),
+      if (trailing != null) ...[
+        const Spacer(),
+        Text(
+          trailing,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.4),
+            fontSize: 11,
           ),
-          if (trailing != null) ...[
-            const Spacer(),
-            Text(
-              trailing,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ],
-      );
+        ),
+      ],
+    ],
+  );
 
   // 3D-Gateway: oeffnet die Merkaba im Vollbild (interaktiv, drehbar).
   Widget _build3DGateway(BuildContext context) {
@@ -907,8 +974,9 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
               final key = _branchOrder[i];
               final name = _branchTitles[key] ?? key;
               final modules = _branches[key] ?? const [];
-              final completed =
-                  modules.where((m) => m['is_completed'] == true).length;
+              final completed = modules
+                  .where((m) => m['is_completed'] == true)
+                  .length;
               final total = modules.length;
               final percent = total > 0 ? completed / total : 0.0;
               final allDone = total > 0 && completed == total;
@@ -928,8 +996,7 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                           _surface,
                           _cyan,
                           0.07,
-                        )!
-                            .withValues(alpha: 0.9),
+                        )!.withValues(alpha: 0.9),
                       ],
                     ),
                     border: Border.all(
