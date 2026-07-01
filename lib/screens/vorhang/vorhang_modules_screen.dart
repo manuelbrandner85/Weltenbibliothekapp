@@ -19,6 +19,7 @@ import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/vorhang_branch_path.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_page_route.dart';
+import '../vorhang_modul_screen.dart';
 
 /// 🎭 VORHANG Modules Screen
 ///
@@ -238,6 +239,13 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.dashboard_outlined, color: _gold),
+            tooltip: 'Lernpfade',
+            onPressed: () => Navigator.of(context).push(
+              VorhangPageRoute(builder: (_) => const VorhangModulScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: _gold),
             tooltip: 'Neu laden',
