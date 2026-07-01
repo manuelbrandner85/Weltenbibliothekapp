@@ -31,6 +31,7 @@ import '../ursprung/mentor_session_screen.dart';
 import '../../widgets/mentor_hero_card.dart';
 import '../../widgets/daily_path_widget.dart';
 import '../../widgets/trending_rooms_section.dart';
+import '../../widgets/wb_section_header.dart';
 import '../../core/responsive.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -477,7 +478,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                         const SliverToBoxAdapter(child: DailyPathWidget()),
                         _buildActionGrid(),
                         _buildRecentRooms(),
-                        _buildSectionTitle('🔥 Trending',
+                        _buildSectionTitle('Trending',
                             subtitle: 'Heiß diskutiert'),
                         SliverToBoxAdapter(
                           child: TrendingRoomsSection(
@@ -486,7 +487,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                           ),
                         ),
                         _buildTrendingChips(),
-                        _buildSectionTitle('📰 Neueste Artikel',
+                        _buildSectionTitle('Neueste Artikel',
                             subtitle: 'Frisch aus der Welt'),
                         _buildArticleCards(),
                         _buildExploreSection(),
@@ -1165,6 +1166,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   // ── SECTION TITLE ──────────────────────────────────────────────────────
   Widget _buildSectionTitle(String title, {String subtitle = ''}) {
+    // Unified accent-bar header (Feature A1) — matches all four worlds.
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
@@ -1172,15 +1174,15 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold)),
+              WbSectionHeader(
+                  label: title, accent: _blue, accentBright: _blueL),
               if (subtitle.isNotEmpty)
-                Text(subtitle,
-                    style:
-                        const TextStyle(color: Colors.white38, fontSize: 12)),
+                Padding(
+                  padding: const EdgeInsets.only(top: 5, left: 13),
+                  child: Text(subtitle,
+                      style: const TextStyle(
+                          color: Colors.white38, fontSize: 12)),
+                ),
             ]),
           ),
           GestureDetector(

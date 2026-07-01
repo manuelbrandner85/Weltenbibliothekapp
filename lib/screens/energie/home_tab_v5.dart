@@ -32,6 +32,7 @@ import '../../widgets/daily_path_widget.dart';
 import '../../services/spirit_reading_service.dart';
 import '../../services/tabbar_service.dart';
 import '../../core/storage/unified_storage_service.dart';
+import '../../widgets/wb_section_header.dart';
 import '../../core/responsive.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -667,12 +668,12 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                         ),
                         _buildRecentRooms(),
                         _buildSectionTitle(
-                          '✨ Spirituelle Themen',
+                          'Spirituelle Themen',
                           subtitle: 'Im Fokus',
                         ),
                         _buildTrendingChips(),
                         _buildSectionTitle(
-                          '📿 Neueste Artikel',
+                          'Neueste Artikel',
                           subtitle: 'Wissen & Weisheit',
                         ),
                         _buildArticleCards(),
@@ -2306,6 +2307,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   // ── SECTION TITLE ──────────────────────────────────────────────────────
   Widget _buildSectionTitle(String title, {String subtitle = ''}) {
+    // Unified accent-bar header (Feature A1) — matches all four worlds.
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
@@ -2315,20 +2317,20 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  WbSectionHeader(
+                    label: title,
+                    accent: _purple,
+                    accentBright: _purpleL,
                   ),
                   if (subtitle.isNotEmpty)
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5, left: 13),
+                      child: Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                 ],
