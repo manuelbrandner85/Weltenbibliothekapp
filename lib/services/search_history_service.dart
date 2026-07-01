@@ -2,14 +2,29 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/search_history.dart';
 
-/// Search History Service v9.0 (SharedPreferences)
+/// Search History Service v10.0 (SharedPreferences)
 ///
 /// Manages search history – last 50 searches, auto-cleanup, filter.
+///
+/// Performance (v10.0): The in-memory store is kept as an ordered index so
+/// query operations no longer re-sort the whole list on every read:
+///   * `_entries` maintains a sorted-descending-by-timestamp invariant, so
+///     reads (getAllHistory / getRecentHistory / searchHistory) return without
+///     an O(n log n) sort per call.
+///   * `_queryIndex` holds all lowercased queries for O(1) hasQuery / dedup
+///     lookups instead of a linear scan with repeated toLowerCase() calls.
+///   * getStatistics computes min/max in a single O(n) pass instead of sorting.
 class SearchHistoryService {
   static const String _kHistory = 'search_history';
   static const int _maxHistoryEntries = 50;
 
+  /// Invariant: always sorted descending by timestamp (newest first).
   static List<SearchHistoryEntry> _entries = [];
+
+  /// Lowercased-query index for O(1) existence/dedup checks. Queries are unique
+  /// because addSearch replaces an existing entry with the same query.
+  static final Set<String> _queryIndex = <String>{};
+
   static bool _loaded = false;
 
   static Future<void> init() async {
@@ -27,12 +42,24 @@ class SearchHistoryService {
     }
     _loaded = true;
     _purgeInvalid();
+    // Establish the sorted invariant + index once on load; every later read
+    // relies on it instead of sorting again.
+    _entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     await _cleanupOldEntries();
+    _rebuildIndex();
   }
 
   /// M3: Entfernt leere/Whitespace-only Eintraege aus Altbestaenden.
   static void _purgeInvalid() {
     _entries.removeWhere((e) => e.query.trim().isEmpty);
+  }
+
+  /// Rebuilds the lowercased-query index from the current entries. Cheap
+  /// (n <= 50) and only needed after a full load or a bulk delete.
+  static void _rebuildIndex() {
+    _queryIndex
+      ..clear()
+      ..addAll(_entries.map((e) => e.query.toLowerCase()));
   }
 
   static Future<void> _persist() async {
@@ -57,7 +84,11 @@ class SearchHistoryService {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;
     query = trimmed;
-    _entries.removeWhere((e) => e.query.toLowerCase() == query.toLowerCase());
+    final lower = query.toLowerCase();
+    // O(1) index check avoids a full scan when the query is new.
+    if (_queryIndex.contains(lower)) {
+      _entries.removeWhere((e) => e.query.toLowerCase() == lower);
+    }
 
     final entry = SearchHistoryEntry(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -69,7 +100,10 @@ class SearchHistoryService {
       metadata: metadata,
     );
 
-    _entries.add(entry);
+    // The new entry is the newest, so it belongs at the front. This keeps the
+    // sorted-descending invariant without re-sorting the whole list.
+    _entries.insert(0, entry);
+    _queryIndex.add(lower);
     await _cleanupOldEntries();
     await _persist();
   }
@@ -77,46 +111,53 @@ class SearchHistoryService {
   // ==================== READ ====================
 
   static List<SearchHistoryEntry> getAllHistory() {
-    return List.of(_entries)
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    // Already sorted (invariant) – just return a defensive copy.
+    return List.of(_entries);
   }
 
   static List<SearchHistoryEntry> getRecentHistory({int limit = 10}) {
-    return getAllHistory().take(limit).toList();
+    // No sort needed: entries are kept newest-first.
+    return _entries.take(limit).toList();
   }
 
   static List<SearchHistoryEntry> searchHistory(String query) {
     if (query.isEmpty) return getAllHistory();
     final q = query.toLowerCase();
+    // Iterating the already-sorted list preserves newest-first order without
+    // an extra sort.
     return _entries
-        .where((e) =>
-            e.query.toLowerCase().contains(q) ||
-            (e.summary?.toLowerCase().contains(q) ?? false) ||
-            (e.tags?.any((tag) => tag.toLowerCase().contains(q)) ?? false))
-        .toList()
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        .where(
+          (e) =>
+              e.query.toLowerCase().contains(q) ||
+              (e.summary?.toLowerCase().contains(q) ?? false) ||
+              (e.tags?.any((tag) => tag.toLowerCase().contains(q)) ?? false),
+        )
+        .toList();
   }
 
   static int getHistoryCount() => _entries.length;
 
   static bool hasQuery(String query) =>
-      _entries.any((e) => e.query.toLowerCase() == query.toLowerCase());
+      _queryIndex.contains(query.toLowerCase());
 
   // ==================== DELETE ====================
 
   static Future<void> deleteEntry(String id) async {
     _entries.removeWhere((e) => e.id == id);
+    _rebuildIndex();
     await _persist();
   }
 
   static Future<void> clearAllHistory() async {
     _entries.clear();
+    _queryIndex.clear();
     await _persist();
   }
 
   static Future<void> deleteOlderThan(int days) async {
     final cutoff = DateTime.now().subtract(Duration(days: days));
     _entries.removeWhere((e) => e.timestamp.isBefore(cutoff));
+    _rebuildIndex();
     await _persist();
   }
 
@@ -124,8 +165,13 @@ class SearchHistoryService {
 
   static Future<void> _cleanupOldEntries() async {
     if (_entries.length <= _maxHistoryEntries) return;
-    _entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    // Entries are kept sorted (newest first), so trimming the tail drops the
+    // oldest entries without another sort.
+    final removed = _entries.sublist(_maxHistoryEntries);
     _entries = _entries.take(_maxHistoryEntries).toList();
+    for (final e in removed) {
+      _queryIndex.remove(e.query.toLowerCase());
+    }
   }
 
   // ==================== STATS ====================
@@ -151,17 +197,24 @@ class SearchHistoryService {
         'newestSearch': null,
       };
     }
-    final uniqueQueries =
-        _entries.map((e) => e.query.toLowerCase()).toSet().length;
-    final totalResults = _entries.fold<int>(0, (sum, e) => sum + e.resultCount);
-    final sorted = List.of(_entries)
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    // Single O(n) pass for unique count, total results and min/max timestamps
+    // instead of an O(n log n) sort just to read the first/last timestamps.
+    final uniqueQueries = <String>{};
+    var totalResults = 0;
+    var oldest = _entries.first.timestamp;
+    var newest = _entries.first.timestamp;
+    for (final e in _entries) {
+      uniqueQueries.add(e.query.toLowerCase());
+      totalResults += e.resultCount;
+      if (e.timestamp.isBefore(oldest)) oldest = e.timestamp;
+      if (e.timestamp.isAfter(newest)) newest = e.timestamp;
+    }
     return {
       'totalSearches': _entries.length,
-      'uniqueQueries': uniqueQueries,
+      'uniqueQueries': uniqueQueries.length,
       'averageResultCount': (totalResults / _entries.length).round(),
-      'oldestSearch': sorted.first.timestamp,
-      'newestSearch': sorted.last.timestamp,
+      'oldestSearch': oldest,
+      'newestSearch': newest,
     };
   }
 }
