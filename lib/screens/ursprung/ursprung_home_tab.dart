@@ -21,6 +21,7 @@ import '../../widgets/daily_practice_card.dart';
 import '../../widgets/ursprung/ursprung_quick_nav.dart';
 import '../../widgets/wb_section_header.dart';
 import '../../widgets/wb_action_tile.dart';
+import '../../widgets/wb_collapsible_section.dart';
 
 import 'ursprung_community_tab.dart';
 import 'ursprung_lesson_screen.dart';
@@ -269,6 +270,14 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                         ),
                         const SizedBox(height: 12),
 
+                        // C: unified skeleton -- Mentor directly under the Hero
+                        // (below the quick-nav) in every world. Header uses the
+                        // shared WbSectionHeader; _mentorKey stays the anchor.
+                        _sectionLabel('MENTOR', key: _mentorKey),
+                        const SizedBox(height: 12),
+                        _buildMentorButton(context),
+                        const SizedBox(height: 28),
+
                         // FEATURE (U1): Level + XP + Streak sichtbar.
                         const WorldXpHeader(world: 'ursprung', accent: _cyan),
                         const SizedBox(height: 12),
@@ -291,21 +300,6 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
 
                         // ── 3D-Gateway (Merkaba) ──
                         _build3DGateway(context),
-                        const SizedBox(height: 28),
-
-                        // ── 🧠 KI-Mentor (Alchemist) ──
-                        Text(
-                          'MENTOR',
-                          key: _mentorKey,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 4.0,
-                            color: _cyan.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildMentorButton(context),
                         const SizedBox(height: 28),
 
                         // ── COMMUNITY: Beiträge-Feed ──
@@ -392,46 +386,61 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                         const SizedBox(height: 28),
 
                         // ── LEBENDIGER PLANET (Ursprung-exklusiv) ──
-                        _sectionLabel('LEBENDIGER PLANET', key: _planetKey),
-                        const SizedBox(height: 12),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '🎙️',
-                          title: 'Livestream',
-                          subtitle: 'Live-Chat & Sprachraeume',
-                          builder: (_) => const UrsprungLiveChatScreen(),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '🐾',
-                          title: 'Artenvielfalt',
-                          subtitle: 'Biodiversität weltweit · GBIF Live-Daten',
-                          builder: (_) => const BiodiversityScreen(),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '✨',
-                          title: 'Sternenhimmel heute',
-                          subtitle: 'Sichtbare Planeten · Himmelskalender',
-                          builder: (_) => const NightSkyScreen(),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '🌍',
-                          title: 'Naturphänomene',
-                          subtitle: 'Stürme, Eis, Dürre weltweit · NASA EONET',
-                          builder: (_) => const NaturePhenomenaScreen(),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '🗣️',
-                          title: 'Indigene Sprachen',
-                          subtitle: 'Naturvölker & ihr Wissen · Datenbank',
-                          builder: (_) => const IndigenousLanguagesScreen(),
+                        // B3: collapsed by default to declutter; quick-nav
+                        // anchor (_planetKey) stays on the section header.
+                        WbCollapsibleSection(
+                          key: _planetKey,
+                          label: 'LEBENDIGER PLANET',
+                          accent: _cyan,
+                          accentBright: _cyanAccent,
+                          trailing: '5 Live-Tools',
+                          bodyBuilder: (_) => Column(
+                            children: [
+                              _buildToolCard(
+                                context: context,
+                                emoji: '🎙️',
+                                title: 'Livestream',
+                                subtitle: 'Live-Chat & Sprachraeume',
+                                builder: (_) => const UrsprungLiveChatScreen(),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildToolCard(
+                                context: context,
+                                emoji: '🐾',
+                                title: 'Artenvielfalt',
+                                subtitle:
+                                    'Biodiversität weltweit · GBIF Live-Daten',
+                                builder: (_) => const BiodiversityScreen(),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildToolCard(
+                                context: context,
+                                emoji: '✨',
+                                title: 'Sternenhimmel heute',
+                                subtitle:
+                                    'Sichtbare Planeten · Himmelskalender',
+                                builder: (_) => const NightSkyScreen(),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildToolCard(
+                                context: context,
+                                emoji: '🌍',
+                                title: 'Naturphänomene',
+                                subtitle:
+                                    'Stürme, Eis, Dürre weltweit · NASA EONET',
+                                builder: (_) => const NaturePhenomenaScreen(),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildToolCard(
+                                context: context,
+                                emoji: '🗣️',
+                                title: 'Indigene Sprachen',
+                                subtitle: 'Naturvölker & ihr Wissen · Datenbank',
+                                builder: (_) =>
+                                    const IndigenousLanguagesScreen(),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 28),
 

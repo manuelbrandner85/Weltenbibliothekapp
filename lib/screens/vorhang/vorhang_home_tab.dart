@@ -190,6 +190,14 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                 _buildHeroSection(),
                 const SizedBox(height: 12),
 
+                // C: unified skeleton -- Mentor directly under the Hero in
+                // every world (matches Materie/Energie). Header uses the shared
+                // WbSectionHeader via _sectionLabel.
+                _sectionLabel('MENTOR'),
+                const SizedBox(height: 12),
+                _buildMentorButton(context),
+                const SizedBox(height: 28),
+
                 // FEATURE (V1): Level + XP + Streak sichtbar.
                 const WorldXpHeader(
                     world: 'vorhang', accent: Color(0xFFC9A84C)),
@@ -205,20 +213,6 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                   practices: DailyPracticeCard.vorhangPractices,
                 ),
                 const SizedBox(height: 20),
-
-                // ── 🧠 KI-Mentor Button (PRESERVED, lines 167-239 original) ──
-                Text(
-                  'MENTOR',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 4.0,
-                    color: _gold.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildMentorButton(context),
-                const SizedBox(height: 28),
 
                 // ── COMMUNITY: Beiträge-Feed (vom Community-Tab ausgelagert) ──
                 _sectionLabel('COMMUNITY'),
