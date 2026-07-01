@@ -32,6 +32,8 @@ import '../../widgets/daily_path_widget.dart';
 import '../../services/spirit_reading_service.dart';
 import '../../services/tabbar_service.dart';
 import '../../core/storage/unified_storage_service.dart';
+import '../../widgets/wb_section_header.dart';
+import '../../widgets/wb_collapsible_section.dart';
 import '../../core/responsive.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -667,12 +669,12 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                         ),
                         _buildRecentRooms(),
                         _buildSectionTitle(
-                          '✨ Spirituelle Themen',
+                          'Spirituelle Themen',
                           subtitle: 'Im Fokus',
                         ),
                         _buildTrendingChips(),
                         _buildSectionTitle(
-                          '📿 Neueste Artikel',
+                          'Neueste Artikel',
                           subtitle: 'Wissen & Weisheit',
                         ),
                         _buildArticleCards(),
@@ -1071,43 +1073,41 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   // ── COSMIC ENERGY (Moon + Sunrise + NASA DONKI) ─────────────────────────
   Widget _buildCosmicEnergySliver() {
+    // B1: the four cosmic cards (Moon, Sun, Tagesenergie, DONKI) are bundled
+    // into ONE collapsible "Kosmos heute" panel, folded by default to cut
+    // overload. Nothing removed — one tap reveals the full block.
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         child: _cosmicLoading
             ? _cosmicShimmer(140)
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      '🌌 Kosmische Energie heute',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+            : WbCollapsibleSection(
+                label: 'Kosmos heute',
+                accent: _purple,
+                accentBright: _purpleL,
+                trailing: 'Mond · Sonne · Zahl',
+                bodyBuilder: (_) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        // Mondphase
+                        Expanded(child: _buildMoonCard()),
+                        const SizedBox(width: 10),
+                        // Sonnenaufgang / Sonnenuntergang
+                        Expanded(child: _buildSunCard()),
+                      ],
                     ),
-                  ),
-                  Row(
-                    children: [
-                      // Mondphase
-                      Expanded(child: _buildMoonCard()),
-                      const SizedBox(width: 10),
-                      // Sonnenaufgang / Sonnenuntergang
-                      Expanded(child: _buildSunCard()),
-                    ],
-                  ),
-                  // Numerologische Tagesenergie-Zahl
-                  const SizedBox(height: 10),
-                  _buildDayEnergyCard(),
-                  // NASA DONKI Sonnenstürme
-                  if (_donkiEvents.isNotEmpty) ...[
+                    // Numerologische Tagesenergie-Zahl
                     const SizedBox(height: 10),
-                    _buildDonkiCard(),
+                    _buildDayEnergyCard(),
+                    // NASA DONKI Sonnenstürme
+                    if (_donkiEvents.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      _buildDonkiCard(),
+                    ],
                   ],
-                ],
+                ),
               ),
       ),
     );
@@ -2306,6 +2306,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   // ── SECTION TITLE ──────────────────────────────────────────────────────
   Widget _buildSectionTitle(String title, {String subtitle = ''}) {
+    // Unified accent-bar header (Feature A1) — matches all four worlds.
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
@@ -2315,20 +2316,20 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  WbSectionHeader(
+                    label: title,
+                    accent: _purple,
+                    accentBright: _purpleL,
                   ),
                   if (subtitle.isNotEmpty)
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
+                    Padding(
+                      padding: const EdgeInsets.only(top: 5, left: 13),
+                      child: Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                 ],

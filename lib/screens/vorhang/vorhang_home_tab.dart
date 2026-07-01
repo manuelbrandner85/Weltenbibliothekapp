@@ -16,6 +16,8 @@ import '../../widgets/daily_path_widget.dart';
 import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
 import '../../widgets/daily_practice_card.dart';
+import '../../widgets/wb_section_header.dart';
+import '../../widgets/wb_action_tile.dart';
 import 'vorhang_community_tab.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_live_chat_screen.dart';
@@ -188,6 +190,14 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                 _buildHeroSection(),
                 const SizedBox(height: 12),
 
+                // C: unified skeleton -- Mentor directly under the Hero in
+                // every world (matches Materie/Energie). Header uses the shared
+                // WbSectionHeader via _sectionLabel.
+                _sectionLabel('MENTOR'),
+                const SizedBox(height: 12),
+                _buildMentorButton(context),
+                const SizedBox(height: 28),
+
                 // FEATURE (V1): Level + XP + Streak sichtbar.
                 const WorldXpHeader(
                     world: 'vorhang', accent: Color(0xFFC9A84C)),
@@ -203,20 +213,6 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
                   practices: DailyPracticeCard.vorhangPractices,
                 ),
                 const SizedBox(height: 20),
-
-                // ── 🧠 KI-Mentor Button (PRESERVED, lines 167-239 original) ──
-                Text(
-                  'MENTOR',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 4.0,
-                    color: _gold.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildMentorButton(context),
-                const SizedBox(height: 28),
 
                 // ── COMMUNITY: Beiträge-Feed (vom Community-Tab ausgelagert) ──
                 _sectionLabel('COMMUNITY'),
@@ -342,41 +338,13 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
 
   // ── PRESERVED: Hero Section ──
   /// Section-Label mit Gold-Accent-Bar (premium Rhythmus, wie Materie/Energie).
-  Widget _sectionLabel(String s, {String? trailing}) => Row(
-        children: [
-          Container(
-            width: 3,
-            height: 13,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFE0C872), Color(0x33C9A84C)],
-              ),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            s,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 4.0,
-              color: _gold.withValues(alpha: 0.85),
-            ),
-          ),
-          if (trailing != null) ...[
-            const Spacer(),
-            Text(
-              trailing,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ],
+  // Delegates to the shared WbSectionHeader so all worlds render identically
+  // (Feature A1). Keeps existing call-sites unchanged.
+  Widget _sectionLabel(String s, {String? trailing}) => WbSectionHeader(
+        label: s,
+        accent: _gold,
+        accentBright: const Color(0xFFE0C872),
+        trailing: trailing,
       );
 
   Widget _buildHeroSection() {
@@ -541,6 +509,8 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
   /// Vorhang-exclusive entry point: decode symbols/logos into possible
   /// meanings, origin and cross-world references.
   /// Kompakte Tool-Kachel fuer die WERKZEUGE-Sektion.
+  // Delegates to the shared WbActionTile so all worlds share one tile style
+  // (Feature A2). Keeps existing call-sites unchanged.
   Widget _buildToolTile(
     BuildContext context, {
     required String emoji,
@@ -548,57 +518,14 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
     required String subtitle,
     required WidgetBuilder builder,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () =>
-            Navigator.push(context, MaterialPageRoute(builder: builder)),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: _surface,
-            border: Border.all(color: _gold.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: _gold.withValues(alpha: 0.12),
-                  border: Border.all(color: _gold.withValues(alpha: 0.4)),
-                ),
-                child: Text(emoji, style: const TextStyle(fontSize: 22)),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 3),
-                    Text(subtitle,
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 12,
-                            height: 1.3)),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right,
-                  color: _gold.withValues(alpha: 0.7), size: 22),
-            ],
-          ),
-        ),
-      ),
+    return WbActionTile(
+      emoji: emoji,
+      title: title,
+      subtitle: subtitle,
+      accent: _gold,
+      surface: _surface,
+      onTap: () =>
+          Navigator.push(context, MaterialPageRoute(builder: builder)),
     );
   }
 

@@ -19,6 +19,9 @@ import '../../widgets/world_xp_header.dart';
 import '../../widgets/daily_revelation_card.dart';
 import '../../widgets/daily_practice_card.dart';
 import '../../widgets/ursprung/ursprung_quick_nav.dart';
+import '../../widgets/wb_section_header.dart';
+import '../../widgets/wb_action_tile.dart';
+import '../../widgets/wb_collapsible_section.dart';
 
 import 'ursprung_community_tab.dart';
 import 'ursprung_lesson_screen.dart';
@@ -267,6 +270,14 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                         ),
                         const SizedBox(height: 12),
 
+                        // C: unified skeleton -- Mentor directly under the Hero
+                        // (below the quick-nav) in every world. Header uses the
+                        // shared WbSectionHeader; _mentorKey stays the anchor.
+                        _sectionLabel('MENTOR', key: _mentorKey),
+                        const SizedBox(height: 12),
+                        _buildMentorButton(context),
+                        const SizedBox(height: 28),
+
                         // FEATURE (U1): Level + XP + Streak sichtbar.
                         const WorldXpHeader(world: 'ursprung', accent: _cyan),
                         const SizedBox(height: 12),
@@ -289,21 +300,6 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
 
                         // ── 3D-Gateway (Merkaba) ──
                         _build3DGateway(context),
-                        const SizedBox(height: 28),
-
-                        // ── 🧠 KI-Mentor (Alchemist) ──
-                        Text(
-                          'MENTOR',
-                          key: _mentorKey,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 4.0,
-                            color: _cyan.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildMentorButton(context),
                         const SizedBox(height: 28),
 
                         // ── COMMUNITY: Beiträge-Feed ──
@@ -390,46 +386,61 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
                         const SizedBox(height: 28),
 
                         // ── LEBENDIGER PLANET (Ursprung-exklusiv) ──
-                        _sectionLabel('LEBENDIGER PLANET', key: _planetKey),
-                        const SizedBox(height: 12),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '🎙️',
-                          title: 'Livestream',
-                          subtitle: 'Live-Chat & Sprachraeume',
-                          builder: (_) => const UrsprungLiveChatScreen(),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '🐾',
-                          title: 'Artenvielfalt',
-                          subtitle: 'Biodiversität weltweit · GBIF Live-Daten',
-                          builder: (_) => const BiodiversityScreen(),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '✨',
-                          title: 'Sternenhimmel heute',
-                          subtitle: 'Sichtbare Planeten · Himmelskalender',
-                          builder: (_) => const NightSkyScreen(),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '🌍',
-                          title: 'Naturphänomene',
-                          subtitle: 'Stürme, Eis, Dürre weltweit · NASA EONET',
-                          builder: (_) => const NaturePhenomenaScreen(),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildToolCard(
-                          context: context,
-                          emoji: '🗣️',
-                          title: 'Indigene Sprachen',
-                          subtitle: 'Naturvölker & ihr Wissen · Datenbank',
-                          builder: (_) => const IndigenousLanguagesScreen(),
+                        // B3: collapsed by default to declutter; quick-nav
+                        // anchor (_planetKey) stays on the section header.
+                        WbCollapsibleSection(
+                          key: _planetKey,
+                          label: 'LEBENDIGER PLANET',
+                          accent: _cyan,
+                          accentBright: _cyanAccent,
+                          trailing: '5 Live-Tools',
+                          bodyBuilder: (_) => Column(
+                            children: [
+                              _buildToolCard(
+                                context: context,
+                                emoji: '🎙️',
+                                title: 'Livestream',
+                                subtitle: 'Live-Chat & Sprachraeume',
+                                builder: (_) => const UrsprungLiveChatScreen(),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildToolCard(
+                                context: context,
+                                emoji: '🐾',
+                                title: 'Artenvielfalt',
+                                subtitle:
+                                    'Biodiversität weltweit · GBIF Live-Daten',
+                                builder: (_) => const BiodiversityScreen(),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildToolCard(
+                                context: context,
+                                emoji: '✨',
+                                title: 'Sternenhimmel heute',
+                                subtitle:
+                                    'Sichtbare Planeten · Himmelskalender',
+                                builder: (_) => const NightSkyScreen(),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildToolCard(
+                                context: context,
+                                emoji: '🌍',
+                                title: 'Naturphänomene',
+                                subtitle:
+                                    'Stürme, Eis, Dürre weltweit · NASA EONET',
+                                builder: (_) => const NaturePhenomenaScreen(),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildToolCard(
+                                context: context,
+                                emoji: '🗣️',
+                                title: 'Indigene Sprachen',
+                                subtitle: 'Naturvölker & ihr Wissen · Datenbank',
+                                builder: (_) =>
+                                    const IndigenousLanguagesScreen(),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 28),
 
@@ -499,43 +510,16 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
   }
 
   // ── Section-Label mit Cyan-Accent-Bar ──
-  Widget _sectionLabel(String s, {String? trailing, Key? key}) => Row(
-    key: key,
-    children: [
-      Container(
-        width: 3,
-        height: 13,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [_cyanAccent, Color(0x3300D4AA)],
-          ),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-      const SizedBox(width: 10),
-      Text(
-        s,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 4.0,
-          color: _cyan.withValues(alpha: 0.9),
-        ),
-      ),
-      if (trailing != null) ...[
-        const Spacer(),
-        Text(
-          trailing,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.4),
-            fontSize: 11,
-          ),
-        ),
-      ],
-    ],
-  );
+  // Delegates to the shared WbSectionHeader (Feature A1). The optional key is
+  // used as an anchor target for the quick-nav scroll.
+  Widget _sectionLabel(String s, {String? trailing, Key? key}) =>
+      WbSectionHeader(
+        key: key,
+        label: s,
+        accent: _cyan,
+        accentBright: _cyanAccent,
+        trailing: trailing,
+      );
 
   // 3D-Gateway: oeffnet die Merkaba im Vollbild (interaktiv, drehbar).
   Widget _build3DGateway(BuildContext context) {
@@ -857,6 +841,9 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
     );
   }
 
+  // Delegates to the shared WbActionTile (Feature A2) so tool rows match the
+  // other worlds: icon-badge + title + subtitle + chevron (was a bespoke
+  // "ÖFFNEN" badge before).
   Widget _buildToolCard({
     required BuildContext context,
     required String emoji,
@@ -864,93 +851,14 @@ class _UrsprungHomeTabState extends State<UrsprungHomeTab> {
     required String subtitle,
     required WidgetBuilder builder,
   }) {
-    // WbTapScale: Scale-on-Press + Haptik (reduce-motion-bewusst).
-    return WbTapScale(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: builder)),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              _surface.withValues(alpha: 0.9),
-              Color.lerp(_surface, _cyan, 0.06)!.withValues(alpha: 0.85),
-            ],
-          ),
-          border: Border.all(color: _cyan.withValues(alpha: 0.25)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-            BoxShadow(
-              color: _cyan.withValues(alpha: 0.12),
-              blurRadius: 20,
-              spreadRadius: -2,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: _cyan.withValues(alpha: 0.10),
-                border: Border.all(color: _cyan.withValues(alpha: 0.30)),
-              ),
-              child: Text(emoji, style: const TextStyle(fontSize: 22)),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: _cyan.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _cyan.withValues(alpha: 0.40)),
-              ),
-              child: Text(
-                'ÖFFNEN',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2.0,
-                  color: _cyanAccent,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return WbActionTile(
+      emoji: emoji,
+      title: title,
+      subtitle: subtitle,
+      accent: _cyan,
+      surface: _surface,
+      onTap: () =>
+          Navigator.push(context, MaterialPageRoute(builder: builder)),
     );
   }
 
