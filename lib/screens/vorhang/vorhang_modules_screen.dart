@@ -12,12 +12,14 @@ import '../../services/xp_retry_queue.dart';
 import '../../services/new_unlock_tracker.dart';
 import '../../services/storage_service.dart';
 import '../../services/unified_profile_service.dart';
+import '../../services/vorhang_module_overview.dart';
 import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/vorhang_branch_path.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_page_route.dart';
+import '../vorhang_modul_screen.dart';
 
 /// 🎭 VORHANG Modules Screen
 ///
@@ -37,7 +39,8 @@ class VorhangModulesScreen extends StatefulWidget {
   State<VorhangModulesScreen> createState() => _VorhangModulesScreenState();
 }
 
-class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
+class _VorhangModulesScreenState extends State<VorhangModulesScreen>
+    with SingleTickerProviderStateMixin {
   static const _gold = Color(0xFFC9A84C);
   static const _goldDim = Color(0xFF8A7531);
   static const _bgBlack = Color(0xFF000000);
@@ -58,6 +61,9 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
 
   // A3: neu freigeschaltete Module (seit letztem Besuch)
   Set<String> _newModuleCodes = {};
+
+  // V3: Lernmodul-Uebersicht — 2 Tabs ("Branchen" + alphabetische "A-Z"-Liste).
+  late final TabController _tabController;
 
   // Branche → Icon
   static const Map<String, IconData> _branchIcons = {
@@ -82,11 +88,13 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _fetchModules();
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _searchCtrl.dispose();
     _searchDebounce?.cancel();
     super.dispose();
@@ -232,6 +240,13 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.dashboard_outlined, color: _gold),
+            tooltip: 'Lernpfade',
+            onPressed: () => Navigator.of(context).push(
+              VorhangPageRoute(builder: (_) => const VorhangModulScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh, color: _gold),
             tooltip: 'Neu laden',
             onPressed: _fetchModules,
@@ -299,169 +314,279 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
   }
 
   Widget _buildContent() {
-    final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
-    final next = _nextModule();
-    final results = _searchResults();
     // Responsive: bound the reading column on tablet/desktop so module tiles
     // stay readable instead of stretching edge-to-edge (phones unchanged).
     return ResponsiveWebContainer(
       variant: WebContainerVariant.compact,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
+      // V3: fixed header (progress + search + TabBar) over a TabBarView so the
+      // "Branchen" and alphabetical "A-Z" views can be switched without losing
+      // the search box or the overall-progress card.
+      child: Column(
         children: [
-          // Overall progress card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [_surface, _gold.withValues(alpha: 0.08), _bgBlack],
-              ),
-              border: Border.all(color: _gold.withValues(alpha: 0.3)),
-            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 100, 16, 0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.auto_stories, color: _gold, size: 22),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'GESAMTFORTSCHRITT',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 4.0,
-                        color: _gold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '$_completedCount / $_totalCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: percent,
-                    minHeight: 8,
-                    backgroundColor: _gold.withValues(alpha: 0.1),
-                    valueColor: const AlwaysStoppedAnimation(_gold),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '${(percent * 100).round()}% des Vorhangs gelüftet',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 12,
-                  ),
-                ),
-                // V2: Weitermachen-Shortcut
-                if (next != null) ...[
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _openLesson(next),
-                      icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                      label: Text(
-                        'Weitermachen: ${next['title'] ?? ''}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _gold,
-                        foregroundColor: _bgBlack,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                _buildProgressCard(),
+                const SizedBox(height: 16),
+                _buildSearchField(),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-
-          // V1: Modul-Suche
-          TextField(
-            controller: _searchCtrl,
-            style: const TextStyle(color: Colors.white),
-            onChanged: (v) {
-              // 200ms Debounce: filter applies after the user briefly pauses.
-              _searchDebounce?.cancel();
-              _searchDebounce = Timer(const Duration(milliseconds: 200), () {
-                if (mounted) setState(() => _searchQuery = v);
-              });
-            },
-            decoration: InputDecoration(
-              hintText: 'Modul suchen (z.B. V-12 oder Stichwort)',
-              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
-              prefixIcon:
-                  Icon(Icons.search, color: _gold.withValues(alpha: 0.7)),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(
-                        Icons.close,
-                        color: _gold.withValues(alpha: 0.7),
-                      ),
-                      onPressed: () {
-                        _searchDebounce?.cancel();
-                        _searchCtrl.clear();
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.04),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: _gold.withValues(alpha: 0.6)),
-              ),
+          _buildTabBar(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildBranchesTab(),
+                _buildAlphabeticalTab(),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
 
-          if (_searchQuery.trim().isNotEmpty) ...[
-            // V1: Such-Ergebnisse (flach)
-            if (results.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 32),
-                child: Center(
-                  child: Text(
-                    'Kein Modul gefunden für "$_searchQuery"',
-                    style:
-                        TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+  /// V3: TabBar to switch between the branch view and the A-Z overview.
+  Widget _buildTabBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: _surface.withValues(alpha: 0.55),
+        border: Border.all(color: _gold.withValues(alpha: 0.2)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: _gold.withValues(alpha: 0.18),
+          border: Border.all(color: _gold.withValues(alpha: 0.6)),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        indicatorPadding: const EdgeInsets.all(4),
+        dividerColor: Colors.transparent,
+        labelColor: _gold,
+        unselectedLabelColor: Colors.white.withValues(alpha: 0.55),
+        labelStyle: const TextStyle(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
+        tabs: const [
+          Tab(
+            height: 44,
+            icon: Icon(Icons.account_tree_outlined, size: 18),
+            iconMargin: EdgeInsets.only(bottom: 2),
+            text: 'Branchen',
+          ),
+          Tab(
+            height: 44,
+            icon: Icon(Icons.sort_by_alpha, size: 18),
+            iconMargin: EdgeInsets.only(bottom: 2),
+            text: 'A-Z',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// V3: Branch view (6 ExpansionTiles) or flat search results when searching.
+  Widget _buildBranchesTab() {
+    final results = _searchResults();
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      children: [
+        if (_searchQuery.trim().isNotEmpty) ...[
+          if (results.isEmpty)
+            _buildEmptySearch()
+          else
+            ...results.map(_buildModuleTile),
+        ] else
+          for (final branchName in _branchOrder)
+            _buildBranchTile(branchName, _branches[branchName] ?? const []),
+      ],
+    );
+  }
+
+  /// V3: All modules flat, sorted alphabetically by title, filtered by search.
+  Widget _buildAlphabeticalTab() {
+    final modules = VorhangModuleOverview.sortedAndFiltered(
+      _branches,
+      order: _branchOrder,
+      query: _searchQuery,
+    );
+    if (modules.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        children: [
+          _searchQuery.trim().isNotEmpty
+              ? _buildEmptySearch()
+              : Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: Text(
+                      'Noch keine Module geladen',
+                      style:
+                          TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                    ),
                   ),
                 ),
-              )
-            else
-              ...results.map(_buildModuleTile),
-          ] else
-            // 6 Branches
-            for (final branchName in _branchOrder)
-              _buildBranchTile(branchName, _branches[branchName] ?? const []),
         ],
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+      itemCount: modules.length,
+      itemBuilder: (context, i) => _buildModuleTile(modules[i]),
+    );
+  }
+
+  Widget _buildEmptySearch() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Center(
+        child: Text(
+          'Kein Modul gefunden für "$_searchQuery"',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+        ),
+      ),
+    );
+  }
+
+  /// V3: Overall progress card (incl. "Weitermachen"-Shortcut).
+  Widget _buildProgressCard() {
+    final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
+    final next = _nextModule();
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_surface, _gold.withValues(alpha: 0.08), _bgBlack],
+        ),
+        border: Border.all(color: _gold.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_stories, color: _gold, size: 22),
+              const SizedBox(width: 10),
+              const Text(
+                'GESAMTFORTSCHRITT',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 4.0,
+                  color: _gold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$_completedCount / $_totalCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: percent,
+              minHeight: 8,
+              backgroundColor: _gold.withValues(alpha: 0.1),
+              valueColor: const AlwaysStoppedAnimation(_gold),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${(percent * 100).round()}% des Vorhangs gelüftet',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 12,
+            ),
+          ),
+          // V2: Weitermachen-Shortcut
+          if (next != null) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _openLesson(next),
+                icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                label: Text(
+                  'Weitermachen: ${next['title'] ?? ''}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _gold,
+                  foregroundColor: _bgBlack,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// V1: Modul-Suche (shared across both tabs).
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchCtrl,
+      style: const TextStyle(color: Colors.white),
+      onChanged: (v) {
+        // 200ms Debounce: filter applies after the user briefly pauses.
+        _searchDebounce?.cancel();
+        _searchDebounce = Timer(const Duration(milliseconds: 200), () {
+          if (mounted) setState(() => _searchQuery = v);
+        });
+      },
+      decoration: InputDecoration(
+        hintText: 'Modul suchen (z.B. V-12 oder Stichwort)',
+        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+        prefixIcon: Icon(Icons.search, color: _gold.withValues(alpha: 0.7)),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+                icon: Icon(
+                  Icons.close,
+                  color: _gold.withValues(alpha: 0.7),
+                ),
+                onPressed: () {
+                  _searchDebounce?.cancel();
+                  _searchCtrl.clear();
+                  setState(() => _searchQuery = '');
+                },
+              )
+            : null,
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.04),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _gold.withValues(alpha: 0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _gold.withValues(alpha: 0.6)),
+        ),
       ),
     );
   }

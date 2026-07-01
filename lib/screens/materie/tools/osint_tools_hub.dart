@@ -371,6 +371,54 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
   ];
 
   @override
+  // Premium Hero-Banner oben im Hub (KI-generiert, fade-to-bg fuer Lesbarkeit).
+  Widget _buildHeroBanner() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          height: 116,
+          width: double.infinity,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                'assets/backdrops/recherche_hero.webp',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    const ColoredBox(color: Color(0xFF0A1424)),
+              ),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0x3304080F), Color(0xF204080F)],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 16,
+                bottom: 12,
+                right: 16,
+                child: Text(
+                  'OSINT - Offene Quellen, ein Werkzeugkasten',
+                  style: TextStyle(
+                    color: _kText.withValues(alpha: 0.92),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF04080F),
@@ -399,6 +447,7 @@ class _OsintToolsHubState extends State<OsintToolsHub> {
         ),
       ),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _buildHeroBanner(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
           child: Text(
